@@ -192,7 +192,7 @@ public class VertxMeterBinderAdapter extends MetricsOptions
      * @param mn the metric name
      * @return the client name if the passed string follows the convention, {@code null} otherwise.
      */
-    private String extractClientName(String mn) {
+    static String extractClientName(String mn) {
         if (mn.contains(METRIC_NAME_SEPARATOR)) {
             return mn.substring(mn.indexOf(METRIC_NAME_SEPARATOR) + 1);
         }

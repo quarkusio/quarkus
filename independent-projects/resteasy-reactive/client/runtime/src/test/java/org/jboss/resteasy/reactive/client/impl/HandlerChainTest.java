@@ -16,13 +16,15 @@ import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.junit.jupiter.api.Test;
 
+import io.vertx.core.http.HttpClientOptions;
+
 public class HandlerChainTest {
 
     @Test
     public void preSendHandlerIsAlwaysFirst() throws Exception {
 
-        var initialChain = new HandlerChain(false, 8096, 2048, true, LoggingScope.NONE, Collections.emptyMap(),
-                new DefaultClientLogger());
+        var initialChain = new HandlerChain(new HttpClientOptions(), false, true, LoggingScope.NONE, Collections.emptyMap(),
+                new DefaultClientLogger(), Collections.emptyList());
 
         ClientRestHandler preHandler = ctx -> {
         };

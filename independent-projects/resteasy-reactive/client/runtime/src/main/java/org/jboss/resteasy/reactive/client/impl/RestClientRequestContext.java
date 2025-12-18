@@ -51,6 +51,7 @@ import io.vertx.core.Context;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
 
@@ -97,6 +98,7 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     // Changed by the request filter
     Map<String, Object> properties;
     private HttpClientRequest httpClientRequest;
+    private HttpClientOptions httpClientOptions;
 
     private int responseStatus;
     private String responseReasonPhrase;
@@ -355,6 +357,15 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
 
     public RestClientRequestContext setHttpClientRequest(HttpClientRequest httpClientRequest) {
         this.httpClientRequest = httpClientRequest;
+        return this;
+    }
+
+    public HttpClientOptions getHttpClientOptions() {
+        return httpClientOptions;
+    }
+
+    public RestClientRequestContext setHttpClientOptions(HttpClientOptions httpClientOptions) {
+        this.httpClientOptions = httpClientOptions;
         return this;
     }
 
@@ -632,4 +643,5 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     public boolean isUserCanceled() {
         return userCanceled.get();
     }
+
 }

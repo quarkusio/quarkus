@@ -45,4 +45,9 @@ public interface ResteasyReactiveClientRequestContext extends ClientRequestConte
      * @param instance
      */
     void setCallStatsCollector(ServiceInstance instance);
+
+    /**
+     * Unwraps a backing object
+     */
+    <T> T unwrap(Class<T> theType);
 }

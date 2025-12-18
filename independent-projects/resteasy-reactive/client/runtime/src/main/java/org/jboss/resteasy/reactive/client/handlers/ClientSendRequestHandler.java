@@ -59,6 +59,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.AsyncFile;
 import io.vertx.core.file.OpenOptions;
 import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpClosedException;
@@ -71,22 +72,28 @@ public class ClientSendRequestHandler implements ClientRestHandler {
     private static final Logger log = Logger.getLogger(ClientSendRequestHandler.class);
     public static final String CONTENT_TYPE = "Content-Type";
 
+    private final HttpClientOptions httpClientOptions;
     private final boolean followRedirects;
     private final LoggingScope loggingScope;
     private final ClientLogger clientLogger;
     private final Map<Class<?>, MultipartResponseData> multipartResponseDataMap;
+    private final List<Consumer<HttpClientRequest>> clientRequestCustomizers;
     private final int maxChunkSize;
     private final int inputStreamChunkSize;
 
-    public ClientSendRequestHandler(int maxChunkSize, int inputStreamChunkSize, boolean followRedirects,
+    public ClientSendRequestHandler(HttpClientOptions httpClientOptions,
+            boolean followRedirects,
             LoggingScope loggingScope, ClientLogger logger,
-            Map<Class<?>, MultipartResponseData> multipartResponseDataMap) {
-        this.maxChunkSize = maxChunkSize;
-        this.inputStreamChunkSize = inputStreamChunkSize;
+            Map<Class<?>, MultipartResponseData> multipartResponseDataMap,
+            List<Consumer<HttpClientRequest>> clientRequestCustomizers) {
+        this.maxChunkSize = httpClientOptions.getMaxChunkSize();
+        this.inputStreamChunkSize = httpClientOptions.getMaxChunkSize();
+        this.httpClientOptions = httpClientOptions;
         this.followRedirects = followRedirects;
         this.loggingScope = loggingScope;
         this.clientLogger = logger;
         this.multipartResponseDataMap = multipartResponseDataMap;
+        this.clientRequestCustomizers = clientRequestCustomizers;
     }
 
     @Override
@@ -95,6 +102,9 @@ public class ClientSendRequestHandler implements ClientRestHandler {
             return;
         }
         requestContext.suspend();
+
+        requestContext.setHttpClientOptions(httpClientOptions);
+
         Uni<HttpClientRequest> future = createRequest(requestContext);
 
         // DNS failures happen before we send the request
@@ -104,6 +114,10 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                 if (requestContext.isUserCanceled()) {
                     // in this case the user aborted before the request was even created
                     return;
+                }
+
+                for (int i = 0; i < clientRequestCustomizers.size(); i++) {
+                    clientRequestCustomizers.get(i).accept(httpClientRequest);
                 }
 
                 requestContext.setHttpClientRequest(httpClientRequest);

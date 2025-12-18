@@ -19,12 +19,12 @@ import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.eclipse.microprofile.rest.client.spi.RestClientBuilderListener;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
+import org.jboss.resteasy.reactive.client.impl.VertxRequestCustomizingClientBuilder;
 
 import io.quarkus.proxy.ProxyType;
 import io.quarkus.rest.client.reactive.runtime.QuarkusRestClientBuilderImpl;
 import io.quarkus.rest.client.reactive.runtime.RestClientBuilderImpl;
 import io.quarkus.tls.TlsConfiguration;
-import io.vertx.core.http.HttpClientOptions;
 
 /**
  * This is the main entry point for creating a Type Safe Quarkus Rest Client.
@@ -35,7 +35,8 @@ import io.vertx.core.http.HttpClientOptions;
  * The <code>QuarkusRestClientBuilder</code> is based on {@link RestClientBuilder} class but Quarkus specific.
  * </p>
  */
-public interface QuarkusRestClientBuilder extends Configurable<QuarkusRestClientBuilder> {
+public interface QuarkusRestClientBuilder extends Configurable<QuarkusRestClientBuilder>,
+        VertxRequestCustomizingClientBuilder<QuarkusRestClientBuilder> {
 
     static QuarkusRestClientBuilder newBuilder() {
         RestClientBuilderImpl delegate = new RestClientBuilderImpl();
@@ -267,22 +268,6 @@ public interface QuarkusRestClientBuilder extends Configurable<QuarkusRestClient
      * @return the current builder
      */
     QuarkusRestClientBuilder clientHeadersFactory(ClientHeadersFactory clientHeadersFactory);
-
-    /**
-     * Specifies the HTTP client options to use.
-     *
-     * @param httpClientOptionsClass the HTTP client options to use.
-     * @return the current builder
-     */
-    QuarkusRestClientBuilder httpClientOptions(Class<? extends HttpClientOptions> httpClientOptionsClass);
-
-    /**
-     * Specifies the HTTP client options to use.
-     *
-     * @param httpClientOptions the HTTP client options to use.
-     * @return the current builder
-     */
-    QuarkusRestClientBuilder httpClientOptions(HttpClientOptions httpClientOptions);
 
     /**
      * Specifies the client logger to use.

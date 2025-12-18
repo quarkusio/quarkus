@@ -113,5 +113,12 @@ public class ClientRequestTest {
                         .when().get("/server-requests/count")
                         .body().as(Integer.class),
                 "Expected: http.server.requests, method=GET, status=500, uri=/client/status/{statusCode}");
+
+        assertEquals(5,
+                given()
+                        .queryParam("clientName", "pingpong")
+                        .when().get("/server-requests/client/count")
+                        .body().as(Integer.class),
+                "Expected: http.client.requests, clientName=pingpong");
     }
 }

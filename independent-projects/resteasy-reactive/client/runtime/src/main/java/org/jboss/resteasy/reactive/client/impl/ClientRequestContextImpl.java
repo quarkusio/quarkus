@@ -44,6 +44,8 @@ import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.stork.api.ServiceInstance;
 import io.vertx.core.Context;
+import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.http.HttpClientRequest;
 
 public class ClientRequestContextImpl implements ResteasyReactiveClientRequestContext {
 
@@ -87,6 +89,18 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
     @Override
     public void setCallStatsCollector(ServiceInstance statCollectingServiceInstance) {
         restClientRequestContext.setCallStatsCollector(statCollectingServiceInstance);
+    }
+
+    @Override
+    public <T> T unwrap(Class<T> theType) {
+        if (theType == RestClientRequestContext.class) {
+            return (T) restClientRequestContext;
+        } else if (theType == HttpClientRequest.class) {
+            return (T) restClientRequestContext.getHttpClientRequest();
+        } else if (theType == HttpClientOptions.class) {
+            return (T) restClientRequestContext.getHttpClientOptions();
+        }
+        return null;
     }
 
     @Override

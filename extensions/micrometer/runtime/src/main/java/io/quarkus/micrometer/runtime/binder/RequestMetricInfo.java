@@ -35,7 +35,7 @@ public class RequestMetricInfo {
      * @param matchPatterns
      * @return final uri for tag, or null to skip measurement
      */
-    protected String getNormalizedUriPath(Map<Pattern, String> matchPatterns, List<Pattern> ignorePatterns, String uri) {
+    public String getNormalizedUriPath(Map<Pattern, String> matchPatterns, List<Pattern> ignorePatterns, String uri) {
         // Normalize path
         String path = normalizePath(uri);
         if (path.length() > 1) {

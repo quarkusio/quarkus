@@ -37,6 +37,7 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.paths.PathCollection;
+import io.quarkus.runtime.JVMUnsafeWarningsControl;
 import io.quarkus.runtime.LaunchMode;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
@@ -96,6 +97,7 @@ public class QuarkusAugmentor {
         }
         long start = System.nanoTime();
         log.debug("Beginning Quarkus augmentation");
+        runtimeInitializeForAugmentation();
         ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
         QuarkusBuildCloseablesBuildItem buildCloseables = new QuarkusBuildCloseablesBuildItem();
         try {
@@ -192,6 +194,14 @@ public class QuarkusAugmentor {
             Thread.currentThread().setContextClassLoader(originalClassLoader);
             buildCloseables.close();
         }
+    }
+
+    /**
+     * Not strictly related to Augmentation, but we want these annoying warnings
+     * disabled before any augmentation process begins.
+     */
+    private void runtimeInitializeForAugmentation() {
+        JVMUnsafeWarningsControl.disableUnsafeRelatedWarnings();
     }
 
     public static Builder builder() {

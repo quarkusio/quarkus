@@ -3,16 +3,11 @@ package io.quarkus.deployment.pkg.jar;
 import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.UBER_JAR;
 
 import java.io.IOException;
-import java.nio.file.FileSystem;
-import java.nio.file.FileVisitOption;
-import java.nio.file.FileVisitResult;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -37,11 +32,11 @@ import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarIgnoredResourceBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarMergedResourceBuildItem;
-import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
+import io.quarkus.paths.OpenPathTree;
 import io.quarkus.sbom.ApplicationComponent;
 import io.quarkus.sbom.ApplicationManifestConfig;
 
@@ -145,32 +140,19 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
     }
 
     private void buildUberJar0(Path runnerJar) throws IOException {
-        List<FileSystem> dependencyFileSystems = new ArrayList<>();
 
         try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(runnerJar,
                 packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null), outputTarget.getOutputDirectory(),
                 executorService)) {
             LOG.info("Building uber jar: " + runnerJar);
 
-            final Map<String, String> seen = new HashMap<>();
             final Map<String, Set<Dependency>> duplicateCatcher = new HashMap<>();
             final Map<String, List<byte[]>> concatenatedEntries = new HashMap<>();
             final Set<String> mergeResourcePaths = mergedResources.stream()
                     .map(UberJarMergedResourceBuildItem::getPath)
                     .collect(Collectors.toSet());
 
-            Set<String> ignoredEntries = new HashSet<>();
-            packageConfig.jar().userConfiguredIgnoredEntries().ifPresent(ignoredEntries::addAll);
-            ignoredResources.stream()
-                    .map(UberJarIgnoredResourceBuildItem::getPath)
-                    .forEach(ignoredEntries::add);
-            Predicate<String> allIgnoredEntriesPredicate = new Predicate<String>() {
-                @Override
-                public boolean test(String path) {
-                    return UBER_JAR_IGNORED_ENTRIES_PREDICATE.test(path)
-                            || ignoredEntries.contains(path);
-                }
-            };
+            final Predicate<String> allIgnoredEntriesPredicate = getIgnoredEntriesPredicate();
 
             ResolvedDependency appArtifact = curateOutcome.getApplicationModel().getAppArtifact();
 
@@ -179,40 +161,31 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             generateManifest(archiveCreator, "", packageConfig, appArtifact, jvmRequirements, mainClass.getClassName(),
                     applicationInfo);
 
+            final Set<String> existingEntries = new HashSet<>();
+            generatedResources.stream()
+                    .map(GeneratedResourceBuildItem::getName)
+                    .forEach(existingEntries::add);
+
             for (ResolvedDependency appDep : curateOutcome.getApplicationModel().getRuntimeDependencies()) {
 
                 // Exclude files that are not jars (typically, we can have XML files here, see https://github.com/quarkusio/quarkus/issues/2852)
                 // and are not part of the optional dependencies to include
-                if (!includeAppDependency(appDep, outputTarget.getIncludedOptionalDependencies(),
-                        removedArtifactKeys)) {
+                if (!includeAppDependency(appDep, outputTarget.getIncludedOptionalDependencies(), removedArtifactKeys)) {
                     continue;
                 }
 
                 for (Path resolvedDep : appDep.getResolvedPaths()) {
-                    Set<String> existingEntries = new HashSet<>();
                     Set<String> transformedFilesByJar = transformedClasses.getTransformedFilesByJar().get(resolvedDep);
                     if (transformedFilesByJar != null) {
                         existingEntries.addAll(transformedFilesByJar);
                     }
-                    generatedResources.stream()
-                            .map(GeneratedResourceBuildItem::getName)
-                            .forEach(existingEntries::add);
-
-                    if (!Files.isDirectory(resolvedDep)) {
-                        FileSystem artifactFs = ZipUtils.newFileSystem(resolvedDep);
-                        dependencyFileSystems.add(artifactFs);
-                        for (final Path root : artifactFs.getRootDirectories()) {
-                            walkFileDependencyForDependency(root, archiveCreator, duplicateCatcher,
-                                    concatenatedEntries, allIgnoredEntriesPredicate, appDep, existingEntries,
-                                    mergeResourcePaths);
-                        }
-                    } else {
-                        walkFileDependencyForDependency(resolvedDep, archiveCreator, duplicateCatcher,
-                                concatenatedEntries, allIgnoredEntriesPredicate, appDep, existingEntries,
-                                mergeResourcePaths);
-                    }
                 }
+
+                walkFileDependencyForDependency(archiveCreator, duplicateCatcher,
+                        concatenatedEntries, allIgnoredEntriesPredicate, appDep, existingEntries,
+                        mergeResourcePaths);
             }
+
             Set<Set<Dependency>> explained = new HashSet<>();
             for (Map.Entry<String, Set<Dependency>> entry : duplicateCatcher.entrySet()) {
                 if (entry.getValue().size() > 1) {
@@ -231,62 +204,76 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 LOG.debug("uber jar will be marked as multi-release jar");
                 archiveCreator.makeMultiVersion();
             }
-        } finally {
-            for (FileSystem dependencyFileSystem : dependencyFileSystems) {
-                dependencyFileSystem.close();
-            }
         }
 
         runnerJar.toFile().setReadable(true, false);
     }
 
-    private void walkFileDependencyForDependency(Path root, ArchiveCreator archiveCreator,
+    private Predicate<String> getIgnoredEntriesPredicate() {
+        if (packageConfig.jar().userConfiguredIgnoredEntries().isEmpty() && ignoredResources.isEmpty()) {
+            return UBER_JAR_IGNORED_ENTRIES_PREDICATE;
+        }
+
+        final List<String> userIgnoredEntries = packageConfig.jar().userConfiguredIgnoredEntries().orElse(List.of());
+        final Set<String> ignoredEntries = new HashSet<>(userIgnoredEntries.size() + ignoredResources.size());
+        ignoredEntries.addAll(userIgnoredEntries);
+        for (var ignoredResource : ignoredResources) {
+            ignoredEntries.add(ignoredResource.getPath());
+        }
+        return path -> UBER_JAR_IGNORED_ENTRIES_PREDICATE.test(path) || ignoredEntries.contains(path);
+    }
+
+    private void walkFileDependencyForDependency(ArchiveCreator archiveCreator,
             Map<String, Set<Dependency>> duplicateCatcher, Map<String, List<byte[]>> concatenatedEntries,
-            Predicate<String> ignoredEntriesPredicate, Dependency appDep, Set<String> existingEntries,
+            Predicate<String> ignoredEntriesPredicate, ResolvedDependency appDep, Set<String> existingEntries,
             Set<String> mergeResourcePaths) throws IOException {
-        final Path metaInfDir = root.resolve("META-INF");
-        Files.walkFileTree(root, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
-                new SimpleFileVisitor<Path>() {
-                    @Override
-                    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-                            throws IOException {
-                        final String relativePath = toUri(root.relativize(dir));
+
+        // The reason opening and closing a path tree right away works, unlike creating and closing a ZipFileSystem,
+        // is that we are actually using a SharedOpenArchivePathTree here, which simply increments and decrements
+        // the user count of the cached shared open path tree instance. This open path tree instance will remain open
+        // until the last user called close() on it, which will be the Quarkus classloaders closing.
+        try (OpenPathTree pathTree = appDep.getContentTree().open()) {
+            pathTree.walk(visit -> {
+                try {
+                    final String relativePath = visit.getRelativePath();
+                    if (Files.isDirectory(visit.getPath())) {
                         if (!relativePath.isEmpty()) {
                             archiveCreator.addDirectory(relativePath);
                         }
-                        return FileVisitResult.CONTINUE;
+                        return;
                     }
 
-                    @Override
-                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-                            throws IOException {
-                        final String relativePath = toUri(root.relativize(file));
-                        //if this has been transformed we do not copy it
-                        // if it's a signature file (under the <jar>/META-INF directory),
-                        // then we don't add it to the uber jar
-                        if (isBlockOrSF(relativePath) &&
-                                file.relativize(metaInfDir).getNameCount() == 1) {
-                            if (LOG.isDebugEnabled()) {
-                                LOG.debug("Signature file " + file.toAbsolutePath() + " from app " +
-                                        "dependency " + appDep + " will not be included in uberjar");
-                            }
-                            return FileVisitResult.CONTINUE;
+                    final Path file = visit.getPath();
+                    //if this has been transformed we do not copy it
+                    // if it's a signature file (under the <jar>/META-INF directory),
+                    // then we don't add it to the uber jar
+                    if (isBlockOrSF(relativePath) &&
+                            relativePath.startsWith("META-INF/") && relativePath.indexOf('/', "META-INF/".length()) < 0) {
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("Signature file " + file.toAbsolutePath() + " from app " +
+                                    "dependency " + appDep + " will not be included in uberjar");
                         }
-                        if (!existingEntries.contains(relativePath)) {
-                            if (UBER_JAR_CONCATENATED_ENTRIES_PREDICATE.test(relativePath)
-                                    || mergeResourcePaths.contains(relativePath)) {
-                                concatenatedEntries.computeIfAbsent(relativePath, (u) -> new ArrayList<>())
-                                        .add(Files.readAllBytes(file));
-                                return FileVisitResult.CONTINUE;
-                            } else if (!ignoredEntriesPredicate.test(relativePath)) {
-                                duplicateCatcher.computeIfAbsent(relativePath, (a) -> new HashSet<>())
-                                        .add(appDep);
-                                archiveCreator.addFileIfNotExists(file, relativePath, appDep.toString());
-                            }
-                        }
-                        return FileVisitResult.CONTINUE;
+                        return;
                     }
-                });
+
+                    if (!existingEntries.contains(relativePath)) {
+                        if (UBER_JAR_CONCATENATED_ENTRIES_PREDICATE.test(relativePath)
+                                || mergeResourcePaths.contains(relativePath)) {
+                            concatenatedEntries.computeIfAbsent(relativePath, (u) -> new ArrayList<>())
+                                    .add(Files.readAllBytes(file));
+                        } else if (!ignoredEntriesPredicate.test(relativePath)) {
+                            duplicateCatcher.computeIfAbsent(relativePath, (a) -> new HashSet<>())
+                                    .add(appDep);
+                            archiveCreator.addFileIfNotExists(file, relativePath, appDep.toString());
+                        }
+                    }
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        }
     }
 
     // same as the impl in sun.security.util.SignatureFileVerifier#isBlockOrSF()

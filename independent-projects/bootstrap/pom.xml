@@ -41,10 +41,10 @@
         <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
         <jboss-logging.version>3.6.1.Final</jboss-logging.version>
         <junit.version>6.0.1</junit.version>
-        <maven-core.version>3.9.11</maven-core.version><!-- Keep in sync with sisu.version -->
+        <maven-core.version>3.9.12</maven-core.version><!-- Keep in sync with sisu.version -->
         <sisu.version>0.9.0.M4</sisu.version><!-- Keep in sync with maven-core.version -->
         <maven-plugin-annotations.version>3.15.1</maven-plugin-annotations.version>
-        <maven-resolver.version>1.9.24</maven-resolver.version>
+        <maven-resolver.version>1.9.25</maven-resolver.version>
         <maven-shared-utils.version>3.4.2</maven-shared-utils.version> <!-- Keep in sync with maven-core.version (force this version on maven-invoker) -->
         <maven-wagon.version>3.5.3</maven-wagon.version>
         <httpcore.version>4.4.16</httpcore.version><!-- Keep in sync with maven-wagon.version (wagon-http 3.5.3 brings in httpclient 4.5.14 which brings httpcore 4.4.16) -->

@@ -1,5 +1,10 @@
 package io.quarkus.opentelemetry.runtime;
 
+import static io.opentelemetry.semconv.ServiceAttributes.SERVICE_NAME;
+import static io.opentelemetry.semconv.ServiceAttributes.SERVICE_VERSION;
+import static io.opentelemetry.semconv.incubating.WebengineIncubatingAttributes.WEBENGINE_NAME;
+import static io.opentelemetry.semconv.incubating.WebengineIncubatingAttributes.WEBENGINE_VERSION;
+
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,9 +19,11 @@ import org.eclipse.microprofile.config.spi.Converter;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.incubator.events.GlobalEventLoggerProvider;
 import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
+import io.opentelemetry.sdk.resources.Resource;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.runtime.RuntimeValue;
@@ -37,6 +44,27 @@ public class OpenTelemetryRecorder {
     public void resetGlobalOpenTelemetryForDevMode() {
         GlobalOpenTelemetry.resetForTest();
         GlobalEventLoggerProvider.resetForTest();
+    }
+
+    @StaticInit
+    public Supplier<DelayedAttributes> delayedAttributes(String quarkusVersion,
+            String serviceName,
+            String serviceVersion) {
+        return new Supplier<>() {
+            @Override
+            public DelayedAttributes get() {
+                var result = new DelayedAttributes();
+                result.setAttributesDelegate(Resource.getDefault()
+                        .merge(Resource.create(
+                                Attributes.of(
+                                        SERVICE_NAME, serviceName,
+                                        SERVICE_VERSION, serviceVersion,
+                                        WEBENGINE_NAME, "Quarkus",
+                                        WEBENGINE_VERSION, quarkusVersion)))
+                        .getAttributes());
+                return result;
+            }
+        };
     }
 
     @RuntimeInit

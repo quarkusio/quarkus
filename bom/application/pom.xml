@@ -19,7 +19,7 @@
         <bouncycastle.version>1.82</bouncycastle.version>
         <bouncycastle.fips.version>2.1.2</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>2.1.20</bouncycastle.tls.fips.version>
-        <cyclonedx.version>9.0.5</cyclonedx.version>
+        <cyclonedx.version>11.0.1</cyclonedx.version>
         <expressly.version>6.0.0</expressly.version>
         <findbugs.version>3.0.2</findbugs.version>
         <jandex.version>3.4.0</jandex.version>
@@ -106,7 +106,7 @@
         <wildfly.openssl-java.version>2.2.5.Final</wildfly.openssl-java.version>
         <wildfly.openssl-linux.version>2.2.2.SP01</wildfly.openssl-linux.version>
         <jboss-logging-annotations.version>3.0.4.Final</jboss-logging-annotations.version>
-        <slf4j-jboss-logmanager.version>2.0.0.Final</slf4j-jboss-logmanager.version>
+        <slf4j-jboss-logmanager.version>2.0.2.Final</slf4j-jboss-logmanager.version>
         <wildfly-common.version>2.0.1</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
         <wildfly-elytron.version>2.6.5.Final</wildfly-elytron.version>
@@ -133,7 +133,7 @@
         <junit.jupiter.version>5.13.4</junit.jupiter.version>
         <infinispan.version>15.0.19.Final</infinispan.version>
         <infinispan.protostream.version>5.0.13.Final</infinispan.protostream.version>
-        <caffeine.version>3.2.2</caffeine.version>
+        <caffeine.version>3.2.3</caffeine.version>
         <netty.version>4.1.130.Final</netty.version>
         <brotli4j.version>1.16.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>

@@ -142,6 +142,7 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         AUTHENTICATION_COOKIE_PATH_HEADER,
         AUTHENTICATION_COOKIE_DOMAIN,
         AUTHENTICATION_COOKIE_SAME_SITE,
+        AUTHENTICATION_CACHE_CONTROL,
         AUTHENTICATION_ALLOW_MULTIPLE_CODE_FLOWS,
         AUTHENTICATION_FAIL_ON_MISSING_STATE_PARAM,
         AUTHENTICATION_FAIL_ON_UNRESOLVED_KID,
@@ -757,6 +758,12 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             public CookieSameSite cookieSameSite() {
                 invocationsRecorder.put(ConfigMappingMethods.AUTHENTICATION_COOKIE_SAME_SITE, true);
                 return CookieSameSite.LAX;
+            }
+
+            @Override
+            public Optional<Set<CacheControl>> cacheControl() {
+                invocationsRecorder.put(ConfigMappingMethods.AUTHENTICATION_CACHE_CONTROL, true);
+                return Optional.empty();
             }
 
             @Override

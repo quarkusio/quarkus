@@ -1,5 +1,8 @@
 package io.quarkus.devtools.testing.registry.client;
 
+import static io.quarkus.registry.Constants.OFFERING;
+import static io.quarkus.registry.Constants.RECOMMEND_STREAMS_FROM;
+
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -390,12 +393,26 @@ public class TestRegistryClientBuilder {
         }
 
         public TestRegistryBuilder setOffering(String offering) {
+            return setExtraOption(OFFERING, offering);
+        }
+
+        public TestRegistryBuilder setRecommendStreamsFrom(String platformKey, String streamId) {
+            Map<String, String> recommendStreamsFrom = (Map<String, String>) config.getExtra().get(RECOMMEND_STREAMS_FROM);
+            if (recommendStreamsFrom == null) {
+                recommendStreamsFrom = new HashMap<>(2);
+                setExtraOption(RECOMMEND_STREAMS_FROM, recommendStreamsFrom);
+            }
+            recommendStreamsFrom.put(platformKey, streamId);
+            return this;
+        }
+
+        private TestRegistryBuilder setExtraOption(String name, Object value) {
             var extra = config.getExtra();
             if (extra == null || extra.isEmpty()) {
-                extra = new HashMap<>(1);
+                extra = new HashMap<>(4);
                 config.setExtra(extra);
             }
-            extra.put(Constants.OFFERING, offering);
+            extra.put(name, value);
             return this;
         }
 

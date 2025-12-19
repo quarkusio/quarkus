@@ -41,9 +41,19 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 public class OidcClientImpl implements OidcClient {
 
     private enum Operation {
-        Get,
-        Refresh,
-        Revoke
+        GET("Get"),
+        REFRESH("Refresh"),
+        REVOKE("Revoke");
+
+        String op;
+
+        Operation(String op) {
+            this.op = op;
+        }
+
+        String operation() {
+            return op;
+        }
     }
 
     private static final Logger LOG = Logger.getLogger(OidcClientImpl.class);
@@ -101,7 +111,7 @@ public class OidcClientImpl implements OidcClient {
             throw new OidcClientException(
                     "Only 'refresh_token' grant is supported, please call OidcClient#refreshTokens method instead");
         }
-        return getJsonResponse(OidcEndpoint.Type.TOKEN, tokenGrantParams, additionalGrantParameters, Operation.Get);
+        return getJsonResponse(OidcEndpoint.Type.TOKEN, tokenGrantParams, additionalGrantParameters, Operation.GET);
     }
 
     @Override
@@ -112,7 +122,7 @@ public class OidcClientImpl implements OidcClient {
         }
         MultiMap refreshGrantParams = copyMultiMap(commonRefreshGrantParams);
         refreshGrantParams.add(OidcConstants.REFRESH_TOKEN_VALUE, refreshToken);
-        return getJsonResponse(OidcEndpoint.Type.TOKEN, refreshGrantParams, additionalGrantParameters, Operation.Refresh);
+        return getJsonResponse(OidcEndpoint.Type.TOKEN, refreshGrantParams, additionalGrantParameters, Operation.REFRESH);
     }
 
     @Override
@@ -128,7 +138,7 @@ public class OidcClientImpl implements OidcClient {
             tokenRevokeParams.set(OidcConstants.REVOCATION_TOKEN, accessToken);
             return postRequest(requestProps, OidcEndpoint.Type.TOKEN_REVOCATION, client.postAbs(tokenRevokeUri),
                     tokenRevokeParams,
-                    additionalParameters, Operation.Revoke)
+                    additionalParameters, Operation.REVOKE)
                     .transform(resp -> toRevokeResponse(requestProps, resp));
         } else {
             LOG.debugf("%s OidcClient can not revoke the access token because the revocation endpoint URL is not set");
@@ -247,7 +257,7 @@ public class OidcClientImpl implements OidcClient {
             }
         }
         if (LOG.isDebugEnabled()) {
-            LOG.debugf("%s token: url : %s, headers: %s, request params: %s", op.name(), request.uri(), request.headers(),
+            LOG.debugf("%s token: url : %s, headers: %s, request params: %s", op.operation(), request.uri(), request.headers(),
                     body);
         }
         // Retry up to three times with a one-second delay between the retries if the connection is closed
@@ -381,6 +391,6 @@ public class OidcClientImpl implements OidcClient {
     }
 
     static boolean isRefresh(Operation op) {
-        return op == Operation.Refresh;
+        return op == Operation.REFRESH;
     }
 }

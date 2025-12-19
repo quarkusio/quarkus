@@ -29,7 +29,12 @@ public class AccessLogTestCase {
         final Path accessLogFilePath = logDirectory.resolve("quarkus-access-log.log");
         final String queryParamVal = UUID.randomUUID().toString();
         final String targetUri = "/simple/access-log-test-endpoint?foo=" + queryParamVal;
-        RestAssured.when().get(targetUri).then().body(containsString("passed"));
+        RestAssured.given().auth().oauth2("bearer-access-token").accept("text/plain")
+                .header("x-Token", "xtoken")
+                .header("Cookie", "Session=encrypted")
+                .header("Cookie", "visitcount=1")
+                .get(targetUri)
+                .then().body(containsString("passed"));
         Awaitility.given().pollInterval(100, TimeUnit.MILLISECONDS)
                 .atMost(10, TimeUnit.SECONDS)
                 .untilAsserted(new ThrowingRunnable() {
@@ -48,6 +53,16 @@ public class AccessLogTestCase {
                                 "access log is missing query params");
                         Assertions.assertFalse(line.contains("?foo=" + queryParamVal + "?foo=" + queryParamVal),
                                 "access log contains duplicated query params");
+                        Assertions.assertTrue(line.contains("Accept: text/plain"),
+                                "access log doesn't contain the HTTP Accept header with a text/plain media type");
+                        Assertions.assertTrue(line.contains("Authorization: Bearer ..."),
+                                "access log must contain a masked value of the HTTP Authorizaton header's Bearer scheme");
+                        Assertions.assertTrue(line.contains("x-Token: ..."),
+                                "access log must contain a masked value of the HTTP X-Token header");
+                        Assertions.assertTrue(line.contains("Cookie: visitcount=1"),
+                                "access log doesn't contain the HTTP Cookie visitorcount header with a value 1");
+                        Assertions.assertTrue(line.contains("Cookie: Session=..."),
+                                "access log must contain a masked value of the HTTP Cookie session header");
                     }
                 });
     }

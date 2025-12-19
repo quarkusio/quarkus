@@ -4,13 +4,16 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import io.quarkus.oidc.OidcTenantConfigBuilder;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.CacheControl;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.CookieSameSite;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.ResponseMode;
 
@@ -25,9 +28,9 @@ public final class AuthenticationConfigBuilder {
             Optional<List<String>> scopes, Optional<String> scopeSeparator, boolean nonceRequired,
             Optional<Boolean> addOpenidScope, Map<String, String> extraParams, Optional<List<String>> forwardParams,
             boolean cookieForceSecure, Optional<String> cookieSuffix, String cookiePath, Optional<String> cookiePathHeader,
-            Optional<String> cookieDomain, CookieSameSite cookieSameSite, boolean allowMultipleCodeFlows,
-            boolean failOnMissingStateParam, boolean failOnUnresolvedKid, Optional<Boolean> userInfoRequired,
-            Duration sessionAgeExtension,
+            Optional<String> cookieDomain, CookieSameSite cookieSameSite, Optional<Set<CacheControl>> cacheControl,
+            boolean allowMultipleCodeFlows, boolean failOnMissingStateParam, boolean failOnUnresolvedKid,
+            Optional<Boolean> userInfoRequired, Duration sessionAgeExtension,
             Duration stateCookieAge, boolean javaScriptAutoRedirect, Optional<Boolean> idTokenRequired,
             Optional<Duration> internalIdTokenLifespan, Optional<Boolean> pkceRequired, Optional<String> pkceSecret,
             Optional<String> stateSecret) implements Authentication {
@@ -54,6 +57,7 @@ public final class AuthenticationConfigBuilder {
     private Optional<String> cookiePathHeader;
     private Optional<String> cookieDomain;
     private CookieSameSite cookieSameSite;
+    private Set<CacheControl> cacheControl = new HashSet<>();
     private boolean allowMultipleCodeFlows;
     private boolean failOnMissingStateParam;
     private boolean failOnUnresolvedKid;
@@ -98,6 +102,9 @@ public final class AuthenticationConfigBuilder {
         this.cookiePathHeader = authentication.cookiePathHeader();
         this.cookieDomain = authentication.cookieDomain();
         this.cookieSameSite = authentication.cookieSameSite();
+        if (authentication.cacheControl().isPresent()) {
+            this.cacheControl.addAll(authentication.cacheControl().get());
+        }
         this.allowMultipleCodeFlows = authentication.allowMultipleCodeFlows();
         this.failOnMissingStateParam = authentication.failOnMissingStateParam();
         this.failOnUnresolvedKid = authentication.failOnUnresolvedKid();
@@ -239,6 +246,15 @@ public final class AuthenticationConfigBuilder {
         if (scopes != null) {
             this.scopes.addAll(Arrays.asList(scopes));
         }
+        return this;
+    }
+
+    /**
+     * @param cacheControl {@link Authentication#cacheControl()}
+     * @return this builder
+     */
+    public AuthenticationConfigBuilder cacheControl(CacheControl directive) {
+        this.cacheControl.add(directive);
         return this;
     }
 
@@ -571,10 +587,13 @@ public final class AuthenticationConfigBuilder {
         Optional<List<String>> optionalScopes = scopes.isEmpty() ? Optional.empty() : Optional.of(List.copyOf(scopes));
         Optional<List<String>> optionalForwardParams = forwardParams.isEmpty() ? Optional.empty()
                 : Optional.of(List.copyOf(forwardParams));
+        Optional<Set<CacheControl>> optionalCacheControl = cacheControl.isEmpty() ? Optional.empty()
+                : Optional.of(Set.copyOf(cacheControl));
         return new AuthenticationImpl(responseMode, redirectPath, restorePathAfterRedirect, removeRedirectParameters, errorPath,
                 sessionExpiredPath, verifyAccessToken, forceRedirectHttpsScheme, optionalScopes, scopeSeparator, nonceRequired,
                 addOpenidScope, Map.copyOf(extraParams), optionalForwardParams, cookieForceSecure, cookieSuffix, cookiePath,
-                cookiePathHeader, cookieDomain, cookieSameSite, allowMultipleCodeFlows, failOnMissingStateParam,
+                cookiePathHeader, cookieDomain, cookieSameSite, optionalCacheControl, allowMultipleCodeFlows,
+                failOnMissingStateParam,
                 failOnUnresolvedKid,
                 userInfoRequired, sessionAgeExtension, stateCookieAge, javaScriptAutoRedirect, idTokenRequired,
                 internalIdTokenLifespan, pkceRequired, pkceSecret, stateSecret);

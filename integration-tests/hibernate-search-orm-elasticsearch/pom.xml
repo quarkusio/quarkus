@@ -22,6 +22,10 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-elasticsearch-java-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-h2</artifactId>
         </dependency>
         <dependency>
@@ -98,6 +102,19 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-elasticsearch-java-client-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>
@@ -113,12 +130,60 @@
                 <configuration>
                     <skip>true</skip>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>default-test</id>
+                        <configuration>
+                            <classpathDependencyExcludes>
+                                <exclude>io.quarkus:quarkus-elasticsearch-java-client</exclude>
+                            </classpathDependencyExcludes>
+                            <excludes>
+                                <exclude>io.quarkus.it.hibernate.search.orm.elasticsearch.devservices.HibernateSearchElasticsearchWithElasticsearchJavaClientDevServicesTest</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>mixed-test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <includes>
+                                <include>io.quarkus.it.hibernate.search.orm.elasticsearch.devservices.HibernateSearchElasticsearchWithElasticsearchJavaClientDevServicesTest</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>default-test</id>
+                        <configuration>
+                            <classpathDependencyExcludes>
+                                <exclude>io.quarkus:quarkus-elasticsearch-java-client</exclude>
+                            </classpathDependencyExcludes>
+                            <excludes>
+                                <exclude>io.quarkus.it.hibernate.search.orm.elasticsearch.devservices.HibernateSearchElasticsearchWithElasticsearchJavaClientDevServicesTest</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>mixed-test</id>
+                        <goals>
+                            <goal>integration-test</goal>
+                        </goals>
+                        <configuration>
+                            <includes>
+                                <include>io.quarkus.it.hibernate.search.orm.elasticsearch.devservices.HibernateSearchElasticsearchWithElasticsearchJavaClientDevServicesTest</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>io.quarkus</groupId>

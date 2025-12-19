@@ -99,14 +99,15 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
             // necessary to set the versions from the selected origins
             this.dataCatalog = CatalogMergeUtility.merge(extensionOrigins);
             // collect platform BOMs to import
-            boolean sawFirstPlatform = false;
             ExtensionCatalog primaryCatalog = null;
             this.platformBoms = new ArrayList<>(extensionOrigins.size());
             for (ExtensionCatalog c : extensionOrigins) {
                 if (c.isPlatform()) {
-                    if (c.getBom().getArtifactId().equals(QUARKUS_BOM) || !sawFirstPlatform) {
+                    // use either the first platform catalog or the first quarkus-bom catalog, if found
+                    if (primaryCatalog == null
+                            || !primaryCatalog.getBom().getArtifactId().equals(QUARKUS_BOM)
+                                    && c.getBom().getArtifactId().equals(QUARKUS_BOM)) {
                         primaryCatalog = c;
-                        sawFirstPlatform = true;
                     }
                     platformBoms.add(c.getBom());
                 }

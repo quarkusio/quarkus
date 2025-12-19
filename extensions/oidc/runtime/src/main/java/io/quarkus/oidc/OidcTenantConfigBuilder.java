@@ -9,12 +9,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfigBuilder;
 import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.oidc.runtime.OidcTenantConfig;
 import io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.CacheControl;
 import io.quarkus.oidc.runtime.OidcTenantConfig.CertificateChain;
 import io.quarkus.oidc.runtime.OidcTenantConfig.CodeGrant;
 import io.quarkus.oidc.runtime.OidcTenantConfig.IntrospectionCredentials;
@@ -234,6 +236,7 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     private IntrospectionCredentials introspectionCredentials;
     private Roles roles;
     private ResourceMetadata resourceMetadata;
+    private Optional<Set<CacheControl>> cacheControl;
     private CertificateChain certificateChain;
     private CodeGrant codeGrant;
     private TokenStateManager tokenStateManager;
@@ -858,7 +861,7 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * Builder for the {@link IntrospectionCredentials}.
+     * Builder for the {@link ResourceMetadata}.
      */
     public static final class ResourceMetadataBuilder {
 

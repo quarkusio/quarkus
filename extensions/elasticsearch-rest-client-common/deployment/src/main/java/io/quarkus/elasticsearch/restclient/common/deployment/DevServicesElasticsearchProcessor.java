@@ -355,7 +355,7 @@ public class DevServicesElasticsearchProcessor {
             for (DevservicesElasticsearchBuildItem buildItem : buildItems) {
                 if (version == null) {
                     version = buildItem.getVersion();
-                } else if (!version.equals(buildItem.getVersion())) {
+                } else if (buildItem.getVersion() != null && !version.equals(buildItem.getVersion())) {
                     // safety guard but should never occur as only Hibernate Search ORM Elasticsearch configure the version
                     throw new BuildException(
                             "Multiple extensions request different versions of Elasticsearch for Dev Services.",
@@ -364,7 +364,7 @@ public class DevServicesElasticsearchProcessor {
 
                 if (distribution == null) {
                     distribution = buildItem.getDistribution();
-                } else if (!distribution.equals(buildItem.getDistribution())) {
+                } else if (buildItem.getDistribution() != null && !distribution.equals(buildItem.getDistribution())) {
                     // safety guard but should never occur as only Hibernate Search ORM Elasticsearch configure the distribution
                     throw new BuildException(
                             "Multiple extensions request different distributions of Elasticsearch for Dev Services.",

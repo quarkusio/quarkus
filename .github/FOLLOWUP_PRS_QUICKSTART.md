@@ -25,9 +25,11 @@ python3 find-followup-prs.py --pr 50799 --json > followups.json
 Given a PR number (e.g., #50799), the tool:
 
 1. **Analyzes the source PR**: Extracts changed files, issue references, labels, and merge date
-2. **Searches for candidates**: Finds all PRs merged after the source PR
+2. **Searches for candidates**: Finds all PRs merged after the source PR to the `main` branch
 3. **Scores relevance**: Assigns scores based on multiple factors
 4. **Returns results**: Shows top follow-up PRs that should likely be backported together
+
+**Note**: Only PRs merged to the `main` branch are considered. PRs to other branches are automatically filtered out.
 
 ## When to Use This Tool
 

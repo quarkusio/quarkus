@@ -160,6 +160,9 @@ class PRAnalyzer:
         if merged_at:
             merged_at = datetime.strptime(merged_at, '%Y-%m-%dT%H:%M:%SZ')
         
+        # Get base branch
+        base_branch = pr.get('base', {}).get('ref', '')
+        
         return {
             'pr': pr,
             'number': pr_number,
@@ -169,7 +172,8 @@ class PRAnalyzer:
             'title': pr.get('title', ''),
             'body': pr.get('body', ''),
             'commits': commits,
-            'labels': {label['name'] for label in pr.get('labels', [])}
+            'labels': {label['name'] for label in pr.get('labels', [])},
+            'base_branch': base_branch
         }
     
     def find_followups(self, source_pr_number: int, max_results: int = 50) -> List[Tuple[int, float, Dict]]:
@@ -224,6 +228,10 @@ class PRAnalyzer:
         
         # Skip if not merged after source
         if not candidate['merged_at'] or candidate['merged_at'] <= source['merged_at']:
+            return 0.0, {}
+        
+        # Skip if not merged to main branch
+        if candidate.get('base_branch', '') != 'main':
             return 0.0, {}
         
         score = 0.0

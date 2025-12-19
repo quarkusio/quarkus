@@ -201,4 +201,7 @@ The tool cannot:
 - Detect follow-ups that don't modify files or reference issues
 - Know about manual testing or runtime dependencies
 
+The tool only considers:
+- PRs that were merged to the `main` branch (PRs to other branches are excluded)
+
 Always use human judgment when deciding what to backport!

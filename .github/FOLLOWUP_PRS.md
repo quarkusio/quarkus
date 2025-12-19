@@ -19,6 +19,8 @@ This tool automates the process of finding these follow-up PRs by analyzing:
 6. **Keywords**: PRs with follow-up or fix-related keywords
 7. **Time proximity**: PRs merged shortly after the source PR
 
+**Note**: The tool only considers PRs that were merged to the `main` branch. PRs merged to other branches (e.g., maintenance branches, feature branches) are automatically excluded.
+
 ## Installation
 
 ### Prerequisites

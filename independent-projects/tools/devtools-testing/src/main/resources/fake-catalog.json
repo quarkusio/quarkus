@@ -451,7 +451,7 @@
         "supported-maven-versions": "[3.6.2,)",
         "minimum-java-version": "11",
         "recommended-java-version": "17",
-        "proposed-maven-version": "3.9.11",
+        "proposed-maven-version": "3.9.12",
         "maven-wrapper-version": "3.3.4",
         "gradle-wrapper-version": "9.2.1"
       }

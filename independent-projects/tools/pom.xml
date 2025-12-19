@@ -36,7 +36,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- These properties are used by CreateProjectMojo to add the Maven Wrapper -->
-        <proposed-maven-version>3.9.11</proposed-maven-version>
+        <proposed-maven-version>3.9.12</proposed-maven-version>
         <maven-wrapper.version>3.3.4</maven-wrapper.version>
         <!-- When updating gradle-wrapper.version, make sure to also update files in
              independent-projects/tools/base-codestarts/src/main/resources/codestarts

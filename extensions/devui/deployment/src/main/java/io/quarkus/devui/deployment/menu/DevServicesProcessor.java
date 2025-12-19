@@ -50,6 +50,7 @@ public class DevServicesProcessor {
 
             BuildTimeActionBuildItem buildTimeActions = new BuildTimeActionBuildItem(NAMESPACE);
             getDevServices(buildTimeActions, devServiceDescriptions, otherDevServices);
+            getDevServicesConfig(buildTimeActions, devServiceDescriptions, otherDevServices);
             buildTimeActionProducer.produce(buildTimeActions);
         }
 
@@ -90,6 +91,31 @@ public class DevServicesProcessor {
                 .description(
                         "Get all the DevServices started by this Quarkus app, including information on container (if any) and the config that is being set automatically")
                 .enableMcpFuctionByDefault()
+                .build();
+    }
+
+    private void getDevServicesConfig(BuildTimeActionBuildItem buildTimeActions,
+            List<DevServiceDescriptionBuildItem> devServiceDescriptions,
+            List<DevServiceDescriptionBuildItem> otherDevServices) {
+        buildTimeActions.actionBuilder()
+                .methodName("devServicesConfig")
+                .function(params -> CompletableFuture.supplyAsync(() -> getServices(devServiceDescriptions, otherDevServices)
+                        .stream()
+                        .filter(d -> d.getName().equals(params.get("name")))
+                        .filter(d -> d.getConfigs() != null && !d.getConfigs().isEmpty())
+                        .findFirst().map(d -> {
+                            if (params.get("configKey") != null) {
+                                String key = params.get("configKey");
+                                return d.getConfigs().get(key);
+                            } else {
+                                return d.getConfigs();
+                            }
+                        }).orElse(null)))
+                .description(
+                        "Get the config or a specific config key for a DevService started by this Quarkus app")
+                .parameter("name", String.class, "The name of the DevService", true)
+                .parameter("configKey", String.class,
+                        "The config key to get the value for. If not set, all the config is returned")
                 .build();
     }
 

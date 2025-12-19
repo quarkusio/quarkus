@@ -63,6 +63,7 @@ export class QwcExtensionLink extends QwcHotReloadElement {
         embed: {type: Boolean},
         externalUrl: {type: String},
         dynamicUrlMethodName: {type: String},
+        dynamicUrlMethodNameParams: {type: String},
         staticLabel: {type: String},
         dynamicLabel: {type: String},
         streamingLabel: {type: String},
@@ -130,9 +131,24 @@ export class QwcExtensionLink extends QwcHotReloadElement {
             this._observer.cancel();
         }
         
-        if(this.dynamicUrlMethodName){
-            let jrpc = new JsonRpc(this.namespace);
-            jrpc[this.dynamicUrlMethodName]().then(jsonRpcResponse => {
+        if(!this.embed && this.dynamicUrlMethodName){
+            let jrpc;
+            let methodName = this.dynamicUrlMethodName;
+            if (this.dynamicUrlMethodName.includes(':')) {
+                let parts = this.dynamicUrlMethodName.split(':');
+                methodName = parts[1];
+                jrpc = new JsonRpc(parts[0]);
+            } else {
+                jrpc = new JsonRpc(this.namespace);
+            }
+
+            let params = {};
+            // Parse URL-style parameters from dynamicUrlMethodNameParams (e.g., "key1=value1&key2=value2")
+            if (this.dynamicUrlMethodNameParams) {
+                const urlParams = new URLSearchParams(this.dynamicUrlMethodNameParams);
+                urlParams.forEach((value, key) => params[key] = value);
+            }
+            jrpc[methodName](params).then(jsonRpcResponse => {
                 this._effectiveExternalUrl = jsonRpcResponse.result;
                 this.requestUpdate();
             });

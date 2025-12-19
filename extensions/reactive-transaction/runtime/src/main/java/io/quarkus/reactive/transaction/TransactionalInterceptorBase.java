@@ -19,7 +19,7 @@ import io.vertx.core.Vertx;
 import io.vertx.sqlclient.Transaction;
 
 /**
- * The base intereceptor which manages reactive transactions for methods
+ * The base interceptor which manages reactive transactions for methods
  * annotated with {@link Transactional}.
  * Each value has its own class as the QuarkusReactiveTransaction Type is binding so requires exact match
  */
@@ -29,15 +29,15 @@ public abstract class TransactionalInterceptorBase {
     public static final String CURRENT_TRANSACTION_KEY = "reactive.transaction.currentTransaction";
 
     // This key is used to indicate the method was annotated with @Transactional
-    // And will open a session and a transaction lazy when the first operation requrires a reactive session
+    // And will open a session and a transaction lazy when the first operation requires a reactive session
     // Check HibernateReactiveRecorder.sessionSupplier to see where the session is injected
     // TODO Luca find a way to remove the duplication between this field and TransactionalInterceptor field
     private static final String TRANSACTIONAL_METHOD_KEY = "hibernate.reactive.methodTransactional";
 
-    // This key is used by Panache internally it's the marker key the WithSessionOnDemand intereceptor uses
+    // This key is used by Panache internally it's the marker key the WithSessionOnDemand interceptor uses
     public static final String SESSION_ON_DEMAND_KEY = "hibernate.reactive.panache.sessionOnDemand";
 
-    // This key is used by Panache internally it's the marker key the WithTransaction intereceptor uses
+    // This key is used by Panache internally it's the marker key the WithTransaction interceptor uses
     public static final String WITH_TRANSACTION_METHOD_KEY = "hibernate.reactive.withTransaction";
 
     private static final Logger LOG = Logger.getLogger(TransactionalInterceptorBase.class);
@@ -58,8 +58,6 @@ public abstract class TransactionalInterceptorBase {
 
             Transactional annotation = getTransactional(context);
             return withTransactionalSessionOnDemand(() -> {
-                // Handle checked exception vs runtime exception differently according to the spec
-                // check blicking interceptor for java.lang.Error as well
                 // copy the logic from io/quarkus/narayana/jta/runtime/interceptor/TransactionalInterceptorBase.java:363
                 return proceedUni(context);
             }).onFailure()
@@ -139,7 +137,7 @@ public abstract class TransactionalInterceptorBase {
             }
         }
 
-        // Checked exception are not handled as in Mutiny is not possible to throw a checked exception inside the body of a Uni
+        // Checked exceptions are not handled as in Mutiny it is not possible to throw a checked exception inside the body of a Uni
         // RuntimeException and Error are un-checked exceptions and rollback is expected
         return actualRollback(transaction);
     }

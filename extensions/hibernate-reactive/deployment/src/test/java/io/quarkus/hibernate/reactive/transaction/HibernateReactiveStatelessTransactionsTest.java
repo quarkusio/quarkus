@@ -141,34 +141,6 @@ public class HibernateReactiveStatelessTransactionsTest {
                 h -> assertThat(h.name).isEqualTo("committedDespiteException"));
     }
 
-    /**
-     * TODO Luca
-     * This test is probably to be removed as there's no way to actual throw a checked exception
-     * Inside mutiny
-     *
-     * @param asserter
-     */
-    @Test
-    @RunOnVertxContext
-    public void testCheckedExceptionNoRollback(UniAsserter asserter) {
-        Long heroId = 80L;
-
-        // First update to set baseline
-        asserter.assertThat(
-                () -> updateWithCommit(heroId, "baselineName")
-                        .chain(() -> findHero(heroId)),
-                h -> assertThat(h.name).isEqualTo("baselineName"));
-
-        // Update with checked exception, Mutiny doesn't support checked exception except by wrapping in
-        // Unchecked.function which doesn't rollback the exception.
-        // https://smallrye.io/smallrye-mutiny/3.0.0/guides/unchecked-exceptions/
-        asserter.assertThat(
-                () -> updateWithCheckedException(heroId, "committedWithCheckedException")
-                        .onFailure().recoverWithNull()
-                        .chain(() -> findHero(heroId)),
-                h -> assertThat(h.name).isEqualTo("committedWithCheckedException"));
-    }
-
     @Test
     @RunOnVertxContext
     public void testRollbackFalseAnnotation(UniAsserter asserter) {
@@ -193,16 +165,6 @@ public class HibernateReactiveStatelessTransactionsTest {
         return updateHero(session, heroId, newName)
                 .onItem().invoke(h -> {
                     throw new DontRollbackException("This should not trigger rollback");
-                });
-    }
-
-    @Transactional
-    public Uni<Hero> updateWithCheckedException(Long heroId, String newName) {
-        return updateHero(session, heroId, newName)
-                .onItem().invoke(h -> {
-                    Unchecked.function(i -> {
-                        throw new CheckedExceptionWrapper();
-                    });
                 });
     }
 

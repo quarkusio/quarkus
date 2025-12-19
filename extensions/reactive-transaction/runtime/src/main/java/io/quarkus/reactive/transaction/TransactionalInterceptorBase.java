@@ -15,7 +15,6 @@ import io.quarkus.transaction.annotations.Rollback;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
-import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.sqlclient.Transaction;
 
@@ -65,7 +64,7 @@ public abstract class TransactionalInterceptorBase {
                 return proceedUni(context);
             }).onFailure()
                     .call(exception -> {
-                        return rollback(annotation, Optional.of(exception));
+                        return rollbackOnlyInSpecificCases(annotation, exception);
                     })
                     .onCancellation().call(() -> {
                         return rollbackOnCancel();
@@ -84,7 +83,7 @@ public abstract class TransactionalInterceptorBase {
     }
 
     // Copied from org/hibernate/reactive/pool/impl/SqlClientConnection.java:305
-    Uni<Void> commit() {
+    Uni<Object> commit() {
         Transaction transaction = transaction();
         if (transaction == null) {
             // This might happen if the method is annotated with @Transactional but doesn't flush
@@ -111,29 +110,45 @@ public abstract class TransactionalInterceptorBase {
                 .mapEmpty().toCompletionStage());
     }
 
-    // Copied from org/hibernate/reactive/pool/impl/SqlClientConnection.java:314
-    Uni<Object> rollback(Transactional annotation, Optional<Throwable> exception) {
+    // See org/hibernate/reactive/pool/impl/SqlClientConnection.java:314 for reference
+    Uni<Object> rollbackOnlyInSpecificCases(Transactional annotation, Throwable exception) {
         Transaction transaction = transaction();
 
-        Future<Boolean> rollBackFuture;
-        if (exception.isPresent()) {
-            rollBackFuture = rollbackOnlyInSpecificCases(exception.get(), transaction, annotation);
-        } else {
-            rollBackFuture = transaction.rollback().map(v -> true);
+        for (Class<?> dontRollbackOnClass : annotation.dontRollbackOn()) {
+            if (dontRollbackOnClass.isAssignableFrom(exception.getClass())) {
+                LOG.trace("Avoid rollback due to `dontRollbackOn` on @Transactional annotation, committing instead");
+                return commit();
+            }
         }
 
+        for (Class<?> rollbackOnClass : annotation.rollbackOn()) {
+            if (rollbackOnClass.isAssignableFrom(exception.getClass())) {
+                LOG.tracef("Rollback the transaction due to exception class %s included in rollbackOn field on @Transactional annotation", exception.getClass());
+                return actualRollback(transaction);
+            }
+        }
+
+        Rollback rollbackAnnotation = exception.getClass().getAnnotation(Rollback.class);
+        if (rollbackAnnotation != null) {
+            if (rollbackAnnotation.value()) {
+                LOG.tracef("Rollback the transaction as the exception class %s is annotated with @Rollback annotation", exception.getClass());
+                return actualRollback(transaction);
+            } else {
+                LOG.tracef("Do not rollback the transaction as the exception class %s is annotated with @Rollback(false) annotation", exception.getClass());
+                return commit();
+            }
+        }
+
+        // Checked exception are not handled as in Mutiny is not possible to throw a checked exception inside the body of a Uni
+        // RuntimeException and Error are un-checked exceptions and rollback is expected
+        return actualRollback(transaction);
+    }
+
+    private static Uni<Object> actualRollback(Transaction transaction) {
         return Uni.createFrom().completionStage(
-                rollBackFuture
+                transaction.rollback()
                         .onFailure(v -> LOG.tracef("Failed to rollback transaction: %s", transaction))
-                        .onSuccess(didRollback -> {
-                            if (didRollback) {
-                                LOG.tracef("Transaction rolled back: %s", transaction);
-                            } else {
-                                LOG.tracef("Transaction was not rolled back: %s", transaction);
-                                transaction.commit();
-                                LOG.tracef("Transaction was committed: %s", transaction);
-                            }
-                        })
+                        .onSuccess(didRollback -> LOG.tracef("Transaction rolled back: %s", transaction))
                         .mapEmpty()
                         .toCompletionStage());
     }
@@ -214,38 +229,6 @@ public abstract class TransactionalInterceptorBase {
 
     // Copied from io/quarkus/narayana/jta/runtime/interceptor/TransactionalInterceptorBase.java:363
     // Returns true if a rollback has been executed, false otherwise
-    protected Future<Boolean> rollbackOnlyInSpecificCases(Throwable t, Transaction tx, Transactional transactional) {
-
-        for (Class<?> dontRollbackOnClass : transactional.dontRollbackOn()) {
-            if (dontRollbackOnClass.isAssignableFrom(t.getClass())) {
-                return Future.succeededFuture(false);
-            }
-        }
-
-        for (Class<?> rollbackOnClass : transactional.rollbackOn()) {
-            if (rollbackOnClass.isAssignableFrom(t.getClass())) {
-                return tx.rollback().map(v -> true);
-            }
-        }
-
-        Rollback rollbackAnnotation = t.getClass().getAnnotation(Rollback.class);
-        if (rollbackAnnotation != null) {
-            if (rollbackAnnotation.value()) {
-                return tx.rollback().map(v -> true);
-            }
-            // in both cases, behaviour is specified by the annotation
-            return Future.succeededFuture(false);
-        }
-
-        // RuntimeException and Error are un-checked exceptions and rollback is expected
-        if (t instanceof RuntimeException || t instanceof Error) {
-            return tx.rollback().map(v -> true);
-        }
-
-        // TODO Luca No way to test that checked exception won't rollback
-        // See testCheckedExceptionNoRollback
-        return Future.succeededFuture(false);
-    }
 
     /**
      * <p>

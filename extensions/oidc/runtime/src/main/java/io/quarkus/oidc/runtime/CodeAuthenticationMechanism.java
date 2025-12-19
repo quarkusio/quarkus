@@ -1438,11 +1438,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         // 'redirect_uri': it must match the 'redirect_uri' query parameter which was used during the code request.
         Optional<String> configuredRedirectPath = configContext.oidcConfig().authentication().redirectPath();
-        if (configuredRedirectPath.isPresent()) {
-            String requestPath = configuredRedirectPath.get().startsWith(HTTP_SCHEME)
-                    ? buildUri(context, configContext.oidcConfig().authentication().forceRedirectHttpsScheme().orElse(false),
-                            context.request().path())
-                    : context.request().path();
+        if (configuredRedirectPath.isPresent() && !configuredRedirectPath.get().startsWith(HTTP_SCHEME)) {
+            String requestPath = context.request().path();
             if (!configuredRedirectPath.get().equals(requestPath)) {
                 LOG.warnf("Token redirect path %s does not match the current request path", requestPath);
                 return Uni.createFrom().failure(new AuthenticationFailedException("Wrong redirect path"));

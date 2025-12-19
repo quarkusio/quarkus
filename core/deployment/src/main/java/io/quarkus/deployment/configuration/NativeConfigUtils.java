@@ -1,10 +1,12 @@
-package io.quarkus.deployment.pkg;
+package io.quarkus.deployment.configuration;
+
+import io.quarkus.deployment.pkg.NativeConfig;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public final class NativeConfigs {
+public final class NativeConfigUtils {
     public static List<String> getNativeAdditionalBuildArgs(NativeConfig nativeConfig) {
         List<String> additionalBuildArgs = new ArrayList<>();
         nativeConfig.additionalBuildArgs().map(additionalBuildArgs::addAll);
@@ -21,6 +23,6 @@ public final class NativeConfigs {
         return additionalBuildArgs;
     }
 
-    private NativeConfigs() {
+    private NativeConfigUtils() {
     }
 }

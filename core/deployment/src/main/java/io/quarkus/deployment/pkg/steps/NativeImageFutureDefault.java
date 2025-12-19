@@ -5,7 +5,7 @@ import java.util.Locale;
 import java.util.function.BooleanSupplier;
 
 import io.quarkus.deployment.pkg.NativeConfig;
-import io.quarkus.deployment.pkg.NativeConfigs;
+import io.quarkus.deployment.configuration.NativeConfigUtils;
 
 public enum NativeImageFutureDefault {
     COMPLETE_REFLECTION_TYPES,
@@ -19,7 +19,7 @@ public enum NativeImageFutureDefault {
     }
 
     private static boolean isFutureDefault(NativeImageFutureDefault futureDefault, NativeConfig nativeConfig) {
-        final List<String> additionalBuildArgs = NativeConfigs.getNativeAdditionalBuildArgs(nativeConfig);
+        final List<String> additionalBuildArgs = NativeConfigUtils.getNativeAdditionalBuildArgs(nativeConfig);
         for (String buildArg : additionalBuildArgs) {
             String trimmedBuildArg = buildArg.trim();
             if (trimmedBuildArg.contains(FUTURE_DEFAULTS_MARKER)) {

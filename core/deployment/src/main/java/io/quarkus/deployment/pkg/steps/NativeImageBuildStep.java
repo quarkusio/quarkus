@@ -39,7 +39,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeMinimalJavaVersionBuild
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
-import io.quarkus.deployment.pkg.NativeConfigs;
+import io.quarkus.deployment.configuration.NativeConfigUtils;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
@@ -1031,7 +1031,7 @@ public class NativeImageBuildStep {
             }
 
             private void handleAdditionalProperties(List<String> command) {
-                final List<String> additionalBuildArgs = NativeConfigs.getNativeAdditionalBuildArgs(nativeConfig);
+                final List<String> additionalBuildArgs = NativeConfigUtils.getNativeAdditionalBuildArgs(nativeConfig);
                 for (String buildArg : additionalBuildArgs) {
                     String trimmedBuildArg = buildArg.trim();
                     if (trimmedBuildArg.contains(TRUST_STORE_SYSTEM_PROPERTY_MARKER) && containerBuild) {

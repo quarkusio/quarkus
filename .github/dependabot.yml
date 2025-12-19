@@ -167,8 +167,6 @@ updates:
       - dependency-name: com.google.errorprone:*
       - dependency-name: com.google.http-client:*
       - dependency-name: io.dekorate:servicebinding-annotations
-      - dependency-name: io.opentelemetry:*
-      - dependency-name: io.opentelemetry.*:*
       - dependency-name: org.aesh:readline
       - dependency-name: org.checkerframework:checker-qual
       - dependency-name: org.jboss.metadata:jboss-metadata-web

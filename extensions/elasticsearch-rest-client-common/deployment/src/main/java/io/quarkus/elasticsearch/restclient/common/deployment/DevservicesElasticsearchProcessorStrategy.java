@@ -224,10 +224,10 @@ public class DevservicesElasticsearchProcessorStrategy {
             Set<String> backendHostsLocahostReplaced = backendHosts.stream()
                     .map(host -> host.replace("localhost", "host.docker.internal")).collect(Collectors.toSet());
             CreatedContainer createdContainer = strategy.supportedDistribution().equals(Distribution.ELASTIC)
-                    ? createKibanaContainer(config, resolvedImageName, defaultNetworkId, useSharedNetwork, launchMode,
-                            composeProjectBuildItem, backendHostsLocahostReplaced)
-                    : createDashboardsContainer(config, resolvedImageName, defaultNetworkId, useSharedNetwork, launchMode,
-                            composeProjectBuildItem, backendHostsLocahostReplaced);
+                    ? createKibanaContainer(config, resolvedImageName, defaultNetworkId, useSharedNetwork,
+                            backendHostsLocahostReplaced)
+                    : createDashboardsContainer(config, resolvedImageName, defaultNetworkId, useSharedNetwork,
+                            backendHostsLocahostReplaced);
             GenericContainer<?> container = createdContainer.genericContainer();
             if (config.serviceName() != null) {
                 container.withLabel(DEV_SERVICE_LABEL, config.serviceName());
@@ -287,7 +287,6 @@ public class DevservicesElasticsearchProcessorStrategy {
 
     private CreatedContainer createKibanaContainer(ElasticsearchDevServicesBuildTimeConfig config,
             DockerImageName resolvedImageName, String defaultNetworkId, boolean useSharedNetwork,
-            LaunchModeBuildItem launchMode, DevServicesComposeProjectBuildItem composeProjectBuildItem,
             Set<String> elasticsearchHosts) {
         //Create Generic Kibana container
         GenericContainer<?> container = new GenericContainer<>(
@@ -306,7 +305,6 @@ public class DevservicesElasticsearchProcessorStrategy {
 
     private CreatedContainer createDashboardsContainer(ElasticsearchDevServicesBuildTimeConfig config,
             DockerImageName resolvedImageName, String defaultNetworkId, boolean useSharedNetwork,
-            LaunchModeBuildItem launchMode, DevServicesComposeProjectBuildItem composeProjectBuildItem,
             Set<String> opensearchHosts) {
         //Create Generic Kibana container
         GenericContainer<?> container = new GenericContainer<>(

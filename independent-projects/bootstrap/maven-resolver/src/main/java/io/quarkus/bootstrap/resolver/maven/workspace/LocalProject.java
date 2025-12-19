@@ -184,7 +184,8 @@ public class LocalProject {
         this.rawModel = rawModel;
         this.effectiveModel = effectiveModel;
         this.modelBuildingResult = null;
-        this.dir = rawModel.getProjectDirectory().toPath();
+        // Maven does not guarantee the projectDirectory will be normalized
+        this.dir = rawModel.getProjectDirectory().toPath().normalize().toAbsolutePath();
         this.workspace = workspace;
         this.key = ArtifactKey.ga(ModelUtils.getGroupId(rawModel), rawModel.getArtifactId());
 

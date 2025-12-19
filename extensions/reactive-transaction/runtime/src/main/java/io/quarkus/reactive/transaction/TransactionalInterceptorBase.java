@@ -58,11 +58,10 @@ public abstract class TransactionalInterceptorBase {
 
             Transactional annotation = getTransactional(context);
             return withTransactionalSessionOnDemand(() -> {
-                // copy the logic from io/quarkus/narayana/jta/runtime/interceptor/TransactionalInterceptorBase.java:363
                 return proceedUni(context);
             }).onFailure()
                     .call(exception -> {
-                        return rollbackOnlyInSpecificCases(annotation, exception);
+                        return rollbackOrCommitBasedOnException(annotation, exception);
                     })
                     .onCancellation().call(() -> {
                         return rollbackOnCancel();
@@ -80,8 +79,8 @@ public abstract class TransactionalInterceptorBase {
         return Vertx.currentContext().getLocal(CURRENT_TRANSACTION_KEY);
     }
 
-    // Copied from org/hibernate/reactive/pool/impl/SqlClientConnection.java:305
-    Uni<Object> commit() {
+    // Based on org/hibernate/reactive/pool/impl/SqlClientConnection.java:305
+    Uni<Void> commit() {
         Transaction transaction = transaction();
         if (transaction == null) {
             // This might happen if the method is annotated with @Transactional but doesn't flush
@@ -102,26 +101,26 @@ public abstract class TransactionalInterceptorBase {
                 .onFailure(v -> {
                     LOG.tracef("Failed to rollback transaction on cancellation: %s", transaction);
                 })
-                .onSuccess(didRollback -> {
+                .onSuccess(ignored -> {
                     LOG.tracef("Transaction rolled back due to cancellation: %s", transaction);
                 })
                 .mapEmpty().toCompletionStage());
     }
 
-    // See org/hibernate/reactive/pool/impl/SqlClientConnection.java:314 for reference
-    Uni<Object> rollbackOnlyInSpecificCases(Transactional annotation, Throwable exception) {
+    // Based on org/hibernate/reactive/pool/impl/SqlClientConnection.java:314
+    Uni<Void> rollbackOrCommitBasedOnException(Transactional annotation, Throwable exception) {
         Transaction transaction = transaction();
 
         for (Class<?> dontRollbackOnClass : annotation.dontRollbackOn()) {
             if (dontRollbackOnClass.isAssignableFrom(exception.getClass())) {
-                LOG.trace("Avoid rollback due to `dontRollbackOn` on @Transactional annotation, committing instead");
+                LOG.trace("Avoid rollback due to `dontRollbackOn` on `@Transactional` annotation, committing instead");
                 return commit();
             }
         }
 
         for (Class<?> rollbackOnClass : annotation.rollbackOn()) {
             if (rollbackOnClass.isAssignableFrom(exception.getClass())) {
-                LOG.tracef("Rollback the transaction due to exception class %s included in rollbackOn field on @Transactional annotation", exception.getClass());
+                LOG.tracef("Rollback the transaction due to exception class %s included in `rollbackOn` field on `@Transactional` annotation", exception.getClass());
                 return actualRollback(transaction);
             }
         }
@@ -129,25 +128,24 @@ public abstract class TransactionalInterceptorBase {
         Rollback rollbackAnnotation = exception.getClass().getAnnotation(Rollback.class);
         if (rollbackAnnotation != null) {
             if (rollbackAnnotation.value()) {
-                LOG.tracef("Rollback the transaction as the exception class %s is annotated with @Rollback annotation", exception.getClass());
+                LOG.tracef("Rollback the transaction as the exception class %s is annotated with `@Rollback` annotation", exception.getClass());
                 return actualRollback(transaction);
             } else {
-                LOG.tracef("Do not rollback the transaction as the exception class %s is annotated with @Rollback(false) annotation", exception.getClass());
+                LOG.tracef("Do not rollback the transaction as the exception class %s is annotated with `@Rollback(false)` annotation", exception.getClass());
                 return commit();
             }
         }
 
-        // Checked exceptions are not handled as in Mutiny it is not possible to throw a checked exception inside the body of a Uni
-        // RuntimeException and Error are un-checked exceptions and rollback is expected
+        // Default behavior: rollback for RuntimeException and Error (unchecked exceptions)
+        // Note: Mutiny wraps checked exceptions in CompletionException, so they appear as RuntimeException here
         return actualRollback(transaction);
     }
 
-    private static Uni<Object> actualRollback(Transaction transaction) {
+    private Uni<Void> actualRollback(Transaction transaction) {
         return Uni.createFrom().completionStage(
                 transaction.rollback()
                         .onFailure(v -> LOG.tracef("Failed to rollback transaction: %s", transaction))
-                        .onSuccess(didRollback -> LOG.tracef("Transaction rolled back: %s", transaction))
-                        .mapEmpty()
+                        .onSuccess(ignored -> LOG.tracef("Transaction rolled back: %s", transaction))
                         .toCompletionStage());
     }
 
@@ -224,9 +222,6 @@ public abstract class TransactionalInterceptorBase {
         }
         return Optional.empty();
     }
-
-    // Copied from io/quarkus/narayana/jta/runtime/interceptor/TransactionalInterceptorBase.java:363
-    // Returns true if a rollback has been executed, false otherwise
 
     /**
      * <p>

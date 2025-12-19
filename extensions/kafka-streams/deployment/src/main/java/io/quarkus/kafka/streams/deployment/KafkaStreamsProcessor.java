@@ -42,6 +42,7 @@ import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 class KafkaStreamsProcessor {
 
     public static final String DEFAULT_PARTITION_GROUPER = "org.apache.kafka.streams.processor.DefaultPartitionGrouper";
+    private static final String CLASS_NAME = KafkaStreamsProcessor.class.getName();
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -66,48 +67,48 @@ class KafkaStreamsProcessor {
 
     private void registerCompulsoryClasses(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(StreamsPartitionAssignor.class)
-                .reason(getClass().getName())
+                .reason(CLASS_NAME)
                 .build());
         if (QuarkusClassLoader.isClassPresentAtRuntime(DEFAULT_PARTITION_GROUPER)) {
             // Class DefaultPartitionGrouper deprecated in Kafka 2.8.x and removed in 3.0.0
             reflectiveClasses.produce(
                     ReflectiveClassBuildItem.builder(DEFAULT_PARTITION_GROUPER)
-                            .reason(getClass().getName() + " compulsory class")
+                            .reason(CLASS_NAME + " compulsory class")
                             .build());
         }
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(
                 DefaultKafkaClientSupplier.class,
                 DefaultProductionExceptionHandler.class,
                 FailOnInvalidTimestamp.class)
-                .reason(getClass().getName())
+                .reason(CLASS_NAME)
                 .build());
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(
                 org.apache.kafka.streams.processor.internals.assignment.HighAvailabilityTaskAssignor.class,
                 org.apache.kafka.streams.processor.internals.assignment.LegacyStickyTaskAssignor.class,
                 org.apache.kafka.streams.processor.internals.assignment.FallbackPriorTaskAssignor.class)
-                .reason(getClass().getName())
+                .reason(CLASS_NAME)
                 .methods().fields().build());
         // for backwards compatibility with < Kafka 3.9.0
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(
                 "org.apache.kafka.streams.processor.internals.assignment.StickyTaskAssignor")
-                .reason(getClass().getName())
+                .reason(CLASS_NAME)
                 .methods().fields().build());
         // See https://github.com/quarkusio/quarkus/issues/23404
         reflectiveClasses.produce(ReflectiveClassBuildItem
                 .builder("org.apache.kafka.streams.processor.internals.StateDirectory$StateDirectoryProcessFile")
-                .reason(getClass().getName())
+                .reason(CLASS_NAME)
                 .methods().fields().build());
 
         // Listed in BuiltInDslStoreSuppliers
         reflectiveClasses.produce(ReflectiveClassBuildItem
                 .builder(org.apache.kafka.streams.state.BuiltInDslStoreSuppliers.RocksDBDslStoreSuppliers.class,
                         org.apache.kafka.streams.state.BuiltInDslStoreSuppliers.InMemoryDslStoreSuppliers.class)
-                .reason(getClass().getName())
+                .reason(CLASS_NAME)
                 .build());
         reflectiveClasses.produce(ReflectiveClassBuildItem
                 .builder(org.apache.kafka.streams.errors.LogAndFailProcessingExceptionHandler.class,
                         org.apache.kafka.streams.errors.LogAndContinueProcessingExceptionHandler.class)
-                .reason(getClass().getName())
+                .reason(CLASS_NAME)
                 .methods().fields().build());
     }
 
@@ -129,7 +130,7 @@ class KafkaStreamsProcessor {
         if (dlsStoreSupplierClassName != null) {
             reflectiveClasses.produce(
                     ReflectiveClassBuildItem.builder(dlsStoreSupplierClassName)
-                            .reason(getClass().getName())
+                            .reason(CLASS_NAME)
                             .build());
         }
     }
@@ -141,12 +142,12 @@ class KafkaStreamsProcessor {
 
         if (exceptionHandlerClassName == null) {
             reflectiveClasses.produce(ReflectiveClassBuildItem.builder(LogAndFailExceptionHandler.class)
-                    .reason(getClass().getName())
+                    .reason(CLASS_NAME)
                     .build());
         } else {
             reflectiveClasses.produce(
                     ReflectiveClassBuildItem.builder(exceptionHandlerClassName)
-                            .reason(getClass().getName())
+                            .reason(CLASS_NAME)
                             .build());
         }
     }
@@ -160,12 +161,12 @@ class KafkaStreamsProcessor {
             reflectiveClasses.produce(
                     ReflectiveClassBuildItem.builder(LogAndFailProcessingExceptionHandler.class,
                             LogAndContinueProcessingExceptionHandler.class)
-                            .reason(getClass().getName())
+                            .reason(CLASS_NAME)
                             .build());
         } else {
             reflectiveClasses.produce(
                     ReflectiveClassBuildItem.builder(processingExceptionHandlerClassName)
-                            .reason(getClass().getName())
+                            .reason(CLASS_NAME)
                             .build());
         }
     }
@@ -178,12 +179,12 @@ class KafkaStreamsProcessor {
         if (productionExceptionHandlerClassName == null) {
             reflectiveClasses.produce(
                     ReflectiveClassBuildItem.builder(DefaultProductionExceptionHandler.class)
-                            .reason(getClass().getName())
+                            .reason(CLASS_NAME)
                             .build());
         } else {
             reflectiveClasses.produce(
                     ReflectiveClassBuildItem.builder(productionExceptionHandlerClassName)
-                            .reason(getClass().getName())
+                            .reason(CLASS_NAME)
                             .build());
         }
     }
@@ -196,13 +197,13 @@ class KafkaStreamsProcessor {
         if (defaultKeySerdeClass != null) {
             reflectiveClasses.produce(
                     ReflectiveClassBuildItem.builder(defaultKeySerdeClass)
-                            .reason(getClass().getName())
+                            .reason(CLASS_NAME)
                             .build());
         }
         if (defaultValueSerdeClass != null) {
             reflectiveClasses.produce(
                     ReflectiveClassBuildItem.builder(defaultValueSerdeClass)
-                            .reason(getClass().getName())
+                            .reason(CLASS_NAME)
                             .build());
         }
         if (!allDefaultSerdesAreDefinedInProperties(defaultKeySerdeClass, defaultValueSerdeClass)) {
@@ -225,7 +226,7 @@ class KafkaStreamsProcessor {
 
     private void registerDefaultSerde(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         reflectiveClasses.produce(
-                ReflectiveClassBuildItem.builder(ByteArraySerde.class).reason(getClass().getName()).build());
+                ReflectiveClassBuildItem.builder(ByteArraySerde.class).reason(CLASS_NAME).build());
     }
 
     @BuildStep

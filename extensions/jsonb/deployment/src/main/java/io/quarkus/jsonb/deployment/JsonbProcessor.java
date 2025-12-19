@@ -4,6 +4,7 @@ import static org.jboss.jandex.AnnotationTarget.Kind.FIELD;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 
 import java.beans.ConstructorProperties;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -78,15 +79,19 @@ public class JsonbProcessor {
 
         IndexView index = combinedIndexBuildItem.getIndex();
 
+        final var serializers = index.getAnnotations(JSONB_TYPE_SERIALIZER);
+        final var deserializers = index.getAnnotations(JSONB_TYPE_DESERIALIZER);
+        List<String> classesForReflection = new ArrayList<>(serializers.size() + deserializers.size());
         // handle the various @JsonSerialize cases
-        for (AnnotationInstance serializeInstance : index.getAnnotations(JSONB_TYPE_SERIALIZER)) {
-            registerInstance(reflectiveClass, serializeInstance);
+        for (AnnotationInstance serializeInstance : serializers) {
+            registerInstance(classesForReflection, serializeInstance);
         }
 
         // handle the various @JsonDeserialize cases
-        for (AnnotationInstance deserializeInstance : index.getAnnotations(JSONB_TYPE_DESERIALIZER)) {
-            registerInstance(reflectiveClass, deserializeInstance);
+        for (AnnotationInstance deserializeInstance : deserializers) {
+            registerInstance(classesForReflection, deserializeInstance);
         }
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(classesForReflection).build());
 
         // register String constructors for reflection as they may not have been properly registered by default
         // see https://github.com/quarkusio/quarkus/issues/10873
@@ -103,14 +108,13 @@ public class JsonbProcessor {
                 long.class, Object.class));
     }
 
-    private void registerInstance(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, AnnotationInstance instance) {
+    private void registerInstance(List<String> classesForReflection, AnnotationInstance instance) {
         AnnotationTarget annotationTarget = instance.target();
         if (FIELD.equals(annotationTarget.kind()) || METHOD.equals(annotationTarget.kind())) {
             AnnotationValue value = instance.value();
             if (value != null) {
                 // the Deserializers are constructed internally by JSON-B using a no-args constructor
-                reflectiveClass.produce(
-                        ReflectiveClassBuildItem.builder(value.asClass().name().toString()).build());
+                classesForReflection.add(value.asClass().name().toString());
             }
         }
     }

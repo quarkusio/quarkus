@@ -62,9 +62,10 @@ public class ConfluentRegistryClientProcessor {
                             .methods().build());
 
             // Make this a weak registration since the class is only reachable when kafka-schema-registry-client v [5.2,7) is in the classpath
-            reflectiveClass
-                    .produce(ReflectiveClassBuildItem.weakClass(true, true, false,
-                            "io.confluent.kafka.schemaregistry.client.rest.entities.requests.ModeGetResponse"));
+            reflectiveClass.produce(
+                    ReflectiveClassBuildItem
+                            .builder("io.confluent.kafka.schemaregistry.client.rest.entities.requests.ModeGetResponse")
+                            .weak().methods().constructors().build());
 
             serviceProviders
                     .produce(new ServiceProviderBuildItem(

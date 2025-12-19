@@ -4,6 +4,7 @@ import static org.jboss.resteasy.reactive.common.model.ResourceInterceptor.FILTE
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -318,9 +319,9 @@ public class ResteasyReactiveCommonProcessor {
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<MessageBodyWriterBuildItem> messageBodyWriterBuildItemBuildProducer,
-            BuildProducer<MessageBodyReaderBuildItem> messageBodyReaderBuildItemBuildProducer) throws NoSuchMethodException {
+            BuildProducer<MessageBodyReaderBuildItem> messageBodyReaderBuildItemBuildProducer) {
 
-        if (!resourceScanningResultBuildItem.isPresent()) {
+        if (resourceScanningResultBuildItem.isEmpty()) {
             // no detected @Path, bail out
             return;
         }
@@ -328,12 +329,14 @@ public class ResteasyReactiveCommonProcessor {
         IndexView index = beanArchiveIndexBuildItem.getIndex();
         SerializerScanningResult serializers = ResteasyReactiveScanner.scanForSerializers(index,
                 applicationResultBuildItem.getResult());
-        for (var i : serializers.getReaders()) {
+        final var readers = serializers.getReaders();
+        final var forReflection = new ArrayList<String>(readers.size());
+        for (var i : readers) {
             messageBodyReaderBuildItemBuildProducer.produce(new MessageBodyReaderBuildItem(i.getClassName(),
                     i.getHandledClassName(), i.getMediaTypeStrings(), i.getRuntimeType(), i.isBuiltin(), i.getPriority()));
-            reflectiveClass.produce(
-                    ReflectiveClassBuildItem.builder(i.getClassName()).build());
+            forReflection.add(i.getClassName());
         }
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(forReflection).build());
         for (var i : serializers.getWriters()) {
             messageBodyWriterBuildItemBuildProducer.produce(new MessageBodyWriterBuildItem(i.getClassName(),
                     i.getHandledClassName(), i.getMediaTypeStrings(), i.getRuntimeType(), i.isBuiltin(), i.getPriority()));

@@ -1,6 +1,7 @@
 package io.quarkus.websockets.client.deployment;
 
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -20,7 +21,6 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
@@ -120,7 +120,7 @@ public class WebsocketClientProcessor {
             annotated.add(i.className);
         }
         reflection.produce(
-                ReflectiveClassBuildItem.builder(annotated.toArray(new String[annotated.size()]))
+                ReflectiveClassBuildItem.builder(annotated)
                         .reason(getClass().getName())
                         .methods().build());
 
@@ -159,10 +159,9 @@ public class WebsocketClientProcessor {
 
     static void registerForReflection(BuildProducer<ReflectiveClassBuildItem> reflection, AnnotationValue types) {
         if (types != null && types.asClassArray() != null) {
-            for (Type type : types.asClassArray()) {
-                reflection
-                        .produce(ReflectiveClassBuildItem.builder(type.name().toString()).methods().build());
-            }
+            reflection.produce(ReflectiveClassBuildItem
+                    .builder(Arrays.stream(types.asClassArray()).map(type -> type.name().toString()).toList())
+                    .methods().build());
         }
     }
 

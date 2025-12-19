@@ -129,11 +129,11 @@ public class KotlinPanacheMongoResourceProcessor extends BasePanacheMongoResourc
         for (String modelClass : modelClasses) {
             transformers.produce(new BytecodeTransformerBuildItem(modelClass, companionEnhancer));
 
-            //register for reflection entity classes
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(modelClass).methods().fields().build());
-
             // Register for building the property mapping cache
             propertyMappingClass.produce(new PropertyMappingClassBuildStep(modelClass));
         }
+
+        //register for reflection entity classes
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(modelClasses).methods().fields().build());
     }
 }

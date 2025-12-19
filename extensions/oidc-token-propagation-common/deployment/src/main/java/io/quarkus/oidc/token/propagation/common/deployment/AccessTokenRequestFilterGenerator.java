@@ -2,6 +2,8 @@ package io.quarkus.oidc.token.propagation.common.deployment;
 
 import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,7 +16,6 @@ import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -28,18 +29,18 @@ public final class AccessTokenRequestFilterGenerator {
     }
 
     private final BuildProducer<UnremovableBeanBuildItem> unremovableBeansProducer;
-    private final BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer;
     private final BuildProducer<GeneratedBeanBuildItem> generatedBeanProducer;
     private final Class<?> requestFilterClass;
-    private final Map<RequestFilterKey, String> cache = new HashMap<>();
+    private final Map<RequestFilterKey, String> cache;
+    private final Collection<String> generatedClasseNames;
 
     public AccessTokenRequestFilterGenerator(BuildProducer<UnremovableBeanBuildItem> unremovableBeansProducer,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
-            BuildProducer<GeneratedBeanBuildItem> generatedBeanProducer, Class<?> requestFilterClass) {
+            BuildProducer<GeneratedBeanBuildItem> generatedBeanProducer, int size, Class<?> requestFilterClass) {
         this.unremovableBeansProducer = unremovableBeansProducer;
-        this.reflectiveClassProducer = reflectiveClassProducer;
         this.generatedBeanProducer = generatedBeanProducer;
         this.requestFilterClass = requestFilterClass;
+        cache = new HashMap<>(size);
+        generatedClasseNames = new ArrayList<>(size);
     }
 
     public String generateClass(AccessTokenInstanceBuildItem instance) {
@@ -104,12 +105,13 @@ public final class AccessTokenRequestFilterGenerator {
                         }
                     }
                     unremovableBeansProducer.produce(UnremovableBeanBuildItem.beanClassNames(className));
-                    reflectiveClassProducer
-                            .produce(ReflectiveClassBuildItem.builder(className)
-                                    .reason(getClass().getName())
-                                    .methods().fields().constructors().build());
+                    generatedClasseNames.add(className);
                     return className;
                 });
+    }
+
+    public Collection<String> getGeneratedClassesNames() {
+        return generatedClasseNames;
     }
 
     private String createUniqueClassName(RequestFilterKey i) {

@@ -42,13 +42,11 @@ public class AvroProcessor {
 
         Collection<AnnotationInstance> annotations = indexBuildItem.getIndex()
                 .getAnnotations(DotName.createSimple(AvroGenerated.class.getName()));
-        for (AnnotationInstance annotation : annotations) {
-            if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
-                String className = annotation.target().asClass().name().toString();
-                reflectiveClass.produce(
-                        ReflectiveClassBuildItem.builder(className).methods().fields().build());
-            }
-        }
+        final var classesForReflection = annotations.stream()
+                .filter(annotation -> annotation.target().kind() == AnnotationTarget.Kind.CLASS)
+                .map(annotation -> annotation.target().asClass().name().toString())
+                .toList();
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(classesForReflection).methods().fields().build());
 
         builder.addRuntimeInitializedClass("org.apache.avro.reflect.ReflectData");
         conf.produce(builder.build());

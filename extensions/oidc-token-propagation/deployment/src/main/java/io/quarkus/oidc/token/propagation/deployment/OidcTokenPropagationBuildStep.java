@@ -60,13 +60,17 @@ public class OidcTokenPropagationBuildStep {
             restAnnotationProvider.produce(new RestClientAnnotationProviderBuildItem(JWT_ACCESS_TOKEN_CREDENTIAL,
                     JsonWebTokenRequestFilter.class));
             if (!accessTokenInstances.isEmpty()) {
-                var filterGenerator = new AccessTokenRequestFilterGenerator(unremovableBeanProducer, reflectiveClass,
-                        generatedBeanProducer, AccessTokenRequestFilter.class);
+                var filterGenerator = new AccessTokenRequestFilterGenerator(unremovableBeanProducer, generatedBeanProducer,
+                        accessTokenInstances.size(),
+                        AccessTokenRequestFilter.class);
                 for (AccessTokenInstanceBuildItem instance : accessTokenInstances) {
                     String providerClass = filterGenerator.generateClass(instance);
                     providerPredicateProducer.produce(new RestClientPredicateProviderBuildItem(providerClass,
                             ci -> instance.targetClass().equals(ci.name().toString())));
                 }
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(filterGenerator.getGeneratedClassesNames())
+                        .reason(getClass().getName())
+                        .methods().fields().constructors().build());
             }
         }
     }

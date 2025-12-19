@@ -907,14 +907,13 @@ public class ConfigGenerationBuildStep {
             Class<?> serviceClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws IOException {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        Set<String> services = new LinkedHashSet<>();
-        for (String service : classNamesNamedIn(classLoader, SERVICES_PREFIX + serviceClass.getName())) {
-            // The discovery includes deployment modules, so we only include services available at runtime
-            if (QuarkusClassLoader.isClassPresentAtRuntime(service)) {
-                services.add(service);
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(service).build());
-            }
-        }
+        final var classNames = classNamesNamedIn(classLoader, SERVICES_PREFIX + serviceClass.getName());
+        final var services = new LinkedHashSet<String>(classNames.size());
+        classNames.stream()
+                // The discovery includes deployment modules, so we only include services available at runtime
+                .filter(QuarkusClassLoader::isClassPresentAtRuntime)
+                .forEach(services::add);
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(services).build());
         return services;
     }
 

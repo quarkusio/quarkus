@@ -1,6 +1,7 @@
 package io.quarkus.picocli.deployment;
 
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -92,17 +93,22 @@ public class PicocliNativeImageProcessor {
         }
 
         // Register both declared methods and fields as they are accessed by picocli during initialization
+        final var withoutCtor = new ArrayList<String>(foundClasses.size());
+        final var withCtor = new ArrayList<String>(foundClasses.size());
         foundClasses.forEach(classInfo -> {
+            final var name = classInfo.name().toString();
             if (Modifier.isInterface(classInfo.flags())) {
-                nativeImageProxies
-                        .produce(new NativeImageProxyDefinitionBuildItem(classInfo.name().toString()));
-                reflectiveClasses.produce(ReflectiveClassBuildItem.builder(classInfo.name().toString()).constructors(false)
-                        .methods().fields().build());
+                nativeImageProxies.produce(new NativeImageProxyDefinitionBuildItem(name));
+                withoutCtor.add(name);
             } else {
-                reflectiveClasses
-                        .produce(ReflectiveClassBuildItem.builder(classInfo.name().toString()).methods().fields().build());
+                withCtor.add(name);
             }
         });
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(withoutCtor)
+                .constructors(false)
+                .methods().fields().build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(withCtor).methods().fields().build());
+
         typeAnnotationValues.forEach(type -> reflectiveHierarchies.produce(ReflectiveHierarchyBuildItem
                 .builder(type)
                 .source(PicocliNativeImageProcessor.class.getSimpleName())

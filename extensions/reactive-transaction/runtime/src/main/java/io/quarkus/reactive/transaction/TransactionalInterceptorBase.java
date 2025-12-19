@@ -95,7 +95,7 @@ public abstract class TransactionalInterceptorBase {
                 .toCompletionStage());
     }
 
-    Uni<Object> rollbackOnCancel() {
+    Uni<Void> rollbackOnCancel() {
         Transaction transaction = transaction();
         return Uni.createFrom().completionStage(transaction.rollback()
                 .onFailure(v -> {
@@ -104,7 +104,7 @@ public abstract class TransactionalInterceptorBase {
                 .onSuccess(ignored -> {
                     LOG.tracef("Transaction rolled back due to cancellation: %s", transaction);
                 })
-                .mapEmpty().toCompletionStage());
+                .toCompletionStage());
     }
 
     // Based on org/hibernate/reactive/pool/impl/SqlClientConnection.java:314

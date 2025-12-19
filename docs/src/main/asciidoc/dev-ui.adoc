@@ -1232,6 +1232,22 @@ If you do not want to embed the content, you can use the `.doNotEmbed()` on the 
 
 The example above assumes you know the link to use at build time. There might be cases where you only know this at runtime. In that case, you can use a JsonRPC Method (discussed later) that returns the link to add, and use that when creating the link. Rather than using the `.url` method on the page builder, use the `.dynamicUrlJsonRPCMethodName("yourJsonRPCMethodName")`.
 
+If the RPC method accepts parameters, you can add these to the method
+`.dynamicUrlJsonRPCMethodName("yourJsonRPCMethodName", Map.of("parameter-name", "parameter-value))`.
+The RPC method lookup defaults to the extension namespace. RPC methods from other extension namespaces can be used by prefixing the method name with the namespace : `.dynamicUrlJsonRPCMethodName("otherNamespace:jsonRPCMethodName")`.
+
+For example, the following Page definition will call the `devui-dev-services:devServicesConfig` JsonRPC method at runtime to get the URL to the dev service named `my-dev-service`:
+
+[source,java]
+----
+cardPageBuildItem.addPage(Page.externalPageBuilder("External Page")
+                .dynamicUrlJsonRPCMethodName("devui-dev-services:devServicesConfig", // <1>
+                    Map.of("name", "my-dev-service", // <2>
+                            "configKey", "url-config-key"))
+                .isHtmlContent());
+----
+<1> Use the `devServicesConfig` RPC method from the namespace `devui-dev-services`.
+<2> Set the parameters needed by the RPC method, `name` and `configKey`.
 
 ===== Raw data pages
 

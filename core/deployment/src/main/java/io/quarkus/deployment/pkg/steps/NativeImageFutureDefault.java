@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.function.BooleanSupplier;
 
-import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.configuration.NativeConfigUtils;
+import io.quarkus.deployment.pkg.NativeConfig;
 
 public enum NativeImageFutureDefault {
     COMPLETE_REFLECTION_TYPES,

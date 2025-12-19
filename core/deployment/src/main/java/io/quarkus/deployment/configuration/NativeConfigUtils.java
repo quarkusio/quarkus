@@ -1,10 +1,10 @@
 package io.quarkus.deployment.configuration;
 
-import io.quarkus.deployment.pkg.NativeConfig;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import io.quarkus.deployment.pkg.NativeConfig;
 
 public final class NativeConfigUtils {
     public static List<String> getNativeAdditionalBuildArgs(NativeConfig nativeConfig) {

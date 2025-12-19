@@ -53,7 +53,7 @@ public interface ReactiveMessagingRuntimeConfig {
          */
         @ConfigDocIgnore
         @WithParentName
-        Map<String, String> channelConfig();
+        Map<String, Optional<String>> channelConfig();
     }
 
     interface Incoming extends ChannelDirection {

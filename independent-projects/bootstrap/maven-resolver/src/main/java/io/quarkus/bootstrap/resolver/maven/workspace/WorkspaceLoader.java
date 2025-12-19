@@ -180,7 +180,7 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
             req.setProfiles(profiles);
             req.setRawModel(rawModule.getModel());
             req.setWorkspaceModelResolver(this);
-            LocalProject project;
+            final LocalProject project;
             try {
                 project = new LocalProject(modelBuilder.build(req), workspace);
             } catch (Exception e) {
@@ -190,10 +190,7 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
                 }
                 throw new RuntimeException("Failed to resolve the effective model for " + rawModule.getModel().getPomFile(), e);
             }
-            log.debugf("Loaded effective model from %s", project.getDir());
-            if (currentProject == null && project.getDir().equals(currentProjectPom.getParent())) {
-                currentProject = project;
-            }
+            loadedModule(project);
             for (var module : project.getEffectiveModel().getModules()) {
                 Path modulePath = project.getDir().resolve(module);
                 if (Files.isDirectory(modulePath)) {
@@ -206,8 +203,11 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
     }
 
     private void processLoadedRawModel(WorkspaceModulePom rawModule) {
-        var project = new LocalProject(rawModule.getModel(), rawModule.effectiveModel, workspace);
-        log.debugf("Loaded raw model from %s", project.getDir());
+        loadedModule(new LocalProject(rawModule.getModel(), rawModule.effectiveModel, workspace));
+    }
+
+    private void loadedModule(LocalProject project) {
+        log.debugf("Loaded module from %s", project.getDir());
         if (currentProject == null && project.getDir().equals(currentProjectPom.getParent())) {
             currentProject = project;
         }

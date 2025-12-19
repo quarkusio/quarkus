@@ -59,8 +59,8 @@ enum DistributionStrategy {
     }
 }
 
-public class DevservicesElasticsearchProcessorStrategy {
-    private static final Logger log = Logger.getLogger(DevservicesElasticsearchProcessorStrategy.class);
+public class DevservicesElasticsearchDashboardProcessorStrategy {
+    private static final Logger log = Logger.getLogger(DevservicesElasticsearchDashboardProcessorStrategy.class);
     private static final int DASHBOARD_PORT = 5601;
     private static final String DEV_SERVICE_LABEL = "io.quarkus.devservice.elasticsearch.dashboards";
 
@@ -75,16 +75,16 @@ public class DevservicesElasticsearchProcessorStrategy {
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private final DistributionStrategy strategy;
 
-    private DevservicesElasticsearchProcessorStrategy(DistributionStrategy strategy) {
+    private DevservicesElasticsearchDashboardProcessorStrategy(DistributionStrategy strategy) {
         this.strategy = strategy;
     }
 
-    static DevservicesElasticsearchProcessorStrategy kibana() {
-        return new DevservicesElasticsearchProcessorStrategy(DistributionStrategy.KIBANA);
+    static DevservicesElasticsearchDashboardProcessorStrategy kibana() {
+        return new DevservicesElasticsearchDashboardProcessorStrategy(DistributionStrategy.KIBANA);
     }
 
-    static DevservicesElasticsearchProcessorStrategy dashboards() {
-        return new DevservicesElasticsearchProcessorStrategy(DistributionStrategy.DASHBOARDS);
+    static DevservicesElasticsearchDashboardProcessorStrategy dashboards() {
+        return new DevservicesElasticsearchDashboardProcessorStrategy(DistributionStrategy.DASHBOARDS);
     }
 
     public DevServicesResultBuildItem startElasticsearchDevService(

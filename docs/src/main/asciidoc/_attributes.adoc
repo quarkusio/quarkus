@@ -72,7 +72,7 @@
 :hibernate-orm-dialect-docs-url: https://docs.hibernate.org/orm/{hibernate-orm-version-major-minor}/dialect/dialect.html
 :hibernate-search-docs-url: https://docs.hibernate.org/search/{hibernate-search-version-major-minor}/reference/en-US/html_single/
 :hibernate-validator-docs-url: https://docs.hibernate.org/validator/{hibernate-validator-version-major-minor}/reference/en-US/html_single/
-:jakarta-persistence-spec-url: https://jakarta.ee/specifications/persistence/{jakarta-persistence-version-major-minor}/jakarta-persistence-spec-{jakarta-persistence-version-major-minor}#a6072
+:jakarta-persistence-spec-url: https://jakarta.ee/specifications/persistence/{jakarta-persistence-version-major-minor}/jakarta-persistence-spec-{jakarta-persistence-version-major-minor}
 // .
 :amazon-services-guide: https://docs.quarkiverse.io/quarkus-amazon-services/dev/index.html
 :config-consul-guide: https://docs.quarkiverse.io/quarkus-config-extensions/dev/consul.html

@@ -38,6 +38,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuil
 import io.quarkus.deployment.builditem.nativeimage.NativeMinimalJavaVersionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem;
+import io.quarkus.deployment.configuration.NativeConfigUtils;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
@@ -1030,40 +1031,33 @@ public class NativeImageBuildStep {
             }
 
             private void handleAdditionalProperties(List<String> command) {
-                Optional<List<String>>[] additionalBuildArgs = new Optional[] { nativeConfig.additionalBuildArgs(),
-                        nativeConfig.additionalBuildArgsAppend() };
-                for (Optional<List<String>> args : additionalBuildArgs) {
-                    if (args.isEmpty()) {
-                        continue;
-                    }
-                    List<String> strings = args.get();
-                    for (String buildArg : strings) {
-                        String trimmedBuildArg = buildArg.trim();
-                        if (trimmedBuildArg.contains(TRUST_STORE_SYSTEM_PROPERTY_MARKER) && containerBuild) {
-                            /*
-                             * When the native binary is being built with a docker container, because a volume is created,
-                             * we need to copy the trustStore file into the output directory (which is the root of volume)
-                             * and change the value of 'javax.net.ssl.trustStore' property to point to this value
-                             *
-                             * TODO: we might want to introduce a dedicated property in order to overcome this ugliness
-                             */
-                            int index = trimmedBuildArg.indexOf(TRUST_STORE_SYSTEM_PROPERTY_MARKER);
-                            if (trimmedBuildArg.length() > index + 2) {
-                                String configuredTrustStorePath = trimmedBuildArg
-                                        .substring(index + TRUST_STORE_SYSTEM_PROPERTY_MARKER.length());
-                                try {
-                                    IoUtils.copy(Paths.get(configuredTrustStorePath),
-                                            outputDir.resolve(MOVED_TRUST_STORE_NAME));
-                                    command.add(trimmedBuildArg.substring(0, index) + TRUST_STORE_SYSTEM_PROPERTY_MARKER
-                                            + CONTAINER_BUILD_VOLUME_PATH + "/" + MOVED_TRUST_STORE_NAME);
-                                } catch (IOException e) {
-                                    throw new UncheckedIOException("Unable to copy trustStore file '" + configuredTrustStorePath
-                                            + "' to volume root directory '" + outputDir.toAbsolutePath() + "'", e);
-                                }
+                final List<String> additionalBuildArgs = NativeConfigUtils.getNativeAdditionalBuildArgs(nativeConfig);
+                for (String buildArg : additionalBuildArgs) {
+                    String trimmedBuildArg = buildArg.trim();
+                    if (trimmedBuildArg.contains(TRUST_STORE_SYSTEM_PROPERTY_MARKER) && containerBuild) {
+                        /*
+                         * When the native binary is being built with a docker container, because a volume is created,
+                         * we need to copy the trustStore file into the output directory (which is the root of volume)
+                         * and change the value of 'javax.net.ssl.trustStore' property to point to this value
+                         *
+                         * TODO: we might want to introduce a dedicated property in order to overcome this ugliness
+                         */
+                        int index = trimmedBuildArg.indexOf(TRUST_STORE_SYSTEM_PROPERTY_MARKER);
+                        if (trimmedBuildArg.length() > index + 2) {
+                            String configuredTrustStorePath = trimmedBuildArg
+                                    .substring(index + TRUST_STORE_SYSTEM_PROPERTY_MARKER.length());
+                            try {
+                                IoUtils.copy(Paths.get(configuredTrustStorePath),
+                                        outputDir.resolve(MOVED_TRUST_STORE_NAME));
+                                command.add(trimmedBuildArg.substring(0, index) + TRUST_STORE_SYSTEM_PROPERTY_MARKER
+                                        + CONTAINER_BUILD_VOLUME_PATH + "/" + MOVED_TRUST_STORE_NAME);
+                            } catch (IOException e) {
+                                throw new UncheckedIOException("Unable to copy trustStore file '" + configuredTrustStorePath
+                                        + "' to volume root directory '" + outputDir.toAbsolutePath() + "'", e);
                             }
-                        } else {
-                            command.add(trimmedBuildArg);
                         }
+                    } else {
+                        command.add(trimmedBuildArg);
                     }
                 }
             }

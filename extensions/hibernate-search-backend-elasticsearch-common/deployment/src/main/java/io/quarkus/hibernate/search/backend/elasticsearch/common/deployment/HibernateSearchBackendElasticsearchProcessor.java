@@ -44,8 +44,7 @@ class HibernateSearchBackendElasticsearchProcessor {
         if (enabled.isEmpty()) {
             return;
         }
-        String[] reflectiveClasses = GsonClasses.typesRequiringReflection().toArray(String[]::new);
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(reflectiveClasses)
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(GsonClasses.typesRequiringReflection())
                 .reason(getClass().getName())
                 .methods().fields().build());
     }

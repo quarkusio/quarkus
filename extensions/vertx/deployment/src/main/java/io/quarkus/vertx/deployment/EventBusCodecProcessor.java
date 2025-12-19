@@ -13,7 +13,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -150,13 +149,9 @@ public class EventBusCodecProcessor {
         }
 
         // Register codec classes for reflection.
-        codecByTypes.values().stream().map(DotName::toString).distinct()
-                .forEach(new Consumer<String>() {
-                    @Override
-                    public void accept(String name) {
-                        reflectiveClass.produce(ReflectiveClassBuildItem.builder(name).methods().build());
-                    }
-                });
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder(codecByTypes.values().stream().map(DotName::toString).distinct().toList())
+                .methods().build());
 
         localCodecSelectorTypes.produce(new LocalCodecSelectorTypesBuildItem(
                 selectorTypes.stream().map(Object::toString).collect(Collectors.toSet())));

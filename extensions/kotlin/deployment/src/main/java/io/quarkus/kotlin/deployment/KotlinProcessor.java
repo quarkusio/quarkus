@@ -51,11 +51,9 @@ public class KotlinProcessor {
                 .build());
         reflectiveClass.produce(
                 ReflectiveClassBuildItem.builder("kotlin.KotlinVersion").methods().fields().build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("kotlin.KotlinVersion[]").constructors(false)
-                .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("kotlin.KotlinVersion$Companion").constructors(false)
-                .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("kotlin.KotlinVersion$Companion[]").constructors(false)
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("kotlin.KotlinVersion[]",
+                "kotlin.KotlinVersion$Companion",
+                "kotlin.KotlinVersion$Companion[]").constructors(false)
                 .build());
         reflectiveClass.produce(
                 ReflectiveClassBuildItem

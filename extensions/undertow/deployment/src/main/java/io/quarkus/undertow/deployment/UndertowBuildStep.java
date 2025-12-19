@@ -424,15 +424,16 @@ public class UndertowBuildStep {
             }
         }
 
+        final var forReflection = new ArrayList<String>(50); // to avoid constant size expansion
         //add servlets
-        if (webMetaData.getServlets() != null) {
-            for (ServletMetaData servlet : webMetaData.getServlets()) {
+        final var optionalServlets = webMetaData.getServlets();
+        if (optionalServlets != null) {
+            for (ServletMetaData servlet : optionalServlets) {
                 String servletClass = servlet.getServletClass();
                 if (servletClass == null) {
                     continue;
                 }
-                reflectiveClasses.accept(
-                        ReflectiveClassBuildItem.builder(servletClass).build());
+                forReflection.add(servletClass);
                 RuntimeValue<ServletInfo> sref = recorder.registerServlet(deployment, servlet.getServletName(),
                         context.classProxy(servletClass),
                         servlet.isAsyncSupported(),
@@ -498,10 +499,10 @@ public class UndertowBuildStep {
             }
         }
         //filters
-        if (webMetaData.getFilters() != null) {
-            for (FilterMetaData filter : webMetaData.getFilters()) {
-                reflectiveClasses
-                        .accept(ReflectiveClassBuildItem.builder(filter.getFilterClass()).build());
+        final var optionalFilters = webMetaData.getFilters();
+        if (optionalFilters != null) {
+            for (FilterMetaData filter : optionalFilters) {
+                forReflection.add(filter.getFilterClass());
                 RuntimeValue<FilterInfo> sref = recorder.registerFilter(deployment,
                         filter.getFilterName(),
                         context.classProxy(filter.getFilterClass()),
@@ -580,8 +581,7 @@ public class UndertowBuildStep {
         //listeners
         if (webMetaData.getListeners() != null) {
             for (ListenerMetaData listener : webMetaData.getListeners()) {
-                reflectiveClasses.accept(
-                        ReflectiveClassBuildItem.builder(listener.getListenerClass()).build());
+                forReflection.add(listener.getListenerClass());
                 recorder.registerListener(deployment, context.classProxy(listener.getListenerClass()), bc.getValue());
             }
         }
@@ -596,8 +596,7 @@ public class UndertowBuildStep {
         for (ServletBuildItem servlet : servlets) {
             String servletClass = servlet.getServletClass();
             if (servlet.getLoadOnStartup() == 0) {
-                reflectiveClasses.accept(
-                        ReflectiveClassBuildItem.builder(servlet.getServletClass()).build());
+                forReflection.add(servlet.getServletClass());
             }
             RuntimeValue<ServletInfo> s = recorder.registerServlet(deployment, servlet.getName(),
                     context.classProxy(servletClass),
@@ -619,7 +618,7 @@ public class UndertowBuildStep {
 
         for (FilterBuildItem filter : filters) {
             String filterClass = filter.getFilterClass();
-            reflectiveClasses.accept(ReflectiveClassBuildItem.builder(filterClass).build());
+            forReflection.add(filterClass);
             RuntimeValue<FilterInfo> f = recorder.registerFilter(deployment, filter.getName(), context.classProxy(filterClass),
                     filter.isAsyncSupported(),
                     bc.getValue(), filter.getInstanceFactory());
@@ -644,10 +643,11 @@ public class UndertowBuildStep {
             recorder.addServletExtension(deployment, i.getValue());
         }
         for (ListenerBuildItem i : listeners) {
-            reflectiveClasses
-                    .accept(ReflectiveClassBuildItem.builder(i.getListenerClass()).build());
+            forReflection.add(i.getListenerClass());
             recorder.registerListener(deployment, context.classProxy(i.getListenerClass()), bc.getValue());
         }
+
+        reflectiveClasses.accept(ReflectiveClassBuildItem.builder(forReflection).build());
 
         for (ServletContainerInitializerBuildItem sci : servletContainerInitializerBuildItems) {
             Set<Class<?>> handlesTypes = new HashSet<>();

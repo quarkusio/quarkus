@@ -1,7 +1,5 @@
 package io.quarkus.vertx.graphql.deployment;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -44,10 +42,10 @@ class VertxGraphqlProcessor {
     }
 
     @BuildStep
-    List<ReflectiveClassBuildItem> registerForReflection() {
-        return Arrays.asList(
-                ReflectiveClassBuildItem.builder(GraphQLBatch.class.getName()).methods().fields().build(),
-                ReflectiveClassBuildItem.builder(GraphQLQuery.class.getName()).methods().fields().build());
+    ReflectiveClassBuildItem registerForReflection() {
+        return ReflectiveClassBuildItem
+                .builder(GraphQLBatch.class.getName(), GraphQLQuery.class.getName())
+                .methods().fields().build();
     }
 
     @BuildStep

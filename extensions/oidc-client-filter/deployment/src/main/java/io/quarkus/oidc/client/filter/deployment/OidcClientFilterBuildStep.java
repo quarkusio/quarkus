@@ -3,6 +3,7 @@ package io.quarkus.oidc.client.filter.deployment;
 import static io.quarkus.oidc.client.deployment.OidcClientFilterDeploymentHelper.DEFAULT_OIDC_REQUEST_FILTER_NAME;
 import static io.quarkus.oidc.client.deployment.OidcClientFilterDeploymentHelper.detectCustomFiltersThatRequireResponseFilter;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -96,7 +97,8 @@ public class OidcClientFilterBuildStep {
         final var helper = new OidcClientFilterDeploymentHelper<>(AbstractOidcClientRequestFilter.class, generatedBean,
                 config.refreshOnUnauthorized());
         Collection<AnnotationInstance> instances = indexBuildItem.getIndex().getAnnotations(OIDC_CLIENT_FILTER);
-        final Set<String> namedFilterClientClasses = new HashSet<>();
+        final Set<String> namedFilterClientClasses = new HashSet<>(instances.size());
+        final var forReflection = new ArrayList<String>(instances.size());
         for (AnnotationInstance instance : instances) {
             // get client name from annotation @OidcClientFilter
             String clientName = OidcClientFilterDeploymentHelper.getClientName(instance);
@@ -110,9 +112,7 @@ public class OidcClientFilterBuildStep {
             namedFilterClientClasses.add(targetRestClient);
 
             // register for reflection
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(generatedProvider).methods()
-                    .reason(getClass().getName())
-                    .fields().serialization(true).build());
+            forReflection.add(generatedProvider);
 
             var isAnnotatedRestClient = new Predicate<ClassInfo>() {
                 // test whether the provider should be added restClientClassInfo
@@ -132,6 +132,10 @@ public class OidcClientFilterBuildStep {
                                 DetectUnauthorizedClientResponseFilter.class.getName(), isAnnotatedRestClient));
             }
         }
+
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(forReflection).methods()
+                .reason(getClass().getName())
+                .fields().serialization(true).build());
         return new NamedOidcClientFilterBuildItem(namedFilterClientClasses);
     }
 

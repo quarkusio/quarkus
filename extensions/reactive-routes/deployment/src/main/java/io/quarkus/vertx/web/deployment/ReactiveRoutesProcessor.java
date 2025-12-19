@@ -12,6 +12,7 @@ import java.lang.constant.MethodTypeDesc;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -313,6 +314,9 @@ class ReactiveRoutesProcessor {
         Map<RouteMatcher, MethodInfo> matchers = new HashMap<>();
         boolean validatorAvailable = capabilities.isPresent(Capability.HIBERNATE_VALIDATOR);
 
+        // record class names for reflection
+        Collection<String> classNamesForReflection = new ArrayList<>();
+
         for (AnnotatedRouteHandlerBuildItem businessMethod : routeHandlerBusinessMethods) {
             AnnotationInstance routeBaseAnnotation = businessMethod.getRouteBase();
             String pathPrefix = null;
@@ -434,8 +438,7 @@ class ReactiveRoutesProcessor {
                             businessMethod.getBean(), businessMethod.getMethod(), gizmo, transformedAnnotations,
                             route, reflectiveHierarchy, produces.length > 0 ? produces[0] : null,
                             validatorAvailable, index);
-                    reflectiveClasses
-                            .produce(ReflectiveClassBuildItem.builder(handlerClass).build());
+                    classNamesForReflection.add(handlerClass);
                     routeHandler = recorder.createHandler(handlerClass);
                     routeHandlers.put(routeString, routeHandler);
                 }
@@ -485,12 +488,14 @@ class ReactiveRoutesProcessor {
                             new String[0]),
                     filterMethod.getBean(), filterMethod.getMethod(), gizmo, transformedAnnotations,
                     filterMethod.getRouteFilter(), reflectiveHierarchy, null, validatorAvailable, index);
-            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(handlerClass).build());
+            classNamesForReflection.add(handlerClass);
             Handler<RoutingContext> routingHandler = recorder.createHandler(handlerClass);
             AnnotationValue priorityValue = filterMethod.getRouteFilter().value();
             filterProducer.produce(new FilterBuildItem(routingHandler,
                     priorityValue != null ? priorityValue.asInt() : RouteFilter.DEFAULT_PRIORITY));
         }
+
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(classNamesForReflection).build());
 
         detectConflictingRoutes(matchers);
     }

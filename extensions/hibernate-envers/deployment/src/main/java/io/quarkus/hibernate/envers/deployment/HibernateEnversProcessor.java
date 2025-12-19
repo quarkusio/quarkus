@@ -61,7 +61,7 @@ public final class HibernateEnversProcessor {
             pu.revisionListener().ifPresent(classes::add);
             pu.auditStrategy().ifPresent(classes::add);
         }
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(classes.toArray(new String[0]))
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(classes)
                 .reason("Configured Envers listeners and audit strategies")
                 .methods().fields().build());
     }

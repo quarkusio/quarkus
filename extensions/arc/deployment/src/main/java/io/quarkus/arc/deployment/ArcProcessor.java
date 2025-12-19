@@ -599,21 +599,21 @@ public class ArcProcessor {
         LOGGER.debugf("Generated %s resources in %s ms", resources.size(),
                 TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
 
+        final var qualifiers = beanProcessor.getBeanDeployment().getQualifiers();
+        final var bindings = beanProcessor.getBeanDeployment().getInterceptorBindings();
+        final var classNamesToRegisterForReflection = new ArrayList<String>(qualifiers.size() + bindings.size());
         // Register all qualifiers for reflection to support type-safe resolution at runtime in native image
-        for (ClassInfo qualifier : beanProcessor.getBeanDeployment().getQualifiers()) {
-            reflectiveClasses
-                    .produce(ReflectiveClassBuildItem.builder(qualifier.name().toString())
-                            .reason(getClass().getName())
-                            .methods().build());
-        }
-
+        qualifiers.stream()
+                .map(qualifier -> qualifier.name().toString())
+                .forEach(classNamesToRegisterForReflection::add);
         // Register all interceptor bindings for reflection so that AnnotationLiteral.equals() works in a native image
-        for (ClassInfo binding : beanProcessor.getBeanDeployment().getInterceptorBindings()) {
-            reflectiveClasses
-                    .produce(ReflectiveClassBuildItem.builder(binding.name().toString())
-                            .reason(getClass().getName())
-                            .methods().build());
-        }
+        bindings.stream()
+                .map(binding -> binding.name().toString())
+                .forEach(classNamesToRegisterForReflection::add);
+
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(classNamesToRegisterForReflection)
+                .reason(getClass().getName())
+                .methods().build());
     }
 
     // PHASE 6 - initialize the container

@@ -1,6 +1,7 @@
 package io.quarkus.smallrye.faulttolerance.deployment;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -109,40 +110,46 @@ public class SmallRyeFaultToleranceProcessor {
         // (reflective access to fallback methods and before retry methods is added
         // in `FaultToleranceScanner.searchForMethods`)
         Set<String> handlers = new HashSet<>();
-        for (ClassInfo implementor : index.getAllKnownImplementors(DotNames.FALLBACK_HANDLER)) {
+        final var forReflection = new ArrayList<String>(50); // to avoid constant size expansion
+        for (ClassInfo implementor : index.getAllKnownImplementations(DotNames.FALLBACK_HANDLER)) {
             handlers.add(implementor.name().toString());
         }
-        for (ClassInfo implementor : index.getAllKnownImplementors(DotNames.BEFORE_RETRY_HANDLER)) {
+        for (ClassInfo implementor : index.getAllKnownImplementations(DotNames.BEFORE_RETRY_HANDLER)) {
             handlers.add(implementor.name().toString());
         }
         if (!handlers.isEmpty()) {
             AdditionalBeanBuildItem.Builder handlerBeans = AdditionalBeanBuildItem.builder()
                     .setDefaultScope(BuiltinScope.DEPENDENT.getName());
             for (String handler : handlers) {
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(handler).methods().build());
                 handlerBeans.addBeanClass(handler);
             }
             beans.produce(handlerBeans.build());
+            forReflection.addAll(handlers);
         }
         // Add reflective access to custom backoff strategies
-        for (ClassInfo strategy : index.getAllKnownImplementors(DotNames.CUSTOM_BACKOFF_STRATEGY)) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(strategy.name().toString()).methods().build());
+        for (ClassInfo strategy : index.getAllKnownImplementations(DotNames.CUSTOM_BACKOFF_STRATEGY)) {
+            forReflection.add(strategy.name().toString());
         }
         // Add reflective access to retry predicates
-        for (AnnotationInstance annotation : index.getAnnotations(DotNames.RETRY_WHEN)) {
+        final var retryWhens = index.getAnnotations(DotNames.RETRY_WHEN);
+        final var retryWithResultOrExceptions = new ArrayList<String>(retryWhens.size());
+        for (AnnotationInstance annotation : retryWhens) {
             for (String memberName : List.of("result", "exception")) {
                 AnnotationValue member = annotation.value(memberName);
                 if (member != null) {
-                    reflectiveClass.produce(ReflectiveClassBuildItem.builder(member.asClass().name().toString()).build());
+                    retryWithResultOrExceptions.add(member.asClass().name().toString());
                 }
             }
         }
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(retryWithResultOrExceptions).build());
 
         for (DotName annotation : DotNames.FT_ANNOTATIONS) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(annotation.toString()).methods().build());
+            forReflection.add(annotation.toString());
             // also make them bean defining annotations
             additionalBda.produce(new BeanDefiningAnnotationBuildItem(annotation));
         }
+
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(forReflection).methods().build());
 
         // Add transitive interceptor binding to FT annotations
         annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
@@ -258,12 +265,10 @@ public class SmallRyeFaultToleranceProcessor {
         Set<String> exceptionConfigs = Set.of("CircuitBreaker/failOn", "CircuitBreaker/skipOn",
                 "Fallback/applyOn", "Fallback/skipOn", "Retry/retryOn", "Retry/abortOn");
 
+        final var forReflection = new ArrayList<String>(50); // to avoid constant size expansion
         for (String exceptionConfig : exceptionConfigs) {
             Optional<String[]> exceptionNames = config.getOptionalValue(exceptionConfig, String[].class);
-            if (exceptionNames.isPresent()) {
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(exceptionNames.get())
-                        .reason(getClass().getName()).build());
-            }
+            exceptionNames.ifPresent(strings -> forReflection.addAll(Arrays.asList(strings)));
         }
 
         AnnotationStore annotationStore = validationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
@@ -303,10 +308,7 @@ public class SmallRyeFaultToleranceProcessor {
                 for (String exceptionConfig : exceptionConfigs) {
                     Optional<String[]> exceptionNames = config.getOptionalValue(beanClass.name().toString()
                             + "/" + exceptionConfig, String[].class);
-                    if (exceptionNames.isPresent()) {
-                        reflectiveClass.produce(ReflectiveClassBuildItem.builder(exceptionNames.get())
-                                .reason(getClass().getName()).build());
-                    }
+                    exceptionNames.ifPresent(strings -> forReflection.addAll(Arrays.asList(strings)));
                 }
 
                 scanner.forEachMethod(beanClass, method -> {
@@ -331,10 +333,7 @@ public class SmallRyeFaultToleranceProcessor {
                         for (String exceptionConfig : exceptionConfigs) {
                             Optional<String[]> exceptionNames = config.getOptionalValue(beanClass.name().toString()
                                     + "/" + method.name() + "/" + exceptionConfig, String[].class);
-                            if (exceptionNames.isPresent()) {
-                                reflectiveClass.produce(ReflectiveClassBuildItem.builder(exceptionNames.get())
-                                        .reason(getClass().getName()).build());
-                            }
+                            exceptionNames.ifPresent(strings -> forReflection.addAll(Arrays.asList(strings)));
                         }
 
                         if (annotationStore.hasAnnotation(method, DotNames.CIRCUIT_BREAKER_NAME)) {
@@ -365,6 +364,8 @@ public class SmallRyeFaultToleranceProcessor {
                 }
             }
         }
+
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(forReflection).reason(getClass().getName()).build());
 
         recorder.createFaultToleranceOperation(ftMethods);
 

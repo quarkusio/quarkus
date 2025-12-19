@@ -321,7 +321,7 @@ public class JaxrsClientReactiveProcessor {
             scannedParameterContainers.addAll(parameterContainersBuildItem.getClassNames());
         }
         reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem
-                .builder(scannedParameterContainers.stream().map(DotName::toString).distinct().toArray(String[]::new))
+                .builder(scannedParameterContainers.stream().map(DotName::toString).toList())
                 .reason(getClass().getName())
                 .methods().fields().build());
 
@@ -451,31 +451,33 @@ public class JaxrsClientReactiveProcessor {
         recorder.setupClientProxies(clientImplementations, failures);
         jaxrsClientReactiveInfoBuildItemProducer.produce(new JaxrsClientReactiveInfoBuildItem(clientImplementations.keySet()));
 
-        for (AdditionalReaderWriter.Entry additionalReader : additionalReaders.get()) {
+        final var additionalReadersList = additionalReaders.get();
+        final var additionalWritersList = additionalWriters.get();
+        final var classNamesForReflection = new ArrayList<String>(additionalReadersList.size() + additionalWritersList.size());
+        for (AdditionalReaderWriter.Entry additionalReader : additionalReadersList) {
             String readerClass = additionalReader.getHandlerClass();
             ResourceReader reader = new ResourceReader();
             reader.setBuiltin(true);
             reader.setFactory(recorder.factory(readerClass, beanContainerBuildItem.getValue()));
             reader.setMediaTypeStrings(Collections.singletonList(additionalReader.getMediaType()));
             recorder.registerReader(serialisers, additionalReader.getEntityClass(), reader);
-            reflectiveClassBuildItemBuildProducer
-                    .produce(ReflectiveClassBuildItem.builder(readerClass)
-                            .reason(getClass().getName())
-                            .build());
+            classNamesForReflection.add(readerClass);
         }
 
-        for (AdditionalReaderWriter.Entry entry : additionalWriters.get()) {
+        for (AdditionalReaderWriter.Entry entry : additionalWritersList) {
             String writerClass = entry.getHandlerClass();
             ResourceWriter writer = new ResourceWriter();
             writer.setBuiltin(true);
             writer.setFactory(recorder.factory(writerClass, beanContainerBuildItem.getValue()));
             writer.setMediaTypeStrings(Collections.singletonList(entry.getMediaType()));
             recorder.registerWriter(serialisers, entry.getEntityClass(), writer);
-            reflectiveClassBuildItemBuildProducer
-                    .produce(ReflectiveClassBuildItem.builder(writerClass)
-                            .reason(getClass().getName())
-                            .build());
+            classNamesForReflection.add(writerClass);
         }
+
+        reflectiveClassBuildItemBuildProducer
+                .produce(ReflectiveClassBuildItem.builder(classNamesForReflection)
+                        .reason(getClass().getName())
+                        .build());
 
         Map<String, RuntimeValue<MultipartResponseData>> responsesData = new HashMap<>();
         for (ClassInfo multipartResponseType : multipartResponseTypes) {

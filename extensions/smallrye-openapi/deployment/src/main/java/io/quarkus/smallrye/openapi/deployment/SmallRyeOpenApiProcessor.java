@@ -247,7 +247,7 @@ public class SmallRyeOpenApiProcessor {
 
             recorder.prepareDocument(autoSecurityFilter, userDefinedRuntimeFilters, documentName);
 
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(userDefinedRuntimeFilters.toArray(new String[] {}))
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(userDefinedRuntimeFilters)
                     .reason(getClass().getName()).build());
         });
     }

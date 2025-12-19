@@ -220,6 +220,7 @@ class RestClientProcessor {
 
         warnAboutNotWorkingFeaturesInNative(nativeConfig, interfaces);
 
+        final var forReflection = new ArrayList<String>(interfaces.size());
         for (Map.Entry<DotName, ClassInfo> entry : interfaces.entrySet()) {
             String iName = entry.getKey().toString();
             // the native image proxy definitions have to be separate because
@@ -227,13 +228,13 @@ class RestClientProcessor {
             proxyDefinition.produce(new NativeImageProxyDefinitionBuildItem(iName, ResteasyClientProxy.class.getName()));
             proxyDefinition.produce(
                     new NativeImageProxyDefinitionBuildItem(iName, RestClientProxy.class.getName(), Closeable.class.getName()));
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(iName).methods().build());
+            forReflection.add(iName);
         }
 
         // Incoming headers
         // required for the non-arg constructor of DCHFImpl to be included in the native image
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(DefaultClientHeadersFactoryImpl.class.getName()).methods()
-                .build());
+        forReflection.add(DefaultClientHeadersFactoryImpl.class.getName());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(forReflection).methods().build());
 
         // Register Interface return types for reflection
         for (Type returnType : returnTypes) {
@@ -456,10 +457,9 @@ class RestClientProcessor {
             restClientRecorder.setResteasyProviderFactoryInstance();
         }
 
+        final var forReflection = new ArrayList<String>(50); // to avoid constant size expansion
         // register the providers for reflection
-        for (String providerToRegister : jaxrsProvidersToRegisterBuildItem.getProviders()) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(providerToRegister).build());
-        }
+        forReflection.addAll(jaxrsProvidersToRegisterBuildItem.getProviders());
 
         // now we register all values of @RegisterProvider for constructor reflection
 
@@ -468,32 +468,30 @@ class RestClientProcessor {
         for (AnnotationInstance annotation : index.getAnnotations(REGISTER_PROVIDERS)) {
             allInstances.addAll(Arrays.asList(annotation.value().asNestedArray()));
         }
-        for (AnnotationInstance annotationInstance : allInstances) {
-            reflectiveClass
-                    .produce(ReflectiveClassBuildItem.builder(annotationInstance.value().asClass().name().toString())
-                            .build());
-        }
+        allInstances.stream().map(RestClientProcessor::valueClassName).forEach(forReflection::add);
 
         // Register @RegisterClientHeaders for reflection
         for (AnnotationInstance annotationInstance : index.getAnnotations(REGISTER_CLIENT_HEADERS)) {
             AnnotationValue value = annotationInstance.value();
             if (value != null) {
-                reflectiveClass
-                        .produce(ReflectiveClassBuildItem.builder(annotationInstance.value().asClass().name().toString())
-                                .build());
+                forReflection.add(valueClassName(annotationInstance));
             }
         }
 
         // now retain all un-annotated implementations of ClientRequestFilter and ClientResponseFilter
         // in case they are programmatically registered by applications
-        for (ClassInfo info : index.getAllKnownImplementors(CLIENT_REQUEST_FILTER)) {
-            reflectiveClass
-                    .produce(ReflectiveClassBuildItem.builder(info.name().toString()).build());
+        for (ClassInfo info : index.getAllKnownImplementations(CLIENT_REQUEST_FILTER)) {
+            forReflection.add(info.name().toString());
         }
-        for (ClassInfo info : index.getAllKnownImplementors(CLIENT_RESPONSE_FILTER)) {
-            reflectiveClass
-                    .produce(ReflectiveClassBuildItem.builder(info.name().toString()).build());
+        for (ClassInfo info : index.getAllKnownImplementations(CLIENT_RESPONSE_FILTER)) {
+            forReflection.add(info.name().toString());
         }
+
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(forReflection).build());
+    }
+
+    private static String valueClassName(AnnotationInstance annotationInstance) {
+        return annotationInstance.value().asClass().name().toString();
     }
 
     @BuildStep

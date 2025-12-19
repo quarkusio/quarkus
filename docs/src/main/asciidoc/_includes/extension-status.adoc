@@ -22,4 +22,4 @@ endif::[]
 
 For a full list of possible statuses, check our https://quarkus.io/faq/#what-are-the-extension-statuses[FAQ entry].
 ====
-endif::[]
+endif::extension-status[]

@@ -22,7 +22,12 @@ import io.smallrye.config.common.MapBackedConfigSource;
 /**
  * Convenience helper to generate the {@link SmallRyeConfigBuilderCustomizer} bytecode, by wrapping methods that
  * require varargs or collections as parameters.
+ * <p>
+ * Methods are used for bytecode generation.
+ *
+ * @see "io.quarkus.deployment.steps.ConfigGenerationBuildStep#generateSharedConfig"
  */
+@SuppressWarnings("unused")
 public abstract class AbstractConfigBuilder implements SmallRyeConfigBuilderCustomizer {
 
     protected static void withSharedBuilder(SmallRyeConfigBuilder builder) {
@@ -119,7 +124,7 @@ public abstract class AbstractConfigBuilder implements SmallRyeConfigBuilderCust
         });
     }
 
-    protected static void withCustomizer(SmallRyeConfigBuilder builder, SmallRyeConfigBuilderCustomizer customizer) {
+    public static void withCustomizer(SmallRyeConfigBuilder builder, SmallRyeConfigBuilderCustomizer customizer) {
         builder.withCustomizers(customizer);
     }
 

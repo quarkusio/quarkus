@@ -82,6 +82,7 @@
         <module>app-model</module>
         <module>maven4-resolver</module>
         <module>maven-resolver</module>
+        <module>registry</module>
         <module>json</module>
         <module>core</module>
         <module>runner</module>

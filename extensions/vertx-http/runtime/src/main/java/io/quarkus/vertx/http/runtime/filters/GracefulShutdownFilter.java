@@ -1,5 +1,8 @@
 package io.quarkus.vertx.http.runtime.filters;
 
+import java.util.Collections;
+import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -71,13 +74,25 @@ public class GracefulShutdownFilter implements ShutdownListener, Handler<HttpSer
         next.handle(event);
     }
 
-    private static void sendGoAwayForHttp2(HttpConnection connection) {
+    Set<Object> connectionsWithGoAway =
+            Collections.synchronizedSet(
+            Collections.newSetFromMap(
+                    new WeakHashMap<>()
+            ));
+
+    private void sendGoAwayForHttp2(HttpConnection connection) {
+        if (!connectionsWithGoAway.add(connection)) {
+            return;
+        }
         // GO_AWAY + 0 (NO_ERROR) = graceful shutdown; client will stop creating new streams on this connection
         connection.goAway(0);
-        connection.shutdownHandler(v -> {
-            // All streams are closed, close the connection
-            connection.close();
-        });
+
+        // Do not do a connection shutdown as OpenJDK 21.0.9 has problems and reports an "EOF reached while reading"
+        // as all messages are processed asynchronously and that might take a while.
+        // See Http2Connection.Http2TubeSubscriber#onComplete()
+        // Problem persists in OpenJDK 25.0.1
+        // A workaround could be to add a delay here, but for now no vertx instance is at hand to set a timer.
+        // connection.shutdown();
     }
 
     @Override

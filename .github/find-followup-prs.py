@@ -290,7 +290,7 @@ class PRAnalyzer:
         return score, dict(reasons)
 
 
-def format_results(source_pr: int, results: List[Tuple[int, float, Dict]], verbose: bool = False):
+def format_results(source_pr: int, results: List[Tuple[int, float, Dict]], repo: str, verbose: bool = False):
     """Format and display results."""
     print(f"\n{'='*80}")
     print(f"Follow-up PRs for #{source_pr}")
@@ -304,7 +304,7 @@ def format_results(source_pr: int, results: List[Tuple[int, float, Dict]], verbo
     
     for i, (pr_number, score, reasons) in enumerate(results, 1):
         print(f"{i}. PR #{pr_number} (score: {score:.1f})")
-        print(f"   URL: https://github.com/quarkusio/quarkus/pull/{pr_number}")
+        print(f"   URL: https://github.com/{repo}/pull/{pr_number}")
         
         if verbose:
             if reasons.get('same_files'):
@@ -394,7 +394,7 @@ Examples:
         }
         print(json.dumps(output, indent=2))
     else:
-        format_results(args.pr, results, args.verbose)
+        format_results(args.pr, results, args.repo, args.verbose)
 
 
 if __name__ == '__main__':

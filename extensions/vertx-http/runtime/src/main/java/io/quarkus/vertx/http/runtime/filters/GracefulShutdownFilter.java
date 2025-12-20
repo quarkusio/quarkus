@@ -58,17 +58,21 @@ public class GracefulShutdownFilter implements ShutdownListener, Handler<HttpSer
                 ((QuarkusRequestWrapper) event).addRequestDoneHandler(unused -> event.connection().close());
             }
         } else if (event.version() == HttpVersion.HTTP_2) {
+            /*
+            // Only send GOAWAY and shutdown after completing the response, as Vert.x 4.5 HttpClient does handle it badly.
+            // It seems that it doesn't proceeed the last DATA frame well when the connection is already ended.
+            // See: DefaultHttp2ConnectionDecoder.FrameReadListener#onDataRead() -> if (endOfStream) { ...closeStreamRemote() }
             if (!running) {
                 // If shutdown is in progress, send the go away as early as possible
-                sendGoAwayForHttp2(event.connection());
-            } else {
-                ((QuarkusRequestWrapper) event).addRequestDoneHandler(unused -> {
-                    // Check again at the end of the request if we should send a shutdown
-                    if (!running) {
-                        sendGoAwayForHttp2(event.connection());
-                    }
-                });
+                sendGoAwayForHttp2(event.connection(), event.getHeader(HttpHeaderNames.USER_AGENT));
             }
+            */
+            ((QuarkusRequestWrapper) event).addRequestDoneHandler(unused -> {
+                // Check again at the end of the request if we should send a shutdown
+                if (!running) {
+                    sendGoAwayForHttp2(event.connection(), event.getHeader(HttpHeaderNames.USER_AGENT));
+                }
+            });
         }
 
         next.handle(event);
@@ -80,7 +84,7 @@ public class GracefulShutdownFilter implements ShutdownListener, Handler<HttpSer
                     new WeakHashMap<>()
             ));
 
-    private void sendGoAwayForHttp2(HttpConnection connection) {
+    private void sendGoAwayForHttp2(HttpConnection connection, String userAgent) {
         if (!connectionsWithGoAway.add(connection)) {
             return;
         }
@@ -92,7 +96,10 @@ public class GracefulShutdownFilter implements ShutdownListener, Handler<HttpSer
         // See Http2Connection.Http2TubeSubscriber#onComplete()
         // Problem persists in OpenJDK 25.0.1
         // A workaround could be to add a delay here, but for now no vertx instance is at hand to set a timer.
-        // connection.shutdown();
+        if (userAgent != null && userAgent.startsWith("Java-http-client/")) {
+            return;
+        }
+        connection.shutdown();
     }
 
     @Override

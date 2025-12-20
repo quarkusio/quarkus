@@ -58,6 +58,7 @@ public class SecurityContextOverrideHandler implements ServerRestHandler {
                 @Override
                 public SecurityIdentity apply(SecurityIdentity old) {
                     Set<Credential> oldCredentials = old.getCredentials();
+                    Set<Permission> oldPermissions = old.getPermissions();
                     Map<String, Object> oldAttributes = old.getAttributes();
                     SecurityIdentity newIdentity = new SecurityIdentity() {
                         @Override
@@ -95,6 +96,11 @@ public class SecurityContextOverrideHandler implements ServerRestHandler {
                         @Override
                         public Set<Credential> getCredentials() {
                             return oldCredentials;
+                        }
+
+                        @Override
+                        public Set<Permission> getPermissions() {
+                            return oldPermissions;
                         }
 
                         @SuppressWarnings("unchecked")

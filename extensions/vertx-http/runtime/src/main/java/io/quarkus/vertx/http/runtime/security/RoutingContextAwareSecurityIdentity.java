@@ -59,6 +59,11 @@ final class RoutingContextAwareSecurityIdentity implements SecurityIdentity {
         return delegate.getCredentials();
     }
 
+    @Override
+    public Set<Permission> getPermissions() {
+        return delegate.getPermissions();
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public <T> T getAttribute(String s) {

@@ -76,6 +76,11 @@ public class IdentityMock implements SecurityIdentity {
     }
 
     @Override
+    public Set<Permission> getPermissions() {
+        return permissions;
+    }
+
+    @Override
     public <T extends Credential> T getCredential(Class<T> aClass) {
         return null;
     }

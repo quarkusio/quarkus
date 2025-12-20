@@ -32,6 +32,9 @@ public class QuarkusSecurityIdentityTest {
 
         assertTrue(identity.checkPermissionBlocking(new StringPermission("read")));
         assertFalse(identity.checkPermissionBlocking(new StringPermission("write")));
+        assertTrue(identity.getPermissions().contains(new StringPermission("read")));
+        assertEquals(1, identity.getPermissions().size());
+
     }
 
     @Test
@@ -56,6 +59,9 @@ public class QuarkusSecurityIdentityTest {
         assertTrue(identity.checkPermissionBlocking(new StringPermission("read")));
         assertTrue(identity.checkPermissionBlocking(new StringPermission("write")));
         assertFalse(identity.checkPermissionBlocking(new StringPermission("comment")));
+        assertTrue(identity.getPermissions().contains(new StringPermission("read")));
+        assertTrue(identity.getPermissions().contains(new StringPermission("write")));
+        assertEquals(2, identity.getPermissions().size());
     }
 
     @Test
@@ -93,6 +99,9 @@ public class QuarkusSecurityIdentityTest {
         assertTrue(identity.checkPermissionBlocking(new StringPermission("read")));
         assertTrue(identity.checkPermissionBlocking(new StringPermission("write")));
         assertFalse(identity.checkPermissionBlocking(new StringPermission("comment")));
+        assertTrue(identity.getPermissions().contains(new StringPermission("read")));
+        assertTrue(identity.getPermissions().contains(new StringPermission("write")));
+        assertEquals(2, identity.getPermissions().size());
     }
 
     @Test
@@ -219,6 +228,11 @@ public class QuarkusSecurityIdentityTest {
 
         @Override
         public Set<Credential> getCredentials() {
+            return Collections.emptySet();
+        }
+
+        @Override
+        public Set<Permission> getPermissions() {
             return Collections.emptySet();
         }
 

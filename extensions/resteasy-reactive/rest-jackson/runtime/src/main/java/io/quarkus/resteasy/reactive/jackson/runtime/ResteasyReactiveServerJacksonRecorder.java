@@ -20,6 +20,8 @@ import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.GeneratedSeriali
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.annotations.RuntimeInit;
+import io.quarkus.runtime.annotations.StaticInit;
 
 @Recorder
 public class ResteasyReactiveServerJacksonRecorder {
@@ -28,15 +30,15 @@ public class ResteasyReactiveServerJacksonRecorder {
     private static final Map<String, Class<?>> customSerializationMap = new HashMap<>();
     private static final Map<String, Class<?>> customDeserializationMap = new HashMap<>();
 
-    /* STATIC INIT */
+    @StaticInit
     public RuntimeValue<Map<String, Supplier<String[]>>> createConfigExpToAllowedRoles() {
         return new RuntimeValue<>(new ConcurrentHashMap<>());
     }
 
-    /* STATIC INIT */
+    @StaticInit
     public BiConsumer<String, Supplier<String[]>> recordRolesAllowedConfigExpression(
             RuntimeValue<Map<String, Supplier<String[]>>> configExpToAllowedRoles) {
-        return new BiConsumer<String, Supplier<String[]>>() {
+        return new BiConsumer<>() {
             @Override
             public void accept(String configKey, Supplier<String[]> configValueSupplier) {
                 configExpToAllowedRoles.getValue().put(configKey, configValueSupplier);
@@ -44,10 +46,10 @@ public class ResteasyReactiveServerJacksonRecorder {
         };
     }
 
-    /* STATIC INIT */
+    @StaticInit
     public Supplier<RolesAllowedConfigExpStorage> createRolesAllowedConfigExpStorage(
             RuntimeValue<Map<String, Supplier<String[]>>> configExpToAllowedRoles) {
-        return new Supplier<RolesAllowedConfigExpStorage>() {
+        return new Supplier<>() {
             @Override
             public RolesAllowedConfigExpStorage get() {
                 Map<String, Supplier<String[]>> map = configExpToAllowedRoles.getValue();
@@ -62,7 +64,7 @@ public class ResteasyReactiveServerJacksonRecorder {
         };
     }
 
-    /* RUNTIME INIT */
+    @RuntimeInit
     public void initAndValidateRolesAllowedConfigExp() {
         Arc.container().instance(RolesAllowedConfigExpStorage.class).get().resolveRolesAllowedConfigExp();
     }

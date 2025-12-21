@@ -50,8 +50,3 @@ java {
     targetCompatibility = JavaVersion.VERSION_{java.version}
 }
 {/}
-
-test {
-    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
-    jvmArgs "--add-opens", "java.base/java.lang=ALL-UNNAMED"
-}

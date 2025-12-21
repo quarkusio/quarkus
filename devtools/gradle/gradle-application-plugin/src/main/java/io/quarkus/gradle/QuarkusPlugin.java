@@ -448,6 +448,11 @@ public class QuarkusPlugin implements Plugin<Project> {
 
                     tasks.withType(Test.class).configureEach(t -> {
                         t.setSystemProperties(extractQuarkusTestSystemProperties(project));
+                        t.systemProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
+                        t.jvmArgs(
+                                "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED",
+                                "--add-opens=java.base/java.lang=ALL-UNNAMED",
+                                "--add-exports=java.base/jdk.internal.module=ALL-UNNAMED");
 
                         t.getInputs().files(quarkusGenerateTestAppModelTask);
                         // Register matching compose files from project root as inputs

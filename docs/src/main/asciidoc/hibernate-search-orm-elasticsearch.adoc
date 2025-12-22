@@ -820,7 +820,7 @@ as shown below.
 
 [source,properties]
 ----
-quarkus.hibernate-search-orm.elasticsearch.version=opensearch:3.3
+quarkus.hibernate-search-orm.elasticsearch.version=opensearch:3.4
 ----
 
 All other configuration options and APIs are exactly the same as with Elasticsearch.

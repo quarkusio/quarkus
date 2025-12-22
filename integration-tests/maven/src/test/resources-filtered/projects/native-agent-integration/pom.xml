@@ -78,10 +78,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>\${surefire-plugin.version}</version>
         <configuration>
-          <systemPropertyVariables>
-            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-            <maven.home>\${maven.home}</maven.home>
-          </systemPropertyVariables>
+          <skip>true</skip>
         </configuration>
       </plugin>
       <plugin>

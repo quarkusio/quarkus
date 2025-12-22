@@ -11,6 +11,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.hibernate.orm.deployment.spatial.HibernateSpatialAvailable;
 
 /**
  * Activates the native-image features included in the module
@@ -55,4 +56,12 @@ public class GraalVMFeatures {
                 .build();
     }
 
+    @BuildStep(onlyIf = HibernateSpatialAvailable.class)
+    ReflectiveClassBuildItem registerGeolatteGeometryHiberateSpatialWkbEncoders() {
+        return ReflectiveClassBuildItem
+                .builder(Stream.concat(ClassNames.GEOLATTE_WKB_ENCODERS.stream().map(DotName::toString),
+                        ClassNames.GEOLATTE_WKB_DECODERS.stream().map(DotName::toString)).toArray(String[]::new))
+                .reason(ClassNames.GRAAL_VM_FEATURES.toString())
+                .build();
+    }
 }

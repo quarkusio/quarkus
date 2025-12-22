@@ -126,6 +126,11 @@
             <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.geolatte</groupId>
+            <artifactId>geolatte-geom</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

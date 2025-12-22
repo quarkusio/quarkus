@@ -230,6 +230,7 @@
                 <module>hibernate-orm-data</module>
                 <module>hibernate-orm-panache-data</module>
                 <module>hibernate-orm-envers</module>
+                <module>hibernate-orm-spatial</module>
                 <module>vertx-http</module>
                 <module>vertx-http-compressors</module>
                 <module>vertx-web</module>

@@ -1,0 +1,96 @@
+== Migrating from Apicurio Registry 2.x to 3.x
+
+IMPORTANT: Apicurio Registry 3.x introduces a **breaking change in schema ID format** from 8-byte (long) to 4-byte (int) identifiers.
+This affects message compatibility between v2 and v3 producers/consumers.
+
+=== Schema ID Format Change
+
+Apicurio Registry 3.x changed the schema ID format from **8-byte (long)** to **4-byte (int)** identifiers.
+This means messages produced with v2 cannot be consumed by v3 applications (and vice versa) without explicit configuration.
+
+=== Migration Scenarios
+
+**New applications (no existing v2 messages):** No configuration needed. The v3 defaults will be used automatically.
+
+**Consuming existing v2 messages:** Configure the `Legacy8ByteIdHandler` for channels that need to read v2-produced messages:
+
+[source,properties]
+----
+# Per-channel configuration for consuming v2 messages
+mp.messaging.incoming.my-channel.apicurio.registry.id-handler=io.apicurio.registry.serde.Legacy8ByteIdHandler
+
+# Or configure globally for all channels
+mp.messaging.connector.smallrye-kafka.apicurio.registry.id-handler=io.apicurio.registry.serde.Legacy8ByteIdHandler
+----
+
+**Producing v2-compatible messages:** If downstream consumers still use v2, configure the producer:
+
+[source,properties]
+----
+mp.messaging.outgoing.my-channel.apicurio.registry.id-handler=io.apicurio.registry.serde.Legacy8ByteIdHandler
+----
+
+=== Standard ID Handlers: Fixed Format
+
+Both v2 (8-byte) and v3 (4-byte) formats use the same magic byte.
+The standard ID handlers (`Legacy8ByteIdHandler` and `Default4ByteIdHandler`) read a fixed number of bytes based on configuration—there is no per-message auto-detection.
+
+WARNING: If a single topic contains mixed messages (some with 8-byte IDs, some with 4-byte IDs), consumers using standard ID handlers will fail.
+A consumer configured with `Legacy8ByteIdHandler` always reads 8 bytes; one with `Default4ByteIdHandler` always reads 4 bytes.
+Mismatches cause corruption or deserialization errors.
+
+**With standard ID handlers, gradual migration only works when:**
+
+* Each topic has messages in ONE format (either v2 or v3, not both)
+* Per-channel configuration routes each topic to the correct ID handler
+
+You can have producers and consumers using both formats in the same Apicurio Registry instance, but not mixing them in the same topic.
+
+TIP: For topics with mixed v2/v3 messages, consider using the `OptimisticFallbackIdHandler` described in the <<Optimistic Fallback ID Handler>> section.
+
+=== Migration Paths for Topics with Existing v2 Messages
+
+For topics that already contain v2 messages, valid migration approaches are:
+
+1. **Stop and drain:** Stop producers → drain topic completely → upgrade all services → restart with v3 configuration
+2. **New topic migration:** Create a new v3 topic and migrate traffic to it
+3. **Accept transient failures:** Accept transient failures during the switchover period
+4. **Optimistic fallback handler:** Use the `OptimisticFallbackIdHandler` for gradual migration (see below)
+
+=== Optimistic Fallback ID Handler
+
+Apicurio Registry provides an `OptimisticFallbackIdHandler` that can help with gradual migration from v2 to v3.
+This handler:
+
+* **Writes** new messages with 4-byte (v3) IDs
+* **Reads** both 4-byte (v3) and 8-byte (v2) IDs
+
+[source,properties]
+----
+# Configure the optimistic fallback handler for migration
+mp.messaging.connector.smallrye-kafka.apicurio.registry.id-handler=io.apicurio.registry.serde.OptimisticFallbackIdHandler
+
+# Or per-channel
+mp.messaging.incoming.my-channel.apicurio.registry.id-handler=io.apicurio.registry.serde.OptimisticFallbackIdHandler
+----
+
+IMPORTANT: The `OptimisticFallbackIdHandler` makes the following assumption to distinguish between 4-byte and 8-byte IDs: schema IDs are greater than 0 and smaller than the maximum integer value.
+This is typically true for most use cases, but you should verify your schema IDs meet this constraint before using this handler.
+
+This approach enables a gradual migration where:
+
+1. Upgrade consumers first with `OptimisticFallbackIdHandler` (they can read both v2 and v3 messages)
+2. Then upgrade producers (they start writing v3 format)
+3. Once all v2 messages are consumed, optionally switch to `Default4ByteIdHandler`
+
+=== Compatibility with Apicurio Registry 2.x Server
+
+The Apicurio Registry 3.x client libraries continue to work with Apicurio Registry 2.x servers.
+However, note that Apicurio Registry 2.x is no longer actively maintained.
+
+=== Additional Resources
+
+* https://www.apicur.io/registry/docs/apicurio-registry/3.0.x/index.html[Apicurio Registry 3.x Documentation]
+* https://www.apicur.io/registry/docs/apicurio-registry/3.1.x/getting-started/assembly-migrating-registry-v2-v3.html[Apicurio Registry Deployment Migration Guide]
+* https://www.apicur.io/blog/2025/03/30/migrate-registry-2-to-3[Official Apicurio Migration Guide]
+* https://www.apicur.io/blog/2025/04/03/evolving-serialization[Apicurio SerDes Evolution Blog Post]

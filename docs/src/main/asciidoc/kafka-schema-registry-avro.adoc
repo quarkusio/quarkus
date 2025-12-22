@@ -567,7 +567,7 @@ public class KafkaAndSchemaRegistryTestResource implements QuarkusTestResourceLi
     @Override
     public Map<String, String> start() {
         kafka.start();
-        registry = new GenericContainer<>("apicurio/apicurio-registry:3.0.6")
+        registry = new GenericContainer<>("apicurio/apicurio-registry:3.0.7")
                 .withExposedPorts(8080)
                 .withEnv("QUARKUS_PROFILE", "prod");
         registry.start();
@@ -594,6 +594,8 @@ public class MovieResourceTest {
     ...
 }
 ----
+
+include::_includes/apicurio-registry-v3-migration.adoc[]
 
 [[confluent]]
 == Using the Confluent Schema Registry

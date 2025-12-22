@@ -21,6 +21,7 @@ public final class HibernateLogFilterBuildStep {
 
     @BuildStep
     void setupLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.orm.core", "HHH000001"));
         filters.produce(new LogCleanupFilterBuildItem("org.hibernate.Version", "HHH000412"));
         //Disable details about bytecode reflection optimizer:
         filters.produce(new LogCleanupFilterBuildItem("org.hibernate.cfg.Environment", "HHH000406"));

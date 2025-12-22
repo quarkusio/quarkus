@@ -13,6 +13,7 @@ import org.graalvm.nativeimage.hosted.Feature;
 public class DisableLoggingFeature implements Feature {
 
     private static final String[] CATEGORIES = {
+            "org.hibernate.orm.core",
             "org.hibernate.Version",
             "org.hibernate.annotations.common.Version",
             "SQL dialect",

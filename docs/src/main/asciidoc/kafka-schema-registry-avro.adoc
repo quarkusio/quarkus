@@ -595,6 +595,8 @@ public class MovieResourceTest {
 }
 ----
 
+include::_includes/apicurio-registry-v3-migration.adoc[]
+
 [[confluent]]
 == Using the Confluent Schema Registry
 

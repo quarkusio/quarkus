@@ -58,7 +58,7 @@
         <color-convert.version>2.0.1</color-convert.version>
         <color-name.version>1.1.4</color-name.version>
         <dot.version>0.0.2</dot.version>
-        <viz-js.version>3.22.0</viz-js.version>
+        <viz-js.version>3.24.0</viz-js.version>
         <panzoom.version>4.6.1</panzoom.version>
     </properties>
 

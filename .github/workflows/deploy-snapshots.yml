@@ -53,7 +53,7 @@ jobs:
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
         run: |
-          ./mvnw -e -B --settings .github/release-settings.xml \
+          ./mvnw -e -B --no-transfer-progress --settings .github/release-settings.xml \
             -Dnjord.autoPublish \
             -DskipTests -DskipITs -Dno-format -Dinvoker.skip=true \
             -Dno-test-modules \

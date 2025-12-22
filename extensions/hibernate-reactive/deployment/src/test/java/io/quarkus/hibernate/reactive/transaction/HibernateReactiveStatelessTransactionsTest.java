@@ -16,7 +16,6 @@ import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 import io.quarkus.transaction.annotations.Rollback;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.unchecked.Unchecked;
 
 public class HibernateReactiveStatelessTransactionsTest {
 

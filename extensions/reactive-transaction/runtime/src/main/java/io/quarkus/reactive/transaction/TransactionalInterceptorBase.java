@@ -25,14 +25,14 @@ import io.vertx.sqlclient.Transaction;
  */
 public abstract class TransactionalInterceptorBase {
 
-    // Used in this class and in TransactionalContextPool to store and get the lazily created Transaction
+    // Used in this class and in TransactionalContextPool to store and get
+    // the lazily created Transaction inside the Vert.x Context
     public static final String CURRENT_TRANSACTION_KEY = "reactive.transaction.currentTransaction";
 
     // This key is used to indicate the method was annotated with @Transactional
-    // And will open a session and a transaction lazy when the first operation requires a reactive session
+    // And will open a session and a transaction lazily when the first operation requires a reactive session
     // Check HibernateReactiveRecorder.sessionSupplier to see where the session is injected
-    // TODO Luca find a way to remove the duplication between this field and TransactionalInterceptor field
-    private static final String TRANSACTIONAL_METHOD_KEY = "hibernate.reactive.methodTransactional";
+    public static final String TRANSACTIONAL_METHOD_KEY = "hibernate.reactive.methodTransactional";
 
     // This key is used by Panache internally it's the marker key the WithSessionOnDemand interceptor uses
     public static final String SESSION_ON_DEMAND_KEY = "hibernate.reactive.panache.sessionOnDemand";
@@ -86,6 +86,7 @@ public abstract class TransactionalInterceptorBase {
             // This might happen if the method is annotated with @Transactional but doesn't flush
             // i.e. a single persist without an explicit .flush()
             // We then avoid committing the transaction, and defer it to the next one
+            LOG.tracef("Transaction doesn't exist, so won't commit here %s");
             return Uni.createFrom().nullItem();
         }
 
@@ -120,7 +121,9 @@ public abstract class TransactionalInterceptorBase {
 
         for (Class<?> rollbackOnClass : annotation.rollbackOn()) {
             if (rollbackOnClass.isAssignableFrom(exception.getClass())) {
-                LOG.tracef("Rollback the transaction due to exception class %s included in `rollbackOn` field on `@Transactional` annotation", exception.getClass());
+                LOG.tracef(
+                        "Rollback the transaction due to exception class %s included in `rollbackOn` field on `@Transactional` annotation",
+                        exception.getClass());
                 return actualRollback(transaction);
             }
         }
@@ -128,10 +131,13 @@ public abstract class TransactionalInterceptorBase {
         Rollback rollbackAnnotation = exception.getClass().getAnnotation(Rollback.class);
         if (rollbackAnnotation != null) {
             if (rollbackAnnotation.value()) {
-                LOG.tracef("Rollback the transaction as the exception class %s is annotated with `@Rollback` annotation", exception.getClass());
+                LOG.tracef("Rollback the transaction as the exception class %s is annotated with `@Rollback` annotation",
+                        exception.getClass());
                 return actualRollback(transaction);
             } else {
-                LOG.tracef("Do not rollback the transaction as the exception class %s is annotated with `@Rollback(false)` annotation", exception.getClass());
+                LOG.tracef(
+                        "Do not rollback the transaction as the exception class %s is annotated with `@Rollback(false)` annotation",
+                        exception.getClass());
                 return commit();
             }
         }

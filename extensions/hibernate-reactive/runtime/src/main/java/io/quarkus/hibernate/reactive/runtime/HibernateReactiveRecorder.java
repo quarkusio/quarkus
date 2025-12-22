@@ -1,5 +1,7 @@
 package io.quarkus.hibernate.reactive.runtime;
 
+import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.TRANSACTIONAL_METHOD_KEY;
+
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -111,12 +113,6 @@ public class HibernateReactiveRecorder {
             }
         };
     }
-
-    // This key is used to indicate  a calling method up the stack was annotated with @Transactional
-    // in which case we will open a session and a transaction lazily on the first operation call to a reactive session
-    // Check HibernateReactiveRecorder.sessionSupplier to see where the session is injected
-    // TODO Luca find a way to remove the duplication between this field and TransactionalInterceptor TRANSACTIONAL_METHOD_KEY field
-    public static final String TRANSACTIONAL_METHOD_KEY = "hibernate.reactive.methodTransactional";
 
     public static Mutiny.Session getSession(String persistenceUnitName) {
         Context context = Vertx.currentContext();

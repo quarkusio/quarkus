@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.reactive.panache.common.runtime;
 
-import static io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder.TRANSACTIONAL_METHOD_KEY;
+import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.TRANSACTIONAL_METHOD_KEY;
 import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.WITH_TRANSACTION_METHOD_KEY;
 import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.isUniReturnType;
 import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.proceedUni;

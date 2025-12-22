@@ -1,7 +1,7 @@
 package io.quarkus.hibernate.reactive.runtime.customized;
 
-import static io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder.TRANSACTIONAL_METHOD_KEY;
 import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.CURRENT_TRANSACTION_KEY;
+import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.TRANSACTIONAL_METHOD_KEY;
 
 import java.util.function.Function;
 

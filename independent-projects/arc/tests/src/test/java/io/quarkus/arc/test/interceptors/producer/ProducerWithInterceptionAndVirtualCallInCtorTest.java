@@ -37,7 +37,7 @@ public class ProducerWithInterceptionAndVirtualCallInCtorTest {
 
         assertEquals(List.of(
                 "MyNonbean",
-                "ProducerWithInterceptionAndVirtualCallInCtorTest$MyNonbean_InterceptionSubclass"),
+                nonbean.getClass().getSimpleName()),
                 MyNonbean.constructedInstances_intercepted);
         assertEquals(MyNonbean.constructedInstances_intercepted, MyNonbean.constructedInstances_notIntercepted);
     }

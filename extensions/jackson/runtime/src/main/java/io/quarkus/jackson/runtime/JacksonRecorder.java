@@ -6,10 +6,13 @@ import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 
 import io.quarkus.jackson.ObjectMapperCustomizer;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.annotations.RuntimeInit;
 import io.quarkus.runtime.annotations.StaticInit;
+import io.quarkus.runtime.shutdown.ShutdownListener;
 
 @Recorder
 public class JacksonRecorder {
@@ -60,6 +63,16 @@ public class JacksonRecorder {
                         return DEFAULT_PRIORITY + 1;
                     }
                 };
+            }
+        };
+    }
+
+    @RuntimeInit
+    public ShutdownListener clearCachesOnShutdown() {
+        return new ShutdownListener() {
+            @Override
+            public void shutdown(ShutdownNotification notification) {
+                TypeFactory.defaultInstance().clearCache();
             }
         };
     }

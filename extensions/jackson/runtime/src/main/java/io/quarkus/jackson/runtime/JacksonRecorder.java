@@ -1,15 +1,23 @@
 package io.quarkus.jackson.runtime;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 
+import io.quarkus.jackson.ObjectMapperCustomizer;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.annotations.RuntimeInit;
+import io.quarkus.runtime.annotations.StaticInit;
+import io.quarkus.runtime.shutdown.ShutdownListener;
 
 @Recorder
-public class JacksonSupportRecorder {
+public class JacksonRecorder {
 
+    @StaticInit
     public Supplier<JacksonSupport> supplier(Optional<String> propertyNamingStrategyClassName) {
         return new Supplier<>() {
             @Override
@@ -33,6 +41,38 @@ public class JacksonSupportRecorder {
                         return Optional.empty();
                     }
                 };
+            }
+        };
+    }
+
+    @StaticInit
+    public Supplier<ObjectMapperCustomizer> customizerSupplier(Map<Class<?>, Class<?>> mixinsMap) {
+        return new Supplier<>() {
+            @Override
+            public ObjectMapperCustomizer get() {
+                return new ObjectMapperCustomizer() {
+                    @Override
+                    public void customize(ObjectMapper objectMapper) {
+                        for (var entry : mixinsMap.entrySet()) {
+                            objectMapper.addMixIn(entry.getKey(), entry.getValue());
+                        }
+                    }
+
+                    @Override
+                    public int priority() {
+                        return DEFAULT_PRIORITY + 1;
+                    }
+                };
+            }
+        };
+    }
+
+    @RuntimeInit
+    public ShutdownListener clearCachesOnShutdown() {
+        return new ShutdownListener() {
+            @Override
+            public void shutdown(ShutdownNotification notification) {
+                TypeFactory.defaultInstance().clearCache();
             }
         };
     }

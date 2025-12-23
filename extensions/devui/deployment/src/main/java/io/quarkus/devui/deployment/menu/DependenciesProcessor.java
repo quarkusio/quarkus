@@ -91,7 +91,7 @@ public class DependenciesProcessor {
     }
 
     private boolean isEnabled() {
-        SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         var value = config.getConfigValue("quarkus.bootstrap.incubating-model-resolver");
         // if it's not false and if it's false it doesn't come from the default value
         return value == null || !"false".equals(value.getValue()) || value.isDefault();

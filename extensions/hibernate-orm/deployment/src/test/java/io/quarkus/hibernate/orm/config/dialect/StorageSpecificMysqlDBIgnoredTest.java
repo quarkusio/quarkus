@@ -37,6 +37,6 @@ public class StorageSpecificMysqlDBIgnoredTest {
 
     @Test
     public void applicationStarts() {
-        // Application starts successfuly
+        // Application starts successfully
     }
 }

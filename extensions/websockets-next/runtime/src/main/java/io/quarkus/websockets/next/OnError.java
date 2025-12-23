@@ -49,7 +49,7 @@ import java.lang.annotation.Target;
  * <h2>Global error handlers</h2>
  *
  * This annotation can be also used to declare a global error handler, i.e. a method that is not declared on a
- * {@link WebSocket}/{@link WebSocketClient} endpoint. Such a method may not accept {@link PathParam} paremeters. If a global
+ * {@link WebSocket}/{@link WebSocketClient} endpoint. Such a method may not accept {@link PathParam} parameters. If a global
  * error handler accepts {@link WebSocketConnection} then it's only applied to server-side errors. If a global error
  * handler accepts {@link WebSocketClientConnection} then it's only applied to client-side errors.
  *

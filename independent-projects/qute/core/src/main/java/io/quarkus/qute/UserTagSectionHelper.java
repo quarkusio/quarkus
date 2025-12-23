@@ -116,7 +116,7 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
                             || value.equals(ISOLATED)
                             // {#myTag _unisolated /}
                             || value.equals(UNISOLATED)
-                            // IT with default value or not the first agrument
+                            // IT with default value or not the first argument
                             // e.g. it=it in {#myTag foo=bar /} or baz in {#myTag foo=bar baz /}
                             || (key.equals(IT) && (!firstParamValue.get().equals(value) || value.equals(IT))));
         }

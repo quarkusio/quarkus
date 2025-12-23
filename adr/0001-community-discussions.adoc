@@ -26,7 +26,7 @@ User wants to locate a answer to a question - Zulip chats does not show up in go
 
 Contributor want to arrange or attend an event around Quarkus - where do he post/look for info on that ?
 
-Contributor/committer are trying to follow new questions and issues - what does he need to track to do that ? today it is a lot and it is all different notification sytems and mainly its a big "firehose" with no good ability to filter out what you don't need. 
+Contributor/committer are trying to follow new questions and issues - what does he need to track to do that ? today it is a lot and it is all different notification systems and mainly its a big "firehose" with no good ability to filter out what you don't need.
 
 User looking for a job involving Quarkus - where do he go look ?
 

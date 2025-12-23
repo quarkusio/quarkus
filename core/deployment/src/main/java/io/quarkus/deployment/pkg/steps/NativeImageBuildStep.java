@@ -86,6 +86,7 @@ public class NativeImageBuildStep {
     private static final String TRUST_STORE_SYSTEM_PROPERTY_MARKER = "-Djavax.net.ssl.trustStore=";
     private static final String MOVED_TRUST_STORE_NAME = "trustStore";
     public static final String APP_SOURCES = "app-sources";
+    public static final String ARTIFACT_RESULT_TYPE = "native";
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void nativeImageFeatures(BuildProducer<NativeImageFeatureBuildItem> features) {
@@ -98,7 +99,7 @@ public class NativeImageBuildStep {
     ArtifactResultBuildItem result(NativeImageBuildItem image,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
         NativeImageBuildItem.GraalVMVersion graalVMVersion = image.getGraalVMInfo();
-        return new ArtifactResultBuildItem(image.getPath(), "native",
+        return new ArtifactResultBuildItem(image.getPath(), ARTIFACT_RESULT_TYPE,
                 graalVMVersion.toMap(),
                 ApplicationManifestConfig.builder()
                         .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())

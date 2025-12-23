@@ -17,7 +17,7 @@ import jakarta.inject.Singleton;
  *
  * <h2>Lifecycle and concurrency</h2>
  * Endpoint implementation class must be a CDI bean. If no scope annotation is defined then {@link Singleton} is used.
- * {@link ApplicationScoped} and {@link Singleton} endpoints are shared accross all WebSocket connections. Therefore,
+ * {@link ApplicationScoped} and {@link Singleton} endpoints are shared across all WebSocket connections. Therefore,
  * implementations should be either stateless or thread-safe.
  */
 @Retention(RUNTIME)

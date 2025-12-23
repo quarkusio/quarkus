@@ -73,9 +73,8 @@ import io.quarkus.jackson.JacksonMixin;
 import io.quarkus.jackson.ObjectMapperCustomizer;
 import io.quarkus.jackson.runtime.ConfigurationCustomizer;
 import io.quarkus.jackson.runtime.JacksonBuildTimeConfig;
+import io.quarkus.jackson.runtime.JacksonRecorder;
 import io.quarkus.jackson.runtime.JacksonSupport;
-import io.quarkus.jackson.runtime.JacksonSupportRecorder;
-import io.quarkus.jackson.runtime.MixinsRecorder;
 import io.quarkus.jackson.runtime.ObjectMapperProducer;
 import io.quarkus.jackson.runtime.VertxHybridPoolObjectMapperCustomizer;
 import io.quarkus.jackson.spi.ClassPathJacksonModuleBuildItem;
@@ -474,7 +473,7 @@ public class JacksonProcessor {
 
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
-    public void supportMixins(MixinsRecorder recorder,
+    public void supportMixins(JacksonRecorder recorder,
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
@@ -523,7 +522,7 @@ public class JacksonProcessor {
 
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
-    public SyntheticBeanBuildItem jacksonSupport(JacksonSupportRecorder recorder,
+    public SyntheticBeanBuildItem jacksonSupport(JacksonRecorder recorder,
             JacksonBuildTimeConfig jacksonBuildTimeConfig) {
         return SyntheticBeanBuildItem
                 .configure(JacksonSupport.class)

@@ -6,8 +6,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -27,16 +30,56 @@ public abstract class ObservabilityContainer<T extends ObservabilityContainer<T,
 
     protected final Logger log = Logger.getLogger(getClass());
 
+    protected C config;
+
+    // keep internal set of exposed ports, possible host mode usage
+    private final Set<Integer> exposedPorts = new TreeSet<>();
+
     public ObservabilityContainer(C config) {
         super(DockerImageName.parse(config.imageName()));
+        this.config = config;
         withLogConsumer(frameConsumer());
         withLabel(config.label(), config.serviceName());
         withLabel(QUARKUS_DEV_SERVICE, config.serviceName());
-        Optional<Set<String>> aliases = config.networkAliases();
-        aliases.map(s -> s.toArray(new String[0])).ifPresent(this::withNetworkAliases);
-        if (config.shared()) {
-            withNetwork(Network.SHARED);
+
+        // networkMode=host doesn't allow aliases or network setup
+        if (!useHostNetworkMode()) {
+            Optional<Set<String>> aliases = config.networkAliases();
+            aliases.map(s -> s.toArray(new String[0])).ifPresent(this::withNetworkAliases);
+            if (config.shared()) {
+                withNetwork(Network.SHARED);
+            }
         }
+    }
+
+    protected boolean useHostNetworkMode() {
+        return false;
+    }
+
+    @Override
+    public void addExposedPort(Integer port) {
+        if (useHostNetworkMode()) {
+            exposedPorts.add(port);
+        } else {
+            super.addExposedPort(port);
+        }
+    }
+
+    @Override
+    public void addExposedPorts(int... ports) {
+        for (int port : ports) {
+            addExposedPort(port);
+        }
+    }
+
+    @Override
+    public List<Integer> getExposedPorts() {
+        return useHostNetworkMode() ? new ArrayList<>(exposedPorts) : super.getExposedPorts();
+    }
+
+    @Override
+    public Integer getMappedPort(int originalPort) {
+        return useHostNetworkMode() ? originalPort : super.getMappedPort(originalPort);
     }
 
     protected abstract String prefix();

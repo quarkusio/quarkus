@@ -195,6 +195,7 @@ public final class ContainerRuntimeUtil {
 
                         return containerRuntimeEnvironment;
                     })
+                    .error().logOnSuccess(false)
                     .run();
         } catch (Exception e) {
             if (!silent) {
@@ -238,6 +239,7 @@ public final class ContainerRuntimeUtil {
             return ProcessBuilder.newBuilder(execPath.get())
                     .arguments("--version")
                     .output().gatherOnFail(true).toSingleString(16384)
+                    .error().logOnSuccess(false)
                     .run();
         } catch (Throwable t) {
             // If an exception is thrown in the process, just return an empty String

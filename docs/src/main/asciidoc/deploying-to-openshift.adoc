@@ -58,7 +58,7 @@ The following table outlines the build strategies that {project-name} supports:
 == Bootstrapping the project
 
 First, you need a new project that contains the OpenShift extension.
-Then, before you build and deploy our application, you must log into an OpenShift cluster.
+Then, before you build and deploy your application, you must log into an OpenShift cluster.
 
 === Adding the OpenShift extension
 
@@ -104,7 +104,7 @@ However, if you want to continue to use `DeploymentConfig`, it is still possible
 +
 [source,bash,subs="+quotes,attributes+"]
 ----
-quarkus extension add 'quarkus-openshift'
+quarkus extension add quarkus-openshift
 ----
 
 == Logging in to an {openshift} cluster

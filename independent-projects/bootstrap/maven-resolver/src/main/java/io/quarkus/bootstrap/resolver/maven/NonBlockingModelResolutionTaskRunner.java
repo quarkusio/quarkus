@@ -1,25 +1,21 @@
 package io.quarkus.bootstrap.resolver.maven;
 
-import java.util.Collection;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Phaser;
-
-import org.jboss.logging.Logger;
 
 /**
  * Non-blocking task runner implementation
  */
 class NonBlockingModelResolutionTaskRunner implements ModelResolutionTaskRunner {
 
-    private static final Logger log = Logger.getLogger(NonBlockingModelResolutionTaskRunner.class);
-
     private final Phaser phaser = new Phaser(1);
 
-    /**
-     * Errors caught while running tasks
-     */
-    private final Collection<Exception> errors = new ConcurrentLinkedDeque<>();
+    private final ModelResolutionTaskErrorHandler errorHandler;
+
+    NonBlockingModelResolutionTaskRunner(ModelResolutionTaskErrorHandler errorHandler) {
+        this.errorHandler = Objects.requireNonNull(errorHandler, "errorHandler cannot be null");
+    }
 
     /**
      * Runs a model resolution task asynchronously. This method may return before the task has completed.
@@ -33,7 +29,7 @@ class NonBlockingModelResolutionTaskRunner implements ModelResolutionTaskRunner 
             try {
                 task.run();
             } catch (Exception e) {
-                errors.add(e);
+                errorHandler.handleError(task, e);
             } finally {
                 phaser.arriveAndDeregister();
             }
@@ -49,36 +45,6 @@ class NonBlockingModelResolutionTaskRunner implements ModelResolutionTaskRunner 
     @Override
     public void waitForCompletion() {
         phaser.arriveAndAwaitAdvance();
-        assertNoErrors();
-    }
-
-    private void assertNoErrors() {
-        if (!errors.isEmpty()) {
-            var sb = new StringBuilder(
-                    "The following errors were encountered while processing Quarkus application dependencies:");
-            log.error(sb);
-            var i = 1;
-            for (var error : errors) {
-                var prefix = i++ + ")";
-                log.error(prefix, error);
-                sb.append(System.lineSeparator()).append(prefix).append(" ").append(error.getLocalizedMessage());
-                for (var e : error.getStackTrace()) {
-                    sb.append(System.lineSeparator());
-                    for (int j = 0; j < prefix.length(); ++j) {
-                        sb.append(" ");
-                    }
-                    sb.append("at ").append(e);
-                    if (e.getClassName().contains("io.quarkus")) {
-                        sb.append(System.lineSeparator());
-                        for (int j = 0; j < prefix.length(); ++j) {
-                            sb.append(" ");
-                        }
-                        sb.append("...");
-                        break;
-                    }
-                }
-            }
-            throw new RuntimeException(sb.toString());
-        }
+        errorHandler.allTasksFinished();
     }
 }

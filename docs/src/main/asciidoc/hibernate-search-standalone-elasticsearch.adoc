@@ -863,9 +863,9 @@ and such loading must be implemented explicitly.
 You can refer to Hibernate Search's reference documentation for more information about configuring loading:
 
 * To load entities from an external datasource in order to reindex them,
-see https://docs.jboss.org/hibernate/stable/search/reference/en-US/html_single/#mapping-entitydefinition-loading-mass[Mass loading strategy].
+see https://docs.hibernate.org/stable/search/reference/en-US/html_single/#mapping-entitydefinition-loading-mass[Mass loading strategy].
 * To load entities from an external datasource when returning search hits,
-see https://docs.jboss.org/hibernate/stable/search/reference/en-US/html_single/#mapping-entitydefinition-loading-selection[Selection loading strategy].
+see https://docs.hibernate.org/stable/search/reference/en-US/html_single/#mapping-entitydefinition-loading-selection[Selection loading strategy].
 
 [NOTE]
 ====

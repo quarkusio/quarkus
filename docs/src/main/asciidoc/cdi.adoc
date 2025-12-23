@@ -443,6 +443,8 @@ import jakarta.decorator.Delegate;
 import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
 import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Decorated;
+import jakarta.enterprise.inject.spi.Bean;
 
 public interface Account {
    void withdraw(BigDecimal amount);
@@ -460,7 +462,6 @@ public class LargeTxAccount implements Account { <3>
    @Inject
    @Decorated
    Bean<Account> delegateInfo; <5>
-
 
    @Inject
    LogService logService; <6>

@@ -22,7 +22,7 @@ import io.quarkus.it.hibernate.search.standalone.elasticsearch.search.stub.Datas
 import io.quarkus.it.hibernate.search.standalone.elasticsearch.search.stub.DatastoreCursorStub;
 import io.quarkus.it.hibernate.search.standalone.elasticsearch.search.stub.DatastoreStub;
 
-// See https://docs.jboss.org/hibernate/search/7.1/reference/en-US/html_single/#mapping-entitydefinition-loading-mass
+// See https://docs.hibernate.org/search/7.1/reference/en-US/html_single/#mapping-entitydefinition-loading-mass
 public class MyMassLoadingStrategy<E>
         implements MassLoadingStrategy<E, Long> {
 

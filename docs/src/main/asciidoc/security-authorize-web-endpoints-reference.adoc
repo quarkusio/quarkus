@@ -331,7 +331,7 @@ quarkus.http.auth.permission.deny1.policy=deny
 
 [NOTE]
 ====
-The preceding permission set shows that `GET /public/foo` matches the paths of both permission sets.However, it specifically aligns with the explicit method of the `permit1` permission set.Therefore, `permit1` is selected, and the request is accepted.
+The preceding permission set shows that `GET /public/foo` matches the paths of both permission sets.However, it specifically aligns with the explicit method of the `permit1` permission set. Therefore, `permit1` is selected, and the request is accepted.
 
 
 

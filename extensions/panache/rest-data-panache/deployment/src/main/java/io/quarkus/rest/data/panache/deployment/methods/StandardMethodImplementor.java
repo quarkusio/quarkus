@@ -12,6 +12,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Context;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -82,6 +83,9 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
 
     protected TryBlock implementTryBlock(BytecodeCreator bytecodeCreator, String message) {
         TryBlock tryBlock = bytecodeCreator.tryBlock();
+        CatchBlockCreator webApplicationExceptionCatch = tryBlock.addCatch(WebApplicationException.class);
+        webApplicationExceptionCatch.throwException(webApplicationExceptionCatch.getCaughtException());
+        webApplicationExceptionCatch.close();
         CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
         catchBlock.throwException(RestDataPanacheException.class, message, catchBlock.getCaughtException());
         catchBlock.close();

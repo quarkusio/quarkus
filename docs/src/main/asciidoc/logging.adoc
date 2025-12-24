@@ -109,6 +109,12 @@ public class MyService {
 <1> Define the logger field.
 <2> Invoke the desired logging methods on the `log` object.
 
+[WARNING]
+====
+When creating a `Logger` instance, some metadata associated to the `Logger` name are kept in memory for the full lifecycle of the application.
+
+It is not recommended to use an unbounded dynamic name for your loggers (e.g. `for (int i ...) { Logger.getLogger("logger-name." + i).info("my log") }`).
+====
 
 [[simplified-logging]]
 === Simplified logging

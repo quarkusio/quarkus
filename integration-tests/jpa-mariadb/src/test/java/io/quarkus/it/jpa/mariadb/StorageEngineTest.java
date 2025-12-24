@@ -8,12 +8,13 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
 @QuarkusTest
-public class OfflineTest {
-
+public class StorageEngineTest {
     @Test
-    public void testJPAFunctionalityFromServlet() {
+    public void testDialectStoreEngines() {
         RestAssured.when().get("/offline/dialect").then().body(
-                containsString("bytesPerCharacter=1"),
-                containsString("noBackslashEscapes=true"));
+                containsString("storageEngine='innodb'"));
+
+        RestAssured.when().get("/offline2/dialect").then().body(
+                containsString("storageEngine='myisam'"));
     }
 }

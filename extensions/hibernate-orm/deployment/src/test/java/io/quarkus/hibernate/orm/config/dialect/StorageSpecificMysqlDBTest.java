@@ -3,7 +3,13 @@ package io.quarkus.hibernate.orm.config.dialect;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import java.util.Locale;
 
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManagerFactory;
+
+import org.hibernate.dialect.Dialect;
+import org.hibernate.internal.SessionFactoryImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -18,6 +24,9 @@ import io.quarkus.test.QuarkusUnitTest;
  */
 public class StorageSpecificMysqlDBTest {
 
+    @Inject
+    EntityManagerFactory entityManagerFactory;
+
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
@@ -31,6 +40,7 @@ public class StorageSpecificMysqlDBTest {
 
     @Test
     public void applicationStarts() {
-        assertThat(System.getProperty("hibernate.dialect.storage_engine")).isEqualTo("innodb");
+        Dialect dialect = entityManagerFactory.unwrap(SessionFactoryImpl.class).getJdbcServices().getDialect();
+        assertThat(dialect.getTableTypeString().toLowerCase(Locale.ROOT)).contains("innodb");
     }
 }

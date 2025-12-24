@@ -351,8 +351,6 @@ public final class HibernateReactiveProcessor {
                 new Properties(),
                 true);
 
-        Set<String> storageEngineCollector = new HashSet<>();
-
         HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDialect dialectConfig = persistenceUnitConfig
                 .dialect();
         Optional<DatabaseKind.SupportedDatabaseKind> supportedDatabaseKind = setDialectAndStorageEngine(
@@ -363,8 +361,7 @@ public final class HibernateReactiveProcessor {
                 dialectConfig,
                 dbKindDialectBuildItems,
                 systemProperties,
-                descriptor.getProperties()::setProperty,
-                storageEngineCollector);
+                descriptor.getProperties()::setProperty);
 
         configureProperties(descriptor, persistenceUnitConfig, hibernateOrmConfig, true);
         configureSqlLoadScript(persistenceUnitName, persistenceUnitConfig, applicationArchivesBuildItem, launchMode,

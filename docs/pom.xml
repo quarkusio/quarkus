@@ -926,6 +926,19 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-panache-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-reactive-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
@@ -3250,6 +3263,17 @@
                         <configuration>
                             <propertyPrefix>jakarta-persistence</propertyPrefix>
                             <versionString>${jakarta.persistence-api.version}</versionString>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>parse-version-jakarta-data</id>
+                        <goals>
+                            <goal>parse-version</goal>
+                        </goals>
+                        <phase>validate</phase>
+                        <configuration>
+                            <propertyPrefix>jakarta-data</propertyPrefix>
+                            <versionString>${jakarta.data-api.version}</versionString>
                         </configuration>
                     </execution>
                 </executions>

@@ -32,7 +32,7 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
+import io.quarkus.hibernate.orm.panache.common.runtime.AbstractManagedJpaOperations;
 import io.quarkus.hibernate.orm.panache.runtime.AdditionalJpaOperations;
 import io.quarkus.panache.common.deployment.TypeBundle;
 import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
@@ -165,7 +165,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
 
                     // call JpaOperations.find()
                     ResultHandle panacheQuery = methodCreator.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(AbstractJpaOperations.class, "find", Object.class,
+                            MethodDescriptor.ofMethod(AbstractManagedJpaOperations.class, "find", Object.class,
                                     Class.class, String.class, io.quarkus.panache.common.Sort.class, Object[].class),
                             methodCreator.readStaticField(operationsField),
                             methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
@@ -216,7 +216,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
 
                     // call JpaOperations.count()
                     ResultHandle count = methodCreator.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(AbstractJpaOperations.class, "count", long.class,
+                            MethodDescriptor.ofMethod(AbstractManagedJpaOperations.class, "count", long.class,
                                     Class.class, String.class, Object[].class),
                             methodCreator.readStaticField(operationsField),
                             methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
@@ -239,7 +239,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
 
                     // call JpaOperations.exists()
                     ResultHandle exists = methodCreator.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(AbstractJpaOperations.class, "exists", boolean.class,
+                            MethodDescriptor.ofMethod(AbstractManagedJpaOperations.class, "exists", boolean.class,
                                     Class.class, String.class, Object[].class),
                             methodCreator.readStaticField(operationsField),
                             methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
@@ -268,7 +268,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
                     // call JpaOperations.delete()
                     ResultHandle delete = methodCreator.invokeStaticMethod(
                             MethodDescriptor.ofMethod(AdditionalJpaOperations.class, "deleteWithCascade",
-                                    long.class, AbstractJpaOperations.class, Class.class, String.class, Object[].class),
+                                    long.class, AbstractManagedJpaOperations.class, Class.class, String.class, Object[].class),
                             methodCreator.readStaticField(operationsField),
                             methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
                             methodCreator.load(parseResult.getQuery()), paramsArray);

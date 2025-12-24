@@ -10,9 +10,11 @@ import org.objectweb.asm.ClassVisitor;
 public abstract class PanacheRepositoryEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
 
     protected final IndexView indexView;
+    protected final TypeBundle bundle;
 
-    public PanacheRepositoryEnhancer(IndexView index) {
+    public PanacheRepositoryEnhancer(IndexView index, TypeBundle bundle) {
         this.indexView = index;
+        this.bundle = bundle;
     }
 
     @Override

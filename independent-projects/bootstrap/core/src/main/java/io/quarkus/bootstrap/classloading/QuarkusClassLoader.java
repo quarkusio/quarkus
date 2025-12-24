@@ -233,6 +233,8 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             throw new IllegalStateException("Classloader is not resettable");
         }
         synchronized (this) {
+            // we don't want the previous MemoryClassPathElement to leak as a key of protectionDomains
+            protectionDomains.remove(this.transformedClasses);
             this.transformedClasses = new MemoryClassPathElement(transformedClasses, true);
             resettableElement.reset(generatedResources);
             classPathResourceIndex = null;

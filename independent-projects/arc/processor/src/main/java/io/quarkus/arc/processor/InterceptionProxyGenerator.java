@@ -82,7 +82,7 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
 
         createInterceptionProxyProvider(gizmo, bean);
         createInterceptionProxy(gizmo, bean);
-        createInterceptionSubclass(gizmo, bean.getInterceptionProxy(), bytecodeTransformerConsumer,
+        createInterceptionSubclass(gizmo, bean, bytecodeTransformerConsumer,
                 transformUnproxyableClasses);
 
         return classOutput.getResources();
@@ -98,8 +98,8 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
         return bean.getBeanClass().toString() + "_InterceptionProxy_" + bean.getIdentifier();
     }
 
-    private static String interceptionSubclassName(InterceptionProxyInfo interceptionProxy) {
-        return interceptionProxy.getTargetClass() + INTERCEPTION_SUBCLASS;
+    private static String interceptionSubclassName(InterceptionProxyInfo interceptionProxy, BeanInfo bean) {
+        return interceptionProxy.getTargetClass() + "_" + bean.getIdentifier() + INTERCEPTION_SUBCLASS;
     }
 
     private void createInterceptionProxyProvider(Gizmo gizmo, BeanInfo bean) {
@@ -157,7 +157,8 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
                 mc.body(b0 -> {
                     InterceptionProxyInfo interceptionProxy = bean.getInterceptionProxy();
                     b0.ifInstanceOf(delegate, classDescOf(interceptionProxy.getTargetClass()), (b1, ignored) -> {
-                        ConstructorDesc ctor = ConstructorDesc.of(ClassDesc.of(interceptionSubclassName(interceptionProxy)),
+                        ConstructorDesc ctor = ConstructorDesc.of(
+                                ClassDesc.of(interceptionSubclassName(interceptionProxy, bean)),
                                 CreationalContext.class, Object.class);
                         b1.return_(b1.new_(ctor, cc.this_().field(ccField), delegate));
                     });
@@ -174,8 +175,9 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
         });
     }
 
-    private void createInterceptionSubclass(Gizmo gizmo, InterceptionProxyInfo interceptionProxy,
+    private void createInterceptionSubclass(Gizmo gizmo, BeanInfo bean,
             Consumer<BytecodeTransformer> bytecodeTransformerConsumer, boolean transformUnproxyableClasses) {
+        InterceptionProxyInfo interceptionProxy = bean.getInterceptionProxy();
         BeanInfo pseudoBean = interceptionProxy.getPseudoBean();
         ClassDesc pseudoBeanClass = classDescOf(pseudoBean.getImplClazz());
         boolean implementingInterface = pseudoBean.getImplClazz().isInterface();
@@ -184,7 +186,7 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
 
         ClassDesc superClass = implementingInterface ? CD_Object : pseudoBeanClass;
 
-        gizmo.class_(interceptionSubclassName(interceptionProxy), cc -> {
+        gizmo.class_(interceptionSubclassName(interceptionProxy, bean), cc -> {
             cc.extends_(superClass);
             if (implementingInterface) {
                 cc.implements_(pseudoBeanClass);

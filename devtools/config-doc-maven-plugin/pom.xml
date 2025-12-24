@@ -11,7 +11,7 @@
     <name>Quarkus - Config doc Maven plugin</name>
     <packaging>maven-plugin</packaging>
     <properties>
-        <maven-core.version>3.9.11</maven-core.version>
+        <maven-core.version>3.9.12</maven-core.version>
     </properties>
     <build>
         <pluginManagement>

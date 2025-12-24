@@ -3,6 +3,7 @@ package io.quarkus.opentelemetry.deployment;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
 import static io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter.getSpanByKindAndParentId;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -10,13 +11,17 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
+import org.eclipse.microprofile.context.ManagedExecutor;
 import org.jboss.logging.MDC;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.AfterEach;
@@ -43,6 +48,7 @@ public class OpenTelemetryMDCTest {
                     .addClass(MdcEntry.class)
                     .addClass(TestMdcCapturer.class)
                     .addClass(TestResource.class)
+                    .addClass(GreetingResource.class)
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
                     .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
@@ -82,6 +88,38 @@ public class OpenTelemetryMDCTest {
         assertEquals("something", programmatic.getName());
 
         assertEquals(expectedMdcEntries, mdcEntries);
+    }
+
+    @Test
+    void vertxAsync() {
+        RestAssured.when()
+                .get("/async").then()
+                .statusCode(200)
+                .body(is("Hello from Quarkus REST"));
+
+        List<SpanData> spans = spanExporter.getFinishedSpanItems(5);
+
+        final SpanData server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
+        assertEquals("GET /async", server.getName());
+
+        List<MdcEntry> expectedMdcEntriesFromSpans = getExpectedMDCEntries(spans);
+        assertThat(testMdcCapturer.getCapturedMdcEntries().size()).isEqualTo(6);
+
+        List<MdcEntry> mdcEntries = testMdcCapturer.getCapturedMdcEntries();
+        // 2 mdcEntries are repeated.
+        assertThat(expectedMdcEntriesFromSpans).containsAll(mdcEntries.stream().distinct().toList());
+
+        assertThat(testMdcCapturer.getCapturedMdcEntries().stream()
+                .filter(mdcEntry -> mdcEntry.parentId.equals("null"))
+                .count())
+                .withFailMessage("There must be 2 MDC entries for the parent span")
+                .isEqualTo(2);
+
+        assertThat(testMdcCapturer.getCapturedMdcEntries().stream()
+                .filter(mdcEntry -> mdcEntry.parentId.equals(server.getSpanId()))
+                .count())
+                .withFailMessage("There must be 4 MDC entries in child spans")
+                .isEqualTo(4);
     }
 
     @Test
@@ -148,6 +186,62 @@ public class OpenTelemetryMDCTest {
         }
     }
 
+    @Path("/async")
+    public static class GreetingResource {
+        @Inject
+        TestMdcCapturer testMdcCapturer;
+
+        @Inject
+        ManagedExecutor managedExecutor;
+
+        @Inject
+        Tracer tracer;
+
+        @GET
+        @Produces(MediaType.TEXT_PLAIN)
+        public String hello() {
+            // 1 span from REST
+            testMdcCapturer.captureMdc();
+            for (int i = 0; i < 3; i++) {
+                managedExecutor.execute(() -> {
+                    Span asyncSpan = tracer.spanBuilder("async hello").startSpan();
+                    try (Scope scope = asyncSpan.makeCurrent()) {
+                        executeWorkOnWorkerThread();
+                        // 3 manual async spans
+                        testMdcCapturer.captureMdc();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    } finally {
+                        asyncSpan.end();
+                    }
+                });
+            }
+
+            Span syncSpan = tracer.spanBuilder("sync hello").startSpan();
+            try (Scope scope = syncSpan.makeCurrent()) {
+                executeWorkOnWorkerThread();
+                // 1 sync span
+                testMdcCapturer.captureMdc();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            } finally {
+                syncSpan.end();
+            }
+            // 5 spans total, 6 MDC captures
+            testMdcCapturer.captureMdc();
+            return "Hello from Quarkus REST";
+        }
+
+        private void executeWorkOnWorkerThread() {
+            try {
+                Random random = new Random();
+                Thread.sleep(100 + random.nextInt(400));
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
     @Unremovable
     @ApplicationScoped
     public static class TestMdcCapturer {
@@ -201,6 +295,11 @@ public class OpenTelemetryMDCTest {
         @Override
         public int hashCode() {
             return Objects.hash(isSampled, parentId, spanId, traceId);
+        }
+
+        @Override
+        public String toString() {
+            return "spanId: " + spanId + " traceId: " + traceId + " parentId: " + parentId;
         }
     }
 }

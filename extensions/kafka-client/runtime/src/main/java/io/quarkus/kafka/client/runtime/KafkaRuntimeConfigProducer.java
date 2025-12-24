@@ -17,6 +17,7 @@ import io.smallrye.common.annotation.Identifier;
 public class KafkaRuntimeConfigProducer {
 
     public static final String TLS_CONFIG_NAME_KEY = "tls-configuration-name";
+    private static final String TLS_CONFIG_NAME_KEY_NORMALIZED = "tls.configuration.name";
 
     // not "kafka.", because we also inspect env vars, which start with "KAFKA_"
     private static final String CONFIG_PREFIX = "kafka";
@@ -46,9 +47,15 @@ public class KafkaRuntimeConfigProducer {
             String effectivePropertyName = propertyNameLowerCase.substring(CONFIG_PREFIX.length() + 1).toLowerCase()
                     .replace("_", ".");
             String value = config.getOptionalValue(propertyName, String.class).orElse("");
-            result.put(effectivePropertyName, value);
-            if (effectivePropertyName.equals(TLS_CONFIG_NAME_KEY)) {
+            // Normalize both property names for comparison (replace hyphens with dots)
+            // This ensures both YAML properties (kafka.tls-configuration-name) and
+            // environment variables (KAFKA_TLS_CONFIGURATION_NAME) are matched correctly
+            if (effectivePropertyName.equals(TLS_CONFIG_NAME_KEY) ||
+                    effectivePropertyName.equals(TLS_CONFIG_NAME_KEY_NORMALIZED)) {
+                result.put(TLS_CONFIG_NAME_KEY, value);
                 result.put("ssl.engine.factory.class", QuarkusKafkaSslEngineFactory.class.getName());
+            } else {
+                result.put(effectivePropertyName, value);
             }
         }
 

@@ -92,6 +92,8 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.PermissionsAllowed;
+import io.quarkus.security.spi.SecurityTransformer;
+import io.quarkus.security.spi.SecurityTransformerBuildItem;
 import io.quarkus.smallrye.openapi.OpenApiFilter;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.smallrye.openapi.deployment.filter.AutoAddOpenApiEndpointFilter;
@@ -119,6 +121,7 @@ import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointB
 import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
+import io.quarkus.vertx.http.security.AuthorizationPolicy;
 import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OpenApiDocument;
 import io.smallrye.openapi.api.OperationHandler;
@@ -214,13 +217,14 @@ public class SmallRyeOpenApiProcessor {
             OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
             List<SecurityInformationBuildItem> securityInformationBuildItems,
             OpenApiRecorder recorder,
-            LaunchModeBuildItem launchMode) {
+            LaunchModeBuildItem launchMode,
+            Optional<SecurityTransformerBuildItem> securityTransformerBuildItem) {
         AutoSecurityFilter autoSecurityFilter = null;
 
         if (securityConfig(launchMode, openApiConfig::autoAddSecurity)) {
             autoSecurityFilter = getAutoSecurityFilter(securityInformationBuildItems, openApiConfig)
                     .filter(securityFilter -> autoSecurityRuntimeEnabled(securityFilter,
-                            () -> hasAutoEndpointSecurity(apiFilteredIndexViewBuildItem, launchMode, openApiConfig)))
+                            () -> hasAutoEndpointSecurity(apiFilteredIndexViewBuildItem, securityTransformerBuildItem)))
                     .orElse(null);
         }
 
@@ -424,7 +428,8 @@ public class SmallRyeOpenApiProcessor {
             OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
             SmallRyeOpenApiConfig config,
             LaunchModeBuildItem launchModeBuildItem,
-            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
+            Optional<SecurityTransformerBuildItem> securityTransformerBuildItem) {
 
         // Add a security scheme from config
         if (config.securityScheme().isPresent()) {
@@ -438,7 +443,8 @@ public class SmallRyeOpenApiProcessor {
         }
 
         // Add operation filter to add tags/descriptions/security requirements
-        OASFilter operationFilter = getOperationFilter(apiFilteredIndexViewBuildItem, launchModeBuildItem, config);
+        OASFilter operationFilter = getOperationFilter(apiFilteredIndexViewBuildItem, launchModeBuildItem, config,
+                securityTransformerBuildItem);
 
         if (operationFilter != null) {
             addToOpenAPIDefinitionProducer.produce(new AddToOpenAPIDefinitionBuildItem(operationFilter));
@@ -543,35 +549,23 @@ public class SmallRyeOpenApiProcessor {
                 .findFirst();
     }
 
-    private boolean hasAutoEndpointSecurity(
-            OpenApiFilteredIndexViewBuildItem indexViewBuildItem,
-            LaunchModeBuildItem launchMode,
-            SmallRyeOpenApiConfig config) {
+    private boolean hasAutoEndpointSecurity(OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
+            Optional<SecurityTransformerBuildItem> securityTransformerBuildItem) {
 
-        if (securityConfig(launchMode, config::autoAddSecurityRequirement)) {
-            Map<String, List<String>> rolesAllowedMethods = Collections.emptyMap();
-            List<String> authenticatedMethods = Collections.emptyList();
+        var securityTransformer = createSecurityTransformer(apiFilteredIndexViewBuildItem, securityTransformerBuildItem);
+        Map<String, List<String>> authorizedMethods = getAuthorizedMethods(securityTransformer);
+        List<String> authenticatedMethods = getAuthenticatedMethodReferences(securityTransformer);
 
-            rolesAllowedMethods = getRolesAllowedMethodReferences(indexViewBuildItem);
-
-            for (String methodRef : getPermissionsAllowedMethodReferences(indexViewBuildItem)) {
-                rolesAllowedMethods.putIfAbsent(methodRef, List.of());
-            }
-
-            authenticatedMethods = getAuthenticatedMethodReferences(indexViewBuildItem);
-
-            return !rolesAllowedMethods.isEmpty() || !authenticatedMethods.isEmpty();
-        }
-
-        return false;
+        return !authorizedMethods.isEmpty() || !authenticatedMethods.isEmpty();
     }
 
     private OASFilter getOperationFilter(OpenApiFilteredIndexViewBuildItem indexViewBuildItem,
             LaunchModeBuildItem launchMode,
-            SmallRyeOpenApiConfig config) {
+            SmallRyeOpenApiConfig config,
+            Optional<SecurityTransformerBuildItem> securityTransformerBuildItem) {
 
         Map<String, ClassAndMethod> classNamesMethods = Collections.emptyMap();
-        Map<String, List<String>> rolesAllowedMethods = Collections.emptyMap();
+        Map<String, List<String>> authorizedMethods = Collections.emptyMap();
         List<String> authenticatedMethods = Collections.emptyList();
 
         if (config.autoAddTags() || config.autoAddOperationSummary()) {
@@ -579,23 +573,33 @@ public class SmallRyeOpenApiProcessor {
         }
 
         if (securityConfig(launchMode, config::autoAddSecurityRequirement)) {
-            rolesAllowedMethods = getRolesAllowedMethodReferences(indexViewBuildItem);
+            var securityTransformer = createSecurityTransformer(indexViewBuildItem, securityTransformerBuildItem);
+            authorizedMethods = getAuthorizedMethods(securityTransformer);
 
-            for (String methodRef : getPermissionsAllowedMethodReferences(indexViewBuildItem)) {
-                rolesAllowedMethods.putIfAbsent(methodRef, List.of());
-            }
-
-            authenticatedMethods = getAuthenticatedMethodReferences(indexViewBuildItem);
+            authenticatedMethods = getAuthenticatedMethodReferences(securityTransformer);
         }
 
-        if (!classNamesMethods.isEmpty() || !rolesAllowedMethods.isEmpty() || !authenticatedMethods.isEmpty()) {
-            return new OperationFilter(classNamesMethods, rolesAllowedMethods, authenticatedMethods,
+        if (!classNamesMethods.isEmpty() || !authorizedMethods.isEmpty() || !authenticatedMethods.isEmpty()) {
+            return new OperationFilter(classNamesMethods, authorizedMethods, authenticatedMethods,
                     config.securitySchemeName(),
                     config.autoAddTags(), config.autoAddOperationSummary(), config.autoAddBadRequestResponse(),
                     isOpenApi_3_1_0_OrGreater(config));
         }
 
         return null;
+    }
+
+    private Map<String, List<String>> getAuthorizedMethods(OpenApiSecurityTransformer securityTransformer) {
+        Map<String, List<String>> authorizedMethods = getRolesAllowedMethodReferences(securityTransformer);
+
+        for (String methodRef : getPermissionsAllowedMethodReferences(securityTransformer)) {
+            authorizedMethods.putIfAbsent(methodRef, List.of());
+        }
+
+        for (String methodRef : getAuthorizationPolicyMethodReferences(securityTransformer)) {
+            authorizedMethods.putIfAbsent(methodRef, List.of());
+        }
+        return authorizedMethods;
     }
 
     private OASFilter getAutoServerFilter(SmallRyeOpenApiConfig config, boolean defaultFlag, String description) {
@@ -619,13 +623,12 @@ public class SmallRyeOpenApiProcessor {
         return null;
     }
 
-    private Map<String, List<String>> getRolesAllowedMethodReferences(OpenApiFilteredIndexViewBuildItem indexViewBuildItem) {
-        IndexView index = indexViewBuildItem.getIndex();
+    private Map<String, List<String>> getRolesAllowedMethodReferences(OpenApiSecurityTransformer securityTransformer) {
         return SecurityConstants.ROLES_ALLOWED
                 .stream()
-                .map(index::getAnnotations)
+                .map(securityTransformer::getAnnotations)
                 .flatMap(Collection::stream)
-                .flatMap(t -> getMethods(t, index))
+                .flatMap(t -> getMethods(t, securityTransformer.getIndex()))
                 .collect(Collectors.toMap(
                         e -> createUniqueMethodReference(e.getKey().classInfo(), e.getKey().method()),
                         e -> List.of(e.getValue().value().asStringArray()),
@@ -638,26 +641,31 @@ public class SmallRyeOpenApiProcessor {
                         }));
     }
 
-    private List<String> getPermissionsAllowedMethodReferences(
-            OpenApiFilteredIndexViewBuildItem indexViewBuildItem) {
-
-        FilteredIndexView index = indexViewBuildItem.getIndex();
-
-        return index
+    private List<String> getPermissionsAllowedMethodReferences(OpenApiSecurityTransformer securityTransformer) {
+        return securityTransformer
                 .getAnnotations(DotName.createSimple(PermissionsAllowed.class))
                 .stream()
-                .flatMap(t -> getMethods(t, index))
+                .flatMap(t -> getMethods(t, securityTransformer.getIndex()))
                 .map(e -> createUniqueMethodReference(e.getKey().classInfo(), e.getKey().method()))
                 .distinct()
                 .toList();
     }
 
-    private List<String> getAuthenticatedMethodReferences(OpenApiFilteredIndexViewBuildItem indexViewBuildItem) {
-        IndexView index = indexViewBuildItem.getIndex();
-        return index
+    private List<String> getAuthorizationPolicyMethodReferences(OpenApiSecurityTransformer securityTransformer) {
+        return securityTransformer
+                .getAnnotations(DotName.createSimple(AuthorizationPolicy.class))
+                .stream()
+                .flatMap(t -> getMethods(t, securityTransformer.getIndex()))
+                .map(e -> createUniqueMethodReference(e.getKey().classInfo(), e.getKey().method()))
+                .distinct()
+                .toList();
+    }
+
+    private List<String> getAuthenticatedMethodReferences(OpenApiSecurityTransformer securityTransformer) {
+        return securityTransformer
                 .getAnnotations(DotName.createSimple(Authenticated.class.getName()))
                 .stream()
-                .flatMap(t -> getMethods(t, index))
+                .flatMap(t -> getMethods(t, securityTransformer.getIndex()))
                 .map(e -> createUniqueMethodReference(e.getKey().classInfo(), e.getKey().method()))
                 .distinct()
                 .toList();
@@ -1242,5 +1250,43 @@ public class SmallRyeOpenApiProcessor {
     private static boolean isOpenApi_3_1_0_OrGreater(SmallRyeOpenApiConfig config) {
         final String openApiVersion = config.openApiVersion().orElse(null);
         return openApiVersion == null || (!openApiVersion.startsWith("2") && !openApiVersion.startsWith("3.0"));
+    }
+
+    private static OpenApiSecurityTransformer createSecurityTransformer(OpenApiFilteredIndexViewBuildItem indexViewBuildItem,
+            Optional<SecurityTransformerBuildItem> securityTransformerBuildItem) {
+        final SecurityTransformer securityTransformer;
+        if (securityTransformerBuildItem.isPresent()) {
+            // this means that Quarkus Security extension is present and our source of the truth is the SecurityTransformer
+            securityTransformer = SecurityTransformerBuildItem.createSecurityTransformer(indexViewBuildItem.getIndex(),
+                    securityTransformerBuildItem);
+        } else {
+            // this mean that Quarkus Security extension is missing, but we still need to consider edge situations
+            // like when the OpenApi document is generated for API dependency without Quarkus Security
+            securityTransformer = null;
+        }
+        var index = indexViewBuildItem.getIndex();
+        return new OpenApiSecurityTransformer() {
+            @Override
+            public Collection<AnnotationInstance> getAnnotations(DotName securityAnnotationName) {
+                if (securityTransformer != null) {
+                    // use the SecurityTransformer because it is more reliable and covers build-time transformations
+                    return securityTransformer.getAnnotations(securityAnnotationName);
+                }
+                return index.getAnnotations(securityAnnotationName);
+            }
+
+            @Override
+            public IndexView getIndex() {
+                return index;
+            }
+        };
+    }
+
+    private interface OpenApiSecurityTransformer {
+
+        Collection<AnnotationInstance> getAnnotations(DotName securityAnnotationName);
+
+        IndexView getIndex();
+
     }
 }

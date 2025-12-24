@@ -28,7 +28,8 @@ class AutoSecurityRolesAllowedTestCase {
             .withApplicationRoot((jar) -> jar
                     .addClasses(ResourceBean.class, OpenApiResourceSecuredAtClassLevel.class,
                             OpenApiResourceSecuredAtClassLevel2.class, OpenApiResourceSecuredAtMethodLevel.class,
-                            OpenApiResourceSecuredAtMethodLevel2.class)
+                            OpenApiResourceSecuredAtMethodLevel2.class, OpenApiResourceSecuredAtClassLevel4.class,
+                            OpenApiResourceSecuredAtMethodLevel4.class, CustomAuthorizationPolicy.class)
                     .addAsResource(
                             new StringAsset("quarkus.smallrye-openapi.security-scheme=jwt\n"
                                     + "quarkus.smallrye-openapi.security-scheme-name=JWTCompanyAuthentication\n"
@@ -85,7 +86,13 @@ class AutoSecurityRolesAllowedTestCase {
                 .body("paths.'/resource3/test-security/annotated'.get.security", schemeArray("AtClassLevel"))
                 .and()
                 // OpenApiResourceSecuredAtClassLevel2
-                .body("paths.'/resource3/test-security/classLevel-2/1'.get.security", defaultSecurity);
+                .body("paths.'/resource3/test-security/classLevel-2/1'.get.security", defaultSecurity)
+                .and()
+                // OpenApiResourceSecuredAtMethodLevel4
+                .body("paths.'/resource4/test-security/annotated'.get.security", schemeArray("AtClassLevel"))
+                .and()
+                // OpenApiResourceSecuredAtClassLevel4
+                .body("paths.'/resource4/test-security/class-level/1'.get.security", defaultSecurity);
     }
 
     @Test
@@ -171,6 +178,12 @@ class AutoSecurityRolesAllowedTestCase {
                         Matchers.equalTo("Not Authorized"))
                 .and()
                 .body("paths.'/resource3/test-security/classLevel-2/1'.get.responses.403.description",
+                        Matchers.equalTo("Not Allowed"))
+                .and()
+                .body("paths.'/resource4/test-security/class-level/1'.get.responses.401.description",
+                        Matchers.equalTo("Not Authorized"))
+                .and()
+                .body("paths.'/resource4/test-security/class-level/1'.get.responses.403.description",
                         Matchers.equalTo("Not Allowed"));
     }
 

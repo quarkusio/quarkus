@@ -301,12 +301,20 @@ public class KnativeProcessor {
 
         //Handle Image Pull Secrets
         config.imagePullSecrets().ifPresent(imagePullSecrets -> {
-            String serviceAccountName = config.serviceAccount().orElse(name);
-            result.add(new DecoratorBuildItem(KNATIVE, new AddServiceAccountResourceDecorator(name)));
-            result.add(
-                    new DecoratorBuildItem(KNATIVE, new ApplyServiceAccountToRevisionSpecDecorator(name, serviceAccountName)));
-            result.add(new DecoratorBuildItem(KNATIVE,
-                    new AddImagePullSecretToServiceAccountDecorator(serviceAccountName, imagePullSecrets)));
+            if (config.addImagePullSecretsToServiceAccount()) {
+                String serviceAccountName = config.serviceAccount().orElse(name);
+                result.add(new DecoratorBuildItem(KNATIVE, new AddServiceAccountResourceDecorator(name)));
+                result.add(
+                        new DecoratorBuildItem(KNATIVE,
+                                new ApplyServiceAccountToRevisionSpecDecorator(name, serviceAccountName)));
+                result.add(new DecoratorBuildItem(KNATIVE,
+                        new AddImagePullSecretToServiceAccountDecorator(serviceAccountName, imagePullSecrets)));
+            } else {
+                for (String imagePullSecret : imagePullSecrets) {
+                    result.add(new DecoratorBuildItem(KNATIVE,
+                            new AddImagePullSecretToRevisionSpecDecorator(name, imagePullSecret)));
+                }
+            }
         });
 
         return result;

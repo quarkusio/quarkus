@@ -14,7 +14,7 @@ include::_attributes.adoc[]
 
 Hibernate with Panache is the perfect solution if you want to get started using Hibernate in Quarkus.
 
-WARNING: This extention is currently in preview. It is experimental, so its API may change, in particular names of
+WARNING: This extension is currently in preview. It is experimental, so its API may change, in particular names of
 classes or packages may change, even the module name. We are in the process of making it a public preview in order
 to obtain public feedback, so please report feedback either on link:https://quarkusio.zulipchat.com/#narrow/channel/187038-dev/topic/WG.20-.20Panache.2ENext/with/562916276[Zulip]
 or via link:https://github.com/orgs/quarkusio/projects/50/views/1[GitHub issues].
@@ -94,18 +94,20 @@ TIP: You can use any of the xref:hibernate-orm.adoc#setting-up-and-configuring-h
 Make sure you configure your datasource in your `application.properties` (although you don't have to in DEV
 mode: if you don't, a dev service will be provided for you):
 
-```properties
+[source,properties]
+----
 %prod.quarkus.datasource.username = hibernate
 %prod.quarkus.datasource.password = hibernate
 %prod.quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/hibernate_db
-```
+----
 
 == Our first entity
 
 What this guide will focus on is the basics of how to use Hibernate with Panache, so let's start with how to
 create an entity:
 
-```java
+[source,java]
+----
 import io.quarkus.hibernate.panache.PanacheEntity;
 import jakarta.persistence.Entity;
 
@@ -121,7 +123,7 @@ public class Cat extends PanacheEntity {
         CUTE, HAIRLESS;
     }
 }
-```
+----
 
 In order to map a Java class to a Database table, just:
 
@@ -134,7 +136,8 @@ And that's it, now you can start creating instances of your entity, persist it t
 all changes to its fields will be automatically sent to the database (no need for any explicit `update` instruction),
 and even remove it from the database:
 
-```java
+[source,java]
+----
 import jakarta.transaction.Transactional;
 
 import java.time.LocalDate;
@@ -159,7 +162,7 @@ public class Code {
         cat.delete();
     }
 }
-```
+----
 <1> This is required on any method which interacts with the database, in order to run the operations in a transaction.
 
 == Our first repository
@@ -171,7 +174,8 @@ Because query operations do not belong on instances of our entities, we will pla
 called a `Repository`, and because those queries are intimately tied with the entities they operate on, we recommend
 placing them on an interface nested in the entity:
 
-```java
+[source,java]
+----
 import io.quarkus.hibernate.panache.PanacheEntity;
 import io.quarkus.hibernate.panache.PanacheRepository;
 import jakarta.persistence.Entity;
@@ -205,7 +209,7 @@ public class Cat extends PanacheEntity {
         long deleteHairless();
     }
 }
-```
+----
 
 A Hibernate with Panache repository is:
 
@@ -219,7 +223,8 @@ method to build a query. The Hibernate documentation has
 https://docs.jboss.org/hibernate/orm/7.1/introduction/html_single/Hibernate_Introduction.html#generated-finder-methods[all the information you need about this].
 
 .A few common examples
-```java
+[source,java]
+----
 @Find
 public List<Cat> findAllCats(); <1>
 
@@ -228,7 +233,7 @@ public long countAllCats(); <2>
 
 @Find
 public Cat findCatByNameAndBreed(String name, Breed breed); <3>
-```
+----
 <1> Finder methods may return collections of entities
 <2> Or generate `COUNT` queries
 <3> Or single entities, and any number of parameters which must all match the queried entities.
@@ -237,7 +242,8 @@ Alternately, you can use `@HQL` or `@SQL` queries, which support HQL and SQL que
 the Hibernate documentation has https://docs.jboss.org/hibernate/orm/7.1/introduction/html_single/Hibernate_Introduction.html#generated-query-methods[all the information you need].
 
 .A few common examples
-```java
+[source,java]
+----
 @HQL("from Cat")
 public List<Cat> findAllCats(); <1>
 
@@ -246,7 +252,7 @@ public LocalDate oldestCat(); <2>
 
 @HQL("where name = :name and breed = :breed")
 public Cat findCatByNameAndBreed(String name, Breed breed); <3>
-```
+----
 <1> Query methods may return collections of entities
 <2> Or projections of a single column, even multiple columns with `Object[]` and `List<Object[]>` types
 <3> Queries can of course refer to method parameters.
@@ -259,7 +265,8 @@ their parameters.
 
 Using the repository can be done by simply injecting it where you intend to use it:
 
-```java
+[source,java]
+----
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
@@ -298,7 +305,7 @@ public class Code {
         repo.deleteHairless();
     }
 }
-```
+----
 
 Now, as an added benefit, you can also access the repository using a handy shortcut generated static method on the
 https://docs.jboss.org/hibernate/orm/7.1/introduction/html_single/Hibernate_Introduction.html#static-metamodel[generated Metamodel]
@@ -306,7 +313,8 @@ of your entity, which is super useful for discovery of operations (just type `Ca
 and to avoid making a detour outside of your method to add an injected field, such as in this startup code that
 will delete all your cats (don't do this in production!!):
 
-```java
+[source,java]
+----
 import io.quarkus.runtime.Startup;
 import jakarta.transaction.Transactional;
 
@@ -317,7 +325,7 @@ public class OnStart {
         Cat_.repo().deleteAll();
     }
 }
-```
+----
 
 All the repositories you define as nested interfaces of your entity will be available under their generated metamodel
 class under accessor methods of the same name as the repository. This is strictly equivalent to injecting the repository
@@ -328,7 +336,8 @@ type, and in fact uses CDI under the hood to look up the repository.
 Just like in previous versions of Hibernate ORM and Hibernate Reactive with Panache, the `PanacheRepository` type comes
 packed with most of the operations you need to work on your entity, such as, out of the box:
 
-```java
+[source,java]
+----
 import io.quarkus.hibernate.panache.blocking.PanacheBlockingQuery;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -364,14 +373,15 @@ public class Code {
         Optional<Cat> optionalCat = repo.findByIdOptional(cat.id);
     }
 }
-```
+----
 
 == Non-type-safe queries
 
 With generated finder and query methods, as we've previously shown, everything is validated at build-time, but if
 you want to write non-type-safe queries, you can always use the provided methods of `PanacheRepository`:
 
-```java
+[source,java]
+----
 import io.quarkus.hibernate.panache.blocking.PanacheBlockingQuery;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -402,7 +412,7 @@ public class Code {
         repo.update("breed = CUTE");
     }
 }
-```
+----
 
 == About entity identifiers
 
@@ -413,17 +423,19 @@ does this by extending the `WithId.AutoLong` class, which provides a generated d
 You can choose to extend the `WithId.AutoString` for a `String` identifier, or `WithId.AutoUUID` for a `UUID`
 identifier, or even extend `WithId<IdType>` to automatically get an attribute of the form:
 
-```java
+[source,java]
+----
 @Id
 @GeneratedValue
 public IdType id;
-```
+----
 
 Naturally, you can also provide your own database identifier explicitly and implement the `PanacheEntity.Managed`
 interface in your entity, as well as use the `PanacheRepository.Managed` interface for your repository, in order to
 specify you database identifier type:
 
-```java
+[source,java]
+----
 import io.quarkus.hibernate.panache.PanacheEntity;
 import io.quarkus.hibernate.panache.PanacheRepository;
 import jakarta.persistence.Entity;
@@ -460,7 +472,7 @@ public class CatWithId implements PanacheEntity.Managed {
         long deleteHairless();
     }
 }
-```
+----
 
 Here is a list of entity supertypes you can use and the ID type they provide, but keep in mind you do not have to
 extend any of these types if you define you own ID:
@@ -482,7 +494,7 @@ extend any of these types if you define you own ID:
 |
 
 |`T`
-|`WithId<Id>
+|`WithId<Id>`
 |
 
 |===
@@ -498,7 +510,8 @@ a _stateless session_.
 In this case, you need to extend `WithId.AutoLong` (or any other ID class or provide your own ID), and implement
 the `PanacheEntity.Stateless` and `PanacheRepository.Stateless` interfaces:
 
-```java
+[source,java]
+----
 import io.quarkus.hibernate.panache.PanacheEntity;
 import io.quarkus.hibernate.panache.PanacheRepository;
 import io.quarkus.hibernate.panache.WithId;
@@ -533,12 +546,13 @@ public class Cat extends WithId.AutoLong implements PanacheEntity.Stateless {
         long deleteHairless();
     }
 }
-```
+----
 
 As you can see, your entity definition is exactly the same, besides the two interfaces. But now, your entities will
 not be _managed_, so every update operation has to be explicit:
 
-```java
+[source,java]
+----
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.hibernate.StatelessSession;
@@ -579,7 +593,7 @@ public class Code {
         repo.deleteHairless();
     }
 }
-```
+----
 
 As you can see, the only differences with a managed entity are:
 
@@ -633,11 +647,12 @@ TIP: You can use any of the xref:hibernate-reactive.adoc#hr-getting-started[supp
 Make sure you configure your reactive datasource in your `application.properties` (although you don't have to in DEV
 mode: if you don't, a dev service will be provided for you):
 
-```properties
+[source,properties]
+----
 quarkus.datasource.username = quarkus_test
 quarkus.datasource.password = quarkus_test
 quarkus.datasource.reactive.url = vertx-reactive:postgresql://localhost/quarkus_test <1>
-```
+----
 
 Now, in your code, the only differences with a regular managed session entity are:
 
@@ -645,7 +660,8 @@ Now, in your code, the only differences with a regular managed session entity ar
 - Your repository extends `PanacheRepository.Reactive`
 - All the operations return a `Uni<T>` instead of `T`, which is the standard Mutiny reactive type
 
-```java
+[source,java]
+----
 import io.quarkus.hibernate.panache.PanacheEntity;
 import io.quarkus.hibernate.panache.PanacheRepository;
 import io.quarkus.hibernate.panache.WithId;
@@ -681,13 +697,14 @@ public class Cat extends WithId.AutoLong implements PanacheEntity.Reactive {
         Uni<Integer> deleteHairless();
     }
 }
-```
+----
 
 And now when you want to use your entity or its repository, besides using `@WithTransaction` in place of
 `@Transactional`, you have to compose operations as you normally do in reactive code with Mutiny, but the operations are
 exactly the same otherwise:
 
-```java
+[source,java]
+----
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
@@ -724,14 +741,15 @@ public class Code {
                 .replaceWithVoid();
     }
 }
-```
+----
 
 == Reactive and stateless
 
 If you want to manage manually your entity changes, then you can use a stateless session by switching to
 the `PanacheEntity.Reactive.Stateless` for your entity, and `PanacheRepository.Reactive.Stateless`:
 
-```java
+[source,java]
+----
 import io.quarkus.hibernate.panache.PanacheEntity;
 import io.quarkus.hibernate.panache.PanacheRepository;
 import io.quarkus.hibernate.panache.WithId;
@@ -767,12 +785,13 @@ public class Cat extends WithId.AutoLong implements PanacheEntity.Reactive.State
         Uni<Integer> deleteHairless();
     }
 }
-```
+----
 
 And for your usage code, the only change is the standard use of manually calling `update()`, and using `insert()`
 instead of `persist()`:
 
-```java
+[source,java]
+----
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
@@ -811,7 +830,7 @@ public class Code {
                 .replaceWithVoid();
     }
 }
-```
+----
 
 TIP: If you're using stateless sessions, you can also use the <<Jakarta Data>> type of repositories.
 
@@ -822,7 +841,8 @@ is possible no matter which supertype of your entity you picked. You should pick
 majority of use-cases, but any one you pick, you can always obtain the alternative operations by using the
 `.statelessReactive()` method on the entity:
 
-```java
+[source,java]
+----
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Uni;
 import jakarta.transaction.Transactional;
@@ -862,7 +882,7 @@ public class Code {
 
     }
 }
-```
+----
 
 All the alternative entity operations are available from these methods:
 
@@ -915,7 +935,8 @@ generated metamodel accessors, or by injecting them with `@Inject`:
 
 But you can also define any number of repositories for your custom operations within your entity:
 
-```java
+[source,java]
+----
 import io.quarkus.hibernate.panache.PanacheEntity;
 import io.quarkus.hibernate.panache.PanacheRepository;
 import io.smallrye.mutiny.Uni;
@@ -946,11 +967,12 @@ public class Cat extends PanacheEntity {
         Uni<Cat> findByName(String name);
     }
 }
-```
+----
 
 And then you can inject both types of repositories:
 
-```java
+[source,java]
+----
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
@@ -976,7 +998,7 @@ public class Code {
                 .replaceWithVoid();
     }
 }
-```
+----
 
 NOTE: you can of course also use the generated metamodel accessors instead of injecting these repositories, with
 `Cat_.repo()` and `Cat_.theOtherRepo()`.
@@ -1028,7 +1050,8 @@ define your own ID entity field:
 
 For blocking operations, invoking startup code is pretty trivial:
 
-```java
+[source,java]
+----
 import io.quarkus.runtime.Startup;
 import jakarta.transaction.Transactional;
 
@@ -1039,13 +1062,14 @@ public class OnStart {
         Cat_.repo().deleteAll();
     }
 }
-```
+----
 
 For reactive operations, it is a little more complex at the moment, because you need a regular `@Startup` method,
 from which you invoke your reactive `@WithTransaction` method from within a call to
 `VertxContextSupport.subscribeAndAwait` (don't worry, we are working on making this easier):
 
-```java
+[source,java]
+----
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.runtime.Startup;
 import io.quarkus.vertx.VertxContextSupport;
@@ -1062,7 +1086,7 @@ public class OnStart {
         return Cat_.repo().deleteAll().replaceWithVoid();
     }
 }
-```
+----
 
 == Jakarta Data
 
@@ -1092,7 +1116,8 @@ annotate the repository with `@Repository`.
 Otherwise, just replace `@HQL` with `@Query` and change the package import of `@Find`, and you can even write
 `@Delete` finder methods:
 
-```java
+[source,java]
+----
 import jakarta.data.repository.CrudRepository;
 import jakarta.data.repository.Delete;
 import jakarta.data.repository.Find;
@@ -1133,7 +1158,7 @@ public class Cat {
         long deleteHairless();
     }
 }
-```
+----
 <1> This is a regular finder method
 <2> Use `@Query` in place of `@HQL`, they're the same everything
 <3> You can write `delete` finder methods. Just like finder methods, except their action is to delete entities, optionally

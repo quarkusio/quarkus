@@ -13,8 +13,23 @@
     <artifactId>quarkus-hibernate-orm-panache-kotlin-parent</artifactId>
     <name>Quarkus - Hibernate ORM with Panache and Kotlin</name>
     <packaging>pom</packaging>
-    <modules>
-        <module>deployment</module>
-        <module>runtime</module>
-    </modules>
+    <profiles>
+        <profile>
+            <!-- Kapt has been failing on Semeru for obscure reasons, it's not ideal disabling these modules entirely
+            but it seems the build could work without it, and it's better than having very regular failures...
+            That also means we can't release with Semeru...
+            -->
+            <id>skip-modules-on-semeru</id>
+            <activation>
+                <property>
+                    <name>java.vendor</name>
+                    <value>!IBM Corporation</value>
+                </property>
+            </activation>
+            <modules>
+                <module>deployment</module>
+                <module>runtime</module>
+            </modules>
+        </profile>
+    </profiles>
 </project>

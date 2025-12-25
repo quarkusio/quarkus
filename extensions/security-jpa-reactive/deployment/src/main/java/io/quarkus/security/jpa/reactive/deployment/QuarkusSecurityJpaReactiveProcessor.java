@@ -1,6 +1,7 @@
 package io.quarkus.security.jpa.reactive.deployment;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
+import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
 import static io.quarkus.security.jpa.common.deployment.JpaSecurityIdentityUtil.buildIdentity;
 import static io.quarkus.security.jpa.common.deployment.JpaSecurityIdentityUtil.buildTrustedIdentity;
 
@@ -25,21 +26,26 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.FunctionCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
 import io.quarkus.security.identity.request.TrustedAuthenticationRequest;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
@@ -47,13 +53,16 @@ import io.quarkus.security.jpa.PasswordProvider;
 import io.quarkus.security.jpa.common.deployment.JpaSecurityDefinition;
 import io.quarkus.security.jpa.common.deployment.JpaSecurityDefinitionBuildItem;
 import io.quarkus.security.jpa.common.deployment.PanacheEntityPredicateBuildItem;
+import io.quarkus.security.jpa.common.deployment.SecurityJpaProviderInfoBuildItem;
 import io.quarkus.security.jpa.reactive.runtime.JpaReactiveIdentityProvider;
 import io.quarkus.security.jpa.reactive.runtime.JpaReactiveTrustedIdentityProvider;
+import io.quarkus.security.jpa.reactive.runtime.SecurityJpaReactiveProvider;
 import io.smallrye.mutiny.Uni;
 
 class QuarkusSecurityJpaReactiveProcessor {
 
     private static final DotName NATURAL_ID = DotName.createSimple(NaturalId.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(QuarkusSecurityJpaReactiveProcessor.class.getName());
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -61,19 +70,46 @@ class QuarkusSecurityJpaReactiveProcessor {
     }
 
     @BuildStep
+    void registerSecurityJpaProviderClass(Optional<JpaSecurityDefinitionBuildItem> jpaSecurityDefinitionBuildItem,
+            BuildProducer<SecurityJpaProviderInfoBuildItem> securityJpaProviderClassProducer) {
+        if (jpaSecurityDefinitionBuildItem.isPresent()) {
+            var definition = jpaSecurityDefinitionBuildItem.get().get();
+            securityJpaProviderClassProducer.produce(new SecurityJpaProviderInfoBuildItem(SecurityJpaReactiveProvider.class,
+                    getJpaIdentityProviderName(definition), getTrustedIdentityProviderName(definition),
+                    JpaReactiveIdentityProvider.class, JpaReactiveTrustedIdentityProvider.class));
+        }
+    }
+
+    @BuildStep
     void configureJpaAuthConfig(ApplicationIndexBuildItem index,
             BuildProducer<GeneratedBeanBuildItem> beanProducer,
             Optional<JpaSecurityDefinitionBuildItem> jpaSecurityDefinitionBuildItem,
-            PanacheEntityPredicateBuildItem panacheEntityPredicate) {
+            PanacheEntityPredicateBuildItem panacheEntityPredicate,
+            BuildProducer<GeneratedClassBuildItem> classProducer,
+            List<PersistenceUnitDescriptorBuildItem> puDescriptors) {
 
         if (jpaSecurityDefinitionBuildItem.isPresent()) {
             JpaSecurityDefinition jpaSecurityDefinition = jpaSecurityDefinitionBuildItem.get().get();
 
-            generateIdentityProvider(index.getIndex(), jpaSecurityDefinition, jpaSecurityDefinition.passwordType(),
-                    jpaSecurityDefinition.customPasswordProvider(), beanProducer, panacheEntityPredicate);
+            // if there is no default persistence unit, the session factory injection into the identity providers
+            // would fail as there is no qualifier, and we are yet to know which unit does user want
+            final boolean isDefaultPersistenceUnitAvailable = puDescriptors.stream()
+                    .map(PersistenceUnitDescriptorBuildItem::getPersistenceUnitName)
+                    .anyMatch(DEFAULT_PERSISTENCE_UNIT_NAME::equals);
+            if (isDefaultPersistenceUnitAvailable) {
+                LOGGER.debug("Not generating identity provider CDI beans as the default persistence unit is not available."
+                        + " Please either configure the default persistence unit"
+                        + " or use programmatic API to select correct persistence unit name");
+            }
 
+            var classOutput = createClassOutput(beanProducer, classProducer, isDefaultPersistenceUnitAvailable);
+            generateIdentityProvider(index.getIndex(), jpaSecurityDefinition, jpaSecurityDefinition.passwordType(),
+                    jpaSecurityDefinition.customPasswordProvider(), classOutput, panacheEntityPredicate,
+                    isDefaultPersistenceUnitAvailable);
+
+            classOutput = createClassOutput(beanProducer, classProducer, isDefaultPersistenceUnitAvailable);
             generateTrustedIdentityProvider(index.getIndex(), jpaSecurityDefinition,
-                    beanProducer, panacheEntityPredicate);
+                    classOutput, panacheEntityPredicate, isDefaultPersistenceUnitAvailable);
         }
     }
 
@@ -92,16 +128,20 @@ class QuarkusSecurityJpaReactiveProcessor {
 
     private static void generateIdentityProvider(Index index, JpaSecurityDefinition jpaSecurityDefinition,
             AnnotationValue passwordTypeValue, AnnotationValue passwordProviderValue,
-            BuildProducer<GeneratedBeanBuildItem> beanProducer, PanacheEntityPredicateBuildItem panacheEntityPredicate) {
-        GeneratedBeanGizmoAdaptor gizmoAdaptor = new GeneratedBeanGizmoAdaptor(beanProducer);
+            ClassOutput classOutput, PanacheEntityPredicateBuildItem panacheEntityPredicate,
+            boolean registerProviderAsCdiBean) {
 
-        String name = jpaSecurityDefinition.annotatedClass.name() + "__JpaReactiveIdentityProviderImpl";
+        String name = getJpaIdentityProviderName(jpaSecurityDefinition);
         try (ClassCreator classCreator = ClassCreator.builder()
                 .className(name)
                 .superClass(JpaReactiveIdentityProvider.class)
-                .classOutput(gizmoAdaptor)
+                .classOutput(classOutput)
                 .build()) {
-            classCreator.addAnnotation(Singleton.class);
+
+            if (registerProviderAsCdiBean) {
+                classCreator.addAnnotation(Singleton.class);
+            }
+
             FieldDescriptor passwordProviderField = classCreator.getFieldCreator("passwordProvider", PasswordProvider.class)
                     .setModifiers(0) // removes default modifier => makes field package-private
                     .getFieldDescriptor();
@@ -127,17 +167,24 @@ class QuarkusSecurityJpaReactiveProcessor {
         }
     }
 
-    private static void generateTrustedIdentityProvider(Index index, JpaSecurityDefinition jpaSecurityDefinition,
-            BuildProducer<GeneratedBeanBuildItem> beanProducer, PanacheEntityPredicateBuildItem panacheEntityPredicate) {
-        GeneratedBeanGizmoAdaptor gizmoAdaptor = new GeneratedBeanGizmoAdaptor(beanProducer);
+    private static String getJpaIdentityProviderName(JpaSecurityDefinition jpaSecurityDefinition) {
+        return jpaSecurityDefinition.annotatedClass.name() + "__JpaReactiveIdentityProviderImpl";
+    }
 
-        String name = jpaSecurityDefinition.annotatedClass.name() + "__JpaReactiveTrustedIdentityProviderImpl";
+    private static void generateTrustedIdentityProvider(Index index, JpaSecurityDefinition jpaSecurityDefinition,
+            ClassOutput classOutput, PanacheEntityPredicateBuildItem panacheEntityPredicate,
+            boolean registerProviderAsCdiBean) {
+
+        String name = getTrustedIdentityProviderName(jpaSecurityDefinition);
         try (ClassCreator classCreator = ClassCreator.builder()
                 .className(name)
                 .superClass(JpaReactiveTrustedIdentityProvider.class)
-                .classOutput(gizmoAdaptor)
+                .classOutput(classOutput)
                 .build()) {
-            classCreator.addAnnotation(Singleton.class);
+
+            if (registerProviderAsCdiBean) {
+                classCreator.addAnnotation(Singleton.class);
+            }
 
             MethodDescriptor methodToImpl = MethodDescriptor.ofMethod(JpaReactiveTrustedIdentityProvider.class, "authenticate",
                     Uni.class, Mutiny.Session.class, TrustedAuthenticationRequest.class);
@@ -158,6 +205,10 @@ class QuarkusSecurityJpaReactiveProcessor {
                 methodCreator.returnValue(identityUni);
             }
         }
+    }
+
+    private static String getTrustedIdentityProviderName(JpaSecurityDefinition jpaSecurityDefinition) {
+        return jpaSecurityDefinition.annotatedClass.name() + "__JpaReactiveTrustedIdentityProviderImpl";
     }
 
     private static ResultHandle lookupUserById(JpaSecurityDefinition jpaSecurityDefinition, MethodCreator methodCreator,
@@ -255,5 +306,11 @@ class QuarkusSecurityJpaReactiveProcessor {
 
         return creator.invokeInterfaceMethod(ofMethod(Uni.class, name, Uni.class, Function.class),
                 uniInstance, lambda.getInstance());
+    }
+
+    private static ClassOutput createClassOutput(BuildProducer<GeneratedBeanBuildItem> beanProducer,
+            BuildProducer<GeneratedClassBuildItem> classProducer, boolean registerProviderAsCdiBean) {
+        return registerProviderAsCdiBean ? new GeneratedBeanGizmoAdaptor(beanProducer)
+                : new GeneratedClassGizmoAdaptor(classProducer, true);
     }
 }

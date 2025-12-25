@@ -7,7 +7,9 @@ import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
+import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.spi.runtime.IdentityProviderBuilder;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.cors.CORSConfig;
@@ -128,6 +130,16 @@ public interface HttpSecurity {
     HttpSecurity mechanism(HttpAuthenticationMechanism mechanism);
 
     /**
+     * Registers given {@link HttpAuthenticationMechanism} in addition to all other global authentication mechanisms.
+     *
+     * @param mechanism {@link HttpAuthenticationMechanism}
+     * @param identityProviderBuilder {@link IdentityProviderBuilder} that should be used for authentication instead
+     *        of {@link IdentityProvider}s registered as CDI beans; if this parameter is null, the global providers are used
+     * @return HttpSecurity
+     */
+    HttpSecurity mechanism(HttpAuthenticationMechanism mechanism, IdentityProviderBuilder identityProviderBuilder);
+
+    /**
      * Registers the Basic authentication mechanism in addition to all other global authentication mechanisms.
      * This method is a shortcut for {@code mechanism(Basic.create())}.
      *
@@ -143,6 +155,16 @@ public interface HttpSecurity {
      * @return HttpSecurity
      */
     HttpSecurity basic(String authenticationRealm);
+
+    /**
+     * Registers the Basic authentication mechanism in addition to all other global authentication mechanisms.
+     * This method is a shortcut for {@code mechanism(Basic.create(), identityProviderBuilder)}.
+     *
+     * @param identityProviderBuilder such as the Quarkus Security JPA {@link IdentityProviderBuilder}
+     * @return HttpSecurity
+     * @see #mechanism(HttpAuthenticationMechanism, IdentityProviderBuilder)
+     */
+    HttpSecurity basic(IdentityProviderBuilder identityProviderBuilder);
 
     /**
      * Registers the mutual TLS client authentication mechanism in addition to all other global authentication mechanisms.

@@ -225,6 +225,17 @@ public class TestResource {
     }
 
     @GET
+    @Path("/subsubclass")
+    @Produces("application/json")
+    public ParentClass subsubclass() {
+        GrandChildClass grandChild = new GrandChildClass();
+        grandChild.setName("your name");
+        grandChild.setValue("your value");
+        grandChild.setToy("your toy");
+        return grandChild;
+    }
+
+    @GET
     @Path("/implementor")
     @Produces("application/json")
     public MyInterface implementor() {
@@ -486,6 +497,18 @@ public class TestResource {
 
         public void setValue(String value) {
             this.value = value;
+        }
+    }
+
+    public static class GrandChildClass extends ChildClass {
+        private String toy;
+
+        public String getToy() {
+            return toy;
+        }
+
+        public void setToy(String toy) {
+            this.toy = toy;
         }
     }
 

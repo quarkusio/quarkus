@@ -8,17 +8,18 @@ import jakarta.inject.Singleton;
 import org.jboss.jandex.DotName;
 
 import com.webauthn4j.data.AuthenticationRequest;
-import com.webauthn4j.data.AuthenticatorAssertionResponse;
-import com.webauthn4j.data.AuthenticatorAttestationResponse;
+import com.webauthn4j.data.AuthenticatorResponse;
 import com.webauthn4j.data.PublicKeyCredential;
 import com.webauthn4j.data.PublicKeyCredentialCreationOptions;
+import com.webauthn4j.data.PublicKeyCredentialEntity;
 import com.webauthn4j.data.PublicKeyCredentialParameters;
 import com.webauthn4j.data.PublicKeyCredentialRequestOptions;
-import com.webauthn4j.data.PublicKeyCredentialRpEntity;
 import com.webauthn4j.data.PublicKeyCredentialType;
-import com.webauthn4j.data.PublicKeyCredentialUserEntity;
 import com.webauthn4j.data.RegistrationRequest;
 import com.webauthn4j.data.attestation.AttestationObject;
+import com.webauthn4j.data.attestation.authenticator.COSEKey;
+import com.webauthn4j.data.attestation.authenticator.Curve;
+import com.webauthn4j.data.attestation.statement.AttestationStatement;
 import com.webauthn4j.data.client.CollectedClientData;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -54,30 +55,33 @@ class QuarkusSecurityWebAuthnProcessor {
 
     @BuildStep
     public void registerJacksonTypes(BuildProducer<ReflectiveHierarchyBuildItem> reflection) {
+        String source = QuarkusSecurityWebAuthnProcessor.class.getSimpleName();
         reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(AuthenticatorAssertionResponse.class).build());
+                ReflectiveHierarchyBuildItem.builder(AuthenticatorResponse.class).source(source).build());
+        reflection.produce(ReflectiveHierarchyBuildItem.builder(AuthenticationRequest.class).source(source).build());
+        reflection.produce(ReflectiveHierarchyBuildItem.builder(RegistrationRequest.class).source(source).build());
         reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(AuthenticatorAttestationResponse.class).build());
-        reflection.produce(ReflectiveHierarchyBuildItem.builder(AuthenticationRequest.class).build());
-        reflection.produce(ReflectiveHierarchyBuildItem.builder(RegistrationRequest.class).build());
+                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialCreationOptions.class).source(source).build());
         reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialCreationOptions.class).build());
+                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialRequestOptions.class).source(source).build());
         reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialRequestOptions.class).build());
+                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialEntity.class).source(source).build());
         reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialRpEntity.class).build());
+                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialParameters.class).source(source).build());
         reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialUserEntity.class).build());
+                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialType.class).source(source).build());
         reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialParameters.class).build());
+                ReflectiveHierarchyBuildItem.builder(PublicKeyCredential.class).source(source).build());
         reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialType.class).build());
+                ReflectiveHierarchyBuildItem.builder(AttestationObject.class).source(source).build());
         reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(PublicKeyCredential.class).build());
+                ReflectiveHierarchyBuildItem.builder(CollectedClientData.class).source(source).build());
         reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(AttestationObject.class).build());
+                ReflectiveHierarchyBuildItem.builder(Curve.class).source(source).build());
         reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(CollectedClientData.class).build());
+                ReflectiveHierarchyBuildItem.builder(AttestationStatement.class).source(source).build());
+        reflection.produce(
+                ReflectiveHierarchyBuildItem.builder(COSEKey.class).source(source).build());
     }
 
     @BuildStep

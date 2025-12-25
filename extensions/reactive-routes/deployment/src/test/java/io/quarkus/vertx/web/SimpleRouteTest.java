@@ -35,7 +35,7 @@ public class SimpleRouteTest {
                     .addAsResource("test-users.properties")
                     .addAsResource("test-roles.properties")
                     .addClasses(SimpleBean.class,
-                            SimpleEventBusBean.class, SimpleRoutesBean.class, Transformer.class));
+                            SimpleEventBusBean.class, SimpleRoutesBean.class, Transformer.class, TestRoute.class));
 
     @Test
     public void testSimpleRoute() {
@@ -66,6 +66,11 @@ public class SimpleRouteTest {
     public void testSecurityIdentityInjection() {
         when().get("/security-identity").then().statusCode(200).body(is(""));
         given().auth().preemptive().basic("alice", "alice").get("/security-identity").then().statusCode(200).body(is("alice"));
+    }
+
+    @Test
+    public void testPatchOnTestRoute() {
+        given().body("test").when().patch("/test").then().statusCode(200).body(is("test route"));
     }
 
     static class SimpleBean {

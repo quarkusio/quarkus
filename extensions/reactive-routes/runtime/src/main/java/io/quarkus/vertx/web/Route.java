@@ -90,6 +90,7 @@ public @interface Route {
     enum HttpMethod {
         GET,
         HEAD,
+        PATCH,
         POST,
         PUT,
         DELETE,

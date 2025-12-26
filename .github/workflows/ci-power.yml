@@ -99,7 +99,7 @@ jobs:
           fi
 
   build-jdk17:
-    name: "Initial JDK 17 Build"
+    name: "Initial JDK 25 Build"
     needs: [ configure ]
     runs-on: ubuntu-24.04-ppc64le
     env:
@@ -107,19 +107,20 @@ jobs:
     steps:
       - name: Gradle Enterprise environment
         run: |
-          echo "GE_TAGS=jdk-17 ppc64le" >> "$GITHUB_ENV"
-          echo "GE_CUSTOM_VALUES=gh-job-name=Initial JDK 17 Build" >> "$GITHUB_ENV"
+          echo "GE_TAGS=jdk-25 ppc64le" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=Initial JDK 25 Build" >> "$GITHUB_ENV"
       - uses: actions/checkout@v6
         with:
           # this is important for GIB to work
           fetch-depth: 0
       - name: Add quarkusio remote
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
-      - name: Set up JDK 17
+      - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
           distribution: semeru
-          java-version: 17
+          java-version: 25
+          architecture: ppc64le
       - name: Restore Maven Repository
         uses: actions/cache/restore@v5
         if: github.event_name != 'push' || github.actor == 'dependabot[bot]'

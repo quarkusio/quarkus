@@ -575,6 +575,45 @@ In this case, the method is invoked on a virtual thread.
 The method must return `void` and your Java runtime must provide support for virtual threads.
 Read xref:./virtual-threads.adoc[the virtual thread guide] for more details.
 
+== Assign a user and roles to a scheduled task
+
+You can use the `@RunAsUser` annotation on methods annotated with the `@Scheduled` annotation to configure the `SecurityIdentity` for the task execution.
+The `@RunAsUser` annotation works only for the scheduled tasks.
+
+.Example scheduled task with `@RunAsUser`
+[source,java]
+----
+import io.quarkus.scheduler.Scheduled;
+import io.quarkus.security.identity.RunAsUser;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.context.ApplicationScoped;
+
+class MyJob {
+
+    @Inject
+    MyService myService;
+
+    @RunAsUser(user = "Alice", roles = "admin") <1>
+    @Scheduled(every = "1s")
+    void updateTask() {
+        myService.update();   <2>
+    }
+
+}
+
+@ApplicationScoped
+class MyService {
+
+    @RolesAllowed("admin")
+    void update() { }
+
+}
+----
+<1> Assign the user `Alice` to the scheduled `updateTask`.
+<2> The call to the `MyService#update` method succeeds, because the configured user has role `admin`.
+
+IMPORTANT: The `@RunAsUser` annotation creates an identity for scheduled tasks. It does not temporarily replace the current identity.
+
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-scheduler.adoc[leveloffset=+1, opts=optional]

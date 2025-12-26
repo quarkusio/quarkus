@@ -419,6 +419,7 @@ public class ConfigGenerationBuildStep {
             values.add(ConfigValue.builder()
                     .withName(value.getName())
                     .withValue(value.getValue())
+                    .withRawValue(value.getRawValue())
                     .withConfigSourceOrdinal(value.getConfigSourceOrdinal())
                     .build());
         }

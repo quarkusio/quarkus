@@ -11,6 +11,11 @@ public final class MongoClientBeanUtil {
         throw new UnsupportedOperationException();
     }
 
+    @Deprecated(forRemoval = true, since = "3.31")
+    public static boolean isDefault(String clientName) {
+        return MongoConfig.isDefaultClient(clientName);
+    }
+
     public static String namedQualifier(String clientName, boolean isReactive) {
         if (MongoConfig.isDefaultClient(clientName)) {
             throw new IllegalArgumentException("The default client should not have a named qualifier");

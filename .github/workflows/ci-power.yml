@@ -98,7 +98,7 @@ jobs:
             echo "common-maven-args=${COMMON_MAVEN_ARGS}" >> $GITHUB_OUTPUT
           fi
 
-  build-jdk17:
+  build-jdk25:
     name: "Initial JDK 25 Build"
     needs: [ configure ]
     runs-on: ubuntu-24.04-ppc64le
@@ -130,9 +130,6 @@ jobs:
           restore-keys: |
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
-      - name: Populate the .m2 repository (for cache and for shipping to follow-up builds)
-        run: |
-          ./mvnw -T2C $COMMON_MAVEN_ARGS dependency:go-offline -Dgo-offline -DexcludeGroupIds=io.netty
       - name: Cache Develocity local cache
         uses: actions/cache@v5
         if: github.event_name == 'pull_request' || github.event_name == 'push' && github.repository != 'quarkusio/quarkus'
@@ -141,10 +138,6 @@ jobs:
           key: develocity-cache-Initial JDK 17 Build-${{ github.event.pull_request.number || github.event.ref }}-${{ github.event.pull_request.head.sha || github.event.head }}
           restore-keys: |
             develocity-cache-Initial JDK 17 Build-${{ github.event.pull_request.number || github.event.ref }}-
-      - name: Verify native-tests.json
-        run: ./.github/verify-tests-json.sh native-tests.json integration-tests/
-      - name: Verify virtual-threads-tests.json
-        run: ./.github/verify-tests-json.sh virtual-threads-tests.json integration-tests/virtual-threads/
       - name: Setup Develocity Build Scan capture
         uses: gradle/develocity-actions/setup-maven@v2.1
         with:
@@ -193,7 +186,7 @@ jobs:
   jvm-tests:
     name: ${{ matrix.java.name }}
     runs-on: ${{ matrix.java.os-name }}
-    needs: [configure, build-jdk17]
+    needs: [configure, build-jdk25]
     timeout-minutes: 400
     env:
       MAVEN_OPTS: ${{ matrix.java.maven_opts }}
@@ -207,6 +200,7 @@ jobs:
             name: "JDK 25",
             java-version: 25,
             java-version-gradle: 25,
+            java-distribution: "semeru",
             os-name: "ubuntu-latest",
             architecture: "ppc64le",
             maven_opts: "-Xmx4g -XX:MaxMetaspaceSize=2g",
@@ -348,7 +342,7 @@ jobs:
   build-report:
     runs-on: ubuntu-latest
     name: Build report
-    needs: [build-jdk17,jvm-tests]
+    needs: [build-jdk25,jvm-tests]
     if: always()
     steps:
       - uses: actions/download-artifact@v7

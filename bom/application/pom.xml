@@ -70,7 +70,7 @@
         <jakarta.json.bind-api.version>3.0.1</jakarta.json.bind-api.version>
         <jakarta.mail-api.version>2.1.5</jakarta.mail-api.version>
         <!--jakarta.persistence-api.version is located in the root pom -->
-        <jakarta.data-api.version>1.0.1</jakarta.data-api.version>
+        <!--jakarta.data-api.version is located in the root pom -->
         <jakarta.resource-api.version>2.1.0</jakarta.resource-api.version>
         <jakarta.servlet-api.version>6.0.0</jakarta.servlet-api.version>
         <jakarta.transaction-api.version>2.0.1</jakarta.transaction-api.version>
@@ -99,7 +99,7 @@
         <narayana-lra.version>1.0.3.Final</narayana-lra.version>
         <agroal.version>2.8</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
-        <elasticsearch-opensource-components.version>9.2.2</elasticsearch-opensource-components.version>
+        <elasticsearch-opensource-components.version>9.2.3</elasticsearch-opensource-components.version>
         <rxjava.version>2.2.21</rxjava.version>
         <wildfly.openssl-java.version>2.2.5.Final</wildfly.openssl-java.version>
         <wildfly.openssl-linux.version>2.2.2.SP01</wildfly.openssl-linux.version>
@@ -1405,6 +1405,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-panacheql</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-hibernate-panache</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-hibernate-panache-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

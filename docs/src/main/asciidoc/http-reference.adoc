@@ -62,6 +62,44 @@ public class StaticResources {
 }
 ----
 
+=== Local filesystem static resources
+
+NOTE: Serving static resources from a local filesystem directory is enabled
+when `quarkus.http.static-dir.path` is set.
+The `quarkus.http.static-dir.enabled` property can be used to explicitly
+disable this feature.
+
+Quarkus can serve static files from a local filesystem directory, outside of the application JAR and Java resources.
+This is configured via the `quarkus.http.static-dir.*` properties.
+
+To expose the contents of a `static/` directory:
+
+[source,properties]
+----
+quarkus.http.static-dir.path=static
+----
+
+By default, static files are exposed under the `/static` endpoint.
+
+With this configuration, a file located at `static/picture.jpg` will be available at:
+`http://localhost:8080/static/picture.jpg`.
+
+To change the default endpoint:
+[source,properties]
+----
+quarkus.http.static-dir.endpoint=/
+----
+
+With this configuration, a file located at `static/picture.jpg` will be available at:
+`http://localhost:8080/picture.jpg`.
+
+The `quarkus.http.static-dir.endpoint` value must not contain `*` or `..`, and it will be normalized
+to avoid trailing slashes.
+Similarly, `quarkus.http.static-dir.path` must be a relative path without `..`.
+Quarkus validates these values at build time.
+
+This feature can be used in both development and production environments.
+
 === HTTP Compression
 
 The response body of a static resource is not compressed by default.

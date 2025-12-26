@@ -20,7 +20,7 @@ package io.quarkus.websockets.next;
  * reused during encoding/decoding.
  *
  * <h2>Lifecycle and concurrency</h2>
- * Codecs are shared accross all WebSocket connections. Therefore, implementations should be either stateless or thread-safe.
+ * Codecs are shared across all WebSocket connections. Therefore, implementations should be either stateless or thread-safe.
  *
  * @param <T>
  * @see OnTextMessage

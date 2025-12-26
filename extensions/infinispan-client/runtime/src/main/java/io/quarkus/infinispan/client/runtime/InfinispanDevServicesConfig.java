@@ -132,4 +132,6 @@ public interface InfinispanDevServicesConfig {
      * Infinispan Server configuration chunks to be passed to the container.
      */
     Optional<List<String>> configFiles();
+
+    String toString();
 }

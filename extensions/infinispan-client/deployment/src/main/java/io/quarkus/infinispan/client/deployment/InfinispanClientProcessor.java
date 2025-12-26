@@ -428,6 +428,12 @@ class InfinispanClientProcessor {
             marshaller = new ProtoStreamMarshaller();
         }
         properties.put(ConfigurationProperties.MARSHALLER, marshaller);
+
+        if (properties.putIfAbsent(ConfigurationProperties.TRANSPORT_FACTORY,
+                "io.quarkus.infinispan.client.runtime.QuarkusTransportFactory") == null) {
+            reflectiveClass.produce(
+                    ReflectiveClassBuildItem.builder("io.quarkus.infinispan.client.runtime.QuarkusTransportFactory").build());
+        }
         return properties;
     }
 
@@ -613,5 +619,4 @@ class InfinispanClientProcessor {
         }
         return result;
     }
-
 }

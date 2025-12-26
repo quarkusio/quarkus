@@ -19,6 +19,7 @@ import org.jose4j.lang.UnresolvableKeyException;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.credential.TokenCredential;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
@@ -47,6 +48,10 @@ public class DynamicVerificationKeyResolver {
 
     public Uni<VerificationKeyResolver> resolve(TokenCredential tokenCred) {
         JsonObject headers = OidcUtils.decodeJwtHeaders(tokenCred.getToken());
+        if (headers == null) {
+            LOG.debug("Invalid JWT token format");
+            return Uni.createFrom().failure(new AuthenticationFailedException());
+        }
         Key key = findKeyInTheCache(headers);
         if (key != null) {
             return Uni.createFrom().item(new SingleKeyVerificationKeyResolver(key));

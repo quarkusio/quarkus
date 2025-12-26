@@ -8,7 +8,7 @@ import java.util.stream.Stream;
 
 import jakarta.persistence.LockModeType;
 
-import org.hibernate.Session;
+import org.hibernate.SharedSessionContract;
 
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.hibernate.orm.panache.common.runtime.CommonPanacheQueryImpl;
@@ -19,7 +19,8 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
 
     private CommonPanacheQueryImpl<Entity> delegate;
 
-    PanacheQueryImpl(Session session, String query, String originalQuery, String orderBy, Object paramsArrayOrMap) {
+    PanacheQueryImpl(SharedSessionContract session, String query, String originalQuery, String orderBy,
+            Object paramsArrayOrMap) {
         this.delegate = new CommonPanacheQueryImpl<>(session, query, originalQuery, orderBy, paramsArrayOrMap);
     }
 

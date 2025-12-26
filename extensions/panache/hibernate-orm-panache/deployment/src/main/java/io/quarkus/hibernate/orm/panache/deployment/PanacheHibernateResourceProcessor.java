@@ -43,6 +43,7 @@ import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
 import io.quarkus.panache.hibernate.common.deployment.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.panache.hibernate.common.deployment.PanacheJpaEntityOperationsEnhancer;
+import io.quarkus.panache.hibernate.common.deployment.PanacheJpaRepositoryEnhancer;
 
 public final class PanacheHibernateResourceProcessor {
 
@@ -169,5 +170,4 @@ public final class PanacheHibernateResourceProcessor {
         }
         return null;
     }
-
 }

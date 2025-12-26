@@ -2,6 +2,8 @@ package io.quarkus.it.keycloak;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -11,6 +13,7 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.quarkus.test.keycloak.client.KeycloakTestClient.Tls;
 import io.restassured.RestAssured;
@@ -152,6 +155,49 @@ public abstract class AbstractBearerTokenAuthorizationTest {
                 .statusCode(401)
                 .header("WWW-Authenticate", equalTo("Bearer resource_metadata=\"https://localhost:8081"
                         + OidcConstants.RESOURCE_METADATA_WELL_KNOWN_PATH + "\""));
+    }
+
+    @Test
+    public void testVerificationFailedInvalidTokenHeaders() {
+        String token = getAccessToken("alice");
+        int ind = token.indexOf('.');
+        String invalidToken = "1" + token.substring(ind);
+        assertNull(OidcUtils.decodeJwtHeaders(invalidToken));
+        assertNotNull(OidcUtils.decodeJwtContent(invalidToken));
+        RestAssured.given().auth().oauth2(invalidToken)
+                .when().get("/api/users/me").then()
+                .statusCode(401)
+                .header("WWW-Authenticate", equalTo("Bearer resource_metadata=\"https://localhost:8081"
+                        + OidcConstants.RESOURCE_METADATA_WELL_KNOWN_PATH + "\""));
+    }
+
+    @Test
+    public void testVerificationEarlyJwkResolution() {
+        String token = getAccessToken("alice");
+        RestAssured.given().auth().oauth2(token)
+                .when().get("/api/users/me/jwk-delayed-resolution")
+                .then()
+                .statusCode(200)
+                .body("userName", equalTo("alice"));
+    }
+
+    @Test
+    public void testVerificationFailedInvalidTokenEarlyJwkResolution() {
+        RestAssured.given().auth().oauth2("123")
+                .when().get("/api/users/me/jwk-delayed-resolution").then()
+                .statusCode(401);
+    }
+
+    @Test
+    public void testVerificationFailedInvalidTokenHeadersEarlyJwkResolution() {
+        String token = getAccessToken("alice");
+        int ind = token.indexOf('.');
+        String invalidToken = "1" + token.substring(ind);
+        assertNull(OidcUtils.decodeJwtHeaders(invalidToken));
+        assertNotNull(OidcUtils.decodeJwtContent(invalidToken));
+        RestAssured.given().auth().oauth2(invalidToken)
+                .when().get("/api/users/me/jwk-delayed-resolution").then()
+                .statusCode(401);
     }
 
     //see https://github.com/quarkusio/quarkus/issues/5809

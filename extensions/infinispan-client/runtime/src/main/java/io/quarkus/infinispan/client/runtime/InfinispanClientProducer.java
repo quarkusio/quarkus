@@ -292,6 +292,8 @@ public class InfinispanClientProducer {
             properties.put(ConfigurationProperties.SO_TIMEOUT, infinispanClientRuntimeConfig.socketTimeout().get());
         }
 
+        properties.put(ConfigurationProperties.TRANSPORT_FACTORY, infinispanClientBuildTimeConfig.transportFactory());
+
         builder.withProperties(properties);
 
         if (infinispanClientRuntimeConfig.tracingPropagationEnabled().isPresent()) {

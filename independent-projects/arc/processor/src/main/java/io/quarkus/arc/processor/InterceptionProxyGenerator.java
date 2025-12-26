@@ -398,7 +398,7 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
                             Expr superResult = method.declaringClass().isInterface()
                                     ? lbc.invokeInterface(methodDesc, target, superArgs)
                                     : lbc.invokeVirtual(methodDesc, target, superArgs);
-                            lbc.return_(superResult);
+                            lbc.return_(superResult.isVoid() ? Const.ofNull(Object.class) : superResult);
                         });
                     });
 

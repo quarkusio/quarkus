@@ -54,15 +54,8 @@ jobs:
   configure:
     name: "Configure jobs"
     runs-on: ubuntu-latest
-    # Skip main in forks
-    # Skip draft PRs, rerun as soon as its removed
-    if: (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')) && (
-           github.event_name != 'pull_request' || (
-             github.event.pull_request.draft == false &&
-             github.event.pull_request.state != 'closed' &&
-             github.event.action != 'edited'
-           )
-        )
+    # Skip forks
+    if: github.repository == 'quarkusio/quarkus'
     outputs:
       m2-monthly-branch-cache-key: ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}
       m2-monthly-cache-key: ${{ steps.cache-key.outputs.m2-monthly-cache-key }}

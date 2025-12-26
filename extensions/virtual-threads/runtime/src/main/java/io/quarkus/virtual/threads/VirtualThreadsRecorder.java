@@ -117,8 +117,10 @@ public class VirtualThreadsRecorder {
         Class<?> vtbClass = Class.forName("java.lang.Thread$Builder$OfVirtual");
         // .name()
         if (prefix != null) {
-            Method name = vtbClass.getMethod("name", String.class, long.class);
-            vtb = name.invoke(vtb, prefix, 0);
+            // why this is not using name(prefix, 0)?
+            // see https://bugs.openjdk.org/browse/JDK-8372410
+            Method name = vtbClass.getMethod("name", String.class);
+            vtb = name.invoke(vtb, prefix);
         }
         // .uncaughtExceptionHandler()
         Method uncaughtHandler = vtbClass.getMethod("uncaughtExceptionHandler", Thread.UncaughtExceptionHandler.class);

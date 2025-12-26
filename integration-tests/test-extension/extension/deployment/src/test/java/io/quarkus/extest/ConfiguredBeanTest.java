@@ -91,11 +91,11 @@ public class ConfiguredBeanTest {
     }
 
     @Test
-    public void testConfigDefaultValuesSourceOrdinal() {
-        Optional<ConfigSource> source = config.getConfigSource("DefaultValuesConfigSource");
+    public void testConfigRuntimeValuesSourceOrdinal() {
+        Optional<ConfigSource> source = config.getConfigSource("Runtime Values");
         assertTrue(source.isPresent());
-        ConfigSource defaultValues = source.get();
-        assertEquals(Integer.MIN_VALUE, defaultValues.getOrdinal());
+        ConfigSource runtimeValues = source.get();
+        assertEquals(0, runtimeValues.getOrdinal());
 
         ConfigSource applicationProperties = null;
         for (ConfigSource configSource : config.getConfigSources()) {
@@ -107,33 +107,33 @@ public class ConfiguredBeanTest {
         assertNotNull(applicationProperties);
         assertEquals(1000, applicationProperties.getOrdinal());
 
-        assertEquals("9999", defaultValues.getValue("%test.my.prop"));
+        assertEquals("9999", runtimeValues.getValue("%test.my.prop"));
         assertEquals("9999", applicationProperties.getValue("%test.my.prop"));
-        assertEquals("1234", defaultValues.getValue("my.prop"));
+        assertEquals("1234", runtimeValues.getValue("my.prop"));
         assertEquals("1234", applicationProperties.getValue("my.prop"));
 
         assertEquals("9999", config.getRawValue("my.prop"));
     }
 
     @Test
-    public void testProfileDefaultValuesSource() {
-        Optional<ConfigSource> source = config.getConfigSource("DefaultValuesConfigSource");
+    public void testProfileRuntimeValuesSource() {
+        Optional<ConfigSource> source = config.getConfigSource("Runtime Values");
         assertTrue(source.isPresent());
-        ConfigSource defaultValues = source.get();
+        ConfigSource runtimeValues = source.get();
 
-        assertEquals("1234", defaultValues.getValue("%prod.my.prop"));
-        assertEquals("5678", defaultValues.getValue("%dev.my.prop"));
-        assertEquals("9999", defaultValues.getValue("%test.my.prop"));
+        assertEquals("1234", runtimeValues.getValue("%prod.my.prop"));
+        assertEquals("5678", runtimeValues.getValue("%dev.my.prop"));
+        assertEquals("9999", runtimeValues.getValue("%test.my.prop"));
         // this runs with the test profile
         assertEquals("9999", config.getValue("my.prop", String.class));
 
         // runtime properties coming from env must not be recorded
-        assertNull(defaultValues.getValue("should.not.be.recorded"));
-        assertNull(defaultValues.getValue("SHOULD_NOT_BE_RECORDED"));
-        assertNull(defaultValues.getValue("quarkus.mapping.rt.do-not-record"));
-        assertNull(defaultValues.getValue("%prod.quarkus.mapping.rt.do-not-record"));
-        assertNull(defaultValues.getValue("%dev.quarkus.mapping.rt.do-not-record"));
-        assertEquals("value", config.getRawValue("quarkus.mapping.rt.do-not-record"));
+        assertNull(runtimeValues.getValue("should.not.be.recorded"));
+        assertNull(runtimeValues.getValue("SHOULD_NOT_BE_RECORDED"));
+        assertNull(runtimeValues.getValue("quarkus.mapping.rt.do-not-record"));
+        assertNull(runtimeValues.getValue("%prod.quarkus.mapping.rt.do-not-record"));
+        assertNull(runtimeValues.getValue("%dev.quarkus.mapping.rt.do-not-record"));
+        assertEquals("value", config.getConfigValue("quarkus.mapping.rt.do-not-record").getValue());
     }
 
     @Test
@@ -143,11 +143,11 @@ public class ConfiguredBeanTest {
         assertEquals("quarkus.bt.bt-config-value", btConfigValue.getName());
         assertEquals("value", btConfigValue.getValue());
 
-        Optional<ConfigSource> source = config.getConfigSource("DefaultValuesConfigSource");
+        Optional<ConfigSource> source = config.getConfigSource("Runtime Values");
         assertTrue(source.isPresent());
-        ConfigSource defaultValues = source.get();
+        ConfigSource runtimeValues = source.get();
 
-        assertTrue(defaultValues.getPropertyNames().contains("quarkus.bt.bt-config-value"));
-        assertEquals("${test.record.expansion}", defaultValues.getValue("quarkus.bt.bt-config-value"));
+        assertTrue(runtimeValues.getPropertyNames().contains("quarkus.bt.bt-config-value"));
+        assertEquals("${test.record.expansion}", runtimeValues.getValue("quarkus.bt.bt-config-value"));
     }
 }

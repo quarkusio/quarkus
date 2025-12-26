@@ -1,0 +1,355 @@
+name: Quarkus CI - Power
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+concurrency:
+  group: "workflow = ${{ github.workflow }}, ref = ${{ github.event.ref }}, pr = ${{ github.event.pull_request.id }}"
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.repository != 'quarkusio/quarkus' }}
+
+env:
+  # Workaround testsuite locale issue
+  LANG: en_US.UTF-8
+  COMMON_MAVEN_ARGS: "-e -B --settings .github/mvn-settings.xml --fail-at-end"
+  COMMON_TEST_MAVEN_ARGS: "-Dformat.skip -Denforcer.skip -DskipDocs -Dforbiddenapis.skip -DskipExtensionValidation -DskipCodestartValidation"
+  NATIVE_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.native.native-image-xmx=6g -Dnative -Dnative.surefire.skip -Dno-descriptor-tests clean install -DskipDocs"
+  JVM_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.test.hang-detection-timeout=300"
+  # Important: keep these selectors in sync with the grep commands in the calc_run_flags job!
+  # This may be a lot better with maven 4, but with maven 3, excluding a project does not exclude its children, and it's not possible to include a project and explicitly exclude some children; compensate by doing excludes the low-tech way, at the shell level
+  JVM_TEST_INTEGRATION_TESTS_SELECTOR: "-f integration-tests -pl !gradle -pl !maven -pl !devmode -pl !devtools"
+  JVM_TEST_NORMAL_TESTS_SELECTOR: "-pl !docs -Dno-test-modules"
+  #PTS_MAVEN_ARGS: "-Ddevelocity.pts.enabled=${{ github.event_name == 'pull_request' && github.base_ref == 'main' && 'true' || 'false' }}"
+  PTS_MAVEN_ARGS: ""
+  DB_USER: hibernate_orm_test
+  DB_PASSWORD: hibernate_orm_test
+  DB_NAME: hibernate_orm_test
+  PULL_REQUEST_NUMBER: ${{ github.event.number }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # This is a hack to work around a GitHub API limitation:
+  # when the PR is coming from another fork, the pull_requests field of the
+  # workflow_run payload is empty.
+  # For more details, see
+  # https://github.community/t/pull-request-attribute-empty-in-workflow-run-event-object-for-pr-from-forked-repo/154682
+  attach-pr-number:
+    runs-on: ubuntu-latest
+    name: Attach pull request number
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Create file
+        run: |
+          echo -n ${{ github.event.number }} > pull-request-number
+      - name: Upload pull request number
+        uses: actions/upload-artifact@v6
+        with:
+          name: pull-request-number-${{ github.event.number }}
+          path: pull-request-number
+          retention-days: 1
+  configure:
+    name: "Configure jobs"
+    runs-on: ubuntu-latest
+    # Skip forks
+    if: github.repository == 'quarkusio/quarkus'
+    outputs:
+      m2-monthly-branch-cache-key: ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}
+      m2-monthly-cache-key: ${{ steps.cache-key.outputs.m2-monthly-cache-key }}
+      m2-cache-key: ${{ steps.cache-key.outputs.m2-cache-key }}
+      quarkus-metadata-cache-key: ${{ steps.cache-key.outputs.quarkus-metadata-cache-key }}
+      quarkus-metadata-cache-key-default: ${{ steps.cache-key.outputs.quarkus-metadata-cache-key-default }}
+      maven-disable-develocity-cache: ${{ steps.develocity-cache-status.outputs.maven-disable-develocity-cache }}
+      common-maven-args: ${{ steps.configure-maven-args.outputs.common-maven-args }}
+    steps:
+      - name: Generate cache key
+        id: cache-key
+        run: |
+          CURRENT_BRANCH="${{ github.repository != 'quarkusio/quarkus' && 'fork' || github.base_ref || github.ref_name }}"
+          CURRENT_MONTH=$(/bin/date -u "+%Y-%m")
+          CURRENT_DAY=$(/bin/date -u "+%d")
+          CURRENT_WEEK=$(/bin/date -u "+%Y-%U")
+          ROOT_CACHE_KEY="m2-cache"
+          echo "m2-monthly-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}" >> $GITHUB_OUTPUT
+          echo "m2-monthly-branch-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}" >> $GITHUB_OUTPUT
+          echo "m2-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}-${CURRENT_WEEK}" >> $GITHUB_OUTPUT
+          echo "quarkus-metadata-cache-key=quarkus-metadata-cache-${CURRENT_WEEK}-${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          echo "quarkus-metadata-cache-key-default=quarkus-metadata-cache-${CURRENT_WEEK}-${{ github.event.repository.default_branch }}" >> $GITHUB_OUTPUT
+      - name: Determines if Develocity cache should be disabled
+        id: develocity-cache-status
+        run: |
+          echo "maven-disable-develocity-cache=${{ contains( github.event.pull_request.labels.*.name, 'ci/disable-develocity-cache') }}" >> $GITHUB_OUTPUT
+      - name: Adjust Maven args
+        id: configure-maven-args
+        env:
+          DEVELOCITY_CACHE_DISABLED: ${{ steps.develocity-cache-status.outputs.maven-disable-develocity-cache }}
+        run: |
+          if [ "$DEVELOCITY_CACHE_DISABLED" == "true" ]; then
+            echo "common-maven-args=${COMMON_MAVEN_ARGS} -Dno-build-cache" >> $GITHUB_OUTPUT
+          else
+            echo "common-maven-args=${COMMON_MAVEN_ARGS}" >> $GITHUB_OUTPUT
+          fi
+
+  build-jdk25:
+    name: "Initial JDK 25 Build"
+    needs: [ configure ]
+    runs-on: ubuntu-24.04-ppc64le
+    env:
+      COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
+    steps:
+      - name: Gradle Enterprise environment
+        run: |
+          echo "GE_TAGS=jdk-25 ppc64le" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=Initial JDK 25 Build" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v6
+        with:
+          # this is important for GIB to work
+          fetch-depth: 0
+      - name: Add quarkusio remote
+        run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: semeru
+          java-version: 25
+          architecture: ppc64le
+      - name: Restore Maven Repository
+        uses: actions/cache/restore@v5
+        if: github.event_name != 'push' || github.actor == 'dependabot[bot]'
+        with:
+          path: ~/.m2/repository
+          key: ${{ needs.configure.outputs.m2-cache-key }}
+          restore-keys: |
+            ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
+            ${{ needs.configure.outputs.m2-monthly-cache-key }}-
+      - name: Cache Develocity local cache
+        uses: actions/cache@v5
+        if: github.event_name == 'pull_request' || github.event_name == 'push' && github.repository != 'quarkusio/quarkus'
+        with:
+          path: ~/.m2/.develocity/build-cache
+          key: develocity-cache-Initial JDK 17 Build-${{ github.event.pull_request.number || github.event.ref }}-${{ github.event.pull_request.head.sha || github.event.head }}
+          restore-keys: |
+            develocity-cache-Initial JDK 17 Build-${{ github.event.pull_request.number || github.event.ref }}-
+      - name: Setup Develocity Build Scan capture
+        uses: gradle/develocity-actions/setup-maven@v2.1
+        with:
+          capture-strategy: ON_DEMAND
+          job-name: "Initial JDK 17 Build"
+          add-pr-comment: false
+          add-job-summary: false
+          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-token-expiry: 6
+      - name: Build
+        env:
+          CAPTURE_BUILD_SCAN: true
+        run: |
+          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-format -Dtcks -Prelocations clean install
+      - name: Tar .m2 content pushed to subsequent jobs
+        run: |
+          if [ -d .m2/.develocity/build-cache ]; then
+            tar -czf m2-content.tgz -C ~ .m2/repository/io/quarkus .m2/.develocity/build-cache
+          else
+            tar -czf m2-content.tgz -C ~ .m2/repository/io/quarkus
+          fi
+      - name: Upload .m2 content pushed to subsequent jobs
+        uses: actions/upload-artifact@v6
+        with:
+          name: m2-content
+          path: m2-content.tgz
+          retention-days: 7
+      - name: Delete snapshots artifacts from cache
+        run: find ~/.m2 -name \*-SNAPSHOT -type d -exec rm -rf {} +
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          7z a -tzip build-reports.zip -r \
+              'target/build-report.json' \
+              'target/gradle-build-scan-url.txt' \
+              LICENSE
+      - name: Upload build reports
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: "build-reports-${{ github.run_attempt }}-Initial JDK 17 Build"
+          path: |
+            build-reports.zip
+          retention-days: 7
+
+  jvm-tests:
+    name: ${{ matrix.java.name }}
+    runs-on: ${{ matrix.java.os-name }}
+    needs: [configure, build-jdk25]
+    timeout-minutes: 400
+    env:
+      MAVEN_OPTS: ${{ matrix.java.maven_opts }}
+      COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
+      JAVA_VERSION_GRADLE: ${{ matrix.java.java-version-gradle || matrix.java.java-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        java:
+          - {
+            name: "JDK 25",
+            java-version: 25,
+            java-version-gradle: 25,
+            java-distribution: "semeru",
+            os-name: "ubuntu-24.04-ppc64le",
+            architecture: "ppc64le",
+            maven_opts: "-Xmx4g -XX:MaxMetaspaceSize=2g",
+            maven_args: ""
+          }
+    steps:
+      - name: Gradle Enterprise environment
+        run: |
+          echo "GE_TAGS=jdk-${{matrix.java.java-version}}" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=${{ matrix.java.name }}" >> "$GITHUB_ENV"
+      - name: Stop mysql
+        if: ${{ !startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos') }}
+        run: |
+          ss -ln
+          sudo service mysql stop || true
+      - uses: actions/checkout@v6
+        with:
+          # this is important for GIB to work
+          fetch-depth: 0
+      - name: Add quarkusio remote for GIB
+        run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
+
+      - name: apt clean
+        run: sudo apt-get clean
+
+      - name: Set up JDK ${{ env.JAVA_VERSION_GRADLE }} for Gradle (if needed)
+        if: env.JAVA_VERSION_GRADLE != matrix.java.java-version
+        uses: actions/setup-java@v5
+        with:
+          distribution: ${{ matrix.java.java-distribution || 'temurin' }}
+          java-version: ${{ matrix.java.java-version-gradle }}
+          architecture: ${{ matrix.java.architecture || 'x64' }}
+
+      - name: Set up GRADLE_JAVA_HOME (if needed)
+        if: ${{ env.JAVA_VERSION_GRADLE != matrix.java.java-version }}
+        run: |
+          JAVA_HOME_ARCHITECTURE=$(echo "${{ matrix.java.architecture || 'x64' }}" | tr [:lower:] [:upper:])
+          GRADLE_JAVA_HOME_VARIABLE="JAVA_HOME_${JAVA_VERSION_GRADLE}_${JAVA_HOME_ARCHITECTURE}"
+          echo "GRADLE_JAVA_HOME=${!GRADLE_JAVA_HOME_VARIABLE}" >> "$GITHUB_ENV"
+
+      - name: Set up JDK ${{ matrix.java.java-version }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: ${{ matrix.java.java-distribution || 'temurin' }}
+          java-version: ${{ matrix.java.java-version }}
+          architecture: ${{ matrix.java.architecture || 'x64' }}
+
+      - name: Restore Maven Repository
+        uses: actions/cache/restore@v5
+        with:
+          path: ~/.m2/repository
+          key: ${{ needs.configure.outputs.m2-cache-key }}
+          restore-keys: |
+            ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
+            ${{ needs.configure.outputs.m2-monthly-cache-key }}-
+      - name: Download previously uploaded .m2 content
+        uses: actions/download-artifact@v7
+        with:
+          name: m2-content
+          path: .
+      - name: Extract previously uploaded .m2 content
+        run: tar -xzf m2-content.tgz -C ~
+      - name: Cache Develocity local cache
+        uses: actions/cache@v5
+        if: github.event_name == 'pull_request' || github.event_name == 'push' && github.repository != 'quarkusio/quarkus'
+        with:
+          path: ~/.m2/.develocity/build-cache
+          key: develocity-cache-${{matrix.java.name}}-${{ github.event.pull_request.number || github.event.ref }}-${{ github.event.pull_request.head.sha || github.event.head }}
+          restore-keys: |
+            develocity-cache-${{matrix.java.name}}-${{ github.event.pull_request.number || github.event.ref }}-
+      - name: Setup Develocity Build Scan capture
+        uses: gradle/develocity-actions/setup-maven@v2.1
+        with:
+          capture-strategy: ON_DEMAND
+          job-name: "${{ matrix.java.name }}"
+          add-pr-comment: false
+          add-job-summary: false
+          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-token-expiry: 6
+      - name: Build
+        env:
+          CAPTURE_BUILD_SCAN: true
+          MATRIX_JAVA_MODULES: ${{ matrix.java.modules }}
+        run: |
+          # we push the arguments to a file because it can exceed the cmd.exe command line limit on Windows
+          # the format of this file is specific: it's one option per line, thus the weird formatting in matrix-jvm-tests.json
+          # see https://maven.apache.org/configure.html#a.mvn.2Fmaven.config_file.3A
+          # IMPORTANT: we cannot simply replace all spaces with new lines as we have a module with spaces in the name (to test spaces are supported)
+          echo -e "$MATRIX_JAVA_MODULES" >> .mvn/maven.config
+          ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS clean install -Dsurefire.timeout=1200 -Dno-test-kubernetes ${{ matrix.java.maven_args }}
+      - name: Clean Gradle temp directory
+        if: always()
+        run: devtools/gradle/gradlew --stop && rm -rf devtools/gradle/gradle-extension-plugin/build/tmp
+      - name: Prepare failure archive (if maven failed)
+        if: failure()
+        run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
+      - name: Upload failure Archive (if maven failed)
+        uses: actions/upload-artifact@v6
+        if: failure()
+        with:
+          name: test-reports-${{matrix.java.name}}
+          path: 'test-reports.tgz'
+          retention-days: 7
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          7z a -tzip build-reports.zip -r \
+              '**/target/*-reports/TEST-*.xml' \
+              'target/build-report.json' \
+              'target/gradle-build-scan-url.txt' \
+              LICENSE
+      - name: Upload build reports
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: "build-reports-${{ github.run_attempt }}-${{ matrix.java.name }}"
+          path: |
+            build-reports.zip
+          retention-days: 7
+      - name: Upload test-produced debug dumps
+        uses: actions/upload-artifact@v6
+        # We need this as soon as there's a matching file
+        # -- even in case of success, as some flaky tests won't fail the build
+        if: always()
+        with:
+          name: "debug-${{ github.run_attempt }}-${{ matrix.java.name }}"
+          path: "**/target/debug/**"
+          if-no-files-found: ignore # If we're not currently debugging any test, it's fine.
+          retention-days: 28 # We don't get notified for flaky tests, so let's give maintainers time to get back to it
+      - name: Upload build.log (if build failed)
+        uses: actions/upload-artifact@v6
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: "build-logs-${{ matrix.java.name }}"
+          path: |
+            **/build.log
+          retention-days: 7
+
+  build-report:
+    runs-on: ubuntu-latest
+    name: Build report
+    needs: [build-jdk25,jvm-tests]
+    if: always()
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          path: build-reports-artifacts
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Produce report and add it as job summary
+        uses: quarkusio/action-build-reporter@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          build-reports-artifacts-path: build-reports-artifacts

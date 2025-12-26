@@ -118,6 +118,7 @@ import io.quarkus.qute.ErrorCode;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Expression.VirtualMethodPart;
 import io.quarkus.qute.Identifiers;
+import io.quarkus.qute.JavaElementUriBuilder;
 import io.quarkus.qute.LoopSectionHelper;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.ParameterDeclaration;
@@ -129,6 +130,7 @@ import io.quarkus.qute.SectionHelper;
 import io.quarkus.qute.SectionHelperFactory;
 import io.quarkus.qute.SetSectionHelper;
 import io.quarkus.qute.Template;
+import io.quarkus.qute.TemplateContents;
 import io.quarkus.qute.TemplateData;
 import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.TemplateExtension;
@@ -2627,6 +2629,7 @@ public class QuteProcessor {
                             .path(getCheckedTemplatePath(index.getIndex(), checkedTemplateAnnotation, fragmentId, target)
                                     + suffix)
                             .extensionInfo(target.toString())
+                            .source(getSource(target, TemplateContents.class))
                             .build());
                     continue;
                 }
@@ -2649,6 +2652,13 @@ public class QuteProcessor {
             }
             throw new TemplateException("Invalid annotation target for @TemplateContents: " + annotation.target());
         }
+    }
+
+    private URI getSource(ClassInfo target, Class<?> annotationClass) {
+        return JavaElementUriBuilder
+                .builder(target.toString())
+                .setAnnotation(annotationClass.getName())
+                .build();
     }
 
     @BuildStep

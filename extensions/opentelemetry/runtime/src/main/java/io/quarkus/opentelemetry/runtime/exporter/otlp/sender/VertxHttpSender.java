@@ -17,8 +17,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.GZIPOutputStream;
 
-import io.opentelemetry.exporter.internal.http.HttpSender;
-import io.opentelemetry.exporter.internal.marshal.Marshaler;
+import io.opentelemetry.exporter.http.HttpRequestBodyWriter;
+import io.opentelemetry.exporter.http.HttpResponse;
+import io.opentelemetry.exporter.http.HttpSender;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.internal.ThrottlingLogger;
 import io.quarkus.vertx.core.runtime.BufferOutputStream;
@@ -94,24 +95,23 @@ public final class VertxHttpSender implements HttpSender {
     }
 
     @Override
-    public void send(Marshaler marshaler,
-            int contentLength,
-            Consumer<Response> onHttpResponseRead,
+    public void send(HttpRequestBodyWriter requestBodyWriter,
+            Consumer<HttpResponse> onHttpResponseRead,
             Consumer<Throwable> onError) {
         if (isShutdown.get()) {
             return;
         }
 
-        String marshalerType = marshaler.getClass().getSimpleName();
+        String writerType = requestBodyWriter.getClass().getSimpleName();
         String requestURI = basePath + signalPath;
         var clientRequestSuccessHandler = new ClientRequestSuccessHandler(client, requestURI, headers, compressionEnabled,
                 contentType,
-                contentLength, onHttpResponseRead,
-                onError, marshaler, 1, isShutdown::get);
+                onHttpResponseRead,
+                onError, requestBodyWriter, 1, isShutdown::get);
         initiateSend(client, requestURI, MAX_ATTEMPTS, clientRequestSuccessHandler, new Consumer<>() {
             @Override
             public void accept(Throwable throwable) {
-                failOnClientRequest(marshalerType, throwable, onError);
+                failOnClientRequest(writerType, throwable, onError);
             }
         });
     }
@@ -201,10 +201,9 @@ public final class VertxHttpSender implements HttpSender {
         private final Map<String, String> headers;
         private final boolean compressionEnabled;
         private final String contentType;
-        private final int contentLength;
-        private final Consumer<Response> onHttpResponseRead;
+        private final Consumer<HttpResponse> onHttpResponseRead;
         private final Consumer<Throwable> onError;
-        private final Marshaler marshaler;
+        private final HttpRequestBodyWriter requestBodyWriter;
 
         private final int attemptNumber;
         private final Supplier<Boolean> isShutdown;
@@ -213,10 +212,9 @@ public final class VertxHttpSender implements HttpSender {
                 String requestURI, Map<String, String> headers,
                 boolean compressionEnabled,
                 String contentType,
-                int contentLength,
-                Consumer<Response> onHttpResponseRead,
+                Consumer<HttpResponse> onHttpResponseRead,
                 Consumer<Throwable> onError,
-                Marshaler marshaler,
+                HttpRequestBodyWriter requestBodyWriter,
                 int attemptNumber,
                 Supplier<Boolean> isShutdown) {
             this.client = client;
@@ -224,10 +222,9 @@ public final class VertxHttpSender implements HttpSender {
             this.headers = headers;
             this.compressionEnabled = compressionEnabled;
             this.contentType = contentType;
-            this.contentLength = contentLength;
             this.onHttpResponseRead = onHttpResponseRead;
             this.onError = onError;
-            this.marshaler = marshaler;
+            this.requestBodyWriter = requestBodyWriter;
             this.attemptNumber = attemptNumber;
             this.isShutdown = isShutdown;
         }
@@ -255,19 +252,19 @@ public final class VertxHttpSender implements HttpSender {
                                             return;
                                         }
                                     }
-                                    onHttpResponseRead.accept(new Response() {
+                                    onHttpResponseRead.accept(new HttpResponse() {
                                         @Override
-                                        public int statusCode() {
+                                        public int getStatusCode() {
                                             return clientResponse.statusCode();
                                         }
 
                                         @Override
-                                        public String statusMessage() {
+                                        public String getStatusMessage() {
                                             return clientResponse.statusMessage();
                                         }
 
                                         @Override
-                                        public byte[] responseBody() {
+                                        public byte[] getResponseBody() {
                                             return bodyResult.result().getBytes();
                                         }
                                     });
@@ -299,18 +296,18 @@ public final class VertxHttpSender implements HttpSender {
             })
                     .putHeader("Content-Type", contentType);
 
-            Buffer buffer = Buffer.buffer(contentLength);
+            Buffer buffer = Buffer.buffer(requestBodyWriter.contentLength());
             OutputStream os = new BufferOutputStream(buffer);
             if (compressionEnabled) {
                 clientRequest.putHeader("Content-Encoding", "gzip");
                 try (var gzos = new GZIPOutputStream(os)) {
-                    marshaler.writeBinaryTo(gzos);
+                    requestBodyWriter.writeRequestBody(gzos);
                 } catch (IOException e) {
                     throw new IllegalStateException(e);
                 }
             } else {
                 try {
-                    marshaler.writeBinaryTo(os);
+                    requestBodyWriter.writeRequestBody(os);
                 } catch (IOException e) {
                     throw new IllegalStateException(e);
                 }
@@ -327,8 +324,8 @@ public final class VertxHttpSender implements HttpSender {
 
         public ClientRequestSuccessHandler newAttempt() {
             return new ClientRequestSuccessHandler(client, requestURI, headers, compressionEnabled,
-                    contentType, contentLength, onHttpResponseRead,
-                    onError, marshaler, attemptNumber + 1, isShutdown);
+                    contentType, onHttpResponseRead,
+                    onError, requestBodyWriter, attemptNumber + 1, isShutdown);
         }
     }
 }

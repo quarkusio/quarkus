@@ -32,7 +32,7 @@ public class CaffeineProcessor {
 
     @BuildStep
     void cacheLoaders(CombinedIndexBuildItem combinedIndex, BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
-        final Collection<ClassInfo> implementors = combinedIndex.getIndex().getAllKnownImplementors(CACHE_LOADER_NAME);
+        final Collection<ClassInfo> implementors = combinedIndex.getIndex().getAllKnownImplementations(CACHE_LOADER_NAME);
         List<String> effectiveImplementorNames = new ArrayList<>(implementors.size());
         for (ClassInfo info : implementors) {
             if (CACHE_LOADER_TO_EXCLUDE.equals(info.name().toString())) {
@@ -46,7 +46,7 @@ public class CaffeineProcessor {
                     .reason(getClass().getName())
                     .methods().build());
 
-            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(effectiveImplementorNames.toArray(new String[0]))
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(effectiveImplementorNames)
                     .reason(getClass().getName())
                     .methods().build());
         }

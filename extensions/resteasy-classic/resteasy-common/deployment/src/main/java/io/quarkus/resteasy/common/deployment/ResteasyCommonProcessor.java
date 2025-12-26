@@ -246,9 +246,7 @@ public class ResteasyCommonProcessor {
         providersToRegister.addAll(contributedProviders);
         if (useBuiltinProviders) {
             // If we use built-in providers, we need to register all available providers
-            for (String availableProvider : availableProviders) {
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(availableProvider).fields().build());
-            }
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(availableProviders).fields().build());
         }
 
         if (providersToRegister.contains("org.jboss.resteasy.plugins.providers.jsonb.JsonBindingProvider")) {

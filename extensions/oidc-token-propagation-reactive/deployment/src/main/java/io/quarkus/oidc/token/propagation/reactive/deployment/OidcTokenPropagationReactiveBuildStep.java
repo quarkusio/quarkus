@@ -41,7 +41,8 @@ public class OidcTokenPropagationReactiveBuildStep {
             BuildProducer<GeneratedBeanBuildItem> generatedBean,
             BuildProducer<RegisterProviderAnnotationInstanceBuildItem> providerProducer) {
         if (!accessTokenInstances.isEmpty()) {
-            var filterGenerator = new AccessTokenRequestFilterGenerator(unremovableBeans, reflectiveClass, generatedBean,
+            var filterGenerator = new AccessTokenRequestFilterGenerator(unremovableBeans, generatedBean,
+                    accessTokenInstances.size(),
                     AccessTokenRequestReactiveFilter.class);
             for (AccessTokenInstanceBuildItem instance : accessTokenInstances) {
                 String providerClass = filterGenerator.generateClass(instance);
@@ -53,6 +54,9 @@ public class OidcTokenPropagationReactiveBuildStep {
                                                         org.jboss.jandex.Type.Kind.CLASS)),
                                         AnnotationValue.createIntegerValue("priority", Priorities.AUTHENTICATION)))));
             }
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(filterGenerator.getGeneratedClassesNames())
+                    .reason(getClass().getName())
+                    .methods().fields().constructors().build());
         }
     }
 

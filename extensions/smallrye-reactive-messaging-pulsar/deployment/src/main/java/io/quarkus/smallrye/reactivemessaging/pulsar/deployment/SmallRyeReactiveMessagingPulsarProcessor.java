@@ -1,13 +1,11 @@
 package io.quarkus.smallrye.reactivemessaging.pulsar.deployment;
 
-import java.util.Collection;
 import java.util.function.BiFunction;
 import java.util.logging.Level;
 
 import org.apache.pulsar.client.impl.conf.ClientConfigurationData;
 import org.apache.pulsar.client.impl.conf.ConsumerConfigurationData;
 import org.apache.pulsar.client.impl.conf.ProducerConfigurationData;
-import org.jboss.jandex.ClassInfo;
 import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
@@ -164,12 +162,12 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
                 .builder("org.apache.pulsar.client.util.SecretsSerializer")
                 .constructors().build());
 
-        Collection<ClassInfo> authPluginClasses = combinedIndex.getIndex()
-                .getAllKnownImplementors(DotNames.PULSAR_AUTHENTICATION);
-        for (ClassInfo authPluginClass : authPluginClasses) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(authPluginClass.name().toString())
-                    .constructors().build());
-        }
+        final var pulsarAuths = combinedIndex.getIndex()
+                .getAllKnownImplementations(DotNames.PULSAR_AUTHENTICATION)
+                .stream()
+                .map(classInfo -> classInfo.name().toString())
+                .toList();
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(pulsarAuths).constructors().build());
 
         NativeImageConfigBuildItem.Builder nativeImageConfig = NativeImageConfigBuildItem.builder()
                 .addNativeImageSystemProperty("io.netty.handler.ssl.noOpenSsl", "true")

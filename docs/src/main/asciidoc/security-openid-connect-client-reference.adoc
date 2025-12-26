@@ -1760,6 +1760,38 @@ Uni<String> tokenUni = oidcClients.getClient("OIDC_CLIENT_NAME")
 builder.dynamicHeader("Authorization", tokenUni);
 VertxDynamicGraphQLClient client = builder.build();
 ----
+
+For dynamic GraphQL clients, you can override the `quarkus.oidc-client-graphql.client-name` configuration property on per-client basis with the `quarkus.oidc-client-graphql."graphql-client".client-name` configuration property.
+For example:
+
+Example `application.properties`
+[source,properties]
+----
+quarkus.oidc-client-graphql."dynamic-graphql-client-2".client-name=oidc-client-for-graphql-2
+
+# example declaration of the OIDC client itself
+quarkus.oidc-client.oidc-client-for-graphql-2.auth-server-url=${keycloak.url}
+quarkus.oidc-client.oidc-client-for-graphql-2.grant.type=password
+quarkus.oidc-client.oidc-client-for-graphql-2.grant-options.password.username=${username}
+quarkus.oidc-client.oidc-client-for-graphql-2.grant-options.password.password=${password}
+quarkus.oidc-client.oidc-client-for-graphql-2.client-id=${quarkus.oidc.client-id}
+quarkus.oidc-client.oidc-client-for-graphql-2.credentials.client-secret.value=${keycloak.credentials.secret}
+quarkus.oidc-client.oidc-client-for-graphql-2.credentials.client-secret.method=POST
+----
+
+.Example dynamic GraphQL client
+[source,java]
+----
+@Inject
+@GraphQLClient("dynamic-graphql-client-2")
+DynamicGraphQLClient dynamicClient;
+
+String dynamicClientAdmin() throws ExecutionException, InterruptedException {
+    return dynamicClient.executeSync("query { principalName }").getData().getString("principalName");   <1>
+}
+----
+<1> The `dynamic-graphql-client-2` GraphQL client calls have the `Authorization` header with an access token acquired by the `oidc-client-for-graphql-2` OIDC client.
+
 endif::no-quarkus-oidc-client-graphql[]
 
 [[configuration-reference]]

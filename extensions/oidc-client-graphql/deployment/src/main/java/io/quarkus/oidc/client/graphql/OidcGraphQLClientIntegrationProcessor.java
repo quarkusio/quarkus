@@ -19,6 +19,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.oidc.client.graphql.runtime.OidcClientGraphQLConfig;
 import io.quarkus.oidc.client.graphql.runtime.OidcGraphQLClientIntegrationRecorder;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.graphql.client.deployment.GraphQLClientConfigInitializedBuildItem;
 
 public class OidcGraphQLClientIntegrationProcessor {
@@ -54,6 +55,17 @@ public class OidcGraphQLClientIntegrationProcessor {
                 }
             }
         }
+        config.additionalOidcClients().forEach((graphQlClient, oidcClient) -> {
+            var previousOidcClient = configKeysToOidcClients.put(graphQlClient, oidcClient.clientName());
+            if (previousOidcClient != null && !previousOidcClient.equals(oidcClient.clientName())) {
+                throw new ConfigurationException("""
+                        The '%s' annotation has been used to configure the '%s' OIDC client for the '%s' GraphQL client.
+                        However, the 'quarkus.oidc-client-graphql."%s".client-name' configuration property
+                        sets the OIDC client to '%s'. Please choose one way to configure the OIDC client name.
+                        """.formatted(OIDC_CLIENT_FILTER, previousOidcClient, graphQlClient, graphQlClient,
+                        oidcClient.clientName()));
+            }
+        });
         recorder.enhanceGraphQLClientConfigurationWithOidc(configKeysToOidcClients, config.clientName().orElse(null));
     }
 }

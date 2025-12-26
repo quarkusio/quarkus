@@ -1,5 +1,6 @@
 package io.quarkus.mongodb;
 
+import io.quarkus.test.DisabledOnPower;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -16,7 +17,8 @@ import de.flapdoodle.reverse.TransitionWalker;
 import de.flapdoodle.reverse.transitions.Start;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class MongoTestBase {
+@DisabledOnPower
+public abstract class MongoTestBase {
 
     private static final Logger LOGGER = Logger.getLogger(MongoTestBase.class);
     protected TransitionWalker.ReachedState<RunningMongodProcess> mongo;

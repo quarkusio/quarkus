@@ -57,27 +57,27 @@ import io.smallrye.common.annotation.Blocking;
  * {@code Uni<Void>}, {@code Uni<Response>} or
  * {@code Uni<RestResponse>}.
  * <ul>
- * <li>{@code void} should be used when filtering does not need to perform any blocking operations and the filter cannot abort
- * processing.
- * <li>{@code Response} or {@code RestResponse} should be used when filtering does not need to perform any blocking operations
- * and the filter cannot
- * abort
- * processing - in this case the processing will be aborted if the response is not {@code null}.
- * <li>{@code Optional<Response>} or {@code Optional<RestResponse>} should be used when filtering does not need to perform any
- * blocking operations but the filter
- * might abort processing - in this case processing is aborted when the {@code Optional} contains a {@code Response} payload.
- * <li>{@code Uni<Void>} should be used when filtering needs to perform a non-blocking operation but the filter cannot abort
- * processing.
+ * <li>{@code void} should be used when filtering does not need to abort processing.
+ * <li>{@code Response} or {@code RestResponse} should be used when filtering might need to abort processing
+ * - in this case the processing will be aborted if the response is not {@code null}.
+ * <li>{@code Optional<Response>} or {@code Optional<RestResponse>} can also be used when filtering might need to abort
+ * processing - in this case processing is aborted when the {@code Optional} contains a {@code Response} value.
+ * <li>{@code Uni<Void>} should be used when filtering might need to perform a non-blocking operation but the filter
+ * cannot abort processing.
  * Note that {@code Uni<Void>} can easily be produced using: {@code Uni.createFrom().nullItem()}
- * <li>{@code Uni<Response>} or {@code Uni<RestResponse>} should be used when filtering needs to perform a non-blocking
- * operation
- * and the filter
- * might abort processing - in this case processing is aborted when the {@code Uni} contains a {@code Response} payload.
+ * <li>{@code Uni<Response>} or {@code Uni<RestResponse>} should be used when filtering might need to perform a
+ * non-blocking operation and the filter might abort processing - in this case processing is aborted when the
+ * {@code Uni} contains a non-{@code null} item.
  * </ul>
- *
+ * <p>
  * Another important thing to note is that if {@link ContainerRequestContext} is used as a request parameter, calling
  * {@code abortWith}
  * is not allowed. You should use the proper response type if aborting processing is necessary.
+ * </p>
+ * <p>
+ * Note: {@link #preMatching()} filters default to running on the event loop, while other filters default to running on the same
+ * thread as the matching endpoint. You can override this behaviour with {@link #nonBlocking()}.
+ * </p>
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
@@ -89,19 +89,27 @@ public @interface ServerRequestFilter {
     int priority() default Priorities.USER;
 
     /**
-     * Whether the filter is a pre-matching filter
+     * Whether the filter is a pre-matching filter. Pre-matching filters run on the event loop by default, unless
+     * overriden by {@link #nonBlocking()}.
      * <p>
      * Note that this setting and {@link ServerRequestFilter#readBody()} cannot be both set to true.
      */
     boolean preMatching() default false;
 
     /**
-     * Normally {@link ContainerRequestFilter} classes are run by RESTEasy Reactive on the same thread as the Resource
+     * <p>
+     * Normally {@link #preMatching()} filters default to running on the event loop, while post-matching filters are run
+     * by RESTEasy Reactive on the same thread as the Resource
      * Method - this means than when a Resource Method is annotated with {@link Blocking}, the filters will also be run
      * on a worker thread.
+     * </p>
+     * <p>
      * This is meant to be set to {@code true} if a filter should be run on the event-loop even if the target Resource
      * method is going to be run on the worker thread.
+     * </p>
+     * <p>
      * For this to work, this filter must be run before any of the filters when non-blocking is not required.
+     * </p>
      */
     boolean nonBlocking() default false;
 

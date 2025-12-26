@@ -371,7 +371,6 @@ public class DevServicesDatasourceProcessor {
                     }
                 }
             }
-            setDataSourceProperties(devDebProperties, dbName, "db-kind", defaultDbKind.get());
             if (datasource.username() != null) {
                 setDataSourceProperties(devDebProperties, dbName, "username", datasource.username());
             }

@@ -648,5 +648,33 @@
                 </pluginManagement>
             </build>
         </profile>
+        <profile>
+            <!-- Add an automatic module name if the corresponding property is defined -->
+            <id>automatic-module</id>
+            <activation>
+                <file>
+                    <exists>automatic-module</exists>
+                </file>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>default-jar</id>
+                                <configuration>
+                                    <archive>
+                                        <manifestEntries>
+                                            <Automatic-Module-Name>${automatic-module}</Automatic-Module-Name>
+                                        </manifestEntries>
+                                    </archive>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 </project>

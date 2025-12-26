@@ -13,6 +13,10 @@
     <artifactId>quarkus-ide-launcher</artifactId>
     <name>Quarkus - IDE Launcher</name>
 
+    <properties>
+        <automatic-module>io.quarkus.launcher</automatic-module>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

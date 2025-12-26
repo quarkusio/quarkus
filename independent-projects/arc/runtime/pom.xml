@@ -13,6 +13,10 @@
     <artifactId>arc</artifactId>
     <name>ArC - Runtime</name>
 
+    <properties>
+        <automatic-module>io.quarkus.arc</automatic-module>
+    </properties>
+
     <dependencies>
 
         <dependency>

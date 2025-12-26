@@ -14,6 +14,10 @@
     <name>Quarkus - Core - Runtime</name>
     <description>Quarkus core components</description>
 
+    <properties>
+        <automatic-module>io.quarkus.core</automatic-module>
+    </properties>
+
     <dependencies>
         <dependency>
           <groupId>jakarta.annotation</groupId>

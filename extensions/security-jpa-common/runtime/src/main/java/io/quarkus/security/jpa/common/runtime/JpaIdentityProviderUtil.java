@@ -1,5 +1,6 @@
 package io.quarkus.security.jpa.common.runtime;
 
+import java.lang.reflect.InvocationTargetException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.List;
 import java.util.UUID;
@@ -80,6 +81,15 @@ public class JpaIdentityProviderUtil {
             ClearPassword.createRaw(ClearPassword.ALGORITHM_CLEAR, uuid.toCharArray());
         } else {
             BcryptUtil.bcryptHash(uuid);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T newInstance(Class<T> clazz) {
+        try {
+            return (T) clazz.getConstructors()[0].newInstance();
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException(e);
         }
     }
 }

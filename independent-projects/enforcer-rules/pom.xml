@@ -40,7 +40,7 @@
         <!--
            Supported Maven versions, interpreted as a version range (Also defined in build-parent)
         -->
-        <supported-maven-versions>[3.6.2,)</supported-maven-versions>
+        <supported-maven-versions>[3.9.0,)</supported-maven-versions>
     </properties>
 
     <dependencies>

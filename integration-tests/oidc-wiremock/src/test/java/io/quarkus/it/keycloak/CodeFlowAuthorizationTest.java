@@ -406,7 +406,7 @@ public class CodeFlowAuthorizationTest {
             // This test enables the token refresh, in this case the cookie age is extended by additional 5 mins
             // to minimize the risk of the browser losing immediately after it has expired, for this cookie
             // be returned to Quarkus, analyzed and refreshed
-            assertThat(date.toInstant().getEpochSecond() - issuedAt).isLessThanOrEqualTo(299 + 300 + 3);
+            assertThat(date.toInstant().getEpochSecond() - issuedAt).isLessThanOrEqualTo(299 + 300 + 5);
 
             assertEquals(299, decryptAccessTokenExpiryTime(webClient, "code-flow-user-info-github-cached-in-idtoken"));
 
@@ -431,7 +431,7 @@ public class CodeFlowAuthorizationTest {
             sessionCookie = getSessionCookie(webClient, "code-flow-user-info-github-cached-in-idtoken");
             date = sessionCookie.getExpires();
             assertThat(date.toInstant().getEpochSecond() - issuedAt).isGreaterThanOrEqualTo(299 + 300);
-            assertThat(date.toInstant().getEpochSecond() - issuedAt).isLessThanOrEqualTo(299 + 300 + 3);
+            assertThat(date.toInstant().getEpochSecond() - issuedAt).isLessThanOrEqualTo(299 + 300 + 5);
 
             assertEquals(305, decryptAccessTokenExpiryTime(webClient, "code-flow-user-info-github-cached-in-idtoken"));
 

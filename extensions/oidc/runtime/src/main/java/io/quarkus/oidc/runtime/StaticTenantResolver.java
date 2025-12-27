@@ -1,11 +1,13 @@
 package io.quarkus.oidc.runtime;
 
 import static io.quarkus.oidc.runtime.OidcProvider.ANY_ISSUER;
+import static io.vertx.core.http.HttpHeaders.AUTHORIZATION;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
@@ -28,8 +30,9 @@ final class StaticTenantResolver {
 
     private static final Logger LOG = Logger.getLogger(StaticTenantResolver.class);
 
-    private final TenantResolver[] staticTenantResolvers;
+    private final TenantResolver[] staticTenantResolversGroup1;
     private final IssuerBasedTenantResolver issuerBasedTenantResolver;
+    private final TenantResolver[] staticTenantResolversGroup2;
 
     StaticTenantResolver(TenantConfigBean tenantConfigBean, String rootPath, boolean resolveTenantsWithIssuer,
             Instance<TenantResolver> tenantResolverInstance) {
@@ -52,24 +55,34 @@ final class StaticTenantResolver {
             staticTenantResolvers.add(pathMatchingTenantResolver);
         }
 
-        // 3. default static tenant resolver
-        if (!tenantConfigBean.getStaticTenantsConfig().isEmpty()) {
-            staticTenantResolvers.add(new DefaultStaticTenantResolver(tenantConfigBean));
-        }
+        this.staticTenantResolversGroup1 = staticTenantResolvers.toArray(new TenantResolver[0]);
 
-        this.staticTenantResolvers = staticTenantResolvers.toArray(new TenantResolver[0]);
-
-        // 4. issuer-based tenant resolver
+        // 3. issuer-based tenant resolver
         if (resolveTenantsWithIssuer) {
             this.issuerBasedTenantResolver = IssuerBasedTenantResolver.of(
                     tenantConfigBean.getStaticTenantsConfig(), tenantConfigBean.getDefaultTenant());
         } else {
             this.issuerBasedTenantResolver = null;
         }
+
+        staticTenantResolvers.clear();
+
+        // 4. header-based tenant resolver
+        var headerBasedTenantResolver = HeaderBasedTenantResolver.of(tenantConfigBean);
+        if (headerBasedTenantResolver != null) {
+            staticTenantResolvers.add(headerBasedTenantResolver);
+        }
+
+        // 5. default static tenant resolver
+        if (!tenantConfigBean.getStaticTenantsConfig().isEmpty()) {
+            staticTenantResolvers.add(new DefaultStaticTenantResolver(tenantConfigBean));
+        }
+
+        this.staticTenantResolversGroup2 = staticTenantResolvers.toArray(new TenantResolver[0]);
     }
 
     Uni<String> resolve(RoutingContext context) {
-        for (TenantResolver resolver : staticTenantResolvers) {
+        for (TenantResolver resolver : staticTenantResolversGroup1) {
             final String tenantId = resolver.resolve(context);
             if (tenantId != null) {
                 return Uni.createFrom().item(tenantId);
@@ -77,7 +90,26 @@ final class StaticTenantResolver {
         }
 
         if (issuerBasedTenantResolver != null) {
-            return issuerBasedTenantResolver.resolveTenant(context);
+            return issuerBasedTenantResolver.resolveTenant(context)
+                    .map(resolvedTenant -> {
+                        if (resolvedTenant != null) {
+                            return resolvedTenant;
+                        }
+                        for (TenantResolver resolver : staticTenantResolversGroup2) {
+                            final String tenantId = resolver.resolve(context);
+                            if (tenantId != null) {
+                                return tenantId;
+                            }
+                        }
+                        return null;
+                    });
+        }
+
+        for (TenantResolver resolver : staticTenantResolversGroup2) {
+            final String tenantId = resolver.resolve(context);
+            if (tenantId != null) {
+                return Uni.createFrom().item(tenantId);
+            }
         }
 
         return Uni.createFrom().nullItem();
@@ -358,4 +390,53 @@ final class StaticTenantResolver {
         }
     }
 
+    private static final class HeaderBasedTenantResolver implements TenantResolver {
+
+        private final Map<String, String> headerNameToTenantId;
+
+        private HeaderBasedTenantResolver(Map<String, String> headerNameToTenantId) {
+            this.headerNameToTenantId = Map.copyOf(headerNameToTenantId);
+        }
+
+        @Override
+        public String resolve(RoutingContext context) {
+            for (String headerName : context.request().headers().names()) {
+                String tenantId = headerNameToTenantId.get(headerName);
+                if (tenantId != null) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debugf("Resolved the '%s' OIDC tenant based on the matching header '%s'", tenantId, headerName);
+                    }
+                    return tenantId;
+                }
+            }
+            return null;
+        }
+
+        private static TenantResolver of(TenantConfigBean tenantConfigBean) {
+            var tenantsWitEnabledHeaderResolution = tenantConfigBean.getStaticTenantsConfig().values().stream()
+                    .map(TenantConfigContext::getOidcTenantConfig)
+                    .filter(Objects::nonNull)
+                    .filter(c -> c.token().header().isPresent())
+                    .filter(c -> !AUTHORIZATION.toString().equalsIgnoreCase(c.token().header().get()))
+                    .toList();
+            if (tenantsWitEnabledHeaderResolution.isEmpty()) {
+                return null;
+            }
+            var headerToTenant = new HashMap<String, String>();
+            for (OidcTenantConfig tc : tenantsWitEnabledHeaderResolution) {
+                String headerName = tc.token().header().get();
+                String tenantId = tc.tenantId().get();
+                String previousTenantId = headerToTenant.putIfAbsent(headerName, tenantId);
+                if (previousTenantId != null) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debugf("OIDC tenants '%s' and '%s' are using the same custom HTTP header '%s'. " +
+                                "The '%s' tenant will not be resolved based on the custom HTTP header.", tenantId,
+                                previousTenantId, headerName, tenantId);
+                    }
+                    return null;
+                }
+            }
+            return new HeaderBasedTenantResolver(headerToTenant);
+        }
+    }
 }

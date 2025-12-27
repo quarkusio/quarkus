@@ -2,10 +2,13 @@ package io.quarkus.it.kafka;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Properties;
 
+import io.apicurio.registry.resolver.config.SchemaResolverConfig;
 import io.quarkus.it.kafka.avro.AvroKafkaCreator;
 import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import io.vertx.core.Vertx;
 
 public class KafkaResource implements QuarkusTestResourceLifecycleManager, DevServicesContext.ContextAware {
 
@@ -18,7 +21,9 @@ public class KafkaResource implements QuarkusTestResourceLifecycleManager, DevSe
         if (bootstrapServers != null) {
             String apicurioUrl = devServicesProperties.get("mp.messaging.connector.smallrye-kafka.apicurio.registry.url");
             String confluentUrl = devServicesProperties.get("mp.messaging.connector.smallrye-kafka.schema.registry.url");
-            creator = new AvroKafkaCreator(bootstrapServers, apicurioUrl, confluentUrl);
+            Properties commonProperties = new Properties();
+            commonProperties.put(SchemaResolverConfig.VERTX_INSTANCE, Vertx.vertx());
+            creator = new AvroKafkaCreator(bootstrapServers, apicurioUrl, confluentUrl, commonProperties);
         }
     }
 

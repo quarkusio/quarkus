@@ -17,17 +17,25 @@
     <dependencies>
         <dependency>
             <groupId>io.apicurio</groupId>
-            <artifactId>apicurio-registry-client</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>io.apicurio</groupId>
-                    <artifactId>apicurio-common-rest-client-jdk</artifactId>
-                </exclusion>
-            </exclusions>
+            <artifactId>apicurio-registry-serde-common</artifactId>
         </dependency>
         <dependency>
             <groupId>io.apicurio</groupId>
-            <artifactId>apicurio-common-rest-client-vertx</artifactId>
+            <artifactId>apicurio-registry-java-sdk</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.kiota</groupId>
+                    <artifactId>kiota-http-jdk</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.microsoft.kiota</groupId>
+                    <artifactId>microsoft-kiota-abstractions</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.vertx</groupId>
+                    <artifactId>vertx-core</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -45,6 +53,12 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-vertx</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>nativeimage</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>

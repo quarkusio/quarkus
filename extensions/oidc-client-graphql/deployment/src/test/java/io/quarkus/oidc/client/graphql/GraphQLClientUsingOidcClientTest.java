@@ -51,12 +51,26 @@ public class GraphQLClientUsingOidcClientTest {
 
     @Test
     public void dynamicClientWithDefault() {
-        // dynamic clients should always resort to the default (`quarkus.oidc-client-graphql.client-name`),
-        // because currently we don't have a way to override it
+        // dynamic clients without more specific configuration should always resort to the default
+        // OIDC client configured with the `quarkus.oidc-client-graphql.client-name` property
         RestAssured.when().get("/oidc-graphql-client/default-dynamic")
                 .then()
                 .statusCode(200)
                 .body(equalTo("alice"));
+    }
+
+    @Test
+    void dynamicClientsWithExplicitlyAssignedOidcClient() {
+        // expect 'jdoe' as we configured 'quarkus.oidc-client-graphql.jdoe-dynamic.client-name=doe'
+        RestAssured.when().get("/oidc-graphql-client/jdoe-dynamic")
+                .then()
+                .statusCode(200)
+                .body(equalTo("jdoe"));
+        // expect 'admin' as we configured 'quarkus.oidc-client-graphql.admin-dynamic.client-name=admin'
+        RestAssured.when().get("/oidc-graphql-client/admin-dynamic")
+                .then()
+                .statusCode(200)
+                .body(equalTo("admin"));
     }
 
 }

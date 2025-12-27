@@ -298,6 +298,13 @@ public class InfinispanCacheImpl extends AbstractCache implements Cache {
     }
 
     @Override
+    public <K, V> Uni<Void> put(final K key, final V value) {
+
+        return Uni.createFrom().completionStage(
+                CompletableFuture.runAsync(() -> remoteCache.put(key, value)));
+    }
+
+    @Override
     public <T extends Cache> T as(Class<T> type) {
         if (type.getTypeName().equals(InfinispanCacheImpl.class.getTypeName())) {
             return (T) this;

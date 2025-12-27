@@ -87,6 +87,11 @@ public class SpecializedCacheTest {
         }
 
         @Override
+        public <K, V> Uni<Void> put(final K key, final V value) {
+            throw new UnsupportedOperationException("This method is not tested here");
+        }
+
+        @Override
         public <T extends Cache> T as(Class<T> cacheType) {
             throw new UnsupportedOperationException("This method is not tested here");
         }

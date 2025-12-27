@@ -1,5 +1,6 @@
 package io.quarkus.oidc.common;
 
+import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 
@@ -46,7 +47,21 @@ public interface OidcRequestFilter {
     }
 
     /**
+     * An {@link OidcRequestContext} implementation used for asynchronous filtering.
+     */
+    final class OidcRequestFilterContext extends OidcRequestContext {
+
+        public OidcRequestFilterContext(HttpRequest<Buffer> request, Buffer requestBody,
+                OidcRequestContextProperties contextProperties) {
+            super(request, requestBody, contextProperties);
+        }
+    }
+
+    /**
      * Filter OIDC request.
+     *
+     * <b>IMPORTANT:</b> If you need to block or filter this request asynchronously,
+     * implement the {@link #filter(OidcRequestFilterContext)} method instead.
      *
      * @param requestContext the request context which provides access to the HTTP request headers and body, as well as context
      *        properties.
@@ -54,6 +69,20 @@ public interface OidcRequestFilter {
      */
     default void filter(OidcRequestContext requestContext) {
         filter(requestContext.request(), requestContext.requestBody(), requestContext.contextProperties());
+    }
+
+    /**
+     * Filter OIDC request asynchronously.
+     *
+     * @param requestContext the request context which provides access to the HTTP request headers and body, as well as context
+     *        properties.
+     * @return {@link Uni}; must not be null
+     */
+    default Uni<Void> filter(OidcRequestFilterContext requestContext) {
+        return Uni.createFrom().item(() -> {
+            filter((OidcRequestContext) requestContext);
+            return null;
+        });
     }
 
     /**

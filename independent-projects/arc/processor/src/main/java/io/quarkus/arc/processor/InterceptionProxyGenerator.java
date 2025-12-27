@@ -1,6 +1,7 @@
 package io.quarkus.arc.processor;
 
 import static java.lang.constant.ConstantDescs.CD_Object;
+import static org.jboss.jandex.Type.Kind.VOID;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
 
@@ -398,7 +399,12 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
                             Expr superResult = method.declaringClass().isInterface()
                                     ? lbc.invokeInterface(methodDesc, target, superArgs)
                                     : lbc.invokeVirtual(methodDesc, target, superArgs);
-                            lbc.return_(superResult);
+
+                            if (method.returnType().kind() == VOID) {
+                                lbc.returnNull();
+                            } else {
+                                lbc.return_(superResult);
+                            }
                         });
                     });
 

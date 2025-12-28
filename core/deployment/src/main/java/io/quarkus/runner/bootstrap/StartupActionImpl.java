@@ -41,7 +41,6 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.RuntimeApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
-import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
 import io.quarkus.deployment.jvm.JvmModulesReconfigurer;
 import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
@@ -194,17 +193,6 @@ public class StartupActionImpl implements StartupAction {
                     }
                 }
             }, runtimeClassLoader);
-        } catch (Throwable t) {
-            // todo: dev mode expects run time config to be available immediately even if static init didn't complete.
-            try {
-                final Class<?> configClass = Class.forName(RunTimeConfigurationGenerator.CONFIG_CLASS_NAME, true,
-                        runtimeClassLoader);
-                configClass.getDeclaredMethod(RunTimeConfigurationGenerator.C_CREATE_RUN_TIME_CONFIG.getName())
-                        .invoke(null);
-            } catch (Throwable t2) {
-                t.addSuppressed(t2);
-            }
-            throw t;
         } finally {
             Thread.currentThread().setContextClassLoader(old);
         }
@@ -339,24 +327,8 @@ public class StartupActionImpl implements StartupAction {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try {
             Thread.currentThread().setContextClassLoader(runtimeClassLoader);
-            final String className = applicationClassName;
-            Class<?> appClass;
-            try {
-                // force init here
-                appClass = Class.forName(className, true, runtimeClassLoader);
-            } catch (Throwable t) {
-                // todo: dev mode expects run time config to be available immediately even if static init didn't complete.
-                try {
-                    final Class<?> configClass = Class.forName(RunTimeConfigurationGenerator.CONFIG_CLASS_NAME, true,
-                            runtimeClassLoader);
-                    configClass.getDeclaredMethod(RunTimeConfigurationGenerator.C_CREATE_RUN_TIME_CONFIG.getName())
-                            .invoke(null);
-                } catch (Throwable t2) {
-                    t.addSuppressed(t2);
-                }
-                throw t;
-            }
-
+            // force init here
+            Class<?> appClass = Class.forName(applicationClassName, true, runtimeClassLoader);
             Method start = appClass.getMethod("start", String[].class);
             Object application = appClass.getDeclaredConstructor().newInstance();
 

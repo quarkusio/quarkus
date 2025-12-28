@@ -22,6 +22,8 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.registry.ValueRegistry;
+import io.quarkus.runtime.ValueRegistryConfigSource;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.configuration.AbstractConfigBuilder;
 import io.quarkus.runtime.configuration.ConfigDiagnostic;
@@ -34,6 +36,7 @@ import io.smallrye.config.ConfigMappings;
 import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 
 /**
  *
@@ -44,12 +47,13 @@ public final class RunTimeConfigurationGenerator {
     public static final String CONFIG_RUNTIME_NAME = "io.quarkus.runtime.generated.RunTimeConfig";
 
     public static final MethodDescriptor C_CREATE_RUN_TIME_CONFIG = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME,
-            "createRunTimeConfig", void.class);
+            "createRunTimeConfig", void.class, ValueRegistry.class);
     public static final MethodDescriptor C_ENSURE_INITIALIZED = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME,
             "ensureInitialized", void.class);
     public static final MethodDescriptor REINIT = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "reinit",
             void.class);
-    public static final MethodDescriptor C_READ_CONFIG = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "readConfig", void.class);
+    public static final MethodDescriptor C_READ_CONFIG = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "readConfig", void.class,
+            ValueRegistry.class);
 
     static final FieldDescriptor C_UNKNOWN = FieldDescriptor.of(CONFIG_CLASS_NAME, "unknown", Set.class);
     static final FieldDescriptor C_UNKNOWN_RUNTIME = FieldDescriptor.of(CONFIG_CLASS_NAME, "unknownRuntime", Set.class);
@@ -90,6 +94,8 @@ public final class RunTimeConfigurationGenerator {
 
     static final MethodDescriptor SRCB_NEW = MethodDescriptor.ofConstructor(SmallRyeConfigBuilder.class);
     static final MethodDescriptor SRCB_WITH_CUSTOMIZER = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
+            "withCustomizer", void.class, SmallRyeConfigBuilder.class, SmallRyeConfigBuilderCustomizer.class);
+    static final MethodDescriptor SRCB_WITH_CUSTOMIZER_BY_NAME = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
             "withCustomizer", void.class, SmallRyeConfigBuilder.class, String.class);
     static final MethodDescriptor SRCB_BUILD = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class, "build",
             SmallRyeConfig.class);
@@ -151,7 +157,7 @@ public final class RunTimeConfigurationGenerator {
             ResultHandle buildTimeBuilder = clinit.newInstance(SRCB_NEW);
 
             // static config builder
-            clinit.invokeStaticMethod(SRCB_WITH_CUSTOMIZER, buildTimeBuilder, clinit.load(CONFIG_STATIC_NAME));
+            clinit.invokeStaticMethod(SRCB_WITH_CUSTOMIZER_BY_NAME, buildTimeBuilder, clinit.load(CONFIG_STATIC_NAME));
 
             clinitConfig = clinit.checkCast(clinit.invokeVirtualMethod(SRCB_BUILD, buildTimeBuilder), SmallRyeConfig.class);
 
@@ -168,7 +174,7 @@ public final class RunTimeConfigurationGenerator {
                 // the build time config, which is for user use only (not used by us other than for loading converters)
                 ResultHandle buildTimeBuilder = reinit.newInstance(SRCB_NEW);
                 // static config builder
-                reinit.invokeStaticMethod(SRCB_WITH_CUSTOMIZER, buildTimeBuilder, reinit.load(CONFIG_STATIC_NAME));
+                reinit.invokeStaticMethod(SRCB_WITH_CUSTOMIZER_BY_NAME, buildTimeBuilder, reinit.load(CONFIG_STATIC_NAME));
 
                 ResultHandle clinitConfig = reinit.checkCast(reinit.invokeVirtualMethod(SRCB_BUILD, buildTimeBuilder),
                         SmallRyeConfig.class);
@@ -178,8 +184,16 @@ public final class RunTimeConfigurationGenerator {
 
             // create the run time config
             ResultHandle runTimeBuilder = readConfig.newInstance(SRCB_NEW);
+            ResultHandle valueRegistry = readConfig.getMethodParam(0);
+
+            // config source for ValueRegistry
+            MethodDescriptor valueRegistryConfigCustomizer = MethodDescriptor.ofMethod(ValueRegistryConfigSource.class,
+                    "customizer", SmallRyeConfigBuilderCustomizer.class, ValueRegistry.class);
+            ResultHandle customizer = readConfig.invokeStaticMethod(valueRegistryConfigCustomizer, valueRegistry);
+            readConfig.invokeStaticMethod(SRCB_WITH_CUSTOMIZER, runTimeBuilder, customizer);
+
             // runtime config builder
-            readConfig.invokeStaticMethod(SRCB_WITH_CUSTOMIZER, runTimeBuilder, readConfig.load(CONFIG_RUNTIME_NAME));
+            readConfig.invokeStaticMethod(SRCB_WITH_CUSTOMIZER_BY_NAME, runTimeBuilder, readConfig.load(CONFIG_RUNTIME_NAME));
 
             ResultHandle runTimeConfig = readConfig.invokeVirtualMethod(SRCB_BUILD, runTimeBuilder);
             installConfiguration(runTimeConfig, readConfig);
@@ -207,7 +221,7 @@ public final class RunTimeConfigurationGenerator {
             try (MethodCreator mc = cc.getMethodCreator(C_CREATE_RUN_TIME_CONFIG)) {
                 mc.setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC);
                 ResultHandle instance = mc.newInstance(MethodDescriptor.ofConstructor(CONFIG_CLASS_NAME));
-                mc.invokeVirtualMethod(C_READ_CONFIG, instance);
+                mc.invokeVirtualMethod(C_READ_CONFIG, instance, mc.getMethodParam(0));
                 mc.returnValue(null);
             }
 

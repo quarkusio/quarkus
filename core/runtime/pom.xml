@@ -89,6 +89,10 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-registry</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bootstrap-runner</artifactId>
         </dependency>
         <dependency>
@@ -145,6 +149,7 @@
                 <artifactId>quarkus-extension-maven-plugin</artifactId>
                 <configuration>
                     <parentFirstArtifacts>
+                        <parentFirstArtifact>io.quarkus:quarkus-registry</parentFirstArtifact>
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-runner</parentFirstArtifact>
                         <parentFirstArtifact>io.quarkus:quarkus-classloader-commons</parentFirstArtifact>
                         <parentFirstArtifact>io.smallrye.common:smallrye-common-constraint</parentFirstArtifact>
@@ -235,6 +240,7 @@
                         <runnerParentFirstArtifact>org.graalvm.sdk:collections</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>org.graalvm.sdk:nativebridge</runnerParentFirstArtifact>
                         <!-- /support for GraalVM js -->
+                        <runnerParentFirstArtifact>io.quarkus:quarkus-registry</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>io.quarkus:quarkus-bootstrap-runner</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>io.quarkus:quarkus-classloader-commons</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>io.quarkus:quarkus-development-mode-spi</runnerParentFirstArtifact>

@@ -9,6 +9,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.registry.ValueRegistry;
 
 public class RunningQuarkusApplicationImpl implements RunningQuarkusApplication {
 
@@ -105,5 +106,10 @@ public class RunningQuarkusApplicationImpl implements RunningQuarkusApplication 
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public ValueRegistry valueRegistry() {
+        return (ValueRegistry) instance(ValueRegistry.class);
     }
 }

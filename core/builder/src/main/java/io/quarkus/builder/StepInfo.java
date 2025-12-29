@@ -8,7 +8,7 @@ final class StepInfo {
     private final Set<StepInfo> dependents;
     private final Set<ItemId> consumes;
     private final Set<ItemId> produces;
-    private final int ordinal;
+    private int ordinal;
 
     StepInfo(BuildStep buildStep, Set<ItemId> consumes, Set<ItemId> produces, int dependencies, Set<StepInfo> dependents,
             int ordinal) {
@@ -45,6 +45,10 @@ final class StepInfo {
      */
     int getOrdinal() {
         return ordinal;
+    }
+
+    void setOrdinal(int newOrdinal) {
+        ordinal = newOrdinal;
     }
 
     @Override

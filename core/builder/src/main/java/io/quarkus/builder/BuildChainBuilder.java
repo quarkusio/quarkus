@@ -162,6 +162,9 @@ public final class BuildChainBuilder {
         final Set<StepInfo> startSteps = new LinkedHashSet<>();
         final Map<ItemId, int[]> producingOrdinals = new HashMap<>();
         final Set<StepInfo> endSteps = buildAllSteps(included, dependencies, startSteps, producingOrdinals);
+        var startTime = System.currentTimeMillis();
+        ResortOrdinals.mutate(classLoader, startSteps, producingOrdinals);
+        System.out.println("BuildChainBuilder.hack took " + (System.currentTimeMillis() - startTime) + "ms");
 
         outputGraph(startSteps, endSteps);
         return new BuildChain(startSteps, this, endSteps.size(), producingOrdinals);

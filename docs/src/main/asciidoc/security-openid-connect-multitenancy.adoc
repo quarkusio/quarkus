@@ -998,6 +998,7 @@ package io.quarkus.it.oidc;
 
 import io.quarkus.oidc.TenantFeature;
 import io.quarkus.oidc.common.OidcRequestFilter;
+import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
@@ -1005,8 +1006,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 public class CustomOidcRequestFilter implements OidcRequestFilter {
 
     @Override
-    public void filter(OidcRequestContext requestContext) {
+    public Uni<Void> filterRequest(OidcRequestContext requestContext) {
         requestContext.request().putHeader("custom-header-name", "custom-header-value");
+        return Uni.createFrom().voidItem();
     }
 }
 ----

@@ -1279,6 +1279,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcRequestFilter;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpMethod;
 
 @ApplicationScoped
@@ -1287,12 +1288,13 @@ import io.vertx.core.http.HttpMethod;
 public class OidcRequestCustomizer implements OidcRequestFilter {
 
     @Override
-    public void filter(OidcRequestContext requestContext) {
+    public Uni<Void> filterRequest(OidcRequestContext requestContext) {
         HttpMethod method = requestContext.request().method();
         String uri = requestContext.request().uri();
         if (method == HttpMethod.POST && uri.endsWith("/token") && requestContext.requestBody() != null) {
             requestContext.request().putHeader("Digest", calculateDigest(requestContext.requestBody().toString()));
         }
+        return Uni.createFrom().voidItem();
     }
 
     private String calculateDigest(String bodyString) {
@@ -1316,8 +1318,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcEndpoint.Type;
-import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
+import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.buffer.Buffer;
 
 @ApplicationScoped
@@ -1326,9 +1328,10 @@ import io.vertx.mutiny.core.buffer.Buffer;
 public class TokenRequestFilter implements OidcRequestFilter {
 
     @Override
-    public void filter(OidcRequestContext rc) {
+    public Uni<Void> filterRequest(OidcRequestContext rc) {
         // Add more required properties to the token request
         rc.requestBody(rc.requestBody().toString() + "&opaque_token_param=opaque_token_value"));
+        return Uni.createFrom().voidItem();
     }
 }
 ----
@@ -1352,6 +1355,7 @@ import io.quarkus.arc.Unremovable;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcEndpoint.Type;
 import io.quarkus.oidc.common.OidcResponseFilter;
+import io.smallrye.mutiny.Uni;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 
 @ApplicationScoped
@@ -1361,13 +1365,14 @@ public class TokenEndpointResponseFilter implements OidcResponseFilter {
     private static final Logger LOG = Logger.getLogger(TokenEndpointResponseFilter.class);
 
     @Override
-    public void filter(OidcResponseContext rc) {
+    public Uni<Void> filterResponse(OidcResponseContext rc) {
         String contentType = rc.responseHeaders().get("Content-Type"); <2>
         if (contentType.equals("application/json")
                 && "refresh_token".equals(rc.requestProperties().get(OidcConstants.GRANT_TYPE)) <3>
                 && rc.responseBody().toJsonObject().containsKey("refresh_token")) { <4>
             LOG.debug("Tokens have been refreshed");
         }
+        return Uni.createFrom().voidItem();
     }
 
 }
@@ -1391,6 +1396,7 @@ import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcEndpoint.Type;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcResponseFilter;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.buffer.Buffer;
 
@@ -1400,13 +1406,14 @@ import io.vertx.mutiny.core.buffer.Buffer;
 public class TokenResponseFilter implements OidcResponseFilter {
 
     @Override
-    public void filter(OidcResponseContext rc) {
+    public Uni<Void> filterResponse(OidcResponseContext rc) {
         JsonObject body = rc.responseBody().toJsonObject();
         // JSON `scope` property has multiple values separated by a comma character.
         // It must be replaced with a space character.
         String scope = body.getString("scope");
         body.put("scope", scope.replace(",", " "));
         rc.responseBody(Buffer.buffer(body.toString()));
+        return Uni.createFrom().voidItem();
     }
 }
 ----

@@ -2,9 +2,7 @@ package io.quarkus.elasticsearch.restclient.common.deployment;
 
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 
-import java.io.Closeable;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -12,8 +10,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -33,10 +33,10 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
-import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.Startable;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
@@ -44,7 +44,6 @@ import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.ContainerLocator;
-import io.quarkus.devservices.common.ContainerShutdownCloseable;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchCommonBuildTimeConfig.ElasticsearchDevServicesBuildTimeConfig;
 import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchCommonBuildTimeConfig.ElasticsearchDevServicesBuildTimeConfig.Distribution;
@@ -72,12 +71,8 @@ public class DevServicesElasticsearchProcessor {
     private static final String DEV_SERVICE_ELASTICSEARCH = "elasticsearch";
     private static final String DEV_SERVICE_OPENSEARCH = "opensearch";
 
-    static volatile List<RunningDevService> devServices;
-    static volatile Map<String, Object> cachedProperties;
-    static volatile boolean first = true;
-
     @BuildStep
-    public DevServicesElasticsearchResultBuildItem startElasticsearchDevServices(
+    public void startElasticsearchDevServices(
             DockerStatusBuildItem dockerStatusBuildItem,
             DevServicesComposeProjectBuildItem composeProjectBuildItem,
             LaunchModeBuildItem launchMode,
@@ -92,49 +87,11 @@ public class DevServicesElasticsearchProcessor {
 
         if (devservicesElasticsearchBuildItems.isEmpty()) {
             // safety belt in case a module depends on this one without producing the build item
-            return null;
+            return;
         }
 
         Collection<DevservicesElasticsearchBuildItemsConfiguration> servicesToStart = DevservicesElasticsearchBuildItemsConfiguration
                 .convert(devservicesElasticsearchBuildItems);
-
-        // Check if we have any ES services running and what to do about it:
-        if (devServices != null) {
-            boolean restartRequired = false;
-            Map<String, Object> newElasticsearchConfigs = buildMapConfig(servicesToStart, clientConfiguration);
-            if (!newElasticsearchConfigs.equals(cachedProperties)) {
-                restartRequired = true;
-            }
-            // check here if there are any discovered devservices that are not running
-            List<String> runningContainerIds = composeProjectBuildItem.getComposeServices().values()
-                    .stream().flatMap(Collection::stream)
-                    .map(r -> r.containerInfo().id())
-                    .toList();
-            List<RunningDevService> noLongerRunningServices = devServices.stream().filter(r -> !r.isOwner())
-                    .filter(r -> !runningContainerIds.contains(r.getContainerId()))
-                    .toList();
-            restartRequired = restartRequired || !noLongerRunningServices.isEmpty();
-
-            if (!restartRequired) {
-                for (RunningDevService service : devServices) {
-                    devServicesResultBuildItemBuildProducer.produce(service.toBuildItem());
-                }
-                // Produce DevServicesDatasourceResultBuildItem only when the devservices start for the first time.
-                return null;
-            }
-            for (Closeable i : devServices) {
-                try {
-                    i.close();
-                } catch (Throwable e) {
-                    log.error("Failed to stop Elasticsearch DevService instance", e);
-                }
-            }
-            devServices = null;
-            cachedProperties = null;
-        }
-
-        Map<String, DevServicesElasticsearchResultBuildItem.ElasticsearchInstance> results = new HashMap<>();
-        List<RunningDevService> runningDevServices = new ArrayList<>();
 
         boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                 devServicesSharedNetworkBuildItem);
@@ -142,74 +99,43 @@ public class DevServicesElasticsearchProcessor {
         for (DevservicesElasticsearchBuildItemsConfiguration elasticsearch : servicesToStart) {
             ElasticsearchDevServicesBuildTimeConfig devServicesBuildTimeConfig = clientConfiguration.devservices()
                     .get(elasticsearch.clientName);
-            RunningDevService devService = startElasticsearchDevService(dockerStatusBuildItem, composeProjectBuildItem,
+            DevServicesResultBuildItem devService = startElasticsearchDevService(dockerStatusBuildItem, composeProjectBuildItem,
                     devServicesBuildTimeConfig, elasticsearch, launchMode, useSharedNetwork, devServicesConfig.timeout());
             if (devService == null) {
                 continue;
             }
-            runningDevServices.add(devService);
-            // results.put( elasticsearch.clientName, new DevServicesElasticsearchResultBuildItem.ElasticsearchInstance( elasticsearch, devServicesBuildTimeConfig ) )
+            devServicesResultBuildItemBuildProducer.produce(devService);
         }
-
-        if (first) {
-            first = false;
-            Runnable closeTask = new Runnable() {
-                @Override
-                public void run() {
-                    if (devServices != null) {
-                        for (Closeable i : devServices) {
-                            try {
-                                i.close();
-                            } catch (Throwable t) {
-                                log.error("Failed to stop Elasticsearch", t);
-                            }
-                        }
-                    }
-                    first = true;
-                    devServices = null;
-                    cachedProperties = null;
-                }
-            };
-            closeBuildItem.addCloseTask(closeTask, true);
-        }
-        devServices = runningDevServices;
-        cachedProperties = buildMapConfig(servicesToStart, clientConfiguration);
-        for (RunningDevService devService : devServices) {
-            devServicesResultBuildItemBuildProducer.produce(devService.toBuildItem());
-        }
-        return new DevServicesElasticsearchResultBuildItem(results);
     }
 
-    private Map<String, Object> buildMapConfig(Collection<DevservicesElasticsearchBuildItemsConfiguration> servicesToStart,
-            ElasticsearchCommonBuildTimeConfig clientConfiguration) {
-        Map<String, Object> result = new HashMap<>();
+    private Map<String, String> buildMapConfig(DevservicesElasticsearchBuildItemsConfiguration configuration,
+            ElasticsearchDevServicesBuildTimeConfig clientConfig) {
+        Map<String, String> result = new HashMap<>();
 
-        for (DevservicesElasticsearchBuildItemsConfiguration toStart : servicesToStart) {
-            String clientName = toStart.clientName;
-            ElasticsearchDevServicesBuildTimeConfig config = clientConfiguration.devservices().get(clientName);
-            if (config == null) {
-                result.put(clientName + ".distribution", toStart.distribution);
-                result.put(clientName + ".version", toStart.version);
-            } else {
-                result.put(clientName + ".enabled", config.enabled().orElse(true));
-                result.put(clientName + ".port", config.port().orElse(-1));
-                result.put(clientName + ".distribution", config.distribution().orElse(Distribution.ELASTIC));
-                result.put(clientName + ".imageName", config.imageName().orElse(null));
-                result.put(clientName + ".javaOpts", config.javaOpts());
-                result.put(clientName + ".shared", config.shared());
-                result.put(clientName + ".serviceName", config.serviceName());
-                result.put(clientName + ".containerEnv", config.containerEnv().entrySet().stream()
-                        .sorted(Map.Entry.comparingByKey())
-                        .map(e -> e.getKey() + "=" + e.getValue())
-                        .collect(Collectors.joining(";")));
-                result.put(clientName + ".reuse", config.reuse());
-            }
+        String clientName = configuration.clientName;
+        if (clientConfig == null) {
+            result.put(clientName + ".distribution", Objects.toString(configuration.distribution));
+            result.put(clientName + ".version", configuration.version);
+        } else {
+            result.put(clientName + ".enabled", Objects.toString(clientConfig.enabled().orElse(true)));
+            result.put(clientName + ".port", Objects.toString(clientConfig.port().orElse(-1)));
+            result.put(clientName + ".distribution",
+                    Objects.toString(clientConfig.distribution().orElse(Distribution.ELASTIC)));
+            clientConfig.imageName().ifPresent(name -> result.put(clientName + ".imageName", name));
+            result.put(clientName + ".javaOpts", clientConfig.javaOpts());
+            result.put(clientName + ".shared", Objects.toString(clientConfig.shared()));
+            result.put(clientName + ".serviceName", clientConfig.serviceName());
+            result.put(clientName + ".containerEnv", clientConfig.containerEnv().entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .map(e -> e.getKey() + "=" + e.getValue())
+                    .collect(Collectors.joining(";")));
+            result.put(clientName + ".reuse", Objects.toString(clientConfig.reuse()));
         }
 
         return result;
     }
 
-    private RunningDevService startElasticsearchDevService(
+    private DevServicesResultBuildItem startElasticsearchDevService(
             DockerStatusBuildItem dockerStatusBuildItem,
             DevServicesComposeProjectBuildItem composeProjectBuildItem,
             ElasticsearchDevServicesBuildTimeConfig config,
@@ -254,13 +180,13 @@ public class DevServicesElasticsearchProcessor {
                         launchMode.getLaunchMode(), useSharedNetwork));
 
         // Starting the server
-        final Supplier<RunningDevService> defaultElasticsearchSupplier = () -> {
+        final Supplier<DevServicesResultBuildItem> defaultElasticsearchSupplier = () -> {
 
             String defaultNetworkId = composeProjectBuildItem.getDefaultNetworkId();
-            CreatedContainer createdContainer = resolvedDistribution.equals(Distribution.ELASTIC)
+            QuarkusElasticsearchContainer quarkusElasticsearchContainer = resolvedDistribution.equals(Distribution.ELASTIC)
                     ? createElasticsearchContainer(config, resolvedImageName, defaultNetworkId, useSharedNetwork)
                     : createOpensearchContainer(config, resolvedImageName, defaultNetworkId, useSharedNetwork);
-            GenericContainer<?> container = createdContainer.genericContainer();
+            GenericContainer<?> container = quarkusElasticsearchContainer.genericContainer();
 
             if (config.serviceName() != null) {
                 container.withLabel(DEV_SERVICE_LABEL, config.serviceName());
@@ -275,23 +201,21 @@ public class DevServicesElasticsearchProcessor {
 
             container.withReuse(config.reuse());
 
-            container.start();
-
-            var httpHost = createdContainer.hostName + ":"
-                    + (useSharedNetwork ? ELASTICSEARCH_PORT : container.getMappedPort(ELASTICSEARCH_PORT));
-            return new RunningDevService(Feature.ELASTICSEARCH_REST_CLIENT_COMMON.getName(),
-                    container.getContainerId(),
-                    new ContainerShutdownCloseable(container, "Elasticsearch"),
-                    buildPropertiesMap(buildItemConfig, httpHost));
+            return DevServicesResultBuildItem.owned()
+                    .feature(Feature.ELASTICSEARCH_REST_CLIENT_COMMON)
+                    .serviceName(buildItemConfig.clientName)
+                    .serviceConfig(config)
+                    .configProvider(hostConfigProvider(buildItemConfig))
+                    .startable(() -> quarkusElasticsearchContainer)
+                    .build();
         };
 
         return maybeContainerAddress
                 .filter(containerWithMappedPublicPort(config.port()))
-                .map(containerAddress -> new RunningDevService(
-                        Feature.ELASTICSEARCH_REST_CLIENT_COMMON.getName(),
-                        containerAddress.getId(),
-                        null,
-                        buildPropertiesMap(buildItemConfig, containerAddress.getUrl())))
+                .map(containerAddress -> DevServicesResultBuildItem.discovered()
+                        .feature(Feature.ELASTICSEARCH_REST_CLIENT_COMMON)
+                        .config(hostConfig(buildItemConfig, containerAddress.getUrl()))
+                        .build())
                 .orElseGet(defaultElasticsearchSupplier);
     }
 
@@ -299,7 +223,7 @@ public class DevServicesElasticsearchProcessor {
         return containerAddress -> port.map(p -> p.equals(containerAddress.getPort())).orElse(true);
     }
 
-    private CreatedContainer createElasticsearchContainer(ElasticsearchDevServicesBuildTimeConfig config,
+    private QuarkusElasticsearchContainer createElasticsearchContainer(ElasticsearchDevServicesBuildTimeConfig config,
             DockerImageName resolvedImageName, String defaultNetworkId, boolean useSharedNetwork) {
         ElasticsearchContainer container = new ElasticsearchContainer(
                 resolvedImageName.asCompatibleSubstituteFor("docker.elastic.co/elasticsearch/elasticsearch"));
@@ -315,10 +239,10 @@ public class DevServicesElasticsearchProcessor {
         container.addEnv("cluster.routing.allocation.disk.threshold_enabled", "false");
         container.addEnv("ES_JAVA_OPTS", config.javaOpts());
 
-        return new CreatedContainer(container, hostName);
+        return new QuarkusElasticsearchContainer(container, hostName, useSharedNetwork);
     }
 
-    private CreatedContainer createOpensearchContainer(ElasticsearchDevServicesBuildTimeConfig config,
+    private QuarkusElasticsearchContainer createOpensearchContainer(ElasticsearchDevServicesBuildTimeConfig config,
             DockerImageName resolvedImageName, String defaultNetworkId, boolean useSharedNetwork) {
         OpensearchContainer container = new OpensearchContainer(
                 resolvedImageName.asCompatibleSubstituteFor("opensearchproject/opensearch"));
@@ -337,10 +261,31 @@ public class DevServicesElasticsearchProcessor {
         // we'll just set some hardcoded password.
         container.addEnv("OPENSEARCH_INITIAL_ADMIN_PASSWORD", "NotActua11y$trongPa$$word");
 
-        return new CreatedContainer(container, hostName);
+        return new QuarkusElasticsearchContainer(container, hostName, useSharedNetwork);
     }
 
-    private record CreatedContainer(GenericContainer<?> genericContainer, String hostName) {
+    private record QuarkusElasticsearchContainer(GenericContainer<?> genericContainer, String hostName,
+            boolean useSharedNetwork) implements Startable {
+        @Override
+        public void start() {
+            genericContainer.start();
+        }
+
+        @Override
+        public String getConnectionInfo() {
+            return hostName + ":"
+                    + (useSharedNetwork ? ELASTICSEARCH_PORT : genericContainer.getMappedPort(ELASTICSEARCH_PORT));
+        }
+
+        @Override
+        public String getContainerId() {
+            return genericContainer.getContainerId();
+        }
+
+        @Override
+        public void close() {
+            genericContainer.close();
+        }
     }
 
     private DockerImageName resolveImageName(ElasticsearchDevServicesBuildTimeConfig config,
@@ -384,11 +329,19 @@ public class DevServicesElasticsearchProcessor {
         return DEFAULT_DISTRIBUTION;
     }
 
-    private Map<String, String> buildPropertiesMap(DevservicesElasticsearchBuildItemsConfiguration buildItemConfig,
-            String httpHosts) {
+    private Map<String, Function<Startable, String>> hostConfigProvider(
+            DevservicesElasticsearchBuildItemsConfiguration buildItemConfig) {
+        Map<String, Function<Startable, String>> propertiesToSet = new HashMap<>();
+        for (String property : buildItemConfig.hostsConfigProperties) {
+            propertiesToSet.put(property, Startable::getConnectionInfo);
+        }
+        return propertiesToSet;
+    }
+
+    private Map<String, String> hostConfig(DevservicesElasticsearchBuildItemsConfiguration buildItemConfig, String host) {
         Map<String, String> propertiesToSet = new HashMap<>();
         for (String property : buildItemConfig.hostsConfigProperties) {
-            propertiesToSet.put(property, httpHosts);
+            propertiesToSet.put(property, host);
         }
         return propertiesToSet;
     }

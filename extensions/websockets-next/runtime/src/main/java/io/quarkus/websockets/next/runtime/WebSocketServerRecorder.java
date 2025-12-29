@@ -8,10 +8,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.BeanManager;
@@ -29,11 +31,14 @@ import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
+import io.quarkus.vertx.http.security.AuthorizationPolicy;
 import io.quarkus.websockets.next.HandshakeRequest;
 import io.quarkus.websockets.next.HttpUpgradeCheck;
 import io.quarkus.websockets.next.HttpUpgradeCheck.CheckResult;
@@ -210,7 +215,7 @@ public class WebSocketServerRecorder {
     }
 
     public Function<SyntheticCreationalContext<SecurityHttpUpgradeCheck>, SecurityHttpUpgradeCheck> createSecurityHttpUpgradeCheck(
-            Map<String, SecurityCheck> endpointToCheck) {
+            Map<String, SecurityCheck> endpointToCheck, Map<String, Set<String>> policyNameToEndpoints) {
         return new Function<SyntheticCreationalContext<SecurityHttpUpgradeCheck>, SecurityHttpUpgradeCheck>() {
             @Override
             public SecurityHttpUpgradeCheck apply(SyntheticCreationalContext<SecurityHttpUpgradeCheck> ctx) {
@@ -221,8 +226,43 @@ public class WebSocketServerRecorder {
                 }), AUTHORIZATION_SUCCESS,
                         AUTHORIZATION_FAILURE, ctx.getInjectedReference(BeanManager.class), securityEventsEnabled);
                 WebSocketsServerRuntimeConfig config = ctx.getInjectedReference(WebSocketsServerRuntimeConfig.class);
+
+                final HttpSecurityPolicy.AuthorizationRequestContext authorizationRequestContext;
+                final Map<String, HttpSecurityPolicy> endpointToPolicy;
+                if (policyNameToEndpoints.isEmpty()) {
+                    endpointToPolicy = Map.of();
+                    authorizationRequestContext = null;
+                } else {
+                    BlockingSecurityExecutor blockingSecurityExecutor = ctx
+                            .getInjectedReference(BlockingSecurityExecutor.class);
+                    authorizationRequestContext = (routingContext, identityUni, function) -> identityUni
+                            .flatMap(identity -> blockingSecurityExecutor
+                                    .executeBlocking(() -> function.apply(routingContext, identity)));
+
+                    endpointToPolicy = new HashMap<>();
+                    Instance<HttpSecurityPolicy> policies = ctx.getInjectedReference(new TypeLiteral<>() {
+                    });
+                    var policyNameToEndpointsRemainder = new HashMap<>(policyNameToEndpoints);
+                    for (HttpSecurityPolicy policy : policies) {
+                        String policyName = policy.name();
+                        if (policyName != null && policyNameToEndpoints.containsKey(policyName)) {
+                            for (String endpoint : policyNameToEndpoints.get(policyName)) {
+                                endpointToPolicy.put(endpoint, policy);
+                            }
+                            policyNameToEndpointsRemainder.remove(policyName);
+                        }
+                    }
+                    if (!policyNameToEndpointsRemainder.isEmpty()) {
+                        String missingPolicies = policyNameToEndpointsRemainder.entrySet().stream()
+                                .map(e -> "policy '%s' is required by endpoints '%s'".formatted(e.getKey(), e.getValue()))
+                                .collect(Collectors.joining(System.lineSeparator()));
+                        throw new RuntimeException("The '%s' policies required by the '%s' annotation instances are missing: %s"
+                                .formatted(HttpSecurityPolicy.class.getName(), AuthorizationPolicy.class.getName(),
+                                        missingPolicies));
+                    }
+                }
                 return new SecurityHttpUpgradeCheck(config.security().authFailureRedirectUrl().orElse(null), endpointToCheck,
-                        securityEventHelper);
+                        securityEventHelper, endpointToPolicy, authorizationRequestContext);
             }
         };
     }

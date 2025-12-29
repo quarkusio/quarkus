@@ -324,7 +324,7 @@ public class StartupActionImpl implements StartupAction {
             devServicesRegistry.startAll(devServicesResults, devServicesCustomizers, additionalConfigBuildItems,
                     augmentClassLoader);
 
-            devServicesProperties.putAll(devServicesRegistry.getConfigForAllRunningServices());
+            devServicesProperties.putAll(devServicesRegistry.getConfigForAllRunningServicesOfCurrentApp());
         }
     }
 

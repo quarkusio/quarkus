@@ -34,7 +34,8 @@ public class NativeDevServicesHandler implements BiConsumer<Object, BuildResult>
                 .consumeMulti(DevServicesAdditionalConfigBuildItem.class);
         if (devServicesRegistry != null) {
             devServicesRegistry.startAll(devServices, customizers, additionalConfigBuildItems, null);
-            for (Map.Entry<String, String> entry : devServicesRegistry.getConfigForAllRunningServices().entrySet()) {
+            for (Map.Entry<String, String> entry : devServicesRegistry.getConfigForAllRunningServicesOfCurrentApp()
+                    .entrySet()) {
                 propertyConsumer.accept(entry.getKey(), entry.getValue());
             }
         }

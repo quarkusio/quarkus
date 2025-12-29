@@ -71,9 +71,10 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
         RunningDevServicesRegistry.INSTANCE.closeRemainingRunningServices(uuid, launchMode.name(), ownersToKeep);
     }
 
-    public Map<String, String> getConfigForAllRunningServices() {
+    public Map<String, String> getConfigForAllRunningServicesOfCurrentApp() {
         Map<String, String> config = new HashMap<>();
-        for (RunningService service : RunningDevServicesRegistry.INSTANCE.getAllRunningServices(launchMode.name())) {
+        for (RunningService service : RunningDevServicesRegistry.INSTANCE.getAllRunningServicesForApp(uuid,
+                launchMode.name())) {
             config.putAll(service.configs());
         }
         return config;

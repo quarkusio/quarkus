@@ -27,6 +27,7 @@ public class HibernateSearchElasticsearchDevServicesDisabledExplicitlyTest {
             // Even if quarkus.hibernate-search-standalone.elasticsearch.hosts is not set,
             // Quarkus won't start Elasticsearch dev-services because of this explicit setting:
             config.put("quarkus.elasticsearch.devservices.enabled", "false");
+            config.put("quarkus.hibernate-search-standalone.elasticsearch.hosts", "localhost:9200");
             // Ensure we can work offline, because without dev-services,
             // we won't have an Elasticsearch instance to talk to.
             config.putAll(Map.of(

@@ -31,6 +31,7 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.builder.BuildResult;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
+import io.quarkus.deployment.builditem.DevServicesAdditionalConfigBuildItem;
 import io.quarkus.deployment.builditem.DevServicesCustomizerBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesNetworkIdBuildItem;
@@ -62,6 +63,7 @@ public class StartupActionImpl implements StartupAction {
     private volatile boolean devServicesStarted = false;
     private final List<DevServicesResultBuildItem> devServicesResults;
     private final List<DevServicesCustomizerBuildItem> devServicesCustomizers;
+    private final List<DevServicesAdditionalConfigBuildItem> additionalConfigBuildItems;
     private final String devServicesNetworkId;
     private final List<RuntimeApplicationShutdownBuildItem> runtimeApplicationShutdownBuildItems;
     private final List<Closeable> runtimeCloseTasks = new ArrayList<>();
@@ -81,6 +83,7 @@ public class StartupActionImpl implements StartupAction {
         devServicesResults = buildResult.consumeMulti(DevServicesResultBuildItem.class);
         devServicesRegistry = buildResult.consumeOptional(DevServicesRegistryBuildItem.class);
         devServicesCustomizers = buildResult.consumeMulti(DevServicesCustomizerBuildItem.class);
+        additionalConfigBuildItems = buildResult.consumeMulti(DevServicesAdditionalConfigBuildItem.class);
 
         Map<String, byte[]> transformedClasses = extractTransformedClasses(buildResult);
         QuarkusClassLoader baseClassLoader = curatedApplication.getOrCreateBaseRuntimeClassLoader();
@@ -306,7 +309,8 @@ public class StartupActionImpl implements StartupAction {
             if (augmentClassLoader == null) {
                 throw new IllegalStateException("Dev services cannot be started without an augmentation class loader.");
             }
-            devServicesRegistry.startAll(devServicesResults, devServicesCustomizers, augmentClassLoader);
+            devServicesRegistry.startAll(devServicesResults, devServicesCustomizers, additionalConfigBuildItems,
+                    augmentClassLoader);
 
             devServicesProperties.putAll(devServicesRegistry.getConfigForAllRunningServices());
         }

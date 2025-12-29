@@ -1527,6 +1527,7 @@ import io.quarkus.logging.Log;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcEndpoint.Type;
 import io.quarkus.oidc.common.OidcResponseFilter;
+import io.smallrye.mutiny.Uni;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.OidcUtils;
 
@@ -1536,13 +1537,14 @@ import io.quarkus.oidc.runtime.OidcUtils;
 public class DiscoveryEndpointResponseFilter implements OidcResponseFilter {
 
     @Override
-    public void filter(OidcResponseContext rc) {
+    public Uni<Void> filterResponse(OidcResponseContext rc) {
         String contentType = rc.responseHeaders().get("Content-Type"); <2>
         if (contentType.equals("application/json") {
             String tenantId = rc.requestProperties().get(OidcUtils.TENANT_ID_ATTRIBUTE); <3>
             String metadata = rc.responseBody().toString(); <4>
             Log.debugf("Tenant %s OIDC metadata: %s", tenantId, metadata);
         }
+        return Uni.createFrom().voidItem();
     }
 }
 
@@ -1566,6 +1568,7 @@ package io.quarkus.it.keycloak;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.oidc.BearerTokenAuthentication;
 import io.quarkus.oidc.common.OidcRequestFilter;
+import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @BearerTokenAuthentication
@@ -1574,8 +1577,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 public class CustomOidcRequestFilter implements OidcRequestFilter {
 
     @Override
-    public void filter(OidcRequestContext requestContext) {
+    public Uni<Void> filterRequest(OidcRequestContext requestContext) {
         requestContext.request().putHeader("custom-header-name", "custom-header-value");
+        return Uni.createFrom().voidItem();
     }
 }
 ----

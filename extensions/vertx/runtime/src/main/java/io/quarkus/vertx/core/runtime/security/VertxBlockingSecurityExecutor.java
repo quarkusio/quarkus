@@ -1,4 +1,4 @@
-package io.quarkus.vertx.http.runtime.security;
+package io.quarkus.vertx.core.runtime.security;
 
 import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setContextSafe;
 import static io.smallrye.common.vertx.VertxContext.getOrCreateDuplicatedContext;

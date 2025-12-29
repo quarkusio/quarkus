@@ -45,7 +45,6 @@ import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcRequestFilter.OidcRequestContext;
 import io.quarkus.oidc.common.OidcResponseFilter;
-import io.quarkus.oidc.common.OidcResponseFilter.OidcResponseContext;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport.TlsConfigSupport;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials;
@@ -85,6 +84,7 @@ public class OidcCommonUtils {
     static final String HTTP_SCHEME = "http";
 
     private static final Logger LOG = Logger.getLogger(OidcCommonUtils.class);
+    private static final BlockingTaskRunner<Void> VOID_BLOCKING_TASK_RUNNER = new BlockingTaskRunner<>();
 
     private OidcCommonUtils() {
 
@@ -571,31 +571,28 @@ public class OidcCommonUtils {
         if (!cookies.isEmpty()) {
             request.putHeader(COOKIE_REQUEST_HEADER, cookies);
         }
-        if (!requestFilters.isEmpty()) {
-            OidcRequestContext context = new OidcRequestContext(request, null, requestProps);
-            for (OidcRequestFilter filter : getMatchingOidcRequestFilters(requestFilters, OidcEndpoint.Type.DISCOVERY)) {
-                filter.filter(context);
-            }
-        }
-        return sendRequest(vertx, request, blockingDnsLookup).onItem().transform(resp -> {
-
-            Buffer buffer = filterHttpResponse(requestProps, resp, responseFilters, OidcEndpoint.Type.DISCOVERY);
-
-            if (resp.statusCode() == 200) {
-                return buffer.toJsonObject();
-            } else if (resp.statusCode() == 302) {
-                throw createOidcClientRedirectException(resp);
-            } else {
-                String errorMessage = buffer != null ? buffer.toString() : null;
-                if (errorMessage != null && !errorMessage.isEmpty()) {
-                    LOG.warnf("Discovery request %s has failed, status code: %d, error message: %s", discoveryUrl,
-                            resp.statusCode(), errorMessage);
-                } else {
-                    LOG.warnf("Discovery request %s has failed, status code: %d", discoveryUrl, resp.statusCode());
-                }
-                throw new OidcEndpointAccessException(resp.statusCode());
-            }
-        }).onFailure(oidcEndpointNotAvailable())
+        return applyRequestFilters(requestFilters, OidcEndpoint.Type.DISCOVERY, request, requestProps, null)
+                .chain(() -> sendRequest(vertx, request, blockingDnsLookup))
+                .flatMap(resp -> filterHttpResponse(requestProps, resp, responseFilters, Type.DISCOVERY)
+                        .map(buffer -> {
+                            if (resp.statusCode() == 200) {
+                                return buffer.toJsonObject();
+                            } else if (resp.statusCode() == 302) {
+                                throw createOidcClientRedirectException(resp);
+                            } else {
+                                String errorMessage = buffer != null ? buffer.toString() : null;
+                                if (errorMessage != null && !errorMessage.isEmpty()) {
+                                    LOG.warnf("Discovery request %s has failed, status code: %d, error message: %s",
+                                            discoveryUrl,
+                                            resp.statusCode(), errorMessage);
+                                } else {
+                                    LOG.warnf("Discovery request %s has failed, status code: %d", discoveryUrl,
+                                            resp.statusCode());
+                                }
+                                throw new OidcEndpointAccessException(resp.statusCode());
+                            }
+                        }))
+                .onFailure(oidcEndpointNotAvailable())
                 .retry()
                 .withBackOff(CONNECTION_BACKOFF_DURATION, CONNECTION_BACKOFF_DURATION)
                 .expireIn(connectionDelayInMillisecs);
@@ -614,18 +611,29 @@ public class OidcCommonUtils {
         return new OidcRequestContextProperties(newProperties);
     }
 
-    public static Buffer filterHttpResponse(OidcRequestContextProperties requestProps,
+    public static Uni<Buffer> filterHttpResponse(OidcRequestContextProperties requestProps,
             HttpResponse<Buffer> resp, Map<Type, List<OidcResponseFilter>> responseFilters, OidcEndpoint.Type type) {
         Buffer responseBody = resp.body();
         if (!responseFilters.isEmpty()) {
-            OidcResponseContext context = new OidcResponseContext(requestProps, resp.statusCode(), resp.headers(),
-                    responseBody);
-            for (OidcResponseFilter filter : getMatchingOidcResponseFilters(responseFilters, type)) {
-                filter.filter(context);
+            var matchingResponseFilters = getMatchingOidcResponseFilters(responseFilters, type);
+            if (!matchingResponseFilters.isEmpty()) {
+                var context = new OidcResponseFilter.OidcResponseContext(requestProps, resp.statusCode(), resp.headers(),
+                        responseBody);
+                return applyResponseFilters(matchingResponseFilters, 0, context)
+                        .replaceWith(() -> getResponseBuffer(requestProps, responseBody));
             }
-            return getResponseBuffer(requestProps, responseBody);
         }
-        return responseBody;
+        return Uni.createFrom().item(responseBody);
+    }
+
+    private static Uni<Void> applyResponseFilters(List<OidcResponseFilter> responseFilters, int index,
+            OidcResponseFilter.OidcResponseContext context) {
+        if (responseFilters.size() == index) {
+            return Uni.createFrom().voidItem();
+        }
+
+        return responseFilters.get(index).filterResponse(context)
+                .chain(() -> applyResponseFilters(responseFilters, index + 1, context));
     }
 
     public static Buffer getRequestBuffer(OidcRequestContextProperties requestProps, Buffer buffer) {
@@ -711,6 +719,35 @@ public class OidcCommonUtils {
             return map;
         }
         return Map.of();
+    }
+
+    public static Uni<HttpRequest<Buffer>> filterHttpRequest(OidcRequestContextProperties requestProps,
+            HttpRequest<Buffer> request, Buffer body,
+            Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters,
+            OidcEndpoint.Type type) {
+        return applyRequestFilters(requestFilters, type, request, requestProps, body).replaceWith(request);
+    }
+
+    private static Uni<Void> applyRequestFilters(Map<Type, List<OidcRequestFilter>> requestFilters,
+            Type type, HttpRequest<Buffer> request, OidcRequestContextProperties requestProps, Buffer body) {
+        if (!requestFilters.isEmpty()) {
+            var context = new OidcRequestContext(request, body, requestProps);
+            var matchingRequestFilters = getMatchingOidcRequestFilters(requestFilters, type);
+            if (!matchingRequestFilters.isEmpty()) {
+                return applyRequestFilters(matchingRequestFilters, 0, context);
+            }
+        }
+        return Uni.createFrom().voidItem();
+    }
+
+    private static Uni<Void> applyRequestFilters(List<OidcRequestFilter> requestFilters, int index,
+            OidcRequestContext context) {
+        if (requestFilters.size() == index) {
+            return Uni.createFrom().voidItem();
+        }
+
+        return requestFilters.get(index).filterRequest(context)
+                .chain(() -> applyRequestFilters(requestFilters, index + 1, context));
     }
 
     public static List<OidcRequestFilter> getMatchingOidcRequestFilters(Map<OidcEndpoint.Type, List<OidcRequestFilter>> filters,
@@ -824,5 +861,12 @@ public class OidcCommonUtils {
             LOG.debugf("Invalid JSON content: %s", json);
             return null;
         }
+    }
+
+    public static Uni<Void> runBlocking(Runnable runnable) {
+        return VOID_BLOCKING_TASK_RUNNER.runBlocking(() -> {
+            runnable.run();
+            return null;
+        });
     }
 }

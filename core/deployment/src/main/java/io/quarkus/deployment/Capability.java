@@ -125,6 +125,7 @@ public interface Capability {
 
     String OIDC = QUARKUS_PREFIX + ".oidc";
     String OIDC_CLIENT = OIDC + ".client";
+    String OIDC_CLIENT_REGISTRATION = QUARKUS_PREFIX + ".oidc-client-registration";
 
     String KEYCLOAK_AUTHORIZATION = QUARKUS_PREFIX + ".keycloak.authorization";
 

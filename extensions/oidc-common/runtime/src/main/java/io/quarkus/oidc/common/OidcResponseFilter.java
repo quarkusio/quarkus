@@ -1,5 +1,7 @@
 package io.quarkus.oidc.common;
 
+import io.quarkus.oidc.common.runtime.OidcCommonUtils;
+import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.core.buffer.Buffer;
 
@@ -47,13 +49,35 @@ public interface OidcResponseFilter {
             responseBody = buffer;
             requestProperties.put(OidcRequestContextProperties.RESPONSE_BODY, buffer);
         }
+
+        public final Uni<Void> runBlocking(Runnable runnable) {
+            return OidcCommonUtils.runBlocking(runnable);
+        }
     }
 
     /**
      * Filter OIDC responses.
      *
      * @param responseContext the response context which provides access to the HTTP response status code, headers and body.
-     *
+     * @deprecated use the {@link #filterResponse(OidcResponseContext)} method instead
      */
-    void filter(OidcResponseContext responseContext);
+    @Deprecated(since = "3.31", forRemoval = true)
+    default void filter(OidcResponseContext responseContext) {
+        throw new UnsupportedOperationException("filter(OidcResponseContext responseContext) method is not implemented");
+    }
+
+    /**
+     * Filter OIDC responses asynchronously.
+     * Blocking tasks can be run with the {@link OidcResponseContext#runBlocking(Runnable)} method.
+     *
+     * @param responseContext the response context which provides access to the HTTP response status code, headers and body.
+     * @return {@link Uni}
+     */
+    default Uni<Void> filterResponse(OidcResponseContext responseContext) {
+        return Uni.createFrom().item(() -> {
+            filter(responseContext);
+            return null;
+        });
+    }
+
 }

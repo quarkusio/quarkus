@@ -88,6 +88,21 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
         this.userAgentCharsets = Map.copyOf(userAgentCharsets);
     }
 
+    private Charset getCharset(RoutingContext context) {
+        if (!userAgentCharsets.isEmpty()) {
+            String ua = context.request().headers().get(HttpHeaderNames.USER_AGENT);
+            if (ua != null) {
+                for (Map.Entry<Pattern, Charset> entry : userAgentCharsets.entrySet()) {
+                    if (entry.getKey().matcher(ua).find()) {
+                        return entry.getValue();
+                    }
+                }
+            }
+        }
+
+        return this.charset;
+    }
+
     @Override
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
@@ -98,20 +113,14 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
 
                     String base64Challenge = current.substring(PREFIX_LENGTH);
                     String plainChallenge = null;
-                    byte[] decode = Base64.getDecoder().decode(base64Challenge);
-
-                    Charset charset = this.charset;
-                    if (!userAgentCharsets.isEmpty()) {
-                        String ua = context.request().headers().get(HttpHeaderNames.USER_AGENT);
-                        if (ua != null) {
-                            for (Map.Entry<Pattern, Charset> entry : userAgentCharsets.entrySet()) {
-                                if (entry.getKey().matcher(ua).find()) {
-                                    charset = entry.getValue();
-                                    break;
-                                }
-                            }
-                        }
+                    byte[] decode;
+                    try {
+                        decode = Base64.getDecoder().decode(base64Challenge);
+                    } catch (IllegalArgumentException illegalArgumentException) {
+                        return Uni.createFrom().failure(new AuthenticationFailedException(illegalArgumentException));
                     }
+
+                    Charset charset = getCharset(context);
 
                     plainChallenge = new String(decode, charset);
                     int colonPos;

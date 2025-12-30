@@ -10,11 +10,12 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
-import org.apache.http.HttpHost;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.Response;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.sniff.Sniffer;
+import org.apache.hc.core5.http.HttpHost;
+
+import co.elastic.clients.transport.rest5_client.low_level.Request;
+import co.elastic.clients.transport.rest5_client.low_level.Response;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
+import co.elastic.clients.transport.rest5_client.low_level.sniffer.Sniffer;
 
 @Path("/test/elasticsearch-client")
 public class ElasticsearchClientTestResource {
@@ -23,7 +24,7 @@ public class ElasticsearchClientTestResource {
     @Path("/connection")
     @Produces(MediaType.TEXT_PLAIN)
     public String testConnection() throws IOException, NoSuchAlgorithmException {
-        try (RestClient restClient = createRestClient()) {
+        try (Rest5Client restClient = createRestClient()) {
             Response response = restClient.performRequest(new Request("GET", "/"));
 
             checkStatus(response, 200);
@@ -36,7 +37,7 @@ public class ElasticsearchClientTestResource {
     @Path("/full-cycle")
     @Produces(MediaType.TEXT_PLAIN)
     public String testFullCycle() throws IOException {
-        try (RestClient restClient = createRestClient()) {
+        try (Rest5Client restClient = createRestClient()) {
             try {
                 restClient.performRequest(new Request("DELETE", "/books"));
             } catch (Exception e) {
@@ -101,7 +102,7 @@ public class ElasticsearchClientTestResource {
     @Path("/sniffer")
     @Produces(MediaType.TEXT_PLAIN)
     public String testSniffer() throws IOException, InterruptedException {
-        try (RestClient restClient = createRestClient()) {
+        try (Rest5Client restClient = createRestClient()) {
             Sniffer sniffer = Sniffer.builder(restClient).setSniffIntervalMillis(5).build();
 
             // Wait for a few iterations of the sniffer
@@ -113,14 +114,14 @@ public class ElasticsearchClientTestResource {
         }
     }
 
-    private static RestClient createRestClient() {
-        return RestClient.builder(new HttpHost("localhost", 9200)).build();
+    private static Rest5Client createRestClient() {
+        return Rest5Client.builder(new HttpHost("localhost", 9200)).build();
     }
 
     private static void checkStatus(Response response, int status) {
-        if (response.getStatusLine().getStatusCode() != status) {
+        if (response.getStatusCode() != status) {
             throw new IllegalStateException("Status should have been " + status + " but is: "
-                    + response.getStatusLine().getStatusCode() + " - " + response.getStatusLine().getReasonPhrase());
+                    + response.getStatusCode());
         }
     }
 

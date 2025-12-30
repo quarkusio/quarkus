@@ -26,6 +26,10 @@
             <artifactId>hibernate-search-backend-elasticsearch</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.hibernate.search</groupId>
+            <artifactId>hibernate-search-backend-elasticsearch-client-rest5</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.graalvm.sdk</groupId>
             <artifactId>graal-sdk</artifactId>
             <scope>provided</scope>

@@ -9,6 +9,7 @@ import static io.quarkus.deployment.steps.ConfigBuildSteps.SERVICES_PREFIX;
 import static io.quarkus.deployment.util.ServiceUtil.classNamesNamedIn;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_LOCATIONS;
 import static java.util.stream.Collectors.toSet;
+import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -24,6 +25,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -110,7 +112,6 @@ import io.smallrye.config.ConfigSourceInterceptor;
 import io.smallrye.config.ConfigSourceInterceptorFactory;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.DefaultValuesConfigSource;
-import io.smallrye.config.ProfileConfigSourceInterceptor;
 import io.smallrye.config.SecretKeysHandler;
 import io.smallrye.config.SecretKeysHandlerFactory;
 import io.smallrye.config.SmallRyeConfig;
@@ -148,10 +149,10 @@ public class ConfigGenerationBuildStep {
                 .build()) {
 
             FieldDescriptor source = FieldDescriptor.of(classCreator.getClassName(), "source", ConfigSource.class);
-            classCreator.getFieldCreator(source).setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
+            classCreator.getFieldCreator(source).setModifiers(ACC_STATIC | Opcodes.ACC_FINAL);
 
             MethodCreator clinit = classCreator.getMethodCreator("<clinit>", void.class);
-            clinit.setModifiers(Opcodes.ACC_STATIC);
+            clinit.setModifiers(ACC_STATIC);
 
             ResultHandle map = clinit.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
             MethodDescriptor put = MethodDescriptor.ofMethod(Map.class, "put", Object.class, Object.class, Object.class);
@@ -232,29 +233,8 @@ public class ConfigGenerationBuildStep {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws Exception {
 
         Map<String, String> defaultValues = new HashMap<>();
-        // Default values from @ConfigRoot
-        for (Map.Entry<String, ConfigValue> entry : configItem.getReadResult().getRunTimeDefaultValues().entrySet()) {
-            defaultValues.put(entry.getKey(), entry.getValue().getRawValue());
-        }
-        // Default values from build item RunTimeConfigurationDefaultBuildItem override
         for (RunTimeConfigurationDefaultBuildItem e : runTimeDefaults) {
             defaultValues.put(e.getKey(), e.getValue());
-        }
-        // Recorded values from build time from any other source (higher ordinal then defaults, so override)
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        List<String> profiles = config.getProfiles();
-        for (Map.Entry<String, ConfigValue> entry : configItem.getReadResult().getRunTimeValues().entrySet()) {
-            if (DefaultValuesConfigSource.NAME.equals(entry.getValue().getConfigSourceName())) {
-                continue;
-            }
-            // Runtime values may contain active profiled names that override sames names in defaults
-            // We need to keep the original name definition in case a different profile is used to run the app
-            String activeName = ProfileConfigSourceInterceptor.activeName(entry.getKey(), profiles);
-            // But keep the default
-            if (!configItem.getReadResult().getRunTimeDefaultValues().containsKey(activeName)) {
-                defaultValues.remove(activeName);
-            }
-            defaultValues.put(entry.getKey(), entry.getValue().getRawValue());
         }
 
         Set<String> converters = discoverService(Converter.class, reflectiveClass);
@@ -296,6 +276,7 @@ public class ConfigGenerationBuildStep {
                 combinedIndex,
                 sharedFields,
                 defaultValues,
+                Map.of(),
                 converters,
                 interceptors,
                 staticSafeServices(interceptorFactories),
@@ -312,6 +293,10 @@ public class ConfigGenerationBuildStep {
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(CONFIG_STATIC_NAME).build());
 
         // For RunTime Config
+        Map<String, String> runtimeValues = new HashMap<>();
+        for (Entry<String, ConfigValue> entry : configItem.getReadResult().getRunTimeValues().entrySet()) {
+            runtimeValues.put(entry.getKey(), entry.getValue().getRawValue());
+        }
         Set<ConfigClass> runTimeMappings = new LinkedHashSet<>();
         runTimeMappings.addAll(runtimeConfigMappings(configMappings));
         runTimeMappings.addAll(configItem.getReadResult().getBuildTimeRunTimeMappings());
@@ -324,6 +309,7 @@ public class ConfigGenerationBuildStep {
                 combinedIndex,
                 sharedFields,
                 defaultValues,
+                runtimeValues,
                 converters,
                 interceptors,
                 interceptorFactories,
@@ -596,6 +582,9 @@ public class ConfigGenerationBuildStep {
     private static final MethodDescriptor WITH_DEFAULTS = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
             "withDefaultValues",
             void.class, SmallRyeConfigBuilder.class, Map.class);
+    private static final MethodDescriptor WITH_RUNTIME_VALUES = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
+            "withRuntimeValues",
+            void.class, SmallRyeConfigBuilder.class, Map.class);
     private static final MethodDescriptor WITH_CONVERTER = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
             "withConverter",
             void.class, SmallRyeConfigBuilder.class, String.class, int.class, Converter.class);
@@ -641,6 +630,10 @@ public class ConfigGenerationBuildStep {
     private static final MethodDescriptor ENSURE_LOADED = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
             "ensureLoaded",
             void.class, String.class);
+    private static final MethodDescriptor MAP_NEW = MethodDescriptor.ofConstructor(HashMap.class, int.class);
+    private static final MethodDescriptor MAP_PUT = MethodDescriptor.ofMethod(HashMap.class,
+            "put",
+            Object.class, Object.class, Object.class);
 
     private static final DotName CONVERTER_NAME = DotName.createSimple(Converter.class.getName());
     private static final DotName PRIORITY_NAME = DotName.createSimple(Priority.class.getName());
@@ -659,13 +652,13 @@ public class ConfigGenerationBuildStep {
                 .build()) {
 
             MethodCreator clinit = classCreator.getMethodCreator("<clinit>", void.class);
-            clinit.setModifiers(Opcodes.ACC_STATIC);
+            clinit.setModifiers(ACC_STATIC);
 
             int converterIndex = 0;
             for (String converter : converters) {
                 String fieldName = "conv$" + converterIndex++;
                 FieldDescriptor converterField = classCreator.getFieldCreator(fieldName, Converter.class)
-                        .setModifiers(Opcodes.ACC_STATIC).getFieldDescriptor();
+                        .setModifiers(ACC_STATIC).getFieldDescriptor();
                 clinit.writeStaticField(converterField, clinit.newInstance(MethodDescriptor.ofConstructor(converter)));
                 fields.put(converter, converterField);
             }
@@ -673,7 +666,7 @@ public class ConfigGenerationBuildStep {
             int mappingIndex = 0;
             for (ConfigClass mapping : mappings) {
                 FieldDescriptor mappingField = classCreator.getFieldCreator("mapping$" + mappingIndex++, ConfigClass.class)
-                        .setModifiers(Opcodes.ACC_STATIC).getFieldDescriptor();
+                        .setModifiers(ACC_STATIC).getFieldDescriptor();
                 clinit.writeStaticField(mappingField, clinit.invokeStaticMethod(CONFIG_CLASS,
                         clinit.load(mapping.getType().getName()), clinit.load(mapping.getPrefix())));
 
@@ -700,6 +693,7 @@ public class ConfigGenerationBuildStep {
             CombinedIndexBuildItem combinedIndex,
             Map<Object, FieldDescriptor> sharedFields,
             Map<String, String> defaultValues,
+            Map<String, String> runtimeValues,
             Set<String> converters,
             Set<String> interceptors,
             Set<String> interceptorFactories,
@@ -724,21 +718,30 @@ public class ConfigGenerationBuildStep {
                 .build()) {
 
             MethodCreator clinit = classCreator.getMethodCreator("<clinit>", void.class);
-            clinit.setModifiers(Opcodes.ACC_STATIC);
+            clinit.setModifiers(ACC_STATIC);
 
             MethodCreator method = classCreator.getMethodCreator(BUILDER_CUSTOMIZER);
             ResultHandle configBuilder = method.getMethodParam(0);
 
-            FieldDescriptor defaultsField = classCreator.getFieldCreator("defaults", Map.class).setModifiers(Opcodes.ACC_STATIC)
+            FieldDescriptor defaultsField = classCreator.getFieldCreator("defaults", Map.class).setModifiers(ACC_STATIC)
                     .getFieldDescriptor();
-            clinit.writeStaticField(defaultsField, clinit.newInstance(MethodDescriptor.ofConstructor(HashMap.class, int.class),
-                    clinit.load((int) ((float) defaultValues.size() / 0.75f + 1.0f))));
-            MethodDescriptor put = MethodDescriptor.ofMethod(HashMap.class, "put", Object.class, Object.class, Object.class);
+            clinit.writeStaticField(defaultsField,
+                    clinit.newInstance(MAP_NEW, clinit.load((int) ((float) defaultValues.size() / 0.75f + 1.0f))));
             for (Map.Entry<String, String> entry : defaultValues.entrySet()) {
-                clinit.invokeVirtualMethod(put, clinit.readStaticField(defaultsField), clinit.load(entry.getKey()),
+                clinit.invokeVirtualMethod(MAP_PUT, clinit.readStaticField(defaultsField), clinit.load(entry.getKey()),
                         clinit.load(entry.getValue()));
             }
             method.invokeStaticMethod(WITH_DEFAULTS, configBuilder, method.readStaticField(defaultsField));
+
+            FieldDescriptor runtimeValuesField = classCreator.getFieldCreator("runtimeValues", Map.class)
+                    .setModifiers(ACC_STATIC).getFieldDescriptor();
+            clinit.writeStaticField(runtimeValuesField,
+                    clinit.newInstance(MAP_NEW, clinit.load((int) ((float) runtimeValues.size() / 0.75f + 1.0f))));
+            for (Map.Entry<String, String> entry : runtimeValues.entrySet()) {
+                clinit.invokeVirtualMethod(MAP_PUT, clinit.readStaticField(runtimeValuesField), clinit.load(entry.getKey()),
+                        clinit.load(entry.getValue()));
+            }
+            method.invokeStaticMethod(WITH_RUNTIME_VALUES, configBuilder, method.readStaticField(runtimeValuesField));
 
             for (String converter : converters) {
                 ClassInfo converterClass = combinedIndex.getComputingIndex().getClassByName(converter);

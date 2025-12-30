@@ -669,7 +669,7 @@ public interface RestClientsConfig {
          * always throws an exception if HTTP response code >= 400.
          * This property is not applicable to the RESTEasy Client.
          */
-        @WithDefault("${microprofile.rest.client.disable.default.mapper:false}")
+        @WithDefault("false")
         Boolean disableDefaultMapper();
 
         /**

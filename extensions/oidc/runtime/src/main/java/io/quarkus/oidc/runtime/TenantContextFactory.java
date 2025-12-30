@@ -29,6 +29,7 @@ import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport;
+import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
@@ -48,12 +49,15 @@ final class TenantContextFactory {
     private final Vertx vertx;
     private final OidcTlsSupport tlsSupport;
     private final boolean securityEventsEnabled;
+    private final ProxyConfigurationRegistry proxyConfigurationRegistry;
 
-    TenantContextFactory(Vertx vertx, TlsConfigurationRegistry tlsConfigurationRegistry, boolean securityEventsEnabled) {
+    TenantContextFactory(Vertx vertx, TlsConfigurationRegistry tlsConfigurationRegistry, boolean securityEventsEnabled,
+            ProxyConfigurationRegistry proxyConfigurationRegistry) {
         this.vertx = vertx;
         this.tlsSupport = OidcTlsSupport.of(tlsConfigurationRegistry);
         this.securityEventsEnabled = securityEventsEnabled;
         this.tenantsExpectingServerAvailableEvents = ConcurrentHashMap.newKeySet();
+        this.proxyConfigurationRegistry = proxyConfigurationRegistry;
     }
 
     TenantConfigContext createDefaultTenantConfig(Map<String, OidcTenantConfig> staticTenants, OidcTenantConfig defaultTenant) {
@@ -449,7 +453,8 @@ final class TenantContextFactory {
 
         WebClientOptions options = new WebClientOptions();
         options.setFollowRedirects(oidcConfig.followRedirects());
-        OidcCommonUtils.setHttpClientOptions(oidcConfig, options, tlsSupport.forConfig(oidcConfig.tls()));
+        OidcCommonUtils.setHttpClientOptions(oidcConfig, options, tlsSupport.forConfig(oidcConfig.tls()),
+                proxyConfigurationRegistry);
         var mutinyVertx = new io.vertx.mutiny.core.Vertx(vertx);
         WebClient client = WebClient.create(mutinyVertx, options);
 

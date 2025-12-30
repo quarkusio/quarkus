@@ -26,6 +26,7 @@ import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport;
+import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.smallrye.mutiny.Uni;
@@ -42,7 +43,8 @@ public class OidcClientRecorder {
     static final String DEFAULT_OIDC_CLIENT_ID = "Default";
 
     static Map<String, OidcClient> createStaticOidcClients(OidcClientsConfig oidcClientsConfig, Vertx vertx,
-            OidcTlsSupport tlsSupport, OidcClientConfig defaultClientConfig) {
+            OidcTlsSupport tlsSupport, OidcClientConfig defaultClientConfig,
+            ProxyConfigurationRegistry proxyConfigurationRegistry) {
 
         String defaultClientId = defaultClientConfig.id().get();
 
@@ -53,7 +55,8 @@ public class OidcClientRecorder {
             if (!OidcClientsConfig.DEFAULT_CLIENT_KEY.equals(namedKey)) {
                 var namedOidcClientConfig = config.getValue();
                 OidcCommonUtils.verifyConfigurationId(defaultClientId, namedKey, namedOidcClientConfig.id());
-                staticOidcClients.put(namedKey, createOidcClient(namedOidcClientConfig, namedKey, vertx, tlsSupport));
+                staticOidcClients.put(namedKey,
+                        createOidcClient(namedOidcClientConfig, namedKey, vertx, tlsSupport, proxyConfigurationRegistry));
             }
         }
 
@@ -70,13 +73,13 @@ public class OidcClientRecorder {
     }
 
     protected static OidcClient createOidcClient(OidcClientConfig oidcConfig, String oidcClientId, Vertx vertx,
-            OidcTlsSupport tlsSupport) {
-        return createOidcClientUni(oidcConfig, oidcClientId, vertx, tlsSupport).await()
+            OidcTlsSupport tlsSupport, ProxyConfigurationRegistry proxyConfigurationRegistry) {
+        return createOidcClientUni(oidcConfig, oidcClientId, vertx, tlsSupport, proxyConfigurationRegistry).await()
                 .atMost(oidcConfig.connectionTimeout());
     }
 
     protected static Uni<OidcClient> createOidcClientUni(OidcClientConfig oidcConfig, String oidcClientId,
-            Vertx vertx, OidcTlsSupport tlsSupport) {
+            Vertx vertx, OidcTlsSupport tlsSupport, ProxyConfigurationRegistry proxyConfigurationRegistry) {
         if (!oidcConfig.clientEnabled()) {
             String message = String.format("'%s' client configuration is disabled", oidcClientId);
             LOG.debug(message);
@@ -104,7 +107,8 @@ public class OidcClientRecorder {
 
         WebClientOptions options = new WebClientOptions();
         options.setFollowRedirects(oidcConfig.followRedirects());
-        OidcCommonUtils.setHttpClientOptions(oidcConfig, options, tlsSupport.forConfig(oidcConfig.tls()));
+        OidcCommonUtils.setHttpClientOptions(oidcConfig, options, tlsSupport.forConfig(oidcConfig.tls()),
+                proxyConfigurationRegistry);
 
         var mutinyVertx = new io.vertx.mutiny.core.Vertx(vertx);
         WebClient client = WebClient.create(mutinyVertx, options);

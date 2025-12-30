@@ -321,17 +321,14 @@ Currently, introspection credentials, if configured, can only be sent as HTTP PO
 |quarkus.oidc.connection-delay ||Connection delay
 |quarkus.oidc.connection-retry-count |3|Connection retry count
 |quarkus.oidc.connection-time-out |10 seconds|Connection time out
-|quarkus.oidc.proxy-host ||Proxy host
-|quarkus.oidc.proxy-port |80|Proxy port
-|quarkus.oidc.proxy-username ||Proxy username
-|quarkus.oidc.proxy-password ||Proxy password
+|quarkus.oidc.proxy.proxy-configuration-name ||Proxy configuration name
 |====
 
 `quarkus.oidc.use-blocking-dns-lookup` should be set to `true` to avoid a Vert'x thread getting blocked when an OIDC provider connection is established on the slow network.
 
 `quarkus.oidc.connection-retry-count` sets a number of connection retries and `quarkus.oidc.connection-time-out` sets a duration after which the current OIDC connection request times out. `quarkus.oidc.connection-delay` establishes a delay for an initial connection request only.
 
-Four properties in the `quarkus.oidc.proxy.*` namespace can be used to control access to HTTP proxies.
+The `quarkus.oidc.proxy.proxy-configuration-name=<name>` property configures the name of proxy configuration registered in the Proxy registry (`quarkus.proxy.<name>.*`). The proxy configuration can be used to control OIDC access to HTTP proxies.
 
 In some cases, OIDC provider, after accepting HTTP GET requests to either discovery or UserInfo endpoints, initiates a redirect exactly to the same endpoint address while also supplying some additional cookies.
 

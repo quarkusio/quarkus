@@ -19,6 +19,7 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.oidc.Oidc;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TenantIdentityProvider;
+import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.annotations.RuntimeInit;
@@ -60,14 +61,16 @@ public class OidcRecorder {
 
     @RuntimeInit
     public Function<SyntheticCreationalContext<TenantConfigBean>, TenantConfigBean> createTenantConfigBean(
-            Supplier<Vertx> vertx, Supplier<TlsConfigurationRegistry> registry) {
+            Supplier<Vertx> vertx, Supplier<TlsConfigurationRegistry> registry,
+            Supplier<ProxyConfigurationRegistry> proxyConfigurationRegistrySupplier) {
         return new Function<SyntheticCreationalContext<TenantConfigBean>, TenantConfigBean>() {
             @Override
             public TenantConfigBean apply(SyntheticCreationalContext<TenantConfigBean> ctx) {
                 final OidcImpl oidc = new OidcImpl(oidcConfig.getValue());
                 ctx.getInjectedReference(new TypeLiteral<Event<Oidc>>() {
                 }).fire(oidc);
-                return new TenantConfigBean(vertx.get(), registry.get(), oidc, securityConfig.getValue().events().enabled());
+                return new TenantConfigBean(vertx.get(), registry.get(), oidc, securityConfig.getValue().events().enabled(),
+                        proxyConfigurationRegistrySupplier.get());
             }
         };
     }

@@ -25,7 +25,7 @@ public class OidcCommonUtilsTest {
         config.username = Optional.of("user");
         config.password = Optional.of("password");
 
-        ProxyOptions options = OidcCommonUtils.toProxyOptions(config).get();
+        ProxyOptions options = OidcCommonUtils.toProxyOptions(config, null).get();
         assertEquals("localhost", options.getHost());
         assertEquals(8080, options.getPort());
         assertEquals("user", options.getUsername());
@@ -42,7 +42,7 @@ public class OidcCommonUtilsTest {
 
         assertEquals("http", URI.create(config.host.get()).getScheme());
 
-        ProxyOptions options = OidcCommonUtils.toProxyOptions(config).get();
+        ProxyOptions options = OidcCommonUtils.toProxyOptions(config, null).get();
         assertEquals("localhost", options.getHost());
         assertEquals(8080, options.getPort());
         assertEquals("user", options.getUsername());

@@ -52,6 +52,7 @@ import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret;
 import io.quarkus.oidc.common.runtime.config.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.config.OidcCommonConfig.Tls.Verification;
+import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.tls.runtime.config.TlsConfigUtils;
@@ -157,9 +158,9 @@ public class OidcCommonUtils {
     }
 
     public static void setHttpClientOptions(OidcCommonConfig oidcConfig, HttpClientOptions options,
-            TlsConfigSupport tlsSupport) {
+            TlsConfigSupport tlsSupport, ProxyConfigurationRegistry proxyConfigurationRegistry) {
 
-        Optional<ProxyOptions> proxyOpt = toProxyOptions(oidcConfig.proxy());
+        Optional<ProxyOptions> proxyOpt = toProxyOptions(oidcConfig.proxy(), proxyConfigurationRegistry);
         if (proxyOpt.isPresent()) {
             options.setProxyOptions(proxyOpt.get());
         }
@@ -281,26 +282,62 @@ public class OidcCommonUtils {
         return connectionDelayInSecs * 1000;
     }
 
-    public static Optional<ProxyOptions> toProxyOptions(OidcCommonConfig.Proxy proxyConfig) {
+    public static Optional<ProxyOptions> toProxyOptions(OidcCommonConfig.Proxy oidcProxyConfig,
+            ProxyConfigurationRegistry proxyConfigurationRegistry) {
         // Proxy is enabled if (at least) "host" is configured.
-        if (!proxyConfig.host().isPresent()) {
+        if (oidcProxyConfig.host().isEmpty() && oidcProxyConfig.proxyConfigurationName().isEmpty()) {
             return Optional.empty();
         }
+
+        final String hostProperty;
+        final int portProperty;
+        final Optional<String> usernameProperty;
+        final Optional<String> passwordProperty;
+        final Optional<Duration> proxyConnectTimeoutProperty;
+        if (oidcProxyConfig.proxyConfigurationName().isPresent()) {
+            var maybeProxyConfig = proxyConfigurationRegistry.get(oidcProxyConfig.proxyConfigurationName());
+            if (maybeProxyConfig.isEmpty()) {
+                throw new ConfigurationException("Cannot find the Proxy registry configuration '%s'"
+                        .formatted(oidcProxyConfig.proxyConfigurationName().get()));
+            } else {
+                var proxyRegistryConfig = maybeProxyConfig.get().assertHttpType();
+                hostProperty = proxyRegistryConfig.host();
+                portProperty = proxyRegistryConfig.port();
+                usernameProperty = proxyRegistryConfig.username();
+                passwordProperty = proxyRegistryConfig.password();
+                proxyConnectTimeoutProperty = proxyRegistryConfig.proxyConnectTimeout();
+                if (proxyRegistryConfig.nonProxyHosts().isPresent()) {
+                    throw new ConfigurationException(
+                            "The OIDC proxy configuration currently does not support the 'quarkus.proxy.\""
+                                    + oidcProxyConfig.proxyConfigurationName().get() + "\".non-proxy-hosts' property");
+                }
+            }
+        } else {
+            hostProperty = oidcProxyConfig.host().get();
+            portProperty = oidcProxyConfig.port();
+            usernameProperty = oidcProxyConfig.username();
+            passwordProperty = oidcProxyConfig.password();
+            proxyConnectTimeoutProperty = Optional.empty();
+        }
+
         JsonObject jsonOptions = new JsonObject();
         // Vert.x Client currently does not expect a host having a scheme but keycloak-authorization expects scheme and host.
         // Having a dedicated scheme property is probably better, but since it is property is not taken into account in Vertx Client
         // it does not really make sense as it can send a misleading message that users can choose between `http` and `https`.
-        String host = URI.create(proxyConfig.host().get()).getHost();
+        String host = URI.create(hostProperty).getHost();
         if (host == null) {
-            host = proxyConfig.host().get();
+            host = hostProperty;
         }
         jsonOptions.put("host", host);
-        jsonOptions.put("port", proxyConfig.port());
-        if (proxyConfig.username().isPresent()) {
-            jsonOptions.put("username", proxyConfig.username().get());
+        jsonOptions.put("port", portProperty);
+        if (usernameProperty.isPresent()) {
+            jsonOptions.put("username", usernameProperty.get());
         }
-        if (proxyConfig.password().isPresent()) {
-            jsonOptions.put("password", proxyConfig.password().get());
+        if (passwordProperty.isPresent()) {
+            jsonOptions.put("password", passwordProperty.get());
+        }
+        if (proxyConnectTimeoutProperty.isPresent()) {
+            jsonOptions.put("connectTimeout", proxyConnectTimeoutProperty.get());
         }
         return Optional.of(new ProxyOptions(jsonOptions));
     }

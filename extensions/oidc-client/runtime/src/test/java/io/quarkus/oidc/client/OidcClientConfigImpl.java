@@ -94,6 +94,7 @@ final class OidcClientConfigImpl implements OidcClientConfig {
         CREDENTIALS_JWT_KEEP_AUDIENCE_TRAILING_SLASH,
         CREDENTIALS_JWT_TOKEN_ID,
         JWT_BEARER_TOKEN_PATH,
+        PROXY_CONFIGURATION_NAME,
         REFRESH_INTERVAL
     }
 
@@ -484,6 +485,12 @@ final class OidcClientConfigImpl implements OidcClientConfig {
     public Proxy proxy() {
         invocationsRecorder.put(ConfigMappingMethods.PROXY, true);
         return new Proxy() {
+            @Override
+            public Optional<String> proxyConfigurationName() {
+                invocationsRecorder.put(ConfigMappingMethods.PROXY_CONFIGURATION_NAME, true);
+                return Optional.empty();
+            }
+
             @Override
             public Optional<String> host() {
                 invocationsRecorder.put(ConfigMappingMethods.PROXY_HOST, true);

@@ -212,6 +212,7 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         INTROSPECTION_CREDENTIALS_SECRET,
         INTROSPECTION_CREDENTIALS_INCLUDE_CLIENT_ID,
         TENANT_ID,
+        PROXY_CONFIGURATION_NAME,
         JWT_BEARER_TOKEN_PATH
     }
 
@@ -1239,6 +1240,12 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
     public Proxy proxy() {
         invocationsRecorder.put(ConfigMappingMethods.PROXY, true);
         return new Proxy() {
+            @Override
+            public Optional<String> proxyConfigurationName() {
+                invocationsRecorder.put(ConfigMappingMethods.PROXY_CONFIGURATION_NAME, true);
+                return Optional.empty();
+            }
+
             @Override
             public Optional<String> host() {
                 invocationsRecorder.put(ConfigMappingMethods.PROXY_HOST, true);

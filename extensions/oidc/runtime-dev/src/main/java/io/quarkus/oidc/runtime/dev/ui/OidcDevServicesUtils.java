@@ -2,14 +2,15 @@ package io.quarkus.oidc.runtime.dev.ui;
 
 import java.time.Duration;
 import java.util.Map;
-import java.util.Optional;
 
-import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
-import io.quarkus.oidc.common.runtime.config.OidcCommonConfig;
+import io.quarkus.oidc.runtime.OidcConfig;
+import io.quarkus.proxy.ProxyConfigurationRegistry;
+import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
@@ -34,32 +35,11 @@ public final class OidcDevServicesUtils {
         WebClientOptions options = new WebClientOptions();
         options.setTrustAll(true);
         options.setVerifyHost(false);
-        Config config = ConfigProvider.getConfig();
-        config.getOptionalValue("quarkus.oidc.proxy.host", String.class)
-                .ifPresent(proxyHost -> {
-                    OidcCommonConfig.Proxy proxyConf = new OidcCommonConfig.Proxy() {
-                        @Override
-                        public Optional<String> host() {
-                            return Optional.of(proxyHost);
-                        }
-
-                        @Override
-                        public int port() {
-                            return config.getOptionalValue("quarkus.oidc.proxy.port", Integer.class).orElse(80);
-                        }
-
-                        @Override
-                        public Optional<String> username() {
-                            return config.getOptionalValue("quarkus.oidc.proxy.username", String.class);
-                        }
-
-                        @Override
-                        public Optional<String> password() {
-                            return config.getOptionalValue("quarkus.oidc.proxy.password", String.class);
-                        }
-                    };
-                    options.setProxyOptions(OidcCommonUtils.toProxyOptions(proxyConf).orElse(null));
-                });
+        var config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        var proxyConfig = OidcConfig.getDefaultTenant(config.getConfigMapping(OidcConfig.class)).proxy();
+        var container = Arc.container();
+        var proxyConfigurationRegistry = container != null ? container.select(ProxyConfigurationRegistry.class).orNull() : null;
+        OidcCommonUtils.toProxyOptions(proxyConfig, proxyConfigurationRegistry).ifPresent(options::setProxyOptions);
         return WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
     }
 

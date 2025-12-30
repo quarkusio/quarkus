@@ -105,6 +105,7 @@ import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.quarkus.oidc.runtime.WebSocketIdentityUpdateProvider;
 import io.quarkus.oidc.runtime.health.OidcTenantHealthCheck;
 import io.quarkus.oidc.runtime.providers.AzureAccessTokenCustomizer;
+import io.quarkus.proxy.deployment.ProxyRegistryBuildItem;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
@@ -360,10 +361,12 @@ public class OidcBuildStep {
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     SyntheticBeanBuildItem setup(OidcRecorder recorder, CoreVertxBuildItem vertxBuildItem,
-            TlsRegistryBuildItem tlsRegistryBuildItem) {
+            TlsRegistryBuildItem tlsRegistryBuildItem,
+            ProxyRegistryBuildItem proxyRegistryBuildItem) {
         return SyntheticBeanBuildItem.configure(TenantConfigBean.class).unremovable().types(TenantConfigBean.class)
                 .addInjectionPoint(ParameterizedType.create(EVENT, ClassType.create(Oidc.class)))
-                .createWith(recorder.createTenantConfigBean(vertxBuildItem.getVertx(), tlsRegistryBuildItem.registry()))
+                .createWith(recorder.createTenantConfigBean(vertxBuildItem.getVertx(), tlsRegistryBuildItem.registry(),
+                        proxyRegistryBuildItem.registry()))
                 .destroyer(TenantConfigBean.Destroyer.class)
                 .scope(Singleton.class) // this should have been @ApplicationScoped but fails for some reason
                 .setRuntimeInit()

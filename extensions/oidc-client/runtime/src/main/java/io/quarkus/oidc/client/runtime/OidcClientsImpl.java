@@ -28,6 +28,7 @@ import io.quarkus.oidc.client.OidcClientException;
 import io.quarkus.oidc.client.OidcClients;
 import io.quarkus.oidc.client.Tokens;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport;
+import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.runtime.Shutdown;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.smallrye.mutiny.Uni;
@@ -44,26 +45,32 @@ public final class OidcClientsImpl implements OidcClients, Closeable {
     private final Vertx vertx;
     private final OidcTlsSupport tlsSupport;
     private volatile PeriodicTask tokenRefreshTask;
+    private final ProxyConfigurationRegistry proxyConfigurationRegistry;
 
     @Inject
-    OidcClientsImpl(OidcClientsConfig oidcClientsConfig, Vertx vertx, TlsConfigurationRegistry registry) {
-        this(oidcClientsConfig, vertx, OidcClientsConfig.getDefaultClient(oidcClientsConfig), OidcTlsSupport.of(registry));
+    OidcClientsImpl(OidcClientsConfig oidcClientsConfig, Vertx vertx, TlsConfigurationRegistry registry,
+            ProxyConfigurationRegistry proxyConfigurationRegistry) {
+        this(oidcClientsConfig, vertx, OidcClientsConfig.getDefaultClient(oidcClientsConfig), OidcTlsSupport.of(registry),
+                proxyConfigurationRegistry);
     }
 
     private OidcClientsImpl(OidcClientsConfig oidcClientsConfig, Vertx vertx, OidcClientConfig defaultClientConfig,
-            OidcTlsSupport tlsSupport) {
-        this(createOidcClient(defaultClientConfig, defaultClientConfig.id().get(), vertx, tlsSupport),
-                createStaticOidcClients(oidcClientsConfig, vertx, tlsSupport, defaultClientConfig),
-                vertx, tlsSupport, createTokenRefreshPeriodicTask(oidcClientsConfig, vertx));
+            OidcTlsSupport tlsSupport, ProxyConfigurationRegistry proxyConfigurationRegistry) {
+        this(createOidcClient(defaultClientConfig, defaultClientConfig.id().get(), vertx, tlsSupport,
+                proxyConfigurationRegistry),
+                createStaticOidcClients(oidcClientsConfig, vertx, tlsSupport, defaultClientConfig, proxyConfigurationRegistry),
+                vertx, tlsSupport, createTokenRefreshPeriodicTask(oidcClientsConfig, vertx), proxyConfigurationRegistry);
     }
 
     private OidcClientsImpl(OidcClient defaultClient, Map<String, OidcClient> staticOidcClients,
-            Vertx vertx, OidcTlsSupport tlsSupport, PeriodicTask tokenRefreshTask) {
+            Vertx vertx, OidcTlsSupport tlsSupport, PeriodicTask tokenRefreshTask,
+            ProxyConfigurationRegistry proxyConfigurationRegistry) {
         this.defaultClient = defaultClient;
         this.staticOidcClients = staticOidcClients;
         this.vertx = vertx;
         this.tlsSupport = tlsSupport;
         this.tokenRefreshTask = tokenRefreshTask;
+        this.proxyConfigurationRegistry = proxyConfigurationRegistry;
     }
 
     @Override
@@ -89,7 +96,7 @@ public final class OidcClientsImpl implements OidcClients, Closeable {
         if (clientConfig.id().isEmpty()) {
             throw new OidcClientException("'id' property must be set");
         }
-        return createOidcClientUni(clientConfig, clientConfig.id().get(), vertx, tlsSupport);
+        return createOidcClientUni(clientConfig, clientConfig.id().get(), vertx, tlsSupport, proxyConfigurationRegistry);
     }
 
     @Singleton

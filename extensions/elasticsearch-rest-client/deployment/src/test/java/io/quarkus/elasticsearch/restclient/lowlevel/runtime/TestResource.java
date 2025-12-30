@@ -10,19 +10,20 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.Response;
-import org.elasticsearch.client.RestClient;
 
+import co.elastic.clients.transport.rest5_client.low_level.Request;
+import co.elastic.clients.transport.rest5_client.low_level.Response;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 @Path("/fruits")
 public class TestResource {
     @Inject
-    RestClient restClient;
+    Rest5Client restClient;
 
     @POST
     public void index(Fruit fruit) throws IOException {
@@ -35,7 +36,8 @@ public class TestResource {
 
     @GET
     @Path("/search")
-    public List<Fruit> search(@QueryParam("term") String term, @QueryParam("match") String match) throws IOException {
+    public List<Fruit> search(@QueryParam("term") String term, @QueryParam("match") String match)
+            throws IOException, ParseException {
         Request request = new Request(
                 "GET",
                 "/fruits/_search");

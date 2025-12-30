@@ -18,7 +18,7 @@ import io.vertx.mutiny.core.buffer.Buffer;
 public class OidcRequestResponseCustomizer implements OidcRequestFilter, OidcResponseFilter {
 
     @Override
-    public Uni<Void> filterRequest(OidcRequestContext requestContext) {
+    public Uni<Void> filter(OidcRequestFilterContext requestContext) {
         return requestContext.runBlocking(() -> {
             var request = requestContext.request();
             String uri = request.uri();

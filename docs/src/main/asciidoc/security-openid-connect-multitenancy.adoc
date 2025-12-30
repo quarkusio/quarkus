@@ -1006,7 +1006,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 public class CustomOidcRequestFilter implements OidcRequestFilter {
 
     @Override
-    public Uni<Void> filterRequest(OidcRequestContext requestContext) {
+    public Uni<Void> filter(OidcRequestFilterContext requestContext) {
         requestContext.request().putHeader("custom-header-name", "custom-header-value");
         return Uni.createFrom().voidItem();
     }

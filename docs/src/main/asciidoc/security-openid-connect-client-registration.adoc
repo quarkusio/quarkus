@@ -532,7 +532,7 @@ public class ClientRegistrationRequestFilter implements OidcRequestFilter {
     private static final Logger LOG = Logger.getLogger(ClientRegistrationRequestFilter.class);
 
     @Override
-    public Uni<Void> filterRequest(OidcRequestContext rc) {
+    public Uni<Void> filter(OidcRequestFilterContext rc) {
         JsonObject body = rc.requestBody().toJsonObject();
         if ("Default Client".equals(body.getString("client_name"))) { <2>
             LOG.debug("'Default Client' registration request");
@@ -571,7 +571,7 @@ import io.vertx.mutiny.core.buffer.Buffer;
 public class ClientRegistrationReRequestFilter implements OidcRequestFilter {
 
     @Override
-    public Uni<Void> filterRequest(OidcRequestContext rc) {
+    public Uni<Void> filter(OidcRequestFilterContext rc) {
         // Update the client name
         JsonObject body = rc.requestBody().toJsonObject();
         if ("Dynamic Tenant Client".equals(body.getString("client_name"))) {
@@ -612,7 +612,7 @@ public class ClientRegistrationResponseFilter implements OidcResponseFilter {
     private static final Logger LOG = Logger.getLogger(ClientRegistrationResponseFilter.class);
 
     @Override
-    public Uni<Void> filterResponse(OidcResponseContext rc) {
+    public Uni<Void> filter(OidcResponseFilterContext rc) {
         String contentType = rc.responseHeaders().get("Content-Type"); <2>
         JsonObject body = rc.responseBody().toJsonObject();
         if (contentType.startsWith("application/json")
@@ -652,7 +652,7 @@ public class RegisteredClientResponseFilter implements OidcResponseFilter {
     private static final Logger LOG = Logger.getLogger(RegisteredClientResponseFilter.class);
 
     @Override
-    public Uni<Void> filterResponse(OidcResponseContext rc) {
+    public Uni<Void> filter(OidcResponseFilterContext rc) {
         String contentType = rc.responseHeaders().get("Content-Type"); <2>
         if (contentType.startsWith("application/json")
                 && "Default Client Updated".equals(rc.responseBody().toJsonObject().getString("client_name"))) { <3>
@@ -693,7 +693,7 @@ import io.vertx.mutiny.core.buffer.Buffer;
 public class ClientRegistrationResponseFilter implements OidcResponseFilter {
 
     @Override
-    public Uni<Void> filterResponse(OidcResponseContext rc) {
+    public Uni<Void> filter(OidcResponseFilterContext rc) {
         // Update the client name
         JsonObject body = rc.responseBody().toJsonObject();
         if ("Registered Dynamic Tenant Client".equals(body.getString("client_name"))) {

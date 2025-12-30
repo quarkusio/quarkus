@@ -1537,7 +1537,7 @@ import io.quarkus.oidc.runtime.OidcUtils;
 public class DiscoveryEndpointResponseFilter implements OidcResponseFilter {
 
     @Override
-    public Uni<Void> filterResponse(OidcResponseContext rc) {
+    public Uni<Void> filter(OidcResponseFilterContext rc) {
         String contentType = rc.responseHeaders().get("Content-Type"); <2>
         if (contentType.equals("application/json") {
             String tenantId = rc.requestProperties().get(OidcUtils.TENANT_ID_ATTRIBUTE); <3>
@@ -1577,7 +1577,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 public class CustomOidcRequestFilter implements OidcRequestFilter {
 
     @Override
-    public Uni<Void> filterRequest(OidcRequestContext requestContext) {
+    public Uni<Void> filter(OidcRequestFilterContext requestContext) {
         requestContext.request().putHeader("custom-header-name", "custom-header-value");
         return Uni.createFrom().voidItem();
     }

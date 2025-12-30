@@ -63,6 +63,7 @@ import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devservice.runtime.config.DevServicesConfigBuilder;
+import io.quarkus.devservice.runtime.config.DevServicesOverrideConfigBuilder;
 import io.quarkus.devservices.common.ContainerUtil;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.StartableContainer;
@@ -92,7 +93,7 @@ public class DevServicesProcessor {
     @BuildStep(onlyIf = IsDevServicesSupportedByLaunchMode.class)
     @Produce(ServiceStartBuildItem.class)
     public DevServicesCustomizerBuildItem containerCustomizer(LaunchModeBuildItem launchModeBuildItem,
-            DevServicesConfig globalDevServicesConfig) {
+            DevServicesConfig devServicesConfig) {
         return new DevServicesCustomizerBuildItem((devService, startable) -> {
             LaunchMode launchMode = launchModeBuildItem.getLaunchMode();
             if (startable instanceof StartableContainer startableContainer) {
@@ -101,10 +102,10 @@ public class DevServicesProcessor {
                 if (shouldConfigureSharedServiceLabel(launchMode)) {
                     container.withLabel(Labels.QUARKUS_DEV_SERVICE, devService.getServiceName());
                 }
-                globalDevServicesConfig.timeout().ifPresent(container::withStartupTimeout);
+                devServicesConfig.timeout().ifPresent(container::withStartupTimeout);
             } else if (startable instanceof GenericContainer container) {
                 configureLabels(container, launchMode);
-                globalDevServicesConfig.timeout().ifPresent(container::withStartupTimeout);
+                devServicesConfig.timeout().ifPresent(container::withStartupTimeout);
                 if (shouldConfigureSharedServiceLabel(launchMode)) {
                     container.withLabel(Labels.QUARKUS_DEV_SERVICE, devService.getServiceName());
                 }
@@ -144,19 +145,20 @@ public class DevServicesProcessor {
     @Produce(ServiceStartBuildItem.class)
     DevServicesRegistryBuildItem devServicesRegistry(LaunchModeBuildItem launchMode,
             ApplicationInstanceIdBuildItem applicationId,
-            DevServicesConfig globalDevServicesConfig,
+            DevServicesConfig devServicesConfig,
             CuratedApplicationShutdownBuildItem shutdownBuildItem) {
         DevServicesRegistryBuildItem registryBuildItem = new DevServicesRegistryBuildItem(applicationId.getUUID(),
-                globalDevServicesConfig, launchMode.getLaunchMode());
+                devServicesConfig, launchMode.getLaunchMode());
         shutdownBuildItem.addCloseTask(registryBuildItem::closeAllRunningServices, true);
         return registryBuildItem;
     }
 
     @BuildStep
-    public RunTimeConfigBuilderBuildItem registerDevResourcesConfigSource(
-            List<DevServicesResultBuildItem> devServicesRequestBuildItems) {
+    public void registerDevResourcesConfigSource(
+            BuildProducer<RunTimeConfigBuilderBuildItem> runtimeConfigBuilders) {
         // Once all the dev services are registered, we can share config
-        return new RunTimeConfigBuilderBuildItem(DevServicesConfigBuilder.class);
+        runtimeConfigBuilders.produce(new RunTimeConfigBuilderBuildItem(DevServicesConfigBuilder.class));
+        runtimeConfigBuilders.produce(new RunTimeConfigBuilderBuildItem(DevServicesOverrideConfigBuilder.class));
     }
 
     @BuildStep(onlyIf = { IsDevelopment.class, DevServicesConfig.Enabled.class })
@@ -339,6 +341,10 @@ public class DevServicesProcessor {
     }
 
     private ContainerInfo.ContainerPort[] getExposedPorts(Container container) {
+        if (container.getPorts() == null) {
+            return new ContainerInfo.ContainerPort[0];
+        }
+
         return Arrays.stream(container.getPorts())
                 .map(c -> new ContainerInfo.ContainerPort(c.getIp(), c.getPrivatePort(), c.getPublicPort(), c.getType()))
                 .toArray(ContainerInfo.ContainerPort[]::new);

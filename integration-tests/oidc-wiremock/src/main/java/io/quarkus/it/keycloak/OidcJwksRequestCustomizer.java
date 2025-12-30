@@ -15,7 +15,7 @@ import io.smallrye.mutiny.Uni;
 public class OidcJwksRequestCustomizer implements OidcRequestFilter {
 
     @Override
-    public Uni<Void> filterRequest(OidcRequestContext requestContext) {
+    public Uni<Void> filter(OidcRequestFilterContext requestContext) {
         return requestContext.runBlocking(() -> {
             var contextProps = requestContext.contextProperties();
             OidcConfigurationMetadata metadata = contextProps.get(OidcConfigurationMetadata.class.getName());

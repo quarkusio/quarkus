@@ -49,6 +49,13 @@ public interface OidcResponseFilter {
             responseBody = buffer;
             requestProperties.put(OidcRequestContextProperties.RESPONSE_BODY, buffer);
         }
+    }
+
+    class OidcResponseFilterContext extends OidcResponseContext {
+        public OidcResponseFilterContext(OidcRequestContextProperties requestProperties, int statusCode,
+                MultiMap responseHeaders, Buffer responseBody) {
+            super(requestProperties, statusCode, responseHeaders, responseBody);
+        }
 
         public final Uni<Void> runBlocking(Runnable runnable) {
             return OidcCommonUtils.runBlocking(runnable);
@@ -59,7 +66,7 @@ public interface OidcResponseFilter {
      * Filter OIDC responses.
      *
      * @param responseContext the response context which provides access to the HTTP response status code, headers and body.
-     * @deprecated use the {@link #filterResponse(OidcResponseContext)} method instead
+     * @deprecated use the {@link #filter(OidcResponseContext)} method instead
      */
     @Deprecated(since = "3.31", forRemoval = true)
     default void filter(OidcResponseContext responseContext) {
@@ -68,14 +75,14 @@ public interface OidcResponseFilter {
 
     /**
      * Filter OIDC responses asynchronously.
-     * Blocking tasks can be run with the {@link OidcResponseContext#runBlocking(Runnable)} method.
+     * Blocking tasks can be run with the {@link OidcResponseFilterContext#runBlocking(Runnable)} method.
      *
      * @param responseContext the response context which provides access to the HTTP response status code, headers and body.
      * @return {@link Uni}
      */
-    default Uni<Void> filterResponse(OidcResponseContext responseContext) {
+    default Uni<Void> filter(OidcResponseFilterContext responseContext) {
         return Uni.createFrom().item(() -> {
-            filter(responseContext);
+            filter((OidcResponseContext) responseContext);
             return null;
         });
     }

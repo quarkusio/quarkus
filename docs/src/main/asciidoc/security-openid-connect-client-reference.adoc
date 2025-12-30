@@ -1288,7 +1288,7 @@ import io.vertx.core.http.HttpMethod;
 public class OidcRequestCustomizer implements OidcRequestFilter {
 
     @Override
-    public Uni<Void> filterRequest(OidcRequestContext requestContext) {
+    public Uni<Void> filter(OidcRequestFilterContext requestContext) {
         HttpMethod method = requestContext.request().method();
         String uri = requestContext.request().uri();
         if (method == HttpMethod.POST && uri.endsWith("/token") && requestContext.requestBody() != null) {
@@ -1328,7 +1328,7 @@ import io.vertx.mutiny.core.buffer.Buffer;
 public class TokenRequestFilter implements OidcRequestFilter {
 
     @Override
-    public Uni<Void> filterRequest(OidcRequestContext rc) {
+    public Uni<Void> filter(OidcRequestFilterContext rc) {
         // Add more required properties to the token request
         rc.requestBody(rc.requestBody().toString() + "&opaque_token_param=opaque_token_value"));
         return Uni.createFrom().voidItem();
@@ -1365,7 +1365,7 @@ public class TokenEndpointResponseFilter implements OidcResponseFilter {
     private static final Logger LOG = Logger.getLogger(TokenEndpointResponseFilter.class);
 
     @Override
-    public Uni<Void> filterResponse(OidcResponseContext rc) {
+    public Uni<Void> filter(OidcResponseFilterContext rc) {
         String contentType = rc.responseHeaders().get("Content-Type"); <2>
         if (contentType.equals("application/json")
                 && "refresh_token".equals(rc.requestProperties().get(OidcConstants.GRANT_TYPE)) <3>
@@ -1406,7 +1406,7 @@ import io.vertx.mutiny.core.buffer.Buffer;
 public class TokenResponseFilter implements OidcResponseFilter {
 
     @Override
-    public Uni<Void> filterResponse(OidcResponseContext rc) {
+    public Uni<Void> filter(OidcResponseFilterContext rc) {
         JsonObject body = rc.responseBody().toJsonObject();
         // JSON `scope` property has multiple values separated by a comma character.
         // It must be replaced with a space character.

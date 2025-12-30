@@ -44,6 +44,13 @@ public interface OidcRequestFilter {
             requestBody = buffer;
             contextProperties.put(OidcRequestContextProperties.REQUEST_BODY, buffer);
         }
+    }
+
+    class OidcRequestFilterContext extends OidcRequestContext {
+        public OidcRequestFilterContext(HttpRequest<Buffer> request, Buffer requestBody,
+                OidcRequestContextProperties contextProperties) {
+            super(request, requestBody, contextProperties);
+        }
 
         public final Uni<Void> runBlocking(Runnable runnable) {
             return OidcCommonUtils.runBlocking(runnable);
@@ -55,7 +62,7 @@ public interface OidcRequestFilter {
      *
      * @param requestContext the request context which provides access to the HTTP request headers and body, as well as context
      *        properties.
-     * @deprecated use the {@link #filterRequest(OidcRequestContext)} method instead
+     * @deprecated use the {@link #filter(OidcRequestContext)} method instead
      */
     @Deprecated(since = "3.31", forRemoval = true)
     default void filter(OidcRequestContext requestContext) {
@@ -64,15 +71,15 @@ public interface OidcRequestFilter {
 
     /**
      * Filter OIDC request asynchronously.
-     * Blocking tasks can be run with the {@link OidcRequestContext#runBlocking(Runnable)} method.
+     * Blocking tasks can be run with the {@link OidcRequestFilterContext#runBlocking(Runnable)} method.
      *
      * @param requestContext the request context which provides access to the HTTP request headers and body, as well
      *        as context properties.
      * @return {@link Uni}; must not be null
      */
-    default Uni<Void> filterRequest(OidcRequestContext requestContext) {
+    default Uni<Void> filter(OidcRequestFilterContext requestContext) {
         return Uni.createFrom().item(() -> {
-            filter(requestContext);
+            filter((OidcRequestContext) requestContext);
             return null;
         });
     }

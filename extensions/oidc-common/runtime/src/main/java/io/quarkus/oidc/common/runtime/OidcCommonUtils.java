@@ -43,7 +43,7 @@ import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcEndpoint.Type;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
-import io.quarkus.oidc.common.OidcRequestFilter.OidcRequestContext;
+import io.quarkus.oidc.common.OidcRequestFilter.OidcRequestFilterContext;
 import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport.TlsConfigSupport;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
@@ -654,7 +654,7 @@ public class OidcCommonUtils {
         if (!responseFilters.isEmpty()) {
             var matchingResponseFilters = getMatchingOidcResponseFilters(responseFilters, type);
             if (!matchingResponseFilters.isEmpty()) {
-                var context = new OidcResponseFilter.OidcResponseContext(requestProps, resp.statusCode(), resp.headers(),
+                var context = new OidcResponseFilter.OidcResponseFilterContext(requestProps, resp.statusCode(), resp.headers(),
                         responseBody);
                 return applyResponseFilters(matchingResponseFilters, 0, context)
                         .replaceWith(() -> getResponseBuffer(requestProps, responseBody));
@@ -664,12 +664,12 @@ public class OidcCommonUtils {
     }
 
     private static Uni<Void> applyResponseFilters(List<OidcResponseFilter> responseFilters, int index,
-            OidcResponseFilter.OidcResponseContext context) {
+            OidcResponseFilter.OidcResponseFilterContext context) {
         if (responseFilters.size() == index) {
             return Uni.createFrom().voidItem();
         }
 
-        return responseFilters.get(index).filterResponse(context)
+        return responseFilters.get(index).filter(context)
                 .chain(() -> applyResponseFilters(responseFilters, index + 1, context));
     }
 
@@ -768,7 +768,7 @@ public class OidcCommonUtils {
     private static Uni<Void> applyRequestFilters(Map<Type, List<OidcRequestFilter>> requestFilters,
             Type type, HttpRequest<Buffer> request, OidcRequestContextProperties requestProps, Buffer body) {
         if (!requestFilters.isEmpty()) {
-            var context = new OidcRequestContext(request, body, requestProps);
+            var context = new OidcRequestFilterContext(request, body, requestProps);
             var matchingRequestFilters = getMatchingOidcRequestFilters(requestFilters, type);
             if (!matchingRequestFilters.isEmpty()) {
                 return applyRequestFilters(matchingRequestFilters, 0, context);
@@ -778,12 +778,12 @@ public class OidcCommonUtils {
     }
 
     private static Uni<Void> applyRequestFilters(List<OidcRequestFilter> requestFilters, int index,
-            OidcRequestContext context) {
+            OidcRequestFilterContext context) {
         if (requestFilters.size() == index) {
             return Uni.createFrom().voidItem();
         }
 
-        return requestFilters.get(index).filterRequest(context)
+        return requestFilters.get(index).filter(context)
                 .chain(() -> applyRequestFilters(requestFilters, index + 1, context));
     }
 

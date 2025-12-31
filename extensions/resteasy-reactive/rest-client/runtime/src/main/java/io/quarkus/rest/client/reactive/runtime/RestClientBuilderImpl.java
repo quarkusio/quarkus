@@ -639,8 +639,8 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
         } else if (restClients.proxyAddress().isPresent()) {
             HostAndPort globalProxy = ProxyAddressUtil.parseAddress(restClients.proxyAddress().get());
             configureProxy(
-                    globalProxy.host,
-                    globalProxy.port,
+                    globalProxy.host(),
+                    globalProxy.port(),
                     restClients.proxyUser().orElse(null),
                     restClients.proxyPassword().orElse(null),
                     restClients.nonProxyHosts().orElse(null),

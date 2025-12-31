@@ -30,6 +30,12 @@ public class GraphQLClientResource {
         return defaultTypesafeClient.principalName();
     }
 
+    @GET
+    @Path("/access-token")
+    public String getAccessToken() {
+        return annotationTypesafeClient.accessToken();
+    }
+
     @Inject
     @GraphQLClient("default-dynamic")
     DynamicGraphQLClient dynamicClient;

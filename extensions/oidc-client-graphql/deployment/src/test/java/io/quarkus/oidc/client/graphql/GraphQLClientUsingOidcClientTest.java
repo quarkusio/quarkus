@@ -1,16 +1,15 @@
 package io.quarkus.oidc.client.graphql;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusDevModeTest;
-import io.quarkus.test.common.QuarkusTestResource;
-import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 import io.restassured.RestAssured;
 
-@QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
 public class GraphQLClientUsingOidcClientTest {
 
     private static final Class<?>[] testClasses = {
@@ -73,4 +72,18 @@ public class GraphQLClientUsingOidcClientTest {
                 .body(equalTo("admin"));
     }
 
+    @Test
+    void testTokenNotRenewedOnEveryCall() {
+        String accessToken1 = getAccessTokenUsedByGraphQLClient();
+        String accessToken2 = getAccessTokenUsedByGraphQLClient();
+        assertEquals(accessToken1, accessToken2, "Expected that GraphQL client will reuse the same access token");
+    }
+
+    private static String getAccessTokenUsedByGraphQLClient() {
+        return RestAssured.when().get("/oidc-graphql-client/access-token")
+                .then()
+                .statusCode(200)
+                .body(Matchers.notNullValue())
+                .extract().asString();
+    }
 }

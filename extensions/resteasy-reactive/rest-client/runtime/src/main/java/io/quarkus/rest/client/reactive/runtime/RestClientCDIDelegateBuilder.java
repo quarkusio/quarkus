@@ -193,7 +193,7 @@ public class RestClientCDIDelegateBuilder<T> {
                 builder.proxyAddress("none", 0);
             } else {
                 ProxyAddressUtil.HostAndPort hostAndPort = ProxyAddressUtil.parseAddress(proxyAddress);
-                builder.proxyAddress(hostAndPort.host, hostAndPort.port);
+                builder.proxyAddress(hostAndPort.host(), hostAndPort.port());
 
                 oneOf(restClientConfig.proxyUser(), configRoot.proxyUser()).ifPresent(builder::proxyUser);
                 oneOf(restClientConfig.proxyPassword(), configRoot.proxyPassword()).ifPresent(builder::proxyPassword);

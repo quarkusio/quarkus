@@ -79,6 +79,7 @@ import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.gradle.tooling.dependency.DependencyUtils;
 import io.quarkus.gradle.tooling.dependency.ExtensionDependency;
 import io.quarkus.gradle.tooling.dependency.ProjectExtensionDependency;
+import io.quarkus.gradle.util.CustomFileSystemOperations;
 import io.quarkus.runtime.LaunchMode;
 
 public class QuarkusPlugin implements Plugin<Project> {
@@ -165,6 +166,14 @@ public class QuarkusPlugin implements Plugin<Project> {
                 forcedPropertiesService, ForcedPropertieBuildService.class,
                 spec -> {
                 });
+
+        // register custom file system operations build service
+        Provider<CustomFileSystemOperations> customFs = project.getGradle().getSharedServices().registerIfAbsent(
+                "customFileSystemOperations-%s".formatted(project.getPath().replace(":", "_")),
+                CustomFileSystemOperations.class,
+                spec -> {
+                });
+
         final String devRuntimeConfigName = ApplicationDeploymentClasspathBuilder
                 .getBaseRuntimeConfigName(LaunchMode.DEVELOPMENT);
         final Configuration devRuntimeDependencies = project.getConfigurations().maybeCreate(devRuntimeConfigName);
@@ -245,14 +254,14 @@ public class QuarkusPlugin implements Plugin<Project> {
                 });
         tasks.register(QUARKUS_SHOW_EFFECTIVE_CONFIG_TASK_NAME,
                 QuarkusShowEffectiveConfig.class, task -> {
-                    configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider, quarkusExt);
+                    configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider, customFs, quarkusExt);
                     task.setDescription("Show effective Quarkus build configuration.");
                 });
 
         TaskProvider<QuarkusBuildDependencies> quarkusBuildDependencies = tasks.register(QUARKUS_BUILD_DEP_TASK_NAME,
                 QuarkusBuildDependencies.class,
                 task -> {
-                    configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider, quarkusExt);
+                    configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider, customFs, quarkusExt);
                     task.getOutputs().doNotCacheIf("Dependencies are never cached", t -> true);
                 });
         project.afterEvaluate(evaluated -> addDependencyOnJandexIfConfigured(evaluated, quarkusBuildDependencies));
@@ -262,7 +271,7 @@ public class QuarkusPlugin implements Plugin<Project> {
         TaskProvider<QuarkusBuildCacheableAppParts> quarkusBuildCacheableAppParts = tasks.register(
                 QUARKUS_BUILD_APP_PARTS_TASK_NAME,
                 QuarkusBuildCacheableAppParts.class, task -> {
-                    configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider, quarkusExt);
+                    configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider, customFs, quarkusExt);
                     task.dependsOn(quarkusGenerateCode);
                     task.getOutputs().doNotCacheIf(
                             "Not adding uber-jars, native binaries and mutable-jar package type to Gradle " +
@@ -278,7 +287,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                 });
 
         TaskProvider<QuarkusBuild> quarkusBuild = tasks.register(QUARKUS_BUILD_TASK_NAME, QuarkusBuild.class, build -> {
-            configureQuarkusBuildTask(project, build, quarkusBuildAppModelTask, serviceProvider, quarkusExt);
+            configureQuarkusBuildTask(project, build, quarkusBuildAppModelTask, serviceProvider, customFs, quarkusExt);
             build.dependsOn(quarkusBuildDependencies, quarkusBuildCacheableAppParts);
             build.getOutputs().doNotCacheIf(
                     "Only collects and combines the outputs of " + QUARKUS_BUILD_APP_PARTS_TASK_NAME + " and "
@@ -302,20 +311,20 @@ public class QuarkusPlugin implements Plugin<Project> {
 
         tasks.register(IMAGE_BUILD_TASK_NAME, ImageBuild.class, task -> {
             task.dependsOn(quarkusRequiredExtension);
-            configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider, quarkusExt);
+            configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider, customFs, quarkusExt);
             task.getBuilderName().set(quarkusRequiredExtension.flatMap(ImageCheckRequirementsTask::getOutputFile));
             task.finalizedBy(quarkusBuild);
         });
 
         tasks.register(IMAGE_PUSH_TASK_NAME, ImagePush.class, task -> {
             task.dependsOn(quarkusRequiredExtension);
-            configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider, quarkusExt);
+            configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider, customFs, quarkusExt);
             task.getBuilderName().set(quarkusRequiredExtension.flatMap(ImageCheckRequirementsTask::getOutputFile));
             task.finalizedBy(quarkusBuild);
         });
 
         tasks.register(DEPLOY_TASK_NAME, Deploy.class, task -> {
-            configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider, quarkusExt);
+            configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider, customFs, quarkusExt);
             task.finalizedBy(quarkusBuild);
         });
 
@@ -323,7 +332,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                 quarkusExt);
         TaskProvider<QuarkusRun> quarkusRun = tasks.register(QUARKUS_RUN_TASK_NAME, QuarkusRun.class,
                 build -> {
-                    configureQuarkusBuildTask(project, build, quarkusBuildAppModelTask, serviceProvider, quarkusExt);
+                    configureQuarkusBuildTask(project, build, quarkusBuildAppModelTask, serviceProvider, customFs, quarkusExt);
                     build.dependsOn(quarkusBuild);
 
                 });
@@ -584,11 +593,14 @@ public class QuarkusPlugin implements Plugin<Project> {
     private static void configureQuarkusBuildTask(Project project, QuarkusBuildTask task,
             TaskProvider<QuarkusApplicationModelTask> quarkusGenerateAppModelTask,
             Provider<ForcedPropertieBuildService> serviceProvider,
+            Provider<CustomFileSystemOperations> customFs,
             QuarkusPluginExtension quarkusExt) {
         task.getApplicationModel().set(quarkusGenerateAppModelTask.flatMap(QuarkusApplicationModelTask::getApplicationModel));
         SourceSet mainSourceSet = getSourceSet(project, SourceSet.MAIN_SOURCE_SET_NAME);
         task.getAdditionalForcedProperties().set(serviceProvider);
         task.usesService(serviceProvider);
+        task.getFileSystemOperationsProvider().set(customFs);
+        task.usesService(customFs);
         task.setCompileClasspath(mainSourceSet.getCompileClasspath().plus(mainSourceSet.getRuntimeClasspath())
                 .plus(mainSourceSet.getAnnotationProcessorPath())
                 .plus(mainSourceSet.getResources()));

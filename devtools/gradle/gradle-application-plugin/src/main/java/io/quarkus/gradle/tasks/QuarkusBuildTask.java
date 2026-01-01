@@ -1,5 +1,6 @@
 package io.quarkus.gradle.tasks;
 
+import static io.quarkus.gradle.util.CustomFileSystemOperations.deleteFileIfExists;
 import static io.smallrye.common.expression.Expression.Flag.DOUBLE_COLON;
 import static io.smallrye.common.expression.Expression.Flag.LENIENT_SYNTAX;
 import static io.smallrye.common.expression.Expression.Flag.NO_SMART_BRACES;
@@ -7,7 +8,6 @@ import static io.smallrye.common.expression.Expression.Flag.NO_TRIM;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -15,12 +15,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.inject.Inject;
-
-import org.gradle.api.Action;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.file.FileCopyDetails;
-import org.gradle.api.file.FileSystemOperations;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.plugins.JavaPlugin;
@@ -43,6 +38,7 @@ import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.gradle.tasks.services.ForcedPropertieBuildService;
 import io.quarkus.gradle.tasks.worker.BuildWorker;
 import io.quarkus.gradle.tooling.ToolingUtils;
+import io.quarkus.gradle.util.CustomFileSystemOperations;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.smallrye.common.expression.Expression;
 
@@ -72,8 +68,13 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
 
     }
 
-    @Inject
-    protected abstract FileSystemOperations getFileSystemOperations();
+    @Internal
+    public abstract Property<CustomFileSystemOperations> getFileSystemOperationsProvider();
+
+    @Internal
+    public CustomFileSystemOperations getFileSystemOperations() {
+        return getFileSystemOperationsProvider().get();
+    }
 
     @Classpath
     public FileCollection getClasspath() {
@@ -305,10 +306,9 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
         workQueue.await();
 
         // Copy built artifacts from `build/` into `build/quarkus-build/gen/`
-        getFileSystemOperations().copy(copy -> {
+        getFileSystemOperations().copyPreservingTimestamps(copy -> {
             copy.from(buildDir);
             copy.into(genDir);
-            copy.eachFile(new CopyActionDeleteNonWriteableTarget(genDir));
             if (nativeEnabled()) {
                 if (jarEnabled()) {
                     throw QuarkusBuild.nativeAndJar();
@@ -350,34 +350,6 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
                     t.setEnabled(false);
                 });
         throw new StopExecutionException();
-    }
-
-    public static final class CopyActionDeleteNonWriteableTarget implements Action<FileCopyDetails> {
-        private final Path destDir;
-
-        public CopyActionDeleteNonWriteableTarget(Path destDir) {
-            this.destDir = destDir;
-        }
-
-        @Override
-        public void execute(FileCopyDetails details) {
-            // Delete a pre-existing non-writeable file, otherwise a copy or sync operation would fail.
-            // This situation happens for 'app-cds.jsa' files, which are created as "read only" files,
-            // prefer to keep those files read-only.
-
-            Path destFile = destDir.resolve(details.getPath());
-            if (Files.exists(destFile) && !Files.isWritable(destFile)) {
-                deleteFileIfExists(destFile);
-            }
-        }
-    }
-
-    protected static void deleteFileIfExists(Path file) {
-        try {
-            Files.deleteIfExists(file);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private Map<String, String> buildSystemProperties(ResolvedDependency appArtifact, Map<String, String> quarkusProperties) {

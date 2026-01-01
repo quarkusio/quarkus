@@ -96,13 +96,13 @@ public abstract class QuarkusBuildCacheableAppParts extends QuarkusBuildTask {
         getLogger().info("Synchronizing Quarkus legacy-jar app for JAR type {} into {}", jarType(),
                 appDir);
 
-        getFileSystemOperations().sync(sync -> {
+        getFileSystemOperations().syncPreservingTimestamps(sync -> {
             sync.into(appDir);
             sync.from(genDir);
             sync.include("**", QUARKUS_ARTIFACT_PROPERTIES);
             sync.exclude("lib/**");
         });
-        getFileSystemOperations().copy(copy -> {
+        getFileSystemOperations().copyPreservingTimestamps(copy -> {
             copy.into(appDir);
             copy.from(genDir);
             copy.include("lib/modified-*");
@@ -129,7 +129,7 @@ public abstract class QuarkusBuildCacheableAppParts extends QuarkusBuildTask {
                     appDir);
         }
 
-        getFileSystemOperations().sync(sync -> {
+        getFileSystemOperations().syncPreservingTimestamps(sync -> {
             sync.into(appDir);
             sync.from(genDir);
             sync.exclude(outputDirectory + "/lib/**");

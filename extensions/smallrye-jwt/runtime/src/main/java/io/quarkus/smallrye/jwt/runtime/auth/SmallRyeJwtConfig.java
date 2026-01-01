@@ -1,5 +1,8 @@
 package io.quarkus.smallrye.jwt.runtime.auth;
 
+import java.util.Optional;
+
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -13,8 +16,8 @@ public interface SmallRyeJwtConfig {
      * Enable this property if fetching the remote keys can be a time-consuming operation.
      * Do not enable it if you use the local keys.
      */
-    @WithDefault("false")
-    boolean blockingAuthentication();
+    @ConfigDocDefault("'true' if 'mp.jwt.decrypt.key.location' or 'mp.jwt.verify.publickey.location' location is set and the location uses the HTTP or HTTPS protocol")
+    Optional<Boolean> blockingAuthentication();
 
     /**
      * Always create HTTP 401 challenge, even for requests containing no authentication credentials.

@@ -899,7 +899,7 @@ All the alternative entity operations are available from these methods:
 |`PanacheEntity.Stateless`
 
 |`Mutiny.Session`
-|`.statelessManaged()`
+|`.managedReactive()`
 |`PanacheEntity.Reactive`
 
 |`Mutiny.StatelessSession`
@@ -924,7 +924,7 @@ generated metamodel accessors, or by injecting them with `@Inject`:
 |`PanacheRepository.Stateless<Cat, Long>`
 
 |`Mutiny.Session`
-|`Cat_.statelessManaged()`
+|`Cat_.managedReactive()`
 |`PanacheRepository.Reactive<Cat, Long>`
 
 |`Mutiny.StatelessSession`

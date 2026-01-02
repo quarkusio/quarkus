@@ -133,9 +133,61 @@ public interface ElasticsearchCommonBuildTimeConfig {
         @WithDefault("true")
         boolean reuse();
 
+        /**
+         * Dashboards/Kibana configuration for Dev Services.
+         */
+        @ConfigDocSection
+        DashboardDevServicesConfig dashboard();
+
         enum Distribution {
             ELASTIC,
             OPENSEARCH
+        }
+
+        @ConfigGroup
+        interface DashboardDevServicesConfig {
+            /**
+             * Whether the Dashboard Dev Service should start with the application in dev mode or tests.
+             * <p>
+             * Dashboards/Kibana Dev Services are disabled by default when Elasticsearch Dev Services are enabled.
+             *
+             * @asciidoclet
+             */
+            @WithDefault("false")
+            boolean enabled();
+
+            /**
+             * Optional fixed port the dev service will listen to.
+             * <p>
+             * If not defined, the port will be chosen randomly.
+             */
+            Optional<Integer> port();
+
+            /**
+             * The Dashboards/Kibana container image to use.
+             *
+             * Defaults depend on the configured `distribution`:
+             *
+             * * For the `elastic` distribution: {kibana-image}
+             * * For the `opensearch` distribution: {opensearch-dashboards-image}
+             *
+             * @asciidoclet
+             */
+            Optional<String> imageName();
+
+            /**
+             * Environment variables that are passed to the container.
+             */
+            @ConfigDocMapKey("environment-variable-name")
+            Map<String, String> containerEnv();
+
+            /**
+             * The value for the NODE_OPTIONS env variable.
+             *
+             * @asciidoclet
+             */
+
+            Optional<String> nodeOpts();
         }
     }
 }

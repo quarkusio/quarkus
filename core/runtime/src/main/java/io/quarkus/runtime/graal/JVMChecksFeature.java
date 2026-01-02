@@ -11,9 +11,11 @@ import io.quarkus.runtime.JVMUnsafeWarningsControl;
  */
 public class JVMChecksFeature implements Feature {
 
+    //Use isInConfiguration as it's the earliest callback we can use
     @Override
-    public void duringSetup(Feature.DuringSetupAccess access) {
+    public boolean isInConfiguration(IsInConfigurationAccess access) {
         JVMUnsafeWarningsControl.disableUnsafeRelatedWarnings();
+        return true;
     }
 
 }

@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import io.quarkus.test.DisabledOnPower;
+import io.quarkus.test.DisabledOnSemeru;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.jboss.logging.Logger;
@@ -26,7 +28,8 @@ import de.flapdoodle.reverse.TransitionWalker;
 import de.flapdoodle.reverse.transitions.Start;
 import io.smallrye.mutiny.Uni;
 
-public class MongoTestBase {
+@DisabledOnPower
+public abstract class MongoTestBase {
 
     private static final Logger LOGGER = Logger.getLogger(MongoTestBase.class);
     public static final String COLLECTION_PREFIX = "mongo-extension-test-";

@@ -4,10 +4,13 @@ import org.junit.platform.launcher.LauncherDiscoveryListener;
 import org.junit.platform.launcher.LauncherDiscoveryRequest;
 import org.junit.platform.launcher.LauncherSession;
 import org.junit.platform.launcher.LauncherSessionListener;
+import org.junit.platform.launcher.TestExecutionListener;
+import org.junit.platform.launcher.TestPlan;
 
 import io.quarkus.test.junit.classloading.FacadeClassLoader;
 
-public class CustomLauncherInterceptor implements LauncherDiscoveryListener, LauncherSessionListener {
+public class CustomLauncherInterceptor
+        implements LauncherDiscoveryListener, LauncherSessionListener, TestExecutionListener {
 
     private static FacadeClassLoader facadeLoader = null;
     // Also use a static variable to store a 'first' starting state that we can reset to
@@ -86,7 +89,6 @@ public class CustomLauncherInterceptor implements LauncherDiscoveryListener, Lau
             initializeFacadeClassLoader();
             adjustContextClassLoader();
         }
-
     }
 
     private void adjustContextClassLoader() {
@@ -101,7 +103,6 @@ public class CustomLauncherInterceptor implements LauncherDiscoveryListener, Lau
 
     @Override
     public void launcherDiscoveryFinished(LauncherDiscoveryRequest request) {
-
         if (!isProductionModeTests()) {
             // We need to support two somewhat incompatible scenarios.
             // If there are user extensions present which implement `ExecutionCondition`, and they call config in `evaluateExecutionCondition`,
@@ -122,7 +123,10 @@ public class CustomLauncherInterceptor implements LauncherDiscoveryListener, Lau
 
     @Override
     public void launcherSessionClosed(LauncherSession session) {
+        clearContextClassloader();
+    }
 
+    private static void clearContextClassloader() {
         try {
             // Tidy up classloaders we created, but not ones created upstream
             // Also make sure to reset the TCCL so we don't leave a closed classloader on the thread
@@ -142,5 +146,38 @@ public class CustomLauncherInterceptor implements LauncherDiscoveryListener, Lau
         } catch (Exception e) {
             throw new RuntimeException("Failed to close custom classloader", e);
         }
+    }
+
+    /**
+     * Called when the execution of the {@link TestPlan} has started,
+     * <em>before</em> any test has been executed.
+     *
+     * <p>
+     * Called from the same thread as {@link #testPlanExecutionFinished(TestPlan)}.
+     *
+     * In continuous testing, the test plan listener seems not to be called, perhaps because of a different execution model.
+     *
+     * @param testPlan describes the tree of tests about to be executed
+     */
+    public void testPlanExecutionStarted(TestPlan testPlan) {
+        // Do nothing, but have the method here for symmetry :)
+    }
+
+    /**
+     * Called when the execution of the {@link TestPlan} has finished,
+     * <em>after</em> all tests have been executed.
+     *
+     * <p>
+     * Called from the same thread as {@link #testPlanExecutionStarted(TestPlan)}.
+     *
+     * If tests failed and are rerun by surefire, the same session will be used for all runs, so we need to get rid of the
+     * FacadeClassLoader associated with the previous run, since its app will be closed and its classloaders will all be stale.
+     *
+     * In continuous testing, the test plan listener seems not to be called, perhaps because of a different execution model.
+     *
+     * @param testPlan describes the tree of tests that have been executed
+     */
+    public void testPlanExecutionFinished(TestPlan testPlan) {
+        clearContextClassloader();
     }
 }

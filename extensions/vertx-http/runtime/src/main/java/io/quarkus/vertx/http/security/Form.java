@@ -3,6 +3,7 @@ package io.quarkus.vertx.http.security;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
@@ -58,6 +59,9 @@ public interface Form {
         private FormAuthConfig.CookieSameSite cookieSameSite;
         private Optional<Duration> cookieMaxAge;
         private Optional<String> encryptionKey;
+        private Optional<Set<String>> landingPageQueryParams;
+        private Optional<Set<String>> errorPageQueryParams;
+        private Optional<Set<String>> loginPageQueryParams;
 
         public Builder() {
             this(ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getConfigMapping(VertxHttpConfig.class));
@@ -82,6 +86,9 @@ public interface Form {
             this.cookieSameSite = formAuthConfig.cookieSameSite();
             this.cookieMaxAge = formAuthConfig.cookieMaxAge();
             this.encryptionKey = vertxHttpConfig.encryptionKey();
+            this.landingPageQueryParams = formAuthConfig.landingPageQueryParams();
+            this.errorPageQueryParams = formAuthConfig.errorPageQueryParams();
+            this.loginPageQueryParams = formAuthConfig.loginPageQueryParams();
         }
 
         /**
@@ -106,6 +113,20 @@ public interface Form {
          */
         public Builder loginPage(String loginPage) {
             this.loginPage = Optional.ofNullable(loginPage);
+            return this;
+        }
+
+        /**
+         * Configures query parameters Quarkus passes through when redirecting requests to the login page.
+         *
+         * @param queryParameters query parameters; must not be null
+         * @return Builder
+         * @see FormAuthConfig#loginPageQueryParams()
+         */
+        public Builder loginPageQueryParameters(String... queryParameters) {
+            if (queryParameters != null) {
+                this.loginPageQueryParams = Optional.of(Set.of(queryParameters));
+            }
             return this;
         }
 
@@ -148,6 +169,20 @@ public interface Form {
         }
 
         /**
+         * Configures query parameters Quarkus passes through when redirecting requests to the error page.
+         *
+         * @param queryParameters query parameters; must not be null
+         * @return Builder
+         * @see FormAuthConfig#errorPageQueryParams()
+         */
+        public Builder errorPageQueryParameters(String... queryParameters) {
+            if (queryParameters != null) {
+                this.errorPageQueryParams = Optional.of(Set.of(queryParameters));
+            }
+            return this;
+        }
+
+        /**
          * Configures the landing page to redirect to if there is no saved page to redirect back to.
          *
          * @param landingPage see the 'quarkus.http.auth.form.landing-page' configuration property
@@ -156,6 +191,20 @@ public interface Form {
          */
         public Builder landingPage(String landingPage) {
             this.landingPage = Optional.ofNullable(landingPage);
+            return this;
+        }
+
+        /**
+         * Configures query parameters Quarkus passes through when redirecting requests to the landing page.
+         *
+         * @param queryParameters query parameters; must not be null
+         * @return Builder
+         * @see FormAuthConfig#landingPageQueryParams()
+         */
+        public Builder landingPageQueryParameters(String... queryParameters) {
+            if (queryParameters != null) {
+                this.landingPageQueryParams = Optional.of(Set.of(queryParameters));
+            }
             return this;
         }
 
@@ -303,13 +352,14 @@ public interface Form {
                     Optional<String> errorPage, Optional<String> landingPage, boolean redirectAfterLogin,
                     String locationCookie, Duration timeout, Duration newCookieInterval, String cookieName,
                     Optional<String> cookiePath, Optional<String> cookieDomain, boolean httpOnlyCookie,
-                    CookieSameSite cookieSameSite, Optional<Duration> cookieMaxAge, String postLocation)
-                    implements
-                        FormAuthConfig {
+                    CookieSameSite cookieSameSite, Optional<Duration> cookieMaxAge, String postLocation,
+                    Optional<Set<String>> landingPageQueryParams, Optional<Set<String>> errorPageQueryParams,
+                    Optional<Set<String>> loginPageQueryParams) implements FormAuthConfig {
             }
             return new FormConfigImpl(loginPage, usernameParameter, passwordParameter, errorPage,
                     landingPage, redirectAfterLogin, locationCookie, timeout, newCookieInterval, cookieName, cookiePath,
-                    cookieDomain, httpOnlyCookie, cookieSameSite, cookieMaxAge, postLocation);
+                    cookieDomain, httpOnlyCookie, cookieSameSite, cookieMaxAge, postLocation, landingPageQueryParams,
+                    errorPageQueryParams, loginPageQueryParams);
         }
     }
 }

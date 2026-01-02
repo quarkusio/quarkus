@@ -12,4 +12,6 @@ public interface AnnotationTypesafeGraphQLClient {
     @Query
     String principalName();
 
+    @Query
+    String accessToken();
 }

@@ -10,6 +10,7 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.UserTransaction;
 
+import org.elasticsearch.client.RestClient;
 import org.hibernate.search.mapper.orm.Search;
 import org.hibernate.search.mapper.orm.entity.SearchIndexedEntity;
 import org.hibernate.search.mapper.orm.mapping.SearchMapping;
@@ -25,6 +26,7 @@ import io.quarkus.hibernate.search.orm.elasticsearch.test.multiplepersistenceuni
 import io.quarkus.hibernate.search.orm.elasticsearch.test.multiplepersistenceunits.pu3.PU3Entity;
 import io.quarkus.hibernate.search.orm.elasticsearch.test.util.TransactionUtils;
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.common.annotation.Identifier;
 
 public class MultiplePersistenceUnitsCdiTest {
 
@@ -66,6 +68,10 @@ public class MultiplePersistenceUnitsCdiTest {
 
     @Inject
     UserTransaction transaction;
+
+    @Inject
+    @Identifier("another-es")
+    RestClient restClient;
 
     @Test
     public void testDefaultMapping() {

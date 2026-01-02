@@ -71,9 +71,10 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
         RunningDevServicesRegistry.INSTANCE.closeRemainingRunningServices(uuid, launchMode.name(), ownersToKeep);
     }
 
-    public Map<String, String> getConfigForAllRunningServices() {
+    public Map<String, String> getConfigForAllRunningServicesOfCurrentApp() {
         Map<String, String> config = new HashMap<>();
-        for (RunningService service : RunningDevServicesRegistry.INSTANCE.getAllRunningServices(launchMode.name())) {
+        for (RunningService service : RunningDevServicesRegistry.INSTANCE.getAllRunningServicesForApp(uuid,
+                launchMode.name())) {
             config.putAll(service.configs());
         }
         return config;
@@ -81,6 +82,7 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
 
     public void startAll(Collection<DevServicesResultBuildItem> services,
             List<DevServicesCustomizerBuildItem> customizers,
+            List<DevServicesAdditionalConfigBuildItem> additionalConfigBuildItems,
             ClassLoader augmentClassLoader) {
         closeRemainingRunningServices(services);
         CompletableFuture.allOf(services.stream()
@@ -92,12 +94,13 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
                     } else {
                         Thread.currentThread().setContextClassLoader(serv.getClass().getClassLoader());
                     }
-                    this.start(serv, customizers);
+                    this.start(serv, customizers, additionalConfigBuildItems);
                 }))
                 .toArray(CompletableFuture[]::new)).join();
     }
 
-    public void start(DevServicesResultBuildItem request, List<DevServicesCustomizerBuildItem> customizers) {
+    public void start(DevServicesResultBuildItem request, List<DevServicesCustomizerBuildItem> customizers,
+            List<DevServicesAdditionalConfigBuildItem> additionalConfigBuildItems) {
         // RunningService class is loaded on parent classloader
         RunningService matchedDevService = this.getRunningServices(request.getName(), request.getServiceName(),
                 request.getServiceConfig());
@@ -106,11 +109,12 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
             // Let's get all the running dev services associated with this feature (+ launch mode plus named section), so we can close them
             closeAllRunningServices(request.getName(), request.getServiceName());
 
-            reallyStart(request, customizers);
+            reallyStart(request, customizers, additionalConfigBuildItems);
         }
     }
 
-    private void reallyStart(DevServicesResultBuildItem request, List<DevServicesCustomizerBuildItem> customizers) {
+    private void reallyStart(DevServicesResultBuildItem request, List<DevServicesCustomizerBuildItem> customizers,
+            List<DevServicesAdditionalConfigBuildItem> additionalConfigBuildItems) {
         StartupLogCompressor compressor = new StartupLogCompressor("Dev Services Startup", null, null);
         try {
             Supplier<Startable> startableSupplier = request.getStartableSupplier();
@@ -123,9 +127,20 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
                 startable = customizer.apply(request, startable);
             }
             startable.start();
-
+            // We do not "copy" the config map here since it is created within the request.getConfig:
+            Map<String, String> combinedConfig = request.getConfig(startable);
+            // Some extensions may rely on adding/overriding config properties
+            //  depending on the results of the started dev services,
+            //  e.g. Hibernate Search/ORM may change the default schema management
+            //  if it detects that it runs over a dev service datasource/Elasticsearch distribution.
+            for (DevServicesAdditionalConfigBuildItem additionalConfigBuildItem : additionalConfigBuildItems) {
+                Map<String, String> extraFromBuildItem = additionalConfigBuildItem.getConfigProvider().provide(combinedConfig);
+                if (!extraFromBuildItem.isEmpty()) {
+                    combinedConfig.putAll(extraFromBuildItem);
+                }
+            }
             RunningService service = new RunningService(request.getName(), request.getDescription(),
-                    request.getConfig(startable), request.getOverrideConfig(startable), startable.getContainerId(), startable);
+                    combinedConfig, request.getOverrideConfig(startable), startable.getContainerId(), startable);
             this.addRunningService(request.getName(), request.getServiceName(), request.getServiceConfig(), service);
 
             compressor.close();

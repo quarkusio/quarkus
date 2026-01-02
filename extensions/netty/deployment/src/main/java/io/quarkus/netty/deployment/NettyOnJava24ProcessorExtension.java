@@ -2,7 +2,6 @@ package io.quarkus.netty.deployment;
 
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ModuleOpenBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 
 /**
  * As Java 24 locks down access to sun.misc.Unsafe, Netty needs to adapt to this
@@ -17,11 +16,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuil
  * setting such an option.
  */
 public class NettyOnJava24ProcessorExtension {
-
-    @BuildStep
-    public NativeImageSystemPropertyBuildItem jdk24CleanersViaSetAccessible() {
-        return new NativeImageSystemPropertyBuildItem("io.netty.tryReflectionSetAccessible", "true");
-    }
 
     @BuildStep
     ModuleOpenBuildItem openModules() {

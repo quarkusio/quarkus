@@ -1,5 +1,9 @@
 package io.quarkus.devui.spi.page;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+
 import org.jboss.logging.Logger;
 
 public class ExternalPageBuilder extends PageBuilder<ExternalPageBuilder> {
@@ -44,6 +48,19 @@ public class ExternalPageBuilder extends PageBuilder<ExternalPageBuilder> {
             throw new RuntimeException("Invalid dynamic URL Method name, can not be empty");
         }
         super.metadata.put(DYNAMIC_URL, methodName);
+        return this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public ExternalPageBuilder dynamicUrlJsonRPCMethodName(String methodName, Map<String, String> parameters) {
+        dynamicUrlJsonRPCMethodName(methodName);
+        if (parameters != null && !parameters.isEmpty()) {
+            super.metadata.put(DYNAMIC_URL + "Params", parameters.entrySet().stream()
+                    .map(e -> URLEncoder.encode(e.getKey(), StandardCharsets.UTF_8) + "="
+                            + URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8))
+                    .reduce((a, b) -> a + "&" + b)
+                    .orElse(""));
+        }
         return this;
     }
 

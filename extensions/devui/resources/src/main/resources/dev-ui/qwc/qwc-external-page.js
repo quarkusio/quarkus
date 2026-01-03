@@ -44,8 +44,21 @@ export class QwcExternalPage extends LitElement {
         var metadata = this.routerController.getCurrentMetaData();
         if(metadata && metadata.dynamicUrlMethodName){
             let ns = this.routerController.getCurrentNamespace();
+            let methodName = metadata.dynamicUrlMethodName;
+            if (methodName.includes(':')) {
+                let parts = methodName.split(':');
+                methodName = parts[1];
+                ns = parts[0];
+            }
+
+            let params = {};
+            // Parse URL-style parameters from dynamicUrlMethodNameParams (e.g., "key1=value1&key2=value2")
+            if (metadata.dynamicUrlMethodNameParams) {
+                const urlParams = new URLSearchParams(metadata.dynamicUrlMethodNameParams);
+                urlParams.forEach((value, key) => params[key] = value);
+            }
             this.jsonRpc = new JsonRpc(ns);
-            this.jsonRpc[metadata.dynamicUrlMethodName]().then(jsonRpcResponse => {
+            this.jsonRpc[methodName](params).then(jsonRpcResponse => {
                 this._externalUrl = jsonRpcResponse.result;
                 
                 if(metadata.mimeType){

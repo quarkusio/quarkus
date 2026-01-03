@@ -11,9 +11,8 @@ public final class JVMUnsafeWarningsControl {
      * users with it.
      */
     public static void disableUnsafeRelatedWarnings() {
-        //No need for this in native image
         //No need for this in JVMs earlier than 24
-        if (ImageMode.current().isNativeImage() || Runtime.version().feature() < 24) {
+        if (Runtime.version().feature() < 24) {
             return;
         }
         try {

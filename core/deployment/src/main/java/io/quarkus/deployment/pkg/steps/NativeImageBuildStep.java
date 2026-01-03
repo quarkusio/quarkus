@@ -746,6 +746,7 @@ public class NativeImageBuildStep {
                     }
                 }
 
+                nativeImageArgs.add("--enable-native-access=ALL-UNNAMED");//Avoid such warnings, as we're working to resolve them in JVM mode first.
                 nativeImageArgs.add("-J-Dfile.encoding=" + nativeConfig.fileEncoding());
 
                 if (enableSslNative) {

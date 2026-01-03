@@ -4,9 +4,14 @@ import static java.lang.Math.max;
 import static java.util.concurrent.locks.LockSupport.park;
 import static java.util.concurrent.locks.LockSupport.unpark;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -25,15 +30,17 @@ import io.smallrye.common.cpu.ProcessorInfo;
 final class Execution {
 
     static final Logger log = Logger.getLogger("io.quarkus.builder");
+    static final String LOGGING_SETUP_STEP = "io.quarkus.deployment.logging.LoggingResourceProcessor#setupLoggingRuntimeInit";
 
     private final BuildChain chain;
     private final ConcurrentHashMap<ItemId, BuildItem> singles;
-    private final ConcurrentHashMap<ItemId, List<BuildItem>> multis;
+    private final MultiBuildItems multis;
     private final Set<ItemId> finalIds;
     private final ConcurrentHashMap<StepInfo, BuildContext> contextCache = new ConcurrentHashMap<>();
     private final EnhancedQueueExecutor executor;
     private final List<Diagnostic> diagnostics = Collections.synchronizedList(new ArrayList<>());
     private final String buildTargetName;
+    private final Set<StepInfo> loggingCriticalPath;
     private final AtomicBoolean errorReported = new AtomicBoolean();
     private final AtomicInteger lastStepCount = new AtomicInteger();
     private volatile Thread runningThread;
@@ -51,8 +58,10 @@ final class Execution {
     Execution(final BuildExecutionBuilder builder, final Set<ItemId> finalIds) {
         chain = builder.getChain();
         this.singles = new ConcurrentHashMap<>(builder.getInitialSingle());
-        this.multis = new ConcurrentHashMap<>(builder.getInitialMulti());
+        this.multis = builder.getMultis();
         this.finalIds = finalIds;
+        this.loggingCriticalPath = computeLoggingCriticalPath(chain);
+        log.tracef("Logging critical path contains %d steps", loggingCriticalPath.size());
         final EnhancedQueueExecutor.Builder executorBuilder = new EnhancedQueueExecutor.Builder();
         executorBuilder.setRegisterMBean(false);
         executorBuilder.setQueueLimited(false);
@@ -97,16 +106,86 @@ final class Execution {
         contextCache.remove(stepInfo, buildContext);
     }
 
+    private static Set<StepInfo> collectAllSteps(BuildChain chain) {
+        Set<StepInfo> all = new HashSet<>();
+        Deque<StepInfo> stack = new ArrayDeque<>(chain.getStartSteps());
+
+        while (!stack.isEmpty()) {
+            StepInfo step = stack.pop();
+            if (all.add(step)) {
+                stack.addAll(step.getDependents());
+            }
+        }
+        return all;
+    }
+
+    private static Map<StepInfo, Set<StepInfo>> buildReverseDeps(Set<StepInfo> allSteps) {
+        Map<StepInfo, Set<StepInfo>> reverse = new HashMap<>();
+
+        for (StepInfo step : allSteps) {
+            for (StepInfo dependent : step.getDependents()) {
+                reverse.computeIfAbsent(dependent, k -> new HashSet<>())
+                        .add(step);
+            }
+        }
+        return reverse;
+    }
+
+    private static Set<StepInfo> computeLoggingCriticalPath(BuildChain chain) {
+        Set<StepInfo> allSteps = collectAllSteps(chain);
+        Map<StepInfo, Set<StepInfo>> reverseDeps = buildReverseDeps(allSteps);
+
+        StepInfo loggingStep = allSteps.stream()
+                .filter(si -> LOGGING_SETUP_STEP.equals(si.getBuildStep().getId()))
+                .findFirst()
+                .orElse(null);
+
+        if (loggingStep == null) {
+            return Set.of();
+        }
+
+        Set<StepInfo> result = new HashSet<>();
+        Deque<StepInfo> stack = new ArrayDeque<>();
+
+        stack.push(loggingStep);
+        result.add(loggingStep);
+
+        while (!stack.isEmpty()) {
+            StepInfo current = stack.pop();
+            for (StepInfo dep : reverseDeps.getOrDefault(current, Set.of())) {
+                if (result.add(dep)) {
+                    stack.push(dep);
+                }
+            }
+        }
+
+        return result;
+    }
+
     BuildResult run() throws BuildException {
         final long start = System.nanoTime();
         metrics.buildStarted();
         runningThread = Thread.currentThread();
 
         // run the build
-        final List<StepInfo> startSteps = chain.getStartSteps();
+        final Set<StepInfo> startSteps = chain.getStartSteps();
+
+        // 1) critical start steps first
         for (StepInfo startStep : startSteps) {
-            executor.execute(getBuildContext(startStep)::run);
+            if (getLoggingCriticalPath().contains(startStep)) {
+                log.tracef("{Logging relevant) Scheduling start step \"%s\"", startStep.getBuildStep().getId());
+                executor.execute(getBuildContext(startStep)::run);
+            }
         }
+
+        // 2) then the rest
+        for (StepInfo startStep : startSteps) {
+            if (!getLoggingCriticalPath().contains(startStep)) {
+                log.tracef("Scheduling start step \"%s\"", startStep.getBuildStep().getId());
+                executor.execute(getBuildContext(startStep)::run);
+            }
+        }
+
         // wait for the wrap-up
         boolean intr = false;
         try {
@@ -154,6 +233,10 @@ final class Execution {
                 duration, metrics);
     }
 
+    Set<StepInfo> getLoggingCriticalPath() {
+        return loggingCriticalPath;
+    }
+
     EnhancedQueueExecutor getExecutor() {
         return executor;
     }
@@ -174,7 +257,7 @@ final class Execution {
         return singles;
     }
 
-    ConcurrentHashMap<ItemId, List<BuildItem>> getMultis() {
+    MultiBuildItems getMultis() {
         return multis;
     }
 

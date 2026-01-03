@@ -7,18 +7,31 @@ import java.util.Optional;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
+import io.quarkus.registry.ValueRegistry;
 import io.quarkus.test.common.ListeningAddress;
 import io.quarkus.test.common.TestResourceManager;
 import io.smallrye.config.SmallRyeConfig;
 
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class IntegrationTestExtensionState extends QuarkusTestExtensionState {
 
+    private final Optional<ListeningAddress> listeningAddress;
     private final Map<String, String> sysPropRestore;
 
-    public IntegrationTestExtensionState(TestResourceManager testResourceManager, Closeable resource, Runnable clearCallbacks,
-            Optional<ListeningAddress> listeningAddress, Map<String, String> sysPropRestore) {
-        super(testResourceManager, resource, clearCallbacks, listeningAddress);
+    public IntegrationTestExtensionState(
+            ValueRegistry valueRegistry,
+            TestResourceManager testResourceManager,
+            Closeable resource,
+            Runnable clearCallbacks,
+            Optional<ListeningAddress> listeningAddress,
+            Map<String, String> sysPropRestore) {
+        super(valueRegistry, testResourceManager, resource, clearCallbacks);
+        this.listeningAddress = listeningAddress;
         this.sysPropRestore = sysPropRestore;
+    }
+
+    public Optional<ListeningAddress> getListeningAddress() {
+        return listeningAddress;
     }
 
     @Override

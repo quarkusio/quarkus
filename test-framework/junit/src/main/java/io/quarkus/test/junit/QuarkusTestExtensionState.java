@@ -4,22 +4,21 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.quarkus.test.common.ListeningAddress;
+import io.quarkus.registry.ValueRegistry;
 import io.quarkus.test.common.TestResourceManager;
 
 public class QuarkusTestExtensionState implements AutoCloseable {
 
     private final AtomicBoolean closed = new AtomicBoolean();
 
+    private ValueRegistry valueRegistry;
     protected final Closeable testResourceManager;
     protected final Closeable resource;
     private Thread shutdownHook;
     private final Runnable clearCallbacks;
     private Throwable testErrorCause;
-    private Optional<ListeningAddress> listeningAddress;
 
     // We need to move this between classloaders, and NewSerializingDeepClone can't clone this
     // Instead, clone by brute force and knowledge of internals
@@ -61,6 +60,10 @@ public class QuarkusTestExtensionState implements AutoCloseable {
 
     }
 
+    public ValueRegistry getValueRegistry() {
+        return valueRegistry;
+    }
+
     // Used reflectively
     public Closeable getTestResourceManager() {
         return testResourceManager;
@@ -81,12 +84,9 @@ public class QuarkusTestExtensionState implements AutoCloseable {
         return clearCallbacks;
     }
 
-    public Optional<ListeningAddress> getListeningAddress() {
-        return listeningAddress;
-    }
-
-    @Deprecated(forRemoval = true)
-    public QuarkusTestExtensionState(Closeable testResourceManager, Closeable resource, Runnable clearCallbacks) {
+    public QuarkusTestExtensionState(ValueRegistry valueRegistry, Closeable testResourceManager, Closeable resource,
+            Runnable clearCallbacks) {
+        this.valueRegistry = valueRegistry;
         this.testResourceManager = testResourceManager;
         this.resource = resource;
         this.clearCallbacks = clearCallbacks;
@@ -102,24 +102,7 @@ public class QuarkusTestExtensionState implements AutoCloseable {
         Runtime.getRuntime().addShutdownHook(shutdownHook);
     }
 
-    public QuarkusTestExtensionState(Closeable testResourceManager, Closeable resource, Runnable clearCallbacks,
-            Optional<ListeningAddress> listeningAddress) {
-        this.testResourceManager = testResourceManager;
-        this.resource = resource;
-        this.clearCallbacks = clearCallbacks;
-        this.shutdownHook = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    QuarkusTestExtensionState.this.close();
-                } catch (IOException ignored) {
-                }
-            }
-        }, "Quarkus Test Cleanup Shutdown task");
-        Runtime.getRuntime().addShutdownHook(shutdownHook);
-        this.listeningAddress = listeningAddress;
-    }
-
+    // TODO - Should ValueRegistry be cloned? Investigate if we still need this clone
     public QuarkusTestExtensionState(Closeable testResourceManager, Closeable resource, Runnable clearCallbacks,
             Thread shutdownHook) {
         this.testResourceManager = testResourceManager;

@@ -10,16 +10,16 @@ import org.wildfly.common.lock.Locks;
 
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
+import io.quarkus.registry.ValueRegistry;
 import io.quarkus.runtime.shutdown.ShutdownRecorder;
 import io.smallrye.common.constraint.Assert;
 
 /**
  * The application base class, which is extended and implemented by a generated class which implements the application
  * setup logic. The base class does some basic error checking, and maintains the application state.
- *
+ * <p>
  * Note that this class does not manage the application lifecycle in any way, it is solely responsible for starting and
  * stopping the application.
- *
  */
 @SuppressWarnings("restriction")
 public abstract class Application implements Closeable {
@@ -48,6 +48,7 @@ public abstract class Application implements Closeable {
      * stop notifications to the {@link ApplicationStateNotification}.
      */
     private final boolean auxiliaryApplication;
+    private final ValueRegistry valueRegistry;
 
     /**
      * Construct a new instance.
@@ -56,6 +57,16 @@ public abstract class Application implements Closeable {
      */
     protected Application(boolean auxiliaryApplication) {
         this.auxiliaryApplication = auxiliaryApplication;
+        this.valueRegistry = new ValueRegistryImpl.Builder().build();
+    }
+
+    /**
+     * Gets this Application {@link ValueRegistry}.
+     *
+     * @return this Application {@link ValueRegistry}.
+     */
+    public ValueRegistry getValueRegistry() {
+        return valueRegistry;
     }
 
     /**

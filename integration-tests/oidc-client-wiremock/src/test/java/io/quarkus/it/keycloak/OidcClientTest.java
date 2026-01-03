@@ -35,6 +35,8 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
 // use method order because we need to keep this test class extendable
 // changing the order and adding extra waiting can lead to extra token refresh
@@ -325,6 +327,24 @@ public class OidcClientTest {
                 .then()
                 .statusCode(200)
                 .body(equalTo("access_token_exchanged"));
+    }
+
+    @Order(16)
+    @Test
+    void testOidcClientHealthCheck() {
+        Response healthReadyResponse = RestAssured.when().get("/q/health/ready");
+        JsonObject jsonHealth = new JsonObject(healthReadyResponse.asString());
+        JsonArray checks = jsonHealth.getJsonArray("checks");
+        assertEquals(1, checks.size());
+        JsonObject oidcCheck = checks.getJsonObject(0);
+        assertEquals("UP", oidcCheck.getString("status"));
+        assertEquals("OIDC Client Health Check", oidcCheck.getString("name"));
+
+        JsonObject data = oidcCheck.getJsonObject("data");
+        assertEquals("Unknown", data.getString("jwtbearer-grant"));
+        assertEquals("OK", data.getString("Client with enabled discovery"));
+        assertEquals("Error", data.getString("Client with error status"));
+        assertEquals("Disabled", data.getString("Disabled client"));
     }
 
     private void checkLog() {

@@ -24,6 +24,7 @@ import java.util.ServiceLoader;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -903,6 +904,54 @@ public class QuarkusUnitTest
      */
     public QuarkusUnitTest withConfigurationResource(String resourceName) {
         this.configResourceName = Objects.requireNonNull(resourceName);
+        return this;
+    }
+
+    /**
+     * Adds build-time configuration properties using a text block.
+     *
+     * @param configBlock text block containing {@code key=value} configuration entries
+     */
+    public QuarkusUnitTest withConfiguration(String configBlock) {
+        applyConfigurationBlock(configBlock, this::overrideConfigKey);
+        return this;
+    }
+
+    /**
+     * Adds runtime configuration properties using a text block.
+     *
+     * @param configBlock text block containing {@code key=value} configuration entries
+     */
+    public QuarkusUnitTest withRuntimeConfiguration(String configBlock) {
+        applyConfigurationBlock(configBlock, this::overrideRuntimeConfigKey);
+        return this;
+    }
+
+    /**
+     * Parses a configuration text block and applies the given action for each {@code key=value} entry.
+     *
+     * @param configBlock the configuration text block to parse
+     * @param keyValueConsumer action applied to each parsed key/value pair
+     * @return this instance for fluent chaining
+     */
+    private QuarkusUnitTest applyConfigurationBlock(String configBlock, BiConsumer<String, String> keyValueConsumer) {
+        Objects.requireNonNull(configBlock, "Configuration text block must not be null");
+        Objects.requireNonNull(keyValueConsumer, "Key/value consumer must not be null");
+
+        configBlock.lines()
+                .map(String::trim)
+                .filter(line -> !line.isEmpty() && !line.startsWith("#"))
+                .forEach(line -> {
+                    int idx = line.indexOf('=');
+                    if (idx <= 0) {
+                        throw new IllegalArgumentException(
+                                "Invalid configuration line: '" + line + "'. Expected format 'key=value'");
+                    }
+                    String key = line.substring(0, idx).trim();
+                    String value = line.substring(idx + 1).trim();
+                    keyValueConsumer.accept(key, value);
+                });
+
         return this;
     }
 

@@ -3,10 +3,14 @@ package io.quarkus.arc.processor;
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
 import java.lang.reflect.Modifier;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import jakarta.enterprise.inject.spi.DefinitionException;
 
@@ -64,8 +68,8 @@ final class Decorators {
             }
             ScopeInfo scopeAnnotation = beanDeployment.getScope(annotation.name());
             if (scopeAnnotation != null && !BuiltinScope.DEPENDENT.is(scopeAnnotation)) {
-                throw new DefinitionException(
-                        "A decorator must be @Dependent but " + decoratorClass + " declares " + scopeAnnotation.getDotName());
+                throw new DefinitionException("A decorator must be @Dependent but " + decoratorClass + " declares "
+                        + scopeAnnotation.getDotName());
             }
         }
 
@@ -99,8 +103,8 @@ final class Decorators {
                     continue;
                 }
                 if (bean.hasRawTypeDotName(decoratedType.name())) {
-                    throw new UnsupportedOperationException("Decorating built-in bean types is not supported! " +
-                            "Decorator " + decoratorClass + " is attempting to decorate " + decoratedType.name());
+                    throw new UnsupportedOperationException("Decorating built-in bean types is not supported! "
+                            + "Decorator " + decoratorClass + " is attempting to decorate " + decoratedType.name());
                 }
             }
         }
@@ -111,32 +115,89 @@ final class Decorators {
                 return null;
             }
 
-            LOGGER.info("The decorator " + decoratorClass + " does not declare any @Priority. " +
-                    "It will be assigned a default priority value of 0.");
+            LOGGER.info("The decorator " + decoratorClass + " does not declare any @Priority. "
+                    + "It will be assigned a default priority value of 0.");
             priority = 0;
         }
 
         if (Modifier.isAbstract(decoratorClass.flags())) {
-            // TODO this check is not precise: we check that decorators do not declare _any_ abstract methods,
-            //  but the spec says that decorators may not declare abstract methods that do not belong
-            //  to a decorated type
-            //  also, we only check methods declared on the decorator class itself, not inherited methods
-            List<MethodInfo> abstractMethods = new ArrayList<>();
-            for (MethodInfo method : decoratorClass.methods()) {
-                if (Modifier.isAbstract(method.flags())) {
-                    abstractMethods.add(method);
-                }
-            }
-            if (!abstractMethods.isEmpty()) {
-                throw new DefinitionException("An abstract decorator " + decoratorClass
-                        + " declares abstract methods: " + abstractMethods);
+            Set<MethodInfo> decoratorAbstractMethods = collectAbstractMethods(decoratorClass, new HashSet<DotName>(),
+                    beanDeployment);
+
+            if (!decoratorAbstractMethods.isEmpty()) {
+
+                String methods = decoratorAbstractMethods.stream()
+                        .map(MethodInfo::toString)
+                        .collect(Collectors.joining(", "));
+
+                String message = String.format(
+                        "Abstract decorator %s declares abstract methods not present on decorated interfaces: %s",
+                        decoratorClass.name(), methods);
+
+                LOGGER.warn(message);
+                throw new DefinitionException(message);
             }
         }
 
         checkDecoratorFieldsAndMethods(decoratorClass, beanDeployment);
 
-        return new DecoratorInfo(decoratorClass, beanDeployment, delegateInjectionPoint,
-                decoratedTypes, injections, priority);
+        return new DecoratorInfo(decoratorClass, beanDeployment, delegateInjectionPoint, decoratedTypes, injections,
+                priority);
+    }
+
+    private static Set<MethodInfo> collectAbstractMethods(ClassInfo clazz, Set<DotName> visited,
+            BeanDeployment beanDeployment) {
+
+        Set<MethodInfo> result = new HashSet<MethodInfo>();
+        if (clazz != null && visited.add(clazz.name()) && !clazz.name().equals(DotNames.OBJECT)) {
+
+            Set<MethodInfo> listMethodsInterface = getInterfaceMethods(clazz, beanDeployment);
+
+            for (MethodInfo method : clazz.methods()) {
+                boolean contain = compare(method, listMethodsInterface);
+
+                if (Modifier.isAbstract(method.flags()) && !contain) {
+                    result.add(method);
+                }
+            }
+
+        }
+        return result;
+    }
+
+    private static Set<MethodInfo> getInterfaceMethods(ClassInfo clazz, BeanDeployment beanDeployment) {
+        Set<MethodInfo> result = new HashSet<>();
+        Set<DotName> visited = new HashSet<>();
+        Deque<ClassInfo> stack = new ArrayDeque<>();
+        stack.push(clazz);
+
+        while (!stack.isEmpty()) {
+            ClassInfo current = stack.pop();
+            if (current != null && visited.add(current.name())) {
+
+                if (Modifier.isInterface(current.flags())) {
+                    result.addAll(current.methods());
+                }
+
+                current.interfaceTypes().stream()
+                        .map(ifaceType -> beanDeployment.getBeanArchiveIndex().getClassByName(ifaceType.name()))
+                        .forEach(stack::push);
+            }
+        }
+        return result;
+    }
+
+    private static boolean compare(MethodInfo method, Set<MethodInfo> interfaceMethods) {
+        return interfaceMethods.stream()
+                .filter(ifaceMethod -> ifaceMethod.name().equals(method.name()))
+                .filter(ifaceMethod -> ifaceMethod.parameterTypes().size() == method.parameterTypes().size())
+                .anyMatch(ifaceMethod -> IntStream.range(0, method.parameterTypes().size())
+                        .allMatch(i -> {
+                            Type ifaceParam = ifaceMethod.parameterTypes().get(i);
+                            Type implParam = method.parameterTypes().get(i);
+                            return ifaceParam.name().equals(DotNames.OBJECT) ||
+                                    ifaceParam.name().equals(implParam.name());
+                        }));
     }
 
     private static void checkDecoratorFieldsAndMethods(ClassInfo decoratorClass, BeanDeployment beanDeployment) {

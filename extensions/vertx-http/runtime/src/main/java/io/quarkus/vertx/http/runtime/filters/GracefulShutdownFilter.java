@@ -1,15 +1,19 @@
 package io.quarkus.vertx.http.runtime.filters;
 
+import java.util.Collections;
+import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.runtime.shutdown.ShutdownListener;
 import io.vertx.core.Handler;
+import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpVersion;
 
 public class GracefulShutdownFilter implements ShutdownListener, Handler<HttpServerRequest> {
 
@@ -40,15 +44,68 @@ public class GracefulShutdownFilter implements ShutdownListener, Handler<HttpSer
 
     @Override
     public void handle(HttpServerRequest event) {
-        if (!running) {
-            event.response().setStatusCode(HttpResponseStatus.SERVICE_UNAVAILABLE.code())
-                    .putHeader(HttpHeaderNames.CONNECTION, "close").end();
-            return;
-        }
         currentRequestCount.incrementAndGet();
         //todo: some way to do this without a wrapper solution
         ((QuarkusRequestWrapper) event).addRequestDoneHandler(requestDoneHandler);
+
+        if (event.version() == HttpVersion.HTTP_1_1) {
+            // For HTTP/1.1, add the header as otherwise the client will consider the connection to be keep-alive.
+            // "Connection-specific header fields such as Connection and Keep-Alive are prohibited in HTTP/2 and HTTP/3"
+            // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Connection
+            // Therefore only add it for HTTP/1.1
+            if (!running) {
+                event.response().headers().add(HttpHeaderNames.CONNECTION, "close");
+                ((QuarkusRequestWrapper) event).addRequestDoneHandler(unused -> event.connection().close());
+            }
+        } else if (event.version() == HttpVersion.HTTP_2) {
+            /*
+            // Only send GOAWAY and shutdown after completing the response, as Vert.x 4.5 HttpClient does handle it badly.
+            // It seems that it doesn't proceeed the last DATA frame well when the connection is already ended.
+            // See: DefaultHttp2ConnectionDecoder.FrameReadListener#onDataRead() -> if (endOfStream) { ...closeStreamRemote() }
+            if (!running) {
+                // If shutdown is in progress, send the go away as early as possible
+                sendGoAwayForHttp2(event.connection(), event.getHeader(HttpHeaderNames.USER_AGENT));
+            }
+            */
+            ((QuarkusRequestWrapper) event).addRequestDoneHandler(unused -> {
+                // Check again at the end of the request if we should send a shutdown
+                if (!running) {
+                    sendGoAwayForHttp2(event.connection(), event.getHeader(HttpHeaderNames.USER_AGENT));
+                }
+            });
+        }
+
         next.handle(event);
+    }
+
+    Set<Object> connectionsWithGoAway =
+            Collections.synchronizedSet(
+            Collections.newSetFromMap(
+                    new WeakHashMap<>()
+            ));
+
+    private void sendGoAwayForHttp2(HttpConnection connection, String userAgent) {
+        if (!connectionsWithGoAway.add(connection)) {
+            return;
+        }
+        // GO_AWAY + 0 (NO_ERROR) = graceful shutdown; client will stop creating new streams on this connection
+        connection.goAway(0);
+
+        // Do not do a connection shutdown as OpenJDK 21.0.9 has problems and reports an "EOF reached while reading"
+        // as all messages are processed asynchronously and that might take a while.
+        // See Http2Connection.Http2TubeSubscriber#onComplete()
+        // Problem persists in OpenJDK 25.0.1
+        // A workaround could be to add a delay here, but for now no vertx instance is at hand to set a timer.
+        if (userAgent != null && userAgent.startsWith("Java-http-client/")) {
+            return;
+        }
+        connection.shutdown();
+    }
+
+    @Override
+    public void preShutdown(ShutdownNotification notification) {
+        running = false;
+        notification.done();
     }
 
     @Override

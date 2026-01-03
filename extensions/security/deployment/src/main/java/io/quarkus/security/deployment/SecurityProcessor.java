@@ -1,6 +1,8 @@
 package io.quarkus.security.deployment;
 
+import static io.quarkus.arc.processor.DotNames.COMPLETION_STAGE;
 import static io.quarkus.arc.processor.DotNames.NO_CLASS_INTERCEPTORS;
+import static io.quarkus.arc.processor.DotNames.UNI;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import static io.quarkus.security.deployment.DotNames.AUTHENTICATED;
 import static io.quarkus.security.deployment.DotNames.DENY_ALL;
@@ -15,6 +17,7 @@ import static io.quarkus.security.runtime.SecurityProviderUtils.findProviderInde
 import static io.quarkus.security.spi.SecurityTransformer.AuthorizationType.AUTHORIZATION_POLICY;
 import static io.quarkus.security.spi.SecurityTransformer.AuthorizationType.SECURITY_CHECK;
 import static io.quarkus.security.spi.SecurityTransformerBuildItem.createSecurityTransformer;
+import static org.jboss.jandex.DotName.VOID_CLASS_NAME;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
@@ -71,6 +74,7 @@ import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildIt
 import io.quarkus.arc.processor.AnnotationStore;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.arc.processor.InterceptorBindingRegistrar;
 import io.quarkus.arc.processor.ObserverInfo;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
@@ -114,6 +118,7 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.deployment.PermissionSecurityChecks.PermissionSecurityChecksBuilder;
+import io.quarkus.security.identity.RunAsUser;
 import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.quarkus.security.runtime.IdentityProviderManagerCreator;
 import io.quarkus.security.runtime.PrincipalProducer;
@@ -130,6 +135,7 @@ import io.quarkus.security.runtime.interceptor.DenyAllInterceptor;
 import io.quarkus.security.runtime.interceptor.PermissionsAllowedInterceptor;
 import io.quarkus.security.runtime.interceptor.PermitAllInterceptor;
 import io.quarkus.security.runtime.interceptor.RolesAllowedInterceptor;
+import io.quarkus.security.runtime.interceptor.RunAsUserInterceptor;
 import io.quarkus.security.runtime.interceptor.SecurityCheckStorageBuilder;
 import io.quarkus.security.runtime.interceptor.SecurityConstrainer;
 import io.quarkus.security.runtime.interceptor.SecurityHandler;
@@ -144,6 +150,7 @@ import io.quarkus.security.spi.DefaultSecurityCheckBuildItem;
 import io.quarkus.security.spi.PermissionsAllowedMetaAnnotationBuildItem;
 import io.quarkus.security.spi.RegisterClassSecurityCheckBuildItem;
 import io.quarkus.security.spi.RolesAllowedConfigExpResolverBuildItem;
+import io.quarkus.security.spi.RunAsUserPredicateBuildItem;
 import io.quarkus.security.spi.SecuredInterfaceAnnotationBuildItem;
 import io.quarkus.security.spi.SecurityTransformer;
 import io.quarkus.security.spi.SecurityTransformer.AuthorizationType;
@@ -1309,6 +1316,80 @@ public class SecurityProcessor {
                                     .get()))
                     .forEach(producer::produce);
         }
+    }
+
+    @BuildStep
+    void registerRunAsUserInterceptor(BuildProducer<InterceptorBindingRegistrarBuildItem> interceptorBindingRegistrarProducer,
+            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformerProducer,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer,
+            List<RunAsUserPredicateBuildItem> runAsUserPredicates,
+            CombinedIndexBuildItem combinedIndexBuildItem) {
+        var annotationInstances = combinedIndexBuildItem.getIndex().getAnnotations(RunAsUser.class);
+        if (annotationInstances.isEmpty()) {
+            return;
+        }
+
+        var targetNotAllowedPredicate = Predicate.not(RunAsUserPredicateBuildItem.get(runAsUserPredicates));
+        var notAllowedTargets = annotationInstances.stream()
+                .map(AnnotationInstance::target)
+                .filter(targetNotAllowedPredicate)
+                .map(AnnotationTarget::asMethod)
+                .map(SecurityProcessor::toString)
+                .collect(Collectors.joining(", "));
+        if (!notAllowedTargets.isEmpty()) {
+            throw new RuntimeException("Annotation '%s' cannot be used on following methods: %s"
+                    .formatted(RunAsUser.class.getName(), notAllowedTargets));
+        }
+
+        if (runAsUserPredicates.isEmpty()) {
+            return;
+        }
+
+        var targetsWithNotAllowedReturnTypes = annotationInstances.stream()
+                .map(AnnotationInstance::target)
+                .map(AnnotationTarget::asMethod)
+                .filter(mi -> {
+                    var returnType = mi.returnType();
+                    boolean isAllowedReturnType = false;
+                    if (returnType.kind() == Type.Kind.VOID) {
+                        isAllowedReturnType = true;
+                    } else if (returnType.kind() == Type.Kind.CLASS && VOID_CLASS_NAME.equals(returnType.name())) {
+                        isAllowedReturnType = true;
+                    } else if (returnType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                        if (UNI.equals(returnType.name()) || COMPLETION_STAGE.equals(returnType.name())) {
+                            var parametrizedType = returnType.asParameterizedType();
+                            if (parametrizedType.arguments().size() == 1) {
+                                var argumentType = parametrizedType.arguments().get(0);
+                                if (VOID_CLASS_NAME.equals(argumentType.name())) {
+                                    isAllowedReturnType = true;
+                                }
+                            }
+                        }
+                    }
+                    return !isAllowedReturnType;
+                })
+                .map(SecurityProcessor::toString)
+                .collect(Collectors.joining(", "));
+        if (!targetsWithNotAllowedReturnTypes.isEmpty()) {
+            throw new RuntimeException(
+                    "Found methods annotated with the '%s' annotation and return type other than 'void', 'Void', 'Uni<Void>' or 'CompletionStage<Void>': %s"
+                            .formatted(RunAsUser.class.getName(), targetsWithNotAllowedReturnTypes));
+        }
+
+        interceptorBindingRegistrarProducer.produce(new InterceptorBindingRegistrarBuildItem(new InterceptorBindingRegistrar() {
+            @Override
+            public List<InterceptorBinding> getAdditionalBindings() {
+                return List.of(InterceptorBindingRegistrar.InterceptorBinding.of(RunAsUser.class, m -> true));
+            }
+        }));
+        annotationsTransformerProducer.produce(new AnnotationsTransformerBuildItem(AnnotationTransformation
+                .forClasses().whenClass(RunAsUserInterceptor.class)
+                .transform(tc -> tc.add(AnnotationInstance.builder(RunAsUser.class).add("user", "").build()))));
+        additionalBeanProducer.produce(AdditionalBeanBuildItem.unremovableOf(RunAsUserInterceptor.class));
+    }
+
+    private static String toString(MethodInfo mi) {
+        return "%s#%s".formatted(mi.declaringClass().name().toString(), mi.name());
     }
 
     private static boolean hasClassLevelStandardSecurityAnnotation(MethodInfo method, AnnotationStore annotationStore,

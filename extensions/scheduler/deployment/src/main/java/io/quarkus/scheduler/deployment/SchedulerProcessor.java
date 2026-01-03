@@ -95,6 +95,7 @@ import io.quarkus.scheduler.runtime.Constituent;
 import io.quarkus.scheduler.runtime.SchedulerConfig;
 import io.quarkus.scheduler.runtime.SchedulerRecorder;
 import io.quarkus.scheduler.runtime.SimpleScheduler;
+import io.quarkus.security.spi.RunAsUserPredicateBuildItem;
 import io.smallrye.common.annotation.Identifier;
 
 public class SchedulerProcessor {
@@ -756,4 +757,8 @@ public class SchedulerProcessor {
                 .setUnremovable().build());
     }
 
+    @BuildStep
+    RunAsUserPredicateBuildItem allowRunAsUserAnnotationForScheduledMethods() {
+        return RunAsUserPredicateBuildItem.ofAnnotation(Scheduled.class);
+    }
 }

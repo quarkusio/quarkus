@@ -29,7 +29,7 @@ The https://www.reactivemanifesto.org/[Reactive Manifesto] characterizes _Reacti
 1. Responsive - they must respond in a timely fashion
 2. Elastic - they adapt themselves to the fluctuating load
 3. Resilient - they handle failures gracefully
-4. Asynchronous message passing - the component of a reactive system interact using messages
+4. Asynchronous message passing - the components of a reactive system interact using messages
 
 image::reactive-systems.png[alt=Reactive Systems Pillars, width=50%, align=center]
 

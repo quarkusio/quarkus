@@ -470,6 +470,10 @@ public class OidcClientImpl implements OidcClient {
         return oidcConfig;
     }
 
+    WebClient getWebClient() {
+        return client;
+    }
+
     static boolean isRefresh(Operation op) {
         return op == Operation.REFRESH;
     }

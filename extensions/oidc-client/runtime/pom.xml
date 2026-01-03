@@ -30,6 +30,11 @@
             <artifactId>quarkus-oidc-client-spi</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.eclipse.microprofile.health</groupId>
+            <artifactId>microprofile-health-api</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit-internal</artifactId>
             <scope>test</scope>

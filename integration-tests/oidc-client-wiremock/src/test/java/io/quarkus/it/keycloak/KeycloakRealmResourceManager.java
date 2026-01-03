@@ -1,7 +1,11 @@
 package io.quarkus.it.keycloak;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.head;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 
 import java.io.IOException;
@@ -225,6 +229,28 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                                     + "\", \"expires_in\":3, \"refresh_token\":\"refresh_token_"
                                     + nextIndex + "\", \"refresh_expires_in\":100}")));
         });
+
+        server.stubFor(
+                get(urlEqualTo("/auth/realms/discovery/.well-known/openid-configuration"))
+                        .willReturn(aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n"
+                                        + "    \"token_endpoint\": \"" + server.baseUrl()
+                                        + "/tokens_public_client\""
+                                        + "}")));
+        server.stubFor(
+                head(urlEqualTo("/auth/realms/discovery/.well-known/openid-configuration"))
+                        .willReturn(aResponse()
+                                .withStatus(200)
+                                .withHeader("Content-Type", "application/json")));
+        server.stubFor(
+                get(urlEqualTo("/auth/realms/error/.well-known/openid-configuration"))
+                        .willReturn(aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n"
+                                        + "    \"token_endpoint\": \"" + server.baseUrl()
+                                        + "/tokens_public_client\""
+                                        + "}")));
 
         LOG.infof("Keycloak started in mock mode: %s", server.baseUrl());
 

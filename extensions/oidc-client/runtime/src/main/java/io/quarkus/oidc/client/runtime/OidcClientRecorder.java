@@ -129,8 +129,7 @@ public class OidcClientRecorder {
                                 OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.revokePath())));
             } else {
                 tokenUrisUni = discoverTokenUris(client, oidcRequestFilters, oidcResponseFilters,
-                        authServerUriString.toString(), oidcConfig,
-                        mutinyVertx);
+                        authServerUriString, oidcConfig, mutinyVertx);
             }
         }
         return tokenUrisUni.onItemOrFailure()
@@ -245,7 +244,7 @@ public class OidcClientRecorder {
         }
     }
 
-    private static class DisabledOidcClient implements OidcClient {
+    static class DisabledOidcClient implements OidcClient {
         String message;
 
         DisabledOidcClient(String message) {

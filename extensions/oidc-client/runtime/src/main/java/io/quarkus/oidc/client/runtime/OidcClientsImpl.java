@@ -83,6 +83,10 @@ public final class OidcClientsImpl implements OidcClients, Closeable {
         return staticOidcClients.get(id);
     }
 
+    public Map<String, OidcClient> getStaticOidcClients() {
+        return staticOidcClients;
+    }
+
     @Override
     public void close() throws IOException {
         defaultClient.close();

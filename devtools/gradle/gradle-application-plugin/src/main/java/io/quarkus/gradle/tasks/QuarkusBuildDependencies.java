@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -203,7 +204,7 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
                                 }
                             } else {
                                 try {
-                                    Files.copy(p, target);
+                                    Files.copy(p, target, StandardCopyOption.COPY_ATTRIBUTES);
                                 } catch (IOException e) {
                                     throw new GradleException(String.format("Failed to copy %s to %s", p, target), e);
                                 }

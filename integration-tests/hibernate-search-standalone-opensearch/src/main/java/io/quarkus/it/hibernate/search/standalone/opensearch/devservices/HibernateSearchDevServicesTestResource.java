@@ -10,9 +10,10 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
-import org.elasticsearch.client.RestClient;
 import org.hibernate.search.backend.elasticsearch.ElasticsearchBackend;
 import org.hibernate.search.mapper.pojo.standalone.mapping.SearchMapping;
+
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 
 @Path("/test/dev-services")
 public class HibernateSearchDevServicesTestResource {
@@ -24,7 +25,7 @@ public class HibernateSearchDevServicesTestResource {
     @Path("/hosts")
     @Transactional
     public String hosts() {
-        return searchMapping.backend().unwrap(ElasticsearchBackend.class).client(RestClient.class)
+        return searchMapping.backend().unwrap(ElasticsearchBackend.class).client(Rest5Client.class)
                 .getNodes().stream()
                 .map(n -> n.getHost().toHostString())
                 .collect(Collectors.joining());

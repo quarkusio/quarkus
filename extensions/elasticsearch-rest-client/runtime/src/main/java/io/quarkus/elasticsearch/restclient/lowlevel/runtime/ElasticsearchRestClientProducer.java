@@ -9,9 +9,9 @@ import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
-import org.elasticsearch.client.sniff.Sniffer;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5ClientBuilder;
+import co.elastic.clients.transport.rest5_client.low_level.sniffer.Sniffer;
 
 @ApplicationScoped
 public class ElasticsearchRestClientProducer {
@@ -19,14 +19,14 @@ public class ElasticsearchRestClientProducer {
     @Inject
     ElasticsearchConfig config;
 
-    private RestClient client;
+    private Rest5Client client;
 
     private Sniffer sniffer;
 
     @Produces
     @Singleton
-    public RestClient restClient() {
-        RestClientBuilder builder = RestClientBuilderHelper.createRestClientBuilder(config);
+    public Rest5Client restClient() {
+        Rest5ClientBuilder builder = RestClientBuilderHelper.createRestClientBuilder(config);
 
         this.client = builder.build();
         if (config.discovery().enabled()) {

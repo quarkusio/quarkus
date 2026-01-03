@@ -40,6 +40,8 @@ public final class HibernateSearchBackendElasticsearchConfigHandler {
             contributeBackendBuildTimeProperties(propertyCollector, mapperContext, backendName, indexNames,
                     backendConfigs.get(backendName));
         }
+        propertyCollector.accept(BackendSettings.backendKey(null, ElasticsearchBackendSettings.CLIENT_FACTORY),
+                "elasticsearch-rest5");
     }
 
     private static void contributeBackendBuildTimeProperties(BiConsumer<String, Object> propertyCollector,

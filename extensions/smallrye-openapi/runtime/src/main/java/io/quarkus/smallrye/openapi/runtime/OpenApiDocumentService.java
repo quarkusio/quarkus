@@ -4,7 +4,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -12,10 +15,10 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.jboss.jandex.IndexView;
 
+import io.quarkus.smallrye.openapi.runtime.filter.AutoSecurityFilter;
 import io.quarkus.smallrye.openapi.runtime.filter.DisabledRestEndpointsFilter;
 import io.smallrye.openapi.api.SmallRyeOpenAPI;
 import io.smallrye.openapi.runtime.io.Format;
@@ -26,22 +29,30 @@ import io.smallrye.openapi.runtime.io.Format;
 @ApplicationScoped
 public class OpenApiDocumentService {
 
-    private final OpenApiDocumentHolder documentHolder;
+    private static final OpenApiDocumentHolder EMPTY_DOCUMENT = new EmptyDocument();
+
+    private final Map<String, OpenApiDocumentHolder> documentHolders = new HashMap<>();
 
     @Inject
-    public OpenApiDocumentService(OASFilter autoSecurityFilter,
-            OpenApiRecorder.UserDefinedRuntimeFilters runtimeFilters, Config config) {
+    Config config;
+
+    void prepareDocument(AutoSecurityFilter autoSecurityFilter, List<String> runtimeFilters, String documentName) {
 
         ClassLoader loader = Optional.ofNullable(OpenApiConstants.classLoader)
                 .orElseGet(Thread.currentThread()::getContextClassLoader);
 
-        try (InputStream source = loader.getResourceAsStream(OpenApiConstants.BASE_NAME + "JSON")) {
+        boolean isDefaultDocument = OpenApiConstants.DEFAULT_DOCUMENT_NAME.equals(documentName);
+        String name = OpenApiConstants.BASE_NAME + (isDefaultDocument ? "" : ("-" + documentName));
+
+        try (InputStream source = loader.getResourceAsStream(name + ".JSON")) {
             if (source != null) {
-                Set<String> userFilters = new LinkedHashSet<>(runtimeFilters.filters());
-                boolean dynamic = config.getOptionalValue("quarkus.smallrye-openapi.always-run-filter", Boolean.class)
-                        .orElse(Boolean.FALSE);
+
+                Config wrappedConfig = OpenApiConfigHelper.wrap(config, documentName);
+
+                boolean dynamic = wrappedConfig.getOptionalValue("quarkus.smallrye-openapi.always-run-filter", boolean.class)
+                        .orElse(false);
                 SmallRyeOpenAPI.Builder builder = new OpenAPIRuntimeBuilder()
-                        .withConfig(config)
+                        .withConfig(wrappedConfig)
                         .withApplicationClassLoader(loader)
                         .enableModelReader(false)
                         .enableStandardStaticFiles(false)
@@ -55,26 +66,30 @@ public class OpenApiDocumentService {
                 DisabledRestEndpointsFilter.maybeGetInstance()
                         .ifPresent(builder::addFilter);
 
+                Set<String> userFilters = new LinkedHashSet<>(runtimeFilters);
                 if (dynamic && !userFilters.isEmpty()) {
                     // Only regenerate the OpenAPI document when configured and there are filters to run
-                    this.documentHolder = new DynamicDocument(builder, loader, userFilters);
+                    this.documentHolders.put(documentName, new DynamicDocument(builder, loader, userFilters));
                 } else {
-                    userFilters.forEach(name -> builder.addFilter(name, loader, (IndexView) null));
-                    this.documentHolder = new StaticDocument(builder.build());
+                    userFilters.forEach(className -> builder.addFilter(className, loader, null));
+                    this.documentHolders.put(documentName, new StaticDocument(builder.build()));
                 }
             } else {
-                this.documentHolder = new EmptyDocument();
+                this.documentHolders.put(documentName, new EmptyDocument());
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
-    public byte[] getDocument(Format format) {
+    public byte[] getDocument(String documentName, Format format) {
+        OpenApiDocumentHolder holder = this.documentHolders.getOrDefault(documentName, EMPTY_DOCUMENT);
+
         if (format.equals(Format.JSON)) {
-            return documentHolder.getJsonDocument();
+            return holder.getJsonDocument();
         }
-        return documentHolder.getYamlDocument();
+
+        return holder.getYamlDocument();
     }
 
     static class EmptyDocument implements OpenApiDocumentHolder {

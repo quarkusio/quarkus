@@ -17,14 +17,32 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface OpenApiFilter {
+
+    /**
+     * Default document name which is used for the unnamed default document configuration.
+     */
+    String DEFAULT_DOCUMENT_NAME = "<default>";
+
+    /**
+     * Marker to indicate that a filter should run for any document name.
+     */
+    String FILTER_RUN_FOR_ANY_DOCUMENT = "<ALL>";
+
     RunStage value() default RunStage.RUN; // When this filter should run, default Runtime
 
     /**
-     * Filter with a higher priority will applied first
+     * Filter with a higher priority will be applied first
      *
      * @return
      */
     int priority() default 1;
+
+    /**
+     * Names of the OpenAPI document configurations this filter should be applicable for
+     *
+     * @return
+     */
+    String[] documentNames() default { FILTER_RUN_FOR_ANY_DOCUMENT };
 
     enum RunStage {
         BUILD,

@@ -2,13 +2,12 @@ package io.quarkus.smallrye.openapi.runtime;
 
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
-import org.eclipse.microprofile.openapi.OASFilter;
-
+import io.quarkus.arc.Arc;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.smallrye.openapi.runtime.filter.AutoSecurityFilter;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.vertx.core.Handler;
@@ -39,9 +38,9 @@ public class OpenApiRecorder {
         return null;
     }
 
-    public Handler<RoutingContext> handler() {
+    public Handler<RoutingContext> handler(String documentName) {
         if (openApiConfig.getValue().enable().orElse(openApiConfig.getValue().enabled())) {
-            return new OpenApiHandler();
+            return new OpenApiHandler(documentName);
         } else {
             return new OpenApiNotFoundHandler();
         }
@@ -57,30 +56,8 @@ public class OpenApiRecorder {
         });
     }
 
-    public Supplier<OASFilter> autoSecurityFilterSupplier(OASFilter autoSecurityFilter) {
-        return new Supplier<>() {
-            @Override
-            public OASFilter get() {
-                return autoSecurityFilter;
-            }
-        };
-    }
-
-    public Supplier<?> createUserDefinedRuntimeFilters(List<String> filters) {
-        return new Supplier<Object>() {
-            @Override
-            public UserDefinedRuntimeFilters get() {
-                return new UserDefinedRuntimeFilters() {
-                    @Override
-                    public List<String> filters() {
-                        return filters;
-                    }
-                };
-            }
-        };
-    }
-
-    public interface UserDefinedRuntimeFilters {
-        List<String> filters();
+    public void prepareDocument(AutoSecurityFilter autoSecurityFilter, List<String> runtimeFilters, String documentName) {
+        OpenApiDocumentService openApiDocumentService = Arc.container().select(OpenApiDocumentService.class).get();
+        openApiDocumentService.prepareDocument(autoSecurityFilter, runtimeFilters, documentName);
     }
 }

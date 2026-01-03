@@ -77,7 +77,7 @@ class FlywayCallbacksLocator {
     private Collection<Callback> callbacksForDataSource(String dataSourceName)
             throws ClassNotFoundException, IllegalAccessException, InvocationTargetException, InstantiationException {
         final Optional<List<String>> callbackConfig = flywayBuildConfig.datasources().get(dataSourceName).callbacks();
-        if (!callbackConfig.isPresent()) {
+        if (callbackConfig.isEmpty()) {
             return Collections.emptyList();
         }
         final Collection<String> callbacks = callbackConfig.get();
@@ -93,9 +93,8 @@ class FlywayCallbacksLocator {
             final Class<?> clazzType = Class.forName(callback, false, Thread.currentThread().getContextClassLoader());
             final Callback instance = (Callback) clazzType.getConstructors()[0].newInstance();
             instances.add(instance);
-            reflectiveClassProducer
-                    .produce(ReflectiveClassBuildItem.builder(clazz.name().toString()).build());
         }
+        reflectiveClassProducer.produce(ReflectiveClassBuildItem.builder(callbacks).build());
         return instances;
     }
 }

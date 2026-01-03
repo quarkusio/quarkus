@@ -19,7 +19,6 @@ public class KotlinSerializationCommonProcessor {
 
     private static final DotName SERIALIZABLE = DotName.createSimple("kotlinx.serialization.Serializable");
     private static final String COMPANION_FIELD_NAME = "Companion";
-    private static final String[] EMPTY_ARRAY = new String[0];
 
     // Kotlin Serialization generates classes at compile time which need to be available via reflection
     // for serialization to work properly
@@ -45,11 +44,11 @@ public class KotlinSerializationCommonProcessor {
             }
         }
         // the companion classes need to be registered for reflection so Kotlin can construct them and invoke methods reflectively
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(supportClassNames.toArray(EMPTY_ARRAY))
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(supportClassNames)
                 .reason(getClass().getName())
                 .methods().build());
         // the serializable classes need to be registered for reflection, so they can be constructed and also Kotlin can determine the companion field at runtime
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(serializableClassNames.toArray(EMPTY_ARRAY))
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(serializableClassNames)
                 .reason(getClass().getName())
                 .fields().build());
     }

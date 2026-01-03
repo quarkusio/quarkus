@@ -127,15 +127,16 @@ public class SmallRyeGraphQLClientProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchies,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxies) throws ClassNotFoundException {
-        for (AnnotationInstance annotation : index.getIndex().getAnnotations(GRAPHQL_CLIENT_API)) {
+        final var annotations = index.getIndex().getAnnotations(GRAPHQL_CLIENT_API);
+        final var forReflection = new ArrayList<String>(annotations.size());
+        for (AnnotationInstance annotation : annotations) {
             ClassInfo apiClassInfo = annotation.target().asClass();
-            Class<?> apiClass = Class.forName(apiClassInfo.name().toString(), true,
-                    Thread.currentThread().getContextClassLoader());
+            final var name = apiClassInfo.name().toString();
+            Class<?> apiClass = Class.forName(name, true, Thread.currentThread().getContextClassLoader());
             proxies.produce(new NativeImageProxyDefinitionBuildItem(apiClass.getName()));
 
             // register the api class and all classes that it references for reflection
-            reflectiveClass.produce(
-                    ReflectiveClassBuildItem.builder(apiClassInfo.name().toString()).build());
+            forReflection.add(name);
             for (MethodInfo method : apiClassInfo.methods()) {
                 reflectiveHierarchies.produce(ReflectiveHierarchyBuildItem
                         .builder(method.returnType())
@@ -158,18 +159,16 @@ public class SmallRyeGraphQLClientProcessor {
                     .done();
             syntheticBeans.produce(bean);
         }
-        // needed to be able to convert config values to URI (performed by the GraphQL client code)
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.net.URI").methods().build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.util.List").methods().build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.util.Collection").methods().build());
-        // some more classes that the client may need to serialize
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(OffsetDateTime.class).methods().build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(Instant.class).methods().build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(ZonedDateTime.class).methods().build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(LocalDateTime.class).methods().build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(LocalTime.class).methods().build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(OffsetTime.class).methods().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(forReflection).build());
 
+        // needed to be able to convert config values to URI (performed by the GraphQL client code) and date-related classes that might get serialized
+        reflectiveClass
+                .produce(
+                        ReflectiveClassBuildItem
+                                .builder("java.net.URI", "java.util.List", "java.util.Collection",
+                                        OffsetDateTime.class.getName(), Instant.class.getName(), ZonedDateTime.class.getName(),
+                                        LocalDateTime.class.getName(), LocalTime.class.getName(), OffsetTime.class.getName())
+                                .methods().build());
     }
 
     /**

@@ -67,8 +67,6 @@ public class KubernetesClientProcessor {
     private static final DotName VISITABLE_BUILDER = DotName.createSimple(VisitableBuilder.class.getName());
     private static final DotName CUSTOM_RESOURCE = DotName.createSimple(CustomResource.class.getName());
 
-    private static final String[] EMPTY_STRINGS_ARRAY = new String[0];
-
     @BuildStep
     public void registerBeanProducers(BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildItem,
             Capabilities capabilities) {
@@ -126,6 +124,8 @@ public class KubernetesClientProcessor {
         findWatchedClasses(CUSTOM_RESOURCE, watchedClasses, 2, false, fullIndex, fullIndex);
 
         Predicate<DotName> reflectionIgnorePredicate = ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE;
+        final Predicate<DotName> noopPredicate = dotName -> true;
+        final var prefix = getClass().getSimpleName() + " > ";
         for (DotName className : watchedClasses) {
             if (reflectionIgnorePredicate.test(className)) {
                 continue;
@@ -137,15 +137,16 @@ public class KubernetesClientProcessor {
                 reflectiveHierarchies
                         .produce(ReflectiveHierarchyBuildItem
                                 .builder(className)
-                                .ignoreTypePredicate(reflectionIgnorePredicate)
-                                .source(getClass().getSimpleName() + " > " + className)
+                                // we've already filtered the classes so no need to do it again when the build item is used
+                                .ignoreTypePredicate(noopPredicate)
+                                .source(prefix + className)
                                 .build());
             }
         }
 
-        Collection<ClassInfo> kubernetesResourceImpls = fullIndex.getAllKnownImplementors(KUBERNETES_RESOURCE);
-        Collection<ClassInfo> kubernetesResourceListImpls = fullIndex.getAllKnownImplementors(KUBERNETES_RESOURCE_LIST);
-        Collection<ClassInfo> visitableBuilderImpls = fullIndex.getAllKnownImplementors(VISITABLE_BUILDER);
+        Collection<ClassInfo> kubernetesResourceImpls = fullIndex.getAllKnownImplementations(KUBERNETES_RESOURCE);
+        Collection<ClassInfo> kubernetesResourceListImpls = fullIndex.getAllKnownImplementations(KUBERNETES_RESOURCE_LIST);
+        Collection<ClassInfo> visitableBuilderImpls = fullIndex.getAllKnownImplementations(VISITABLE_BUILDER);
 
         // default sizes determined experimentally - these are only set in order to prevent continuous expansion of the array list
         int defSize = kubernetesResourceImpls.size() + kubernetesResourceListImpls.size() + visitableBuilderImpls.size();
@@ -161,7 +162,7 @@ public class KubernetesClientProcessor {
 
         if (!withFieldsRegistration.isEmpty()) {
             reflectiveClasses.produce(ReflectiveClassBuildItem
-                    .builder(withFieldsRegistration.toArray(EMPTY_STRINGS_ARRAY))
+                    .builder(withFieldsRegistration)
                     .reason(getClass().getName())
                     .weak().methods().fields()
                     .build());
@@ -173,22 +174,22 @@ public class KubernetesClientProcessor {
         ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(KUBERNETES_RESOURCE_LIST));
         ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(KUBERNETES_RESOURCE));
 
-        final String[] deserializerClasses = fullIndex
+        final var deserializerClasses = fullIndex
                 .getAllKnownSubclasses(DotName.createSimple("com.fasterxml.jackson.databind.JsonDeserializer"))
                 .stream()
                 .map(c -> c.name().toString())
                 .filter(s -> s.startsWith("io.fabric8.kubernetes"))
-                .toArray(String[]::new);
+                .toList();
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(deserializerClasses)
                 .reason(getClass().getName())
                 .methods().build());
 
-        final String[] serializerClasses = fullIndex
+        final var serializerClasses = fullIndex
                 .getAllKnownSubclasses(DotName.createSimple("com.fasterxml.jackson.databind.JsonSerializer"))
                 .stream()
                 .map(c -> c.name().toString())
                 .filter(s -> s.startsWith("io.fabric8.kubernetes"))
-                .toArray(String[]::new);
+                .toList();
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(serializerClasses)
                 .reason(getClass().getName())
                 .methods().build());
@@ -258,7 +259,7 @@ public class KubernetesClientProcessor {
             IndexView targetIndex,
             IndexView fullIndex) {
 
-        final var implementors = isTargetClassAnInterface ? targetIndex.getAllKnownImplementors(implementedOrExtendedClass)
+        final var implementors = isTargetClassAnInterface ? targetIndex.getAllKnownImplementations(implementedOrExtendedClass)
                 : targetIndex.getAllKnownSubclasses(implementedOrExtendedClass);
         implementors.forEach(c -> {
             try {

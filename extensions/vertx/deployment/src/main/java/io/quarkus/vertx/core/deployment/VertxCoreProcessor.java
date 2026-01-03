@@ -278,10 +278,12 @@ class VertxCoreProcessor {
     @BuildStep
     void registerVerticleClasses(CombinedIndexBuildItem indexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        for (ClassInfo ci : indexBuildItem.getIndex()
-                .getAllKnownSubclasses(DotName.createSimple(AbstractVerticle.class.getName()))) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(ci.toString()).build());
-        }
+        final var verticles = indexBuildItem.getIndex()
+                .getAllKnownSubclasses(DotName.createSimple(AbstractVerticle.class.getName()))
+                .stream()
+                .map(ClassInfo::toString)
+                .toList();
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(verticles).build());
     }
 
     @BuildStep

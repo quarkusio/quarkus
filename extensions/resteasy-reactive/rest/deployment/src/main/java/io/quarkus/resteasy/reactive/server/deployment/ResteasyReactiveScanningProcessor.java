@@ -4,6 +4,7 @@ import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReac
 import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.HTTP_SERVER_RESPONSE;
 import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.ROUTING_CONTEXT;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -218,13 +219,12 @@ public class ResteasyReactiveScanningProcessor {
                 .entrySet()) {
             beanBuilder.addBeanClass(i.getValue().getClassName());
         }
+        final var forReflection = new ArrayList<String>(mappers.size());
         for (ExceptionMapperBuildItem additionalExceptionMapper : mappers) {
             if (additionalExceptionMapper.isRegisterAsBean()) {
                 beanBuilder.addBeanClass(additionalExceptionMapper.getClassName());
             } else {
-                reflectiveClassBuildItemBuildProducer
-                        .produce(ReflectiveClassBuildItem.builder(additionalExceptionMapper.getClassName())
-                                .build());
+                forReflection.add(additionalExceptionMapper.getClassName());
             }
             int priority = Priorities.USER;
             if (additionalExceptionMapper.getPriority() != null) {
@@ -236,6 +236,7 @@ public class ResteasyReactiveScanningProcessor {
             addRuntimeCheckIfNecessary(additionalExceptionMapper, mapper);
             exceptions.addExceptionMapper(additionalExceptionMapper.getHandledExceptionName(), mapper);
         }
+        reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(forReflection).build());
         additionalBeanBuildItemBuildProducer.produce(beanBuilder.build());
         return new ExceptionMappersBuildItem(exceptions);
     }
@@ -267,13 +268,13 @@ public class ResteasyReactiveScanningProcessor {
 
         AdditionalBeanBuildItem.Builder beanBuilder = AdditionalBeanBuildItem.builder().setUnremovable();
         ParamConverterProviders paramConverterProviders = new ParamConverterProviders();
+
+        final var forReflection = new ArrayList<String>(paramConverterBuildItems.size());
         for (ParamConverterBuildItem additionalParamConverter : paramConverterBuildItems) {
             if (additionalParamConverter.isRegisterAsBean()) {
                 beanBuilder.addBeanClass(additionalParamConverter.getClassName());
             } else {
-                reflectiveClassBuildItemBuildProducer
-                        .produce(ReflectiveClassBuildItem.builder(additionalParamConverter.getClassName())
-                                .build());
+                forReflection.add(additionalParamConverter.getClassName());
             }
             int priority = Priorities.USER;
             if (additionalParamConverter.getPriority() != null) {
@@ -284,6 +285,7 @@ public class ResteasyReactiveScanningProcessor {
             provider.setClassName(additionalParamConverter.getClassName());
             paramConverterProviders.addParamConverterProviders(provider);
         }
+        reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(forReflection).build());
         additionalBeanBuildItemBuildProducer.produce(beanBuilder.build());
         return new ParamConverterProvidersBuildItem(paramConverterProviders);
 
@@ -330,13 +332,12 @@ public class ResteasyReactiveScanningProcessor {
                 beanBuilder.addBeanClass(i.getClassName());
             }
         }
+        final var forReflection = new ArrayList<String>(additionalResolvers.size());
         for (ContextResolverBuildItem i : additionalResolvers) {
             if (i.isRegisterAsBean()) {
                 beanBuilder.addBeanClass(i.getClassName());
             } else {
-                reflectiveClassBuildItemBuildProducer
-                        .produce(ReflectiveClassBuildItem.builder(i.getClassName())
-                                .build());
+                forReflection.add(i.getClassName());
             }
             ResourceContextResolver resolver = new ResourceContextResolver();
             resolver.setClassName(i.getClassName());
@@ -349,6 +350,7 @@ public class ResteasyReactiveScanningProcessor {
                         "Unable to load handled exception type " + i.getProvidedType(), e);
             }
         }
+        reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(forReflection).build());
         additionalBeanBuildItemBuildProducer.produce(beanBuilder.build());
         return new ContextResolversBuildItem(resolvers);
     }

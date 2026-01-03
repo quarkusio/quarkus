@@ -68,4 +68,11 @@ public @interface CacheResult {
      */
     @Nonbinding
     Class<? extends CacheKeyGenerator> keyGenerator() default UndefinedCacheKeyGenerator.class;
+
+    /**
+     * If set to true the cached value (if exists) will not be used.
+     * The method will always be executed and have their returned value placed in the cache.
+     */
+    @Nonbinding
+    boolean skipGet() default false;
 }

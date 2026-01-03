@@ -66,4 +66,9 @@ public @interface CachedResults {
      */
     String exclude() default "";
 
+    /**
+     * If set to true the cached value (if exists) will not be used.
+     * The method will always be executed and have their returned value placed in the cache.
+     */
+    boolean skipGet() default false;
 }

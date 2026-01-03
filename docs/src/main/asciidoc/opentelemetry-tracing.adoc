@@ -232,7 +232,7 @@ public class CustomConfiguration {
     }
 }
 ----
-
+[[propagators-reference]]
 === Propagators
 OpenTelemetry propagates cross-cutting concerns through https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/api-propagators.md[propagators] that will share an underlying `Context` for storing state and accessing
 data across the lifespan of a distributed transaction.
@@ -482,6 +482,7 @@ class SpanBean {
 }
 ----
 
+[[cdi-injections-reference]]
 === Available OpenTelemetry CDI injections
 
 As per MicroProfile Telemetry Tracing specification, Quarkus supports the CDI injections of the
@@ -591,6 +592,203 @@ Quarkus supports exporting of the xref:security-customization.adoc#observe-secur
 quarkus.otel.security-events.enabled=true <1>
 ----
 <1> Export Quarkus Security events as OpenTelemetry Span events.
+
+== Manual instrumentation
+
+In cases were utilities or automatic instrumentation is not available, manual instrumentation can be used to generate spans, propagate the OpenTelemetry context and the Baggage.
+
+[WARNING]
+====
+Use Manual instrumentation if there are no other alternatives because it will require more maintenance work.
+====
+
+=== Manual Span
+
+On the following example we have a class with a method implementing a manual span with a custom attribute. The only business logic we are measuring there is the `return "Hello from Quarkus REST";` statement.
+
+[source,java]
+----
+@ApplicationScoped
+public static class HelloSpan {
+
+    private final Tracer tracer;
+
+    // Instead of using @Inject on the tracer attribute
+    public HelloSpan(Tracer tracer) {
+        // The same as openTelemetry.getTracer("io.quarkus.opentelemetry");
+        this.tracer = tracer;
+    }
+
+    public String helloManualSpan() {
+        // Create a new span
+        Span span = tracer.spanBuilder("HelloBean.helloManualSpan").startSpan();
+        // Make sure span scope is closed
+        try (Scope scope = span.makeCurrent()) { <1>
+            // Add an attribute
+            span.setAttribute("myAttributeName", "myValue");
+            // Execute logic...
+            return "Hello from Quarkus REST";
+        } catch (Exception ignored) {
+            // Store potential exceptions.
+            span.recordException(ignored);
+        } finally {
+            // Whatever happens above, the span will be closed.
+            span.end();
+        }
+        return "failover message";
+    }
+}
+----
+<1> It is essential that all the logic the span is measuring be well delimited by a scope. The scope is Autocloseable.
+
+=== Manual Context Propagation
+
+When you send messages or requests with clients that don't propagate the OpenTelemetry context you will have incomplete traces or broken traces, when the destination creates spans but because no context was propagated, the parent span is non-existent. This will cause more than one trace per request, which will cause problems.
+
+Manual propagation can be implemented for those clients if there is a way to ship metadata containing the OpenTelemetry context with the message or request.
+
+*This is an advanced subject*. For more details on context propagation please check the above section about <<propagators-reference>>.
+
+Next, we have an implementation example. The class contains a `MAP_SETTER`, a `MAP_GETTER` and 2 methods.
+
+[source, java]
+----
+@ApplicationScoped
+public static class HelloPropagation {
+
+    /**
+     * How data is stored
+     */
+    private static final TextMapSetter<Map<String, String>> MAP_SETTER = new TextMapSetter<Map<String, String>>() {
+        @Override
+        public void set(@Nullable Map<String, String> carrier, String key, String value) {
+            carrier.put(key, value); <1>
+        }
+    };
+
+    /**
+     * How data is retrieved
+     */
+    private static final TextMapGetter<Map<String, String>> MAP_GETTER = new TextMapGetter<>() {
+
+        @Override
+        public Iterable<String> keys(Map<String, String> carrier) {
+            return carrier == null ? emptyList() : carrier.keySet();
+        }
+
+        @Override
+        public @Nullable String get(@Nullable Map<String, String> carrier, String key) {
+            return carrier == null && key != null ? null : carrier.get(key); <2>
+        }
+    };
+
+    private final Tracer tracer;
+    private final OpenTelemetry openTelemetry;
+
+    // Instead of using @Inject on the tracer attribute
+    public HelloPropagation(Tracer tracer, OpenTelemetry openTelemetry) {
+        this.openTelemetry = openTelemetry;
+        // The same as openTelemetry.getTracer("io.quarkus.opentelemetry");
+        this.tracer = tracer;
+    }
+
+    public String createParentContext() { <3>
+        // Create the first manual span
+        Span parentSpan = tracer.spanBuilder("parent-span").startSpan();
+
+        try (Scope ignored = parentSpan.makeCurrent()) {
+            // inject into a temporary map and return the traceparent header value
+            // This can be stored in any data structure containing metadata in the payload to ship.
+            // As an example, for HTTP the headers, for JMS a message attribute
+            Map<String, String> tempCarrier = new HashMap<>();
+
+            // We will use The MAP_SETTER to place the header containing the OTel Context in the tempCarrier
+            openTelemetry.getPropagators()
+                    .getTextMapPropagator()
+                    .inject(Context.current(), tempCarrier, MAP_SETTER);
+
+            // W3C traceparent header key is "traceparent"
+            return tempCarrier.get("traceparent");
+        } finally {
+            parentSpan.end();
+        }
+    }
+
+    public void receiveAndUseContext(String traceparent) { <4>
+        // Rebuild a tempCarrier map that contains the "traceparent" header data
+        Map<String, String> tempCarrier = new HashMap<>();
+        tempCarrier.put("traceparent", traceparent);
+
+        // Extract context from the tempCarrier
+        Context extracted = openTelemetry.getPropagators()
+                .getTextMapPropagator()
+                .extract(Context.current(), tempCarrier, MAP_GETTER);
+
+        // Optionally check whether a parent span was found:
+        boolean hasParent = Span.fromContext(extracted).getSpanContext().isValid();
+
+        // Start a child span with the extracted context as explicit parent
+        Span child = tracer.spanBuilder("child-span")
+                .setParent(extracted)
+                .startSpan();
+
+        try (Scope scope = child.makeCurrent()) {
+            // Simulate work under child span
+            logger.infov("Child span started. Extracted parent valid? {0}", hasParent);
+        } finally {
+            child.end();
+        }
+    }
+----
+
+<1> The `MAP_SETTER` handles how to store data in the carrier map that will transport the context.
+<2> `MAP_GETTER` handles how to retrieve data from the carrier map transporting the context.
+<3> The `createParentContext()` method explains how to create an OpenTelemetry context. In this case we generate the default https://www.w3.org/TR/trace-context/[W3C Trace Context] header: `traceparent`.
+<4> the `receiveAndUseContext()` method receives the contents of the `traceparent` header used to bootstrap a new OpenTelemetry context in the destination.
+
+=== Manual Baggage propagation
+
+The https://opentelemetry.io/docs/languages/java/api/#baggage[Baggage] can be used to send application specific data using the OpenTelemetry's propagation mechanism.
+
+In Quarkus, as documented in the <<cdi-injections-reference>>, Baggage can be injected to unwrap data coming with inbound requests but in more complex scenarios were data needs to be sent away in the Baggage manual instrumentation is required.
+
+*This is an advanced subject*.
+
+Using the `HelloPropagation` class from before we can add the following 2 methods, `createBaggage()` and `receiveAndUseBaggage()`.
+
+[source,java]
+----
+
+        public Map<String, String> createBaggage(String withValue) {
+            // Baggage can be used to send Application specific data using the OpenTelemetry propagation mechanism
+            Baggage baggage = Baggage.builder()
+                    .put("baggage_key", withValue, BaggageEntryMetadata.empty())
+                    .build();
+            Context context = baggage.storeInContext(Context.current());
+
+            // We use this to store the header data to ship out.
+            Map<String, String> tempCarrier = new HashMap<>();
+
+            // We will use The MAP_SETTER to place the header containing the OTel Context in the tempCarrier
+            try (Scope ignored = context.makeCurrent()) {
+                openTelemetry.getPropagators()
+                        .getTextMapPropagator()
+                        .inject(Context.current(), tempCarrier, MAP_SETTER);
+            }
+            return tempCarrier;
+        }
+
+        public String receiveAndUseBaggage(Map<String, String> headers) {
+            // Extract context from the tempCarrier
+            Context extracted = openTelemetry.getPropagators()
+                    .getTextMapPropagator()
+                    .extract(Context.current(), headers, MAP_GETTER);
+            // Retrieve the baggage contents
+            Baggage baggage = Baggage.fromContext(extracted);
+            BaggageEntry baggageKey = baggage.asMap().get("baggage_key");
+            return baggageKey != null ? baggageKey.getValue() : null;
+        }
+----
 
 == Exporters
 

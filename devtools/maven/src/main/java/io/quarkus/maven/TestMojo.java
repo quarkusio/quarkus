@@ -1,7 +1,5 @@
 package io.quarkus.maven;
 
-import java.util.function.Consumer;
-
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
@@ -25,12 +23,11 @@ public class TestMojo extends DevMojo {
 
     @Override
     protected void modifyDevModeContext(DevModeCommandLineBuilder builder) {
-        builder.entryPointCustomizer(new Consumer<DevModeContext>() {
-            @Override
-            public void accept(DevModeContext devModeContext) {
-                devModeContext.setMode(QuarkusBootstrap.Mode.CONTINUOUS_TEST);
-                devModeContext.setAlternateEntryPoint(IsolatedTestModeMain.class.getName());
-            }
-        });
+        builder.entryPointCustomizer(TestMojo::configureContinuousTesting);
+    }
+
+    private static void configureContinuousTesting(DevModeContext devModeContext) {
+        devModeContext.setMode(QuarkusBootstrap.Mode.CONTINUOUS_TEST);
+        devModeContext.setAlternateEntryPoint(IsolatedTestModeMain.class.getName());
     }
 }

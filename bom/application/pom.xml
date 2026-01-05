@@ -32,7 +32,7 @@
         <opentelemetry-instrumentation.version>2.23.0-alpha</opentelemetry-instrumentation.version> <!-- OTel SDk 1.55.0-->
         <opentelemetry-semconv.version>1.37.0-alpha</opentelemetry-semconv.version>
         <quarkus-http.version>5.3.5</quarkus-http.version>
-        <micrometer.version>1.14.7</micrometer.version><!-- keep in sync with hdrhistogram: https://central.sonatype.com/artifact/io.micrometer/micrometer-core -->
+        <micrometer.version>1.16.1</micrometer.version><!-- keep in sync with hdrhistogram: https://central.sonatype.com/artifact/io.micrometer/micrometer-core -->
         <hdrhistogram.version>2.2.2</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
         <graphql-java.version>24.3</graphql-java.version> <!-- keep in sync with smallrye-graphql -->

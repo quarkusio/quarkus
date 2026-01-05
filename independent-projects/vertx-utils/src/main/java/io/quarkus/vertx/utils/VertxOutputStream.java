@@ -5,13 +5,13 @@ import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.util.Optional;
 
-import io.vertx.core.Context;
 import org.jboss.logging.Logger;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponse;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;

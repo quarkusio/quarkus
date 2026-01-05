@@ -5,10 +5,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
 import jakarta.ws.rs.core.GenericEntity;
 import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.RestResponse;
@@ -30,8 +30,8 @@ public class ResponseHandler implements ServerRestHandler {
     public static final ResponseHandler NO_CUSTOMIZER_INSTANCE = new ResponseHandler();
 
     // TODO: we need to think about what other headers coming from the existing Response need to be ignored
-    private static final Set<String> IGNORED_HEADERS = Collections.singleton(ServerSerialisers.TRANSFER_ENCODING.toLowerCase(
-            Locale.ROOT));
+    private static final String TRANSFER_ENCODING_LOWER = ServerSerialisers.TRANSFER_ENCODING.toLowerCase(Locale.ROOT);
+    private static final String CONTENT_LENGTH_LOWER = HttpHeaders.CONTENT_LENGTH.toLowerCase(Locale.ROOT);
 
     private final List<ResponseBuilderCustomizer> responseBuilderCustomizers;
 
@@ -68,10 +68,12 @@ public class ResponseHandler implements ServerRestHandler {
                     }
 
                     // this is a weird case where the response comes from the rest-client
-                    if (responseBuilder.getEntity() == null) {
-                        if (responseImpl.getEntityStream() instanceof ByteArrayInputStream byteArrayInputStream) {
-                            responseBuilder.entity(byteArrayInputStream.readAllBytes());
-                        }
+                    if (!hasTransferEncoding(existing)
+                            && responseBuilder.getEntity() == null
+                            && responseImpl.getEntityStream() instanceof ByteArrayInputStream byteArrayInputStream) {
+                        byte[] entityBytes = byteArrayInputStream.readAllBytes();
+                        responseBuilder.entity(entityBytes);
+                        responseBuilder.header(HttpHeaders.CONTENT_LENGTH, entityBytes.length);
                     }
                 }
             }
@@ -110,10 +112,12 @@ public class ResponseHandler implements ServerRestHandler {
                     }
 
                     // this is a weird case where the response comes from the rest-client
-                    if (responseBuilder.getEntity() == null) {
-                        if (responseImpl.getEntityStream() instanceof ByteArrayInputStream byteArrayInputStream) {
-                            responseBuilder.entity(byteArrayInputStream.readAllBytes());
-                        }
+                    if (!hasTransferEncoding(existing)
+                            && responseBuilder.getEntity() == null
+                            && responseImpl.getEntityStream() instanceof ByteArrayInputStream byteArrayInputStream) {
+                        byte[] entityBytes = byteArrayInputStream.readAllBytes();
+                        responseBuilder.entity(entityBytes);
+                        responseBuilder.header(HttpHeaders.CONTENT_LENGTH, entityBytes.length);
                     }
                 }
             }
@@ -196,8 +200,11 @@ public class ResponseHandler implements ServerRestHandler {
         }
         var headers = response.getHeaders();
         if (headers != null) {
+            boolean hasTransferEncoding = hasTransferEncoding(response);
             for (String headerName : headers.keySet()) {
-                if (IGNORED_HEADERS.contains(headerName.toLowerCase(Locale.ROOT))) {
+                String headerLower = headerName.toLowerCase(Locale.ROOT);
+                if (hasTransferEncoding && CONTENT_LENGTH_LOWER.equals(headerLower)) {
+                    // Honor Transfer-Encoding precedence by discarding any Content-Length header
                     continue;
                 }
                 List<Object> headerValues = headers.get(headerName);
@@ -215,8 +222,10 @@ public class ResponseHandler implements ServerRestHandler {
         if (response.hasEntity()) {
             b.entity(response.getEntity());
         }
+        boolean hasTransferEncoding = hasTransferEncoding(response);
         for (String headerName : response.getHeaders().keySet()) {
-            if (IGNORED_HEADERS.contains(headerName.toLowerCase(Locale.ROOT))) {
+            String headerLower = headerName.toLowerCase(Locale.ROOT);
+            if (hasTransferEncoding && CONTENT_LENGTH_LOWER.equals(headerLower)) {
                 continue;
             }
             List<Object> headerValues = response.getHeaders().get(headerName);
@@ -225,6 +234,26 @@ public class ResponseHandler implements ServerRestHandler {
             }
         }
         return (ResponseBuilderImpl) b;
+    }
+
+    private static boolean hasTransferEncoding(Response response) {
+        return containsHeaderIgnoreCase(response.getHeaders(), ServerSerialisers.TRANSFER_ENCODING);
+    }
+
+    private static boolean hasTransferEncoding(RestResponse<?> response) {
+        return containsHeaderIgnoreCase(response.getHeaders(), ServerSerialisers.TRANSFER_ENCODING);
+    }
+
+    private static boolean containsHeaderIgnoreCase(MultivaluedMap<String, ?> headers, String header) {
+        if (headers == null || headers.isEmpty()) {
+            return false;
+        }
+        for (String name : headers.keySet()) {
+            if (header.equalsIgnoreCase(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public interface ResponseBuilderCustomizer {

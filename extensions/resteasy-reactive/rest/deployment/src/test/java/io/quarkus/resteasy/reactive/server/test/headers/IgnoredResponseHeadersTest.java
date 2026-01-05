@@ -48,6 +48,9 @@ public class IgnoredResponseHeadersTest {
         assertThat(responseHeaders.getList("Transfer-Encoding"))
                 .extracting("value")
                 .singleElement().isEqualTo("chunked");
+
+        assertThat(responseHeaders.getList("Content-Length"))
+                .isEmpty();
     }
 
     @Path("resource")
@@ -60,6 +63,7 @@ public class IgnoredResponseHeadersTest {
             return Response.ok(largeString())
                     .header("Transfer-Encoding", "chunked")
                     .header("Content-Type", "text/plain")
+                    .header("Content-Length", "42")
                     .build();
         }
 
@@ -70,6 +74,7 @@ public class IgnoredResponseHeadersTest {
             return RestResponse.ResponseBuilder.ok(largeString())
                     .header("Transfer-Encoding", "chunked")
                     .header("Content-Type", "text/plain")
+                    .header("Content-Length", "13")
                     .build();
         }
 

@@ -211,10 +211,8 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
             BuildProducer<DecoratorBuildItem> decorators) {
         final var config = config();
         final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-        if (config.externalizeInit()) {
-            InitTaskProcessor.process(deploymentTarget(), name, image, initTasks, config.initTaskDefaults(), config.initTasks(),
-                    jobs, initContainers, env, roles, roleBindings, serviceAccount, decorators);
-        }
+        InitTaskProcessor.process(deploymentTarget(), name, image, initTasks, config.initTaskDefaults(), config.initTasks(),
+                jobs, initContainers, env, roles, roleBindings, serviceAccount, decorators);
     }
 
     /**

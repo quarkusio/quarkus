@@ -874,6 +874,74 @@ quarkus.http.auth.proactive=false <1>
 ----
 <1> Start authenticating an opening WebSocket handshake request only when the `io.quarkus.oidc.BearerTokenAuthentication` annotation is detected.
 
+==== Secure HTTP upgrade with the `@AuthorizationPolicy` annotation
+
+You can bind custom named `HttpSecurityPolicy` to a WebSocket endpoint with the `@AuthorizationPolicy` security annotation.
+The `@AuthorizationPolicy` security annotation can only be used to secure the HTTP upgrade, thus placing this annotation on WebSocket endpoint methods fails the build during the validation.
+
+.Example WebSocket endpoint with secured HTTP upgrade
+[source, java]
+----
+package io.quarkus.websockets.next.test.security;
+
+import io.quarkus.vertx.http.security.AuthorizationPolicy;
+import io.quarkus.websockets.next.OnTextMessage;
+import io.quarkus.websockets.next.WebSocket;
+
+@AuthorizationPolicy(name = "custom")   <1>
+@WebSocket(path = "/end")
+public class Endpoint {
+
+    @OnTextMessage
+    String echo(String message) {
+        return message;
+    }
+
+}
+----
+<1> Secure the HTTP upgrade with the `HttpSecurityPolicy` named `custom`.
+
+.Example custom `HttpSecurityPolicy`
+[source, java]
+----
+package io.quarkus.websockets.next.test.security;
+
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
+import io.smallrye.mutiny.Uni;
+import io.vertx.ext.web.RoutingContext;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class CustomHttpSecurityPolicy implements HttpSecurityPolicy {
+
+    @Override
+    public Uni<CheckResult> checkPermission(RoutingContext routingContext, Uni<SecurityIdentity> identity,
+                                            AuthorizationRequestContext requestContext) {
+        if (customRequestAuthorization(routingContext)) {
+            return CheckResult.permit();
+        }
+        return CheckResult.deny();
+    }
+
+    @Override
+    public String name() {
+        return "custom";    <1>
+    }
+
+    private static boolean customRequestAuthorization(RoutingContext routingContext) {
+        // here comes your custom authorization check
+        // for example, you can check headers:
+        String authorization = routingContext.request().getHeader("Authorization");
+        return verifyAuthorization(authorization);
+    }
+
+}
+----
+<1> The `custom` name must match the name specified with the `io.quarkus.vertx.http.security.AuthorizationPolicy#name` attribute.
+
+See also the xref:security-authorize-web-endpoints-reference.adoc#custom-http-security-policy[Custom HttpSecurityPolicy] section of the Authorization of web endpoints guide for more information about custom policies.
+
 [[secure-callback-methods]]
 ==== Secure WebSocket endpoint callback methods
 

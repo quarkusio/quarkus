@@ -1,16 +1,15 @@
 package io.quarkus.oidc.client.graphql;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusDevModeTest;
-import io.quarkus.test.common.QuarkusTestResource;
-import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 import io.restassured.RestAssured;
 
-@QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
 public class GraphQLClientUsingOidcClientTest {
 
     private static final Class<?>[] testClasses = {
@@ -51,12 +50,40 @@ public class GraphQLClientUsingOidcClientTest {
 
     @Test
     public void dynamicClientWithDefault() {
-        // dynamic clients should always resort to the default (`quarkus.oidc-client-graphql.client-name`),
-        // because currently we don't have a way to override it
+        // dynamic clients without more specific configuration should always resort to the default
+        // OIDC client configured with the `quarkus.oidc-client-graphql.client-name` property
         RestAssured.when().get("/oidc-graphql-client/default-dynamic")
                 .then()
                 .statusCode(200)
                 .body(equalTo("alice"));
     }
 
+    @Test
+    void dynamicClientsWithExplicitlyAssignedOidcClient() {
+        // expect 'jdoe' as we configured 'quarkus.oidc-client-graphql.jdoe-dynamic.client-name=doe'
+        RestAssured.when().get("/oidc-graphql-client/jdoe-dynamic")
+                .then()
+                .statusCode(200)
+                .body(equalTo("jdoe"));
+        // expect 'admin' as we configured 'quarkus.oidc-client-graphql.admin-dynamic.client-name=admin'
+        RestAssured.when().get("/oidc-graphql-client/admin-dynamic")
+                .then()
+                .statusCode(200)
+                .body(equalTo("admin"));
+    }
+
+    @Test
+    void testTokenNotRenewedOnEveryCall() {
+        String accessToken1 = getAccessTokenUsedByGraphQLClient();
+        String accessToken2 = getAccessTokenUsedByGraphQLClient();
+        assertEquals(accessToken1, accessToken2, "Expected that GraphQL client will reuse the same access token");
+    }
+
+    private static String getAccessTokenUsedByGraphQLClient() {
+        return RestAssured.when().get("/oidc-graphql-client/access-token")
+                .then()
+                .statusCode(200)
+                .body(Matchers.notNullValue())
+                .extract().asString();
+    }
 }

@@ -30,6 +30,8 @@ import org.gradle.testkit.runner.BuildTask;
 import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.testkit.runner.TaskOutcome;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -99,6 +101,7 @@ public class CachingTest {
     }
 
     @Test
+    @DisabledOnOs(OS.WINDOWS)
     void dotEnvChangeInvalidatesBuild() throws Exception {
         var dotEnvFile = Paths.get(System.getProperty("user.dir"), ".env");
         // If the local environment has a ~/.env file, then skip this test - do not mess up a user's environment.

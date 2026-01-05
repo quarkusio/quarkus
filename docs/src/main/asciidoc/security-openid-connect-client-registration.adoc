@@ -521,6 +521,7 @@ import io.quarkus.arc.Unremovable;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcEndpoint.Type;
 import io.quarkus.oidc.common.OidcRequestFilter;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonObject;
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -531,11 +532,12 @@ public class ClientRegistrationRequestFilter implements OidcRequestFilter {
     private static final Logger LOG = Logger.getLogger(ClientRegistrationRequestFilter.class);
 
     @Override
-    public void filter(OidcRequestContext rc) {
+    public Uni<Void> filter(OidcRequestFilterContext rc) {
         JsonObject body = rc.requestBody().toJsonObject();
         if ("Default Client".equals(body.getString("client_name"))) { <2>
             LOG.debug("'Default Client' registration request");
         }
+        return Uni.createFrom().voidItem();
     }
 
 }
@@ -558,8 +560,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcEndpoint.Type;
-import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.buffer.Buffer;
 
@@ -569,13 +571,14 @@ import io.vertx.mutiny.core.buffer.Buffer;
 public class ClientRegistrationReRequestFilter implements OidcRequestFilter {
 
     @Override
-    public void filter(OidcRequestContext rc) {
+    public Uni<Void> filter(OidcRequestFilterContext rc) {
         // Update the client name
         JsonObject body = rc.requestBody().toJsonObject();
         if ("Dynamic Tenant Client".equals(body.getString("client_name"))) {
             body.put("client_name", "Registered Dynamic Tenant Client");
             rc.requestBody(Buffer.buffer(body.toString()));
         }
+        return Uni.createFrom().voidItem();
     }
 }
 ----
@@ -599,6 +602,7 @@ import io.quarkus.arc.Unremovable;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcEndpoint.Type;
 import io.quarkus.oidc.common.OidcResponseFilter;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonObject;
 
 @ApplicationScoped
@@ -608,13 +612,14 @@ public class ClientRegistrationResponseFilter implements OidcResponseFilter {
     private static final Logger LOG = Logger.getLogger(ClientRegistrationResponseFilter.class);
 
     @Override
-    public void filter(OidcResponseContext rc) {
+    public Uni<Void> filter(OidcResponseFilterContext rc) {
         String contentType = rc.responseHeaders().get("Content-Type"); <2>
         JsonObject body = rc.responseBody().toJsonObject();
         if (contentType.startsWith("application/json")
                 && "Default Client".equals(body.getString("client_name"))) { <3>
             LOG.debug("'Default Client' has been registered");
         }
+        return Uni.createFrom().voidItem();
     }
 
 }
@@ -638,6 +643,7 @@ import io.quarkus.arc.Unremovable;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcEndpoint.Type;
 import io.quarkus.oidc.common.OidcResponseFilter;
+import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
 @Unremovable
@@ -646,12 +652,13 @@ public class RegisteredClientResponseFilter implements OidcResponseFilter {
     private static final Logger LOG = Logger.getLogger(RegisteredClientResponseFilter.class);
 
     @Override
-    public void filter(OidcResponseContext rc) {
+    public Uni<Void> filter(OidcResponseFilterContext rc) {
         String contentType = rc.responseHeaders().get("Content-Type"); <2>
         if (contentType.startsWith("application/json")
                 && "Default Client Updated".equals(rc.responseBody().toJsonObject().getString("client_name"))) { <3>
             LOG.debug("Registered 'Default Client' has had its name updated to 'Default Client Updated'");
         }
+        return Uni.createFrom().voidItem();
     }
 
 }
@@ -675,8 +682,8 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcEndpoint.Type;
-import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcResponseFilter;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.buffer.Buffer;
 
@@ -686,13 +693,14 @@ import io.vertx.mutiny.core.buffer.Buffer;
 public class ClientRegistrationResponseFilter implements OidcResponseFilter {
 
     @Override
-    public void filter(OidcResponseContext rc) {
+    public Uni<Void> filter(OidcResponseFilterContext rc) {
         // Update the client name
         JsonObject body = rc.responseBody().toJsonObject();
         if ("Registered Dynamic Tenant Client".equals(body.getString("client_name"))) {
             body.put("client_name", "Registered Dynamically Tenant Client");
             rc.responseContext(Buffer.buffer(body.toString()));
         }
+        return Uni.createFrom().voidItem();
     }
 }
 ----

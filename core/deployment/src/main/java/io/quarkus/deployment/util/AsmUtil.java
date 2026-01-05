@@ -12,25 +12,15 @@ import static org.objectweb.asm.Type.SHORT_TYPE;
 import static org.objectweb.asm.Type.VOID_TYPE;
 import static org.objectweb.asm.Type.getType;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
-import org.jboss.jandex.ArrayType;
-import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.ParameterizedType;
-import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
-import org.jboss.jandex.TypeVariable;
-import org.jboss.jandex.TypeVariableReference;
-import org.jboss.jandex.UnresolvedTypeVariable;
-import org.jboss.jandex.WildcardType;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
@@ -77,26 +67,6 @@ public class AsmUtil {
         return WRAPPERS.get(primitive.getSort());
     }
 
-    /**
-     * @deprecated use {@link MethodInfo#genericSignatureIfRequired()}
-     */
-    @Deprecated(since = "3.1", forRemoval = true)
-    public static String getSignatureIfRequired(MethodInfo method) {
-        return method.genericSignatureIfRequired();
-    }
-
-    /**
-     * @deprecated use {@link MethodInfo#genericSignatureIfRequired(Function)}
-     */
-    @Deprecated(since = "3.1", forRemoval = true)
-    public static String getSignatureIfRequired(MethodInfo method, Function<String, String> typeArgMapper) {
-        if (!method.requiresGenericSignature()) {
-            return null;
-        }
-
-        return getSignature(method, typeArgMapper);
-    }
-
     private static boolean hasThrowsSignature(MethodInfo method) {
         // JVMS 16, chapter 4.7.9.1. Signatures:
         //
@@ -117,222 +87,6 @@ public class AsmUtil {
             }
         }
         return false;
-    }
-
-    /**
-     * @deprecated use {@link MethodInfo#genericSignature(Function)}
-     */
-    @Deprecated(since = "3.1", forRemoval = true)
-    public static String getSignature(MethodInfo method, Function<String, String> typeArgMapper) {
-        // for grammar, see JVMS 16, chapter 4.7.9.1. Signatures
-
-        StringBuilder signature = new StringBuilder();
-
-        if (!method.typeParameters().isEmpty()) {
-            signature.append('<');
-            for (TypeVariable typeParameter : method.typeParameters()) {
-                typeParameter(typeParameter, signature, typeArgMapper);
-            }
-            signature.append('>');
-        }
-
-        signature.append('(');
-        for (Type type : method.parameterTypes()) {
-            toSignature(signature, type, typeArgMapper, false);
-        }
-        signature.append(')');
-
-        toSignature(signature, method.returnType(), typeArgMapper, false);
-
-        if (hasThrowsSignature(method)) {
-            for (Type exception : method.exceptions()) {
-                signature.append('^');
-                toSignature(signature, exception, typeArgMapper, false);
-            }
-        }
-
-        return signature.toString();
-    }
-
-    private static void typeParameter(TypeVariable typeParameter, StringBuilder result,
-            Function<String, String> typeArgMapper) {
-        result.append(typeParameter.identifier());
-
-        if (hasImplicitObjectBound(typeParameter)) {
-            result.append(':');
-        }
-        for (Type bound : typeParameter.bounds()) {
-            result.append(':');
-            toSignature(result, bound, typeArgMapper, false);
-        }
-    }
-
-    private static boolean hasImplicitObjectBound(TypeVariable typeParameter) {
-        // TODO is there a better way? :-/
-        boolean result = false;
-        try {
-            Method method = TypeVariable.class.getDeclaredMethod("hasImplicitObjectBound");
-            method.setAccessible(true);
-            result = (Boolean) method.invoke(typeParameter);
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException(e);
-        }
-        return result;
-    }
-
-    /**
-     * @deprecated use {@link MethodInfo#descriptor(Function)}
-     */
-    @Deprecated(since = "3.1", forRemoval = true)
-    public static String getDescriptor(MethodInfo method, Function<String, String> typeArgMapper) {
-        List<Type> parameters = method.parameterTypes();
-
-        StringBuilder descriptor = new StringBuilder("(");
-        for (Type type : parameters) {
-            toSignature(descriptor, type, typeArgMapper, true);
-        }
-        descriptor.append(")");
-        toSignature(descriptor, method.returnType(), typeArgMapper, true);
-        return descriptor.toString();
-    }
-
-    /**
-     * @deprecated use {@link Type#descriptor(Function)}
-     */
-    @Deprecated(since = "3.1", forRemoval = true)
-    public static String getDescriptor(Type type, Function<String, String> typeArgMapper) {
-        StringBuilder sb = new StringBuilder();
-        toSignature(sb, type, typeArgMapper, true);
-        return sb.toString();
-    }
-
-    /**
-     * @deprecated use {@link org.jboss.jandex.GenericSignature#forType(Type, Function, StringBuilder)}
-     */
-    @Deprecated(since = "3.1", forRemoval = true)
-    public static String getSignature(Type type, Function<String, String> typeArgMapper) {
-        StringBuilder sb = new StringBuilder();
-        toSignature(sb, type, typeArgMapper, false);
-        return sb.toString();
-    }
-
-    private static void toSignature(StringBuilder sb, Type type, Function<String, String> typeArgMapper, boolean erased) {
-        switch (type.kind()) {
-            case ARRAY:
-                ArrayType arrayType = type.asArrayType();
-                for (int i = 0; i < arrayType.dimensions(); i++) {
-                    sb.append('[');
-                }
-                toSignature(sb, arrayType.constituent(), typeArgMapper, erased);
-                break;
-            case CLASS:
-                sb.append('L').append(type.asClassType().name().toString('/')).append(';');
-                break;
-            case PARAMETERIZED_TYPE:
-                ParameterizedType parameterizedType = type.asParameterizedType();
-                Type owner = parameterizedType.owner();
-                if (owner != null && owner.kind() == Kind.PARAMETERIZED_TYPE) {
-                    toSignature(sb, owner, typeArgMapper, erased);
-                    // the typeSignature call on previous line always takes the PARAMETERIZED_TYPE branch,
-                    // so at this point, result ends with a ';', which we just replace with '.'
-                    assert sb.charAt(sb.length() - 1) == ';';
-                    sb.setCharAt(sb.length() - 1, '.');
-                    sb.append(parameterizedType.name().local());
-                } else {
-                    sb.append('L').append(parameterizedType.name().toString('/'));
-                }
-                if (!erased && !parameterizedType.arguments().isEmpty()) {
-                    sb.append('<');
-                    for (Type argument : parameterizedType.arguments()) {
-                        toSignature(sb, argument, typeArgMapper, erased);
-                    }
-                    sb.append('>');
-                }
-                sb.append(';');
-                break;
-            case PRIMITIVE:
-                Primitive primitive = type.asPrimitiveType().primitive();
-                switch (primitive) {
-                    case BOOLEAN:
-                        sb.append('Z');
-                        break;
-                    case BYTE:
-                        sb.append('B');
-                        break;
-                    case CHAR:
-                        sb.append('C');
-                        break;
-                    case DOUBLE:
-                        sb.append('D');
-                        break;
-                    case FLOAT:
-                        sb.append('F');
-                        break;
-                    case INT:
-                        sb.append('I');
-                        break;
-                    case LONG:
-                        sb.append('J');
-                        break;
-                    case SHORT:
-                        sb.append('S');
-                        break;
-                }
-                break;
-            case TYPE_VARIABLE:
-                TypeVariable typeVariable = type.asTypeVariable();
-                String mappedSignature = typeArgMapper.apply(typeVariable.identifier());
-                if (mappedSignature != null) {
-                    sb.append(mappedSignature);
-                } else if (erased) {
-                    toSignature(sb, typeVariable.bounds().get(0), typeArgMapper, erased);
-                } else {
-                    sb.append('T').append(typeVariable.identifier()).append(';');
-                }
-                break;
-            case UNRESOLVED_TYPE_VARIABLE:
-                UnresolvedTypeVariable unresolvedTypeVariable = type.asUnresolvedTypeVariable();
-                String mappedSignature2 = typeArgMapper.apply(unresolvedTypeVariable.identifier());
-                if (mappedSignature2 != null) {
-                    sb.append(mappedSignature2);
-                } else if (erased) {
-                    // TODO ???
-                } else {
-                    sb.append("T").append(unresolvedTypeVariable.identifier()).append(";");
-                }
-                break;
-            case TYPE_VARIABLE_REFERENCE:
-                TypeVariableReference typeVariableReference = type.asTypeVariableReference();
-                String mappedSignature3 = typeArgMapper.apply(typeVariableReference.identifier());
-                if (mappedSignature3 != null) {
-                    sb.append(mappedSignature3);
-                } else if (erased) {
-                    // TODO ???
-                } else {
-                    sb.append("T").append(typeVariableReference.identifier()).append(";");
-                }
-                break;
-            case VOID:
-                sb.append('V');
-                break;
-            case WILDCARD_TYPE:
-                if (!erased) {
-                    WildcardType wildcardType = type.asWildcardType();
-                    if (wildcardType.superBound() != null) {
-                        sb.append('-');
-                        toSignature(sb, wildcardType.superBound(), typeArgMapper, erased);
-                    } else if (ClassType.OBJECT_TYPE.equals(wildcardType.extendsBound())) {
-                        sb.append('*');
-                    } else {
-                        sb.append('+');
-                        toSignature(sb, wildcardType.extendsBound(), typeArgMapper, erased);
-                    }
-                }
-                break;
-            default:
-                break;
-
-        }
     }
 
     /**

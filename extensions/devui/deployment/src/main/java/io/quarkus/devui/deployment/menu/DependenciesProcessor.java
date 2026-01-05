@@ -25,7 +25,7 @@ import io.quarkus.devui.spi.page.Page;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
-import io.smallrye.config.DefaultValuesConfigSource;
+import io.smallrye.config.SmallRyeConfig;
 
 public class DependenciesProcessor {
 
@@ -91,10 +91,10 @@ public class DependenciesProcessor {
     }
 
     private boolean isEnabled() {
-        var value = ConfigProvider.getConfig().getConfigValue("quarkus.bootstrap.incubating-model-resolver");
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        var value = config.getConfigValue("quarkus.bootstrap.incubating-model-resolver");
         // if it's not false and if it's false it doesn't come from the default value
-        return value == null || !"false".equals(value.getValue())
-                || DefaultValuesConfigSource.NAME.equals(value.getSourceName());
+        return value == null || !"false".equals(value.getValue()) || value.isDefault();
     }
 
     private void buildTree(ApplicationModel model, Root root, Optional<Set<String>> allGavs, Optional<String> toTarget) {

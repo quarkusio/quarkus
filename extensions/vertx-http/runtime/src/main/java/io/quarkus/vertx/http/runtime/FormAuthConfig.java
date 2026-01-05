@@ -2,7 +2,10 @@ package io.quarkus.vertx.http.runtime;
 
 import java.time.Duration;
 import java.util.Optional;
+import java.util.Set;
 
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 
 /**
@@ -25,6 +28,15 @@ public interface FormAuthConfig {
     Optional<String> loginPage();
 
     /**
+     * List of query parameters that should be passed through when Quarkus redirects requests to the login page.
+     * For example, if a request to the `/secured-path?query_param=1&other_query_param=2` is redirected
+     * on the authentication failure to the login page and this property is set to the `other_query_param`,
+     * then the resulting redirect path will be `/login.html?other_query_param=2`.
+     * By default, no request query parameters are passed through.
+     */
+    Optional<Set<@WithConverter(TrimmedStringConverter.class) String>> loginPageQueryParams();
+
+    /**
      * The username field name.
      */
     @WithDefault("j_username")
@@ -43,11 +55,33 @@ public interface FormAuthConfig {
     Optional<String> errorPage();
 
     /**
+     * List of query parameters that should be passed through when Quarkus redirects requests to the error page.
+     * For example, if the POST request to the `/j_security_check?query_param=1&other_query_param=2` is redirected
+     * on the authentication failure to the error page and this property is set to the `other_query_param`,
+     * then the resulting redirect path will be `/error.html?other_query_param=2`.
+     * By default, only query parameters configured with the `quarkus.http.auth.form.login-page-query-params` property are
+     * passed through.
+     */
+    @WithDefault("${quarkus.http.auth.form.login-page-query-params:}")
+    Optional<Set<@WithConverter(TrimmedStringConverter.class) String>> errorPageQueryParams();
+
+    /**
      * The landing page to redirect to if there is no saved page to redirect back to.
      * Redirect to landing page can be disabled by setting `quarkus.http.auth.form.landing-page=`.
      */
     @WithDefault("/index.html")
     Optional<String> landingPage();
+
+    /**
+     * List of query parameters that should be passed through when Quarkus redirects requests to the landing page.
+     * For example, if the POST request to the `/j_security_check?query_param=1&other_query_param=2` is redirected
+     * on the authentication success to the landing page and this property is set to the `other_query_param`,
+     * then the resulting redirect path will be `/index.html?other_query_param=2`.
+     * By default, only query parameters configured with the `quarkus.http.auth.form.login-page-query-params` property are
+     * passed through.
+     */
+    @WithDefault("${quarkus.http.auth.form.login-page-query-params:}")
+    Optional<Set<@WithConverter(TrimmedStringConverter.class) String>> landingPageQueryParams();
 
     /**
      * Option to disable redirect to landingPage if there is no saved page to redirect back to. Form Auth POST is followed

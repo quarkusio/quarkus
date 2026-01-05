@@ -1,11 +1,16 @@
 package io.quarkus.websockets.next.deployment;
 
 import static io.quarkus.arc.processor.DotNames.EVENT;
+import static io.quarkus.arc.processor.DotNames.OBJECT;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.security.spi.SecurityTransformer.AuthorizationType.AUTHORIZATION_POLICY;
 import static io.quarkus.security.spi.SecurityTransformer.AuthorizationType.SECURITY_CHECK;
 import static io.quarkus.security.spi.SecurityTransformerBuildItem.createSecurityTransformer;
 import static io.quarkus.vertx.http.deployment.EagerSecurityInterceptorClassesBuildItem.collectInterceptedClasses;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toSet;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
 
@@ -112,13 +117,16 @@ import io.quarkus.security.spi.SecurityTransformer;
 import io.quarkus.security.spi.SecurityTransformerBuildItem;
 import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
+import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorClassesBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
+import io.quarkus.vertx.http.security.AuthorizationPolicy;
 import io.quarkus.websockets.next.HttpUpgradeCheck;
 import io.quarkus.websockets.next.InboundProcessingMode;
 import io.quarkus.websockets.next.WebSocketClientConnection;
@@ -783,12 +791,29 @@ public class WebSocketProcessor {
         return new EndpointSecurityChecksBuildItem(endpointIdToSecurityCheck);
     }
 
+    @BuildStep
+    AuthorizationPolicyToEndpointsBuildItem collectEndpointAuthorizationPolicies(BeanArchiveIndexBuildItem indexItem,
+            Capabilities capabilities, List<WebSocketEndpointBuildItem> endpoints,
+            Optional<SecurityTransformerBuildItem> securityTransformerBuildItem) {
+        final Map<String, Set<String>> policyNameToEndpoints;
+        if (capabilities.isMissing(Capability.SECURITY)) {
+            policyNameToEndpoints = Map.of();
+        } else {
+            SecurityTransformer securityTransformer = createSecurityTransformer(indexItem.getIndex(),
+                    securityTransformerBuildItem);
+            policyNameToEndpoints = collectEndpointAuthorizationPolicies(securityTransformer, endpoints, indexItem.getIndex());
+        }
+        return new AuthorizationPolicyToEndpointsBuildItem(policyNameToEndpoints);
+    }
+
     @Record(RUNTIME_INIT) // needs runtime config
     @BuildStep
     void createSecurityHttpUpgradeCheck(BuildProducer<SyntheticBeanBuildItem> producer,
-            EndpointSecurityChecksBuildItem endpointSecurityChecks, WebSocketServerRecorder recorder) {
+            EndpointSecurityChecksBuildItem endpointSecurityChecks, WebSocketServerRecorder recorder,
+            AuthorizationPolicyToEndpointsBuildItem authorizationPolicyToEndpoints) {
         var endpointIdToSecurityCheck = endpointSecurityChecks.endpointIdToSecurityCheck;
-        if (!endpointIdToSecurityCheck.isEmpty()) {
+        var policyNameToEndpoints = authorizationPolicyToEndpoints.policyNameToEndpoints;
+        if (!endpointIdToSecurityCheck.isEmpty() || !policyNameToEndpoints.isEmpty()) {
             producer.produce(SyntheticBeanBuildItem
                     .configure(SecurityHttpUpgradeCheck.class)
                     .types(HttpUpgradeCheck.class)
@@ -799,7 +824,9 @@ public class WebSocketProcessor {
                     .addInjectionPoint(ParameterizedType.create(EVENT, ClassType.create(AuthorizationFailureEvent.class)))
                     .addInjectionPoint(ParameterizedType.create(EVENT, ClassType.create(AuthorizationSuccessEvent.class)))
                     .addInjectionPoint(ClassType.create(WebSocketsServerRuntimeConfig.class))
-                    .createWith(recorder.createSecurityHttpUpgradeCheck(endpointIdToSecurityCheck))
+                    .addInjectionPoint(ClassType.create(BlockingSecurityExecutor.class))
+                    .addInjectionPoint(ParameterizedType.create(Instance.class, ClassType.create(HttpSecurityPolicy.class)))
+                    .createWith(recorder.createSecurityHttpUpgradeCheck(endpointIdToSecurityCheck, policyNameToEndpoints))
                     .done());
         }
     }
@@ -916,6 +943,56 @@ public class WebSocketProcessor {
                     }
                 })
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    private static Map<String, Set<String>> collectEndpointAuthorizationPolicies(SecurityTransformer securityTransformer,
+            List<WebSocketEndpointBuildItem> endpoints, IndexView index) {
+        long authorizationPoliciesCount = securityTransformer.getSecurityAnnotationNames(AUTHORIZATION_POLICY)
+                .stream().mapToLong(n -> securityTransformer.getAnnotations(n).size()).sum();
+        if (authorizationPoliciesCount == 0) {
+            return Map.of();
+        }
+
+        record PolicyToEndpoint(String policyName, String endpointId) {
+        }
+        return endpoints.stream()
+                .<PolicyToEndpoint> mapMulti((endpoint, consumer) -> {
+                    var beanName = endpoint.beanClassName();
+                    var beanClassInfo = index.getClassByName(beanName);
+                    if (securityTransformer.hasSecurityAnnotation(beanClassInfo, AUTHORIZATION_POLICY)) {
+                        var authorizationPolicyAnnotation = securityTransformer
+                                .findFirstSecurityAnnotation(beanClassInfo, AUTHORIZATION_POLICY).get();
+                        String policyName = authorizationPolicyAnnotation.value("name").asString();
+                        consumer.accept(new PolicyToEndpoint(policyName, endpoint.id));
+                    } else {
+                        // we document that security annotations that secure the HTTP upgrade must be on the endpoint class
+                        var superName = beanClassInfo.superName();
+                        while (superName != null && !OBJECT.equals(superName)) {
+                            var superClass = index.getClassByName(superName);
+                            if (superClass != null
+                                    && securityTransformer.hasSecurityAnnotation(superClass, AUTHORIZATION_POLICY)) {
+                                throw new IllegalStateException("""
+                                        WebSocket endpoint '%s' superclass '%s' is secured with the '%s' security annotation.
+                                        Only the HTTP upgrade can be secured with this annotation.
+                                        Please place the annotation on the endpoint class '%s' instead.
+                                        """.formatted(endpoint.id, superClass.name(), AuthorizationPolicy.class.getName(),
+                                        beanName));
+                            } else {
+                                superName = superClass == null ? null : superClass.superName();
+                            }
+                        }
+                    }
+                    beanClassInfo.methods().forEach(mi -> {
+                        if (securityTransformer.hasSecurityAnnotation(mi, AUTHORIZATION_POLICY)) {
+                            throw new IllegalStateException("""
+                                    WebSocket endpoint '%s' has method '%s' secured with the '%s' security annotation.
+                                    Only the HTTP upgrade can be secured with this annotation.
+                                    Please place the annotation on the endpoint class instead.
+                                    """.formatted(beanName, mi.name(), AuthorizationPolicy.class.getName()));
+                        }
+                    });
+                })
+                .collect(groupingBy(PolicyToEndpoint::policyName, mapping(PolicyToEndpoint::endpointId, toSet())));
     }
 
     static String mergePath(String prefix, String path) {
@@ -1912,6 +1989,14 @@ public class WebSocketProcessor {
 
         private EndpointSecurityChecksBuildItem(Map<String, SecurityCheck> endpointIdToSecurityCheck) {
             this.endpointIdToSecurityCheck = endpointIdToSecurityCheck;
+        }
+    }
+
+    private static final class AuthorizationPolicyToEndpointsBuildItem extends SimpleBuildItem {
+        private final Map<String, Set<String>> policyNameToEndpoints;
+
+        private AuthorizationPolicyToEndpointsBuildItem(Map<String, Set<String>> policyNameToEndpoints) {
+            this.policyNameToEndpoints = Map.copyOf(policyNameToEndpoints);
         }
     }
 }

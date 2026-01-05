@@ -43,9 +43,8 @@ import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcEndpoint.Type;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
-import io.quarkus.oidc.common.OidcRequestFilter.OidcRequestContext;
+import io.quarkus.oidc.common.OidcRequestFilter.OidcRequestFilterContext;
 import io.quarkus.oidc.common.OidcResponseFilter;
-import io.quarkus.oidc.common.OidcResponseFilter.OidcResponseContext;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport.TlsConfigSupport;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials;
@@ -53,6 +52,7 @@ import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret;
 import io.quarkus.oidc.common.runtime.config.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.config.OidcCommonConfig.Tls.Verification;
+import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.tls.runtime.config.TlsConfigUtils;
@@ -85,6 +85,7 @@ public class OidcCommonUtils {
     static final String HTTP_SCHEME = "http";
 
     private static final Logger LOG = Logger.getLogger(OidcCommonUtils.class);
+    private static final BlockingTaskRunner<Void> VOID_BLOCKING_TASK_RUNNER = new BlockingTaskRunner<>();
 
     private OidcCommonUtils() {
 
@@ -157,9 +158,9 @@ public class OidcCommonUtils {
     }
 
     public static void setHttpClientOptions(OidcCommonConfig oidcConfig, HttpClientOptions options,
-            TlsConfigSupport tlsSupport) {
+            TlsConfigSupport tlsSupport, ProxyConfigurationRegistry proxyConfigurationRegistry) {
 
-        Optional<ProxyOptions> proxyOpt = toProxyOptions(oidcConfig.proxy());
+        Optional<ProxyOptions> proxyOpt = toProxyOptions(oidcConfig.proxy(), proxyConfigurationRegistry);
         if (proxyOpt.isPresent()) {
             options.setProxyOptions(proxyOpt.get());
         }
@@ -281,26 +282,62 @@ public class OidcCommonUtils {
         return connectionDelayInSecs * 1000;
     }
 
-    public static Optional<ProxyOptions> toProxyOptions(OidcCommonConfig.Proxy proxyConfig) {
+    public static Optional<ProxyOptions> toProxyOptions(OidcCommonConfig.Proxy oidcProxyConfig,
+            ProxyConfigurationRegistry proxyConfigurationRegistry) {
         // Proxy is enabled if (at least) "host" is configured.
-        if (!proxyConfig.host().isPresent()) {
+        if (oidcProxyConfig.host().isEmpty() && oidcProxyConfig.proxyConfigurationName().isEmpty()) {
             return Optional.empty();
         }
+
+        final String hostProperty;
+        final int portProperty;
+        final Optional<String> usernameProperty;
+        final Optional<String> passwordProperty;
+        final Optional<Duration> proxyConnectTimeoutProperty;
+        if (oidcProxyConfig.proxyConfigurationName().isPresent()) {
+            var maybeProxyConfig = proxyConfigurationRegistry.get(oidcProxyConfig.proxyConfigurationName());
+            if (maybeProxyConfig.isEmpty()) {
+                throw new ConfigurationException("Cannot find the Proxy registry configuration '%s'"
+                        .formatted(oidcProxyConfig.proxyConfigurationName().get()));
+            } else {
+                var proxyRegistryConfig = maybeProxyConfig.get().assertHttpType();
+                hostProperty = proxyRegistryConfig.host();
+                portProperty = proxyRegistryConfig.port();
+                usernameProperty = proxyRegistryConfig.username();
+                passwordProperty = proxyRegistryConfig.password();
+                proxyConnectTimeoutProperty = proxyRegistryConfig.proxyConnectTimeout();
+                if (proxyRegistryConfig.nonProxyHosts().isPresent()) {
+                    throw new ConfigurationException(
+                            "The OIDC proxy configuration currently does not support the 'quarkus.proxy.\""
+                                    + oidcProxyConfig.proxyConfigurationName().get() + "\".non-proxy-hosts' property");
+                }
+            }
+        } else {
+            hostProperty = oidcProxyConfig.host().get();
+            portProperty = oidcProxyConfig.port();
+            usernameProperty = oidcProxyConfig.username();
+            passwordProperty = oidcProxyConfig.password();
+            proxyConnectTimeoutProperty = Optional.empty();
+        }
+
         JsonObject jsonOptions = new JsonObject();
         // Vert.x Client currently does not expect a host having a scheme but keycloak-authorization expects scheme and host.
         // Having a dedicated scheme property is probably better, but since it is property is not taken into account in Vertx Client
         // it does not really make sense as it can send a misleading message that users can choose between `http` and `https`.
-        String host = URI.create(proxyConfig.host().get()).getHost();
+        String host = URI.create(hostProperty).getHost();
         if (host == null) {
-            host = proxyConfig.host().get();
+            host = hostProperty;
         }
         jsonOptions.put("host", host);
-        jsonOptions.put("port", proxyConfig.port());
-        if (proxyConfig.username().isPresent()) {
-            jsonOptions.put("username", proxyConfig.username().get());
+        jsonOptions.put("port", portProperty);
+        if (usernameProperty.isPresent()) {
+            jsonOptions.put("username", usernameProperty.get());
         }
-        if (proxyConfig.password().isPresent()) {
-            jsonOptions.put("password", proxyConfig.password().get());
+        if (passwordProperty.isPresent()) {
+            jsonOptions.put("password", passwordProperty.get());
+        }
+        if (proxyConnectTimeoutProperty.isPresent()) {
+            jsonOptions.put("connectTimeout", proxyConnectTimeoutProperty.get());
         }
         return Optional.of(new ProxyOptions(jsonOptions));
     }
@@ -571,31 +608,28 @@ public class OidcCommonUtils {
         if (!cookies.isEmpty()) {
             request.putHeader(COOKIE_REQUEST_HEADER, cookies);
         }
-        if (!requestFilters.isEmpty()) {
-            OidcRequestContext context = new OidcRequestContext(request, null, requestProps);
-            for (OidcRequestFilter filter : getMatchingOidcRequestFilters(requestFilters, OidcEndpoint.Type.DISCOVERY)) {
-                filter.filter(context);
-            }
-        }
-        return sendRequest(vertx, request, blockingDnsLookup).onItem().transform(resp -> {
-
-            Buffer buffer = filterHttpResponse(requestProps, resp, responseFilters, OidcEndpoint.Type.DISCOVERY);
-
-            if (resp.statusCode() == 200) {
-                return buffer.toJsonObject();
-            } else if (resp.statusCode() == 302) {
-                throw createOidcClientRedirectException(resp);
-            } else {
-                String errorMessage = buffer != null ? buffer.toString() : null;
-                if (errorMessage != null && !errorMessage.isEmpty()) {
-                    LOG.warnf("Discovery request %s has failed, status code: %d, error message: %s", discoveryUrl,
-                            resp.statusCode(), errorMessage);
-                } else {
-                    LOG.warnf("Discovery request %s has failed, status code: %d", discoveryUrl, resp.statusCode());
-                }
-                throw new OidcEndpointAccessException(resp.statusCode());
-            }
-        }).onFailure(oidcEndpointNotAvailable())
+        return applyRequestFilters(requestFilters, OidcEndpoint.Type.DISCOVERY, request, requestProps, null)
+                .chain(() -> sendRequest(vertx, request, blockingDnsLookup))
+                .flatMap(resp -> filterHttpResponse(requestProps, resp, responseFilters, Type.DISCOVERY)
+                        .map(buffer -> {
+                            if (resp.statusCode() == 200) {
+                                return buffer.toJsonObject();
+                            } else if (resp.statusCode() == 302) {
+                                throw createOidcClientRedirectException(resp);
+                            } else {
+                                String errorMessage = buffer != null ? buffer.toString() : null;
+                                if (errorMessage != null && !errorMessage.isEmpty()) {
+                                    LOG.warnf("Discovery request %s has failed, status code: %d, error message: %s",
+                                            discoveryUrl,
+                                            resp.statusCode(), errorMessage);
+                                } else {
+                                    LOG.warnf("Discovery request %s has failed, status code: %d", discoveryUrl,
+                                            resp.statusCode());
+                                }
+                                throw new OidcEndpointAccessException(resp.statusCode());
+                            }
+                        }))
+                .onFailure(oidcEndpointNotAvailable())
                 .retry()
                 .withBackOff(CONNECTION_BACKOFF_DURATION, CONNECTION_BACKOFF_DURATION)
                 .expireIn(connectionDelayInMillisecs);
@@ -614,18 +648,29 @@ public class OidcCommonUtils {
         return new OidcRequestContextProperties(newProperties);
     }
 
-    public static Buffer filterHttpResponse(OidcRequestContextProperties requestProps,
+    public static Uni<Buffer> filterHttpResponse(OidcRequestContextProperties requestProps,
             HttpResponse<Buffer> resp, Map<Type, List<OidcResponseFilter>> responseFilters, OidcEndpoint.Type type) {
         Buffer responseBody = resp.body();
         if (!responseFilters.isEmpty()) {
-            OidcResponseContext context = new OidcResponseContext(requestProps, resp.statusCode(), resp.headers(),
-                    responseBody);
-            for (OidcResponseFilter filter : getMatchingOidcResponseFilters(responseFilters, type)) {
-                filter.filter(context);
+            var matchingResponseFilters = getMatchingOidcResponseFilters(responseFilters, type);
+            if (!matchingResponseFilters.isEmpty()) {
+                var context = new OidcResponseFilter.OidcResponseFilterContext(requestProps, resp.statusCode(), resp.headers(),
+                        responseBody);
+                return applyResponseFilters(matchingResponseFilters, 0, context)
+                        .replaceWith(() -> getResponseBuffer(requestProps, responseBody));
             }
-            return getResponseBuffer(requestProps, responseBody);
         }
-        return responseBody;
+        return Uni.createFrom().item(responseBody);
+    }
+
+    private static Uni<Void> applyResponseFilters(List<OidcResponseFilter> responseFilters, int index,
+            OidcResponseFilter.OidcResponseFilterContext context) {
+        if (responseFilters.size() == index) {
+            return Uni.createFrom().voidItem();
+        }
+
+        return responseFilters.get(index).filter(context)
+                .chain(() -> applyResponseFilters(responseFilters, index + 1, context));
     }
 
     public static Buffer getRequestBuffer(OidcRequestContextProperties requestProps, Buffer buffer) {
@@ -711,6 +756,35 @@ public class OidcCommonUtils {
             return map;
         }
         return Map.of();
+    }
+
+    public static Uni<HttpRequest<Buffer>> filterHttpRequest(OidcRequestContextProperties requestProps,
+            HttpRequest<Buffer> request, Buffer body,
+            Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters,
+            OidcEndpoint.Type type) {
+        return applyRequestFilters(requestFilters, type, request, requestProps, body).replaceWith(request);
+    }
+
+    private static Uni<Void> applyRequestFilters(Map<Type, List<OidcRequestFilter>> requestFilters,
+            Type type, HttpRequest<Buffer> request, OidcRequestContextProperties requestProps, Buffer body) {
+        if (!requestFilters.isEmpty()) {
+            var context = new OidcRequestFilterContext(request, body, requestProps);
+            var matchingRequestFilters = getMatchingOidcRequestFilters(requestFilters, type);
+            if (!matchingRequestFilters.isEmpty()) {
+                return applyRequestFilters(matchingRequestFilters, 0, context);
+            }
+        }
+        return Uni.createFrom().voidItem();
+    }
+
+    private static Uni<Void> applyRequestFilters(List<OidcRequestFilter> requestFilters, int index,
+            OidcRequestFilterContext context) {
+        if (requestFilters.size() == index) {
+            return Uni.createFrom().voidItem();
+        }
+
+        return requestFilters.get(index).filter(context)
+                .chain(() -> applyRequestFilters(requestFilters, index + 1, context));
     }
 
     public static List<OidcRequestFilter> getMatchingOidcRequestFilters(Map<OidcEndpoint.Type, List<OidcRequestFilter>> filters,
@@ -824,5 +898,12 @@ public class OidcCommonUtils {
             LOG.debugf("Invalid JSON content: %s", json);
             return null;
         }
+    }
+
+    public static Uni<Void> runBlocking(Runnable runnable) {
+        return VOID_BLOCKING_TASK_RUNNER.runBlocking(() -> {
+            runnable.run();
+            return null;
+        });
     }
 }

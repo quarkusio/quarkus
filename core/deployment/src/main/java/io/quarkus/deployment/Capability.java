@@ -41,6 +41,7 @@ public interface Capability {
 
     String JAXB = QUARKUS_PREFIX + ".jaxb";
     String JAXP = QUARKUS_PREFIX + ".jaxp";
+    String JFR = QUARKUS_PREFIX + ".jfr";
 
     String KOTLIN = QUARKUS_PREFIX + ".kotlin";
 
@@ -124,6 +125,7 @@ public interface Capability {
 
     String OIDC = QUARKUS_PREFIX + ".oidc";
     String OIDC_CLIENT = OIDC + ".client";
+    String OIDC_CLIENT_REGISTRATION = QUARKUS_PREFIX + ".oidc-client-registration";
 
     String KEYCLOAK_AUTHORIZATION = QUARKUS_PREFIX + ".keycloak.authorization";
 

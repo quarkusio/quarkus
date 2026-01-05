@@ -45,6 +45,7 @@
 :hibernate-search-version-major-minor: ${hibernate-search.majorVersion}.${hibernate-search.minorVersion}
 :hibernate-validator-version-major-minor: ${hibernate-validator.majorVersion}.${hibernate-validator.minorVersion}
 :jakarta-persistence-version-major-minor: ${jakarta-persistence.majorVersion}.${jakarta-persistence.minorVersion}
+:jakarta-data-version-major-minor: ${jakarta-data.majorVersion}.${jakarta-data.minorVersion}
 // .
 :quarkus-home-url: ${quarkus-home-url}
 :quarkus-org-url: https://github.com/quarkusio
@@ -73,6 +74,8 @@
 :hibernate-search-docs-url: https://docs.hibernate.org/search/{hibernate-search-version-major-minor}/reference/en-US/html_single/
 :hibernate-validator-docs-url: https://docs.hibernate.org/validator/{hibernate-validator-version-major-minor}/reference/en-US/html_single/
 :jakarta-persistence-spec-url: https://jakarta.ee/specifications/persistence/{jakarta-persistence-version-major-minor}/jakarta-persistence-spec-{jakarta-persistence-version-major-minor}
+:jakarta-persistence-javadocs-url: https://jakarta.ee/specifications/persistence/{jakarta-persistence-version-major-minor}/apidocs/jakarta.persistence/
+:jakarta-data-spec-url: https://jakarta.ee/specifications/data/{jakarta-data-version-major-minor}/jakarta-data-{jakarta-data-version-major-minor}
 // .
 :amazon-services-guide: https://docs.quarkiverse.io/quarkus-amazon-services/dev/index.html
 :config-consul-guide: https://docs.quarkiverse.io/quarkus-config-extensions/dev/consul.html

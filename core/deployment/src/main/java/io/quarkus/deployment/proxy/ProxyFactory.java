@@ -53,7 +53,7 @@ public class ProxyFactory<T> {
         if (!findConstructor(superClass, configuration.isAllowPackagePrivate(), true)) {
             throw new IllegalArgumentException(
                     "A proxy cannot be created for class " + this.superClassName
-                            + " because it does not declare a no-arg constructor");
+                            + " because it does not declare an accessible constructor");
         }
         if (Modifier.isFinal(superClass.getModifiers())) {
             throw new IllegalArgumentException(

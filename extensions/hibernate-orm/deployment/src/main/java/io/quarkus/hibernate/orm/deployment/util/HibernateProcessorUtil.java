@@ -7,6 +7,7 @@ import static org.hibernate.cfg.DialectSpecificSettings.ORACLE_APPLICATION_CONTI
 import static org.hibernate.cfg.DialectSpecificSettings.ORACLE_AUTONOMOUS_DATABASE;
 import static org.hibernate.cfg.DialectSpecificSettings.ORACLE_EXTENDED_STRING_SIZE;
 import static org.hibernate.cfg.DialectSpecificSettings.SQL_SERVER_COMPATIBILITY_LEVEL;
+import static org.hibernate.cfg.SchemaToolingSettings.STORAGE_ENGINE;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,7 +19,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Properties;
-import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -97,8 +97,7 @@ public final class HibernateProcessorUtil {
             HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDialect dialectConfig,
             List<DatabaseKindDialectBuildItem> dbKindDialectBuildItems,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
-            BiConsumer<String, String> puPropertiesCollector,
-            Set<String> storageEngineCollector) {
+            BiConsumer<String, String> puPropertiesCollector) {
         Optional<String> dialect = explicitDialect;
         Optional<String> dbProductName = Optional.empty();
         Optional<String> dbProductVersion = explicitDbMinVersion;
@@ -144,9 +143,7 @@ public final class HibernateProcessorUtil {
 
         handleDialectSpecificSettings(
                 persistenceUnitName,
-                systemProperties,
                 puPropertiesCollector,
-                storageEngineCollector,
                 dialectConfig,
                 supportedDbKind);
 
@@ -155,13 +152,10 @@ public final class HibernateProcessorUtil {
 
     private static void handleDialectSpecificSettings(
             String persistenceUnitName,
-            BuildProducer<SystemPropertyBuildItem> systemProperties,
             BiConsumer<String, String> puPropertiesCollector,
-            Set<String> storageEngineCollector,
             HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDialect dialectConfig,
             Optional<SupportedDatabaseKind> databaseKind) {
-        handleStorageEngine(databaseKind, persistenceUnitName, dialectConfig, storageEngineCollector,
-                systemProperties);
+        handleStorageEngine(databaseKind, persistenceUnitName, dialectConfig, puPropertiesCollector);
 
         if (dialectConfig.mariadb().bytesPerCharacter().isPresent()
                 || dialectConfig.mariadb().noBackslashEscapes().isPresent()) {
@@ -213,8 +207,7 @@ public final class HibernateProcessorUtil {
             Optional<SupportedDatabaseKind> supportedDatabaseKind,
             String persistenceUnitName,
             HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDialect dialectConfig,
-            Set<String> storageEngineCollector,
-            BuildProducer<SystemPropertyBuildItem> systemProperties) {
+            BiConsumer<String, String> puPropertiesCollector) {
 
         final String topLevelStorageEngine = dialectConfig.storageEngine().orElse(null);
 
@@ -234,9 +227,9 @@ public final class HibernateProcessorUtil {
                 && (supportedDatabaseKind.get() == SupportedDatabaseKind.MARIADB ||
                         supportedDatabaseKind.get() == SupportedDatabaseKind.MYSQL)) {
             if (mariaDbStorageEngine != null) {
-                addStorageEngine(storageEngineCollector, systemProperties, mariaDbStorageEngine);
+                addStorageEngine(mariaDbStorageEngine, puPropertiesCollector);
             } else if (mysqlDbStorageEngine != null) {
-                addStorageEngine(storageEngineCollector, systemProperties, mysqlDbStorageEngine);
+                addStorageEngine(mysqlDbStorageEngine, puPropertiesCollector);
             }
         } else {
             final String storageEngine;
@@ -247,11 +240,11 @@ public final class HibernateProcessorUtil {
             } else if (mariaDbStorageEngine != null) {
                 storageEngine = mariaDbStorageEngine;
                 storageEngineSource = HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName,
-                        "dialect.mariadb.storage-engine");
+                        "dialect.storage-engine");
             } else if (mysqlDbStorageEngine != null) {
                 storageEngine = mysqlDbStorageEngine;
                 storageEngineSource = HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName,
-                        "dialect.mysql.storage-engine");
+                        "dialect.storage-engine");
             } else {
                 storageEngine = null;
                 storageEngineSource = null;
@@ -264,17 +257,14 @@ public final class HibernateProcessorUtil {
                                     + " because the database is neither MySQL nor MariaDB.",
                             storageEngineSource);
                 } else {
-                    systemProperties.produce(new SystemPropertyBuildItem(AvailableSettings.STORAGE_ENGINE, storageEngine));
-                    storageEngineCollector.add(storageEngine);
+                    addStorageEngine(storageEngine, puPropertiesCollector);
                 }
             }
         }
     }
 
-    private static void addStorageEngine(Set<String> storageEngineCollector,
-            BuildProducer<SystemPropertyBuildItem> systemProperties, String mariaDbStorageEngine) {
-        storageEngineCollector.add(mariaDbStorageEngine);
-        systemProperties.produce(new SystemPropertyBuildItem(AvailableSettings.STORAGE_ENGINE, mariaDbStorageEngine));
+    private static void addStorageEngine(String storageEngine, BiConsumer<String, String> puPropertiesCollector) {
+        puPropertiesCollector.accept(STORAGE_ENGINE, storageEngine);
     }
 
     private static void applyOptionalStringSetting(

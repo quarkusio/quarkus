@@ -4,14 +4,14 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="jfr"]
-= Using Java Flight Recorder
+= Using JDK Flight Recorder
 include::_attributes.adoc[]
 :categories: observability
-:summary: This guide explains how Java Flight Recorder (JFR) can be extended to provide additional insight into your Quarkus application.
+:summary: This guide explains how JDK Flight Recorder (JFR) can be extended to provide additional insight into your Quarkus application.
 :topics: observability,jfr
 :extensions: io.quarkus:quarkus-jfr
 
-This guide explains how https://openjdk.org/jeps/328[Java Flight Recorder] (JFR) can be extended to provide additional insight into your Quarkus application.
+This guide explains how https://openjdk.org/jeps/328[Flight Recorder] can be extended to provide additional insight into your Quarkus application.
 JFR records various information from the Java standard API and JVM as events.
 By adding the Quarkus JFR extension, you can add custom Quarkus events to JFR. This will help you solve potential problems in your application.
 
@@ -99,7 +99,7 @@ We can launch the application with JFR configured to be enabled from the startup
 :dev-additional-parameters: -Djvm.args="-XX:StartFlightRecording=name=quarkus,dumponexit=true,filename=myrecording.jfr"
 include::{includes}/devtools/dev.adoc[]
 
-With the Java Flight Recorder and the application running, we can make a request to the provided endpoint:
+With the JDK Flight Recorder and the application running, we can make a request to the provided endpoint:
 
 [source,shell]
 ----
@@ -269,7 +269,7 @@ Extension::
 
 === Native Image
 
-Native executables supports Java Flight Recorder.
+Native executables supports JDK Flight Recorder.
 This extension also supports native executables.
 
 To enable JFR on native executables, it is usually built with `--enable-monitoring`.
@@ -329,7 +329,40 @@ include::{includes}/devtools/dev.adoc[]
 
 == Adding new events
 
-This section is for those who would like to add new events to this extension.
+This section is for extension authors who want to add new JFR events.
+
+=== Depending on the API module
+
+The Quarkus JFR extension separates the public API from the runtime implementation.
+As a result, other extensions can implement JFR-based instrumentation by depending only on the JFR API module, without adding a dependency on the Quarkus JFR extension implementation itself.
+
+At deployment time, an extension can detect whether the application has enabled the Quarkus JFR extension by using Quarkus capabilities:
+
+[source,java]
+----
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
+
+@BuildSteps
+class MyProcessor {
+
+    @BuildStep
+    void step(Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.JFR)) {
+            // The Quarkus JFR extension is enabled
+            // Register JFR-related build items, bytecode transformations, etc.
+        }
+    }
+}
+----
+
+This pattern allows your extension to:
+* compile against stable API types only, and
+* activate JFR instrumentation only when the Quarkus JFR extension is present in the application.
+
+=== Associating events by request
 
 We recommend that new events be associated with existing events.
 Associations are useful when looking at the details of a process that is taking a long time.
@@ -345,14 +378,17 @@ Datastore events are not implemented yet.
 The Quarkus JFR extension provides a Request ID for event association.
 See <<identifying-requests>> for more information on Request IDs.
 
-In specific code, the following two steps are required.
-First, implement `traceId` and `spanId` on the new event as follows
-The `@TraceIdRelational` and `@SpanIdRelational` attached to these events will provide the association.
+In code, you typically need the following two steps.
+
+==== 1) Add trace/span identifiers to your event
+
+Implement `traceId` and `spanId` on the new event as follows.
+The `@TraceIdRelational` and `@SpanIdRelational` annotations mark these fields as relational identifiers used for association.
 
 [source,java]
 ----
-import io.quarkus.jfr.runtime.SpanIdRelational;
-import io.quarkus.jfr.runtime.TraceIdRelational;
+import io.quarkus.jfr.api.SpanIdRelational;
+import io.quarkus.jfr.api.TraceIdRelational;
 import jdk.jfr.Description;
 import jdk.jfr.Event;
 import jdk.jfr.Label;
@@ -374,11 +410,13 @@ public class NewEvent extends Event {
 }
 ----
 
-Then you get the information to store in the event from the `IdProducer` object's `getTraceId()` and `getSpanId()`.
+==== 2) Populate the identifiers from the IdProducer
+
+Obtain the values to store in the event from an `IdProducer` and set them just before committing the event.
 
 [source,java]
 ----
-import io.quarkus.jfr.runtime.IdProducer;
+import io.quarkus.jfr.api.IdProducer;
 
 public class NewInterceptor {
 
@@ -392,11 +430,11 @@ public class NewInterceptor {
         // The process you want to measure
 
         event.end();
-        if (endEvent.shouldCommit()) {
+        if (event.shouldCommit()) {
             event.setTraceId(idProducer.getTraceId());
             event.setSpanId(idProducer.getSpanId());
             // call other setters which you want to add
-            endEvent.commit();
+            event.commit();
         }
     }
 }

@@ -13,7 +13,6 @@ public class InfinispanJsonRPCService {
     public String getConsoleDefaultLink() {
         InfinispanClientsContainer clientsContainer = Arc.container().instance(InfinispanClientsContainer.class).get();
         if (clientsContainer != null) {
-            LOG.info(clientsContainer.clientsInfo().get(0).serverUrl);
             return "http://" + clientsContainer.clientsInfo().get(0).serverUrl + "/console";
         }
         return "";

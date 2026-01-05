@@ -28,7 +28,6 @@ import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.config.ConfigValue;
-import io.smallrye.config.DefaultValuesConfigSource;
 import io.smallrye.config.Expressions;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
@@ -132,7 +131,7 @@ public final class EffectiveConfig {
                     // system properties to Gradle workers and, we loose the ability to determine if it was set by
                     // the user to evaluate deprecated configuration
                     if (configValue.getValue() != null && (!defaultNames.contains(configValue.getName())
-                            || !DefaultValuesConfigSource.NAME.equals(configValue.getConfigSourceName()))) {
+                            || !configValue.isDefault())) {
                         properties.put(propertyName, configValue.getValue());
                     }
                 }
@@ -156,7 +155,7 @@ public final class EffectiveConfig {
                         // system properties to Gradle workers and, we loose the ability to determine if it was set by
                         // the user to evaluate deprecated configuration
                         if (configValue.getValue() != null && (!defaultNames.contains(configValue.getName())
-                                || !DefaultValuesConfigSource.NAME.equals(configValue.getConfigSourceName()))) {
+                                || !configValue.isDefault())) {
                             properties.put(propertyName, configValue.getValue());
                         }
                     }

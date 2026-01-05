@@ -7,7 +7,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
-import io.quarkus.jfr.runtime.IdProducer;
+import io.quarkus.jfr.api.IdProducer;
 
 @Path("")
 @ApplicationScoped

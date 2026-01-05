@@ -1,5 +1,6 @@
 package io.quarkus.deployment.configuration;
 
+import static io.smallrye.config.ConfigMappings.propertyNamesMatcher;
 import static io.smallrye.config.ConfigMappings.ConfigClass.configClass;
 import static io.smallrye.config.Expressions.withoutExpansion;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE;
@@ -8,7 +9,6 @@ import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE_PARENT;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -30,14 +30,13 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.PropertiesUtil;
 import io.smallrye.common.constraint.Assert;
 import io.smallrye.config.ConfigMapping;
-import io.smallrye.config.ConfigMappings;
 import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.DefaultValuesConfigSource;
 import io.smallrye.config.EnvConfigSource;
 import io.smallrye.config.ProfileConfigSourceInterceptor;
 import io.smallrye.config.PropertiesConfigSource;
-import io.smallrye.config.PropertyName;
+import io.smallrye.config.PropertyNamesMatcher;
 import io.smallrye.config.SecretKeys;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
@@ -246,9 +245,9 @@ public final class BuildTimeConfigurationReader {
                 }
             }
 
-            Set<PropertyName> buildTimeNames = mappingsToNames(buildTimeMappings).keySet();
-            Set<PropertyName> buildTimeRunTimeNames = mappingsToNames(buildTimeRunTimeMappings).keySet();
-            Set<PropertyName> runTimeNames = mappingsToNames(runTimeMappings).keySet();
+            PropertyNamesMatcher buildTimeNamesMatcher = propertyNamesMatcher(buildTimeMappings);
+            PropertyNamesMatcher buildTimeRunTimeNamesMatcher = propertyNamesMatcher(buildTimeRunTimeMappings);
+            PropertyNamesMatcher runTimeNamesMatcher = propertyNamesMatcher(runTimeMappings);
 
             Set<String> prefixes = new HashSet<>();
             prefixes.addAll(buildTimeMappings.stream().map(ConfigClass::getPrefix).toList());
@@ -262,15 +261,14 @@ public final class BuildTimeConfigurationReader {
                 }
 
                 boolean mapped = false;
-                PropertyName name = new PropertyName(property);
-                if (buildTimeNames.contains(name)) {
+                if (buildTimeNamesMatcher.matches(property)) {
                     mapped = true;
                     ConfigValue value = config.getConfigValue(property);
                     if (value.getValue() != null) {
                         allBuildTimeValues.put(value.getNameProfiled(), value);
                     }
                 }
-                if (buildTimeRunTimeNames.contains(name)) {
+                if (buildTimeRunTimeNamesMatcher.matches(property)) {
                     mapped = true;
                     ConfigValue value = config.getConfigValue(property);
                     if (value.getValue() != null) {
@@ -278,7 +276,7 @@ public final class BuildTimeConfigurationReader {
                         buildTimeRunTimeValues.put(value.getNameProfiled(), value);
                     }
                 }
-                if (runTimeNames.contains(name)) {
+                if (runTimeNamesMatcher.matches(property)) {
                     mapped = true;
                     ConfigValue value = withoutExpansion(() -> runtimeConfig.getConfigValue(property));
                     if (value.getRawValue() != null) {
@@ -514,29 +512,6 @@ public final class BuildTimeConfigurationReader {
             }
             properties.keySet().removeAll(propertiesToRemove);
             return properties;
-        }
-
-        private static Map<PropertyName, String> mappingsToNames(final List<ConfigClass> configMappings) {
-            Set<String> names = new HashSet<>();
-            for (ConfigClass configMapping : configMappings) {
-                names.addAll(ConfigMappings.getProperties(configMapping).keySet());
-            }
-            Map<PropertyName, String> propertyNames = new HashMap<>();
-            for (String name : names) {
-                PropertyName propertyName = new PropertyName(name);
-                if (propertyNames.containsKey(propertyName)) {
-                    List<String> duplicates = new ArrayList<>();
-                    duplicates.add(name);
-                    while (propertyNames.containsKey(propertyName)) {
-                        duplicates.add(propertyNames.remove(propertyName));
-                    }
-                    String minName = Collections.min(duplicates, Comparator.comparingInt(String::length));
-                    propertyNames.put(new PropertyName(minName), minName);
-                } else {
-                    propertyNames.put(propertyName, name);
-                }
-            }
-            return propertyNames;
         }
     }
 

@@ -21,11 +21,9 @@ public final class HibernateLogFilterBuildStep {
 
     @BuildStep
     void setupLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
-        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.Version", "HHH000412"));
-        //Disable details about bytecode reflection optimizer:
-        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.cfg.Environment", "HHH000406"));
-        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.jpa.internal.util.LogHelper", "HHH000204"));
-        filters.produce(new LogCleanupFilterBuildItem("SQL dialect", "HHH000400"));
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.orm.core", "HHH000001"));
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.orm.jpa", "HHH008540"));
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.statistics", "HHH000400"));
         filters.produce(new LogCleanupFilterBuildItem("org.hibernate.orm.beans", "HHH10005002", "HHH10005004"));
         // Silence incubating settings warnings as we will use some for compatibility
         filters.produce(new LogCleanupFilterBuildItem("org.hibernate.orm.incubating",

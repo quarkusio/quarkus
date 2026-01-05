@@ -16,9 +16,9 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
-import io.quarkus.jfr.runtime.http.rest.RestEndEvent;
-import io.quarkus.jfr.runtime.http.rest.RestPeriodEvent;
-import io.quarkus.jfr.runtime.http.rest.RestStartEvent;
+import io.quarkus.jfr.runtime.internal.http.rest.RestEndEvent;
+import io.quarkus.jfr.runtime.internal.http.rest.RestPeriodEvent;
+import io.quarkus.jfr.runtime.internal.http.rest.RestStartEvent;
 import io.quarkus.logging.Log;
 import jdk.jfr.Configuration;
 import jdk.jfr.FlightRecorder;

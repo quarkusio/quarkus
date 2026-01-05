@@ -686,8 +686,12 @@ These are the metrics produced by the OpenTelemetry extension when metrics are e
 
 |===
 
+[WARNING]
+====
+The instrumentation for JVM metrics uses JFR events and not all native VM implementations support the listed events. For more details, please see https://github.com/open-telemetry/opentelemetry-java-instrumentation/tree/main/instrumentation/runtime-telemetry/runtime-telemetry-java17/library[OpenTelemetry's Runtime Telemetry Java 17 documentation].
+====
 
-The native image assessment above was performed using GraalVM 23.0.2. Work will be done in the future to improve the metrics support on the native image builds.
+The native image assessment above was performed using GraalVM 23.0.2.
 
 [NOTE]
 ====

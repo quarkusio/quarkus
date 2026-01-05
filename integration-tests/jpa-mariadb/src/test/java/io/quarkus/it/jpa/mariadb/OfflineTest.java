@@ -11,11 +11,9 @@ import io.restassured.RestAssured;
 public class OfflineTest {
 
     @Test
-    public void testJPAFunctionalityFromServlet() throws Exception {
+    public void testJPAFunctionalityFromServlet() {
         RestAssured.when().get("/offline/dialect").then().body(
                 containsString("bytesPerCharacter=1"),
-                containsString("noBackslashEscapes=true")
-        //                containsString("storageEngine: MY_CUSTOM_ENGINE"))
-        );
+                containsString("noBackslashEscapes=true"));
     }
 }

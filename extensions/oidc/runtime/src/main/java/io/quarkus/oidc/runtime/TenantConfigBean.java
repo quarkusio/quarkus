@@ -12,6 +12,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
@@ -26,8 +27,9 @@ public final class TenantConfigBean {
     private final TenantContextFactory tenantContextFactory;
 
     TenantConfigBean(Vertx vertx, TlsConfigurationRegistry tlsConfigurationRegistry, OidcImpl oidc,
-            boolean securityEventsEnabled) {
-        this.tenantContextFactory = new TenantContextFactory(vertx, tlsConfigurationRegistry, securityEventsEnabled);
+            boolean securityEventsEnabled, ProxyConfigurationRegistry proxyConfigurationRegistry) {
+        this.tenantContextFactory = new TenantContextFactory(vertx, tlsConfigurationRegistry, securityEventsEnabled,
+                proxyConfigurationRegistry);
         this.dynamicTenantsConfig = new ConcurrentHashMap<>();
 
         this.staticTenantsConfig = tenantContextFactory.createStaticTenantConfigs(oidc.getStaticTenantConfigs(),

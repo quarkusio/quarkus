@@ -27,7 +27,6 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.ImageMode;
 import io.smallrye.config.ConfigValue;
-import io.smallrye.config.DefaultValuesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.common.utils.StringUtil;
 
@@ -70,7 +69,7 @@ public final class ConfigDiagnostic {
         for (Map.Entry<String, String> entry : deprecatedProperties.entrySet()) {
             String propertyName = entry.getKey();
             ConfigValue configValue = config.getConfigValue(propertyName);
-            if (configValue.getValue() != null && !DefaultValuesConfigSource.NAME.equals(configValue.getConfigSourceName())) {
+            if (configValue.getValue() != null && !configValue.isDefault()) {
                 ConfigDiagnostic.deprecated(propertyName, entry.getValue());
             }
         }

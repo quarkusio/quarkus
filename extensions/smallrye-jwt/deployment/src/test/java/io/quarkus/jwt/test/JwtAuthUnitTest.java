@@ -6,6 +6,7 @@ import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.util.HashMap;
 
+import jakarta.inject.Inject;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
@@ -40,6 +42,9 @@ public class JwtAuthUnitTest {
                     .addAsResource("privateKey.pem")
                     .addAsResource("Token1.json")
                     .addAsResource("application.properties"));
+
+    @Inject
+    MpJwtValidator mpJwtValidator;
 
     @BeforeEach
     public void generateToken() throws Exception {
@@ -73,5 +78,11 @@ public class JwtAuthUnitTest {
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
         Assertions.assertTrue(reply.getBoolean("pass"), reply.getString("msg"));
+    }
+
+    @Test
+    void testBlockingAuthDisabledForClasspathResource() {
+        Assertions.assertFalse(mpJwtValidator.isBlockingAuthentication(), "Blocking authentication should be disabled"
+                + " as the 'mp.jwt.verify.publickey.location' location should be resolved locally from the classpath");
     }
 }

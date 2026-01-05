@@ -10,6 +10,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.notContaining;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -381,7 +382,9 @@ public class CodeFlowAuthorizationTest {
             final long nowInSecs = nowInSecs();
             final long sessionCookieLifespan = stateCookieDate.toInstant().getEpochSecond() - nowInSecs;
             // 5 mins is default
-            assertTrue(sessionCookieLifespan >= 299 && sessionCookieLifespan <= 304);
+            assertThat(sessionCookieLifespan).isGreaterThanOrEqualTo(299);
+
+            assertThat(sessionCookieLifespan).isLessThanOrEqualTo(304);
 
             TextPage textPage = form.getInputByValue("login").click();
 
@@ -399,11 +402,11 @@ public class CodeFlowAuthorizationTest {
 
             Cookie sessionCookie = getSessionCookie(webClient, "code-flow-user-info-github-cached-in-idtoken");
             Date date = sessionCookie.getExpires();
-            assertTrue(date.toInstant().getEpochSecond() - issuedAt >= 299 + 300);
+            assertThat(date.toInstant().getEpochSecond() - issuedAt).isGreaterThanOrEqualTo(299 + 300);
             // This test enables the token refresh, in this case the cookie age is extended by additional 5 mins
             // to minimize the risk of the browser losing immediately after it has expired, for this cookie
             // be returned to Quarkus, analyzed and refreshed
-            assertTrue(date.toInstant().getEpochSecond() - issuedAt <= 299 + 300 + 3);
+            assertThat(date.toInstant().getEpochSecond() - issuedAt).isLessThanOrEqualTo(299 + 300 + 5);
 
             assertEquals(299, decryptAccessTokenExpiryTime(webClient, "code-flow-user-info-github-cached-in-idtoken"));
 
@@ -427,8 +430,8 @@ public class CodeFlowAuthorizationTest {
 
             sessionCookie = getSessionCookie(webClient, "code-flow-user-info-github-cached-in-idtoken");
             date = sessionCookie.getExpires();
-            assertTrue(date.toInstant().getEpochSecond() - issuedAt >= 299 + 300);
-            assertTrue(date.toInstant().getEpochSecond() - issuedAt <= 299 + 300 + 3);
+            assertThat(date.toInstant().getEpochSecond() - issuedAt).isGreaterThanOrEqualTo(299 + 300);
+            assertThat(date.toInstant().getEpochSecond() - issuedAt).isLessThanOrEqualTo(299 + 300 + 5);
 
             assertEquals(305, decryptAccessTokenExpiryTime(webClient, "code-flow-user-info-github-cached-in-idtoken"));
 

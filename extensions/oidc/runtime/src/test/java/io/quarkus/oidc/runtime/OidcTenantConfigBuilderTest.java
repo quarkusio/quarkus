@@ -424,6 +424,7 @@ public class OidcTenantConfigBuilderTest {
                 .followRedirects(false)
                 .proxy("need", 55, "no", "education")
                 .tlsConfigurationName("Teacher!")
+                .proxyConfigurationName("Kreacher!")
                 .build();
 
         // OidcTenantConfig methods
@@ -652,6 +653,7 @@ public class OidcTenantConfigBuilderTest {
         assertEquals("education", config.proxy().password().orElse(null));
         assertNotNull(config.tls());
         assertEquals("Teacher!", config.tls().tlsConfigurationName().orElse(null));
+        assertEquals("Kreacher!", config.proxy().proxyConfigurationName().orElse(null));
         assertTrue(config.tls().verification().isEmpty());
         assertTrue(config.tls().keyStoreFile().isEmpty());
         assertTrue(config.tls().keyStoreFileType().isEmpty());
@@ -932,6 +934,7 @@ public class OidcTenantConfigBuilderTest {
                 .followRedirects(false)
                 .proxy("need", 55, "no", "education")
                 .tlsConfigurationName("Teacher!")
+                .proxyConfigurationName("Kreacher!")
                 .build();
         var newConfig = OidcTenantConfig.builder(previousConfig)
                 .discoveryEnabled(true)
@@ -958,6 +961,7 @@ public class OidcTenantConfigBuilderTest {
         assertEquals("boarder", newConfig.proxy().password().orElse(null));
         assertNotNull(newConfig.tls());
         assertEquals("Teacher!", newConfig.tls().tlsConfigurationName().orElse(null));
+        assertEquals("Kreacher!", newConfig.proxy().proxyConfigurationName().orElse(null));
         assertTrue(newConfig.tls().verification().isEmpty());
         assertTrue(newConfig.tls().keyStoreFile().isEmpty());
         assertTrue(newConfig.tls().keyStoreFileType().isEmpty());

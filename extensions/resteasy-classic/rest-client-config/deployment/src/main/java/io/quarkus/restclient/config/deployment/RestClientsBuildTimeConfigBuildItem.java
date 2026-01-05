@@ -22,7 +22,6 @@ import io.quarkus.restclient.config.RestClientKeysProvider;
 import io.quarkus.restclient.config.RestClientsBuildTimeConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.smallrye.config.ConfigValue;
-import io.smallrye.config.DefaultValuesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
@@ -59,8 +58,7 @@ public final class RestClientsBuildTimeConfigBuildItem extends SimpleBuildItem {
                     @Override
                     public String getValue(final String propertyName) {
                         ConfigValue configValue = config.getConfigValue(propertyName);
-                        if (configValue.getValue() != null
-                                && !DefaultValuesConfigSource.NAME.equals(configValue.getConfigSourceName())) {
+                        if (configValue.getValue() != null && !configValue.isDefault()) {
                             return configValue.getValue();
                         }
                         return null;

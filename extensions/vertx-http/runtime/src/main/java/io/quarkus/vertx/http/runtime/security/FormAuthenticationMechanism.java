@@ -5,6 +5,8 @@ import static io.quarkus.vertx.http.runtime.security.FormAuthenticationEvent.cre
 import static io.quarkus.vertx.http.runtime.security.RoutingContextAwareSecurityIdentity.addRoutingCtxToIdentityIfMissing;
 
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Arrays;
@@ -15,6 +17,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import jakarta.enterprise.event.Event;
 
@@ -65,6 +68,9 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     private final boolean isFormAuthEventObserver;
     private final PersistentLoginManager loginManager;
     private final Event<FormAuthenticationEvent> formAuthEvent;
+    private final Set<String> landingPageQueryParams;
+    private final Set<String> errorPageQueryParams;
+    private final Set<String> loginPageQueryParams;
 
     //the temp encryption key, persistent across dev mode restarts
     static volatile String encryptionKey;
@@ -107,6 +113,9 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         this.formAuthEvent = this.isFormAuthEventObserver
                 ? Arc.container().beanManager().getEvent().select(FormAuthenticationEvent.class)
                 : null;
+        this.landingPageQueryParams = runtimeForm.landingPageQueryParams().filter(p -> !p.isEmpty()).orElse(null);
+        this.loginPageQueryParams = runtimeForm.loginPageQueryParams().filter(p -> !p.isEmpty()).orElse(null);
+        this.errorPageQueryParams = runtimeForm.errorPageQueryParams().filter(p -> !p.isEmpty()).orElse(null);
     }
 
     /**
@@ -133,6 +142,9 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         this.loginManager = loginManager;
         this.isFormAuthEventObserver = false;
         this.formAuthEvent = null;
+        this.landingPageQueryParams = null;
+        this.loginPageQueryParams = null;
+        this.errorPageQueryParams = null;
     }
 
     public Uni<SecurityIdentity> runFormAuth(final RoutingContext exchange,
@@ -217,7 +229,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
                 throw new IllegalStateException(
                         "Landing page is no set, please make sure 'quarkus.http.auth.form.landing-page' is configured properly.");
             }
-            location = exchange.request().scheme() + "://" + exchange.request().authority() + landingPage;
+            location = assembleRedirectLocation(exchange, landingPage, landingPageQueryParams);
         }
         exchange.response().setStatusCode(302);
         exchange.response().headers().add(HttpHeaderNames.LOCATION, location);
@@ -245,20 +257,58 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         exchange.response().addCookie(cookie);
     }
 
+    /**
+     * @deprecated this method hasn't been used by this class for some time now; if you implement this mechanism
+     *             and have a use case with this method, please let us no so that we can document and test it
+     */
+    @Deprecated(since = "3.31", forRemoval = true)
     protected void servePage(final RoutingContext exchange, final String location) {
         sendRedirect(exchange, location);
     }
 
     static void sendRedirect(final RoutingContext exchange, final String location) {
-        String loc = exchange.request().scheme() + "://" + exchange.request().authority() + location;
+        String loc = assembleRedirectLocation(exchange, location, null);
         exchange.response().headers().add(HttpHeaderNames.LOCATION, loc);
         exchange.response().setStatusCode(302);
         exchange.response().end();
     }
 
-    static Uni<ChallengeData> getRedirect(final RoutingContext exchange, final String location) {
-        String loc = exchange.request().scheme() + "://" + exchange.request().authority() + location;
+    static Uni<ChallengeData> getRedirect(final RoutingContext exchange, final String location,
+            Set<String> redirectQueryParams) {
+        String loc = assembleRedirectLocation(exchange, location, redirectQueryParams);
         return Uni.createFrom().item(new ChallengeData(302, "Location", loc));
+    }
+
+    private static String assembleRedirectLocation(RoutingContext exchange, String path, Set<String> redirectQueryParams) {
+        var location = exchange.request().scheme() + "://" + exchange.request().authority() + path;
+        if (redirectQueryParams != null) {
+            // add certain query params from the active HTTP request to the redirect location
+            String queryString = exchange.queryParams().names().stream()
+                    .filter(redirectQueryParams::contains)
+                    .flatMap(queryName -> exchange.queryParam(queryName).stream()
+                            .map(queryValue -> queryName + "=" + urlEncode(queryValue)))
+                    .collect(Collectors.joining("&"));
+
+            if (!queryString.isEmpty()) {
+                if (path.contains("?")) {
+                    location += "&" + queryString;
+                } else {
+                    location += "?" + queryString;
+                }
+            }
+        }
+        return location;
+    }
+
+    private static String urlEncode(String value) {
+        try {
+            return URLEncoder.encode(value, StandardCharsets.UTF_8)
+                    // force stricter encoding (RFC 3986 uses %20) to have cookie 'quarkus-redirect-location'
+                    // and the header location encoded similarly
+                    .replace("+", "%20");
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     @Override
@@ -310,14 +360,14 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
             if (redirectToErrorPage) {
                 log.debugf("Serving form auth error page %s for %s", errorPage, context);
                 // This method would no longer be called if authentication had already occurred.
-                return getRedirect(context, errorPage);
+                return getRedirect(context, errorPage, errorPageQueryParams);
             }
         } else {
             if (redirectToLoginPage) {
                 log.debugf("Serving login form %s for %s", loginPage, context);
                 // we need to store the URL
                 storeInitialLocation(context);
-                return getRedirect(context, loginPage);
+                return getRedirect(context, loginPage, loginPageQueryParams);
             }
         }
 

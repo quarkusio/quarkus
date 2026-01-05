@@ -16,7 +16,6 @@ import io.smallrye.config.ConfigSourceContext.ConfigSourceContextConfigSource;
 import io.smallrye.config.ConfigSourceFactory;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.Converters;
-import io.smallrye.config.DefaultValuesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
@@ -85,7 +84,7 @@ class KubernetesConfigSourceFactory implements ConfigSourceFactory {
 
     private boolean isExplicitlyDisabled(ConfigSourceContext context) {
         ConfigValue configValue = context.getValue("quarkus.kubernetes-config.enabled");
-        if (DefaultValuesConfigSource.NAME.equals(configValue.getConfigSourceName())) {
+        if (configValue.isDefault()) {
             return false;
         }
         if (configValue.getValue() != null) {

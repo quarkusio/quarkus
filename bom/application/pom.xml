@@ -32,7 +32,7 @@
         <opentelemetry-instrumentation.version>2.23.0-alpha</opentelemetry-instrumentation.version> <!-- OTel SDk 1.55.0-->
         <opentelemetry-semconv.version>1.37.0-alpha</opentelemetry-semconv.version>
         <quarkus-http.version>5.3.5</quarkus-http.version>
-        <micrometer.version>1.14.7</micrometer.version><!-- keep in sync with hdrhistogram: https://central.sonatype.com/artifact/io.micrometer/micrometer-core -->
+        <micrometer.version>1.16.1</micrometer.version><!-- keep in sync with hdrhistogram: https://central.sonatype.com/artifact/io.micrometer/micrometer-core -->
         <hdrhistogram.version>2.2.2</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
         <graphql-java.version>24.3</graphql-java.version> <!-- keep in sync with smallrye-graphql -->
@@ -46,7 +46,7 @@
         <microprofile-lra.version>2.0.1</microprofile-lra.version>
         <microprofile-openapi.version>4.1.1</microprofile-openapi.version>
         <smallrye-common.version>2.14.0</smallrye-common.version>
-        <smallrye-config.version>3.14.1</smallrye-config.version>
+        <smallrye-config.version>3.15.0</smallrye-config.version>
         <smallrye-health.version>4.3.0</smallrye-health.version>
         <smallrye-open-api.version>4.2.3</smallrye-open-api.version>
         <smallrye-graphql.version>2.16.0</smallrye-graphql.version>
@@ -70,7 +70,7 @@
         <jakarta.json.bind-api.version>3.0.1</jakarta.json.bind-api.version>
         <jakarta.mail-api.version>2.1.5</jakarta.mail-api.version>
         <!--jakarta.persistence-api.version is located in the root pom -->
-        <jakarta.data-api.version>1.0.1</jakarta.data-api.version>
+        <!--jakarta.data-api.version is located in the root pom -->
         <jakarta.resource-api.version>2.1.0</jakarta.resource-api.version>
         <jakarta.servlet-api.version>6.0.0</jakarta.servlet-api.version>
         <jakarta.transaction-api.version>2.0.1</jakarta.transaction-api.version>
@@ -99,7 +99,7 @@
         <narayana-lra.version>1.0.3.Final</narayana-lra.version>
         <agroal.version>2.8</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
-        <elasticsearch-opensource-components.version>9.2.2</elasticsearch-opensource-components.version>
+        <elasticsearch-opensource-components.version>9.2.3</elasticsearch-opensource-components.version>
         <rxjava.version>2.2.21</rxjava.version>
         <wildfly.openssl-java.version>2.2.5.Final</wildfly.openssl-java.version>
         <wildfly.openssl-linux.version>2.2.2.SP01</wildfly.openssl-linux.version>
@@ -157,7 +157,7 @@
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.3.0</awaitility.version>
         <jboss-logmanager.version>3.1.2.Final</jboss-logmanager.version>
-        <flyway.version>11.19.1</flyway.version>
+        <flyway.version>11.20.0</flyway.version>
         <yasson.version>3.0.4</yasson.version>
         <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->
         <liquibase.version>4.33.0</liquibase.version>
@@ -1405,6 +1405,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-panacheql</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-hibernate-panache</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-hibernate-panache-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -6502,7 +6512,17 @@
             <!-- JDK Flight Recorder -->
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jfr-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-jfr</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jfr-deployment-spi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

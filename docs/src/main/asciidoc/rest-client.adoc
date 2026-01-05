@@ -2203,6 +2203,13 @@ To change this behavior, set the `quarkus.rest-client.scope` property to the ful
 - it is not possible to set `SSLContext`
 - a few things that don't make sense for a non-blocking implementations, such as setting the `ExecutorService`, don't work
 
+== Import things to be aware of
+
+=== Concurrent requests
+
+The REST Client uses the Vert.x HTTP connection pool with a default size of `50`  in order to minimize the necessary HTTP connections being used against the target REST services.
+While this is a reasonable default, it might be too limiting for specific scenarios. In such cases, the `quarkus.rest-client."some-client".connection-pool-size` configuration property can be used.
+
 == Further reading
 
  * link:https://download.eclipse.org/microprofile/microprofile-rest-client-4.0/microprofile-rest-client-spec-4.0.html[MicroProfile Rest Client specification]

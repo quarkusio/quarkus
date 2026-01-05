@@ -36,7 +36,12 @@ public class QuarkusMock {
      */
     public static <T> void installMockForInstance(T mock, T instance) {
         //mock support does the actual work, but exposes other methods that are not part of the user API
-        MockSupport.installMock(instance, mock);
+        MockSupport.installMock(instance, mock, new Options());
+    }
+
+    public static <T> void installMockForInstance(T mock, T instance, Options options) {
+        //mock support does the actual work, but exposes other methods that are not part of the user API
+        MockSupport.installMock(instance, mock, options);
     }
 
     /**
@@ -55,7 +60,7 @@ public class QuarkusMock {
                         + " is not assignable to type " + instance.getClass().getSuperclass());
             }
         }
-        MockSupport.installMock(CDI.current().select(instance, qualifiers).get(), mock);
+        MockSupport.installMock(CDI.current().select(instance, qualifiers).get(), mock, new Options());
     }
 
     /**
@@ -67,6 +72,36 @@ public class QuarkusMock {
      * @param <T> The bean type
      */
     public static <T> void installMockForType(T mock, TypeLiteral<? super T> typeLiteral, Annotation... qualifiers) {
-        MockSupport.installMock(CDI.current().select(typeLiteral, qualifiers).get(), mock);
+        MockSupport.installMock(CDI.current().select(typeLiteral, qualifiers).get(), mock, new Options());
+    }
+
+    /**
+     * Installs a mock for a CDI normal scoped bean by typeLiteral and qualifiers
+     *
+     * @param mock The mock object
+     * @param typeLiteral TypeLiteral representing the required type
+     * @param qualifiers The CDI qualifiers of the bean to mock
+     * @param <T> The bean type
+     */
+    public static <T> void installMockForType(T mock, TypeLiteral<? super T> typeLiteral, Options options,
+            Annotation... qualifiers) {
+        MockSupport.installMock(CDI.current().select(typeLiteral, qualifiers).get(), mock, options);
+    }
+
+    /**
+     * Allowed options for configuring mocked beans
+     */
+    public static class Options {
+
+        private boolean mockObservers;
+
+        public boolean isMockObservers() {
+            return mockObservers;
+        }
+
+        public Options setMockObservers(boolean mockObservers) {
+            this.mockObservers = mockObservers;
+            return this;
+        }
     }
 }

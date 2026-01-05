@@ -18,7 +18,8 @@ public class SetMockitoMockAsBeanMockCallback implements QuarkusTestBeforeEachCa
 
     private void installMock(MockitoMocksTracker.Mocked mocked) {
         try {
-            QuarkusMock.installMockForInstance(mocked.mock, mocked.beanInstance);
+            QuarkusMock.installMockForInstance(mocked.mock, mocked.beanInstance,
+                    new QuarkusMock.Options().setMockObservers(!mocked.isSpy));
         } catch (Exception e) {
             throw new RuntimeException(mocked.beanInstance
                     + " is not a normal scoped CDI bean, make sure the bean is a normal scope like @ApplicationScoped or @RequestScoped."

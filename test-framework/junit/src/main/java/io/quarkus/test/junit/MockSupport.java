@@ -38,7 +38,7 @@ class MockSupport {
         }
     }
 
-    static synchronized <T> void installMock(T instance, T mock) {
+    static synchronized <T> void installMock(T instance, T mock, QuarkusMock.Options options) {
         //due to class loading issues we can't access the interface directly
         List<Object> inst = contexts.peek();
         if (inst == null) {
@@ -55,7 +55,9 @@ class MockSupport {
                 inst.add(instance);
 
                 // Disable all observers declared on the mocked bean
-                mockObservers(instance, true);
+                if (options.isMockObservers()) {
+                    mockObservers(instance, true);
+                }
             }
         } catch (Exception e) {
             throw new RuntimeException(instance

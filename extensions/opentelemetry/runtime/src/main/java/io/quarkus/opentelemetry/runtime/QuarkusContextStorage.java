@@ -3,6 +3,8 @@ package io.quarkus.opentelemetry.runtime;
 import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setContextSafe;
 import static io.smallrye.common.vertx.VertxContext.isDuplicatedContext;
 
+import java.util.Map;
+
 import org.jboss.logging.Logger;
 
 import io.opentelemetry.api.trace.Span;
@@ -83,10 +85,14 @@ public enum QuarkusContextStorage implements ContextStorage {
                     log.debugv("Closing Otel context: {0}", OpenTelemetryUtil.getSpanData(otelToAttach));
                 }
 
-                if (otelBefore != otelToAttach) {
-                    log.info("Context in storage not the expected context, Scope.close was not called correctly. Details:" +
-                            " OTel context otelBefore: " + OpenTelemetryUtil.getSpanData(otelBefore) +
-                            ". OTel context otelToAttach: " + OpenTelemetryUtil.getSpanData(otelToAttach));
+                if (otelBefore != otelToAttach && log.isDebugEnabled()) {
+                    Map<String, String> spanDataBefore = OpenTelemetryUtil.getSpanData(otelBefore);
+                    if (spanDataBefore != null && !spanDataBefore.isEmpty()) {
+                        log.debug(
+                                "Context in storage not the expected context, Scope.close was not called correctly. Details:" +
+                                        " OTel context otelBefore: " + spanDataBefore +
+                                        ". OTel context otelToAttach: " + OpenTelemetryUtil.getSpanData(otelToAttach));
+                    }
                 }
 
                 if (otelBeforeAttach == null) {

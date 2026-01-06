@@ -3,6 +3,8 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '30 5 * * 0'
+env:
+  MVNW_REPOURL: https://maven-central.storage-download.googleapis.com/maven2
 jobs:
   build:
     name: Build

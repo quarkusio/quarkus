@@ -161,6 +161,8 @@ public class OidcTenantConfigBuilderTest {
         assertTrue(authentication.pkceRequired().isEmpty());
         assertTrue(authentication.pkceSecret().isEmpty());
         assertTrue(authentication.stateSecret().isEmpty());
+        assertTrue(authentication.par().enabled().isEmpty());
+        assertTrue(authentication.par().path().isEmpty());
 
         var codeGrant = config.codeGrant();
         assertNotNull(codeGrant);
@@ -411,6 +413,7 @@ public class OidcTenantConfigBuilderTest {
                 .internalIdTokenLifespan(Duration.ofMinutes(357))
                 .pkceRequired()
                 .stateSecret("state-secret-auth-whatever")
+                .par("/as/par")
                 .end()
                 // OidcCommonConfig methods
                 .authServerUrl("we")
@@ -561,6 +564,9 @@ public class OidcTenantConfigBuilderTest {
         assertTrue(authentication.pkceRequired().orElseThrow());
         assertTrue(authentication.pkceSecret().isEmpty());
         assertEquals("state-secret-auth-whatever", authentication.stateSecret().orElse(null));
+        var par = authentication.par();
+        assertTrue(par.enabled().orElse(false));
+        assertEquals("/as/par", par.path().orElse(null));
 
         var codeGrant = config.codeGrant();
         assertNotNull(codeGrant);
@@ -1252,6 +1258,7 @@ public class OidcTenantConfigBuilderTest {
                 .internalIdTokenLifespan(Duration.ofMinutes(357))
                 .pkceRequired()
                 .stateSecret("state-secret-auth-whatever")
+                .par()
                 .build();
         var config1Builder = OidcTenantConfig.builder().tenantId("3").authentication(first);
         var config1 = config1Builder.build();
@@ -1299,6 +1306,8 @@ public class OidcTenantConfigBuilderTest {
         assertEquals(357, builtFirst.internalIdTokenLifespan().orElseThrow().toMinutes());
         assertTrue(builtFirst.pkceRequired().orElseThrow());
         assertEquals("state-secret-auth-whatever", builtFirst.stateSecret().orElse(null));
+        assertTrue(builtFirst.par().enabled().orElse(false));
+        assertTrue(builtFirst.par().path().isEmpty());
 
         var second = new AuthenticationConfigBuilder(config1Builder).scopes("scope-four").responseMode(FORM_POST)
                 .extraParams(Map.of("ho", "hey")).stateSecret("my-state-secret");
@@ -1349,6 +1358,8 @@ public class OidcTenantConfigBuilderTest {
         assertEquals(357, builtSecond.internalIdTokenLifespan().orElseThrow().toMinutes());
         assertTrue(builtSecond.pkceRequired().orElseThrow());
         assertEquals("my-state-secret", builtSecond.stateSecret().orElse(null));
+        assertTrue(builtSecond.par().enabled().orElse(false));
+        assertTrue(builtSecond.par().path().isEmpty());
     }
 
     @Test

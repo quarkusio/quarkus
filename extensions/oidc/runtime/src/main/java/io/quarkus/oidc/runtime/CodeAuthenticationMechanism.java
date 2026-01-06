@@ -687,26 +687,33 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         codeFlowParams.append(OidcConstants.CODE_FLOW_RESPONSE_TYPE).append(EQ)
                                 .append(OidcConstants.CODE_FLOW_CODE);
 
+                        var authenticationConfig = configContext.oidcConfig().authentication();
+
                         // response_mode
-                        if (ResponseMode.FORM_POST == configContext.oidcConfig().authentication().responseMode()
-                                .orElse(ResponseMode.QUERY)) {
+                        if (ResponseMode.FORM_POST == authenticationConfig.responseMode().orElse(ResponseMode.QUERY)) {
                             codeFlowParams.append(AMP).append(OidcConstants.CODE_FLOW_RESPONSE_MODE).append(EQ)
-                                    .append(configContext.oidcConfig().authentication().responseMode().get().toString()
-                                            .toLowerCase());
+                                    .append(authenticationConfig.responseMode().get().toString().toLowerCase());
                         }
 
-                        // client_id
-                        codeFlowParams.append(AMP).append(OidcConstants.CLIENT_ID).append(EQ)
-                                .append(OidcCommonUtils.urlEncode(configContext.oidcConfig().clientId().get()));
+                        boolean pushedAuthorizationRequest = OidcUtils.isParEnabled(authenticationConfig,
+                                configContext.getOidcMetadata());
+
+                        if (!pushedAuthorizationRequest) {
+                            // for par, we add the client_id alongside the request_uri
+                            // that must be returned from the par endpoint;
+                            // client_id
+                            codeFlowParams.append(AMP).append(OidcConstants.CLIENT_ID).append(EQ)
+                                    .append(OidcCommonUtils.urlEncode(configContext.oidcConfig().clientId().get()));
+                        }
 
                         // scope
                         codeFlowParams.append(AMP).append(OidcConstants.TOKEN_SCOPE).append(EQ)
                                 .append(OidcUtils.encodeScopes(configContext.oidcConfig()));
 
                         MultiMap requestQueryParams = null;
-                        if (!configContext.oidcConfig().authentication().forwardParams().isEmpty()) {
+                        if (!authenticationConfig.forwardParams().isEmpty()) {
                             requestQueryParams = context.queryParams();
-                            for (String forwardedParam : configContext.oidcConfig().authentication().forwardParams().get()) {
+                            for (String forwardedParam : authenticationConfig.forwardParams().get()) {
                                 if (requestQueryParams.contains(forwardedParam)) {
                                     for (String requestQueryParamValue : requestQueryParams.getAll(forwardedParam))
                                         codeFlowParams.append(AMP).append(forwardedParam).append(EQ)
@@ -728,7 +735,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         PkceStateBean pkceStateBean = createPkceStateBean(configContext);
 
                         // state
-                        String nonce = configContext.oidcConfig().authentication().nonceRequired()
+                        String nonce = authenticationConfig.nonceRequired()
                                 ? UUID.randomUUID().toString()
                                 : null;
 
@@ -750,20 +757,38 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         }
 
                         // extra redirect parameters, see https://openid.net/specs/openid-connect-core-1_0.html#AuthRequests
-                        addExtraParamsToUri(codeFlowParams, configContext.oidcConfig().authentication().extraParams());
+                        addExtraParamsToUri(codeFlowParams, authenticationConfig.extraParams());
 
-                        String authorizationURL = configContext.provider().getMetadata().getAuthorizationUri() + "?"
-                                + codeFlowParams;
+                        if (pushedAuthorizationRequest) {
+                            return configContext.getOidcProviderClient()
+                                    .pushedAuthorizationRequest(codeFlowParams.toString())
+                                    .map(requestUri -> {
+                                        // client_id
+                                        String parCodeFlowParams = OidcConstants.CLIENT_ID + EQ +
+                                                OidcCommonUtils.urlEncode(configContext.oidcConfig().clientId().get())
+                                        // request_uri
+                                                + AMP + OidcConstants.REQUEST_URI + EQ
+                                                + OidcCommonUtils.urlEncode(requestUri);
 
-                        authorizationURL = filterRedirect(context, configContext, authorizationURL,
-                                Redirect.Location.OIDC_AUTHORIZATION);
-                        LOG.debugf("Code flow redirect to: %s", authorizationURL);
-
-                        return Uni.createFrom().item(new ChallengeData(HttpResponseStatus.FOUND.code(), HttpHeaders.LOCATION,
-                                authorizationURL));
+                                        return createCodeFlowRedirect(parCodeFlowParams, context, configContext);
+                                    });
+                        } else {
+                            return Uni.createFrom()
+                                    .item(createCodeFlowRedirect(codeFlowParams.toString(), context, configContext));
+                        }
                     }
 
                 });
+    }
+
+    private static ChallengeData createCodeFlowRedirect(String codeFlowParams, RoutingContext context,
+            TenantConfigContext configContext) {
+        String authorizationURL = configContext.provider().getMetadata().getAuthorizationUri() + "?" + codeFlowParams;
+
+        authorizationURL = filterRedirect(context, configContext, authorizationURL, Redirect.Location.OIDC_AUTHORIZATION);
+        LOG.debugf("Code flow redirect to: %s", authorizationURL);
+
+        return new ChallengeData(HttpResponseStatus.FOUND.code(), HttpHeaders.LOCATION, authorizationURL);
     }
 
     private boolean isRedirectFromProvider(RoutingContext context, TenantConfigContext configContext) {

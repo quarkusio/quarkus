@@ -213,7 +213,10 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         INTROSPECTION_CREDENTIALS_INCLUDE_CLIENT_ID,
         TENANT_ID,
         PROXY_CONFIGURATION_NAME,
-        JWT_BEARER_TOKEN_PATH
+        JWT_BEARER_TOKEN_PATH,
+        PAR,
+        PAR_ENABLED,
+        PAR_PATH
     }
 
     final Map<ConfigMappingMethods, Boolean> invocationsRecorder = new EnumMap<>(ConfigMappingMethods.class);
@@ -845,6 +848,24 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             public Optional<String> stateSecret() {
                 invocationsRecorder.put(ConfigMappingMethods.AUTHENTICATION_STATE_SECRET, true);
                 return Optional.empty();
+            }
+
+            @Override
+            public PushedAuthorizationRequest par() {
+                invocationsRecorder.put(ConfigMappingMethods.PAR, true);
+                return new PushedAuthorizationRequest() {
+                    @Override
+                    public Optional<Boolean> enabled() {
+                        invocationsRecorder.put(ConfigMappingMethods.PAR_ENABLED, true);
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<String> path() {
+                        invocationsRecorder.put(ConfigMappingMethods.PAR_PATH, true);
+                        return Optional.empty();
+                    }
+                };
             }
         };
     }

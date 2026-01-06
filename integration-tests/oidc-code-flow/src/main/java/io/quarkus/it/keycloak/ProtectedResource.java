@@ -326,4 +326,28 @@ public class ProtectedResource {
     public String getRefreshTokenQuery(@QueryParam("a") String aValue) {
         return getRefreshToken() + ":" + aValue;
     }
+
+    @GET
+    @Path("pushed-authorization-request/disabled-par-tenant-client-secret")
+    public String pushedAuthorizationRequestTenantDisabledParClientSecret() {
+        return principal.getName();
+    }
+
+    @GET
+    @Path("pushed-authorization-request/tenant-client-secret")
+    public String pushedAuthorizationRequestTenantClientSecret() {
+        return principal.getName();
+    }
+
+    @GET
+    @Path("pushed-authorization-request/tenant-jwt")
+    public String pushedAuthorizationRequestTenantJwt() {
+        return principal.getName();
+    }
+
+    @GET
+    @Path("pushed-authorization-request/disabled-par-tenant-jwt")
+    public String disabledPushedAuthorizationRequestTenantJwt() {
+        return principal.getName();
+    }
 }

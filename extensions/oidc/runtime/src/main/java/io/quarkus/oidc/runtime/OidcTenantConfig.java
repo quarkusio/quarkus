@@ -1009,6 +1009,12 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
          */
         Optional<String> stateSecret();
 
+        /**
+         * Configuration for the pushed authorization request (PAR)
+         * as defined by the <a href="https://datatracker.ietf.org/doc/html/rfc9126">RFC 9126</a>.
+         */
+        @ConfigDocSection
+        PushedAuthorizationRequest par();
     }
 
     /**
@@ -1338,4 +1344,23 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
         X
     }
 
+    /**
+     * Pushed authorization request (PAR) configuration.
+     */
+    interface PushedAuthorizationRequest {
+
+        /**
+         * If the pushed authorization request is enabled for this OIDC tenant.
+         * When enabled, Quarkus will act as if the authorization server accepts authorization request data only via PAR.
+         */
+        @ConfigDocDefault("enabled if the discovered Authorization Server Metadata parameter 'require_pushed_authorization_requests' is 'true'")
+        Optional<Boolean> enabled();
+
+        /**
+         * Relative path or absolute URL of the authorization server's pushed authorization request endpoint.
+         * If not specified, Quarkus will use the URL of the PAR endpoint in the authorization server metadata document
+         * using the `pushed_authorization_request_endpoint` parameter.
+         */
+        Optional<String> path();
+    }
 }

@@ -75,6 +75,8 @@ public final class OidcConstants {
     public static final String PKCE_CODE_CHALLENGE_METHOD = "code_challenge_method";
     public static final String PKCE_CODE_CHALLENGE_S256 = "S256";
 
+    public static final String REQUEST_URI = "request_uri";
+
     public static final String BACK_CHANNEL_LOGOUT_TOKEN = "logout_token";
     public static final String BACK_CHANNEL_EVENTS_CLAIM = "events";
     public static final String BACK_CHANNEL_EVENT_NAME = "http://schemas.openid.net/event/backchannel-logout";

@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import jakarta.inject.Inject;
-import jakarta.inject.Named;
 
 import org.bson.Document;
 import org.junit.jupiter.api.Assertions;
@@ -19,6 +18,7 @@ import org.junit.jupiter.api.condition.OS;
 import com.mongodb.client.ListIndexesIterable;
 import com.mongodb.client.MongoClient;
 
+import io.quarkus.mongodb.MongoClientName;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.junit.QuarkusTest;
@@ -31,7 +31,7 @@ import io.restassured.common.mapper.TypeRef;
 class UserResourceTest {
 
     @Inject
-    @Named("users")
+    @MongoClientName("users")
     MongoClient mongoClient;
 
     @Test

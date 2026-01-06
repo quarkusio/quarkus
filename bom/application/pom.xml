@@ -141,7 +141,7 @@
         <mutiny.version>2.9.5</mutiny.version>
         <jctools-core.version>4.0.5</jctools-core.version>
         <kafka3.version>4.0.0</kafka3.version>
-        <lz4.version>1.8.0</lz4.version> <!-- dependency of the kafka-clients that could be overridden by other imported BOMs in the platform -->
+        <lz4.version>1.10.1</lz4.version> <!-- dependency of the kafka-clients that could be overridden by other imported BOMs in the platform -->
         <snappy.version>1.1.10.8</snappy.version>
         <strimzi-test-container.version>0.109.2</strimzi-test-container.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
@@ -4612,9 +4612,16 @@
                 <groupId>org.apache.kafka</groupId>
                 <artifactId>kafka-clients</artifactId>
                 <version>${kafka3.version}</version>
+                <!-- TODO: remove the exclusion after upgrading to kafka-clients depending on the new lz4-java groupId (at.yawk.lz4) -->
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.lz4</groupId>
+                        <artifactId>lz4-java</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
-                <groupId>org.lz4</groupId>
+                <groupId>at.yawk.lz4</groupId>
                 <artifactId>lz4-java</artifactId>
                 <version>${lz4.version}</version>
             </dependency>

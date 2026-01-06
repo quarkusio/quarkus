@@ -23,6 +23,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.GeneratedRuntimeSystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.ModuleOpenBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -38,6 +39,7 @@ import io.quarkus.netty.MainEventLoopGroup;
 import io.quarkus.netty.runtime.EmptyByteBufStub;
 import io.quarkus.netty.runtime.MachineIdGenerator;
 import io.quarkus.netty.runtime.NettyRecorder;
+import io.quarkus.runtime.util.JavaVersionGreaterOrEqual25;
 
 class NettyProcessor {
 
@@ -79,6 +81,42 @@ class NettyProcessor {
         return new SystemPropertyBuildItem("io.netty.allocator.disableCacheFinalizersForFastThreadLocalThreads", "true");
     }
 
+    /**
+     * <a href="https://openjdk.org/jeps/471">JEP 471</a> locks down access to sun.misc.Unsafe, Netty needs to adapt
+     * to this to maintain its efficiency. As this work progresses in upstream Netty to handle this better automatically, we can
+     * already apply the following recommendations by the Netty team. See also
+     * <a href="https://github.com/quarkusio/quarkus/issues/39907">#39907</a> and
+     * <a href="https://netty.io/wiki/java-24-and-sun.misc.unsafe.html">Java 24 and sun.misc.unsafe</a>.
+     * </p>
+     * Unfortunately, "--sun-misc-unsafe-memory-access=allow" should also be set for Java runtime, but it can't be applied
+     * automatically as the JAR Manifest format doesn't allow setting such an option.
+     */
+    @BuildStep(onlyIf = JavaVersionGreaterOrEqual25.class)
+    NativeImageConfigBuildItem build25Specific(
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
+            BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
+            BuildProducer<ModuleOpenBuildItem> moduleOpenBuildItem) {
+
+        reflectiveMethods.produce(
+                new ReflectiveMethodBuildItem("Reflectively accessed through Netty's PlatformDependent0.",
+                        "jdk.internal.misc.Unsafe", "allocateUninitializedArray",
+                        new String[] { Class.class.getName(), int.class.getName() }));
+
+        reflectiveFields.produce(
+                new ReflectiveFieldBuildItem("Reflectively accessed through Netty's PlatformDependent0.",
+                        "java.nio.Bits", "UNSAFE_SET_THRESHOLD"));
+
+        // Enables Netty's PlatformDependent0 and PlatformDependent to access java.nio, e.g. java.nio.Bits
+        // It's potentially problematic regarding build-time and run-time inited JDK parts.
+        moduleOpenBuildItem.produce(
+                new ModuleOpenBuildItem("java.base", "io.netty.common", "java.nio", "jdk.internal.misc"));
+
+        final NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder()
+                .addNativeImageSystemProperty("io.netty.tryReflectionSetAccessible", "true")
+                .addNativeImageSystemProperty("io.netty.noUnsafe", "false");
+        return builder.build();
+    }
+
     @BuildStep
     NativeImageConfigBuildItem build(
             NettyBuildTimeConfig config,
@@ -90,14 +128,11 @@ class NettyProcessor {
         reflectiveMethods.produce(
                 new ReflectiveMethodBuildItem("Reflectively accessed through PlatformDependent0's static initializer",
                         "jdk.internal.misc.Unsafe", "getUnsafe", new String[0]));
+
         // in JDK >= 21 the constructor has `long, long` signature
         reflectiveMethods.produce(
                 new ReflectiveMethodBuildItem("Reflectively accessed through PlatformDependent0's static initializer",
                         "java.nio.DirectByteBuffer", "<init>", new String[] { long.class.getName(), long.class.getName() }));
-        // in JDK < 21 the constructor has `long, int` signature
-        reflectiveMethods.produce(
-                new ReflectiveMethodBuildItem("Reflectively accessed through PlatformDependent0's static initializer",
-                        "java.nio.DirectByteBuffer", "<init>", new String[] { long.class.getName(), int.class.getName() }));
 
         reflectiveFields.produce(
                 new ReflectiveFieldBuildItem("Reflectively accessed through PlatformDependent0's static initializer",

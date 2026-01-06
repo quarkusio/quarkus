@@ -1,13 +1,13 @@
 package io.quarkus.test.junit;
 
+import static org.junit.platform.commons.util.AnnotationUtils.findAnnotation;
+
 import java.lang.reflect.AnnotatedElement;
 import java.util.Optional;
 
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
-
-import static org.junit.platform.commons.util.AnnotationUtils.findAnnotation;
 
 public class DisabledOnPowerCondition implements ExecutionCondition {
 

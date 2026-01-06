@@ -1,6 +1,5 @@
 package io.quarkus.mongodb;
 
-import io.quarkus.test.DisabledOnPower;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -15,6 +14,7 @@ import de.flapdoodle.embed.mongo.transitions.RunningMongodProcess;
 import de.flapdoodle.embed.process.types.ProcessConfig;
 import de.flapdoodle.reverse.TransitionWalker;
 import de.flapdoodle.reverse.transitions.Start;
+import io.quarkus.test.DisabledOnPower;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DisabledOnPower

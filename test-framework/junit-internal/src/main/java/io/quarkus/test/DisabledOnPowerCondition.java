@@ -9,8 +9,6 @@ import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-import io.quarkus.test.common.JdkUtil;
-
 public class DisabledOnPowerCondition implements ExecutionCondition {
 
     private static final String ARCH = System.getProperty("os.arch");

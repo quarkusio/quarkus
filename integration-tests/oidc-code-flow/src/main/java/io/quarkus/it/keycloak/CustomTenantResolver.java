@@ -106,6 +106,22 @@ public class CustomTenantResolver implements TenantResolver {
             return "tenant-2";
         }
 
+        if (path.contains("pushed-authorization-request/tenant-jwt")) {
+            return "par-tenant-jwt";
+        }
+
+        if (path.contains("pushed-authorization-request/disabled-par-tenant-jwt")) {
+            return "par-disabled-tenant-jwt";
+        }
+
+        if (path.contains("pushed-authorization-request/tenant-client-secret")) {
+            return "par-tenant-client-secret";
+        }
+
+        if (path.contains("pushed-authorization-request/disabled-par-tenant-client-secret")) {
+            return "disabled-par-tenant-client-secret";
+        }
+
         return OidcUtils.DEFAULT_TENANT_ID;
     }
 }

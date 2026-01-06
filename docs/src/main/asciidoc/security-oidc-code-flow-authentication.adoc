@@ -925,6 +925,23 @@ The secret key is required to encrypt a randomly generated PKCE `code_verifier` 
 The `code_verifier` is decrypted when the user is redirected back to Quarkus and sent to the token endpoint alongside the `code`, client secret, and other parameters to complete the code exchange.
 The provider will fail the code exchange if a `SHA256` digest of the `code_verifier` does not match the `code_challenge` that was provided during the authentication request.
 
+=== Pushed Authorization Requests
+
+link:https://datatracker.ietf.org/doc/html/rfc9126[OAuth 2.0 Pushed Authorization Requests] (PAR) allows the authorization server to authenticate the client before any user interaction happens.
+It mitigates front-channel attacks by preventing malicious actors from intercepting, tampering with, or spoofing the authorization request details in the user's browser.
+
+You can enable PAR for your OIDC web-app endpoint by setting the `quarkus.oidc.authentication.par.enabled` configuration property to `true`.
+It will be enabled automatically if the OIDC metadata contains a `require_pushed_authorization_requests` property that is set to `true`.
+
+The PAR endpoint is discovered from the OAuth Authorization Server Metadata parameter `pushed_authorization_request_endpoint`.
+If the metadata discovery is disabled, you must configure the PAR endpoint manually like in the example below:
+
+[source, properties]
+----
+quarkus.oidc.authentication.par.enabled=true
+quarkus.oidc.authentication.par.path=/as/par
+----
+
 === Handling and controlling the lifetime of authentication
 
 Another important requirement for authentication is to ensure that the data the session is based on is up-to-date without requiring the user to authenticate for every single request.

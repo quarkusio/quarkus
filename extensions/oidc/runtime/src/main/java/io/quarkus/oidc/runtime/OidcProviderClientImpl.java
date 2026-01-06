@@ -1,5 +1,7 @@
 package io.quarkus.oidc.runtime;
 
+import static io.quarkus.oidc.common.OidcEndpoint.Type.PUSHED_AUTHORIZATION_REQUEST;
+
 import java.io.Closeable;
 import java.net.SocketException;
 import java.security.Key;
@@ -46,7 +48,8 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         GET("Get"),
         REFRESH("Refresh"),
         INTROSPECT("Introspect"),
-        REVOKE("Revoke");
+        REVOKE("Revoke"),
+        PAR("Pushed Authorization Request");
 
         String op;
 
@@ -241,6 +244,31 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         return getString(requestProps, metadata.getJsonWebKeySetUri(), resp, OidcEndpoint.Type.JWKS).map(JsonWebKeySet::new);
     }
 
+    final Uni<String> pushedAuthorizationRequest(String codeFlowParams) {
+        final OidcRequestContextProperties requestProps = getRequestProps();
+        return getHttpResponse(requestProps, metadata.getPushedAuthorizationRequestUri(),
+                MultiMap.caseInsensitiveMultiMap(), TokenOperation.PAR, PUSHED_AUTHORIZATION_REQUEST,
+                Buffer.buffer(codeFlowParams))
+                .transformToUni(resp -> OidcCommonUtils
+                        .filterHttpResponse(requestProps, resp, responseFilters, PUSHED_AUTHORIZATION_REQUEST)
+                        .flatMap(buffer -> {
+                            if (resp.statusCode() == 201) {
+                                LOG.debugf("Request succeeded: %s", resp.bodyAsJsonObject());
+                                return Uni.createFrom().item(buffer.toJsonObject());
+                            }
+                            return Uni.createFrom()
+                                    .failure(responseException(metadata.getPushedAuthorizationRequestUri(), resp, buffer));
+                        }))
+                .map(json -> {
+                    final String requestUri = json.getString(OidcConstants.REQUEST_URI);
+                    if (requestUri != null) {
+                        return requestUri;
+                    }
+                    // should not happen, see https://datatracker.ietf.org/doc/html/rfc9126#name-successful-response
+                    throw new OIDCException("Authorization server must generate a request URI, but got " + json);
+                });
+    }
+
     Uni<AuthorizationCodeTokens> getAuthorizationCodeTokens(String code, String redirectUri, String codeVerifier) {
         final MultiMap codeGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
         codeGrantParams.add(OidcConstants.GRANT_TYPE, OidcConstants.AUTHORIZATION_CODE);
@@ -311,7 +339,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     }
 
     private PreparedHttpRequest prepareHttpRequest(OidcRequestContextProperties requestProps, String uri,
-            MultiMap formBody, TokenOperation op, OidcEndpoint.Type endpointType) {
+            MultiMap formBody, TokenOperation op, OidcEndpoint.Type endpointType, Buffer bodyBuffer) {
         HttpRequest<Buffer> request = client.postAbs(uri);
 
         final Buffer buffer;
@@ -358,7 +386,15 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
             } else {
                 formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId().get());
             }
-            buffer = OidcCommonUtils.encodeForm(formBody);
+            if (bodyBuffer == null) {
+                buffer = OidcCommonUtils.encodeForm(formBody);
+            } else {
+                if (op == TokenOperation.PAR && !formBody.contains(OidcConstants.CLIENT_ID)) {
+                    // the client_id is required for PAR: https://datatracker.ietf.org/doc/html/rfc9126#name-request
+                    formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId().get());
+                }
+                buffer = OidcCommonUtils.encodeForm(formBody, bodyBuffer);
+            }
         } else {
             formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId().get());
             formBody.add(OidcConstants.CLIENT_SECRET, clientSecret);
@@ -369,7 +405,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
                 request.addQueryParam(entry.getKey(), OidcCommonUtils.urlEncode(entry.getValue()));
             }
             request.putHeader(ACCEPT_HEADER, APPLICATION_JSON);
-            buffer = Buffer.buffer();
+            buffer = bodyBuffer == null ? Buffer.buffer() : bodyBuffer;
         }
 
         if (oidcConfig.codeGrant().headers() != null) {
@@ -378,8 +414,13 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
             }
         }
         if (LOG.isDebugEnabled()) {
-            LOG.debugf("%s token: url : %s, headers: %s, request params: %s", op.operation(), request.uri(), request.headers(),
-                    formBody);
+            if (op == TokenOperation.PAR) {
+                LOG.debugf("%s: url : %s, headers: %s, request params: %s", op.operation(), request.uri(),
+                        request.headers(), formBody);
+            } else {
+                LOG.debugf("%s token: url : %s, headers: %s, request params: %s", op.operation(), request.uri(),
+                        request.headers(), formBody);
+            }
         }
         // Retry up to three times with a one-second delay between the retries if the connection is closed.
         var preparedResponse = filterHttpRequest(requestProps, endpointType, request, buffer)
@@ -393,6 +434,11 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
 
     private UniOnItem<HttpResponse<Buffer>> getHttpResponse(OidcRequestContextProperties requestProps, String uri,
             MultiMap formBody, TokenOperation op, OidcEndpoint.Type endpointType) {
+        return getHttpResponse(requestProps, uri, formBody, op, endpointType, null);
+    }
+
+    private UniOnItem<HttpResponse<Buffer>> getHttpResponse(OidcRequestContextProperties requestProps, String uri,
+            MultiMap formBody, TokenOperation op, OidcEndpoint.Type endpointType, Buffer bodyBuffer) {
 
         final MultiMap newFormBody;
         boolean hasClientSecretProvider = hasClientSecretProvider();
@@ -404,7 +450,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
             newFormBody = formBody;
         }
 
-        var preparedRequest = prepareHttpRequest(requestProps, uri, newFormBody, op, endpointType);
+        var preparedRequest = prepareHttpRequest(requestProps, uri, newFormBody, op, endpointType, bodyBuffer);
         if (hasClientSecretProvider && preparedRequest.credentialsToRetry != null) {
             return preparedRequest.httpRequestUni.flatMap(httpResponse -> {
                 if (httpResponse.statusCode() == 401) {
@@ -437,7 +483,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
                         if (Boolean.TRUE.equals(credentialsRefreshed)) {
                             LOG.debug("HTTP request failed with response status code 401 and the CredentialsProvider"
                                     + " provided new credentials, retrying the request with new credentials");
-                            return prepareHttpRequest(requestProps, uri, formBody, op, endpointType).httpRequestUni;
+                            return prepareHttpRequest(requestProps, uri, formBody, op, endpointType, bodyBuffer).httpRequestUni;
                         }
                         return Uni.createFrom().item(httpResponse);
                     });
@@ -553,6 +599,10 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
 
     private OidcRequestContextProperties getRequestProps(OidcRequestContextProperties contextProperties) {
         return getRequestProps(contextProperties, null);
+    }
+
+    private OidcRequestContextProperties getRequestProps() {
+        return getRequestProps(null, null);
     }
 
     private OidcRequestContextProperties getRequestProps(OidcRequestContextProperties contextProperties, String grantType) {

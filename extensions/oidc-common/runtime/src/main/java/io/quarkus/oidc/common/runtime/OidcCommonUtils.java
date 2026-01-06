@@ -137,7 +137,10 @@ public class OidcCommonUtils {
     }
 
     public static Buffer encodeForm(MultiMap form) {
-        Buffer buffer = Buffer.buffer();
+        return encodeForm(form, Buffer.buffer());
+    }
+
+    public static Buffer encodeForm(MultiMap form, Buffer buffer) {
         for (Map.Entry<String, String> entry : form) {
             if (buffer.length() != 0) {
                 buffer.appendByte(AMP);

@@ -1764,6 +1764,103 @@ public class CodeFlowTest {
         }
     }
 
+    @Test
+    public void testPushedAuthorizationRequestClientSecret() throws IOException {
+        // first verify that PAR is required by this OIDC client
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+            var webResponse = webClient
+                    .getPage("http://localhost:8081/web-app/pushed-authorization-request/disabled-par-tenant-client-secret")
+                    .getWebResponse();
+            assertEquals(401, webResponse.getStatusCode());
+            var requestQuery = webResponse.getWebRequest().getUrl().getQuery();
+            // error code: invalid_request, error description: Pushed Authorization Request is only allowed
+            assertNotNull(requestQuery);
+            assertTrue(requestQuery.contains("error=invalid_request"),
+                    () -> "request query does not contain 'error=invalid_request': " + requestQuery);
+            assertTrue(requestQuery.contains("Pushed"), () -> "request query does not contain 'Pushed': " + requestQuery);
+            assertTrue(requestQuery.contains("Authorization"),
+                    () -> "request query does not contain 'Authorization': " + requestQuery);
+        }
+
+        // now verify that with enabled PAR, authorization succeeds
+        // the only difference to the previous OIDC tenant is enabled PAR
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient
+                    .getPage("http://localhost:8081/web-app/pushed-authorization-request/tenant-client-secret");
+
+            assertEquals("Sign in to quarkus", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            page = loginForm.getButtonByName("login").click();
+            assertEquals("alice", page.getBody().asNormalizedText());
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testPushedAuthorizationRequestWrongUserCredentials() throws IOException {
+        // this should be similar as with disabled PAR, but let's check as this will happen to users
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient
+                    .getPage("http://localhost:8081/web-app/pushed-authorization-request/tenant-client-secret");
+
+            assertEquals("Sign in to quarkus", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("wrong");
+
+            HtmlPage aPage = loginForm.getButtonByName("login").click();
+            assertTrue(aPage.getBody().asNormalizedText().contains("Invalid username or password."),
+                    () -> "Expected 'Invalid username or password.' but got " + aPage.getBody().asNormalizedText());
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testPushedAuthorizationRequestJwtSecret() throws IOException {
+        // first verify that PAR is required by this OIDC client
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+            var webResponse = webClient
+                    .getPage("http://localhost:8081/web-app/pushed-authorization-request/disabled-par-tenant-jwt")
+                    .getWebResponse();
+
+            assertEquals(401, webResponse.getStatusCode());
+            // error code: invalid_request, error description: Pushed Authorization Request is only allowed
+            var requestQuery = webResponse.getWebRequest().getUrl().getQuery();
+            assertNotNull(requestQuery);
+            assertTrue(requestQuery.contains("error=invalid_request"),
+                    () -> "request query does not contain 'error=invalid_request': " + requestQuery);
+            assertTrue(requestQuery.contains("Pushed"), () -> "request query does not contain 'Pushed': " + requestQuery);
+            assertTrue(requestQuery.contains("Authorization"),
+                    () -> "request query does not contain 'Authorization': " + requestQuery);
+        }
+
+        // now verify that with enabled PAR, authorization succeeds
+        // the only difference to the previous OIDC tenant is enabled PAR
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/web-app/pushed-authorization-request/tenant-jwt");
+
+            assertEquals("Sign in to quarkus", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            page = loginForm.getButtonByName("login").click();
+            assertEquals("alice", page.getBody().asNormalizedText());
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
     private WebClient createWebClient() {
         WebClient webClient = new WebClient();
         webClient.setCssErrorHandler(new SilentCssErrorHandler());

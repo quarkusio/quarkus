@@ -16,6 +16,7 @@ import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.CacheControl;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.CookieSameSite;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.ResponseMode;
+import io.quarkus.oidc.runtime.OidcTenantConfig.PushedAuthorizationRequest;
 
 /**
  * Builder for the {@link Authentication} config.
@@ -33,7 +34,7 @@ public final class AuthenticationConfigBuilder {
             Optional<Boolean> userInfoRequired, Optional<Duration> sessionAgeExtension,
             Duration stateCookieAge, boolean javaScriptAutoRedirect, Optional<Boolean> idTokenRequired,
             Optional<Duration> internalIdTokenLifespan, Optional<Boolean> pkceRequired, Optional<String> pkceSecret,
-            Optional<String> stateSecret) implements Authentication {
+            Optional<String> stateSecret, PushedAuthorizationRequest par) implements Authentication {
     }
 
     private final OidcTenantConfigBuilder builder;
@@ -70,6 +71,7 @@ public final class AuthenticationConfigBuilder {
     private Optional<Boolean> pkceRequired;
     private Optional<String> pkceSecret;
     private Optional<String> stateSecret;
+    private PushedAuthorizationRequest par;
 
     public AuthenticationConfigBuilder() {
         this(new OidcTenantConfigBuilder());
@@ -117,6 +119,7 @@ public final class AuthenticationConfigBuilder {
         this.pkceRequired = authentication.pkceRequired();
         this.pkceSecret = authentication.pkceSecret();
         this.stateSecret = authentication.stateSecret();
+        this.par = authentication.par();
     }
 
     /**
@@ -574,6 +577,29 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
+     * Enables the pushed authorization request ({@link Authentication#par()}).
+     *
+     * @return this builder
+     */
+    public AuthenticationConfigBuilder par() {
+        return par(null);
+    }
+
+    /**
+     * Enables the pushed authorization request ({@link Authentication#par()}) and configures the endpoint URL.
+     *
+     * @param endpointPath {@link PushedAuthorizationRequest#path()}; Relative path or absolute URL of the PAR endpoint.
+     * @return this builder
+     */
+    public AuthenticationConfigBuilder par(String endpointPath) {
+        record PushedAuthorizationRequestImpl(Optional<Boolean> enabled,
+                Optional<String> path) implements PushedAuthorizationRequest {
+        }
+        this.par = new PushedAuthorizationRequestImpl(Optional.of(true), Optional.ofNullable(endpointPath));
+        return this;
+    }
+
+    /**
      * @return OidcTenantConfigBuilder with built {@link Authentication}
      */
     public OidcTenantConfigBuilder end() {
@@ -596,6 +622,6 @@ public final class AuthenticationConfigBuilder {
                 failOnMissingStateParam,
                 failOnUnresolvedKid,
                 userInfoRequired, sessionAgeExtension, stateCookieAge, javaScriptAutoRedirect, idTokenRequired,
-                internalIdTokenLifespan, pkceRequired, pkceSecret, stateSecret);
+                internalIdTokenLifespan, pkceRequired, pkceSecret, stateSecret, par);
     }
 }

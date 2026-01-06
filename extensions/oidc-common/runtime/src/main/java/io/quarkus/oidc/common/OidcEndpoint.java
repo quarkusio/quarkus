@@ -50,7 +50,11 @@ public @interface OidcEndpoint {
         /**
          * Applies to requests to dynamically registered OIDC client endpoints
          */
-        REGISTERED_CLIENT
+        REGISTERED_CLIENT,
+        /**
+         * Applies to the pushed authorization requests.
+         */
+        PUSHED_AUTHORIZATION_REQUEST
     }
 
     /**

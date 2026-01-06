@@ -5,8 +5,10 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.jboss.logging.Logger;
+import org.slf4j.MDC;
 
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
@@ -22,6 +24,7 @@ public final class OpenTelemetryUtil {
     public static final String SPAN_ID = "spanId";
     public static final String SAMPLED = "sampled";
     public static final String PARENT_ID = "parentId";
+    private static final Set<String> TRACING_MDC_KEYS = Set.of(TRACE_ID, SPAN_ID, SAMPLED, PARENT_ID);
 
     private OpenTelemetryUtil() {
     }
@@ -74,7 +77,7 @@ public final class OpenTelemetryUtil {
                         getSpanData(QuarkusContextStorage.getOtelContext(vertxContext)));
             }
             // clear the object ref to force a new one and prevent crosstalk
-            VertxMDC.INSTANCE.clearVertxMdcFromContext(vertxContext);
+            VertxMDC.INSTANCE.reinitializeVertxMdc(vertxContext, TRACING_MDC_KEYS);
             SpanContext spanContext = span.getSpanContext();
             VertxMDC.INSTANCE.put(SPAN_ID, spanContext.getSpanId(), vertxContext);
             VertxMDC.INSTANCE.put(TRACE_ID, spanContext.getTraceId(), vertxContext);

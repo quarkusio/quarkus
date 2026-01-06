@@ -103,7 +103,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         this.locationCookie = runtimeForm.locationCookie();
         this.cookiePath = runtimeForm.cookiePath().orElse(null);
         this.cookieDomain = runtimeForm.cookieDomain().orElse(null);
-        this.redirectToLandingPage = landingPage != null && runtimeForm.redirectAfterLogin();
+        this.redirectToLandingPage = landingPage != null;
         this.redirectToLoginPage = loginPage != null;
         this.redirectToErrorPage = errorPage != null;
         this.cookieSameSite = CookieSameSite.valueOf(runtimeForm.cookieSameSite().name());

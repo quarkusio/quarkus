@@ -114,6 +114,8 @@
                 <exclude>mysql:mysql-connector-java</exclude>
                 <!-- Use the SmallRye classfile API instead -->
                 <exclude>io.github.dmlloyd:jdk-classfile-backport</exclude>
+                <!-- org.lz4:lz4-java is abandoned and has a CVE -->
+                <exclude>org.lz4:lz4-java</exclude>
             </excludes>
             <includes>
                 <!-- this is for REST Assured -->

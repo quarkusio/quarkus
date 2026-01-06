@@ -9,12 +9,6 @@ import java.util.Set;
 
 import javax.sql.DataSource;
 
-import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.PersistenceConfiguration;
-import jakarta.persistence.PersistenceException;
-import jakarta.persistence.spi.PersistenceProvider;
-import jakarta.persistence.spi.PersistenceUnitInfo;
-
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
@@ -42,6 +36,11 @@ import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRunti
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.PersistenceConfiguration;
+import jakarta.persistence.PersistenceException;
+import jakarta.persistence.spi.PersistenceProvider;
+import jakarta.persistence.spi.PersistenceUnitInfo;
 
 /**
  * This can not inherit from HibernatePersistenceProvider as that would force
@@ -157,7 +156,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             Map properties) {
         log.tracef("Attempting to obtain correct EntityManagerFactoryBuilder for persistenceUnitName : %s",
                 persistenceUnitName);
-
+        SchemaToolingUtil.clearTempUnzippedSchemaDirectories();
         verifyProperties(properties);
 
         // These are pre-parsed during image generation:

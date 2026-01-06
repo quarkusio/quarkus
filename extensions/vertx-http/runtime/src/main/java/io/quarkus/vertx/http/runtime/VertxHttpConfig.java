@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -13,6 +14,7 @@ import io.quarkus.vertx.http.runtime.cors.CORSConfig;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
+import io.vertx.core.http.Http2Settings;
 
 @ConfigMapping(prefix = "quarkus.http")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
@@ -107,6 +109,16 @@ public interface VertxHttpConfig {
      */
     @WithDefault("true")
     boolean http2PushEnabled();
+
+    /**
+     * Set the default HTTP/2 connection window size. It overrides the initial window
+     * size set by {@link Http2Settings#getInitialWindowSize}, so the connection window size
+     * is greater than for its streams, in order the data throughput.
+     * <p/>
+     * A value of {@code -1} reuses the initial window size setting.
+     */
+    @ConfigDocDefault("-1")
+    OptionalInt http2ConnectionWindowSize();
 
     /**
      * The CORS config

@@ -368,6 +368,9 @@ public class HttpServerOptionsUtils {
                         (int) httpConfig.limits().rstFloodWindowDuration().get().toSeconds());
                 httpServerOptions.setHttp2RstFloodWindowDurationTimeUnit(TimeUnit.SECONDS);
             }
+            if (httpConfig.http2ConnectionWindowSize().isPresent()) {
+                httpServerOptions.setHttp2ConnectionWindowSize(httpConfig.http2ConnectionWindowSize().getAsInt());
+            }
         } else {
             httpServerOptions.setHttp2ClearTextEnabled(false);
         }

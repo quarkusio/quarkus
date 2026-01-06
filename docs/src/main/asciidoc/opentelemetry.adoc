@@ -53,7 +53,7 @@ The tracing functionality is supported and *on* by default.
 === xref:opentelemetry-metrics.adoc[OpenTelemetry Metrics Guide]
 
 ==== Enable Metrics
-The metrics functionality is experimental and *off* by default. You will need to activate it by setting:
+The metrics functionality is tech preview and *off* by default. You will need to activate it by setting:
 
 [source,properties]
 ----
@@ -64,7 +64,7 @@ At build time on your `application.properties` file.
 === xref:opentelemetry-logging.adoc[OpenTelemetry Logging Guide]
 
 ==== Enable Logs
-The logging functionality is experimental and *off* by default. You will need to activate it by setting:
+The logging functionality is tech preview and *off* by default. You will need to activate it by setting:
 
 [source,properties]
 ----
@@ -140,7 +140,7 @@ If false will disable the default OTLP exporter at *build* time.
 | Metrics
 |`quarkus.otel.metrics.enabled`
 |false
-|Metrics are disabled by default at *build* time because they are experimental.
+|Metrics are disabled by default at *build* time because they are tech preview.
 
 | Metrics output
 |`quarkus.otel.metrics.exporter`
@@ -150,7 +150,7 @@ If false will disable the default OTLP exporter at *build* time.
 | Logs
 |`quarkus.otel.logs.enabled`
 |false
-|Logs are disabled by default at *build* time because they are experimental.
+|Logs are disabled by default at *build* time because they are tech preview.
 
 | Logs output
 |`quarkus.otel.logs.exporter`

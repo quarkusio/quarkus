@@ -6,6 +6,7 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
+import io.quarkus.hibernate.orm.deployment.spatial.HibernateSpatialAvailable;
 import io.quarkus.hibernate.orm.runtime.graal.DisableLoggingFeature;
 
 /**
@@ -43,5 +44,11 @@ public final class HibernateLogFilterBuildStep {
         //property (we have a custom DialectFactory already so this could be trivial), however even in this case ORM
         //can't guess things since there is no connection, so even if we did so, this message wouldn't be applicable.
         filters.produce(new LogCleanupFilterBuildItem("org.hibernate.orm.deprecation", "HHH90000025"));
+    }
+
+    @BuildStep(onlyIf = HibernateSpatialAvailable.class)
+    void setupSpatialLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.spatial.integration.SpatialService",
+                "Hibernate Spatial integration enabled"));
     }
 }

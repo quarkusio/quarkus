@@ -3657,6 +3657,11 @@
                 <artifactId>byte-buddy-agent</artifactId>
                 <version>${bytebuddy.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.geolatte</groupId>
+                <artifactId>geolatte-geom</artifactId>
+                <version>${geolatte.version}</version>
+            </dependency>
 
             <!-- GRPC dependencies -->
             <dependency>
@@ -5438,6 +5443,11 @@
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-envers</artifactId>
+                <version>${hibernate-orm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate.orm</groupId>
+                <artifactId>hibernate-spatial</artifactId>
                 <version>${hibernate-orm.version}</version>
             </dependency>
             <dependency>

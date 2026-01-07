@@ -86,6 +86,7 @@
 
         <!-- Database images for JDBC/Reactive/Hibernate tests and devservices -->
         <postgres.image>docker.io/library/postgres:17</postgres.image>
+        <postgis.image>docker.io/postgis/postgis:17-3.5</postgis.image>
         <mariadb.image>docker.io/library/mariadb:10.11</mariadb.image>
         <db2.image>icr.io/db2_community/db2:12.1.0.0</db2.image>
         <mssql.image>mcr.microsoft.com/mssql/server:2022-latest</mssql.image>

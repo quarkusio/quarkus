@@ -1115,6 +1115,25 @@ At this point the extension does not expose additional configuration properties.
 
 For more information about Hibernate Envers, see link:https://hibernate.org/orm/envers/[hibernate.org/orm/envers/].
 
+[[spatial]]
+== Hibernate Spatial
+The Spatial extension to Hibernate ORM provides a standardized, cross-database interface to geographic data storage and query functions.
+
+To use Hibernate Spatial, you simply need to add the dependency to your project:
+[source,xml]
+.Additional dependency to enable Hibernate Spatial
+----
+    <!-- Add the Hibernate Spatial module -->
+    <dependency>
+        <groupId>org.hibernate.orm</groupId>
+        <artifactId>hibernate-spatial</artifactId>
+    </dependency>
+----
+
+The dependency version is managed by Quarkus, so you don't need to specify it explicitly.
+
+You can find all information about Spatial in the Hibernate user guide: link:{hibernate-orm-docs-url}#spatial[Hibernate ORM Spatial].
+
 [[metrics]]
 == Metrics
 xref:telemetry-micrometer.adoc[Micrometer] is

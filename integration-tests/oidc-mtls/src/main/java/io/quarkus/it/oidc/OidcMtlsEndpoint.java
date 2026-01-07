@@ -54,6 +54,7 @@ public class OidcMtlsEndpoint {
         return "Identities: " + cred.getSubjectX500Principal().getName().split(",")[0] + ", "
                 + accessToken.getName() + "; "
                 + "Client: " + accessToken.getClaim("azp") + "; "
+                + "Scope: " + accessToken.getClaim("scope") + "; "
                 + "JWT cert thumbprint: " + isJwtTokenThumbprintAvailable() + ", "
                 + "introspection cert thumbprint: " + isIntrospectionThumbprintAvailable();
     }

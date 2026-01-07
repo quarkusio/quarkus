@@ -24,9 +24,11 @@ import de.flapdoodle.embed.mongo.transitions.RunningMongodProcess;
 import de.flapdoodle.embed.process.types.ProcessConfig;
 import de.flapdoodle.reverse.TransitionWalker;
 import de.flapdoodle.reverse.transitions.Start;
+import io.quarkus.test.DisabledOnPower;
 import io.smallrye.mutiny.Uni;
 
-public class MongoTestBase {
+@DisabledOnPower
+public abstract class MongoTestBase {
 
     private static final Logger LOGGER = Logger.getLogger(MongoTestBase.class);
     public static final String COLLECTION_PREFIX = "mongo-extension-test-";

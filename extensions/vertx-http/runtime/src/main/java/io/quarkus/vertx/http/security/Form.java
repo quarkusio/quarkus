@@ -48,7 +48,6 @@ public interface Form {
         private String passwordParameter;
         private Optional<String> errorPage;
         private Optional<String> landingPage;
-        private boolean redirectAfterLogin;
         private String locationCookie;
         private Duration timeout;
         private Duration newCookieInterval;
@@ -75,7 +74,6 @@ public interface Form {
             this.passwordParameter = formAuthConfig.passwordParameter();
             this.errorPage = formAuthConfig.errorPage();
             this.landingPage = formAuthConfig.landingPage();
-            this.redirectAfterLogin = formAuthConfig.redirectAfterLogin();
             this.locationCookie = formAuthConfig.locationCookie();
             this.timeout = formAuthConfig.timeout();
             this.newCookieInterval = formAuthConfig.newCookieInterval();
@@ -349,7 +347,7 @@ public interface Form {
 
         private FormAuthConfig createFormConfig() {
             record FormConfigImpl(Optional<String> loginPage, String usernameParameter, String passwordParameter,
-                    Optional<String> errorPage, Optional<String> landingPage, boolean redirectAfterLogin,
+                    Optional<String> errorPage, Optional<String> landingPage,
                     String locationCookie, Duration timeout, Duration newCookieInterval, String cookieName,
                     Optional<String> cookiePath, Optional<String> cookieDomain, boolean httpOnlyCookie,
                     CookieSameSite cookieSameSite, Optional<Duration> cookieMaxAge, String postLocation,
@@ -357,7 +355,7 @@ public interface Form {
                     Optional<Set<String>> loginPageQueryParams) implements FormAuthConfig {
             }
             return new FormConfigImpl(loginPage, usernameParameter, passwordParameter, errorPage,
-                    landingPage, redirectAfterLogin, locationCookie, timeout, newCookieInterval, cookieName, cookiePath,
+                    landingPage, locationCookie, timeout, newCookieInterval, cookieName, cookiePath,
                     cookieDomain, httpOnlyCookie, cookieSameSite, cookieMaxAge, postLocation, landingPageQueryParams,
                     errorPageQueryParams, loginPageQueryParams);
         }

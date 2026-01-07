@@ -84,18 +84,6 @@ public interface FormAuthConfig {
     Optional<Set<@WithConverter(TrimmedStringConverter.class) String>> landingPageQueryParams();
 
     /**
-     * Option to disable redirect to landingPage if there is no saved page to redirect back to. Form Auth POST is followed
-     * by redirect to landingPage by default.
-     *
-     * @deprecated redirect to landingPage can be disabled by removing default landing page
-     *             (via `quarkus.http.auth.form.landing-page=`). Quarkus will ignore this configuration property
-     *             if there is no landing page.
-     */
-    @WithDefault("true")
-    @Deprecated(forRemoval = true, since = "2.16")
-    boolean redirectAfterLogin();
-
-    /**
      * Option to control the name of the cookie used to redirect the user back
      * to the location they want to access.
      */

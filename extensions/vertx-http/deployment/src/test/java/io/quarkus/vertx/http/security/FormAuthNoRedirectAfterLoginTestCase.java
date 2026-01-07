@@ -26,8 +26,7 @@ public class FormAuthNoRedirectAfterLoginTestCase {
             "quarkus.http.auth.form.enabled=true\n" +
             "quarkus.http.auth.form.login-page=login\n" +
             "quarkus.http.auth.form.error-page=error\n" +
-            "quarkus.http.auth.form.landing-page=landing\n" +
-            "quarkus.http.auth.form.redirect-after-login=false\n" +
+            "quarkus.http.auth.form.landing-page=\n" +
             "quarkus.http.auth.policy.r1.roles-allowed=a d m i n\n" +
             "quarkus.http.auth.permission.roles1.paths=/admin\n" +
             "quarkus.http.auth.permission.roles1.policy=r1\n";
@@ -57,7 +56,7 @@ public class FormAuthNoRedirectAfterLoginTestCase {
      * we do POST with valid credentials.
      * Server should provide a response with quarkus-credential cookie
      * and a redirect to the previously attempted /admin page.
-     * Note the redirect takes place despite having quarkus.http.auth.form.redirect-after-login=false
+     * Note the redirect takes place despite having 'quarkus.http.auth.form.landing-page='
      * because there is some previous location to redirect to.
      *
      * Last but not least, client accesses the protected /admin resource again,

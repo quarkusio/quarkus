@@ -77,6 +77,14 @@
           <artifactId>awaitility</artifactId>
           <scope>test</scope>
       </dependency>
+      <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
+      <!-- SimpleSchedulerRunAsUserTest needs Quarkus Security dependency -->
+      <dependency>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-security-deployment</artifactId>
+          <optional>true</optional>
+          <scope>test</scope>
+      </dependency>
   </dependencies>
 
     <build>

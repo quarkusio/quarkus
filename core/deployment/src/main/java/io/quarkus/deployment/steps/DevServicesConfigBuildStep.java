@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -14,9 +13,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesAdditionalConfigBuildItem;
-import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
-import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
@@ -25,20 +22,12 @@ class DevServicesConfigBuildStep {
     static volatile Map<String, String> oldConfig;
 
     @BuildStep
-    List<DevServicesConfigResultBuildItem> deprecated(List<DevServicesNativeConfigResultBuildItem> items) {
-        return items.stream().map(s -> new DevServicesConfigResultBuildItem(s.getKey(), s.getValue()))
-                .collect(Collectors.toList());
-    }
-
-    @BuildStep
     @Produce(ServiceStartBuildItem.class)
     DevServicesLauncherConfigResultBuildItem setup(BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfig,
-            List<DevServicesConfigResultBuildItem> devServicesConfigResultBuildItems,
             List<DevServicesResultBuildItem> devServicesResultBuildItems,
             List<DevServicesAdditionalConfigBuildItem> devServicesAdditionalConfigBuildItems,
             CuratedApplicationShutdownBuildItem shutdownBuildItem) {
-        Map<String, String> newProperties = new HashMap<>(devServicesConfigResultBuildItems.stream().collect(
-                Collectors.toMap(DevServicesConfigResultBuildItem::getKey, DevServicesConfigResultBuildItem::getValue)));
+        Map<String, String> newProperties = new HashMap<>();
         for (DevServicesResultBuildItem resultBuildItem : devServicesResultBuildItems) {
             newProperties.putAll(resultBuildItem.getConfig());
         }

@@ -12,7 +12,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.extest.runtime.classpath.ClasspathEntriesRecorder;
 import io.quarkus.extest.runtime.classpath.ClasspathRecordingConfig;
@@ -39,9 +38,6 @@ public class ClasspathEntryRecordingBuildStep {
     // This makes sure we execute this step even though it doesn't produce anything useful for the build
     // (just side-effects).
     @Produce(FeatureBuildItem.class)
-    // This makes sure we execute this in io.quarkus.test.junit.IntegrationTestUtil.handleDevDb,
-    // so that we can reproduce a problem that happens in the Hibernate ORM extension.
-    @Produce(DevServicesConfigResultBuildItem.class)
     void recordDuringAugmentation(ClasspathRecordingConfig config)
             throws IOException {
         List<String> resourcesToRecord = getResourcesToRecord(config);
@@ -54,9 +50,6 @@ public class ClasspathEntryRecordingBuildStep {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    // This makes sure we execute this in io.quarkus.test.junit.IntegrationTestUtil.handleDevDb,
-    // so that we can reproduce a problem that happens in the Hibernate ORM extension.
-    @Produce(DevServicesConfigResultBuildItem.class)
     void recordDuringStaticInit(ClasspathEntriesRecorder classpathEntriesRecorder, ClasspathRecordingConfig config)
             throws IOException {
         List<String> resourcesToRecord = getResourcesToRecord(config);
@@ -69,9 +62,6 @@ public class ClasspathEntryRecordingBuildStep {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    // This makes sure we execute this in io.quarkus.test.junit.IntegrationTestUtil.handleDevDb,
-    // so that we can reproduce a problem that happens in the Hibernate ORM extension.
-    @Produce(DevServicesConfigResultBuildItem.class)
     void recordDuringRuntimeInit(ClasspathEntriesRecorder classpathEntriesRecorder, ClasspathRecordingConfig config)
             throws IOException {
         List<String> resourcesToRecord = getResourcesToRecord(config);

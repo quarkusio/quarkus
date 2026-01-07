@@ -9,6 +9,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -108,7 +109,7 @@ public class OidcMtlsTest {
     }
 
     @Test
-    public void testMtlsClientWithSecret() throws Exception {
+    public void testMtlsClientWithSecretWithoutMicroprofileScope() throws Exception {
         WebClientOptions options = createWebClientOptions();
         WebClient webClient = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
 
@@ -123,10 +124,38 @@ public class OidcMtlsTest {
         String name = resp.bodyAsString();
         assertEquals("Identities: CN=backend-service, alice;"
                 + " Client: backend-client-with-secret;"
+                + " Scope: email profile;"
                 + " JWT cert thumbprint: false, introspection cert thumbprint: false", name);
 
         // HTTP 401, token is valid but it is not certificate bound
-        resp = webClient.get("/service/mtls-jwt")
+        resp = webClient.get("/service/mtls-client-secret")
+                .putHeader("Authorization", OidcConstants.BEARER_SCHEME + " " + accessToken)
+                .send().await()
+                .indefinitely();
+        assertEquals(401, resp.statusCode());
+    }
+
+    @Test
+    public void testMtlsClientWithSecretWithMicroprofileScope() throws Exception {
+        WebClientOptions options = createWebClientOptions();
+        WebClient webClient = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
+
+        String accessToken = getAccessToken("backend-client-with-secret", "secret", "alice", List.of("microprofile:jwt"));
+        // HTTP 200
+        HttpResponse<io.vertx.mutiny.core.buffer.Buffer> resp = webClient.get("/service/mtls-client-with-secret")
+                .putHeader("Authorization",
+                        OidcConstants.BEARER_SCHEME + " " + accessToken)
+                .send().await()
+                .indefinitely();
+        assertEquals(200, resp.statusCode());
+        String name = resp.bodyAsString();
+        assertEquals("Identities: CN=backend-service, alice;"
+                + " Client: backend-client-with-secret;"
+                + " Scope: email microprofile:jwt profile;"
+                + " JWT cert thumbprint: false, introspection cert thumbprint: false", name);
+
+        // HTTP 401, token is valid but it is not certificate bound
+        resp = webClient.get("/service/mtls-client-secret")
                 .putHeader("Authorization", OidcConstants.BEARER_SCHEME + " " + accessToken)
                 .send().await()
                 .indefinitely();
@@ -134,7 +163,11 @@ public class OidcMtlsTest {
     }
 
     private String getAccessToken(String clientName, String clientSecret, String userName) {
-        return client.getAccessToken(userName, userName, clientName, clientSecret);
+        return getAccessToken(clientName, clientSecret, userName, List.of());
+    }
+
+    private String getAccessToken(String clientName, String clientSecret, String userName, List<String> scopes) {
+        return client.getAccessToken(userName, userName, clientName, clientSecret, scopes);
     }
 
     private WebClientOptions createWebClientOptions() throws Exception {

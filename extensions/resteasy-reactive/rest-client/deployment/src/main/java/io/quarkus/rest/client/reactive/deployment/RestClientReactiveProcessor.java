@@ -86,6 +86,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -507,6 +508,7 @@ class RestClientReactiveProcessor {
             CustomScopeAnnotationsBuildItem scopes,
             List<RestClientAnnotationsTransformerBuildItem> restClientAnnotationsTransformerBuildItem,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfigDefault,
             LaunchModeBuildItem launchMode,
             RestClientRecorder recorder,
             ShutdownContextBuildItem shutdown) {
@@ -523,6 +525,11 @@ class RestClientReactiveProcessor {
                     .filter(f -> f.hasAnnotation(REST_CLIENT))
                     .map(f -> f.type().name())
                     .collect(Collectors.toSet());
+        }
+
+        for (DotName dotName : requestedRestClientMocks) {
+            runtimeConfigDefault.produce(new RunTimeConfigurationDefaultBuildItem(
+                    "quarkus.rest-client.\"%s\".uri".formatted(dotName.toString()), "http://change.me"));
         }
 
         Map<String, String> configKeys = new HashMap<>();

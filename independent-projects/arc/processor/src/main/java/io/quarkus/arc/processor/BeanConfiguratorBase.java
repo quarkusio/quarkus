@@ -381,8 +381,7 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
      * <p>
      * The class of the provider type is scanned for interceptor binding annotations.
      * <p>
-     * This method may only be called once. If called multiple times, the last call wins and
-     * the previous calls are lost.
+     * This method may only be called once. Subsequent calls throw an exception.
      *
      * @return self
      */
@@ -400,8 +399,7 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
      * of the provider type are ignored; instead, the {@code bindingsSource} class is scanned
      * for interceptor binding annotations as defined in {@link io.quarkus.arc.BindingsSource}.
      * <p>
-     * This method may only be called once. If called multiple times, the last call wins and
-     * the previous calls are lost.
+     * This method may only be called once. Subsequent calls throw an exception.
      *
      * @param bindingsSource the bindings source class, may be {@code null}
      * @return self
@@ -420,8 +418,7 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
      * of the provider type are ignored; instead, the {@code bindingsSource} class is scanned
      * for interceptor binding annotations as defined in {@link io.quarkus.arc.BindingsSource}.
      * <p>
-     * This method may only be called once. If called multiple times, the last call wins and
-     * the previous calls are lost.
+     * This method may only be called once. Subsequent calls throw an exception.
      *
      * @param bindingsSource the bindings source class, may be {@code null}
      * @return self

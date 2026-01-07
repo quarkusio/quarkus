@@ -1021,6 +1021,8 @@ public class SpyGreetingServiceTest {
 <2> Here we are telling the Spy to return "hi" instead of "hello". When the `GreetingResource` requests the greeting from `GreetingService` we get the mocked response instead of the response of the regular `GreetingService` bean. Sometimes it's impossible or impractical to use `when(Object)` for stubbing spies. Therefore when using spies please consider `doReturn|Answer|Throw()` family of methods for stubbing.
 <3> We are verifying that we get the mocked response from the Spy.
 
+NOTE: Contrary to what happens with `@InjectMock`, when using `@InjectSpy` for a bean that used CDI observers, these observers are not disabled but executed as per the normal CDI rules.
+
 ==== Using `@InjectMock` with `@RestClient`
 
 The `@RegisterRestClient` registers the implementation of the REST Client at runtime, and because the bean needs to be a regular scope, you have to annotate your interface with `@ApplicationScoped`.

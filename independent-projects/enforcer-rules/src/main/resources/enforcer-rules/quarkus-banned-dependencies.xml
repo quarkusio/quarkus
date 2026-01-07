@@ -112,6 +112,8 @@
                 <exclude>org.graalvm.nativeimage:svm</exclude>
                 <!-- moved to com.mysql:mysql-connector-j -->
                 <exclude>mysql:mysql-connector-java</exclude>
+                <!-- org.lz4:lz4-java is abandoned and has a CVE -->
+                <exclude>org.lz4:lz4-java</exclude>
             </excludes>
             <includes>
                 <!-- this is for REST Assured -->

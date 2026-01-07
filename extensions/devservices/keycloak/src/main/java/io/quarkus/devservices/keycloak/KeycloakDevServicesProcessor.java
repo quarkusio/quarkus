@@ -1,6 +1,5 @@
 package io.quarkus.devservices.keycloak;
 
-import static io.quarkus.devservices.common.ConfigureUtil.getDefaultImageNameFor;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
 import static io.quarkus.devservices.keycloak.KeycloakDevServicesConfigBuildItem.getKeycloakUrl;
@@ -172,7 +171,7 @@ public class KeycloakDevServicesProcessor {
         boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                 devServicesSharedNetworkBuildItem);
 
-        String imageName = config.imageName();
+        String imageName = config.imageName().orElse(null); // TODO handle the null properly
         // TODO do something with this
         List<String> errors = new ArrayList<>();
 
@@ -395,7 +394,7 @@ public class KeycloakDevServicesProcessor {
                     config.shared(),
                     LaunchMode.current());
 
-            String imageName = config.imageName();
+            String imageName = config.imageName().orElse(null); // TODO handle the null properly
             DockerImageName dockerImageName = DockerImageName.parse(imageName).asCompatibleSubstituteFor(imageName);
 
             oidcContainer = new QuarkusOidcContainer(config, dockerImageName,
@@ -439,7 +438,7 @@ public class KeycloakDevServicesProcessor {
                 String hostURL, List<RealmRepresentation> realmReps, List<String> errors,
                 KeycloakDevServicesConfigurator devServicesConfigurator, String internalBaseUrl) {
             final String realmName = !realmReps.isEmpty() ? realmReps.iterator().next().getRealm()
-                    : getDefaultRealmName(config);
+                    : getDefaultRealmName();
             final String authServerInternalUrl = realmsURL(internalURL, realmName);
 
             String clientAuthServerBaseUrl = hostURL != null ? hostURL : internalURL;
@@ -513,48 +512,10 @@ public class KeycloakDevServicesProcessor {
         }
 
         private static String getDefaultRealmName() {
-            return capturedDevServicesConfiguration.realmName().orElse("quarkus");
+            // TODO merge, no longer works , need to handle better!!!
+            //  return capturedDevServicesConfiguration.realmName().orElse("quarkus");
+            return "quarkus";
         }
-
-    private static RunningDevService startContainer(
-            DevServicesComposeProjectBuildItem composeProjectBuildItem,
-            BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer,
-            boolean useSharedNetwork, Optional<Duration> timeout,
-            List<String> errors, KeycloakDevServicesConfigurator devServicesConfigurator) {
-        if (!capturedDevServicesConfiguration.enabled()) {
-            // explicitly disabled
-            LOG.debug("Not starting Dev Services for Keycloak as it has been disabled in the config");
-            return null;
-        }
-
-        final Optional<ContainerAddress> maybeContainerAddress = KEYCLOAK_DEV_MODE_CONTAINER_LOCATOR.locateContainer(
-                capturedDevServicesConfiguration.serviceName(),
-                capturedDevServicesConfiguration.shared(),
-                LaunchMode.current());
-
-        String imageName = capturedDevServicesConfiguration.imageName().orElseGet(() -> getDefaultImageNameFor("keycloak"));
-        DockerImageName dockerImageName = DockerImageName.parse(imageName).asCompatibleSubstituteFor(imageName);
-
-        final Supplier<RunningDevService> defaultKeycloakContainerSupplier = () -> {
-
-            QuarkusOidcContainer oidcContainer = new QuarkusOidcContainer(dockerImageName,
-                    capturedDevServicesConfiguration.port(),
-                    composeProjectBuildItem.getDefaultNetworkId(),
-                    useSharedNetwork,
-                    capturedDevServicesConfiguration.realmPath().orElse(List.of()),
-                    resourcesMap(errors),
-                    capturedDevServicesConfiguration.serviceName(),
-                    capturedDevServicesConfiguration.shared(),
-                    capturedDevServicesConfiguration.javaOpts(),
-                    capturedDevServicesConfiguration.startCommand(),
-                    capturedDevServicesConfiguration.features(),
-                    capturedDevServicesConfiguration.showLogs(),
-                    capturedDevServicesConfiguration.containerMemoryLimit(),
-                    errors);
-
-            timeout.ifPresent(oidcContainer::withStartupTimeout);
-            oidcContainer.withEnv(capturedDevServicesConfiguration.containerEnv());
-            oidcContainer.start();
 
         // TODO what to do with the errors
         private Map<String, String> sortConfig() {

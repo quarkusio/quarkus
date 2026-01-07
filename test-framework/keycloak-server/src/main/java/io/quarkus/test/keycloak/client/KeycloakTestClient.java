@@ -6,8 +6,6 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -286,7 +284,7 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
             requestSpec = requestSpec.param("client_secret", clientSecret);
         }
         if (scopes != null && !scopes.isEmpty()) {
-            requestSpec = requestSpec.param("scope", urlEncode(String.join(" ", scopes)));
+            requestSpec = requestSpec.param("scope", String.join(" ", scopes));
         }
         return requestSpec.when().post(authServerUrl + "/protocol/openid-connect/token")
                 .as(AccessTokenResponse.class);
@@ -300,7 +298,7 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
             requestSpec = requestSpec.param("client_secret", clientSecret);
         }
         if (scopes != null && !scopes.isEmpty()) {
-            requestSpec = requestSpec.param("scope", urlEncode(String.join(" ", scopes)));
+            requestSpec = requestSpec.param("scope", String.join(" ", scopes));
         }
         return requestSpec.when().post(authServerUrl + "/protocol/openid-connect/token")
                 .as(AccessTokenResponse.class).getToken();
@@ -429,14 +427,6 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
     @Override
     public void setIntegrationTestContext(DevServicesContext context) {
         this.testContext = context;
-    }
-
-    private static String urlEncode(String value) {
-        try {
-            return URLEncoder.encode(value, StandardCharsets.UTF_8.name());
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
     }
 
     private RequestSpecification getSpec() {

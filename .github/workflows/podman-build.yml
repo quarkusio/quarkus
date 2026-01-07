@@ -16,6 +16,7 @@ env:
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test
   IS_PODMAN: "true"
+  MVNW_REPOURL: https://maven-central.storage-download.googleapis.com/maven2
 
 jobs:
   build-all-the-things:

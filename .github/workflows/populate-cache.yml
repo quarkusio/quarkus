@@ -9,6 +9,7 @@ env:
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
   COMMON_MAVEN_ARGS: "-e -B --settings .github/mvn-settings.xml --fail-at-end"
+  MVNW_REPOURL: https://maven-central.storage-download.googleapis.com/maven2
 
 defaults:
   run:

@@ -18,7 +18,15 @@ final class MockitoMocksTracker {
     }
 
     static void track(Object testInstance, Object mock, Object beanInstance) {
-        TEST_TO_USED_MOCKS.computeIfAbsent(testInstance, k -> new HashSet<>()).add(new Mocked(mock, beanInstance));
+        doTrack(testInstance, mock, beanInstance, false);
+    }
+
+    static void trackSpy(Object testInstance, Object mock, Object beanInstance) {
+        doTrack(testInstance, mock, beanInstance, true);
+    }
+
+    static void doTrack(Object testInstance, Object mock, Object beanInstance, boolean isSpy) {
+        TEST_TO_USED_MOCKS.computeIfAbsent(testInstance, k -> new HashSet<>()).add(new Mocked(mock, beanInstance, isSpy));
     }
 
     static Set<Mocked> getMocks(Object testInstance) {
@@ -55,10 +63,12 @@ final class MockitoMocksTracker {
 
         final Object mock;
         final Object beanInstance;
+        final boolean isSpy;
 
-        Mocked(Object mock, Object beanInstance) {
+        Mocked(Object mock, Object beanInstance, boolean isSpy) {
             this.mock = mock;
             this.beanInstance = beanInstance;
+            this.isSpy = isSpy;
         }
     }
 }

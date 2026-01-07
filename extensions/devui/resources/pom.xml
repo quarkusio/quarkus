@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-devui-parent</artifactId>
-        <version>3.30.999-SNAPSHOT</version>
+        <version>3.30.6</version>
         <relativePath>../</relativePath>
     </parent>
     <artifactId>quarkus-devui-resources</artifactId>

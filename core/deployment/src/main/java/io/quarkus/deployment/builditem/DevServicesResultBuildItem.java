@@ -260,31 +260,84 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         private Map<String, Function<Startable, String>> applicationConfigProvider;
         private Set<String> highPriorityConfig;
 
+        /**
+         * Use {@link #feature(String)} instead
+         *
+         * @param name the name of the owning feature
+         * @return the builder, for chaining
+         */
+        @Deprecated()
         public OwnedServiceBuilder<T> name(String name) {
             this.name = name;
             return this;
         }
 
+        /**
+         * Identifies the feature which owns this service. The feature's name is used for identification and lifecycle
+         * managemennt.
+         * This should always be set. Use {@link #feature(String)} if a feature object is not available.
+         *
+         * @param feature the owning feature
+         * @return the builder, for chaining
+         */
         public OwnedServiceBuilder<T> feature(Feature feature) {
             this.name = feature.getName();
             return this;
         }
 
+        /**
+         * Identifies the feature which owns this service. The feature's name is used for identification and lifecycle
+         * managemennt.
+         * This should always be set. Also see {@link #feature(Feature)}, which can be used when a feature object is available.
+         *
+         * @param featureName the name of the owning feature
+         * @return the builder, for chaining
+         */
         public OwnedServiceBuilder<T> feature(String featureName) {
             this.name = featureName;
             return this;
         }
 
+        /**
+         * Sets a human-readable description of the service.
+         * <p>
+         * Optional.
+         *
+         * @param description the service description
+         * @return the builder, for chaining
+         */
         public OwnedServiceBuilder<T> description(String description) {
             this.description = description;
             return this;
         }
 
+        /**
+         * Defines config which should be injected into the config system when this service is started.
+         * All values must be known up-front, at build time.
+         * <p>
+         * This is easier to use than {@link #configProvider(Map)} because there are no lambdas, but it is also more limited.
+         * The two methods can co-exist, with static values being set via {@link #config(Map)} and lazy or dynamic ones being
+         * set via {@link #configProvider(Map)}.
+         * <p>
+         * Optional.
+         *
+         * @param config a map of config keys and fixed values
+         * @return the builder, for chaining
+         */
         public OwnedServiceBuilder<T> config(Map<String, String> config) {
             this.config = config;
             return this;
         }
 
+        /**
+         * If the feature provides multiple dev services, this is the name of the service.
+         * Used for identification and lifecycle management, along with the {@link #feature(Feature)}.
+         * <p>
+         * Optional, only needed if there are multiple services for a feature.
+         *
+         * @param serviceName a name specific to this service, when there are several
+         * @return the builder, for chaining
+         */
         public OwnedServiceBuilder<T> serviceName(String serviceName) {
             this.serviceName = serviceName;
             return this;
@@ -316,9 +369,18 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         }
 
         /**
-         * Provides config to inject into the config system. If you've got values that don't change, use config(), and if you've
+         * Provides config to inject into the config system. If you've got values that don't change, use {@link #config(Map)},
+         * and if you've
          * got values that you'll only know after starting the container, use configProvider() and provide a map of
          * name->lambda. The key in the map is the name of a config property which is being injected.
+         * <p>
+         * Note that if a subclass of Startable is passed in on {@link #startable(Supplier)}, that same subclass will be used in
+         * the function. This avoids the need to cast.
+         * <p>
+         * Optional, but will be important in most cases.
+         *
+         * @param applicationConfigProvider a map with config keys on the left side and lambdas on the right
+         * @return the builder, for chaining
          */
         @SuppressWarnings({ "unchecked", "rawtypes" })
         public OwnedServiceBuilder<T> configProvider(Map<String, Function<T, String>> applicationConfigProvider) {

@@ -20,9 +20,9 @@ import io.vertx.ext.web.RoutingContext;
 @Inherited
 public @interface HttpAuthenticationMechanism {
     /**
-     * {@link io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism} scheme as returned by
+     * {@link io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism} authentication scheme as returned by
      * {@link HttpCredentialTransport#getAuthenticationScheme()}.
-     * Custom mechanisms can set this name inside
+     * {@link io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism} implementations must set this scheme in
      * {@link io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism#getCredentialTransport(RoutingContext)}.
      */
     String value();

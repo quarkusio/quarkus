@@ -870,19 +870,27 @@ The following configuration example demonstrates how you can enforce a single se
 
 [source,properties]
 ----
-quarkus.http.auth.permission.basic-or-bearer.paths=/service
-quarkus.http.auth.permission.basic-or-bearer.policy=authenticated
-
-quarkus.http.auth.permission.basic.paths=/basic-only
+quarkus.http.auth.permission.basic.paths=/hello/basic <1>
 quarkus.http.auth.permission.basic.policy=authenticated
 quarkus.http.auth.permission.basic.auth-mechanism=basic
 
-quarkus.http.auth.permission.bearer.paths=/bearer-only
+quarkus.http.auth.permission.bearer.paths=/hello/bearer <2>
 quarkus.http.auth.permission.bearer.policy=authenticated
 quarkus.http.auth.permission.bearer.auth-mechanism=bearer
-----
 
-Ensure that the value of the `auth-mechanism` property matches the authentication scheme supported by `HttpAuthenticationMechanism`, for example, `basic`, `bearer`, or `form`.
+quarkus.http.auth.permission.custom.paths=/hello/custom <3>
+quarkus.http.auth.permission.custom.policy=authenticated
+quarkus.http.auth.permission.custom.auth-mechanism=custom
+----
+<1> The REST endpoint `/hello/basic` can only ever be accessed by using the <<basic-auth>>.
+<2> The REST endpoint `/hello/bearer` can only ever be accessed by using the xref:security-oidc-bearer-token-authentication.adoc[OIDC bearer token authentication mechanism].
+<3> The REST endpoint `/hello/custom` can only ever be accessed by using a custom `HttpAuthenticationMechanism` with a `custom` authentication scheme.
+
+[IMPORTANT]
+====
+Ensure that the value of the `auth-mechanism` property matches the authentication scheme supported by `HttpAuthenticationMechanism`, for example, `basic`, `bearer` or `custom`.
+For example, for the `quarkus.http.auth.permission.custom.auth-mechanism=custom` expression to be effective, a custom `HttpAuthenticationMechanism` implementation must set its authentication scheme to `custom` in its `HttpAuthenticationMechanism#getCredentialTransport` method implementation.
+====
 
 [[use-annotations-for-path-based-auth]]
 ==== Use annotations to enable path-based authentication for Jakarta REST endpoints
@@ -922,12 +930,27 @@ public class HelloResource {
     public String codeFlowAuthMechanism() {
         return "code-flow";
     }
+
+    @GET
+    @HttpAuthenticationMechanism("custom") <5> <6>
+    @Path("custom")
+    public String customAuthMechanism() {
+        return "custom";
+    }
 }
 ----
 <1> The REST endpoint `/hello/basic` can only ever be accessed by using the <<basic-auth>>.
-<2> This endpoint requires authentication, because when no standard security annotation accompanies the `@BasicAuthentication` annotation, the `@Authenticated` annotation is added by default.
+<2> The `/hello/basic` endpoint requires authentication, because when no standard security annotation accompanies the `@BasicAuthentication` annotation, the `@Authenticated` annotation is added by default.
 <3> The `@AuthorizationCodeFlow` annotation can be combined with any other standard security annotation like `@RolesAllowed`, `@PermissionsAllowed` and others.
 <4> The REST endpoint `/hello/code-flow` can only ever be accessed by using the xref:security-oidc-code-flow-authentication.adoc[OIDC authorization code flow mechanism].
+<5> The REST endpoint `/hello/custom` can only ever be accessed by using a custom `HttpAuthenticationMechanism` with a `custom` authentication scheme.
+<6> The `/hello/custom` endpoint requires authentication, because when no standard security annotation accompanies the `@HttpAuthenticationMechanism` annotation, the `@Authenticated` annotation is added by default.
+
+[IMPORTANT]
+====
+Ensure that the value of the `@HttpAuthenticationMechanism` annotation matches the authentication scheme supported by `HttpAuthenticationMechanism`.
+For example, for `@HttpAuthenticationMechanism("custom")` to work, a custom `io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism` implementation must set its authentication scheme to `custom` in its `HttpAuthenticationMechanism#getCredentialTransport` method implementation.
+====
 
 .Supported authentication mechanism annotations
 |===

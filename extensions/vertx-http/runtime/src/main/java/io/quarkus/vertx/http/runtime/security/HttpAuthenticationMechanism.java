@@ -41,7 +41,12 @@ public interface HttpAuthenticationMechanism {
     /**
      * The credential transport, used for finding the best candidate for authenticating and challenging when more than one
      * mechanism is installed.
-     *
+     * <p>
+     * This method must be implemented if either
+     * {@link io.quarkus.vertx.http.runtime.security.annotation.HttpAuthenticationMechanism#value()}
+     * or an HTTP security policy's `auth-mechanism` property has to be set to find
+     * a matching {@link HttpAuthenticationMechanism} that must secure a specific REST resource method or request path.
+     * <p>
      * May be {@link Uni} with null item if this mechanism cannot interfere with other mechanisms.
      */
     default Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {

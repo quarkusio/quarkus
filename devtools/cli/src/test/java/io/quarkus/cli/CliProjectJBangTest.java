@@ -197,6 +197,21 @@ public class CliProjectJBangTest {
                 "Generated source should contain //JAVA 21. Found:\n" + source);
     }
 
+    @Test
+    public void testCreateArgJava25() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--jbang",
+                "-e", "-B", "--verbose",
+                "--java", "25");
+
+        // We don't need to retest this, just need to make sure all the arguments were passed through
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+
+        Path javaMain = validateJBangSourcePackage(project, ""); // no package name
+        String source = CliDriver.readFileAsString(javaMain);
+        Assertions.assertTrue(source.contains("//JAVA 25"),
+                "Generated source should contain //JAVA 25. Found:\n" + source);
+    }
+
     void validateBasicIdentifiers(Path project, String group, String artifact, String version) throws Exception {
         Assertions.assertTrue(project.resolve("README.md").toFile().exists(),
                 "README.md should exist: " + project.resolve("README.md").toAbsolutePath().toString());

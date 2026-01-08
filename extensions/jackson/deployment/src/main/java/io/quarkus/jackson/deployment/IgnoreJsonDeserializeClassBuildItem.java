@@ -22,11 +22,6 @@ public final class IgnoreJsonDeserializeClassBuildItem extends MultiBuildItem {
         this.dotNames = dotNames;
     }
 
-    @Deprecated(forRemoval = true)
-    public DotName getDotName() {
-        return dotNames.size() > 0 ? dotNames.get(0) : null;
-    }
-
     public List<DotName> getDotNames() {
         return dotNames;
     }

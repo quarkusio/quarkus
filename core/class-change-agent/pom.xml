@@ -31,8 +31,6 @@
                         <manifestEntries>
                             <Premain-Class>io.quarkus.changeagent.ClassChangeAgent</Premain-Class>
                             <Can-Redefine-Classes>true</Can-Redefine-Classes>
-                            <!-- "class" is not accepted in module name. -->
-                            <Automatic-Module-Name>quarkus.klass.change.agent</Automatic-Module-Name>
                         </manifestEntries>
                     </archive>
                 </configuration>

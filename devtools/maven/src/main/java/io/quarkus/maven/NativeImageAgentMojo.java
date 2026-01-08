@@ -1,9 +1,7 @@
 package io.quarkus.maven;
 
 import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -109,8 +107,7 @@ public class NativeImageAgentMojo extends QuarkusBootstrapMojo {
             final JsonObjectBuilder jsonBuilder = Json.object();
             jsonBuilder.transform(jsonRead, JsonTransform.dropping(v -> discardResource("glob", v)));
 
-            try (BufferedWriter writer = new BufferedWriter(
-                    new FileWriter(target.resolve(name).toFile(), StandardCharsets.UTF_8))) {
+            try (BufferedWriter writer = Files.newBufferedWriter(target.resolve(name))) {
                 jsonBuilder.appendTo(writer);
             }
         } else {
@@ -126,8 +123,7 @@ public class NativeImageAgentMojo extends QuarkusBootstrapMojo {
         final Json.JsonObjectBuilder jsonBuilder = Json.object();
         jsonBuilder.transform(jsonRead, transform);
 
-        try (BufferedWriter writer = new BufferedWriter(
-                new FileWriter(target.resolve(name).toFile(), StandardCharsets.UTF_8))) {
+        try (BufferedWriter writer = Files.newBufferedWriter(target.resolve(name))) {
             jsonBuilder.appendTo(writer);
         }
     }

@@ -44,7 +44,7 @@
         <version.jpa>3.1.0</version.jpa>
         <version.jta>2.0.1</version.jta>
         <!-- main versions -->
-        <version.gizmo>1.9.0</version.gizmo>
+        <version.gizmo>1.10.1</version.gizmo>
         <version.jandex>3.5.3</version.jandex>
         <version.gizmo2>2.0.0</version.gizmo2>
         <version.jboss-logging>3.6.1.Final</version.jboss-logging>

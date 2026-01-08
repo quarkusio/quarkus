@@ -23,7 +23,7 @@ An HTTP user agent, like a web browser, uses an `Authorization` header to provid
 The header is specified as `Authorization: Basic <credentials>`, where credentials are the Base64 encoding of the user ID and password, joined by a colon.
 
 .Example:
-If the user name is `Alice` and the password is `secret`, the HTTP authorization header would be `Authorization: Basic QWxjZTpzZWNyZXQ=`, where `QWxjZTpzZWNyZXQ=` is a Base64 encoded representation of the `Alice:secret` string.
+If the user name is `Alice` and the password is `secret`, the HTTP authorization header would be `Authorization: Basic QWxpY2U6c2VjcmV0`, where `QWxpY2U6c2VjcmV0` is a Base64 encoded representation of the `Alice:secret` string.
 
 
 The Basic authentication mechanism does not provide confidentiality protection for the transmitted credentials.

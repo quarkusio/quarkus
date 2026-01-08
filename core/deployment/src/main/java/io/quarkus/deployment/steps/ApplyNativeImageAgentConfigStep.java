@@ -40,16 +40,21 @@ public class ApplyNativeImageAgentConfigStep {
             if (!targetPath.toFile().exists()) {
                 targetPath.toFile().mkdirs();
             }
-            Files.copy(basePath.resolve("reflect-config.json"), targetPath.resolve("reflect-config.json"),
-                    StandardCopyOption.REPLACE_EXISTING);
-            Files.copy(basePath.resolve("serialization-config.json"), targetPath.resolve("serialization-config.json"),
-                    StandardCopyOption.REPLACE_EXISTING);
-            Files.copy(basePath.resolve("jni-config.json"), targetPath.resolve("jni-config.json"),
-                    StandardCopyOption.REPLACE_EXISTING);
-            Files.copy(basePath.resolve("proxy-config.json"), targetPath.resolve("proxy-config.json"),
-                    StandardCopyOption.REPLACE_EXISTING);
-            Files.copy(basePath.resolve("resource-config.json"), targetPath.resolve("resource-config.json"),
-                    StandardCopyOption.REPLACE_EXISTING);
+            if (Files.exists(basePath.resolve("reachability-metadata.json"))) {
+                Files.copy(basePath.resolve("reachability-metadata.json"), targetPath.resolve("reachability-metadata.json"),
+                        StandardCopyOption.REPLACE_EXISTING);
+            } else {
+                Files.copy(basePath.resolve("reflect-config.json"), targetPath.resolve("reflect-config.json"),
+                        StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(basePath.resolve("serialization-config.json"), targetPath.resolve("serialization-config.json"),
+                        StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(basePath.resolve("jni-config.json"), targetPath.resolve("jni-config.json"),
+                        StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(basePath.resolve("proxy-config.json"), targetPath.resolve("proxy-config.json"),
+                        StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(basePath.resolve("resource-config.json"), targetPath.resolve("resource-config.json"),
+                        StandardCopyOption.REPLACE_EXISTING);
+            }
 
             log.info("Applying native image agent generated files to current native executable build");
             nativeImageAgentConfigDirectoryProducer.produce(new NativeImageAgentConfigDirectoryBuildItem(targetDirName));

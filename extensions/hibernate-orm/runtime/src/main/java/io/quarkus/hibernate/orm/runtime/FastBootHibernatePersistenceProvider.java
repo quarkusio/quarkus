@@ -1,13 +1,23 @@
 package io.quarkus.hibernate.orm.runtime;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import javax.sql.DataSource;
+
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.PersistenceConfiguration;
+import jakarta.persistence.PersistenceException;
+import jakarta.persistence.spi.PersistenceProvider;
+import jakarta.persistence.spi.PersistenceUnitInfo;
 
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.boot.registry.StandardServiceRegistry;
@@ -36,11 +46,6 @@ import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRunti
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
-import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.PersistenceConfiguration;
-import jakarta.persistence.PersistenceException;
-import jakarta.persistence.spi.PersistenceProvider;
-import jakarta.persistence.spi.PersistenceUnitInfo;
 
 /**
  * This can not inherit from HibernatePersistenceProvider as that would force
@@ -156,7 +161,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             Map properties) {
         log.tracef("Attempting to obtain correct EntityManagerFactoryBuilder for persistenceUnitName : %s",
                 persistenceUnitName);
-        SchemaToolingUtil.clearTempUnzippedSchemaDirectories();
+        //SchemaToolingUtil.clearTempUnzippedSchemaDirectories();
         verifyProperties(properties);
 
         // These are pre-parsed during image generation:
@@ -209,6 +214,25 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
 
             StandardServiceRegistry standardServiceRegistry = rewireMetadataAndExtractServiceRegistry(persistenceUnitName,
                     recordedState, puConfig, runtimeSettings);
+
+            CompletableFuture.runAsync(() -> {
+                String[] tempFilePaths = ((String) runtimeSettings
+                        .get(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE))
+                        .split(",");
+                Path currentParentPath = Path.of(tempFilePaths[0]).getParent();
+                try {
+                    for (String tempFileStringPath : tempFilePaths) {
+                        Path tempFilePath = Path.of(tempFileStringPath);
+                        if (!currentParentPath.equals(tempFilePath.getParent())) {
+                            Files.deleteIfExists(currentParentPath);
+                            currentParentPath = tempFilePath.getParent();
+                        }
+                        Files.deleteIfExists(tempFilePath);
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
 
             final Object cdiBeanManager = Arc.container().beanManager();
             final Object validatorFactory = Arc.container().instance("quarkus-hibernate-validator-factory").get();

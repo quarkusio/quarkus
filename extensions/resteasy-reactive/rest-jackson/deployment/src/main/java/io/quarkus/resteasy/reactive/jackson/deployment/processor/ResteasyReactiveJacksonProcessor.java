@@ -407,7 +407,7 @@ public class ResteasyReactiveJacksonProcessor {
         for (ResteasyReactiveResourceMethodEntriesBuildItem.Entry entry : resourceMethodEntries.getEntries()) {
             MethodInfo methodInfo = entry.getMethodInfo();
             ClassInfo effectiveReturnClassInfo = getEffectiveClassInfo(methodInfo.returnType(), indexView);
-            if (effectiveReturnClassInfo != null) {
+            if (effectiveReturnClassInfo != null && !effectiveReturnClassInfo.isEnum()) {
                 serializedClasses.put(effectiveReturnClassInfo.name().toString(), effectiveReturnClassInfo);
             }
 

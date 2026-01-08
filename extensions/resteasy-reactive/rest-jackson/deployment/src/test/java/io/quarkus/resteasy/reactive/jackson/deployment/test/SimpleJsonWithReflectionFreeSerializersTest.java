@@ -5,8 +5,6 @@ import java.util.function.Supplier;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.test.utils.TestIdentityController;
@@ -39,11 +37,4 @@ public class SimpleJsonWithReflectionFreeSerializersTest extends AbstractSimpleJ
                                     "application.properties");
                 }
             });
-
-    @Disabled("Doesn't work with the reflection free serializers")
-    @Test
-    @Override
-    public void testSecureFieldOnTypeVariable() {
-        super.testSecureFieldOnTypeVariable();
-    }
 }

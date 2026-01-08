@@ -98,7 +98,7 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
  *         if (JacksonMapperUtil.includeSecureField(address_ROLES_ALLOWED)) {
  *             var2.writeFieldName(SerializedStrings$quarkusjacksonserializer.address);
  *             Address var9 = var4.getAddress();
- *             var2.writePOJO(var9);
+ *             JacksonSerializationUtils.serializePojo(var9, var2, var3);
  *         }
  *         var2.writeEndObject();
  *     }
@@ -357,9 +357,10 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
                 writeFieldName(fieldSpecs, bytecode, ctx.jsonGenerator, pkgName);
             }
 
-            MethodDescriptor writeMethod = MethodDescriptor.ofMethod(JSON_GEN_CLASS_NAME, "writePOJO",
-                    void.class, Object.class);
-            bytecode.invokeVirtualMethod(writeMethod, ctx.jsonGenerator, arg);
+            MethodDescriptor serializePojoMethod = MethodDescriptor.ofMethod(JacksonMapperUtil.class.getName(),
+                    "serializePojo",
+                    void.class, Object.class, JsonGenerator.class, SerializerProvider.class);
+            bytecode.invokeStaticMethod(serializePojoMethod, arg, ctx.jsonGenerator, ctx.serializerProvider);
         }
     }
 

@@ -282,6 +282,7 @@ public class JvmStartupOptimizerArchiveBuildStep {
             var pb = ProcessBuilder.newBuilder(command.get(0))
                     .arguments(command.subList(1, command.size()))
                     .directory(workingDirectory);
+            pb.error().logOnSuccess(false);
             if (log.isDebugEnabled()) {
                 pb.output().consumeLinesWith(8192, log::debug)
                         .error().consumeLinesWith(8192, log::debug);

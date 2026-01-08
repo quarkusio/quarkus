@@ -88,6 +88,7 @@ public class SwaggerUiProcessor {
     public void getSwaggerUiFinalDestination(
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             Optional<DevContextBuildItem> devContextBuildItem,
+            List<SwaggerUiUrlBuildItem> swaggerUiUrls,
             LaunchModeBuildItem launchMode,
             SwaggerUiConfig swaggerUiConfig,
             SmallRyeOpenApiConfig openapi,
@@ -124,7 +125,8 @@ public class SwaggerUiProcessor {
             byte[] indexHtmlContent = generateIndexHtml(openApiPath, swaggerUiPath, swaggerUiConfig,
                     indexRootPathBuildItem,
                     launchMode,
-                    devServicesLauncherConfig.orElse(null));
+                    devServicesLauncherConfig.orElse(null),
+                    swaggerUiUrls);
             webJarBuildProducer.produce(
                     WebJarBuildItem.builder().artifactKey(SWAGGER_UI_WEBJAR_ARTIFACT_KEY) //
                             .root(SWAGGER_UI_WEBJAR_STATIC_RESOURCES_PATH) //
@@ -185,10 +187,11 @@ public class SwaggerUiProcessor {
 
     private byte[] generateIndexHtml(String openApiPath, String swaggerUiPath, SwaggerUiConfig swaggerUiConfig,
             NonApplicationRootPathBuildItem nonApplicationRootPath, LaunchModeBuildItem launchMode,
-            DevServicesLauncherConfigResultBuildItem devServicesLauncherConfigResultBuildItem)
+            DevServicesLauncherConfigResultBuildItem devServicesLauncherConfigResultBuildItem,
+            List<SwaggerUiUrlBuildItem> swaggerUiUrls)
             throws IOException {
         Map<Option, String> options = new HashMap<>();
-        Map<String, String> urlsMap = null;
+        Map<String, String> urlsMap = new HashMap<>();
 
         options.put(Option.selfHref, swaggerUiPath);
         if (nonApplicationRootPath != null) {
@@ -197,10 +200,16 @@ public class SwaggerUiProcessor {
             options.put(Option.backHref, swaggerUiPath);
         }
 
-        // Only add the url if the user did not specify urls
         if (swaggerUiConfig.urls() != null && !swaggerUiConfig.urls().isEmpty()) {
-            urlsMap = swaggerUiConfig.urls();
-        } else {
+            urlsMap.putAll(swaggerUiConfig.urls());
+        }
+
+        for (SwaggerUiUrlBuildItem urlBuildItem : swaggerUiUrls) {
+            urlsMap.putIfAbsent(urlBuildItem.getName(), urlBuildItem.getUrl());
+        }
+
+        // Only add the url if the user or other extensions did not specify urls
+        if (urlsMap.isEmpty()) {
             options.put(Option.url, openApiPath);
         }
 

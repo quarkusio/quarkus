@@ -311,7 +311,9 @@ public abstract class AbstractMethodsAdder {
         } else {
             final ClassInfo typeClass = index.getClassByName(t.name());
             if (typeClass == null) {
-                throw new IllegalStateException(t.name() + " was not part of the Quarkus index");
+                throw new IllegalStateException(
+                        t.name() + " is not in the Quarkus Jandex index and cannot be used as a query return type. " +
+                                "Consider using a simpler type or ensure this class is properly indexed. ");
             }
         }
         return t;

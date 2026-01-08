@@ -284,10 +284,14 @@ public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig, 
 
         //Handle Image Pull Secrets
         config.imagePullSecrets().ifPresent(imagePullSecrets -> {
-            String serviceAccountName = config.serviceAccount().orElse(name);
-            context.add(new AddServiceAccountResourceDecorator(name));
-            context.add(new ApplyServiceAccountToRevisionSpecDecorator(name, serviceAccountName));
-            context.add(new AddImagePullSecretToServiceAccountDecorator(serviceAccountName, imagePullSecrets));
+            if (config.addImagePullSecretsToServiceAccount()) {
+                String serviceAccountName = config.serviceAccount().orElse(name);
+                context.add(new AddServiceAccountResourceDecorator(name));
+                context.add(new ApplyServiceAccountToRevisionSpecDecorator(name, serviceAccountName));
+                context.add(new AddImagePullSecretToServiceAccountDecorator(serviceAccountName, imagePullSecrets));
+            } else {
+                context.add(new AddImagePullSecretToServiceAccountDecorator(name, imagePullSecrets));
+            }
         });
 
         return context.decorators();

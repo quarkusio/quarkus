@@ -2,6 +2,7 @@ package io.quarkus.resteasy.reactive.server.test.resteasy.async.filters;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.net.URI;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.client.Client;
@@ -9,6 +10,7 @@ import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
+import jakarta.ws.rs.core.UriBuilder;
 
 import org.jboss.logging.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -17,8 +19,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.resteasy.reactive.server.test.ExceptionUtil;
-import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 
 public class AsyncRequestFilterTest {
     protected static final Logger log = Logger.getLogger(AsyncRequestFilterTest.class.getName());
@@ -29,7 +31,7 @@ public class AsyncRequestFilterTest {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(PortProviderUtil.class,
+                            .addClasses(
                                     AsyncRequestFilter.class, AsyncRequestFilter1.class, AsyncRequestFilter2.class,
                                     AsyncRequestFilter3.class,
                                     AsyncPreMatchRequestFilter1.class, AsyncPreMatchRequestFilter2.class,
@@ -41,16 +43,19 @@ public class AsyncRequestFilterTest {
                 }
             });
 
+    @TestHTTPResource
+    URI uri;
+
     /**
      * @tpTestDetails Interceptors work
      * @tpSince RESTEasy 4.0.0
      */
     @Test
-    public void testRequestFilters() throws Exception {
+    public void testRequestFilters() {
         Client client = ClientBuilder.newClient();
 
         // Create book.
-        WebTarget base = client.target(PortProviderUtil.generateURL("/"));
+        WebTarget base = client.target(uri);
 
         // all sync
 
@@ -178,11 +183,11 @@ public class AsyncRequestFilterTest {
      * @tpSince RESTEasy 4.0.0
      */
     @Test
-    public void testPreMatchRequestFilters() throws Exception {
+    public void testPreMatchRequestFilters() {
         Client client = ClientBuilder.newClient();
 
         // Create book.
-        WebTarget base = client.target(PortProviderUtil.generateURL("/"));
+        WebTarget base = client.target(uri);
 
         // all sync
 
@@ -293,11 +298,11 @@ public class AsyncRequestFilterTest {
      * @tpSince RESTEasy 4.0.0
      */
     @Test
-    public void testResponseFilters() throws Exception {
+    public void testResponseFilters() {
         Client client = ClientBuilder.newClient();
 
         // Create book.
-        WebTarget base = client.target(PortProviderUtil.generateURL("/"));
+        WebTarget base = client.target(uri);
 
         // all sync
 
@@ -425,11 +430,11 @@ public class AsyncRequestFilterTest {
      * @tpSince RESTEasy 4.0.0
      */
     @Test
-    public void testResponseFilters2() throws Exception {
+    public void testResponseFilters2() {
         Client client = ClientBuilder.newClient();
 
         // Create book.
-        WebTarget base = client.target(PortProviderUtil.generateURL("/async"));
+        WebTarget base = client.target(UriBuilder.fromUri(uri).path("/async"));
 
         // async way later
         Response response = base.request()
@@ -448,7 +453,7 @@ public class AsyncRequestFilterTest {
      * @tpSince RESTEasy 4.0.0
      */
     @Test
-    public void testResponseFiltersThrow() throws Exception {
+    public void testResponseFiltersThrow() {
         Client client = ClientBuilder.newClient();
 
         testResponseFilterThrow(client, "/callback-async", false);
@@ -461,7 +466,7 @@ public class AsyncRequestFilterTest {
     }
 
     private void testResponseFilterThrow(Client client, String target, boolean useExceptionMapper) {
-        WebTarget base = client.target(PortProviderUtil.generateURL(target));
+        WebTarget base = client.target(UriBuilder.fromUri(uri).path(target));
 
         // throw in response filter
         Response response = base.request()
@@ -524,11 +529,11 @@ public class AsyncRequestFilterTest {
      * @tpSince RESTEasy 4.0.0
      */
     @Test
-    public void testRequestFiltersGuessReturnType() throws Exception {
+    public void testRequestFiltersGuessReturnType() {
         Client client = ClientBuilder.newClient();
 
         // Create book.
-        WebTarget base = client.target(PortProviderUtil.generateURL("/non-response"));
+        WebTarget base = client.target(UriBuilder.fromUri(uri).path("/non-response"));
 
         Response response = base.request()
                 .header("Filter1", "async-pass")

@@ -65,6 +65,7 @@ import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.registry.ValueRegistry;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
 import io.quarkus.runner.bootstrap.StartupActionImpl;
 import io.quarkus.runtime.LaunchMode;
@@ -700,25 +701,22 @@ public class QuarkusUnitTest
                     overriddenConfig.putAll(customRuntimeApplicationProperties);
                 }
                 startupAction.overrideConfig(overriddenConfig);
-                runningQuarkusApplication = startupAction
-                        .run(commandLineParameters);
+                runningQuarkusApplication = startupAction.run(commandLineParameters);
                 //we restore the CL at the end of the test
                 Thread.currentThread().setContextClassLoader(runningQuarkusApplication.getClassLoader());
                 if (assertException != null) {
                     fail(THE_BUILD_WAS_EXPECTED_TO_FAIL);
                 }
                 started = true;
-                System.setProperty("test.url", TestHTTPResourceManager.getUri(runningQuarkusApplication));
+                ValueRegistry valueRegistry = runningQuarkusApplication.valueRegistry();
                 try {
-                    actualTestClass = Class.forName(testClass.getName(), true,
-                            Thread.currentThread().getContextClassLoader());
+                    actualTestClass = Class.forName(testClass.getName(), true, Thread.currentThread().getContextClassLoader());
                     actualTestInstance = runningQuarkusApplication.instance(actualTestClass);
                     Class<?> resM = runningQuarkusApplication.getClassLoader()
                             .loadClass(TestHTTPResourceManager.class.getName());
-                    resM.getDeclaredMethod("inject", Object.class).invoke(null, actualTestInstance);
-
+                    resM.getDeclaredMethod("inject", Object.class, ValueRegistry.class).invoke(null, actualTestInstance,
+                            valueRegistry);
                     populateTestMethodInvokers(startupAction.getClassLoader());
-
                 } catch (Exception e) {
                     throw new TestInstantiationException("Failed to create test instance", e);
                 }
@@ -810,7 +808,6 @@ public class QuarkusUnitTest
                 curatedApplication = null;
             }
         } finally {
-            System.clearProperty("test.url");
             Thread.currentThread().setContextClassLoader(originalClassLoader);
             originalClassLoader = null;
             if (quarkusUnitTestClassLoader != null) {

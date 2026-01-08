@@ -1,5 +1,6 @@
 package io.quarkus.test.junit;
 
+import static io.quarkus.test.config.TestValueRegistryConfigSource.CONFIG;
 import static io.quarkus.test.junit.ArtifactTypeUtil.isContainer;
 import static io.quarkus.test.junit.ArtifactTypeUtil.isJar;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
@@ -14,6 +15,7 @@ import static io.quarkus.test.junit.IntegrationTestUtil.handleDevServices;
 import static io.quarkus.test.junit.IntegrationTestUtil.readQuarkusArtifactProperties;
 import static io.quarkus.test.junit.IntegrationTestUtil.startLauncher;
 import static io.quarkus.test.junit.TestResourceUtil.TestResourceManagerReflections.copyEntriesFromProfile;
+import static org.junit.jupiter.api.extension.ExtensionContext.StoreScope.LAUNCHER_SESSION;
 
 import java.io.Closeable;
 import java.io.File;
@@ -38,6 +40,7 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
@@ -123,7 +126,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             state.getListeningAddress().ifPresent(new Consumer<ListeningAddress>() {
                 @Override
                 public void accept(ListeningAddress listeningAddress) {
-                    RestAssuredStateManager.setURL(listeningAddress.isSsl(), listeningAddress.getPort(),
+                    RestAssuredStateManager.setURL(listeningAddress.isSsl(), listeningAddress.port(),
                             QuarkusTestExtension.getEndpointPath(context, testHttpEndpointProviders));
                 }
             });
@@ -316,6 +319,8 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             activateLogging();
             Optional<ListeningAddress> listeningAddress = startLauncher(launcher, additionalProperties);
             ValueRegistry valueRegistry = new ValueRegistryImpl.Builder().addDiscoveredInfos().build();
+            context.getStore(LAUNCHER_SESSION, CONFIG).put(ValueRegistry.class, valueRegistry);
+            listeningAddress.ifPresent(address -> address.register(valueRegistry));
 
             Closeable resource = new IntegrationTestExtensionStateResource(launcher,
                     devServicesLaunchResult.getCuratedApplication());

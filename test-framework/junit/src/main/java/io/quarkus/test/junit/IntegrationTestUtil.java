@@ -109,7 +109,7 @@ public final class IntegrationTestUtil {
         ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
         QuarkusTestExtensionState state = store.get(QuarkusTestExtensionState.class.getName(), QuarkusTestExtensionState.class);
         ValueRegistryInjector.inject(testInstance, state);
-        TestHTTPResourceManager.inject(testInstance);
+        TestHTTPResourceManager.inject(testInstance, state.getValueRegistry());
         Object testResourceManager = state.testResourceManager;
         if (!(testResourceManager instanceof TestResourceManager)) {
             throw new RuntimeException(

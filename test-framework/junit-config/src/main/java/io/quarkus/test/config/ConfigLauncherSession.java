@@ -23,7 +23,7 @@ public class ConfigLauncherSession implements LauncherSessionListener {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
         try {
-            TestConfigProviderResolver resolver = new TestConfigProviderResolver();
+            TestConfigProviderResolver resolver = new TestConfigProviderResolver(session.getStore());
             ConfigProviderResolver.setInstance(resolver);
             resolver.getConfig(LaunchMode.TEST);
         } finally {

@@ -49,9 +49,9 @@ import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
+import io.quarkus.registry.ValueRegistry.RuntimeKey;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
 import io.quarkus.test.common.TestInstantiator;
-import io.quarkus.test.common.http.TestHTTPResourceManager;
 
 public class QuarkusDeployableContainer implements DeployableContainer<QuarkusConfiguration> {
 
@@ -234,20 +234,19 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
         }
 
         ProtocolMetaData metadata = new ProtocolMetaData();
-
-        //TODO: fix this
-        String testUri = TestHTTPResourceManager.getUri(deployment.get().getRunningApp());
-
-        System.setProperty("test.url", testUri);
-        URI uri = URI.create(testUri);
-        HTTPContext httpContext = new HTTPContext(uri.getHost(), uri.getPort());
-        // This is to work around https://github.com/arquillian/arquillian-core/issues/216
-        String path = uri.getPath();
-        if (path == null || path.isEmpty()) {
-            path = "/";
+        String testUrl = deployment.get().getRunningApp().valueRegistry()
+                .getOrDefault(RuntimeKey.key("test.url"), null);
+        if (testUrl != null) {
+            URI uri = URI.create(testUrl);
+            HTTPContext httpContext = new HTTPContext(uri.getHost(), uri.getPort());
+            // This is to work around https://github.com/arquillian/arquillian-core/issues/216
+            String path = uri.getPath();
+            if (path == null || !path.endsWith("/")) {
+                path = "/";
+            }
+            httpContext.add(new Servlet("dummy", path));
+            metadata.addContext(httpContext);
         }
-        httpContext.add(new Servlet("dummy", path));
-        metadata.addContext(httpContext);
         return metadata;
     }
 
@@ -266,6 +265,7 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
         } finally {
             Thread.currentThread().setContextClassLoader(old);
         }
+        testInstance = null;
         deployment.get().cleanup();
 
         Path location = deploymentLocation.get();

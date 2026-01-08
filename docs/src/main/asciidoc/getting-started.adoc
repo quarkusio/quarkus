@@ -409,8 +409,7 @@ a Servlet mapped to `/myservlet` I would just add the following to my test:
 URL testUrl;
 ----
 
-The test port can be controlled via the `quarkus.http.test-port` config property. Quarkus also creates a system
-property called `test.url` that is set to the base test URL for situations where you cannot use injection.
+The test port can be controlled via the `quarkus.http.test-port` config property.
 
 == Working with multi-module project or external modules
 

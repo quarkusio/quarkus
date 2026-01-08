@@ -5,16 +5,22 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.function.Function;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
+import io.quarkus.registry.ValueRegistry;
+import io.quarkus.registry.ValueRegistry.RuntimeKey;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
+import io.quarkus.test.common.ListeningAddress;
+import io.smallrye.config.SmallRyeConfig;
 
 public class TestHTTPResourceManager {
 
+    @Deprecated(forRemoval = true, since = "3.31")
     public static String getUri() {
         try {
             return ConfigProvider.getConfig().getValue("test.url", String.class);
@@ -25,6 +31,7 @@ public class TestHTTPResourceManager {
         }
     }
 
+    @Deprecated(forRemoval = true, since = "3.31")
     public static String getManagementUri() {
         try {
             return ConfigProvider.getConfig().getValue("test.management.url", String.class);
@@ -35,27 +42,36 @@ public class TestHTTPResourceManager {
         }
     }
 
+    @Deprecated(forRemoval = true, since = "3.31")
     public static String getSslUri() {
         return ConfigProvider.getConfig().getValue("test.url.ssl", String.class);
     }
 
+    @Deprecated(forRemoval = true, since = "3.31")
     public static String getManagementSslUri() {
         return ConfigProvider.getConfig().getValue("test.management.url.ssl", String.class);
     }
 
+    @Deprecated(forRemoval = true, since = "3.31")
     public static String getUri(RunningQuarkusApplication application) {
         return application.getConfigValue("test.url", String.class).get();
     }
 
+    @Deprecated(forRemoval = true, since = "3.31")
     public static String getSslUri(RunningQuarkusApplication application) {
         return application.getConfigValue("test.url.ssl", String.class).get();
     }
 
-    public static void inject(Object testCase) {
-        inject(testCase, TestHttpEndpointProvider.load());
+    public static void inject(Object testCase, ValueRegistry valueRegistry) {
+        inject(testCase, valueRegistry, TestHttpEndpointProvider.load());
     }
 
-    public static void inject(Object testCase, List<Function<Class<?>, String>> endpointProviders) {
+    public static void inject(
+            Object testCase,
+            ValueRegistry valueRegistry,
+            List<Function<Class<?>, String>> endpointProviders) {
+
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         Map<Class<?>, TestHTTPResourceProvider<?>> providers = getProviders();
         Class<?> c = testCase.getClass();
         while (c != Object.class) {
@@ -90,34 +106,18 @@ public class TestHTTPResourceManager {
                         path = endpointPath;
                     }
                     String val;
-                    if (resource.tls() || ConfigProvider.getConfig()
-                            .getOptionalValue("quarkus.http.test-ssl-enabled", Boolean.class).orElse(false)) {
+                    if (resource.tls()
+                            || config.getOptionalValue("quarkus.http.test-ssl-enabled", Boolean.class).orElse(false)) {
                         if (management) {
-                            if (path.startsWith("/")) {
-                                val = getManagementSslUri() + path;
-                            } else {
-                                val = getManagementSslUri() + "/" + path;
-                            }
+                            val = testManagementUrlSsl(valueRegistry, config, path);
                         } else {
-                            if (path.startsWith("/")) {
-                                val = getSslUri() + path;
-                            } else {
-                                val = getSslUri() + "/" + path;
-                            }
+                            val = testUrlSsl(valueRegistry, config, path);
                         }
                     } else {
                         if (management) {
-                            if (path.startsWith("/")) {
-                                val = getManagementUri() + path;
-                            } else {
-                                val = getManagementUri() + "/" + path;
-                            }
+                            val = testManagementUrl(valueRegistry, config, path);
                         } else {
-                            if (path.startsWith("/")) {
-                                val = getUri() + path;
-                            } else {
-                                val = getUri() + "/" + path;
-                            }
+                            val = testUrl(valueRegistry, config, path);
                         }
                     }
                     f.setAccessible(true);
@@ -154,4 +154,80 @@ public class TestHTTPResourceManager {
                         + " to inject " + field);
     }
 
+    public static String testUrl(ValueRegistry valueRegistry, SmallRyeConfig config, String... paths) {
+        String host = host(config, "quarkus.http.host");
+        int port = valueRegistry.getOrDefault(ListeningAddress.HTTP_TEST_PORT, 8081);
+        String rootPath = rootPath(config, paths);
+        return "http://" + host + ":" + port + rootPath;
+    }
+
+    public static String testManagementUrl(ValueRegistry valueRegistry, SmallRyeConfig config, String... paths) {
+        String host = host(config, "quarkus.management.host");
+        int port = valueRegistry.getOrDefault(RuntimeKey.intKey("quarkus.management.test-port"), 9001);
+        String managementRootPath = managementRootPath(config, paths);
+        return "http://" + host + ":" + port + managementRootPath;
+    }
+
+    public static String testUrlSsl(ValueRegistry valueRegistry, SmallRyeConfig config, String... paths) {
+        String host = host(config, "quarkus.http.host");
+        int port = valueRegistry.getOrDefault(ListeningAddress.HTTPS_TEST_PORT, 8444);
+        String rootPath = rootPath(config, paths);
+        return "https://" + host + ":" + port + rootPath;
+    }
+
+    public static String testManagementUrlSsl(ValueRegistry valueRegistry, SmallRyeConfig config, String... paths) {
+        String host = host(config, "quarkus.management.host");
+        int port = valueRegistry.getOrDefault(RuntimeKey.intKey("quarkus.management.test-port"), 9001);
+        String managementRootPath = managementRootPath(config, paths);
+        return "https://" + host + ":" + port + managementRootPath;
+    }
+
+    public static String host(SmallRyeConfig config, String name) {
+        String host = config.getOptionalValue(name, String.class).orElse("localhost");
+        // for test, the host default is localhost, but if using WSL is 0.0.0.0 which shouldn't be used when determining the test url
+        if (host.equals("0.0.0.0")) {
+            host = "localhost";
+        }
+        return host;
+    }
+
+    public static String rootPath(SmallRyeConfig config, String... paths) {
+        String rootPath = config.getOptionalValue("quarkus.http.root-path", String.class).orElse("/");
+        Optional<String> contextPath = config.getOptionalValue("quarkus.servlet.context-path", String.class);
+        StringBuilder path = new StringBuilder(rootPath);
+        if (!rootPath.startsWith("/")) {
+            path.insert(0, "/");
+        }
+        if (!rootPath.endsWith("/")) {
+            path.append("/");
+        }
+        if (contextPath.isPresent()) {
+            String relativePath = contextPath.get().startsWith("/") ? contextPath.get().substring(1) : contextPath.get();
+            path.append(relativePath);
+            if (!relativePath.endsWith("/")) {
+                path.append("/");
+            }
+        }
+        for (String p : paths) {
+            String relativePath = p.startsWith("/") ? p.substring(1) : p;
+            path.append(relativePath);
+        }
+        return path.toString();
+    }
+
+    public static String managementRootPath(SmallRyeConfig config, String... paths) {
+        String rootPath = config.getOptionalValue("quarkus.management.root-path", String.class).orElse("/q");
+        StringBuilder path = new StringBuilder(rootPath);
+        if (!rootPath.startsWith("/")) {
+            path.insert(0, "/");
+        }
+        if (!rootPath.endsWith("/")) {
+            path.append("/");
+        }
+        for (String p : paths) {
+            String relativePath = p.startsWith("/") ? p.substring(1) : p;
+            path.append(relativePath);
+        }
+        return path.toString();
+    }
 }

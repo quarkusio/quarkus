@@ -6,6 +6,8 @@ import java.util.function.Function;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import org.junit.platform.engine.support.store.Namespace;
+import org.junit.platform.engine.support.store.NamespacedHierarchicalStore;
 
 import io.quarkus.deployment.dev.testing.TestConfigCustomizer;
 import io.quarkus.runtime.LaunchMode;
@@ -19,16 +21,17 @@ import io.smallrye.config.SmallRyeConfigProviderResolver;
  * classloader.
  */
 public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
-
     // Note that this class both *extends* and *consumes* SmallRyeConfigProviderResolver. Every method in SmallRyeConfigProviderResolver should be replicated here with a delegation to the instance variable, or there will be subtle and horrible bugs.
     private final SmallRyeConfigProviderResolver resolver;
     private final ClassLoader classLoader;
     private final Map<LaunchMode, SmallRyeConfig> configs;
+    private final NamespacedHierarchicalStore<Namespace> store;
 
-    TestConfigProviderResolver() {
+    TestConfigProviderResolver(NamespacedHierarchicalStore<Namespace> store) {
         this.resolver = (SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver.instance();
         this.classLoader = Thread.currentThread().getContextClassLoader();
         this.configs = new ConcurrentHashMap<>();
+        this.store = store;
     }
 
     @Override
@@ -57,6 +60,7 @@ public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
                     LaunchMode.set(launchMode);
                     SmallRyeConfig config = ConfigUtils.configBuilder()
                             .withCustomizers(new TestConfigCustomizer(mode))
+                            .withSources(new TestValueRegistryConfigSource(store))
                             .build();
                     LaunchMode.set(current);
                     return config;

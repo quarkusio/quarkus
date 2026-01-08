@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.server.test.resource.basic;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -12,6 +13,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 
 import org.jboss.resteasy.reactive.RestPath;
 import org.jboss.resteasy.reactive.RestQuery;
@@ -21,8 +23,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 
 public class SubResourceFieldInjectionTest {
     @RegisterExtension
@@ -31,7 +33,6 @@ public class SubResourceFieldInjectionTest {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class);
                     war.addClasses(StoreResource.class);
                     war.addClasses(OrderResource.class);
                     war.addClasses(ContactResource.class);
@@ -41,15 +42,17 @@ public class SubResourceFieldInjectionTest {
                 }
             }).debugBytecode(true);
 
+    @TestHTTPResource
+    URI uri;
+
     @Test
     public void basicTest() {
         // Test parameter injection works for Class<SubResource> locators
         {
             Client client = ClientBuilder.newClient();
             Response response = client.target(
-                    PortProviderUtil.generateURL(
-                            "/store/orders/orderId/contacts?typeFilter=SENDER",
-                            SubResourceFieldInjectionTest.class.getSimpleName()))
+                    UriBuilder.fromUri(uri).path("/store/orders/orderId/contacts"))
+                    .queryParam("typeFilter", "SENDER")
                     .request().get();
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             Assertions.assertEquals("[name1]", response.readEntity(String.class), "Wrong content of response");
@@ -59,9 +62,7 @@ public class SubResourceFieldInjectionTest {
         {
             Client client = ClientBuilder.newClient();
             Response response = client.target(
-                    PortProviderUtil.generateURL(
-                            "/store/orders/orderId/contacts",
-                            SubResourceFieldInjectionTest.class.getSimpleName()))
+                    UriBuilder.fromUri(uri).path("/store/orders/orderId/contacts"))
                     .request().get();
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             Assertions.assertEquals("[name1, name2]", response.readEntity(String.class), "Wrong content of response");
@@ -73,9 +74,7 @@ public class SubResourceFieldInjectionTest {
         {
             Client client = ClientBuilder.newClient();
             Response response = client.target(
-                    PortProviderUtil.generateURL(
-                            "/store/orders/orderId/positions/positionId",
-                            SubResourceFieldInjectionTest.class.getSimpleName()))
+                    UriBuilder.fromUri(uri).path("/store/orders/orderId/positions/positionId"))
                     .request().get();
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             Assertions.assertEquals("orderId:positionId", response.readEntity(String.class), "Wrong content of response");

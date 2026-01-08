@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.server.test.resource.basic;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.function.Supplier;
@@ -21,8 +22,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.MediaTypeFromMessageBodyWriterListAsText;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.MediaTypeFromMessageBodyWriterListAsXML;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.MediaTypeFromMessageBodyWriterResource;
-import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 
 /**
  * @tpSubChapter Resteasy server
@@ -31,7 +32,7 @@ import io.quarkus.test.QuarkusUnitTest;
  * @tpSince RESTEasy 3.1.3.Final
  */
 @DisplayName("Media Type From Message Body Writer Test")
-public class MediaTypeFromMessageBodyWriterTestMultiple {
+public class MediaTypeFromMessageBodyWriterTestMultipleTest {
 
     @DisplayName("Target")
     private static class Target {
@@ -80,8 +81,10 @@ public class MediaTypeFromMessageBodyWriterTestMultiple {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class, MediaTypeFromMessageBodyWriterListAsText.class,
-                            MediaTypeFromMessageBodyWriterListAsXML.class, MediaTypeFromMessageBodyWriterResource.class);
+                    war.addClasses(
+                            MediaTypeFromMessageBodyWriterListAsText.class,
+                            MediaTypeFromMessageBodyWriterListAsXML.class,
+                            MediaTypeFromMessageBodyWriterResource.class);
                     return war;
                 }
             });
@@ -96,13 +99,8 @@ public class MediaTypeFromMessageBodyWriterTestMultiple {
         client.close();
     }
 
-    private String generateURL(String path) {
-        return PortProviderUtil.generateURL(path, MediaTypeFromMessageBodyWriterTestMultiple.class.getSimpleName());
-    }
-
-    private String generateURLUserCase(String path) {
-        return PortProviderUtil.generateURL(path, MediaTypeFromMessageBodyWriterTestMultiple.class.getSimpleName() + "_single");
-    }
+    @TestHTTPResource
+    URI uri;
 
     /**
      * @tpTestDetails Test that MessageBodyWriters can be consulted for media type
@@ -111,8 +109,8 @@ public class MediaTypeFromMessageBodyWriterTestMultiple {
     @Test
     @DisplayName("Test")
     public void test() throws Exception {
-        WebTarget base = client.target(generateURL(""));
-        Response response = null;
+        WebTarget base = client.target(uri);
+        Response response;
         for (Target tgt : tgts) {
             for (String accept : accepts) {
                 if (tgt.queryName != null) {
@@ -129,5 +127,4 @@ public class MediaTypeFromMessageBodyWriterTestMultiple {
         }
         client.close();
     }
-
 }

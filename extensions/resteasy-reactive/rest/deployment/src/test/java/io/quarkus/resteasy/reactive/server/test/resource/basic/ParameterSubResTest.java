@@ -1,10 +1,12 @@
 package io.quarkus.resteasy.reactive.server.test.resource.basic;
 
+import java.net.URI;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -31,8 +33,8 @@ import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.Paramete
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.ParameterSubResSub;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.ParameterSubResSubImpl;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.RequestScopedObject;
-import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 
 /**
  * @tpSubChapter Resources
@@ -59,7 +61,6 @@ public class ParameterSubResTest {
                     war.addClass(ParameterSubResDoubleInterface.class);
                     war.addClass(ParameterSubResGenericInterface.class);
                     war.addClass(ParameterSubResInternalInterface.class);
-                    war.addClasses(PortProviderUtil.class);
                     war.addClass(ParameterSubResRoot.class);
                     war.addClass(ParameterSubResClassSub.class);
                     war.addClass(ApplicationScopeObject.class);
@@ -71,10 +72,6 @@ public class ParameterSubResTest {
                 }
             });
 
-    private String generateURL(String path) {
-        return PortProviderUtil.generateURL(path, ParameterSubResTest.class.getSimpleName());
-    }
-
     @BeforeEach
     public void init() {
         client = ClientBuilder.newClient();
@@ -85,26 +82,29 @@ public class ParameterSubResTest {
         client.close();
     }
 
+    @TestHTTPResource
+    URI uri;
+
     /**
      * @tpTestDetails Check sub resources.
      * @tpSince RESTEasy 3.0.16
      */
     @Test
     @DisplayName("Test Sub Resource")
-    public void testSubResource() throws Exception {
-        Response response = client.target(generateURL("/path/sub/fred")).request().get();
+    public void testSubResource() {
+        Response response = client.target(UriBuilder.fromUri(uri).path("/path/sub/fred")).request().get();
         Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         Assertions.assertEquals("Boo! - fred", response.readEntity(String.class), "Wrong content of response");
     }
 
     @Test
     @DisplayName("Test Return Sub Resource As Class")
-    public void testReturnSubResourceAsClass() throws Exception {
-        Response response = client.target(generateURL("/path/subclass")).request().get();
+    public void testReturnSubResourceAsClass() {
+        Response response = client.target(UriBuilder.fromUri(uri).path("/path/subclass")).request().get();
         Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         Assertions.assertEquals("resourceCounter:1,appscope:1,requestScope:1", response.readEntity(String.class),
                 "Wrong response");
-        response = client.target(generateURL("/path/subclass")).request().get();
+        response = client.target(UriBuilder.fromUri(uri).path("/path/subclass")).request().get();
         Assertions.assertEquals("resourceCounter:2,appscope:2,requestScope:1", response.readEntity(String.class),
                 "Wrong response");
     }
@@ -115,8 +115,9 @@ public class ParameterSubResTest {
      */
     @Test
     @DisplayName("Test Root")
-    public void testRoot() throws Exception {
-        Response response = client.target(generateURL("/generic/sub")).queryParam("foo", "42.0").request().get();
+    public void testRoot() {
+        Response response = client.target(UriBuilder.fromUri(uri).path("/generic/sub")).queryParam("foo", "42.0").request()
+                .get();
         Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         Assertions.assertEquals("42.0", response.readEntity(String.class), "Wrong content of response");
     }

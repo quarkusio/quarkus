@@ -1,7 +1,9 @@
 package io.quarkus.resteasy.reactive.server.test.resource.basic;
 
+import java.net.URI;
 import java.util.function.Supplier;
 
+import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.WebTarget;
 
@@ -19,8 +21,8 @@ import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.GenericR
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.GenericResourceStudentInterface;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.GenericResourceStudentReader;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.GenericResourceStudentWriter;
-import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 
 /**
  * @tpSubChapter Resource
@@ -31,12 +33,11 @@ import io.quarkus.test.QuarkusUnitTest;
 @DisplayName("Generic Resource Test")
 public class GenericResourceTest {
 
-    private static WebTarget proxy;
+    static Client client;
 
     @BeforeAll
     public static void setup() {
-        WebTarget target = ClientBuilder.newClient().target(generateURL(""));
-        proxy = target.register(GenericResourceStudentReader.class).register(GenericResourceStudentWriter.class);
+        client = ClientBuilder.newClient();
     }
 
     @RegisterExtension
@@ -46,7 +47,6 @@ public class GenericResourceTest {
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
                     war.addClass(GenericResourceStudent.class);
-                    war.addClass(PortProviderUtil.class);
                     war.addClass(GenericResourceStudentInterface.class);
                     war.addClass(GenericResourceCrudResource.class);
                     war.addClasses(GenericResourceStudentCrudResource.class, GenericResourceStudentReader.class,
@@ -55,14 +55,16 @@ public class GenericResourceTest {
                 }
             });
 
-    private static String generateURL(String path) {
-        return PortProviderUtil.generateURL(path, GenericResourceTest.class.getSimpleName());
-    }
+    @TestHTTPResource
+    URI uri;
 
     @Test
     @DisplayName("Test Get")
     @Disabled
     public void testGet() {
+        WebTarget proxy = client.target(uri)
+                .register(GenericResourceStudentReader.class)
+                .register(GenericResourceStudentWriter.class);
         //Assertions.assertTrue(proxy.get(1).getName().equals("Jozef Hartinger"));
     }
 
@@ -70,6 +72,9 @@ public class GenericResourceTest {
     @DisplayName("Test Put")
     @Disabled
     public void testPut() {
+        WebTarget proxy = client.target(uri)
+                .register(GenericResourceStudentReader.class)
+                .register(GenericResourceStudentWriter.class);
         //proxy.put(2, new GenericResourceStudent("John Doe"));
         //Assertions.assertTrue(proxy.get(2).getName().equals("John Doe"));
     }

@@ -20,6 +20,7 @@ import io.smallrye.config.Priorities;
  * the full value expanded or the value unexpanded. In most cases, the test urls are used as expressions, so we need to
  * intercept the expression expansion directly to rewrite what we need.
  */
+@Deprecated(forRemoval = true)
 @Priority(Priorities.LIBRARY + 299)
 public class TestHTTPConfigSourceInterceptor extends ExpressionConfigSourceInterceptor {
     @Override

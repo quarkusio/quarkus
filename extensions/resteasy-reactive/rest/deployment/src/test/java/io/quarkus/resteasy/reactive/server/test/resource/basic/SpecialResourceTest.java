@@ -1,6 +1,7 @@
 package io.quarkus.resteasy.reactive.server.test.resource.basic;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.client.Client;
@@ -9,6 +10,7 @@ import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -29,8 +31,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.SpecialResourceApiResource;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.SpecialResourceDeleteResource;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.SpecialResourceStreamResource;
-import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 
 /**
  * @tpSubChapter Resources
@@ -50,7 +52,6 @@ public class SpecialResourceTest {
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
                     war.addClasses(SpecialResourceStreamResource.class, SpecialResourceApiResource.class,
-                            PortProviderUtil.class,
                             SpecialResourceDeleteResource.class);
                     return war;
                 }
@@ -67,9 +68,8 @@ public class SpecialResourceTest {
         client = null;
     }
 
-    private String generateURL(String path) {
-        return PortProviderUtil.generateURL(path, SpecialResourceTest.class.getSimpleName());
-    }
+    @TestHTTPResource
+    URI uri;
 
     /**
      * @tpTestDetails Regression test for RESTEASY-631
@@ -77,8 +77,8 @@ public class SpecialResourceTest {
      */
     @Test
     @DisplayName("Test 631")
-    public void test631() throws Exception {
-        WebTarget base = client.target(generateURL("/delete"));
+    public void test631() {
+        WebTarget base = client.target(UriBuilder.fromUri(uri).path("/delete"));
         Response response = base.request().method("DELETE", Entity.entity("hello", "text/plain"));
         Assertions.assertEquals(Response.Status.NO_CONTENT.getStatusCode(), response.getStatus());
         response.close();
@@ -90,8 +90,8 @@ public class SpecialResourceTest {
      */
     @Test
     @DisplayName("Test 534")
-    public void test534() throws Exception {
-        WebTarget base = client.target(generateURL("/inputstream/test/json"));
+    public void test534() {
+        WebTarget base = client.target(UriBuilder.fromUri(uri).path("/inputstream/test/json"));
         Response response = base.request().post(Entity.entity("hello world".getBytes(), MediaType.APPLICATION_OCTET_STREAM));
         Assertions.assertEquals(Response.Status.NO_CONTENT.getStatusCode(), response.getStatus());
         response.close();
@@ -103,8 +103,8 @@ public class SpecialResourceTest {
      */
     @Test
     @DisplayName("Test 624")
-    public void test624() throws Exception {
-        WebTarget base = client.target(generateURL("/ApI/FuNc"));
+    public void test624() {
+        WebTarget base = client.target(UriBuilder.fromUri(uri).path("/ApI/FuNc"));
         Response response = base.request().get();
         Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         response.close();
@@ -116,9 +116,9 @@ public class SpecialResourceTest {
      */
     @Test
     @DisplayName("Test 583")
-    public void test583() throws Exception {
+    public void test583() {
         HttpClient client = HttpClientBuilder.create().build();
-        HttpPut method = new HttpPut(generateURL("/api"));
+        HttpPut method = new HttpPut(UriBuilder.fromUri(uri).path("/api").build());
         HttpResponse response = null;
         try {
             method.setEntity(

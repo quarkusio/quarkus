@@ -16,7 +16,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.AbstractMap;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
@@ -71,7 +70,6 @@ import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.TestMethodInvoker;
 import io.quarkus.test.common.GroovyClassValue;
 import io.quarkus.test.common.RestAssuredStateManager;
-import io.quarkus.test.common.RestorableSystemProperties;
 import io.quarkus.test.common.TestClassIndexer;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestScopeManager;
@@ -189,8 +187,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
             testHttpEndpointProviders = TestHttpEndpointProvider.load();
 
-            // clear the test.url system property as the value leaks into the run when using different profiles
-            System.clearProperty("test.url");
             QuarkusTestProfile profileInstance = AppMakerHelper.getQuarkusTestProfile(profile);
             if (profileInstance != null) {
                 Runnable configCleaner = AppMakerHelper.setExtraPropertiesRestorably(profile, profileInstance);
@@ -256,8 +252,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 hangTaskKey = hangDetectionExecutor.schedule(hangDetectionTask, hangTimeout.toMillis(), TimeUnit.MILLISECONDS);
             }
 
-            RestorableSystemProperties restorableSystemProperties = RestorableSystemProperties.setProperties(
-                    Collections.singletonMap("test.url", TestHTTPResourceManager.getUri(runningQuarkusApplication)));
+            ValueRegistry valueRegistry = runningQuarkusApplication.valueRegistry();
 
             Closeable shutdownTask = new Closeable() {
                 @Override
@@ -277,7 +272,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                                 shutdownTasks.pop().run();
                             }
                         } finally {
-                            restorableSystemProperties.close();
                             shutdownHangDetection();
                         }
                         try {
@@ -288,7 +282,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 }
             };
 
-            ValueRegistry valueRegistry = runningQuarkusApplication.valueRegistry();
             return new ExtensionState(valueRegistry, testResourceManager, shutdownTask,
                     AbstractTestWithCallbacksExtension::clearCallbacks);
         } catch (Throwable e) {
@@ -811,14 +804,11 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     }
 
     private Object createActualTestInstance(Class<?> testClass, QuarkusTestExtensionState state)
-            throws ClassNotFoundException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+            throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         Object testInstance = runningQuarkusApplication.instance(testClass);
         ValueRegistryInjector.inject(testInstance, state);
-        Class<?> resM = Thread.currentThread().getContextClassLoader().loadClass(TestHTTPResourceManager.class.getName());
-        resM.getDeclaredMethod("inject", Object.class, List.class).invoke(null, testInstance,
-                testHttpEndpointProviders);
-        state.testResourceManager.getClass().getMethod("inject", Object.class).invoke(state.testResourceManager,
-                testInstance);
+        TestHTTPResourceManager.inject(testInstance, runningQuarkusApplication.valueRegistry(), testHttpEndpointProviders);
+        state.testResourceManager.getClass().getMethod("inject", Object.class).invoke(state.testResourceManager, testInstance);
         return testInstance;
     }
 

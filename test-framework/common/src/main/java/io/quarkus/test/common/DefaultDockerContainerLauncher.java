@@ -297,7 +297,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         } else {
             log.info("Wait for server to start by capturing listening data...");
             ListeningAddress result = waitForCapturedListeningData(containerProcess, logPath, waitTimeSeconds);
-            log.infof("Server started on port %s", result.getPort());
+            log.infof("Server started on port %s", result.port());
             return Optional.of(result);
         }
     }

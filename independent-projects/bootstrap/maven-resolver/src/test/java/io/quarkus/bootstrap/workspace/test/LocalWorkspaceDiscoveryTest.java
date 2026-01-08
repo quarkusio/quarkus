@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
+import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
@@ -245,6 +246,26 @@ public class LocalWorkspaceDiscoveryTest {
         assertNotNull(ws.getProject("org.example", "model-extension-parent"));
         assertNotNull(ws.getProject("org.example", "aggregator"));
         assertEquals(7, ws.getProjects().size());
+    }
+
+    /**
+     * Maven doesn't normalize POM XML paths associating them with parsed raw Models
+     */
+    @Test
+    public void nonNormalizedRootPomPath() throws Exception {
+        final Path modulePomXml = getModuleDir("non-parent-aggregator/service-extension").resolve("..")
+                .resolve("service-extension").resolve("pom.xml");
+
+        final LocalProject module1 = new BootstrapMavenContext(BootstrapMavenContext.config()
+                .addProvidedModule(modulePomXml, ModelUtils.readModel(modulePomXml), null)
+                .setCurrentProject(modulePomXml.toString()))
+                .getCurrentProject();
+        final LocalWorkspace ws = module1.getWorkspace();
+
+        assertNotNull(ws.getProject("org.example", "service-extension-deployment"));
+        assertNotNull(ws.getProject("org.example", "service-extension"));
+        assertNotNull(ws.getProject("org.example", "service-extension-parent"));
+        assertEquals(3, ws.getProjects().size());
     }
 
     @Test

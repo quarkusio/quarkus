@@ -94,8 +94,7 @@ public class Timing {
         Timing t = get(anc);
         final long bootTimeNanoSeconds = System.nanoTime() - t.bootStartTime;
         final Logger logger = Logger.getLogger("io.quarkus");
-        //Use a BigDecimal so we can render in seconds with 3 digits precision, as requested:
-        final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(bootTimeNanoSeconds);
+        final String secondsRepresentation = convertToSecondsString(bootTimeNanoSeconds);
         String safeAppName = (name == null || name.trim().isEmpty()) ? UNSET_VALUE : name;
         String safeAppVersion = (version == null || version.trim().isEmpty() || "null".equals(version)) ? UNSET_VALUE : version;
         final String nativeOrJvm = ImageInfo.inImageRuntimeCode() ? "native" : "on JVM";
@@ -120,7 +119,7 @@ public class Timing {
         Timing t = get(auxiliaryApplication);
         final long stopTimeNanoSeconds = System.nanoTime() - t.bootStopTime;
         final Logger logger = Logger.getLogger("io.quarkus");
-        final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(stopTimeNanoSeconds);
+        final String secondsRepresentation = convertToSecondsString(stopTimeNanoSeconds);
         logger.infof("%s%s stopped in %ss",
                 (UNSET_VALUE.equals(name) || name == null || name.trim().isEmpty()) ? "Quarkus" : name,
                 auxiliaryApplication ? "(test application)" : "",
@@ -141,11 +140,29 @@ public class Timing {
         }
     }
 
+    public static String convertToSecondsString(long timeNanoSeconds) {
+        long millis = (timeNanoSeconds + 500_000) / 1_000_000;
+        long seconds = millis / 1000;
+        int fraction = (int) (millis % 1000);
+
+        StringBuilder sb = new StringBuilder(16);
+        sb.append(seconds).append('.');
+        if (fraction < 10)
+            sb.append("00");
+        else if (fraction < 100)
+            sb.append('0');
+        sb.append(fraction);
+        return sb.toString();
+    }
+
+    /**
+     * @deprecated use {@link #convertToSecondsString(long)} instead.
+     */
+    @Deprecated(forRemoval = true, since = "3.31")
     public static BigDecimal convertToBigDecimalSeconds(final long timeNanoSeconds) {
         final BigDecimal secondsRepresentation = BigDecimal.valueOf(timeNanoSeconds) // As nanoseconds
                 .divide(BigDecimal.valueOf(1_000_000), RoundingMode.HALF_UP) // Convert to milliseconds, discard remaining digits while rounding
                 .divide(BigDecimal.valueOf(1_000), 3, RoundingMode.HALF_UP); // Convert to seconds, while preserving 3 digits
         return secondsRepresentation;
     }
-
 }

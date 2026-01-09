@@ -557,7 +557,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
                 restartCallback.accept(filesChanged, changedClassResults);
                 long timeNanoSeconds = System.nanoTime() - startNanoseconds;
-                log.infof("Live reload total time: %ss ", Timing.convertToBigDecimalSeconds(timeNanoSeconds));
+                log.infof("Live reload total time: %ss ", Timing.convertToSecondsString(timeNanoSeconds));
                 for (Runnable step : postRestartSteps) {
                     try {
                         step.run();
@@ -585,10 +585,10 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                 }
 
                 log.infof("Files changed but restart not needed - notified extensions in: %ss ",
-                        Timing.convertToBigDecimalSeconds(System.nanoTime() - startNanoseconds));
+                        Timing.convertToSecondsString(System.nanoTime() - startNanoseconds));
             } else if (instrumentationChange) {
                 log.infof("Live reload performed via instrumentation, no restart needed, total time: %ss ",
-                        Timing.convertToBigDecimalSeconds(System.nanoTime() - startNanoseconds));
+                        Timing.convertToSecondsString(System.nanoTime() - startNanoseconds));
             }
             return false;
 

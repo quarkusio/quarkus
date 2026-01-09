@@ -24,6 +24,10 @@ import io.quarkus.security.identity.SecurityIdentity;
 
 public class JacksonMapperUtil {
 
+    public static boolean includeSecureField(SerializerProvider serializerProvider, String[] rolesAllowed) {
+        return serializerProvider.getConfig().getFilterProvider() == null || includeSecureField(rolesAllowed);
+    }
+
     public static boolean includeSecureField(String[] rolesAllowed) {
         SecurityIdentity securityIdentity = RolesAllowedHolder.SECURITY_IDENTITY;
         if (securityIdentity == null) {
@@ -122,7 +126,7 @@ public class JacksonMapperUtil {
 
     public static void serializePojo(Object value, JsonGenerator generator, SerializerProvider serializerProvider)
             throws IOException {
-        if (value == null || value instanceof Map || value instanceof Iterable) {
+        if (value == null || value instanceof Map) {
             generator.writePOJO(value);
             return;
         }

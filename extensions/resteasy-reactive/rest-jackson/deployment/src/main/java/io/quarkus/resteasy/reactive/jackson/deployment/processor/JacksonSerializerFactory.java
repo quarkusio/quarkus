@@ -279,7 +279,7 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
                 if (fieldSpecs.hasUnknownAnnotation()) {
                     return false;
                 }
-                writeField(classInfo, fieldSpecs, writeFieldBranch(classCreator, serialize, fieldSpecs), ctx);
+                writeField(classInfo, fieldSpecs, writeFieldBranch(classCreator, serialize, fieldSpecs, ctx), ctx);
             }
         }
         return true;
@@ -393,7 +393,8 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
         };
     }
 
-    private BytecodeCreator writeFieldBranch(ClassCreator classCreator, MethodCreator serialize, FieldSpecs fieldSpecs) {
+    private BytecodeCreator writeFieldBranch(ClassCreator classCreator, MethodCreator serialize, FieldSpecs fieldSpecs,
+            SerializationContext ctx) {
         String[] rolesAllowed = fieldSpecs.rolesAllowed();
         if (rolesAllowed != null) {
             MethodCreator clinit = classCreator.getMethodCreator("<clinit>", void.class).setModifiers(ACC_STATIC);
@@ -413,8 +414,8 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
                             String[].class.getName()));
 
             MethodDescriptor includeSecureField = MethodDescriptor.ofMethod(JacksonMapperUtil.class, "includeSecureField",
-                    boolean.class, String[].class);
-            ResultHandle included = serialize.invokeStaticMethod(includeSecureField, rolesArrayReader);
+                    boolean.class, SerializerProvider.class, String[].class);
+            ResultHandle included = serialize.invokeStaticMethod(includeSecureField, ctx.serializerProvider, rolesArrayReader);
             return serialize.ifTrue(included).trueBranch();
         }
         return serialize;

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration version="2.0" label="NoEvent" description="For test" provider="Quarkus">
+
+    <event name="quarkus.extension">
+      <setting name="enabled">false</setting>
+    </event>
+
+    <event name="quarkus.runtime">
+      <setting name="enabled">false</setting>
+    </event>
+
+    <event name="quarkus.application">
+      <setting name="enabled">false</setting>
+    </event>
+
+    <event name="quarkus.infinispanSingleEntry">
+      <setting name="enabled">false</setting>
+    </event>
+
+    <event name="quarkus.infinispanSingleEntryStart">
+      <setting name="enabled">false</setting>
+    </event>
+
+    <event name="quarkus.infinispanSingleEntryEnd">
+      <setting name="enabled">false</setting>
+    </event>
+
+    <event name="quarkus.infinispanMultiEntry">
+      <setting name="enabled">false</setting>
+    </event>
+
+    <event name="quarkus.infinispanMultiEntryStart">
+      <setting name="enabled">false</setting>
+    </event>
+
+    <event name="quarkus.infinispanMultiEntryEnd">
+      <setting name="enabled">false</setting>
+    </event>
+
+    <event name="quarkus.infinispanCacheWide">
+      <setting name="enabled">false</setting>
+    </event>
+
+    <event name="quarkus.infinispanCacheWideStart">
+      <setting name="enabled">false</setting>
+    </event>
+
+    <event name="quarkus.infinispanCacheWideEnd">
+      <setting name="enabled">false</setting>
+    </event>
+
+
+</configuration>

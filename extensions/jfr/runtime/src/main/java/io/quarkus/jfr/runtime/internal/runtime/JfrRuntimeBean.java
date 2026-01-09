@@ -6,7 +6,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
-import io.quarkus.jfr.runtime.internal.config.JfrRuntimeConfig;
+import io.quarkus.jfr.api.config.JfrRuntimeConfig;
 import io.quarkus.runtime.ApplicationConfig;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;

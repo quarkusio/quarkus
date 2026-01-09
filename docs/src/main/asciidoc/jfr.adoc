@@ -267,6 +267,54 @@ Extension::
 
   Records information about extensions included in the running Quarkus. This event includes the name of the extensions installed in Quarkus.
 
+=== Infinispan RemoteCache events
+
+When the `infinispan-client` extension is present, Quarkus emits JFR events for methods executed on Infinispan `RemoteCache`.
+There are nine event types, grouped by scope (single-entry, multi-entry, cache-wide) and by type (start, period, end).
+These events help you analyze the latency and behavior of remote cache access in your application.
+
+`quarkus.infinispanSingleEntry`::
+A duration event for a single-entry `RemoteCache` operation
+
+`quarkus.infinispanSingleEntryStart`::
+A point-in-time event emitted when a single-entry `RemoteCache` operation starts (disabled by default)
+
+`quarkus.infinispanSingleEntryEnd`::
+A point-in-time event emitted when a single-entry `RemoteCache` operation completes (disabled by default)
+
+`quarkus.infinispanMultiEntry`::
+A duration event for a multi-entry `RemoteCache` operation, such as `putAll` or `getAll`
+
+`quarkus.infinispanMultiEntryStart`::
+A point-in-time event emitted when a multi-entry `RemoteCache` operation starts (disabled by default)
+
+`quarkus.infinispanMultiEntryEnd`::
+A point-in-time event emitted when a multi-entry `RemoteCache` operation completes (disabled by default)
+
+`quarkus.infinispanCacheWide`::
+A duration event for a cache-wide `RemoteCache` operation, such as `clear` or `size`
+
+`quarkus.infinispanCacheWideStart`::
+A point-in-time event emitted when a cache-wide `RemoteCache` operation starts (disabled by default)
+
+`quarkus.infinispanCacheWideEnd`::
+A point-in-time event emitted when a cache-wide `RemoteCache` operation completes (disabled by default)
+
+All `RemoteCache` events contain:
+
+- Method name
+- Cache name
+- Cluster name
+
+Multi-entry events also contain:
+
+- Entry count
+
+Method name is the invoked `RemoteCache` method (for example, `get`, `put`, or `remove`).
+Cache name is the name of the remote cache.
+Cluster name is the name of the cluster that hosts the remote cache.
+Entry count is the number of keys or entries targeted by the multi-entry operation.
+
 === Native Image
 
 Native executables supports JDK Flight Recorder.
@@ -442,4 +490,4 @@ public class NewInterceptor {
 
 == Configuration Reference
 
-include::{generated-dir}/config/quarkus-jfr.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/config/quarkus-jfr-api.adoc[leveloffset=+1, opts=optional]

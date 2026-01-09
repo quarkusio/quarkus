@@ -26,6 +26,7 @@ public class OidcClientHealthCheck implements HealthCheck {
     private static final String ERROR_STATUS = "Error";
     private static final String DISABLED_STATUS = "Disabled";
     private static final String UNKNOWN_STATUS = "Unknown";
+    private static final String NOT_READY_STATUS = "Not Ready";
 
     @Inject
     OidcClientsImpl oidcClients;
@@ -57,6 +58,10 @@ public class OidcClientHealthCheck implements HealthCheck {
 
     private String checkClient(HealthCheckResponseBuilder builder, String clientId,
             OidcClient oidcClient) {
+        if (oidcClient instanceof DeferredOidcClient deferredOidcClient && deferredOidcClient.getResolvedOidcClient() != null) {
+            oidcClient = deferredOidcClient.getResolvedOidcClient();
+        }
+
         String name = clientId;
         String status = null;
         if (oidcClient instanceof OidcClientRecorder.DisabledOidcClient) {
@@ -83,6 +88,12 @@ public class OidcClientHealthCheck implements HealthCheck {
             } else {
                 // We may introduce a metadata health property
                 status = UNKNOWN_STATUS;
+            }
+        } else if (oidcClient instanceof DeferredOidcClient) {
+            status = NOT_READY_STATUS;
+            var deferredClientConfig = oidcClientsConfig.namedClients().get(clientId);
+            if (deferredClientConfig != null && deferredClientConfig.clientName().isPresent()) {
+                name = deferredClientConfig.clientName().get();
             }
         }
 

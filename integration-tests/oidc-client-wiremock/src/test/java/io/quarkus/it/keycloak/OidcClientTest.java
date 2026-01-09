@@ -345,6 +345,7 @@ public class OidcClientTest {
         assertEquals("OK", data.getString("Client with enabled discovery"));
         assertEquals("Error", data.getString("Client with error status"));
         assertEquals("Disabled", data.getString("Disabled client"));
+        assertEquals("Not Ready", data.getString("Client with status not ready"));
     }
 
     private void checkLog() {

@@ -141,10 +141,18 @@ public class Timing {
     }
 
     public static String convertToSecondsString(long timeNanoSeconds) {
-        long millis = Math.round(timeNanoSeconds / 1_000_000.0);
+        long millis = (timeNanoSeconds + 500_000) / 1_000_000;
         long seconds = millis / 1000;
         int fraction = (int) (millis % 1000);
-        return seconds + "." + fraction;
+
+        StringBuilder sb = new StringBuilder(16);
+        sb.append(seconds).append('.');
+        if (fraction < 10)
+            sb.append("00");
+        else if (fraction < 100)
+            sb.append('0');
+        sb.append(fraction);
+        return sb.toString();
     }
 
     /**

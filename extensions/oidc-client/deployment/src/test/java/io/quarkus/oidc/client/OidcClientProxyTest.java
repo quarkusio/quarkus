@@ -1,33 +1,34 @@
 package io.quarkus.oidc.client;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import jakarta.inject.Inject;
+
 import org.awaitility.Awaitility;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jose4j.base64url.Base64;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.runtime.util.ExceptionUtil;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpServer;
 
 @QuarkusTestResource(KeycloakRealmUserPasswordManager.class)
-public class OidcClientProxyTest {
+class OidcClientProxyTest {
 
     private static final Map<String, String> HEADERS = new ConcurrentHashMap<>();
-    private static volatile HttpServer httpServer;
-    private static volatile Vertx vertx;
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
@@ -35,8 +36,8 @@ public class OidcClientProxyTest {
                     .addClass(OidcClientResource.class)
                     .addAsResource(new StringAsset("""
                             quarkus.keycloak.devservices.enabled=false
-                            quarkus.oidc.auth-server-url=${keycloak.url}/realms/quarkus/
-                            quarkus.oidc-client.auth-server-url=${quarkus.oidc.auth-server-url}
+                            quarkus.oidc.enabled=false
+                            quarkus.oidc-client.auth-server-url=${keycloak.url}/realms/quarkus/
                             quarkus.oidc-client.client-id=quarkus-app
                             quarkus.oidc-client.credentials.secret=secret
                             quarkus.oidc-client.grant.type=password
@@ -47,56 +48,61 @@ public class OidcClientProxyTest {
                             quarkus.proxy.oidc-proxy.port=8765
                             quarkus.proxy.oidc-proxy.username=name
                             quarkus.proxy.oidc-proxy.password=pwd
-                            """), "application.properties"))
-            .setBeforeAllCustomizer(() -> {
-                CountDownLatch latch = new CountDownLatch(1);
-                vertx = Vertx.vertx();
-                httpServer = vertx.createHttpServer();
-                httpServer.requestHandler(request -> {
-                    request.headers().forEach(HEADERS::put);
-                    request.response().end(" ");
-                });
-                httpServer.listen(8765, "localhost").onSuccess(ignored -> latch.countDown());
-                try {
-                    assertTrue(latch.await(15, TimeUnit.SECONDS), "Proxy server is not listening");
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            })
-            .assertException(throwable -> {
-                // expect startup failure as our "proxy" is not redirecting requests
-                var rootCause = ExceptionUtil.getRootCause(throwable);
-                Assertions.assertNotNull(rootCause);
-                Assertions.assertTrue(
-                        rootCause.getMessage().toLowerCase().contains("OIDC Server is not available".toLowerCase()),
-                        () -> "Expected exception message to contain 'OIDC Server is not available' but got: "
-                                + rootCause.getMessage());
+                            """), "application.properties"));
 
-                // now assert proxy configuration
-                Awaitility.await().atMost(10, TimeUnit.SECONDS)
-                        .until(() -> HEADERS.containsKey("host") && HEADERS.containsKey("Proxy-Authorization"));
-                assertTrue(HEADERS.get("host").contains("localhost:"),
-                        () -> "Expected host header '%s' to contain 'localhost:'".formatted(HEADERS.get("host")));
-                String proxyAuthorization = HEADERS.get("Proxy-Authorization");
-                assertTrue(proxyAuthorization.contains("Basic "),
-                        () -> "Proxy authorization does not contain basic authentication credentials: " + proxyAuthorization);
-                String basicCredentials = new String(Base64.decode(proxyAuthorization.substring("Basic ".length()).trim()),
-                        StandardCharsets.UTF_8);
-                Assertions.assertEquals("name:pwd", basicCredentials);
-            });
+    @Inject
+    OidcClient oidcClient;
+
+    @Inject
+    Vertx vertx;
 
     @Test
-    void runTest() {
-        Assertions.fail("Application startup should had failed due to unreachable authentication server");
-    }
+    void assertProxyConfigurationAndOidcClientRecovery() throws InterruptedException, MalformedURLException {
+        // the fact that this place is reached and the application startup did not fail also verifies that
+        // when the OIDC client authentication server is not available on startup, we do not fail the build
+        CountDownLatch latch = new CountDownLatch(1);
+        var httpServer = vertx.createHttpServer();
+        var httpClient = vertx.createHttpClient();
+        var keycloakUrl = new URL(ConfigProvider.getConfig().getValue("keycloak.url", String.class));
+        try {
+            httpServer.requestHandler(serverReq -> {
+                serverReq.headers().forEach(HEADERS::put);
+                serverReq.body().onSuccess(serverReqBody -> httpClient
+                        .request(serverReq.method(), keycloakUrl.getPort(), keycloakUrl.getHost(), serverReq.path())
+                        .flatMap(clientReq -> {
+                            serverReq.headers().forEach(clientReq::putHeader);
+                            return clientReq.send(serverReqBody);
+                        })
+                        .onSuccess(clientResp -> clientResp.body().onSuccess(clientRespBody -> {
+                            serverReq.response().setStatusCode(clientResp.statusCode());
+                            clientResp.headers().forEach((k, v) -> serverReq.response().putHeader(k, v));
+                            serverReq.response().end(clientRespBody);
+                        }))
+                        .onFailure(f -> serverReq.response().setStatusCode(500).end(f.getMessage())))
+                        .onFailure(t -> serverReq.response().setStatusCode(500).end(t.getMessage()));
+            });
+            httpServer.listen(8765, "localhost").onSuccess(ignored -> latch.countDown());
+            assertTrue(latch.await(15, TimeUnit.SECONDS), "Proxy server is not listening");
 
-    @AfterAll
-    static void cleanResources() {
-        if (httpServer != null) {
+            // now that we have configured proxy, we expect that OIDC client can be used even though on startup
+            // the OIDC metadata discovery has failed
+            var tokens = oidcClient.getTokens().await().indefinitely();
+            assertNotNull(tokens.getAccessToken());
+
+            // assert proxy configuration
+            Awaitility.await().atMost(10, TimeUnit.SECONDS)
+                    .until(() -> HEADERS.containsKey("host") && HEADERS.containsKey("Proxy-Authorization"));
+            assertTrue(HEADERS.get("host").contains("localhost:"),
+                    () -> "Expected host header '%s' to contain 'localhost:'".formatted(HEADERS.get("host")));
+            String proxyAuthorization = HEADERS.get("Proxy-Authorization");
+            assertTrue(proxyAuthorization.contains("Basic "),
+                    () -> "Proxy authorization does not contain basic authentication credentials: " + proxyAuthorization);
+            String basicCredentials = new String(Base64.decode(proxyAuthorization.substring("Basic ".length()).trim()),
+                    StandardCharsets.UTF_8);
+            Assertions.assertEquals("name:pwd", basicCredentials);
+        } finally {
+            httpClient.close();
             httpServer.close();
-        }
-        if (vertx != null) {
-            vertx.close();
         }
     }
 }

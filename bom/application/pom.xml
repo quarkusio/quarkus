@@ -2443,6 +2443,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-grpc-zero-codegen</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-grpc-stubs</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -6395,6 +6400,17 @@
                 <groupId>com.github.javaparser</groupId>
                 <artifactId>javaparser-core</artifactId>
                 <version>${javaparser.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.roastedroot</groupId>
+                <artifactId>protobuf4j-v4</artifactId>
+                <version>${protobuf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>protoc-gen-grpc-kotlin</artifactId>
+                <version>${grpc-kotlin.version}</version>
+                <classifier>jdk8</classifier>
             </dependency>
             <dependency>
                 <groupId>org.aesh</groupId>

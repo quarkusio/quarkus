@@ -291,7 +291,36 @@ plugins {
 IMPORTANT: It is recommended to package the `proto` files in a dependency instead of the generated classes, so Quarkus can generate optimized classes.
 Refer to the <<scan-for-proto, dedicated section>> for more information.
 
-== Argument files
+== Using native `protoc`
+
+By default `quarkus-grpc` uses a portable version of `protoc` embedded as Java bytecode.
+You can esily switch back to use the official `protoc` binary by:
+
+.Step 1: Exclusion of gRPC Zero:
+[source, xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-grpc</artifactId>
+    <exclusions>
+        <exclusion>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-grpc-zero-codegen</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+----
+
+.Step 1: Add the dependency that relies on the `protoc` binary:
+[source, xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-grpc-codegen</artifactId>
+</dependency>
+----
+
+=== Argument files
 
 When the `protoc` command line exceeds the maximum command length, you can ask Quarkus to use an argument file to pass the arguments to the `protoc` command.
 
@@ -299,9 +328,9 @@ To enable this feature, set the `quarkus.generate-code.grpc.use-arg-file` proper
 
 If you are on Windows, and the command line exceeds 8190 characters, Quarkus automatically uses an argument file to pass the arguments to the `protoc` command.
 
-== Local vs. Downloaded `protoc`
+=== Local vs. Downloaded `protoc`
 
-To generate gRPC classes, Quarkus uses the `protoc` artifact from the `com.google.protobuf` group id.
+To generate gRPC classes, when using `quarkus-grpc-codegen`, Quarkus uses the `protoc` artifact from the `com.google.protobuf` group id.
 However, to ensure the support of various platforms, Quarkus automatically downloads _all_ the possible variants of the `protoc` artifact.
 In addition, Quarkus downloads both `protoc` and the plugin used to generate gRPC classes in Java.
 For example, even if you are using Linux, Quarkus downloads the `protoc` and the Java plugin artifacts for Windows and MacOS.

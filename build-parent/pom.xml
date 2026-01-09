@@ -36,6 +36,8 @@
         <asciidoctorj.version>3.0.0</asciidoctorj.version>
         <htmlunit.version>4.21.0</htmlunit.version>
         <javaparser-core.version>3.28.0</javaparser-core.version>
+        <protobuf4j.version>0.0.1</protobuf4j.version>
+        <grpc-kotlin.version>1.5.0</grpc-kotlin.version>
         <jdeparser.version>2.0.3.Final</jdeparser.version>
         <subethasmtp.version>6.0.1</subethasmtp.version>
 
@@ -214,6 +216,17 @@
                 <groupId>com.github.javaparser</groupId>
                 <artifactId>javaparser-core</artifactId>
                 <version>${javaparser-core.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.roastedroot</groupId>
+                <artifactId>protobuf4j-v4</artifactId>
+                <version>${protobuf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>protoc-gen-grpc-kotlin</artifactId>
+                <version>${grpc-kotlin.version}</version>
+                <classifier>jdk8</classifier>
             </dependency>
 
             <!-- Miscellaneous -->

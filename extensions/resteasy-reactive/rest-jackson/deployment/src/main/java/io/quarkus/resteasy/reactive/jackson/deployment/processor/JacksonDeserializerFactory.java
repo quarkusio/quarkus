@@ -296,7 +296,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
     private Map<String, Integer> parseTypeParameters(ClassInfo classInfo, ClassCreator classCreator) {
         List<TypeVariable> typeParameters = classInfo.typeParameters();
         if (typeParameters.isEmpty()) {
-            return null;
+            return Map.of();
         }
 
         createContextualMethod(classCreator);

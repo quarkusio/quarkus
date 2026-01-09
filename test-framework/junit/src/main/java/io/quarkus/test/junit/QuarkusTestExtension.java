@@ -63,6 +63,7 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.dev.testing.ExceptionReporting;
 import io.quarkus.dev.testing.TracingHandler;
+import io.quarkus.registry.ValueRegistry;
 import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.DurationConverter;
@@ -286,7 +287,10 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                     }
                 }
             };
-            return new ExtensionState(testResourceManager, shutdownTask, AbstractTestWithCallbacksExtension::clearCallbacks);
+
+            ValueRegistry valueRegistry = runningQuarkusApplication.valueRegistry();
+            return new ExtensionState(valueRegistry, testResourceManager, shutdownTask,
+                    AbstractTestWithCallbacksExtension::clearCallbacks);
         } catch (Throwable e) {
             if (!InitialConfigurator.DELAYED_HANDLER.isActivated()) {
                 activateLogging();
@@ -809,13 +813,12 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     private Object createActualTestInstance(Class<?> testClass, QuarkusTestExtensionState state)
             throws ClassNotFoundException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         Object testInstance = runningQuarkusApplication.instance(testClass);
-
+        ValueRegistryInjector.inject(testInstance, state);
         Class<?> resM = Thread.currentThread().getContextClassLoader().loadClass(TestHTTPResourceManager.class.getName());
         resM.getDeclaredMethod("inject", Object.class, List.class).invoke(null, testInstance,
                 testHttpEndpointProviders);
         state.testResourceManager.getClass().getMethod("inject", Object.class).invoke(state.testResourceManager,
                 testInstance);
-
         return testInstance;
     }
 
@@ -1092,6 +1095,11 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     @Override
     public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
             throws ParameterResolutionException {
+        if (ValueRegistryParameterResolver.INSTANCE.supportsParameter(parameterContext, extensionContext)
+                && !isNativeOrIntegrationTest(extensionContext.getRequiredTestClass())) {
+            return true;
+        }
+
         boolean isConstructor = parameterContext.getDeclaringExecutable() instanceof Constructor;
         if (isConstructor) {
             return true;
@@ -1121,6 +1129,11 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     @Override
     public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
             throws ParameterResolutionException {
+        if (ValueRegistryParameterResolver.INSTANCE.supportsParameter(parameterContext, extensionContext)
+                && !isNativeOrIntegrationTest(extensionContext.getRequiredTestClass())) {
+            return ValueRegistryParameterResolver.INSTANCE.resolveParameter(parameterContext, extensionContext);
+        }
+
         if ((parameterContext.getDeclaringExecutable() instanceof Method) && (testMethodInvokers != null)) {
             for (Object testMethodInvoker : testMethodInvokers) {
                 if (testMethodInvokerHandlesParamType(testMethodInvoker, parameterContext)) {
@@ -1161,8 +1174,9 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
     public static class ExtensionState extends QuarkusTestExtensionState {
 
-        public ExtensionState(Closeable testResourceManager, Closeable resource, Runnable clearCallbacks) {
-            super(testResourceManager, resource, clearCallbacks);
+        public ExtensionState(ValueRegistry valueRegistry, Closeable testResourceManager, Closeable resource,
+                Runnable clearCallbacks) {
+            super(valueRegistry, testResourceManager, resource, clearCallbacks);
         }
 
         public ExtensionState(Closeable trm, Closeable resource, Runnable clearCallbacks, Thread shutdownHook) {

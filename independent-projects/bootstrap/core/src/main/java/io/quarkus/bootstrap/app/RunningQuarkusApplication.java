@@ -3,14 +3,21 @@ package io.quarkus.bootstrap.app;
 import java.lang.annotation.Annotation;
 import java.util.Optional;
 
+import io.quarkus.registry.ValueRegistry;
+
 public interface RunningQuarkusApplication extends AutoCloseable {
     ClassLoader getClassLoader();
 
     @Override
     void close() throws Exception;
 
+    /**
+     * @deprecated Should use {@link ValueRegistry}.
+     */
+    @Deprecated
     <T> Optional<T> getConfigValue(String key, Class<T> type);
 
+    @Deprecated
     Iterable<String> getConfigKeys();
 
     /**
@@ -21,4 +28,11 @@ public interface RunningQuarkusApplication extends AutoCloseable {
      * @return The instance or null
      */
     Object instance(Class<?> clazz, Annotation... qualifiers);
+
+    /**
+     * Gets this Application {@link ValueRegistry}.
+     *
+     * @return this Application {@link ValueRegistry}.
+     */
+    ValueRegistry valueRegistry();
 }

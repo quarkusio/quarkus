@@ -76,6 +76,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.quarkus.registry.ValueRegistry;
 import io.quarkus.runtime.Application;
 import io.quarkus.runtime.ExecutionModeManager;
 import io.quarkus.runtime.LaunchMode;
@@ -272,6 +273,14 @@ public class MainClassBuildStep {
                 startupContext, mv.getMethodParam(0));
 
         mv.invokeStaticMethod(CONFIGURE_STEP_TIME_ENABLED);
+
+        // Register ValueRegistry
+        MethodDescriptor getValueRegistry = ofMethod(Application.class, "getValueRegistry", ValueRegistry.class);
+        ResultHandle valueRegistry = mv.invokeVirtualMethod(getValueRegistry, mv.getThis());
+        MethodDescriptor putValueInStartupContext = ofMethod(StartupContext.class, "putValue", void.class, String.class,
+                Object.class);
+        mv.invokeVirtualMethod(putValueInStartupContext, startupContext, mv.load(ValueRegistry.class.getName()),
+                valueRegistry);
 
         tryBlock = mv.tryBlock();
         tryBlock.invokeStaticMethod(CONFIGURE_STEP_TIME_START);

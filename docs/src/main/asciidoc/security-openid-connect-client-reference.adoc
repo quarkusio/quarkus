@@ -658,7 +658,7 @@ Add the following Maven Dependency:
 
 NOTE: It will also bring `io.quarkus:quarkus-oidc-client`.
 
-`quarkus-resteasy-client-oidc-filter` extension provides `io.quarkus.oidc.client.filter.OidcClientRequestFilter` Jakarta REST ClientRequestFilter which uses `OidcClient` to acquire the access token, refresh it if needed, and set it as an HTTP `Authorization Bearer` scheme value.
+`quarkus-resteasy-client-oidc-filter` extension provides `io.quarkus.oidc.client.resteasy.filter.OidcClientRequestFilter` Jakarta REST ClientRequestFilter which uses `OidcClient` to acquire the access token, refresh it if needed, and set it as an HTTP `Authorization Bearer` scheme value.
 
 By default, this filter will get `OidcClient` to acquire the first pair of access and refresh tokens at its initialization time. If the access tokens are short-lived and refresh tokens are unavailable, then the token acquisition should be delayed with `quarkus.oidc-client.early-tokens-acquisition=false`.
 
@@ -709,7 +709,7 @@ or
 ----
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
-import io.quarkus.oidc.client.filter.OidcClientRequestFilter;
+import io.quarkus.oidc.client.resteasy.filter.OidcClientRequestFilter;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 

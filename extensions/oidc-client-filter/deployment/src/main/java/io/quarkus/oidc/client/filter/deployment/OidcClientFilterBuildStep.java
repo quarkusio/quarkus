@@ -23,10 +23,10 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.oidc.client.deployment.OidcClientBuildStep.IsEnabled;
 import io.quarkus.oidc.client.deployment.OidcClientFilterDeploymentHelper;
 import io.quarkus.oidc.client.filter.OidcClientFilter;
-import io.quarkus.oidc.client.filter.OidcClientRequestFilter;
 import io.quarkus.oidc.client.filter.runtime.AbstractOidcClientRequestFilter;
 import io.quarkus.oidc.client.filter.runtime.DetectUnauthorizedClientResponseFilter;
 import io.quarkus.oidc.client.filter.runtime.OidcClientFilterConfig;
+import io.quarkus.oidc.client.resteasy.filter.OidcClientRequestFilter;
 import io.quarkus.restclient.deployment.RestClientPredicateProviderBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 
@@ -46,6 +46,12 @@ public class OidcClientFilterBuildStep {
 
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(OidcClientRequestFilter.class));
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(OidcClientRequestFilter.class)
+                .reason(getClass().getName())
+                .methods().fields().build());
+
+        additionalBeans
+                .produce(AdditionalBeanBuildItem.unremovableOf(io.quarkus.oidc.client.filter.OidcClientRequestFilter.class));
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(io.quarkus.oidc.client.filter.OidcClientRequestFilter.class)
                 .reason(getClass().getName())
                 .methods().fields().build());
 

@@ -84,6 +84,7 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>$\{surefire-plugin.version}</version>
                     <configuration>
+                        <argLine>@\{argLine}</argLine>
                         <systemPropertyVariables>
                             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                             <maven.home>$\{maven.home}</maven.home>
@@ -96,6 +97,7 @@
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <version>$\{failsafe-plugin.version}</version>
                     <configuration>
+                        <argLine>@\{argLine}</argLine>
                         <systemPropertyVariables>
                             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                             <maven.home>$\{maven.home}</maven.home>

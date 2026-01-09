@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.BiFunction;
 
@@ -68,7 +69,9 @@ public final class Qualifiers {
 
     // in various cases, specification requires to check qualifiers for duplicates and throw IAE
     private static void checkQualifiersForDuplicates(Map<Class<? extends Annotation>, Integer> timesQualifierSeen) {
-        timesQualifierSeen.forEach(Qualifiers::checkQualifiersForDuplicates);
+        for (Entry<Class<? extends Annotation>, Integer> entry : timesQualifierSeen.entrySet()) {
+            checkQualifiersForDuplicates(entry.getKey(), entry.getValue());
+        }
     }
 
     private static void checkQualifiersForDuplicates(Class<? extends Annotation> aClass, Integer times) {

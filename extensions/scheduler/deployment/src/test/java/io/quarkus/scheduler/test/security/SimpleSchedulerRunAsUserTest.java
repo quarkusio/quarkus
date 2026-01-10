@@ -19,6 +19,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.security.Authenticated;
@@ -38,7 +39,7 @@ class SimpleSchedulerRunAsUserTest {
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar.addClasses(Scheduler.class, SecuredBean.class, StaticScheduler.class))
-            .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-security")));
+            .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-security", Version.getVersion())));
 
     @Inject
     Scheduler scheduler;

@@ -1,15 +1,18 @@
 package io.quarkus.netty.deployment;
 
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.Level;
+import org.objectweb.asm.ClassVisitor;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.resolver.dns.DnsServerAddressStreamProviders;
@@ -22,6 +25,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.GeneratedRuntimeSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.ModuleOpenBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
@@ -34,6 +38,9 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.gizmo.ClassTransformer;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.netty.BossEventLoopGroup;
 import io.quarkus.netty.MainEventLoopGroup;
 import io.quarkus.netty.runtime.EmptyByteBufStub;
@@ -430,6 +437,27 @@ class NettyProcessor {
     @BuildStep
     NativeImageResourceBuildItem nettyVersions() {
         return new NativeImageResourceBuildItem("META-INF/io.netty.versions.properties");
+    }
+
+    @BuildStep
+    BytecodeTransformerBuildItem transformPlatformDependent() {
+        String className = "io.netty.util.internal.PlatformDependent";
+        return new BytecodeTransformerBuildItem.Builder().setClassToTransform(className)
+                .setCacheable(true).setVisitorFunction(
+                        new BiFunction<>() {
+                            @Override
+                            public ClassVisitor apply(String s, ClassVisitor classVisitor) {
+                                ClassTransformer transformer = new ClassTransformer(className);
+                                MethodDescriptor methodDescriptor = MethodDescriptor.ofMethod(className, "isAndroid",
+                                        boolean.class);
+                                transformer.removeMethod(methodDescriptor);
+                                MethodCreator newIsAndroidMethod = transformer.addMethod(methodDescriptor).setModifiers(
+                                        Modifier.PUBLIC | Modifier.STATIC);
+                                newIsAndroidMethod.returnValue(newIsAndroidMethod.load(false));
+                                return transformer.applyTo(classVisitor);
+                            }
+                        })
+                .build();
     }
 
     private String calculateMaxOrder(OptionalInt userConfig, List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems,

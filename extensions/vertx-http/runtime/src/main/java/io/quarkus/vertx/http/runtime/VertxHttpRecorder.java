@@ -1609,7 +1609,7 @@ public class VertxHttpRecorder {
                                 //this can happen if blocking authentication is involved for get requests
                                 if (!event.request().isEnded()) {
                                     event.request().resume();
-                                    if (CAN_HAVE_BODY.contains(event.request().method())) {
+                                    if (StaticDataHolder.CAN_HAVE_BODY.contains(event.request().method())) {
                                         bodyHandler.handle(event);
                                     } else {
                                         event.next();
@@ -1626,7 +1626,7 @@ public class VertxHttpRecorder {
                     if (!event.request().isEnded()) {
                         event.request().resume();
                     }
-                    if (CAN_HAVE_BODY.contains(event.request().method())) {
+                    if (StaticDataHolder.CAN_HAVE_BODY.contains(event.request().method())) {
                         bodyHandler.handle(event);
                     } else {
                         event.next();
@@ -1645,9 +1645,6 @@ public class VertxHttpRecorder {
         Optional<MemorySize> maxBodySize = managementConfig.getValue().limits().maxBodySize();
         return configureAndGetBody(maxBodySize, managementConfig.getValue().body());
     }
-
-    private static final List<HttpMethod> CAN_HAVE_BODY = Arrays.asList(HttpMethod.POST, HttpMethod.PUT, HttpMethod.PATCH,
-            HttpMethod.DELETE);
 
     private BiConsumer<Cookie, HttpServerRequest> processSameSiteConfig(Map<String, SameSiteCookieConfig> cookieConfig) {
 
@@ -1721,5 +1718,11 @@ public class VertxHttpRecorder {
             Thread.currentThread().setContextClassLoader(currentCl);
             hotReplacementHandler.handle(event);
         }
+    }
+
+    private static class StaticDataHolder {
+
+        private static final List<HttpMethod> CAN_HAVE_BODY = Arrays.asList(HttpMethod.POST, HttpMethod.PUT, HttpMethod.PATCH,
+                HttpMethod.DELETE);
     }
 }

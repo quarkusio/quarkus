@@ -13,12 +13,6 @@ import java.util.concurrent.CompletableFuture;
 
 import javax.sql.DataSource;
 
-import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.PersistenceConfiguration;
-import jakarta.persistence.PersistenceException;
-import jakarta.persistence.spi.PersistenceProvider;
-import jakarta.persistence.spi.PersistenceUnitInfo;
-
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
@@ -46,6 +40,11 @@ import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRunti
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.PersistenceConfiguration;
+import jakarta.persistence.PersistenceException;
+import jakarta.persistence.spi.PersistenceProvider;
+import jakarta.persistence.spi.PersistenceUnitInfo;
 
 /**
  * This can not inherit from HibernatePersistenceProvider as that would force
@@ -558,7 +557,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
     }
 
     /**
-     * Runs the SQL import temp directories deletion task concurrently.
+     * Performs the deletion of SQL import temp directories and files.
      * The process is done by getting the value of jakarta.persistence.sql-load-script-source property and deleting the files
      * that were unzipped to temp directories (path has parent).
      * Temp files' parents (temp directories) are added to a Set and deleted after.

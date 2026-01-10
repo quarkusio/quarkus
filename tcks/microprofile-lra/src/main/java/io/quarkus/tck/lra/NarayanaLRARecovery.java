@@ -47,7 +47,7 @@ public class NarayanaLRARecovery implements LRARecoveryService {
     private static final Logger log = Logger.getLogger(NarayanaLRARecovery.class);
     private static final long WAIT_CALLBACK_TIMEOUT = initWaitForCallbackTimeout();
     private static final String WAIT_CALLBACK_TIMEOUT_PROPERTY = "lra.tck.callback.timeout";
-    private static final int DEFAULT_CALLBACK_TIMEOUT = 30000;
+    private static final int DEFAULT_CALLBACK_TIMEOUT = 1000;
 
     private Client client = ClientBuilder.newClient();
 
@@ -87,40 +87,25 @@ public class NarayanaLRARecovery implements LRARecoveryService {
     @Override
     public boolean waitForEndPhaseReplay(URI lraId) {
         log.info("waitForEndPhaseReplay for: " + lraId.toASCIIString());
-        if (!recoverLRAs(lraId)) {
-            // first recovery scan probably collided with periodic recovery which started
-            // before the test execution so try once more
-            return recoverLRAs(lraId);
-        }
-        return true;
-    }
 
-    /**
-     * Invokes LRA coordinator recovery REST endpoint and returns whether the recovery of intended LRAs happened
-     *
-     * @param lraId the LRA id of the LRA that is intended to be recovered
-     * @return true the intended LRA recovered, false otherwise
-     */
-    private boolean recoverLRAs(URI lraId) {
-        // trigger a recovery scan
-        Client recoveryCoordinatorClient = ClientBuilder.newClient();
-
-        try {
+        try (Client recoveryCoordinatorClient = ClientBuilder.newClient()) {
             URI lraCoordinatorUri = LRAConstants.getLRACoordinatorUrl(lraId);
             URI recoveryCoordinatorUri = UriBuilder.fromUri(lraCoordinatorUri)
                     .path(RECOVERY_COORDINATOR_PATH_NAME).build();
-            WebTarget recoveryTarget = recoveryCoordinatorClient.target(recoveryCoordinatorUri);
 
-            // send the request to the recovery coordinator
-            Response response = recoveryTarget.request().get();
-            String json = response.readEntity(String.class);
-            response.close();
+            String recoveryJson = getResponse(recoveryCoordinatorUri, client);
+            String mainJson = getResponse(lraCoordinatorUri, client);
 
-            // intended LRA didn't recover
-            return !json.contains(lraId.toASCIIString());
-        } finally {
-            recoveryCoordinatorClient.close();
+            return !recoveryJson.contains(lraId.toASCIIString()) && !mainJson.contains(lraId.toASCIIString());
         }
+    }
+
+    private String getResponse(URI uri, Client client) {
+        WebTarget target = client.target(uri);
+        Response response = target.request().get();
+        String json = response.readEntity(String.class);
+        response.close();
+        return json;
     }
 
     private static Integer initWaitForCallbackTimeout() {

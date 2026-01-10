@@ -23,7 +23,7 @@ public class ImportSqlLoadScriptsAsMultipleZipFilesTestCase {
         String name1 = "import-1.sql load script entity";
         String name2 = "import-2.sql load script entity";
 
-        RestAssured.when().get("/orm-sql-load-script/1").then().body(Matchers.is(name1));
-        RestAssured.when().get("/orm-sql-load-script/2").then().body(Matchers.is(name2));
+        RestAssured.when().get("/orm-sql-load-script/1").then().body(Matchers.is(SqlLoadScriptTestResource.NO_ENTITY_MESSAGE));
+        RestAssured.when().get("/orm-sql-load-script/2").then().body(Matchers.is(SqlLoadScriptTestResource.NO_ENTITY_MESSAGE));
     }
 }

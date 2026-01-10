@@ -161,7 +161,6 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             Map properties) {
         log.tracef("Attempting to obtain correct EntityManagerFactoryBuilder for persistenceUnitName : %s",
                 persistenceUnitName);
-        //SchemaToolingUtil.clearTempUnzippedSchemaDirectories();
         verifyProperties(properties);
 
         // These are pre-parsed during image generation:
@@ -215,24 +214,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             StandardServiceRegistry standardServiceRegistry = rewireMetadataAndExtractServiceRegistry(persistenceUnitName,
                     recordedState, puConfig, runtimeSettings);
 
-            CompletableFuture.runAsync(() -> {
-                String[] tempFilePaths = ((String) runtimeSettings
-                        .get(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE))
-                        .split(",");
-                Path currentParentPath = Path.of(tempFilePaths[0]).getParent();
-                try {
-                    for (String tempFileStringPath : tempFilePaths) {
-                        Path tempFilePath = Path.of(tempFileStringPath);
-                        if (!currentParentPath.equals(tempFilePath.getParent())) {
-                            Files.deleteIfExists(currentParentPath);
-                            currentParentPath = tempFilePath.getParent();
-                        }
-                        Files.deleteIfExists(tempFilePath);
-                    }
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
+            CompletableFuture.runAsync(() -> deleteSqlImportTempDirectories(runtimeSettings));
 
             final Object cdiBeanManager = Arc.container().beanManager();
             final Object validatorFactory = Arc.container().instance("quarkus-hibernate-validator-factory").get();
@@ -575,4 +557,33 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                 persistenceUnitConfig.flush().mode());
     }
 
+    /**
+     * Runs the SQL import temp directories deletion task concurrently.
+     * The process is done by getting the value of jakarta.persistence.sql-load-script-source property and deleting the files
+     * that were unzipped to temp directories (path has parent).
+     * Temp files' parents (temp directories) are added to a Set and deleted after.
+     *
+     * @param runtimeSettings the runtime settings
+     */
+    private void deleteSqlImportTempDirectories(RuntimeSettings runtimeSettings) {
+        String[] tempFilePaths = ((String) runtimeSettings
+                .get(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE))
+                .split(",");
+        Set<Path> tempDirPaths = new HashSet<>();
+        try {
+            for (String tempFileStringPath : tempFilePaths) {
+                Path tempFilePath = Path.of(tempFileStringPath);
+                if (tempFilePath.getParent() != null) {
+                    Files.deleteIfExists(tempFilePath);
+                    tempDirPaths.add(tempFilePath.getParent());
+                }
+            }
+
+            for (Path tempDirPath : tempDirPaths) {
+                Files.deleteIfExists(tempDirPath);
+            }
+        } catch (IOException e) {
+            log.error("Error deleting temp files: " + e.getMessage());
+        }
+    }
 }

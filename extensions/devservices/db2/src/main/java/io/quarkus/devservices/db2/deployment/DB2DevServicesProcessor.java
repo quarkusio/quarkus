@@ -54,8 +54,24 @@ public class DB2DevServicesProcessor {
                         devServicesSharedNetworkBuildItem);
                 String effectiveUsername = containerConfig.getUsername().orElse(username.orElse(DEFAULT_DATABASE_USERNAME));
                 String effectivePassword = containerConfig.getPassword().orElse(password.orElse(DEFAULT_DATABASE_PASSWORD));
-                String effectiveDbName = containerConfig.getDbName().orElse(
-                        DataSourceUtil.isDefault(datasourceName) ? DEFAULT_DATABASE_NAME : datasourceName);
+                String effectiveDbName = containerConfig.getDbName().orElseGet(() -> {
+                    if (DataSourceUtil.isDefault(datasourceName)) {
+                        return DEFAULT_DATABASE_NAME;
+                    }
+                    // DB2 has an 8-character limit for database names
+                    // See: https://github.com/quarkusio/quarkus/issues/51225
+                    if (datasourceName.length() > 8) {
+                        // Use prefix (4 chars) + hash (4 chars) to avoid collisions
+                        String prefix = datasourceName.substring(0, 4);
+                        String hash = String.format("%04x", (datasourceName.hashCode() & 0x7FFFFFFF) % 0xFFFF);
+                        String dbName = prefix + hash;
+                        LOG.warnf("DB2 database name '%s' exceeds 8 character limit. Using '%s' instead. " +
+                                "Set 'quarkus.datasource.\"%s\".devservices.db-name' to specify a custom database name.",
+                                datasourceName, dbName, datasourceName);
+                        return dbName;
+                    }
+                    return datasourceName;
+                });
 
                 Supplier<RunningDevServicesDatasource> maybe = () -> {
                     // We just use this to enable a workaround, so:

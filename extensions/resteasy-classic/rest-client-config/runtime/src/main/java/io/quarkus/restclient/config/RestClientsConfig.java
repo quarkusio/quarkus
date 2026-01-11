@@ -78,6 +78,7 @@ public interface RestClientsConfig {
      *
      * @deprecated use {@code quarkus.rest-client.proxy-configuration-name} instead
      */
+    @Deprecated
     Optional<@WithConverter(TrimmedStringConverter.class) String> proxyAddress();
 
     /**
@@ -90,6 +91,7 @@ public interface RestClientsConfig {
      *
      * @deprecated use {@code quarkus.rest-client.proxy-configuration-name} instead
      */
+    @Deprecated
     Optional<String> proxyUser();
 
     /**
@@ -102,6 +104,7 @@ public interface RestClientsConfig {
      *
      * @deprecated use {@code quarkus.rest-client.proxy-configuration-name} instead
      */
+    @Deprecated
     Optional<String> proxyPassword();
 
     /**
@@ -115,6 +118,7 @@ public interface RestClientsConfig {
      *
      * @deprecated use {@code quarkus.rest-client.proxy-configuration-name} instead
      */
+    @Deprecated
     Optional<String> nonProxyHosts();
 
     /**
@@ -127,6 +131,7 @@ public interface RestClientsConfig {
      *
      * @deprecated use {@code quarkus.rest-client.proxy-configuration-name} instead
      */
+    @Deprecated
     @ConfigDocDefault("10s")
     Optional<Duration> proxyConnectTimeout();
 
@@ -135,6 +140,7 @@ public interface RestClientsConfig {
      * <p>
      * Can be overwritten by client-specific settings.
      */
+    @Deprecated
     @WithDefault("15000")
     Long connectTimeout();
 
@@ -520,6 +526,7 @@ public interface RestClientsConfig {
          *
          * @deprecated use {@code quarkus.rest-client."client".proxy-configuration-name} instead
          */
+        @Deprecated
         Optional<@WithConverter(TrimmedStringConverter.class) String> proxyAddress();
 
         /**
@@ -530,6 +537,7 @@ public interface RestClientsConfig {
          *
          * @deprecated use {@code quarkus.rest-client."client".proxy-configuration-name} instead
          */
+        @Deprecated
         Optional<String> proxyUser();
 
         /**
@@ -540,6 +548,7 @@ public interface RestClientsConfig {
          *
          * @deprecated use {@code quarkus.rest-client."client".proxy-configuration-name} instead
          */
+        @Deprecated
         Optional<String> proxyPassword();
 
         /**
@@ -550,6 +559,7 @@ public interface RestClientsConfig {
          *
          * @deprecated use {@code quarkus.rest-client."client".proxy-configuration-name} instead
          */
+        @Deprecated
         Optional<String> nonProxyHosts();
 
         /**
@@ -560,6 +570,7 @@ public interface RestClientsConfig {
          *
          * @deprecated use {@code quarkus.rest-client."client".proxy-configuration-name} instead
          */
+        @Deprecated
         @ConfigDocDefault("10s")
         Optional<Duration> proxyConnectTimeout();
 

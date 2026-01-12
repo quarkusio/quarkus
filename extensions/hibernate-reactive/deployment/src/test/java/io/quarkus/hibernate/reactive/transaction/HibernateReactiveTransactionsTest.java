@@ -116,19 +116,41 @@ public class HibernateReactiveTransactionsTest {
         });
     }
 
-    @Transactional
-    public Uni<Hero> findHero(Long previousHeroId) {
-        return session.find(Hero.class, previousHeroId);
+
+    @Test
+    @RunOnVertxContext
+    public void testReactiveAnnotationTransactionWithTwoMethods(UniAsserter asserter) {
+        // initialTransactionData.sql
+        Long heroId = 50L;
+
+        asserter.assertThat(
+                () -> updateCallingAnotherTransactionalMethod(heroId, "updatedNameTwiceCommitted")
+                        .chain(() -> findHero(heroId)),
+                h -> {
+                    assertThat(h.name).isEqualTo("updatedNameTwiceCommitted");
+                });
+
     }
 
     @Transactional
-    public Uni<Hero> updateWithCommit(Long previousHeroId, String newName) {
-        return updateHero(session, previousHeroId, newName);
+    public Uni<Hero> findHero(Long heroId) {
+        return session.find(Hero.class, heroId);
     }
 
     @Transactional
-    public Uni<Hero> transactionalUpdateWithRollback(Long previousHeroId, String newName) {
-        return updateHero(session, previousHeroId, newName)
+    public Uni<Hero> updateWithCommit(Long heroId, String newName) {
+        return updateHero(session, heroId, newName);
+    }
+
+    @Transactional
+    public Uni<Hero> updateCallingAnotherTransactionalMethod(Long heroId, String newName) {
+        return updateHero(session, heroId, newName + "thisShouldntAppear")
+                .chain(h -> updateWithCommit(heroId, newName));
+    }
+
+    @Transactional
+    public Uni<Hero> transactionalUpdateWithRollback(Long heroId, String newName) {
+        return updateHero(session, heroId, newName)
                 .onItem().invoke(h -> {
                     throw new RuntimeException("Failing update");
                 });

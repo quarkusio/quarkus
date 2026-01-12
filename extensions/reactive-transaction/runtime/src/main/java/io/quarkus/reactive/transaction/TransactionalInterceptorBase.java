@@ -59,19 +59,9 @@ public abstract class TransactionalInterceptorBase {
             }
 
             Transactional annotation = getTransactional(context);
-            return withTransactionalSessionOnDemand(method, () -> {
+            return withTransactionalSessionOnDemand(annotation, method, () -> {
                 return proceedUni(context);
-            }).onFailure()
-                    .call(exception -> {
-                        return rollbackOrCommitBasedOnException(annotation, exception);
-                    })
-                    .onCancellation().call(() -> {
-                        return rollbackOnCancel();
-                    })
-                    .call(() -> {
-                        LOG.tracef("Calling commit from method %s", method);
-                        return commit();
-                    });
+            });
         }
         LOG.tracef("Transactional interceptor end from method %s", method);
         return context.proceed();
@@ -172,7 +162,7 @@ public abstract class TransactionalInterceptorBase {
         return context.getMethod().getReturnType().equals(Uni.class);
     }
 
-    protected <T> Uni<T> withTransactionalSessionOnDemand(Method method, Supplier<Uni<T>> work) {
+    protected <T> Uni<T> withTransactionalSessionOnDemand(Transactional annotation, Method method, Supplier<Uni<T>> work) {
         Context context = vertxContext();
         if (context.getLocal(SESSION_ON_DEMAND_KEY) != null) {
             return Uni.createFrom().failure(
@@ -200,10 +190,19 @@ public abstract class TransactionalInterceptorBase {
             // perform the work and eventually close the session and remove the key
             return work.get().eventually(() -> {
 
-                // TODO Luca close session after commit
                 return Uni.combine().all().unis(afterWorkStrategy.getAfterWorkActions(context)).discardItems();
 
-            });
+            }).onFailure()
+                    .call(exception -> {
+                        return rollbackOrCommitBasedOnException(annotation, exception);
+                    })
+                    .onCancellation().call(() -> {
+                        return rollbackOnCancel();
+                    })
+                    .call(() -> {
+                        LOG.tracef("Calling commit from method %s", method);
+                        return commit();
+                    });
         }
     }
 

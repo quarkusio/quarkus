@@ -17,7 +17,3 @@ metadata:
   config:
   - "quarkus.datasource."
   - "quarkus.hibernate-orm."
-  codestart:
-    name: "hibernate-panache-next"
-    languages: ["java"]
-    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

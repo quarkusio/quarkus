@@ -124,7 +124,7 @@ public class TransactionalContextConnection implements SqlConnection {
         optTransaction.ifPresent(t -> {
             LOG.tracef("Found a transaction %s in the context, registering the handling of closing", t);
             t.completion().onComplete(h -> {
-                LOG.tracef("Found a committed transaction %s in the context, close this after the commit", t);
+                LOG.tracef("Found a %s transaction %s in the context, closing the connection %s", h.succeeded() ? "succeded" : "failed", t, connection);
                 connection.close();
             });
         });

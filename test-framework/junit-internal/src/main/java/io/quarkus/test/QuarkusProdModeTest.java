@@ -581,7 +581,7 @@ public class QuarkusProdModeTest
         if (logFileName != null) {
             logfilePath = builtResultArtifactParent.resolve(logFileName);
             runtimeProperties.put("quarkus.log.file.path", logfilePath.toAbsolutePath().toString());
-            runtimeProperties.put("quarkus.log.file.enable", "true");
+            runtimeProperties.put("quarkus.log.file.enabled", "true");
         }
 
         // ensure that the properties obtained from QuarkusTestResourceLifecycleManager

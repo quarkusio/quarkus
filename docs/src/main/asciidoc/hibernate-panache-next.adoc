@@ -15,6 +15,8 @@ include::_attributes.adoc[]
 
 Hibernate with Panache Next is the perfect solution if you want to get started using Hibernate in Quarkus.
 
+include::{includes}/extension-status.adoc[]
+
 WARNING: This extension is currently experimental, so its API may change, in particular names of
 classes or packages may change, even the module name. We are in the process of making it a public preview in order
 to obtain public feedback, so please report feedback either on link:https://quarkusio.zulipchat.com/#narrow/channel/187038-dev/topic/WG.20-.20Panache.2ENext/with/562916276[Zulip]

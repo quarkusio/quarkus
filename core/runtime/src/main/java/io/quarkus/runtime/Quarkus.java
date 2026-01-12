@@ -73,6 +73,7 @@ public class Quarkus {
             //we already have an application, run it directly
             Class<? extends Application> appClass = (Class<? extends Application>) Class.forName(Application.APP_CLASS_NAME,
                     false, Thread.currentThread().getContextClassLoader());
+            Quarkus.class.getModule().addReads(appClass.getModule());
             MethodHandle constructor = MethodHandles.lookup().findConstructor(appClass, MethodType.methodType(void.class));
             Application application = (Application) constructor.invoke();
             ApplicationLifecycleManager.run(application, quarkusApplication, exitHandler, args);

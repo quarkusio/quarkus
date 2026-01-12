@@ -3,6 +3,8 @@ package io.quarkus.hibernate.orm.runtime;
 import java.util.Map;
 import java.util.Optional;
 
+import jakarta.persistence.FlushModeType;
+
 import org.hibernate.FlushMode;
 
 import io.quarkus.runtime.annotations.ConfigDocDefault;
@@ -157,9 +159,8 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
          *
          * @asciidoclet
          */
-        @WithConverter(TrimmedStringConverter.class)
         @WithDefault("none")
-        String strategy();
+        HibernateGenerationStrategy strategy();
 
         /**
          * If Hibernate ORM should create the schemas automatically (for databases supporting them).
@@ -188,6 +189,60 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
         Optional<@WithConverter(TrimmedStringConverter.class) String> extraPhysicalTableTypes();
     }
 
+    enum HibernateGenerationStrategy {
+        /**
+         * No schema action.
+         *
+         * @asciidoclet
+         */
+        NONE("none"),
+        /**
+         * Create the schema.
+         *
+         * @asciidoclet
+         */
+        CREATE("create"),
+        /**
+         * Drop and then recreate the schema.
+         *
+         * @asciidoclet
+         */
+        DROP_AND_CREATE("drop-and-create"),
+        /**
+         * Drop the schema.
+         *
+         * @asciidoclet
+         */
+        DROP("drop"),
+        /**
+         * Update (alter) the database schema.
+         *
+         * @asciidoclet
+         */
+        UPDATE("update"),
+        /**
+         * Validate the database schema.
+         *
+         * @asciidoclet
+         */
+        VALIDATE("validate");
+
+        private final String schemaGenerationString;
+
+        HibernateGenerationStrategy(String schemaGenerationString) {
+            this.schemaGenerationString = schemaGenerationString;
+        }
+
+        public static String getString(HibernateGenerationStrategy strategy) {
+            return strategy.toString();
+        }
+
+        @Override
+        public String toString() {
+            return schemaGenerationString;
+        }
+    }
+
     @ConfigGroup
     @Deprecated(forRemoval = true, since = "3.22")
     interface HibernateOrmConfigPersistenceUnitDatabaseGeneration {
@@ -204,7 +259,7 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
          */
         @WithParentName
         @Deprecated(forRemoval = true, since = "3.22")
-        Optional<@WithConverter(TrimmedStringConverter.class) String> generation();
+        Optional<HibernateGenerationStrategy> generation();
 
         /**
          * If Hibernate ORM should create the schemas automatically (for databases supporting them).
@@ -229,8 +284,7 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
          */
         @WithParentName
         @WithDefault("none")
-        @WithConverter(TrimmedStringConverter.class)
-        String generation();
+        HibernateGenerationStrategy generation();
 
         /**
          * Filename or URL where the database create DDL file should be generated.
@@ -294,7 +348,48 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
          * @asciidoclet
          */
         @WithDefault("auto")
-        FlushMode mode();
+        HibernateFlushMode mode();
     }
 
+    enum HibernateFlushMode {
+        /**
+         * The `org.hibernate.Session` is only flushed when `org.hibernate.Session#flush()`
+         * is called explicitly. This mode is very efficient for read-only
+         * transactions.
+         *
+         * @asciidoclet
+         */
+        MANUAL,
+        /**
+         * The `org.hibernate.Session` is flushed when `org.hibernate.Transaction#commit()`
+         * is called. It is never automatically flushed before query
+         * execution.
+         *
+         * @see FlushModeType#COMMIT
+         * @asciidoclet
+         */
+        COMMIT,
+        /**
+         * The `org.hibernate.Session` is flushed when `org.hibernate.Transaction#commit()`
+         * is called, and is sometimes flushed before query execution in
+         * order to ensure that queries never return stale state. This is
+         * the default flush mode.
+         *
+         * @see FlushModeType#AUTO
+         * @asciidoclet
+         */
+        AUTO,
+        /**
+         * The `org.hibernate.Session` is flushed when `org.hibernate.Transaction#commit()`
+         * is called and before every query. This is usually unnecessary and
+         * inefficient.
+         *
+         * @asciidoclet
+         */
+        ALWAYS;
+
+        public FlushMode getHibernateFlushMode() {
+            return FlushMode.valueOf(name());
+        }
+    }
 }

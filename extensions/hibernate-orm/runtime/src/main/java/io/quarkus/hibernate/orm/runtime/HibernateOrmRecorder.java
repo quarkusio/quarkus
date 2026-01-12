@@ -287,13 +287,15 @@ public class HibernateOrmRecorder {
     public void doValidation(String puName) {
         HibernateOrmRuntimeConfigPersistenceUnit hibernateOrmRuntimeConfigPersistenceUnit = runtimeConfig.getValue()
                 .persistenceUnits().get(puName);
-        String schemaManagementStrategy = hibernateOrmRuntimeConfigPersistenceUnit.database().generation().generation()
+        HibernateOrmRuntimeConfigPersistenceUnit.HibernateGenerationStrategy schemaManagementStrategy = hibernateOrmRuntimeConfigPersistenceUnit
+                .database().generation().generation()
                 .orElse(hibernateOrmRuntimeConfigPersistenceUnit.schemaManagement().strategy());
 
         boolean startsOffline = hibernateOrmRuntimeConfigPersistenceUnit.database().startOffline();
 
         //if hibernate is already managing the schema or if we're in offline mode we don't do this
-        if (!"none".equals(schemaManagementStrategy) || startsOffline) {
+        if (!HibernateOrmRuntimeConfigPersistenceUnit.HibernateGenerationStrategy.NONE.equals(schemaManagementStrategy)
+                || startsOffline) {
             return;
         }
         new Thread(new Runnable() {

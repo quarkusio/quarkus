@@ -91,7 +91,7 @@ public class DB2DevServicesProcessor {
                         String prefix = datasourceName.substring(0, 4);
                         String hash = generateShortHash(datasourceName);
                         String dbName = prefix + hash;
-                        LOG.warnf("DB2 database name '%s' exceeds 8 character limit. Using '%s' instead. " +
+                        LOG.warnf("DB2 database name '%s' exceeds 8 character limit. Using '%s' for dev services instead. " +
                                 "Set 'quarkus.datasource.\"%s\".devservices.db-name' to specify a custom database name.",
                                 datasourceName, dbName, datasourceName);
                         return dbName;

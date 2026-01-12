@@ -29,7 +29,11 @@ final class LocationUtil {
             if (!path.startsWith("/")) {
                 path = "/" + path;
             }
-            return new URI(request.getScheme(), request.getAuthority(), null, null, null).resolve(prefix + path);
+            URI uri = new URI(request.getScheme(), request.getAuthority(), "/", null, null);
+            if (prefix.isEmpty() && path.equals("/")) {
+                return uri;
+            }
+            return uri.resolve(prefix + path);
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }

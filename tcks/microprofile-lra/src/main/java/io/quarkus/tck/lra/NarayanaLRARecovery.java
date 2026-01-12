@@ -49,8 +49,6 @@ public class NarayanaLRARecovery implements LRARecoveryService {
     private static final String WAIT_CALLBACK_TIMEOUT_PROPERTY = "lra.tck.callback.timeout";
     private static final int DEFAULT_CALLBACK_TIMEOUT = 1000;
 
-    private Client client = ClientBuilder.newClient();
-
     /*
      * Wait for the participant to return the callback. This method does not
      * guarantee callbacks to finish. The Participant status is not immediately
@@ -61,26 +59,28 @@ public class NarayanaLRARecovery implements LRARecoveryService {
     @Override
     public void waitForCallbacks(URI lraId) {
         log.trace("waitForCallbacks for: " + lraId.toASCIIString());
-        try {
-            await().atMost(Duration.ofMillis(WAIT_CALLBACK_TIMEOUT)).catchUncaughtExceptions()
-                    .until(() -> {
-                        try {
-                            WebTarget target;
+        try (Client client = ClientBuilder.newClient()) {
+            try {
+                await().atMost(Duration.ofMillis(WAIT_CALLBACK_TIMEOUT)).catchUncaughtExceptions()
+                        .until(() -> {
                             try {
-                                target = client.target(lraId);
-                            } catch (Exception | Error e) {
-                                // Some TCK tests don't start Quarkus application, so we can't create REST request
-                                return false;
+                                WebTarget target;
+                                try {
+                                    target = client.target(lraId);
+                                } catch (Exception | Error e) {
+                                    // Some TCK tests don't start Quarkus application, so we can't create REST request
+                                    return false;
+                                }
+                                target.request().get();
+                            } catch (NotFoundException notFoundException) {
+                                // LRA not found means it has been finished
+                                return true;
                             }
-                            target.request().get();
-                        } catch (NotFoundException notFoundException) {
-                            // LRA not found means it has been finished
-                            return true;
-                        }
-                        return false;
-                    });
-        } catch (ConditionTimeoutException e) {
-            log.warn("waitForCallbacks timeout (OK, optimization): " + e.getMessage());
+                            return false;
+                        });
+            } catch (ConditionTimeoutException e) {
+                log.info("waitForCallbacks timeout (OK, optimization): " + e.getMessage());
+            }
         }
     }
 
@@ -88,7 +88,7 @@ public class NarayanaLRARecovery implements LRARecoveryService {
     public boolean waitForEndPhaseReplay(URI lraId) {
         log.info("waitForEndPhaseReplay for: " + lraId.toASCIIString());
 
-        try (Client recoveryCoordinatorClient = ClientBuilder.newClient()) {
+        try (Client client = ClientBuilder.newClient()) {
             URI lraCoordinatorUri = LRAConstants.getLRACoordinatorUrl(lraId);
             URI recoveryCoordinatorUri = UriBuilder.fromUri(lraCoordinatorUri)
                     .path(RECOVERY_COORDINATOR_PATH_NAME).build();

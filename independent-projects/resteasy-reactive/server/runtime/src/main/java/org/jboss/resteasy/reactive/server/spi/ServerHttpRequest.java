@@ -28,7 +28,15 @@ public interface ServerHttpRequest {
 
     String getRequestScheme();
 
-    String getRequestHost();
+    /**
+     * Use {@link #getRequestHostAndPort()} instead
+     */
+    @Deprecated
+    default String getRequestHost() {
+        return getRequestHostAndPort();
+    }
+
+    String getRequestHostAndPort();
 
     void closeConnection();
 

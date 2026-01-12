@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
@@ -561,7 +562,8 @@ public class DevModeCommandLineBuilder {
                 int tries = 0;
                 while (true) {
                     boolean isPortUsed;
-                    try (Socket socket = new Socket(getInetAddress(debugHost), port)) {
+                    try (Socket socket = new Socket()) {
+                        socket.connect(new InetSocketAddress(getInetAddress(debugHost), port), 500);
                         // we can make a connection, that means the port is in use
                         isPortUsed = true;
                         warnAboutChange = warnAboutChange || (originalPort != 0); // we only want to warn if the user had not configured a random port

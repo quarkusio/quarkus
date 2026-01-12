@@ -30,6 +30,32 @@ mp.messaging.connector.smallrye-kafka.apicurio.registry.id-handler=io.apicurio.r
 mp.messaging.outgoing.my-channel.apicurio.registry.id-handler=io.apicurio.registry.serde.Legacy8ByteIdHandler
 ----
 
+=== Important: No Per-Message Format Auto-Detection
+
+Both v2 (8-byte) and v3 (4-byte) formats use the same magic byte.
+The ID handler reads a fixed number of bytes based on configuration—there is no per-message auto-detection.
+
+WARNING: If a single topic contains mixed messages (some with 8-byte IDs, some with 4-byte IDs), consumers will fail.
+A consumer configured with `Legacy8ByteIdHandler` always reads 8 bytes; one with `Default4ByteIdHandler` always reads 4 bytes.
+Mismatches cause corruption or deserialization errors.
+
+**Gradual migration only works when:**
+
+* Each topic has messages in ONE format (either v2 or v3, not both)
+* Per-channel configuration routes each topic to the correct ID handler
+
+You can have producers and consumers using both formats in the same Apicurio Registry instance, but not mixing them in the same topic.
+
+=== Migration Paths for Topics with Existing v2 Messages
+
+For topics that already contain v2 messages, valid migration approaches are:
+
+1. **Stop and drain:** Stop producers → drain topic completely → upgrade all services → restart with v3 configuration
+2. **New topic migration:** Create a new v3 topic and migrate traffic to it
+3. **Accept transient failures:** Accept transient failures during the switchover period
+
+NOTE: A fallback ID handler that auto-detects the format is not feasible because there is no separator between the ID bytes and the payload bytes.
+
 === Compatibility with Apicurio Registry 2.x Server
 
 The Apicurio Registry 3.x client libraries continue to work with Apicurio Registry 2.x servers.

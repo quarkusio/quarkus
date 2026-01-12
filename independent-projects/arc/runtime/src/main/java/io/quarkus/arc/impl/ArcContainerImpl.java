@@ -886,7 +886,7 @@ public class ArcContainerImpl implements ArcContainer {
             }
         }
         // Observers with smaller priority values are called first
-        resolvedObservers.sort(InjectableObserverMethod::compare);
+        Collections.sort(resolvedObservers);
         return resolvedObservers;
     }
 

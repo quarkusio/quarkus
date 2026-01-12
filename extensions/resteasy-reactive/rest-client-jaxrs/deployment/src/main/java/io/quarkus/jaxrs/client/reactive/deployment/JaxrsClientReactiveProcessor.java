@@ -34,6 +34,7 @@ import java.lang.reflect.Modifier;
 import java.nio.file.Path;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -2652,12 +2653,19 @@ public class JaxrsClientReactiveProcessor {
             if (consumes != null && consumes.length > 0) {
 
                 if (consumes.length > 1) {
-                    throw new IllegalArgumentException(
-                            "Multiple `@Consumes` values used in a MicroProfile Rest Client: " +
-                                    restClientInterface.name().toString()
-                                    + " Unable to determine a single `Content-Type`.");
+                    Set<String> uniqueConsumes = new HashSet<>(Arrays.asList(consumes));
+                    if (uniqueConsumes.size() > 1) {
+                        // Consider picking up the first @Consumes instead
+                        throw new IllegalArgumentException(
+                                "Multiple `@Consumes` values used in a MicroProfile Rest Client: " +
+                                        restClientInterface.name().toString()
+                                        + " Unable to determine a single `Content-Type`.");
+                    } else {
+                        mediaTypeValue = uniqueConsumes.iterator().next();
+                    }
+                } else {
+                    mediaTypeValue = consumes[0];
                 }
-                mediaTypeValue = consumes[0];
             } else if (formParams != null) {
                 mediaTypeValue = multipart ? MediaType.MULTIPART_FORM_DATA : MediaType.APPLICATION_FORM_URLENCODED;
             }

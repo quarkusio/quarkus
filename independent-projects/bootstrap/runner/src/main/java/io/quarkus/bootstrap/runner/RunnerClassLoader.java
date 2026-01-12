@@ -74,8 +74,12 @@ public final class RunnerClassLoader extends ClassLoader {
         this.transformedBytecodeClassLoadingResource = transformedBytecodeClassLoadingResource;
         this.transformedBytecode = transformedBytecode;
 
-        resource = new CracResource();
-        org.crac.Core.getGlobalContext().register(resource);
+        if (CracSupport.isEnabled()) {
+            resource = new CracResource();
+            org.crac.Core.getGlobalContext().register(resource);
+        } else {
+            resource = null;
+        }
     }
 
     @Override

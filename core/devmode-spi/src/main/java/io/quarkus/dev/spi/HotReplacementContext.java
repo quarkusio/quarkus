@@ -70,6 +70,11 @@ public interface HotReplacementContext {
     Set<String> syncState(Map<String, String> fileHashes);
 
     /**
+     * Adds a task that is run before the restart is performed.
+     */
+    void addPreRestartStep(Runnable runnable);
+
+    /**
      * Adds a task that is run after the restart is performed.
      */
     void addPostRestartStep(Runnable runnable);

@@ -109,6 +109,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     private Map<DotName, Set<DotName>> classToRecompilationTargets = new HashMap<>();
 
     private final List<Runnable> preScanSteps = new CopyOnWriteArrayList<>();
+    private final List<Runnable> preRestartSteps = new CopyOnWriteArrayList<>();
     private final List<Runnable> postRestartSteps = new CopyOnWriteArrayList<>();
     private final List<Consumer<Set<String>>> noRestartChangesConsumers = new CopyOnWriteArrayList<>();
     private final List<HotReplacementSetup> hotReplacementSetup = new ArrayList<>();
@@ -554,7 +555,13 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                 } else if (forceRestart && userInitiated) {
                     log.info("Restarting as requested by the user.");
                 }
-
+                for (Runnable step : preRestartSteps) {
+                    try {
+                        step.run();
+                    } catch (Throwable t) {
+                        log.error("Pre Restart step failed", t);
+                    }
+                }
                 restartCallback.accept(filesChanged, changedClassResults);
                 long timeNanoSeconds = System.nanoTime() - startNanoseconds;
                 log.infof("Live reload total time: %ss ", Timing.convertToBigDecimalSeconds(timeNanoSeconds));
@@ -642,6 +649,11 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     @Override
     public void addPreScanStep(Runnable runnable) {
         preScanSteps.add(runnable);
+    }
+
+    @Override
+    public void addPreRestartStep(Runnable runnable) {
+        preRestartSteps.add(runnable);
     }
 
     @Override

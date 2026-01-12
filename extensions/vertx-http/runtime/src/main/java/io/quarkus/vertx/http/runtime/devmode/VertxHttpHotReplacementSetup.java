@@ -53,7 +53,7 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                 RemoteSyncHandler.doPreScan();
             }
         });
-        hotReplacementContext.addPostRestartStep(new Runnable() {
+        hotReplacementContext.addPreRestartStep(new Runnable() {
             @Override
             public void run() {
                 // If not on a worker thread then attempt to re-initialize the dev mode executor

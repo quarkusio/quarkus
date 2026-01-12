@@ -1,1 +1,1 @@
-io.quarkus.bootstrap.logging.EmptyLogContextConfigurator$Factory
+io.quarkus.bootstrap.logging.EmptyLogConfiguratorFactory

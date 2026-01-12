@@ -50,6 +50,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.bootstrap.runner.CracSupport;
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementContext;
@@ -1205,7 +1206,9 @@ public class VertxHttpRecorder {
             this.registry = registry;
             this.startEventsFired = startEventsFired;
             this.httpBuildTimeConfig = httpBuildTimeConfig;
-            org.crac.Core.getGlobalContext().register(this);
+            if (CracSupport.isEnabled()) {
+                org.crac.Core.getGlobalContext().register(this);
+            }
         }
 
         @Override

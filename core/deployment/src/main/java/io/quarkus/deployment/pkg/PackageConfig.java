@@ -241,6 +241,27 @@ public interface PackageConfig {
         }
 
         /**
+         * Whether CRaC checkpointing feature is enabled.
+         * <p>
+         * CRaC is a technology enabled in specific builds of Azul's JVM distribution.
+         */
+        CracConfig crac();
+
+        /**
+         * Configuration for CRaC checkpointing.
+         */
+        @ConfigGroup
+        interface CracConfig {
+            /**
+             * Whether to enable CRaC checkpointing feature.
+             * <p>
+             * Note that it is a no-op if not using a JVM distribution supporting CRaC.
+             */
+            @WithDefault("false")
+            boolean enabled();
+        }
+
+        /**
          * This is an advanced option that only takes effect for development mode.
          * <p>
          * If this is specified a directory of this name will be created in the jar distribution. Users can place

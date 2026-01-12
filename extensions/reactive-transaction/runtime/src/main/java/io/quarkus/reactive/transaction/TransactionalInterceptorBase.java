@@ -59,7 +59,7 @@ public abstract class TransactionalInterceptorBase {
             }
 
             Transactional annotation = getTransactional(context);
-            return withTransactionalSessionOnDemand(annotation, method, () -> {
+            return defineReactiveTransactionChain(annotation, method, () -> {
                 return proceedUni(context);
             });
         }
@@ -162,7 +162,7 @@ public abstract class TransactionalInterceptorBase {
         return context.getMethod().getReturnType().equals(Uni.class);
     }
 
-    protected <T> Uni<T> withTransactionalSessionOnDemand(Transactional annotation, Method method, Supplier<Uni<T>> work) {
+    protected <T> Uni<T> validateAnnotations() {
         Context context = vertxContext();
         if (context.getLocal(SESSION_ON_DEMAND_KEY) != null) {
             return Uni.createFrom().failure(
@@ -176,33 +176,38 @@ public abstract class TransactionalInterceptorBase {
                             "Cannot call a method annotated with @Transactional from a method annotated with @WithTransaction"));
         }
 
+        return Uni.createFrom().nullItem();
+    }
+
+    protected <T> Uni<T> defineReactiveTransactionChain(Transactional annotation, Method method, Supplier<Uni<T>> work) {
         // TODO check that there's no other session opened by session delegators for another PU
 
         // TODO check that there's no statelessSession opened by statelessSession delegators
 
-        // io/quarkus/hibernate/reactive/panache/common/runtime/SessionOperations.java:79
-        if (context.getLocal(TRANSACTIONAL_METHOD_KEY) != null) {
-            return work.get();
-        } else {
-            // mark this method to be @Transactional so that other Panache interceptor might fail
+        Context context = vertxContext();
+
+        // mark this method to be @Transactional so that other Panache interceptor might fail
+        // parent method should be the one responsible to commit or cancel the transaction
+        if (context.getLocal(TRANSACTIONAL_METHOD_KEY) == null) {
             LOG.tracef("Setting this method as transactional: %s", method);
             context.putLocal(TRANSACTIONAL_METHOD_KEY, true);
-            // perform the work and eventually close the session and remove the key
-            return work.get().eventually(() -> {
-
-                return Uni.combine().all().unis(afterWorkStrategy.getAfterWorkActions(context)).discardItems();
-
-            }).onFailure()
-                    .call(exception -> {
+            return validateAnnotations()
+                    .chain(empty -> work.get())
+                    .onFailure().call(exception -> {
                         return rollbackOrCommitBasedOnException(annotation, exception);
                     })
                     .onCancellation().call(() -> {
                         return rollbackOnCancel();
                     })
-                    .call(() -> {
+                    .call(() -> { // Good path
                         LOG.tracef("Calling commit from method %s", method);
                         return commit();
+                    })
+                    .eventually(() -> {
+                        return Uni.combine().all().unis(afterWorkStrategy.getAfterWorkActions(context)).discardItems();
                     });
+        } else {
+            return validateAnnotations().chain(empty -> work.get());
         }
     }
 

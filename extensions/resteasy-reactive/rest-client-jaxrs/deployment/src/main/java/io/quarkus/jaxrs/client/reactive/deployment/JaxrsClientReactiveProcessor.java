@@ -34,7 +34,6 @@ import java.lang.reflect.Modifier;
 import java.nio.file.Path;
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -2653,15 +2652,15 @@ public class JaxrsClientReactiveProcessor {
             if (consumes != null && consumes.length > 0) {
 
                 if (consumes.length > 1) {
-                    Set<String> uniqueConsumes = new HashSet<>(Arrays.asList(consumes));
+                    Set<String> uniqueConsumes = Set.of(consumes);
+                    mediaTypeValue = uniqueConsumes.iterator().next();
                     if (uniqueConsumes.size() > 1) {
-                        // Consider picking up the first @Consumes instead
-                        throw new IllegalArgumentException(
-                                "Multiple `@Consumes` values used in a MicroProfile Rest Client: " +
-                                        restClientInterface.name().toString()
-                                        + " Unable to determine a single `Content-Type`.");
-                    } else {
-                        mediaTypeValue = uniqueConsumes.iterator().next();
+                        log.debugf("MicroProfile Rest Client `%s`'s method `%s` has multiple `@Consumes` values `%s`,"
+                                + " Content-Type will be set to `%s`."
+                                + " You can change Content-Type in a custom jakarta.ws.rs.ClientRequestFilter implementation.",
+                                restClientInterface.name().toString(), jandexMethod.name(),
+                                uniqueConsumes.stream().collect(Collectors.joining(", ")),
+                                mediaTypeValue);
                     }
                 } else {
                     mediaTypeValue = consumes[0];

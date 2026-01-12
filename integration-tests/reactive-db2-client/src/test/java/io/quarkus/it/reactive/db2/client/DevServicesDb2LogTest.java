@@ -10,9 +10,13 @@ import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.junit.QuarkusTest;
 
 /**
- * Tests that Dev Services for DB2 starts without errors.
+ * Tests that Dev Services for DB2 correctly handles datasource names
+ * longer than 8 characters (DB2's database name limit).
+ * <p>
  * Note LogCollectingTestResource cannot be used in native mode,
  * hence the lack of a corresponding native mode test.
+ *
+ * @see <a href="https://github.com/quarkusio/quarkus/issues/51225">GitHub Issue #51225</a>
  */
 @QuarkusTest
 @QuarkusTestResource(value = LogCollectingTestResource.class, restrictToAnnotatedClass = true, initArgs = {
@@ -21,11 +25,10 @@ import io.quarkus.test.junit.QuarkusTest;
 })
 public class DevServicesDb2LogTest {
     @Test
-    public void testNoErrorsOnStartup() {
+    public void testLongDatasourceNameWarning() {
         assertThat(LogCollectingTestResource.current().getRecords())
-                .as("Dev Services DB2 logs")
+                .as("Dev Services DB2 warning about 8 character limit")
                 .extracting(LogCollectingTestResource::format)
-                // No errors should occur during DB2 startup
-                .noneMatch(log -> log.contains("ERROR"));
+                .anyMatch(log -> log.contains("8 character limit"));
     }
 }

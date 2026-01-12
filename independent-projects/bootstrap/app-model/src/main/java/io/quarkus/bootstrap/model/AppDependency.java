@@ -8,6 +8,7 @@ import java.util.Objects;
 
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathCollection;
@@ -137,6 +138,11 @@ public class AppDependency implements ResolvedDependency, Serializable {
 
     @Override
     public Collection<ArtifactCoords> getDependencies() {
+        return List.of();
+    }
+
+    @Override
+    public Collection<Dependency> getDirectDependencies() {
         return List.of();
     }
 

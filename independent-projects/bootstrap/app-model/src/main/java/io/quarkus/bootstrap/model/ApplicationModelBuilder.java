@@ -1,5 +1,7 @@
 package io.quarkus.bootstrap.model;
 
+import static io.quarkus.bootstrap.util.BootstrapUtils.matches;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -198,6 +200,15 @@ public class ApplicationModelBuilder {
         return this;
     }
 
+    public Collection<ArtifactCoordsPattern> getExcludedArtifacts() {
+        return excludedArtifacts;
+    }
+
+    public ApplicationModelBuilder clearExcludedArtifacts() {
+        this.excludedArtifacts.clear();
+        return this;
+    }
+
     public ApplicationModelBuilder addRemovedResources(ArtifactKey key, Collection<String> resources) {
         this.excludedResources.computeIfAbsent(key, k -> new HashSet<>(resources.size())).addAll(resources);
         return this;
@@ -387,15 +398,6 @@ public class ApplicationModelBuilder {
             }
         }
         return result;
-    }
-
-    private static boolean matches(ArtifactCoords coords, ArtifactCoordsPattern[] patterns) {
-        for (int i = 0; i < patterns.length; ++i) {
-            if (patterns[i].matches(coords)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static Collection<ArtifactCoords> ensureNoMatches(Collection<ArtifactCoords> artifacts,

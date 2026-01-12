@@ -1,5 +1,7 @@
 package io.quarkus.maven.dependency;
 
+import io.quarkus.bootstrap.util.BootstrapUtils;
+
 public interface DependencyFlags {
 
     /* @formatter:off */
@@ -44,5 +46,21 @@ public interface DependencyFlags {
      * this flag as an argument.
      */
     int COMPILE_ONLY                         = 0b01000000000000;
+
+    /**
+     * This flag is used for dependencies returned from {@link ResolvedDependency#getDirectDependencies()}.
+     * It indicates a dependency was configured for a given artifact but is missing among the application dependencies.
+     */
+    int MISSING_FROM_APPLICATION             = 0b10000000000000;
     /* @formatter:on */
+
+    /**
+     * Generates a comma-separated list of flag names for a given integer value.
+     *
+     * @param flags flags as an integer value
+     * @return comma-separated list of the flag names
+     */
+    static String toNames(int flags) {
+        return BootstrapUtils.toTextFlags(flags);
+    }
 }

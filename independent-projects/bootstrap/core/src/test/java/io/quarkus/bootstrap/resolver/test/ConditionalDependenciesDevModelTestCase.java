@@ -11,6 +11,7 @@ import io.quarkus.bootstrap.resolver.CollectDependenciesBase;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
 import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependency;
 
@@ -110,57 +111,192 @@ public class ConditionalDependenciesDevModelTestCase extends CollectDependencies
         for (var d : buildDeps) {
             switch (d.getArtifactId()) {
                 case "ext-a":
+                case "ext-d":
+                    assertThat(d.getFlags()).isEqualTo(
+                            DependencyFlags.DIRECT |
+                                    DependencyFlags.RUNTIME_CP |
+                                    DependencyFlags.DEPLOYMENT_CP |
+                                    DependencyFlags.RUNTIME_EXTENSION_ARTIFACT |
+                                    DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT);
+                    assertThat(d.getDependencies()).isEmpty();
+                    break;
                 case "ext-b":
                 case "ext-c":
-                case "ext-d":
                 case "ext-h":
+                    assertThat(d.getFlags()).isEqualTo(
+                            DependencyFlags.RUNTIME_CP |
+                                    DependencyFlags.DEPLOYMENT_CP |
+                                    DependencyFlags.RUNTIME_EXTENSION_ARTIFACT);
+                    assertThat(d.getDependencies()).isEmpty();
+                    break;
                 case "lib-e":
+                    assertThat(d.getFlags()).isEqualTo(
+                            DependencyFlags.RUNTIME_CP |
+                                    DependencyFlags.DEPLOYMENT_CP);
+                    assertThat(d.getDependencies()).isEmpty();
+                    break;
                 case "lib-e-build-time":
+                    assertThat(d.getFlags()).isEqualTo(DependencyFlags.DEPLOYMENT_CP);
                     assertThat(d.getDependencies()).isEmpty();
                     break;
                 case "ext-a-deployment":
-                case "ext-b-deployment":
-                case "ext-c-deployment":
                 case "ext-d-deployment":
-                case "ext-h-deployment":
+                    assertThat(d.getFlags()).isEqualTo(DependencyFlags.DEPLOYMENT_CP);
                     assertThat(d.getDependencies()).containsExactlyInAnyOrder(
                             ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID,
                                     d.getArtifactId().substring(0, d.getArtifactId().length() - "-deployment".length()),
                                     TsArtifact.DEFAULT_VERSION));
+                    assertThat(d.getDirectDependencies()).containsExactlyInAnyOrder(
+                            Dependency.jarWithFlags(TsArtifact.DEFAULT_GROUP_ID,
+                                    d.getArtifactId().substring(0, d.getArtifactId().length() - "-deployment".length()),
+                                    TsArtifact.DEFAULT_VERSION,
+                                    DependencyFlags.RUNTIME_CP |
+                                            DependencyFlags.DEPLOYMENT_CP |
+                                            DependencyFlags.RUNTIME_EXTENSION_ARTIFACT |
+                                            DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT |
+                                            DependencyFlags.DIRECT));
+                    break;
+                case "ext-b-deployment":
+                case "ext-c-deployment":
+                case "ext-h-deployment":
+                    assertThat(d.getFlags()).isEqualTo(DependencyFlags.DEPLOYMENT_CP);
+                    assertThat(d.getDependencies()).containsExactlyInAnyOrder(
+                            ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID,
+                                    d.getArtifactId().substring(0, d.getArtifactId().length() - "-deployment".length()),
+                                    TsArtifact.DEFAULT_VERSION));
+                    assertThat(d.getDirectDependencies()).containsExactlyInAnyOrder(
+                            Dependency.jarWithFlags(TsArtifact.DEFAULT_GROUP_ID,
+                                    d.getArtifactId().substring(0, d.getArtifactId().length() - "-deployment".length()),
+                                    TsArtifact.DEFAULT_VERSION,
+                                    DependencyFlags.DIRECT |
+                                            DependencyFlags.RUNTIME_CP |
+                                            DependencyFlags.DEPLOYMENT_CP |
+                                            DependencyFlags.RUNTIME_EXTENSION_ARTIFACT));
                     break;
                 case "ext-e":
+                    assertThat(d.getFlags()).isEqualTo(
+                            DependencyFlags.RUNTIME_CP |
+                                    DependencyFlags.DEPLOYMENT_CP |
+                                    DependencyFlags.RUNTIME_EXTENSION_ARTIFACT);
                     assertThat(d.getDependencies()).containsExactlyInAnyOrder(
                             ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "lib-e", TsArtifact.DEFAULT_VERSION));
+                    assertThat(d.getDirectDependencies()).containsExactlyInAnyOrder(
+                            Dependency.jarWithFlags(TsArtifact.DEFAULT_GROUP_ID, "lib-e", TsArtifact.DEFAULT_VERSION,
+                                    DependencyFlags.DIRECT |
+                                            DependencyFlags.RUNTIME_CP |
+                                            DependencyFlags.DEPLOYMENT_CP));
                     break;
                 case "ext-e-deployment":
+                    assertThat(d.getFlags()).isEqualTo(DependencyFlags.DEPLOYMENT_CP);
                     assertThat(d.getDependencies()).containsExactlyInAnyOrder(
                             ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-e", TsArtifact.DEFAULT_VERSION),
                             ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "lib-e-build-time", TsArtifact.DEFAULT_VERSION));
+                    assertThat(d.getDirectDependencies()).containsExactlyInAnyOrder(
+                            Dependency.jarWithFlags(TsArtifact.DEFAULT_GROUP_ID, "ext-e", TsArtifact.DEFAULT_VERSION,
+                                    DependencyFlags.DIRECT |
+                                            DependencyFlags.RUNTIME_CP |
+                                            DependencyFlags.DEPLOYMENT_CP |
+                                            DependencyFlags.RUNTIME_EXTENSION_ARTIFACT),
+                            Dependency.jarWithFlags(TsArtifact.DEFAULT_GROUP_ID, "lib-e-build-time", TsArtifact.DEFAULT_VERSION,
+                                    DependencyFlags.DIRECT |
+                                            DependencyFlags.DEPLOYMENT_CP));
                     break;
                 case "ext-f":
+                    assertThat(d.getFlags()).isEqualTo(
+                            DependencyFlags.DIRECT |
+                                    DependencyFlags.RUNTIME_CP |
+                                    DependencyFlags.DEPLOYMENT_CP |
+                                    DependencyFlags.RUNTIME_EXTENSION_ARTIFACT |
+                                    DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT);
                     assertThat(d.getDependencies()).containsExactlyInAnyOrder(
                             ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-c", TsArtifact.DEFAULT_VERSION),
                             ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-e", TsArtifact.DEFAULT_VERSION));
+                    assertThat(d.getDirectDependencies()).containsExactlyInAnyOrder(
+                            Dependency.jarWithFlags(TsArtifact.DEFAULT_GROUP_ID, "ext-c", TsArtifact.DEFAULT_VERSION,
+                                    DependencyFlags.DIRECT |
+                                            DependencyFlags.RUNTIME_CP |
+                                            DependencyFlags.DEPLOYMENT_CP |
+                                            DependencyFlags.RUNTIME_EXTENSION_ARTIFACT),
+                            Dependency.jarWithFlags(TsArtifact.DEFAULT_GROUP_ID, "ext-e", TsArtifact.DEFAULT_VERSION,
+                                    DependencyFlags.DIRECT |
+                                            DependencyFlags.RUNTIME_CP |
+                                            DependencyFlags.DEPLOYMENT_CP |
+                                            DependencyFlags.RUNTIME_EXTENSION_ARTIFACT));
                     break;
                 case "ext-f-deployment":
+                    assertThat(d.getFlags()).isEqualTo(DependencyFlags.DEPLOYMENT_CP);
                     assertThat(d.getDependencies()).containsExactlyInAnyOrder(
                             ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-f", TsArtifact.DEFAULT_VERSION),
                             ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-c-deployment", TsArtifact.DEFAULT_VERSION),
                             ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-e-deployment", TsArtifact.DEFAULT_VERSION));
+                    assertThat(d.getDirectDependencies()).containsExactlyInAnyOrder(
+                            Dependency.jarWithFlags(TsArtifact.DEFAULT_GROUP_ID, "ext-f", TsArtifact.DEFAULT_VERSION,
+                                    DependencyFlags.DIRECT |
+                                            DependencyFlags.RUNTIME_CP |
+                                            DependencyFlags.DEPLOYMENT_CP |
+                                            DependencyFlags.RUNTIME_EXTENSION_ARTIFACT |
+                                            DependencyFlags.DIRECT |
+                                            DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT),
+                            Dependency.jarWithFlags(TsArtifact.DEFAULT_GROUP_ID, "ext-c-deployment", TsArtifact.DEFAULT_VERSION,
+                                    DependencyFlags.DIRECT |
+                                            DependencyFlags.DEPLOYMENT_CP),
+                            Dependency.jarWithFlags(TsArtifact.DEFAULT_GROUP_ID, "ext-e-deployment", TsArtifact.DEFAULT_VERSION,
+                                    DependencyFlags.DIRECT |
+                                            DependencyFlags.DEPLOYMENT_CP));
                     break;
                 case "ext-g":
+                    assertThat(d.getFlags()).isEqualTo(
+                            DependencyFlags.DIRECT |
+                                    DependencyFlags.RUNTIME_CP |
+                                    DependencyFlags.DEPLOYMENT_CP |
+                                    DependencyFlags.RUNTIME_EXTENSION_ARTIFACT |
+                                    DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT);
                     assertThat(d.getDependencies()).containsExactlyInAnyOrder(
                             ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-b", TsArtifact.DEFAULT_VERSION),
                             ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "dev-only-lib", TsArtifact.DEFAULT_VERSION));
+                    assertThat(d.getDirectDependencies()).containsExactlyInAnyOrder(
+                            Dependency.jarWithFlags(TsArtifact.DEFAULT_GROUP_ID, "ext-b", TsArtifact.DEFAULT_VERSION,
+                                    DependencyFlags.DIRECT |
+                                            DependencyFlags.RUNTIME_CP |
+                                            DependencyFlags.DEPLOYMENT_CP |
+                                            DependencyFlags.RUNTIME_EXTENSION_ARTIFACT),
+                            Dependency.jarWithFlags(TsArtifact.DEFAULT_GROUP_ID, "dev-only-lib", TsArtifact.DEFAULT_VERSION,
+                                    DependencyFlags.DIRECT |
+                                            DependencyFlags.RUNTIME_CP |
+                                            DependencyFlags.DEPLOYMENT_CP));
                     break;
                 case "ext-g-deployment":
+                    assertThat(d.getFlags()).isEqualTo(DependencyFlags.DEPLOYMENT_CP);
                     assertThat(d.getDependencies()).containsExactlyInAnyOrder(
                             ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-g", TsArtifact.DEFAULT_VERSION),
                             ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-b-deployment", TsArtifact.DEFAULT_VERSION));
+                    assertThat(d.getDirectDependencies()).containsExactlyInAnyOrder(
+                            Dependency.jarWithFlags(TsArtifact.DEFAULT_GROUP_ID, "ext-g", TsArtifact.DEFAULT_VERSION,
+                                    DependencyFlags.RUNTIME_CP |
+                                            DependencyFlags.DEPLOYMENT_CP |
+                                            DependencyFlags.RUNTIME_EXTENSION_ARTIFACT |
+                                            DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT |
+                                            DependencyFlags.DIRECT),
+                            Dependency.jarWithFlags(TsArtifact.DEFAULT_GROUP_ID, "ext-b-deployment", TsArtifact.DEFAULT_VERSION,
+                                    DependencyFlags.DIRECT |
+                                            DependencyFlags.DEPLOYMENT_CP));
                     break;
                 case "dev-only-lib":
+                    assertThat(d.getFlags()).isEqualTo(
+                            DependencyFlags.RUNTIME_CP |
+                                    DependencyFlags.DEPLOYMENT_CP);
                     assertThat(d.getDependencies()).containsExactlyInAnyOrder(
-                            ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-h", TsArtifact.DEFAULT_VERSION));
+                            ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-h", TsArtifact.DEFAULT_VERSION),
+                            ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-h-deployment", TsArtifact.DEFAULT_VERSION));
+                    assertThat(d.getDirectDependencies()).containsExactlyInAnyOrder(
+                            Dependency.jarWithFlags(TsArtifact.DEFAULT_GROUP_ID, "ext-h", TsArtifact.DEFAULT_VERSION,
+                                    DependencyFlags.DIRECT |
+                                            DependencyFlags.RUNTIME_CP |
+                                            DependencyFlags.DEPLOYMENT_CP |
+                                            DependencyFlags.RUNTIME_EXTENSION_ARTIFACT),
+                            Dependency.jarWithFlags(TsArtifact.DEFAULT_GROUP_ID, "ext-h-deployment", TsArtifact.DEFAULT_VERSION,
+                                    DependencyFlags.DIRECT |
+                                            DependencyFlags.DEPLOYMENT_CP));
                     break;
                 default:
                     throw new RuntimeException("unexpected dependency " + d.toCompactCoords());

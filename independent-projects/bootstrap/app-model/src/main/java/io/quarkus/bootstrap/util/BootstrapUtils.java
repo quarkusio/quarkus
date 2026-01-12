@@ -14,6 +14,8 @@ import org.jboss.logging.Logger;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoordsPattern;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACT;
@@ -224,6 +226,7 @@ public class BootstrapUtils {
         appendFlagIfSet(sb, flags, DependencyFlags.CLASSLOADER_LESSER_PRIORITY, "classloader-lesser-priority");
         appendFlagIfSet(sb, flags, DependencyFlags.COMPILE_ONLY, "compile-only");
         appendFlagIfSet(sb, flags, DependencyFlags.VISITED, "visited");
+        appendFlagIfSet(sb, flags, DependencyFlags.MISSING_FROM_APPLICATION, "missing-from-application");
         return sb.toString();
     }
 
@@ -234,5 +237,14 @@ public class BootstrapUtils {
             }
             sb.append(flagName);
         }
+    }
+
+    public static boolean matches(ArtifactCoords coords, ArtifactCoordsPattern[] patterns) {
+        for (int i = 0; i < patterns.length; ++i) {
+            if (patterns[i].matches(coords)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

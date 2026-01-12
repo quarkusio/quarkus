@@ -11,8 +11,8 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.bootstrap.app.ApplicationModelSerializer;
 import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.DependencyFlags;
 
 public class TestFixtureMultiModuleTest extends QuarkusGradleWrapperTestBase {
 
@@ -29,7 +29,7 @@ public class TestFixtureMultiModuleTest extends QuarkusGradleWrapperTestBase {
         final Map<ArtifactKey, String> actualDepFlags = new HashMap<>();
         for (var dep : model.getDependencies()) {
             if (dep.getGroupId().equals("my-groupId")) {
-                actualDepFlags.put(dep.getKey(), BootstrapUtils.toTextFlags(dep.getFlags()));
+                actualDepFlags.put(dep.getKey(), DependencyFlags.toNames(dep.getFlags()));
             }
         }
         assertThat(actualDepFlags).containsExactlyInAnyOrderEntriesOf(Map.of(

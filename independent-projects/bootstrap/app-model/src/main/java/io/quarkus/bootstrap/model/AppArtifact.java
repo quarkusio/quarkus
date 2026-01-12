@@ -8,6 +8,7 @@ import java.util.Map;
 
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
@@ -131,6 +132,11 @@ public class AppArtifact extends AppArtifactCoords implements ResolvedDependency
 
     @Override
     public Collection<ArtifactCoords> getDependencies() {
+        return List.of();
+    }
+
+    @Override
+    public Collection<Dependency> getDirectDependencies() {
         return List.of();
     }
 

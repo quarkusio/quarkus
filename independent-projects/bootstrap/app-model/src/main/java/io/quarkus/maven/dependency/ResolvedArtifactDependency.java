@@ -20,6 +20,7 @@ public class ResolvedArtifactDependency extends ArtifactDependency implements Re
     private PathCollection paths;
     private final WorkspaceModule module;
     private final Collection<ArtifactCoords> deps;
+    private final Collection<Dependency> directDeps;
     private volatile transient PathTree contentTree;
 
     public ResolvedArtifactDependency(ArtifactCoords coords) {
@@ -41,6 +42,7 @@ public class ResolvedArtifactDependency extends ArtifactDependency implements Re
         this.paths = resolvedPath;
         this.module = null;
         this.deps = List.of();
+        this.directDeps = List.of();
     }
 
     public ResolvedArtifactDependency(ArtifactCoords coords, PathCollection resolvedPaths) {
@@ -48,6 +50,7 @@ public class ResolvedArtifactDependency extends ArtifactDependency implements Re
         this.paths = resolvedPaths;
         this.module = null;
         this.deps = List.of();
+        this.directDeps = List.of();
     }
 
     public ResolvedArtifactDependency(ResolvedDependencyBuilder builder) {
@@ -55,6 +58,7 @@ public class ResolvedArtifactDependency extends ArtifactDependency implements Re
         this.paths = builder.getResolvedPaths();
         this.module = builder.getWorkspaceModule();
         this.deps = builder.getDependencies();
+        this.directDeps = builder.getDirectDependencies();
     }
 
     @Override
@@ -79,6 +83,11 @@ public class ResolvedArtifactDependency extends ArtifactDependency implements Re
     @Override
     public Collection<ArtifactCoords> getDependencies() {
         return deps;
+    }
+
+    @Override
+    public Collection<Dependency> getDirectDependencies() {
+        return directDeps;
     }
 
     @Override

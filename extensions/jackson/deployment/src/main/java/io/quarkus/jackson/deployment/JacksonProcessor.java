@@ -56,7 +56,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
@@ -534,8 +534,8 @@ public class JacksonProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    public ShutdownListenerBuildItem clearCachesOnShutdown(JacksonRecorder recorder) {
-        return new ShutdownListenerBuildItem(recorder.clearCachesOnShutdown());
+    public void clearCachesOnShutdown(JacksonRecorder recorder, ShutdownContextBuildItem shutdown) {
+        recorder.clearCachesOnShutdown(shutdown);
     }
 
     private Optional<String> determinePropertyNamingStrategyClassName(JacksonBuildTimeConfig jacksonBuildTimeConfig) {

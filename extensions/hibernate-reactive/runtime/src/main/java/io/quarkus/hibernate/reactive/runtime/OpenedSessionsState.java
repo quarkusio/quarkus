@@ -12,6 +12,7 @@ import org.hibernate.reactive.common.spi.Implementor;
 import org.hibernate.reactive.context.Context.Key;
 import org.hibernate.reactive.context.impl.BaseKey;
 import org.hibernate.reactive.mutiny.Mutiny;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ClientProxy;
@@ -19,7 +20,6 @@ import io.quarkus.arc.impl.ComputingCache;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
-import org.jboss.logging.Logger;
 
 public abstract class OpenedSessionsState<T extends Mutiny.Closeable> {
     // This key is used to keep track of the Set<String> sessions created on demand

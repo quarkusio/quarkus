@@ -116,7 +116,6 @@ public class HibernateReactiveTransactionsTest {
         });
     }
 
-
     @Test
     @RunOnVertxContext
     public void testReactiveAnnotationTransactionWithTwoMethods(UniAsserter asserter) {

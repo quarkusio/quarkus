@@ -2,7 +2,6 @@ package io.quarkus.reactive.transaction;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -52,21 +51,50 @@ public abstract class TransactionalInterceptorBase {
         LOG.tracef("Starting Transactional interceptor from method %s", method);
         this.afterWorkStrategy = afterWorkStrategy;
         if (isUniReturnType(context)) {
+            validateTransactionalType(context); // So far only required is supported
             validateAnnotations();
 
-            Optional<Uni<Object>> typeValidation = validateTransactionalType(context);
-
-            if (typeValidation.isPresent()) {
-                return typeValidation.get();
-            }
-
-            Transactional annotation = getTransactional(context);
+            Transactional annotation = getTransactionalAnnotation(context);
             return defineReactiveTransactionalChain(annotation, method, () -> {
                 return proceedUni(context);
             });
         }
         LOG.tracef("Transactional interceptor end from method %s", method);
         return context.proceed();
+    }
+
+    protected <T> Uni<T> defineReactiveTransactionalChain(Transactional annotation, Method method, Supplier<Uni<T>> work) {
+        // TODO check that there's no other session opened by session delegators for another PU
+        // TODO check that there's no statelessSession opened by statelessSession delegators
+
+        Context context = vertxContext();
+
+        // This is the parent method, responsible to commit, rollback or cancel the transaction
+        if (context.getLocal(TRANSACTIONAL_METHOD_KEY) == null) {
+
+            // mark this method to be @Transactional so that other Panache interceptor might fail
+            LOG.tracef("Setting this method as transactional: %s", method);
+            context.putLocal(TRANSACTIONAL_METHOD_KEY, true);
+
+            return work.get()
+                    .eventually(() -> {
+                        // Closing of Hibernate sessions is made here
+                        return Uni.combine().all().unis(afterWorkStrategy.getAfterWorkActions(context)).discardItems();
+                    })
+                    .onFailure().call(exception -> {
+                        return rollbackOrCommitBasedOnException(annotation, exception);
+                    })
+                    .onCancellation().call(() -> {
+                        return rollbackOnCancel();
+                    })
+                    .call(() -> { // Good path - commit
+                        LOG.tracef("Calling commit from method %s", method);
+                        return commit();
+                    });
+        } else {
+            // Nested methods should just propagate the reactive chain without transaction handling
+            return work.get();
+        }
     }
 
     Transaction transaction() {
@@ -119,7 +147,7 @@ public abstract class TransactionalInterceptorBase {
                 LOG.tracef(
                         "Rollback the transaction due to exception class %s included in `rollbackOn` field on `@Transactional` annotation",
                         exception.getClass());
-                return exception(transaction, exception);
+                return actualRollback(transaction, exception);
             }
         }
 
@@ -128,7 +156,7 @@ public abstract class TransactionalInterceptorBase {
             if (rollbackAnnotation.value()) {
                 LOG.tracef("Rollback the transaction as the exception class %s is annotated with `@Rollback` annotation",
                         exception.getClass());
-                return exception(transaction, exception);
+                return actualRollback(transaction, exception);
             } else {
                 LOG.tracef(
                         "Do not rollback the transaction as the exception class %s is annotated with `@Rollback(false)` annotation",
@@ -139,10 +167,10 @@ public abstract class TransactionalInterceptorBase {
 
         // Default behavior: rollback for RuntimeException and Error (unchecked exceptions)
         // Note: Mutiny wraps checked exceptions in CompletionException, so they appear as RuntimeException here
-        return exception(transaction, exception);
+        return actualRollback(transaction, exception);
     }
 
-    private Uni<Void> exception(Transaction transaction, Object exception) {
+    private Uni<Void> actualRollback(Transaction transaction, Object exception) {
         return Uni.createFrom().completionStage(
                 transaction.rollback()
                         .onFailure(v -> {
@@ -171,46 +199,13 @@ public abstract class TransactionalInterceptorBase {
     protected void validateAnnotations() {
         Context context = vertxContext();
         if (context.getLocal(SESSION_ON_DEMAND_KEY) != null) {
-                   throw new UnsupportedOperationException(
-                            "Cannot call a method annotated with @Transactional from a method annotated with @WithSessionOnDemand");
+            throw new UnsupportedOperationException(
+                    "Cannot call a method annotated with @Transactional from a method annotated with @WithSessionOnDemand");
         }
 
         if (context.getLocal(WITH_TRANSACTION_METHOD_KEY) != null) {
             throw new UnsupportedOperationException(
-                            "Cannot call a method annotated with @Transactional from a method annotated with @WithTransaction");
-        }
-    }
-
-    protected <T> Uni<T> defineReactiveTransactionalChain(Transactional annotation, Method method, Supplier<Uni<T>> work) {
-        // TODO check that there's no other session opened by session delegators for another PU
-
-        // TODO check that there's no statelessSession opened by statelessSession delegators
-
-        Context context = vertxContext();
-
-        // mark this method to be @Transactional so that other Panache interceptor might fail
-        // parent method should be the one responsible to commit or cancel the transaction
-
-        // TODO Luca shouldn't these context.getLocal call made inside the Mutiny chain?
-        if (context.getLocal(TRANSACTIONAL_METHOD_KEY) == null) {
-            LOG.tracef("Setting this method as transactional: %s", method);
-            context.putLocal(TRANSACTIONAL_METHOD_KEY, true);
-            return work.get()
-                    .eventually(() -> {
-                        return Uni.combine().all().unis(afterWorkStrategy.getAfterWorkActions(context)).discardItems();
-                    })
-                    .onFailure().call(exception -> {
-                        return rollbackOrCommitBasedOnException(annotation, exception);
-                    })
-                    .onCancellation().call(() -> {
-                        return rollbackOnCancel();
-                    })
-                    .call(() -> { // Good path
-                        LOG.tracef("Calling commit from method %s", method);
-                        return commit();
-                    });
-        } else {
-            return work.get();
+                    "Cannot call a method annotated with @Transactional from a method annotated with @WithTransaction");
         }
     }
 
@@ -230,13 +225,13 @@ public abstract class TransactionalInterceptorBase {
         }
     }
 
-    protected Optional<Uni<Object>> validateTransactionalType(InvocationContext context) {
+    // Default impl fails .Required overrides it
+    protected void validateTransactionalType(InvocationContext context) {
         Transactional transactional = context.getMethod().getAnnotation(Transactional.class);
         if (transactional != null && transactional.value() != Transactional.TxType.REQUIRED) {
-            return Optional.of(Uni.createFrom().failure(new UnsupportedOperationException(
-                    "@Transactional on Reactive methods supports only Transactional.TxType.REQUIRED")));
+            throw new UnsupportedOperationException(
+                    "@Transactional on Reactive methods supports only Transactional.TxType.REQUIRED");
         }
-        return Optional.empty();
     }
 
     /**
@@ -250,7 +245,7 @@ public abstract class TransactionalInterceptorBase {
      * @param ic invocation context of the interceptor
      * @return instance of {@link Transactional} annotation or null
      */
-    private Transactional getTransactional(InvocationContext ic) {
+    private Transactional getTransactionalAnnotation(InvocationContext ic) {
         Set<Annotation> bindings = InterceptorBindings.getInterceptorBindings(ic);
         for (Annotation i : bindings) {
             if (i.annotationType() == Transactional.class) {

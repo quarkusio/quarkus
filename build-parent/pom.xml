@@ -35,7 +35,7 @@
 
         <asciidoctorj.version>3.0.0</asciidoctorj.version>
         <htmlunit.version>4.21.0</htmlunit.version>
-        <javaparser-core.version>3.27.1</javaparser-core.version>
+        <javaparser-core.version>3.28.0</javaparser-core.version>
         <jdeparser.version>2.0.3.Final</jdeparser.version>
         <subethasmtp.version>6.0.1</subethasmtp.version>
 

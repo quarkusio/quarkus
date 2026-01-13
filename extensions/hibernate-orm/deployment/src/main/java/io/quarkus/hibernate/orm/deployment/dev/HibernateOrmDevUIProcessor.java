@@ -26,7 +26,7 @@ public class HibernateOrmDevUIProcessor {
     public CardPageBuildItem create(HibernateOrmConfig config) {
         CardPageBuildItem card = new CardPageBuildItem();
         card.setLogo("hibernate_icon_dark.svg", "hibernate_icon_light.svg");
-        card.addLibraryVersion("org.hibernate.orm", "hibernate-core", "Hibernate", "https://hibernate.org/orm/");
+        card.addLibraryVersion("org.hibernate.orm", "hibernate-core", "Hibernate ORM", "https://hibernate.org/orm/");
         card.addLibraryVersion("jakarta.persistence", "jakarta.persistence-api", "Jakarta Persistence",
                 "https://jakarta.ee/specifications/persistence/");
 

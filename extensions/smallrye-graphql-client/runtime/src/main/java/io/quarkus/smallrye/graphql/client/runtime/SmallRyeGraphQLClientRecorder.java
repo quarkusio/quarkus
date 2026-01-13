@@ -1,5 +1,9 @@
 package io.quarkus.smallrye.graphql.client.runtime;
 
+import static io.smallrye.graphql.client.impl.GraphQLClientConfiguration.ProxyType.HTTP;
+import static io.smallrye.graphql.client.impl.GraphQLClientConfiguration.ProxyType.SOCKS4;
+import static io.smallrye.graphql.client.impl.GraphQLClientConfiguration.ProxyType.SOCKS5;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,7 +21,6 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.proxy.ProxyConfiguration;
 import io.quarkus.proxy.ProxyConfigurationRegistry;
-import io.quarkus.proxy.ProxyType;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
@@ -156,15 +159,12 @@ public class SmallRyeGraphQLClientRecorder {
                         transformed.setProxyPort(proxyConfiguration.port());
                         proxyConfiguration.username().ifPresent(transformed::setProxyUsername);
                         proxyConfiguration.password().ifPresent(transformed::setProxyPassword);
-                        // TODO: these properties will need to be supported on the smallrye-graphql side first
-                        proxyConfiguration.nonProxyHosts().ifPresent(x -> {
-                            org.jboss.logging.Logger.getLogger(this.getClass()).warn(
-                                    "Non-proxy hosts setting is not yet supported by the GraphQL client extension and will be ignored.");
+                        proxyConfiguration.nonProxyHosts().ifPresent(transformed::setNonProxyHosts);
+                        transformed.setProxyType(switch (proxyConfiguration.type()) {
+                            case HTTP -> HTTP;
+                            case SOCKS4 -> SOCKS4;
+                            case SOCKS5 -> SOCKS5;
                         });
-                        if (proxyConfiguration.type() != ProxyType.HTTP) {
-                            throw new ConfigurationException(
-                                    "Only HTTP proxy type is supported by the GraphQL client extension at the moment.");
-                        }
                     });
         }
 

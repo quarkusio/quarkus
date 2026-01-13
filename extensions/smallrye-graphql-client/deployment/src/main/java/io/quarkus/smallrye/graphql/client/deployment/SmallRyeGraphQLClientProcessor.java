@@ -52,8 +52,8 @@ import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientCertificateUpdate
 import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientSupport;
 import io.quarkus.smallrye.graphql.client.runtime.SmallRyeGraphQLClientRecorder;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
-import io.smallrye.graphql.client.model.ClientModelBuilder;
 import io.smallrye.graphql.client.model.ClientModels;
+import io.smallrye.graphql.client.modelbuilder.ClientModelBuilder;
 
 public class SmallRyeGraphQLClientProcessor {
 

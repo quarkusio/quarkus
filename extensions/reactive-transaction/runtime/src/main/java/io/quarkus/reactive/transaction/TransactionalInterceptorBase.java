@@ -21,7 +21,8 @@ import io.vertx.sqlclient.Transaction;
 /**
  * The base interceptor which manages reactive transactions for methods
  * annotated with {@link Transactional}.
- * Each value has its own class as the QuarkusReactiveTransaction Type is binding so requires exact match
+ * Each Transaction Type (REQUIRED, MANDATORY, NEVER, etc...)
+ * has its own class as the QuarkusReactiveTransaction is a binding type so requires exact match
  */
 public abstract class TransactionalInterceptorBase {
 
@@ -51,7 +52,7 @@ public abstract class TransactionalInterceptorBase {
         LOG.tracef("Starting Transactional interceptor from method %s", method);
         this.afterWorkStrategy = afterWorkStrategy;
         if (isUniReturnType(context)) {
-            validateTransactionalType(context); // So far only required is supported
+            validateTransactionalType(context); // So far only REQUIRED is supported
             validateAnnotations();
 
             Transactional annotation = getTransactionalAnnotation(context);
@@ -72,7 +73,7 @@ public abstract class TransactionalInterceptorBase {
         // This is the parent method, responsible to commit, rollback or cancel the transaction
         if (context.getLocal(TRANSACTIONAL_METHOD_KEY) == null) {
 
-            /* mark the current context to be @Transactional
+            /* Mark the current context to be @Transactional
                 ** This is the parent method and subsequent nested method will avoid tx management
                 ** validation of other Panache interceptors
              */
@@ -100,13 +101,13 @@ public abstract class TransactionalInterceptorBase {
         }
     }
 
-    Transaction transaction() {
+    Transaction transactionFromContext() {
         return Vertx.currentContext().getLocal(CURRENT_TRANSACTION_KEY);
     }
 
     // Based on org/hibernate/reactive/pool/impl/SqlClientConnection.java:305
     Uni<Void> commit() {
-        Transaction transaction = transaction();
+        Transaction transaction = transactionFromContext();
         if (transaction == null) {
             // This might happen if the method is annotated with @Transactional but doesn't flush
             // i.e. a single persist without an explicit .flush()
@@ -123,7 +124,7 @@ public abstract class TransactionalInterceptorBase {
     }
 
     Uni<Void> rollbackOnCancel() {
-        Transaction transaction = transaction();
+        Transaction transaction = transactionFromContext();
         return Uni.createFrom().completionStage(transaction.rollback()
                 .onFailure(v -> {
                     LOG.tracef("Failed to rollback transaction on cancellation: %s", transaction);
@@ -136,7 +137,7 @@ public abstract class TransactionalInterceptorBase {
 
     // Based on org/hibernate/reactive/pool/impl/SqlClientConnection.java:314
     Uni<Void> rollbackOrCommitBasedOnException(Transactional annotation, Throwable exception) {
-        Transaction transaction = transaction();
+        Transaction transaction = transactionFromContext();
 
         for (Class<?> dontRollbackOnClass : annotation.dontRollbackOn()) {
             if (dontRollbackOnClass.isAssignableFrom(exception.getClass())) {
@@ -173,7 +174,7 @@ public abstract class TransactionalInterceptorBase {
         return actualRollback(transaction, exception);
     }
 
-    private Uni<Void> actualRollback(Transaction transaction, Object exception) {
+    private Uni<Void> actualRollback(Transaction transaction, Throwable exception) {
         return Uni.createFrom().completionStage(
                 transaction.rollback()
                         .onFailure(v -> {
@@ -228,7 +229,7 @@ public abstract class TransactionalInterceptorBase {
         }
     }
 
-    // Default impl fails .Required overrides it
+    // Default impl fails .REQUIRED overrides it
     protected void validateTransactionalType(InvocationContext context) {
         Transactional transactional = context.getMethod().getAnnotation(Transactional.class);
         if (transactional != null && transactional.value() != Transactional.TxType.REQUIRED) {
@@ -245,14 +246,14 @@ public abstract class TransactionalInterceptorBase {
      * Method handles CDI types to cover cases where extensions are used. In
      * case of EE container uses reflection.
      *
-     * @param ic invocation context of the interceptor
+     * @param context invocation context of the interceptor
      * @return instance of {@link Transactional} annotation or null
      */
-    private Transactional getTransactionalAnnotation(InvocationContext ic) {
-        Set<Annotation> bindings = InterceptorBindings.getInterceptorBindings(ic);
-        for (Annotation i : bindings) {
-            if (i.annotationType() == Transactional.class) {
-                return (Transactional) i;
+    private Transactional getTransactionalAnnotation(InvocationContext context) {
+        Set<Annotation> bindings = InterceptorBindings.getInterceptorBindings(context);
+        for (Annotation binding : bindings) {
+            if (binding.annotationType() == Transactional.class) {
+                return (Transactional) binding;
             }
         }
         throw new RuntimeException("Cannot find a @Transactional annotation");

@@ -284,6 +284,7 @@
                 <module>reactive-mysql-client</module>
                 <module>reactive-mssql-client</module>
                 <module>reactive-oracle-client</module>
+                <module>devservices</module>
                 <module>test-extension</module>
                 <module>amazon-lambda</module>
                 <module>amazon-lambda-s3event</module>

@@ -3,6 +3,7 @@ package io.quarkus.resteasy.reactive.server.test.resource.basic;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.net.URI;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -12,6 +13,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 
 import org.jboss.resteasy.reactive.RestPath;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
@@ -26,8 +28,8 @@ import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.resteasy.reactive.server.deployment.SetupEndpointsResultBuildItem;
-import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 
 public class SubResourceInterfaceAndClientInterfaceTest {
 
@@ -37,7 +39,6 @@ public class SubResourceInterfaceAndClientInterfaceTest {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class);
                     war.addClasses(StoreResource.class);
                     war.addClasses(OrderResource.class);
                     war.addClasses(PositionResource.class);
@@ -71,14 +72,16 @@ public class SubResourceInterfaceAndClientInterfaceTest {
                 }
             });
 
+    @TestHTTPResource
+    URI uri;
+
     @Test
     public void basicTest() {
         {
             Client client = ClientBuilder.newClient();
             Response response = client.target(
-                    PortProviderUtil.generateURL(
-                            "/store/orders/orderId/positions/positionId/dangerousgoods/dangerousgoodId/some-field",
-                            SubResourceInterfaceAndClientInterfaceTest.class.getSimpleName()))
+                    UriBuilder.fromUri(uri)
+                            .path("/store/orders/orderId/positions/positionId/dangerousgoods/dangerousgoodId/some-field"))
                     .request().get();
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             Assertions.assertEquals("someFielddangerousgoodId", response.readEntity(String.class), "Wrong content of response");
@@ -89,9 +92,7 @@ public class SubResourceInterfaceAndClientInterfaceTest {
         {
             Client client = ClientBuilder.newClient();
             Response response = client.target(
-                    PortProviderUtil.generateURL(
-                            "/store/orders/orderId/contacts",
-                            SubResourceInterfaceAndClientInterfaceTest.class.getSimpleName()))
+                    UriBuilder.fromUri(uri).path("/store/orders/orderId/contacts"))
                     .request().get();
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             Assertions.assertEquals("[name1, name2]", response.readEntity(String.class), "Wrong content of response");

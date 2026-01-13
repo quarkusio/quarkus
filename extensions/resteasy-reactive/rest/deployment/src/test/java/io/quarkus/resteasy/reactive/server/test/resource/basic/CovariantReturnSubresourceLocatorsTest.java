@@ -1,10 +1,12 @@
 package io.quarkus.resteasy.reactive.server.test.resource.basic;
 
+import java.net.URI;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -17,8 +19,8 @@ import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.Covarian
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.CovariantReturnSubresourceLocatorsSubProxy;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.CovariantReturnSubresourceLocatorsSubProxyRootImpl;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.CovariantReturnSubresourceLocatorsSubProxySubImpl;
-import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 
 /**
  * @tpSubChapter Resources
@@ -35,13 +37,16 @@ public class CovariantReturnSubresourceLocatorsTest {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(CovariantReturnSubresourceLocatorsRootProxy.class, PortProviderUtil.class,
+                    war.addClasses(CovariantReturnSubresourceLocatorsRootProxy.class,
                             CovariantReturnSubresourceLocatorsSubProxy.class);
                     war.addClasses(CovariantReturnSubresourceLocatorsSubProxyRootImpl.class,
                             CovariantReturnSubresourceLocatorsSubProxySubImpl.class);
                     return war;
                 }
             });
+
+    @TestHTTPResource
+    URI uri;
 
     /**
      * @tpTestDetails Test basic path
@@ -51,9 +56,7 @@ public class CovariantReturnSubresourceLocatorsTest {
     @DisplayName("Basic Test")
     public void basicTest() {
         Client client = ClientBuilder.newClient();
-        Response response = client.target(
-                PortProviderUtil.generateURL("/path/sub/xyz", CovariantReturnSubresourceLocatorsTest.class.getSimpleName()))
-                .request().get();
+        Response response = client.target(UriBuilder.fromUri(uri).path("/path/sub/xyz")).request().get();
         Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         Assertions.assertEquals("Boo! - xyz", response.readEntity(String.class), "Wrong content of response");
         response.close();

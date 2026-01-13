@@ -7,6 +7,5 @@ public class ArquillianExtension implements LoadableExtension {
     @Override
     public void register(final ExtensionBuilder builder) {
         builder.service(ApplicationArchiveProcessor.class, DeploymentProcessor.class);
-        builder.observer(ArquillianLifecycle.class);
     }
 }

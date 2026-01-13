@@ -2,21 +2,25 @@ package io.quarkus.resteasy.reactive.server.test.resource.basic.resource;
 
 import java.net.URI;
 
+import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.core.UriInfo;
 
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Assertions;
 
-import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
+import io.quarkus.vertx.http.HttpServer;
 
 @Path("UriInfoSimpleSingletonResource")
 public class UriInfoSimpleSingletonResource {
-    private static Logger LOG = Logger.getLogger(UriInfoSimpleSingletonResource.class);
+    private static final Logger LOG = Logger.getLogger(UriInfoSimpleSingletonResource.class);
 
+    @Inject
+    HttpServer server;
     @Context
     UriInfo myInfo;
 
@@ -24,11 +28,11 @@ public class UriInfoSimpleSingletonResource {
     @GET
     public String get(@Context UriInfo info, @QueryParam("abs") String abs) {
         LOG.debug("abs query: " + abs);
-        URI base = null;
+        URI base;
         if (abs == null) {
-            base = PortProviderUtil.createURI("/");
+            base = UriBuilder.fromUri(server.getLocalBaseUri()).path("/").build();
         } else {
-            base = PortProviderUtil.createURI("/" + abs + "/");
+            base = UriBuilder.fromUri(server.getLocalBaseUri()).path("/").path(abs).build();
         }
 
         LOG.debug("BASE URI: " + info.getBaseUri());
@@ -42,11 +46,11 @@ public class UriInfoSimpleSingletonResource {
     @GET
     public String get(@QueryParam("abs") String abs) {
         LOG.debug("abs query: " + abs);
-        URI base = null;
+        URI base;
         if (abs == null) {
-            base = PortProviderUtil.createURI("/");
+            base = UriBuilder.fromUri(server.getLocalBaseUri()).path("/").build();
         } else {
-            base = PortProviderUtil.createURI("/" + abs + "/");
+            base = UriBuilder.fromUri(server.getLocalBaseUri()).path("/").path(abs).build();
         }
 
         LOG.debug("BASE URI: " + myInfo.getBaseUri());

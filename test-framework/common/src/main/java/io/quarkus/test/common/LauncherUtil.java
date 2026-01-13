@@ -1,5 +1,8 @@
 package io.quarkus.test.common;
 
+import static io.quarkus.test.common.http.TestHTTPResourceManager.host;
+import static io.quarkus.test.common.http.TestHTTPResourceManager.rootPath;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -23,7 +26,6 @@ import java.util.regex.Pattern;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.smallrye.common.os.OS;
-import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
 
 public final class LauncherUtil {
@@ -42,17 +44,17 @@ public final class LauncherUtil {
      *
      * @return a String with the <code>test.url</code> value to be evaluated by the running Quarkus Config instance.
      */
+    // TODO - Replace internal usages of test.url with io.quarkus.vertx.http.HttpServer.getLocalBaseUri
     static String generateTestUrl() {
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        String rootPath = "";
+        String host = host(config, "quarkus.http.host");
         // These are build time properties so it is fine to evaluate them here as they will not change
-        ConfigValue rootPathValue = config.getConfigValue("${quarkus.http.root-path:${quarkus.servlet.context-path:}}");
-        // Remove the ending "/", not relevant for invoking but causes issues with OpenTelemetry
-        if (rootPathValue.getValue() != null && rootPathValue.getValue().endsWith("/")) {
-            rootPath = rootPathValue.getValue().substring(0, rootPathValue.getValue().length() - 1);
+        String rootPath = rootPath(config);
+        if (rootPath.endsWith("/")) {
+            rootPath = rootPath.substring(0, rootPath.length() - 1);
         }
         // We want to keep `quarkus.http.test-port` as an expression so it is evaluated correctly if is random
-        return "http://localhost:${quarkus.http.test-port:8081}" + rootPath;
+        return "http://" + host + ":${quarkus.http.test-port:8081}" + rootPath;
     }
 
     /**

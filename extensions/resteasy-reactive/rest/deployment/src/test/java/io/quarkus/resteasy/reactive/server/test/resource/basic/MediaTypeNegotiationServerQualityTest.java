@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.net.URI;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.GET;
@@ -18,6 +19,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
+import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.MessageBodyWriter;
 import jakarta.ws.rs.ext.Provider;
@@ -31,8 +33,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 
 @DisplayName("Media Type Negotiation Server Quality Test")
 public class MediaTypeNegotiationServerQualityTest {
@@ -86,8 +88,7 @@ public class MediaTypeNegotiationServerQualityTest {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class, CustomMessageBodyWriter.class, FakeResource.class,
-                            NotFoundExceptionMapper.class);
+                    war.addClasses(CustomMessageBodyWriter.class, FakeResource.class, NotFoundExceptionMapper.class);
                     return war;
                 }
             });
@@ -102,14 +103,14 @@ public class MediaTypeNegotiationServerQualityTest {
         client.close();
     }
 
-    private String generateURL() {
-        return PortProviderUtil.generateBaseUrl();
-    }
+    @TestHTTPResource
+    URI uri;
 
     @Test
     @DisplayName("Test Server Quality")
-    public void testServerQuality() throws Exception {
-        Invocation.Builder request = client.target(generateURL()).path("foo/echo").request("application/x;", "text/y");
+    public void testServerQuality() {
+        Invocation.Builder request = client.target(UriBuilder.fromUri(uri)).path("foo/echo").request("application/x;",
+                "text/y");
         Response response = request.get();
         try {
             Assertions.assertEquals(Status.NOT_FOUND.getStatusCode(), response.getStatus());

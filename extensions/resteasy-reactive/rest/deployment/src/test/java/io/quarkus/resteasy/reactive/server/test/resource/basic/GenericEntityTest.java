@@ -1,11 +1,13 @@
 package io.quarkus.resteasy.reactive.server.test.resource.basic;
 
+import java.net.URI;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -20,8 +22,8 @@ import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.GenericE
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.GenericEntityFloatWriter;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.GenericEntityIntegerServerMessageBodyWriter;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.GenericEntityResource;
-import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 
 /**
  * @tpSubChapter Resource
@@ -39,7 +41,7 @@ public class GenericEntityTest {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class, GenericEntityResource.class, GenericEntityDoubleWriter.class,
+                    war.addClasses(GenericEntityResource.class, GenericEntityDoubleWriter.class,
                             GenericEntityFloatWriter.class, GenericEntityIntegerServerMessageBodyWriter.class);
                     return war;
                 }
@@ -56,9 +58,8 @@ public class GenericEntityTest {
         client = null;
     }
 
-    private String generateURL(String path) {
-        return PortProviderUtil.generateURL(path, GenericEntityTest.class.getSimpleName());
-    }
+    @TestHTTPResource
+    URI uri;
 
     /**
      * @tpTestDetails Resource returning GenericEntity with custom MessageBodyWriter returning double values
@@ -67,7 +68,7 @@ public class GenericEntityTest {
     @Test
     @DisplayName("Test Doubles")
     public void testDoubles() {
-        WebTarget base = client.target(generateURL("/doubles"));
+        WebTarget base = client.target(UriBuilder.fromUri(uri).path("/doubles"));
         try {
             Response response = base.request().get();
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
@@ -85,7 +86,7 @@ public class GenericEntityTest {
     @Test
     @DisplayName("Test Floats")
     public void testFloats() {
-        WebTarget base = client.target(generateURL("/floats"));
+        WebTarget base = client.target(UriBuilder.fromUri(uri).path("/floats"));
         try {
             Response response = base.request().get();
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
@@ -107,7 +108,7 @@ public class GenericEntityTest {
     }
 
     private void doTestIntegers(String path) {
-        WebTarget base = client.target(generateURL(path));
+        WebTarget base = client.target(UriBuilder.fromUri(uri).path(path));
         try {
             Response response = base.request().get();
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());

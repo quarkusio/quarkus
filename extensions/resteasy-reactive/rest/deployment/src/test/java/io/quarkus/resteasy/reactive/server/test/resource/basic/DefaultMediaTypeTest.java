@@ -1,6 +1,7 @@
 package io.quarkus.resteasy.reactive.server.test.resource.basic;
 
 import java.io.ByteArrayOutputStream;
+import java.net.URI;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.client.Client;
@@ -9,6 +10,7 @@ import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 
 import org.jboss.logging.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -22,8 +24,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.DefaultMediaTypeCustomObject;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.DefaultMediaTypeResource;
-import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 
 /**
  * @tpSubChapter Resources
@@ -46,7 +48,7 @@ public class DefaultMediaTypeTest {
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
                     war.addClass(DefaultMediaTypeCustomObject.class);
-                    war.addClasses(PortProviderUtil.class, DefaultMediaTypeResource.class);
+                    war.addClasses(DefaultMediaTypeResource.class);
                     return war;
                 }
             });
@@ -62,9 +64,8 @@ public class DefaultMediaTypeTest {
         client = null;
     }
 
-    private String generateURL(String path) {
-        return PortProviderUtil.generateURL(path, DefaultMediaTypeResource.class.getSimpleName());
-    }
+    @TestHTTPResource
+    URI uri;
 
     /**
      * @tpTestDetails Test Date object with produce annotation
@@ -72,8 +73,8 @@ public class DefaultMediaTypeTest {
      */
     @Test
     @DisplayName("Post Date Produce")
-    public void postDateProduce() throws Exception {
-        WebTarget target = client.target(generateURL("/postDateProduce"));
+    public void postDateProduce() {
+        WebTarget target = client.target(UriBuilder.fromUri(uri).path("/postDateProduce"));
         ByteArrayOutputStream baos = new ByteArrayOutputStream(5000);
         for (int i = 0; i < 5000; i++) {
             baos.write(i);
@@ -92,8 +93,8 @@ public class DefaultMediaTypeTest {
     @Test
 
     @DisplayName("Post Date")
-    public void postDate() throws Exception {
-        WebTarget target = client.target(generateURL("/postDate"));
+    public void postDate() {
+        WebTarget target = client.target(UriBuilder.fromUri(uri).path("/postDate"));
         ByteArrayOutputStream baos = new ByteArrayOutputStream(5000);
         for (int i = 0; i < 5000; i++) {
             baos.write(i);
@@ -111,8 +112,8 @@ public class DefaultMediaTypeTest {
      */
     @Test
     @DisplayName("Post Foo Produce")
-    public void postFooProduce() throws Exception {
-        WebTarget target = client.target(generateURL("/postFooProduce"));
+    public void postFooProduce() {
+        WebTarget target = client.target(UriBuilder.fromUri(uri).path("/postFooProduce"));
         ByteArrayOutputStream baos = new ByteArrayOutputStream(5000);
         for (int i = 0; i < 5000; i++) {
             baos.write(i);
@@ -131,8 +132,8 @@ public class DefaultMediaTypeTest {
     @Test
 
     @DisplayName("Post Foo")
-    public void postFoo() throws Exception {
-        WebTarget target = client.target(generateURL("/postFoo"));
+    public void postFoo() {
+        WebTarget target = client.target(UriBuilder.fromUri(uri).path("/postFoo"));
         ByteArrayOutputStream baos = new ByteArrayOutputStream(5000);
         for (int i = 0; i < 5000; i++) {
             baos.write(i);
@@ -150,8 +151,8 @@ public class DefaultMediaTypeTest {
      */
     @Test
     @DisplayName("Post Int Produce")
-    public void postIntProduce() throws Exception {
-        WebTarget target = client.target(generateURL("/postIntProduce"));
+    public void postIntProduce() {
+        WebTarget target = client.target(UriBuilder.fromUri(uri).path("/postIntProduce"));
         ByteArrayOutputStream baos = new ByteArrayOutputStream(5000);
         for (int i = 0; i < 5000; i++) {
             baos.write(i);
@@ -168,8 +169,8 @@ public class DefaultMediaTypeTest {
      */
     @Test
     @DisplayName("Post Int")
-    public void postInt() throws Exception {
-        WebTarget target = client.target(generateURL("/postInt"));
+    public void postInt() {
+        WebTarget target = client.target(UriBuilder.fromUri(uri).path("/postInt"));
         ByteArrayOutputStream baos = new ByteArrayOutputStream(5000);
         for (int i = 0; i < 5000; i++) {
             baos.write(i);
@@ -187,8 +188,8 @@ public class DefaultMediaTypeTest {
      */
     @Test
     @DisplayName("Post Integer Produce")
-    public void postIntegerProduce() throws Exception {
-        WebTarget target = client.target(generateURL("/postIntegerProduce"));
+    public void postIntegerProduce() {
+        WebTarget target = client.target(UriBuilder.fromUri(uri).path("/postIntegerProduce"));
         ByteArrayOutputStream baos = new ByteArrayOutputStream(5000);
         for (int i = 0; i < 5000; i++) {
             baos.write(i);
@@ -205,8 +206,8 @@ public class DefaultMediaTypeTest {
      */
     @Test
     @DisplayName("Post Integer")
-    public void postInteger() throws Exception {
-        WebTarget target = client.target(generateURL("/postInteger"));
+    public void postInteger() {
+        WebTarget target = client.target(UriBuilder.fromUri(uri).path("/postInteger"));
         ByteArrayOutputStream baos = new ByteArrayOutputStream(5000);
         for (int i = 0; i < 5000; i++) {
             baos.write(i);

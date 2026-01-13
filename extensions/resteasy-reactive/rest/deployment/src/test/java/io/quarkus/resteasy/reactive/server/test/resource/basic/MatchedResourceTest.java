@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.server.test.resource.basic;
 
+import java.net.URI;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.client.Client;
@@ -7,6 +8,7 @@ import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -18,8 +20,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.MatchedResource;
-import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 
 /**
  * @tpSubChapter Resources
@@ -38,7 +40,7 @@ public class MatchedResourceTest {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(MatchedResource.class, PortProviderUtil.class);
+                    war.addClasses(MatchedResource.class);
                     return war;
                 }
             });
@@ -53,9 +55,8 @@ public class MatchedResourceTest {
         client.close();
     }
 
-    private static String generateURL(String path) {
-        return PortProviderUtil.generateURL(path, MatchedResourceTest.class.getSimpleName());
-    }
+    @TestHTTPResource
+    URI uri;
 
     /**
      * @tpTestDetails Regression test for RESTEASY-549
@@ -63,14 +64,14 @@ public class MatchedResourceTest {
      */
     @Test
     @DisplayName("Test Empty")
-    public void testEmpty() throws Exception {
-        WebTarget base = client.target(generateURL("/start"));
+    public void testEmpty() {
+        WebTarget base = client.target(UriBuilder.fromUri(uri).path("/start"));
         Response response = base.request().post(Entity.text(""));
         Assertions.assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
         String rtn = response.readEntity(String.class);
         Assertions.assertEquals("started", rtn);
         response.close();
-        base = client.target(generateURL("/start"));
+        base = client.target(UriBuilder.fromUri(uri).path("/start"));
         response = base.request().post(Entity.entity("<xml/>", "application/xml"));
         Assertions.assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
         rtn = response.readEntity(String.class);
@@ -84,8 +85,8 @@ public class MatchedResourceTest {
      */
     @Test
     @DisplayName("Test Match")
-    public void testMatch() throws Exception {
-        WebTarget base = client.target(generateURL("/match"));
+    public void testMatch() {
+        WebTarget base = client.target(UriBuilder.fromUri(uri).path("/match"));
         Response response = base.request().header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
                 .get();
         Assertions.assertEquals("text/html;charset=UTF-8", response.getHeaders().getFirst("Content-Type"));
@@ -94,8 +95,8 @@ public class MatchedResourceTest {
         response.close();
     }
 
-    public void generalPostTest(String uri, String value) {
-        WebTarget base = client.target(uri);
+    public void generalPostTest(String path, String value) {
+        WebTarget base = client.target(UriBuilder.fromUri(uri).path(path));
         Response response = base.request().get();
         Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         Assertions.assertEquals(response.readEntity(String.class), value, "Wrong response content");
@@ -108,7 +109,7 @@ public class MatchedResourceTest {
     @Test
     @DisplayName("Test Post")
     public void testPost() {
-        generalPostTest(generateURL("/test2/foo.xml.en"), "complex2");
-        generalPostTest(generateURL("/test1/foo.xml.en"), "complex");
+        generalPostTest("/test2/foo.xml.en", "complex2");
+        generalPostTest("/test1/foo.xml.en", "complex");
     }
 }

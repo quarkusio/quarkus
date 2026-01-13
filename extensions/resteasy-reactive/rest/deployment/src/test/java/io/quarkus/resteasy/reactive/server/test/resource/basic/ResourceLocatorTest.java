@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
+import java.net.URI;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
@@ -17,6 +18,7 @@ import jakarta.ws.rs.client.Invocation.Builder;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -41,8 +43,8 @@ import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.Resource
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.ResourceLocatorSubresource2;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.ResourceLocatorSubresource3;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.ResourceLocatorSubresource3Interface;
-import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 
 /**
  * @tpSubChapter Resource
@@ -75,7 +77,7 @@ public class ResourceLocatorTest {
                     war.addClass(ResourceLocatorQueueReceiver.class).addClass(ResourceLocatorReceiver.class)
                             .addClass(ResourceLocatorRootInterface.class).addClass(ResourceLocatorSubInterface.class)
                             .addClass(ResourceLocatorSubresource3Interface.class).addClass(CorsPreflightResource.class);
-                    war.addClasses(PortProviderUtil.class, ResourceLocatorAbstractAnnotationFreeResource.class,
+                    war.addClasses(ResourceLocatorAbstractAnnotationFreeResource.class,
                             ResourceLocatorAnnotationFreeSubResource.class, ResourceLocatorBaseResource.class,
                             ResourceLocatorCollectionResource.class, ResourceLocatorDirectory.class,
                             ResourceLocatorSubresource.class, ResourceLocatorSubresource2.class,
@@ -84,9 +86,8 @@ public class ResourceLocatorTest {
                 }
             });
 
-    private String generateURL(String path) {
-        return PortProviderUtil.generateURL(path, ResourceLocatorTest.class.getSimpleName());
-    }
+    @TestHTTPResource
+    URI uri;
 
     /**
      * @tpTestDetails Resource locator returns proxied resource.
@@ -94,8 +95,8 @@ public class ResourceLocatorTest {
      */
     @Test
     @DisplayName("Test Proxied Subresource")
-    public void testProxiedSubresource() throws Exception {
-        WebTarget target = client.target(generateURL("/proxy/3"));
+    public void testProxiedSubresource() {
+        WebTarget target = client.target(UriBuilder.fromUri(uri).path("/proxy/3"));
         Response res = target.queryParam("foo", "1.2").queryParam("foo", "1.3").request().get();
         Assertions.assertEquals(200, res.getStatus());
         res.close();
@@ -107,14 +108,15 @@ public class ResourceLocatorTest {
      */
     @Test
     @DisplayName("Test Subresource")
-    public void testSubresource() throws Exception {
+    public void testSubresource() {
         {
-            Response response = client.target(generateURL("/base/1/resources")).request().get();
+            Response response = client.target(UriBuilder.fromUri(uri).path("/base/1/resources")).request().get();
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             Assertions.assertEquals(ResourceLocatorSubresource.class.getName(), response.readEntity(String.class));
         }
         {
-            Response response = client.target(generateURL("/base/1/resources/subresource2/stuff/2/bar")).request().get();
+            Response response = client.target(UriBuilder.fromUri(uri).path("/base/1/resources/subresource2/stuff/2/bar"))
+                    .request().get();
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             Assertions.assertEquals(ResourceLocatorSubresource2.class.getName() + "-2", response.readEntity(String.class));
         }
@@ -127,7 +129,8 @@ public class ResourceLocatorTest {
     @Test
     @DisplayName("Test custom HTTP OPTIONS handler in subresource")
     public void testOptionsMethodInSubresource() {
-        try (Response response = client.target(generateURL("/sub3/something/resources/test-options-method")).request()
+        try (Response response = client.target(UriBuilder.fromUri(uri).path("/sub3/something/resources/test-options-method"))
+                .request()
                 .options()) {
             assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
@@ -148,7 +151,8 @@ public class ResourceLocatorTest {
     @Test
     @DisplayName("Test custom explicit HTTP OPTIONS handler in subresource")
     public void testOptionsMethodExplicitInSubresource() {
-        try (Response response = client.target(generateURL("/sub3/something/resources/test-options-method-explicit")).request()
+        try (Response response = client
+                .target(UriBuilder.fromUri(uri).path("/sub3/something/resources/test-options-method-explicit")).request()
                 .options()) {
             assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
@@ -168,8 +172,8 @@ public class ResourceLocatorTest {
      */
     @Test
     @DisplayName("Test Same Uri")
-    public void testSameUri() throws Exception {
-        Response response = client.target(generateURL("/directory/receivers/1")).request().delete();
+    public void testSameUri() {
+        Response response = client.target(UriBuilder.fromUri(uri).path("/directory/receivers/1")).request().delete();
         Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         Assertions.assertEquals(ResourceLocatorDirectory.class.getName(), response.readEntity(String.class));
     }
@@ -180,17 +184,18 @@ public class ResourceLocatorTest {
      */
     @Test
     @DisplayName("Test Annotation Free Subresource")
-    public void testAnnotationFreeSubresource() throws Exception {
+    public void testAnnotationFreeSubresource() {
         {
-            Response response = client.target(generateURL("/collection/annotation_free_subresource")).request().get();
+            Response response = client.target(UriBuilder.fromUri(uri).path("/collection/annotation_free_subresource")).request()
+                    .get();
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-            Assertions.assertEquals(response.readEntity(String.class), "got");
+            Assertions.assertEquals("got", response.readEntity(String.class));
             Assertions.assertNotNull(response.getHeaderString("Content-Type"));
             Assertions.assertEquals("text/plain;charset=UTF-8",
                     response.getHeaderString("Content-Type"));
         }
         {
-            Builder request = client.target(generateURL("/collection/annotation_free_subresource")).request();
+            Builder request = client.target(UriBuilder.fromUri(uri).path("/collection/annotation_free_subresource")).request();
             Response response = request.post(Entity.entity("hello!".getBytes(), MediaType.TEXT_PLAIN));
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             Assertions.assertEquals("posted: hello!", response.readEntity(String.class));
@@ -206,7 +211,7 @@ public class ResourceLocatorTest {
     }
 
     @Test
-    public void testRoot() throws Exception {
+    public void testRoot() {
         given().get().then().body(is("[app, ]"));
     }
 }

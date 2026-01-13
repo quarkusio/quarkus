@@ -1,11 +1,13 @@
 package io.quarkus.resteasy.reactive.server.test.resource.basic;
 
+import java.net.URI;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -17,8 +19,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.ClassLevelMediaTypeResource;
-import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 
 @DisplayName("Class Level Media Type Test")
 public class ClassLevelMediaTypeTest {
@@ -30,7 +32,7 @@ public class ClassLevelMediaTypeTest {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class, ClassLevelMediaTypeResource.class);
+                    war.addClasses(ClassLevelMediaTypeResource.class);
                     return war;
                 }
             });
@@ -46,10 +48,13 @@ public class ClassLevelMediaTypeTest {
         client = null;
     }
 
+    @TestHTTPResource
+    URI uri;
+
     @Test
     @DisplayName("Test Application Json Media Type")
     public void testApplicationJsonMediaType() {
-        WebTarget base = client.target(generateURL("/test"));
+        WebTarget base = client.target(UriBuilder.fromUri(uri).path("/test"));
         System.err.println(base.getClass());
         try {
             Response response = base.request().get();
@@ -59,9 +64,5 @@ public class ClassLevelMediaTypeTest {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private String generateURL(String path) {
-        return PortProviderUtil.generateURL(path);
     }
 }

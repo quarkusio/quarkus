@@ -62,9 +62,6 @@ public class AppMakerHelper {
 
         Path testClassLocation = getTestClassesLocation(requiredTestClass, curatedApplication);
 
-        // clear the test.url system property as the value leaks into the run when using different profiles
-        System.clearProperty("test.url");
-
         // TODO should we do this here, or when we prepare the curated application?
         // Or is it needed at all?
         Index testClassesIndex = TestClassIndexer.indexTestClasses(testClassLocation);

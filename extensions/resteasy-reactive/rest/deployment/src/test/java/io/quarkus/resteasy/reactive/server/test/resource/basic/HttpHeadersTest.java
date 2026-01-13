@@ -1,10 +1,12 @@
 package io.quarkus.resteasy.reactive.server.test.resource.basic;
 
+import java.net.URI;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -16,8 +18,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.HttpHeadersResource;
-import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 
 /**
  * @tpSubChapter Resources
@@ -36,7 +38,7 @@ public class HttpHeadersTest {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class, HttpHeadersResource.class);
+                    war.addClasses(HttpHeadersResource.class);
                     return war;
                 }
             });
@@ -51,9 +53,8 @@ public class HttpHeadersTest {
         client.close();
     }
 
-    private static String generateURL(String path) {
-        return PortProviderUtil.generateURL(path, HttpHeadersTest.class.getSimpleName());
-    }
+    @TestHTTPResource
+    URI uri;
 
     /**
      * @tpTestDetails Client invokes GET request on a sub resource at /HeadersTest/sub2
@@ -63,9 +64,8 @@ public class HttpHeadersTest {
      */
     @Test
     @DisplayName("Request Headers Test")
-    public void RequestHeadersTest() throws Exception {
-        String errorMessage = "Wrong content of response";
-        Response response = client.target(generateURL("/HeadersTest/headers")).request()
+    public void RequestHeadersTest() {
+        Response response = client.target(UriBuilder.fromUri(uri).path("/HeadersTest/headers")).request()
                 .header("Accept", "text/plain, text/html, text/html;level=1, */*")
                 .header("Content-Type", "application/xml;charset=utf8").get();
         Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());

@@ -76,9 +76,10 @@ public abstract class TransactionalInterceptorBase {
         // This is the parent method, responsible to commit, rollback or cancel the transaction
         if (context.getLocal(TRANSACTIONAL_METHOD_KEY) == null) {
 
-            /* Mark the current context to be @Transactional
-                ** This is the parent method and subsequent nested method will avoid tx management
-                ** validation of other Panache interceptors
+            /*
+             * Mark the current context to be @Transactional
+             ** This is the parent method and subsequent nested method will avoid tx management
+             ** validation of other Panache interceptors
              */
             LOG.tracef("Setting this method as transactional: %s", method);
             context.putLocal(TRANSACTIONAL_METHOD_KEY, true);

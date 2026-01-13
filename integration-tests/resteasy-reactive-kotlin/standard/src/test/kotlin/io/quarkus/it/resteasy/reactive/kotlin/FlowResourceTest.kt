@@ -1,5 +1,7 @@
 package io.quarkus.it.resteasy.reactive.kotlin
 
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
 import io.quarkus.test.common.http.TestHTTPResource
 import io.quarkus.test.junit.QuarkusTest
 import io.restassured.module.kotlin.extensions.Then
@@ -7,9 +9,10 @@ import io.restassured.module.kotlin.extensions.When
 import jakarta.ws.rs.client.ClientBuilder
 import jakarta.ws.rs.client.WebTarget
 import jakarta.ws.rs.sse.SseEventSource
-import java.util.Collections
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
+import java.util.stream.Collectors
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -41,13 +44,24 @@ class FlowResourceTest {
 
     @Test
     fun testSeeJson() {
+
         testSse("json", 10) {
-            assertThat(it)
+            assertThat(it.stream().map(this::json).collect(Collectors.toList()))
                 .containsExactly(
-                    "{\"name\":\"Barbados\",\"capital\":\"Bridgetown\"}",
-                    "{\"name\":\"Mauritius\",\"capital\":\"Port Louis\"}",
-                    "{\"name\":\"Fiji\",\"capital\":\"Suva\"}",
+                    json("{\"name\":\"Barbados\",\"capital\":\"Bridgetown\"}"),
+                    json("{\"name\":\"Mauritius\",\"capital\":\"Port Louis\"}"),
+                    json("{\"name\":\"Fiji\",\"capital\":\"Suva\"}"),
                 )
+        }
+    }
+
+    private val mapper: ObjectMapper = ObjectMapper()
+
+    private fun json(jsonString: String?): JsonNode {
+        try {
+            return mapper.readTree(jsonString)
+        } catch (e: java.lang.Exception) {
+            throw java.lang.RuntimeException(e)
         }
     }
 

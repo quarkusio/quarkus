@@ -1,6 +1,8 @@
 package io.quarkus.hibernate.reactive.panache.common.runtime;
 
 import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
+import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.SESSION_ON_DEMAND_KEY;
+import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.TRANSACTIONAL_METHOD_KEY;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -71,14 +73,8 @@ public final class SessionOperations {
         return new BaseKey<>(Mutiny.StatelessSession.class, implementor.getUuid());
     }
 
-    // This key is used to indicate that reactive sessions should be opened lazily/on-demand (when needed) in the current vertx context
-    private static final String SESSION_ON_DEMAND_KEY = "hibernate.reactive.panache.sessionOnDemand";
-
     // This key is used to keep track of the Set<String> sessions (managed or stateless) created on demand
     private static final String SESSION_ON_DEMAND_OPENED_KEY = "hibernate.reactive.panache.sessionOnDemandOpened";
-
-    // TODO Luca remove this once this module depends on reactive-transactional
-    private static final String TRANSACTIONAL_METHOD_KEY = "hibernate.reactive.methodTransactional";
 
     /**
      * Marks the current vertx duplicated context as "lazy" which indicates that a reactive session should be opened lazily if

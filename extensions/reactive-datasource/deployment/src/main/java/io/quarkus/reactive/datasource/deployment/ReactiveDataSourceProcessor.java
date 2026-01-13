@@ -18,6 +18,7 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig;
+import io.quarkus.reactive.datasource.runtime.StealingHelper;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
 class ReactiveDataSourceProcessor {
@@ -124,5 +125,11 @@ class ReactiveDataSourceProcessor {
                     newDataSourceBuildItem.isDefault(),
                     newDataSourceBuildItem.getVersion()));
         }
+    }
+
+    @BuildStep
+    void registerStealingHelper(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        // Register the StealingHelper bean so it is discovered by Arc
+        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(StealingHelper.class));
     }
 }

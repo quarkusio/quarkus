@@ -2,6 +2,7 @@ package io.quarkus.oidc.client.deployment.devservices.keycloak;
 
 import java.util.HashMap;
 
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -25,7 +26,7 @@ public class KeycloakDevServiceRequiredBuildStep {
 
     @BuildStep
     KeycloakDevServicesRequiredBuildItem requireKeycloakDevService(KeycloakDevServicesConfig config) {
-        return KeycloakDevServicesRequiredBuildItem.of(ctx -> {
+        return KeycloakDevServicesRequiredBuildItem.of(Feature.OIDC_CLIENT, ctx -> {
             var configProperties = new HashMap<String, String>();
             configProperties.put(OIDC_CLIENT_AUTH_SERVER_URL_CONFIG_KEY, ctx.authServerInternalUrl());
             configProperties.put(OIDC_CLIENT_TOKEN_PATH_CONFIG_KEY, "/protocol/openid-connect/tokens");

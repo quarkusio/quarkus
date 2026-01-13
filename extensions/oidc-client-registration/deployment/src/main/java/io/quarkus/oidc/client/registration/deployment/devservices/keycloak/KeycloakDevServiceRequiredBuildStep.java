@@ -8,6 +8,7 @@ import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.representations.idm.ComponentExportRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -53,7 +54,8 @@ public class KeycloakDevServiceRequiredBuildStep {
             }
         };
 
-        return KeycloakDevServicesRequiredBuildItem.of(devServicesConfigurator, OIDC_CLIENT_REG_AUTH_SERVER_URL_CONFIG_KEY);
+        return KeycloakDevServicesRequiredBuildItem.of(Feature.OIDC_CLIENT_REGISTRATION, devServicesConfigurator,
+                OIDC_CLIENT_REG_AUTH_SERVER_URL_CONFIG_KEY);
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)

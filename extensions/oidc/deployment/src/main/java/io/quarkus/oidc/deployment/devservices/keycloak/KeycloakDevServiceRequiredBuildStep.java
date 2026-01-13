@@ -7,6 +7,7 @@ import java.util.HashMap;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -33,7 +34,7 @@ public class KeycloakDevServiceRequiredBuildStep {
             return null;
         }
 
-        return KeycloakDevServicesRequiredBuildItem.of(ctx -> {
+        return KeycloakDevServicesRequiredBuildItem.of(Feature.OIDC, ctx -> {
             var configProperties = new HashMap<String, String>();
             configProperties.put(OIDC_AUTH_SERVER_URL_CONFIG_KEY, ctx.authServerInternalUrl());
             configProperties.put(APPLICATION_TYPE_CONFIG_KEY, getOidcApplicationType());

@@ -14,6 +14,7 @@ import org.jboss.logging.Logger;
 import org.keycloak.representations.idm.RealmRepresentation;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.deployment.Feature;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
 /**
@@ -29,30 +30,33 @@ public final class KeycloakDevServicesRequiredBuildItem extends MultiBuildItem {
 
     private final KeycloakDevServicesConfigurator devServicesConfigurator;
     private final String authServerUrl;
+    private final Feature feature;
 
     private KeycloakDevServicesRequiredBuildItem(KeycloakDevServicesConfigurator devServicesConfigurator,
-            String authServerUrl) {
+            String authServerUrl, Feature feature) {
         this.devServicesConfigurator = requireNonNull(devServicesConfigurator);
         this.authServerUrl = requireNonNull(authServerUrl);
+        this.feature = feature;
     }
 
     String getAuthServerUrl() {
         return authServerUrl;
     }
 
-    public static KeycloakDevServicesRequiredBuildItem of(KeycloakDevServicesConfigurator devServicesConfigurator,
+    public static KeycloakDevServicesRequiredBuildItem of(Feature feature,
+            KeycloakDevServicesConfigurator devServicesConfigurator,
             String authServerUrl, String... additionalDontStartConfigProperties) {
         final Set<String> dontStartConfigProperties = new HashSet<>(Arrays.asList(additionalDontStartConfigProperties));
         dontStartConfigProperties.add(authServerUrl);
         dontStartConfigProperties.add(OIDC_AUTH_SERVER_URL_CONFIG_KEY);
         dontStartConfigProperties.add(OIDC_PROVIDER_CONFIG_KEY);
-        return of(devServicesConfigurator, authServerUrl, dontStartConfigProperties);
+        return of(devServicesConfigurator, authServerUrl, dontStartConfigProperties, feature);
     }
 
     private static KeycloakDevServicesRequiredBuildItem of(KeycloakDevServicesConfigurator devServicesConfigurator,
-            String authServerUrl, Set<String> dontStartConfigProperties) {
+            String authServerUrl, Set<String> dontStartConfigProperties, Feature feature) {
         if (shouldStartDevService(dontStartConfigProperties)) {
-            return new KeycloakDevServicesRequiredBuildItem(devServicesConfigurator, authServerUrl);
+            return new KeycloakDevServicesRequiredBuildItem(devServicesConfigurator, authServerUrl, feature);
         }
         return null;
     }
@@ -78,6 +82,22 @@ public final class KeycloakDevServicesRequiredBuildItem extends MultiBuildItem {
                         .forEach(i -> i.customizeDefaultRealm(realmRepresentation));
             }
         };
+    }
+
+    /**
+     * @return the feature for which the dev service should be created; if there is multiple features, prefer OIDC
+     *         as it covers all the rest
+     */
+    static Feature getFeature(List<KeycloakDevServicesRequiredBuildItem> devSvcRequiredMarkerItems) {
+        Feature feature = null;
+        for (KeycloakDevServicesRequiredBuildItem devSvcRequiredMarkerItem : devSvcRequiredMarkerItems) {
+            if (feature == null) {
+                feature = devSvcRequiredMarkerItem.feature;
+            } else if (devSvcRequiredMarkerItem.feature == Feature.OIDC) {
+                feature = Feature.OIDC;
+            }
+        }
+        return feature;
     }
 
     private static boolean shouldStartDevService(Set<String> dontStartConfigProperties) {

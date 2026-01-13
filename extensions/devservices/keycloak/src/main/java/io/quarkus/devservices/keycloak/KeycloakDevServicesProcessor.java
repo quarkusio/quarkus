@@ -1,5 +1,6 @@
 package io.quarkus.devservices.keycloak;
 
+import static io.quarkus.devservices.common.ConfigureUtil.getDefaultImageNameFor;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
 import static io.quarkus.devservices.keycloak.KeycloakDevServicesConfigBuildItem.getKeycloakUrl;
@@ -49,7 +50,6 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
-import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -156,13 +156,13 @@ public class KeycloakDevServicesProcessor {
             return null;
         }
         var devServicesConfigurator = getDevServicesConfigurator(devSvcRequiredMarkerItems);
+        var feature = KeycloakDevServicesRequiredBuildItem.getFeature(devSvcRequiredMarkerItems);
 
         // Figure out if we need to shut down and restart any existing Keycloak container
         // if not and the Keycloak container has already started we just return
 
         // TODO we need to capture and update the realm last modified
-        Set<FileTime> currentRealmFileLastModifiedDate = getRealmFileLastModifiedDate(
-                config.realmPath());
+        Set<FileTime> currentRealmFileLastModifiedDate = getRealmFileLastModifiedDate(config.realmPath());
         if (currentRealmFileLastModifiedDate != null
                 && !currentRealmFileLastModifiedDate.equals(capturedRealmFileLastModifiedDate)) {
 
@@ -171,13 +171,11 @@ public class KeycloakDevServicesProcessor {
         boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                 devServicesSharedNetworkBuildItem);
 
-        String imageName = config.imageName().orElse(null); // TODO handle the null properly
+        String imageName = config.imageName().orElseGet(() -> getDefaultImageNameFor("keycloak"));
         // TODO do something with this
         List<String> errors = new ArrayList<>();
 
-        return KEYCLOAK_DEV_MODE_CONTAINER_LOCATOR.locateContainer(config.serviceName(),
-                config.shared(),
-                LaunchMode.current())
+        return KEYCLOAK_DEV_MODE_CONTAINER_LOCATOR.locateContainer(config.serviceName(), config.shared(), LaunchMode.current())
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem, List.of(imageName, "keycloak"),
                         KEYCLOAK_PORT, LaunchMode.current(), useSharedNetwork))
                 .map(containerAddress -> {
@@ -187,12 +185,12 @@ public class KeycloakDevServicesProcessor {
                             sharedContainerUrl,
                             sharedContainerUrl, List.of(), errors, devServicesConfigurator, sharedContainerUrl);
                     return DevServicesResultBuildItem.discovered()
-                            .feature(Feature.KEYCLOAK_AUTHORIZATION)
+                            .feature(feature)
                             .containerId(containerAddress.getId())
                             .config(configs)
                             .build();
-                }).orElseGet(() -> DevServicesResultBuildItem.owned().feature(Feature.KEYCLOAK_AUTHORIZATION)
-                        .serviceName(Feature.KEYCLOAK_AUTHORIZATION.getName())
+                }).orElseGet(() -> DevServicesResultBuildItem.owned().feature(feature)
+                        .serviceName(feature.getName())
                         .serviceConfig(config)
                         .startable(
                                 () -> new KeycloakServer(useSharedNetwork, config, devServicesConfig, devServicesConfigurator,

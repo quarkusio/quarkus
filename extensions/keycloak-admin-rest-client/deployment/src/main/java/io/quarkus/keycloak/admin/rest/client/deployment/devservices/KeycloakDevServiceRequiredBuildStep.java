@@ -2,6 +2,7 @@ package io.quarkus.keycloak.admin.rest.client.deployment.devservices;
 
 import java.util.Map;
 
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -20,7 +21,8 @@ public class KeycloakDevServiceRequiredBuildStep {
 
     @BuildStep
     KeycloakDevServicesRequiredBuildItem requireKeycloakDevService() {
-        return KeycloakDevServicesRequiredBuildItem.of(
+        // TODO: introduce Keycloak Admin Client feature, I just don't want to do it in this already large PR
+        return KeycloakDevServicesRequiredBuildItem.of(Feature.OIDC,
                 ctx -> Map.of(SERVER_URL_CONFIG_KEY, ctx.authServerInternalBaseUrl()),
                 SERVER_URL_CONFIG_KEY);
     }

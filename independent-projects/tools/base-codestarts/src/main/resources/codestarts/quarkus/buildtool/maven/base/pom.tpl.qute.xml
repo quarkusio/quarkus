@@ -170,7 +170,9 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>$\{surefire-plugin.version}</version>
                 <configuration>
+                    {#if quarkus.platform.version.compareVersionTo("3.30.999") > 0}
                     <argLine>@\{argLine}</argLine>
+                    {/if}
                     <systemPropertyVariables>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>$\{maven.home}</maven.home>
@@ -191,7 +193,9 @@
                     </execution>
                 </executions>
                 <configuration>
+                    {#if quarkus.platform.version.compareVersionTo("3.30.999") > 0}
                     <argLine>@\{argLine}</argLine>
+                    {/if}
                     <systemPropertyVariables>
                         {#if generate-native}
                         <native.image.path>$\{project.build.directory}/$\{project.build.finalName}-runner</native.image.path>

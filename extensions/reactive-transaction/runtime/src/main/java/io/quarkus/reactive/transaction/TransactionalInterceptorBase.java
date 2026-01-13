@@ -59,7 +59,7 @@ public abstract class TransactionalInterceptorBase {
             }
 
             Transactional annotation = getTransactional(context);
-            return defineReactiveTransactionChain(annotation, method, () -> {
+            return defineReactiveTransactionalChain(annotation, method, () -> {
                 return proceedUni(context);
             });
         }
@@ -183,7 +183,7 @@ public abstract class TransactionalInterceptorBase {
         return Uni.createFrom().nullItem();
     }
 
-    protected <T> Uni<T> defineReactiveTransactionChain(Transactional annotation, Method method, Supplier<Uni<T>> work) {
+    protected <T> Uni<T> defineReactiveTransactionalChain(Transactional annotation, Method method, Supplier<Uni<T>> work) {
         // TODO check that there's no other session opened by session delegators for another PU
 
         // TODO check that there's no statelessSession opened by statelessSession delegators

@@ -41,6 +41,9 @@ public abstract class TransactionalInterceptorBase {
     // This key is used by Panache internally it's the marker key the WithTransaction interceptor uses
     public static final String WITH_TRANSACTION_METHOD_KEY = "hibernate.reactive.withTransaction";
 
+    // This key is used by Panache internally it's the marker key the ReactiveTransactional interceptor uses
+    public static final String REACTIVE_TRANSACTIONAL_METHOD_KEY = "hibernate.reactive.reactiveTransactional";
+
     private static final Logger LOG = Logger.getLogger(TransactionalInterceptorBase.class);
 
     private static final String ERROR_MSG = "@Transactional reactive support requires a safe (isolated) Vert.x sub-context, but the current context hasn't been flagged as such.";
@@ -210,6 +213,11 @@ public abstract class TransactionalInterceptorBase {
         if (context.getLocal(WITH_TRANSACTION_METHOD_KEY) != null) {
             throw new UnsupportedOperationException(
                     "Cannot call a method annotated with @Transactional from a method annotated with @WithTransaction");
+        }
+
+        if (context.getLocal(REACTIVE_TRANSACTIONAL_METHOD_KEY) != null) {
+            throw new UnsupportedOperationException(
+                    "Cannot call a method annotated with @Transactional from a method annotated with @ReactiveTransactional");
         }
     }
 

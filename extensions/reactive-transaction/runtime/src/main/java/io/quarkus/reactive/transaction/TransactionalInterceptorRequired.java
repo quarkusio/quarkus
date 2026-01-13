@@ -1,7 +1,5 @@
 package io.quarkus.reactive.transaction;
 
-import java.util.Optional;
-
 import jakarta.annotation.Priority;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
@@ -9,8 +7,6 @@ import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InvocationContext;
 import jakarta.transaction.Transactional;
-
-import io.smallrye.mutiny.Uni;
 
 @Transactional(Transactional.TxType.REQUIRED)
 @Interceptor
@@ -31,8 +27,7 @@ public class TransactionalInterceptorRequired extends TransactionalInterceptorBa
     }
 
     @Override
-    protected Optional<Uni<Object>> validateTransactionalType(InvocationContext context) {
+    protected void validateTransactionalType(InvocationContext context) {
         // Required is supported
-        return Optional.empty();
     }
 }

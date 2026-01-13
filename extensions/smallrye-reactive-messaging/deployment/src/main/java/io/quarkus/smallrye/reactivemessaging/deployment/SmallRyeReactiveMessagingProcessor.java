@@ -52,6 +52,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
@@ -258,7 +259,9 @@ public class SmallRyeReactiveMessagingProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    public void build(SmallRyeReactiveMessagingRecorder recorder, RecorderContext recorderContext,
+    public void build(SmallRyeReactiveMessagingRecorder recorder,
+            LaunchModeBuildItem launchMode,
+            RecorderContext recorderContext,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             List<MediatorBuildItem> mediatorMethods,
             List<ConnectorManagedChannelBuildItem> connectorManagedChannels,
@@ -305,6 +308,10 @@ public class SmallRyeReactiveMessagingProcessor {
                     defaultConfig.produce(new RunTimeConfigurationDefaultBuildItem(
                             "smallrye.messaging.worker." + poolName + ".max-concurrency",
                             DEFAULT_VIRTUAL_THREADS_MAX_CONCURRENCY));
+                }
+                if (launchMode.getLaunchMode().isDevOrTest()) {
+                    defaultConfig.produce(new RunTimeConfigurationDefaultBuildItem(
+                            "smallrye.messaging.worker." + poolName + ".shutdown-timeout", "0"));
                 }
                 workerConfigurations.add(new WorkerConfiguration(methodInfo.declaringClass().toString(),
                         methodInfo.name(), poolName, methodInfo.hasAnnotation(RUN_ON_VIRTUAL_THREAD)));

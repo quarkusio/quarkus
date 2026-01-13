@@ -3,18 +3,21 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Simplified Hibernate with Panache
+= Simplified Hibernate with Panache Next
 include::_attributes.adoc[]
 :categories: data
-:summary: Hibernate is the de facto Jakarta Persistence implementation and offers you the full breadth of an Object Relational Mapper. It makes complex mappings possible, but it does not make simple and common mappings trivial. Panache focuses on making your entities trivial and fun to write.
+:summary: Hibernate is the de facto Jakarta Persistence implementation and offers you the full breadth of an Object Relational Mapper. It makes complex mappings possible, but it does not make simple and common mappings trivial. Hibernate with Panache Next focuses on making your entities trivial and fun to write.
 :config-file: application.properties
 :topics: data,hibernate-orm,hibernate-reactive,panache,sql,jdbc
-:extensions: io.quarkus:quarkus-hibernate-panache,io.quarkus:quarkus-hibernate-orm,io.quarkus:quarkus-hibernate-reactive
+:extensions: io.quarkus:quarkus-hibernate-panache-next,io.quarkus:quarkus-hibernate-orm,io.quarkus:quarkus-hibernate-reactive
 :hibernate-panache-api: https://javadoc.io/doc/io.quarkus.hibernate.panache/hibernate-panache/{quarkus-version}
+:extension-status: experimental
 
-Hibernate with Panache is the perfect solution if you want to get started using Hibernate in Quarkus.
+Hibernate with Panache Next is the perfect solution if you want to get started using Hibernate in Quarkus.
 
-WARNING: This extension is currently in preview. It is experimental, so its API may change, in particular names of
+include::{includes}/extension-status.adoc[]
+
+WARNING: This extension is currently experimental, so its API may change, in particular names of
 classes or packages may change, even the module name. We are in the process of making it a public preview in order
 to obtain public feedback, so please report feedback either on link:https://quarkusio.zulipchat.com/#narrow/channel/187038-dev/topic/WG.20-.20Panache.2ENext/with/562916276[Zulip]
 or via link:https://github.com/orgs/quarkusio/projects/50/views/1[GitHub issues].
@@ -36,7 +39,7 @@ because both already have great documentation that you can and should use for mo
 <!-- Import the Hibernate with Panache extension -->
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-hibernate-panache</artifactId>
+    <artifactId>quarkus-hibernate-panache-next</artifactId>
 </dependency>
 <!-- Pick your database driver -->
 <dependency>
@@ -49,7 +52,7 @@ because both already have great documentation that you can and should use for mo
 .build.gradle
 ----
 // Import the Hibernate with Panache extension
-implementation("io.quarkus:quarkus-hibernate-panache")
+implementation("io.quarkus:quarkus-hibernate-panache-next")
 
 // Pick your database driver
 implementation("io.quarkus:quarkus-jdbc-postgresql")

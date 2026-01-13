@@ -52,6 +52,8 @@ public abstract class TransactionalInterceptorBase {
         LOG.tracef("Starting Transactional interceptor from method %s", method);
         this.afterWorkStrategy = afterWorkStrategy;
         if (isUniReturnType(context)) {
+            validateAnnotations();
+
             Optional<Uni<Object>> typeValidation = validateTransactionalType(context);
 
             if (typeValidation.isPresent()) {
@@ -166,21 +168,17 @@ public abstract class TransactionalInterceptorBase {
         return context.getMethod().getReturnType().equals(Uni.class);
     }
 
-    protected <T> Uni<T> validateAnnotations() {
+    protected void validateAnnotations() {
         Context context = vertxContext();
         if (context.getLocal(SESSION_ON_DEMAND_KEY) != null) {
-            return Uni.createFrom().failure(
-                    new UnsupportedOperationException(
-                            "Cannot call a method annotated with @Transactional from a method annotated with @WithSessionOnDemand"));
+                   throw new UnsupportedOperationException(
+                            "Cannot call a method annotated with @Transactional from a method annotated with @WithSessionOnDemand");
         }
 
         if (context.getLocal(WITH_TRANSACTION_METHOD_KEY) != null) {
-            return Uni.createFrom().failure(
-                    new UnsupportedOperationException(
-                            "Cannot call a method annotated with @Transactional from a method annotated with @WithTransaction"));
+            throw new UnsupportedOperationException(
+                            "Cannot call a method annotated with @Transactional from a method annotated with @WithTransaction");
         }
-
-        return Uni.createFrom().nullItem();
     }
 
     protected <T> Uni<T> defineReactiveTransactionalChain(Transactional annotation, Method method, Supplier<Uni<T>> work) {
@@ -197,8 +195,7 @@ public abstract class TransactionalInterceptorBase {
         if (context.getLocal(TRANSACTIONAL_METHOD_KEY) == null) {
             LOG.tracef("Setting this method as transactional: %s", method);
             context.putLocal(TRANSACTIONAL_METHOD_KEY, true);
-            return validateAnnotations()
-                    .chain(empty -> work.get())
+            return work.get()
                     .eventually(() -> {
                         return Uni.combine().all().unis(afterWorkStrategy.getAfterWorkActions(context)).discardItems();
                     })
@@ -213,7 +210,7 @@ public abstract class TransactionalInterceptorBase {
                         return commit();
                     });
         } else {
-            return validateAnnotations().chain(empty -> work.get());
+            return work.get();
         }
     }
 

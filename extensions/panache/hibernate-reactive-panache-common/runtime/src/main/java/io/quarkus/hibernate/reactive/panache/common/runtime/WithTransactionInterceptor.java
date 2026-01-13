@@ -31,6 +31,9 @@ public class WithTransactionInterceptor {
                                 "Cannot call a method annotated with @WithTransaction from a method annotated with @Transactional"));
             }
 
+            // Annotate current method so that we can validate mixing of @WithTransaction and @Transactional
+            vertxContext.putLocal(WITH_TRANSACTION_METHOD_KEY, true);
+
             WithTransaction withTransaction = getAnnotation(context);
             String persistenceUnitName = withTransaction.value();
             if (withTransaction.stateless()) {

@@ -117,7 +117,7 @@ public abstract class TransactionalInterceptorBase {
                 LOG.tracef(
                         "Rollback the transaction due to exception class %s included in `rollbackOn` field on `@Transactional` annotation",
                         exception.getClass());
-                return actualRollback(transaction);
+                return exception(transaction, exception);
             }
         }
 
@@ -126,7 +126,7 @@ public abstract class TransactionalInterceptorBase {
             if (rollbackAnnotation.value()) {
                 LOG.tracef("Rollback the transaction as the exception class %s is annotated with `@Rollback` annotation",
                         exception.getClass());
-                return actualRollback(transaction);
+                return exception(transaction, exception);
             } else {
                 LOG.tracef(
                         "Do not rollback the transaction as the exception class %s is annotated with `@Rollback(false)` annotation",
@@ -137,14 +137,18 @@ public abstract class TransactionalInterceptorBase {
 
         // Default behavior: rollback for RuntimeException and Error (unchecked exceptions)
         // Note: Mutiny wraps checked exceptions in CompletionException, so they appear as RuntimeException here
-        return actualRollback(transaction);
+        return exception(transaction, exception);
     }
 
-    private Uni<Void> actualRollback(Transaction transaction) {
+    private Uni<Void> exception(Transaction transaction, Object exception) {
         return Uni.createFrom().completionStage(
                 transaction.rollback()
-                        .onFailure(v -> LOG.tracef("Failed to rollback transaction: %s", transaction))
-                        .onSuccess(ignored -> LOG.tracef("Transaction rolled back: %s", transaction))
+                        .onFailure(v -> {
+                            LOG.tracef("Failed to rollback transaction: %s", transaction);
+                        })
+                        .onSuccess(ignored -> {
+                            LOG.tracef("Transaction rolled back: %s due to exception %s", transaction, exception);
+                        })
                         .toCompletionStage());
     }
 
@@ -188,11 +192,16 @@ public abstract class TransactionalInterceptorBase {
 
         // mark this method to be @Transactional so that other Panache interceptor might fail
         // parent method should be the one responsible to commit or cancel the transaction
+
+        // TODO Luca shouldn't these context.getLocal call made inside the Mutiny chain?
         if (context.getLocal(TRANSACTIONAL_METHOD_KEY) == null) {
             LOG.tracef("Setting this method as transactional: %s", method);
             context.putLocal(TRANSACTIONAL_METHOD_KEY, true);
             return validateAnnotations()
                     .chain(empty -> work.get())
+                    .eventually(() -> {
+                        return Uni.combine().all().unis(afterWorkStrategy.getAfterWorkActions(context)).discardItems();
+                    })
                     .onFailure().call(exception -> {
                         return rollbackOrCommitBasedOnException(annotation, exception);
                     })
@@ -202,9 +211,6 @@ public abstract class TransactionalInterceptorBase {
                     .call(() -> { // Good path
                         LOG.tracef("Calling commit from method %s", method);
                         return commit();
-                    })
-                    .eventually(() -> {
-                        return Uni.combine().all().unis(afterWorkStrategy.getAfterWorkActions(context)).discardItems();
                     });
         } else {
             return validateAnnotations().chain(empty -> work.get());

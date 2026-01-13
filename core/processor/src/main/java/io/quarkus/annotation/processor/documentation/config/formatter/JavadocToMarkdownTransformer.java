@@ -24,7 +24,7 @@ public class JavadocToMarkdownTransformer {
         } else if (format == JavadocFormat.JAVADOC) {
             // the parser expects all the lines to start with "* "
             // we add it as it has been previously removed
-            Javadoc parsedJavadoc = StaticJavaParser.parseJavadoc(START_OF_LINE.matcher(javadoc).replaceAll("* "));
+            Javadoc parsedJavadoc = StaticJavaParser.parseJavadoc(START_OF_LINE.matcher(javadoc).replaceAll("* "), false);
 
             // HTML is valid Javadoc but we need to drop the Javadoc tags e.g. {@link ...}
             return simplifyJavadoc(parsedJavadoc.getDescription());

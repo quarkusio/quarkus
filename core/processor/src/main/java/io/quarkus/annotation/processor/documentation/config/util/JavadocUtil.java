@@ -51,7 +51,7 @@ public final class JavadocUtil {
 
         // the parser expects all the lines to start with "* "
         // we add it as it has been previously removed
-        Javadoc javadoc = StaticJavaParser.parseJavadoc(START_OF_LINE.matcher(rawJavadoc).replaceAll("* "));
+        Javadoc javadoc = StaticJavaParser.parseJavadoc(START_OF_LINE.matcher(rawJavadoc).replaceAll("* "), false);
 
         String description;
         JavadocFormat format;
@@ -96,7 +96,7 @@ public final class JavadocUtil {
         // the parser expects all the lines to start with "* "
         // we add it as it has been previously removed
         javadocComment = START_OF_LINE.matcher(javadocComment).replaceAll("* ");
-        Javadoc javadoc = StaticJavaParser.parseJavadoc(javadocComment);
+        Javadoc javadoc = StaticJavaParser.parseJavadoc(javadocComment, false);
 
         Optional<String> deprecated = javadoc.getBlockTags().stream()
                 .filter(t -> t.getType() == Type.DEPRECATED)

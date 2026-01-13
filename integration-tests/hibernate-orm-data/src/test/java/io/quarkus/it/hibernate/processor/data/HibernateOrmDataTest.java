@@ -107,6 +107,8 @@ public class HibernateOrmDataTest {
                 .when().get("/data/sqlonly/myuser/by/username/{name}")
                 .then()
                 .statusCode(200)
-                .body(equalTo("{\"id\":42,\"username\":\"admin\",\"role\":\"admin\"}"));
+                .body("id", equalTo(42))
+                .body("username", equalTo("admin"))
+                .body("role", equalTo("admin"));
     }
 }

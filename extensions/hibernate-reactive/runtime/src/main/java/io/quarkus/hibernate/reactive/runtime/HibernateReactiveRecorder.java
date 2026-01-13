@@ -129,6 +129,16 @@ public class HibernateReactiveRecorder {
                     + "\n\t- a session is opened automatically for JAX-RS resource methods annotated with an HTTP method (@GET, @POST, etc.); inherited annotations are not taken into account"
                     + "\n\t- you may need to annotate the business method with @Transactional");
         } else {
+
+            Optional<OpenedSessionsState.SessionWithKey<Mutiny.StatelessSession>> openedStatelessSession = OPENED_SESSIONS_STATE_STATELESS.getOpenedSession(
+                    context,
+                    persistenceUnitName);
+
+            if (openedStatelessSession.isPresent()) {
+                throw new IllegalStateException("A stateless session for the same Persistence Unit is already opened."
+                        + "\n\t- Mixing different kinds of sessions is forbidden");
+            }
+
             return OPENED_SESSIONS_STATE.createNewSession(persistenceUnitName, context);
         }
     }
@@ -163,6 +173,16 @@ public class HibernateReactiveRecorder {
                     + "\n\t- a session is opened automatically for JAX-RS resource methods annotated with an HTTP method (@GET, @POST, etc.); inherited annotations are not taken into account"
                     + "\n\t- you may need to annotate the business method with @Transactional");
         } else {
+
+            Optional<OpenedSessionsState.SessionWithKey<Mutiny.Session>> openedRegularSession = OPENED_SESSIONS_STATE.getOpenedSession(
+                    context,
+                    persistenceUnitName);
+
+            if (openedRegularSession.isPresent()) {
+                throw new IllegalStateException("A session for the same Persistence Unit is already opened."
+                        + "\n\t- Mixing different kinds of sessions is forbidden");
+            }
+
             return OPENED_SESSIONS_STATE_STATELESS.createNewSession(persistenceUnitName, context);
         }
     }

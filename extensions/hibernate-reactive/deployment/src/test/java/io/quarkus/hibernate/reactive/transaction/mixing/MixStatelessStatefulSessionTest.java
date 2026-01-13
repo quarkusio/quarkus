@@ -6,7 +6,6 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import org.hibernate.reactive.mutiny.Mutiny;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -24,39 +23,45 @@ public class MixStatelessStatefulSessionTest {
             .withConfigurationResource("application.properties");
 
     @Inject
-    Mutiny.SessionFactory mutinySessionFactory;
+    Mutiny.Session session;
+
+    @Inject
+    Mutiny.StatelessSession statelessSession;
 
     @Test
     @RunOnVertxContext
-    @Disabled("WIP")
-    public void avoidMixingTransactionalAndWithTransactionTest(UniAsserter asserter) {
-        Uni<Void> uni = avoidMixingDifferentSessionTypes();
+    public void testStatelessSessionThenRegularSessionInTransactional(UniAsserter asserter) {
+        asserter.assertFailedWith(
+                () -> transactionalMethodUsingStatelessSessionThenRegularSession(),
+                e -> assertThat(e)
+                        .isInstanceOf(IllegalStateException.class)
+                        .hasMessageContaining("stateless session for the same Persistence Unit is already opened")
+                        .hasMessageContaining("Mixing different kinds of sessions is forbidden"));
+    }
 
-        asserter.assertFailedWith(() -> uni,
-                e -> assertThat(e.getCause())
-                        .isInstanceOf(UnsupportedOperationException.class)
-                        .hasMessage("Cannot mix Stateful and Stateless sessions"));
+    @Test
+    @RunOnVertxContext
+    public void testRegularSessionThenStatelessSessionInTransactional(UniAsserter asserter) {
+        asserter.assertFailedWith(
+                () -> transactionalMethodUsingRegularSessionThenStatelessSession(),
+                e -> assertThat(e)
+                        .isInstanceOf(IllegalStateException.class)
+                        .hasMessageContaining("session for the same Persistence Unit is already opened")
+                        .hasMessageContaining("Mixing different kinds of sessions is forbidden"));
     }
 
     @Transactional
-    public Uni<Void> avoidMixingDifferentSessionTypes() {
-        Hero heroStateful = new Hero("heroStateful");
-        Hero heroStateless = new Hero("heroStateless");
+    public Uni<Object> transactionalMethodUsingRegularSessionThenStatelessSession() {
+        return session.createQuery("select count(1) from Hero h").getSingleResult()
+                .chain(count -> statelessSession.createQuery("select count(1) from Hero h", Long.class)
+                        .getSingleResult());
+    }
 
-        // TODO this is an advanced scenario and we shoulnd't support this
-
-        return mutinySessionFactory
-                .withSession(s -> {
-                    return s.merge(heroStateful)
-                            .flatMap(h -> s.flush()).onItem().invoke(() -> {
-                                System.out.println("+++ First merge done");
-                            });
-                })
-                .flatMap(h1 -> {
-                    return mutinySessionFactory.withStatelessSession(
-                            s -> s.insert(heroStateless)
-                                    .onItem().invoke(() -> System.out.println("++++ Second insert done")));
-                });
+    @Transactional
+    public Uni<Object> transactionalMethodUsingStatelessSessionThenRegularSession() {
+        return statelessSession.createQuery("select count(1) from Hero h").getSingleResult()
+                .chain(count -> session.createQuery("select count(1) from Hero h", Long.class)
+                        .getSingleResult());
     }
 
 }

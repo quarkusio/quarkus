@@ -28,7 +28,9 @@ public class WithTransactionInterceptor {
             if (vertxContext.getLocal(TRANSACTIONAL_METHOD_KEY) != null) {
                 return Uni.createFrom().failure(
                         new UnsupportedOperationException(
-                                "Cannot call a method annotated with @WithTransaction from a method annotated with @Transactional"));
+                                "Calling a method annotated with @WithTransaction from a method annotated with @Transactional is not supported. "
+                                        + "Use either @Transactional or @WithSessionOnDemand/@WithSession/@WithTransaction, "
+                                        + "but not both, throughout your whole application."));
             }
 
             // Annotate current method so that we can validate mixing of @WithTransaction and @Transactional

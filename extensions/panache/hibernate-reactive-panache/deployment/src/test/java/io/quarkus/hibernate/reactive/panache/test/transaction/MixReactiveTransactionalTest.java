@@ -29,7 +29,7 @@ public class MixReactiveTransactionalTest {
                 () -> methodAnnotatedWithTransactionalCallingReactiveTransactional(),
                 t -> assertThat(t)
                         .hasMessageContaining(
-                                "Cannot call a method annotated with @ReactiveTransactional from a method annotated with @Transactional"));
+                                "Calling a method annotated with @ReactiveTransactional from a method annotated with @Transactional is not supported"));
     }
 
     @Transactional
@@ -50,7 +50,7 @@ public class MixReactiveTransactionalTest {
                 () -> methodAnnotatedWithReactiveTransactionalCallingTransactional(),
                 t -> assertThat(t)
                         .hasMessageContaining(
-                                "Cannot call a method annotated with @Transactional from a method annotated with @ReactiveTransactional"));
+                                "Calling a method annotated with @Transactional from a method annotated with @ReactiveTransactional is not supported"));
     }
 
     @ReactiveTransactional

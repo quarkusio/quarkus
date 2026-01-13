@@ -29,7 +29,7 @@ public class MixWithSessionOnDemandTest {
                 () -> methodAnnotatedWithTransactionalCallingSessionOnDemand(),
                 t -> assertThat(t)
                         .hasMessageContaining(
-                                "Cannot call a method annotated with @WithSessionOnDemand from a method annotated with @Transactional"));
+                                "Calling a method annotated with @WithSessionOnDemand from a method annotated with @Transactional is not supported"));
     }
 
     @Transactional
@@ -51,7 +51,7 @@ public class MixWithSessionOnDemandTest {
                 () -> methodAnnotatedWithSessionOnDemandCallingTransactional(),
                 t -> assertThat(t)
                         .hasMessageContaining(
-                                "Cannot call a method annotated with @Transactional from a method annotated with @WithSessionOnDemand"));
+                                "Calling a method annotated with @Transactional from a method annotated with @WithSessionOnDemand is not supported"));
     }
 
     @WithSessionOnDemand

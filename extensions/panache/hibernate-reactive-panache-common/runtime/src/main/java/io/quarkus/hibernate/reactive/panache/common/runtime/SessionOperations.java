@@ -92,7 +92,9 @@ public final class SessionOperations {
         if (context.getLocal(TRANSACTIONAL_METHOD_KEY) != null) {
             return Uni.createFrom().failure(
                     new UnsupportedOperationException(
-                            "Cannot call a method annotated with @WithSessionOnDemand from a method annotated with @Transactional"));
+                            "Calling a method annotated with @WithSessionOnDemand from a method annotated with @Transactional is not supported. "
+                                    + "Use either @Transactional or @WithSessionOnDemand/@WithSession/@WithTransaction, "
+                                    + "but not both, throughout your whole application."));
         }
 
         if (context.getLocal(SESSION_ON_DEMAND_KEY) != null) {

@@ -208,17 +208,23 @@ public abstract class TransactionalInterceptorBase {
         Context context = vertxContext();
         if (context.getLocal(SESSION_ON_DEMAND_KEY) != null) {
             throw new UnsupportedOperationException(
-                    "Cannot call a method annotated with @Transactional from a method annotated with @WithSessionOnDemand");
+                    "Calling a method annotated with @Transactional from a method annotated with @WithSessionOnDemand is not supported. "
+                            + "Use either @Transactional or @WithSessionOnDemand/@WithSession/@WithTransaction, "
+                            + "but not both, throughout your whole application.");
         }
 
         if (context.getLocal(WITH_TRANSACTION_METHOD_KEY) != null) {
             throw new UnsupportedOperationException(
-                    "Cannot call a method annotated with @Transactional from a method annotated with @WithTransaction");
+                    "Calling a method annotated with @Transactional from a method annotated with @WithTransaction is not supported. "
+                            + "Use either @Transactional or @WithSessionOnDemand/@WithSession/@WithTransaction, "
+                            + "but not both, throughout your whole application.");
         }
 
         if (context.getLocal(REACTIVE_TRANSACTIONAL_METHOD_KEY) != null) {
             throw new UnsupportedOperationException(
-                    "Cannot call a method annotated with @Transactional from a method annotated with @ReactiveTransactional");
+                    "Calling a method annotated with @Transactional from a method annotated with @ReactiveTransactional is not supported. "
+                            + "Use either @Transactional or @WithSessionOnDemand/@WithSession/@WithTransaction, "
+                            + "but not both, throughout your whole application.");
         }
     }
 

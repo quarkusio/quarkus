@@ -5,6 +5,7 @@ import static org.awaitility.Awaitility.given;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -33,7 +34,7 @@ public class OidcClientTest {
                 .when().get("/frontend/userNameReactive")
                 .then()
                 .statusCode(200)
-                .body(equalTo("alice"));
+                .body(equalTo("alice:alice"));
     }
 
     @Test
@@ -78,7 +79,7 @@ public class OidcClientTest {
                 .when().get("/frontend/userNameReactive")
                 .then()
                 .statusCode(200)
-                .body(equalTo("alice"));
+                .body(equalTo("alice:alice"));
 
         // Wait until the access token has expired
         long expiredTokenTime = System.currentTimeMillis() + 5000;
@@ -95,7 +96,7 @@ public class OidcClientTest {
                 .when().get("/frontend/userNameReactive")
                 .then()
                 .statusCode(200)
-                .body(equalTo("alice"));
+                .body(equalTo("alice:alice"));
         checkLog();
     }
 
@@ -118,6 +119,7 @@ public class OidcClientTest {
                         int tokenAcquisitionCount = 0;
                         int tokenRefreshedOidcClientLogCount = 0;
                         int tokenRefreshResponseFilterLogCount = 0;
+                        boolean contentTypeUpdated = false;
 
                         try (BufferedReader reader = new BufferedReader(
                                 new InputStreamReader(new ByteArrayInputStream(Files.readAllBytes(accessLogFilePath)),
@@ -132,6 +134,9 @@ public class OidcClientTest {
                                 if (line.contains("Tokens have been refreshed")) {
                                     tokenRefreshResponseFilterLogCount++;
                                 }
+                                if (line.contains("Content-Type is set to application/json, replacing it with text/plain")) {
+                                    contentTypeUpdated = true;
+                                }
 
                             }
                         }
@@ -144,6 +149,9 @@ public class OidcClientTest {
 
                         assertEquals(1, tokenRefreshResponseFilterLogCount,
                                 "Log file must contain a single OidcResponseFilter token refresh confirmation");
+
+                        assertTrue(contentTypeUpdated,
+                                "Log file must contain a confirmation of application/json replaced with text/plain ");
                     }
                 });
     }

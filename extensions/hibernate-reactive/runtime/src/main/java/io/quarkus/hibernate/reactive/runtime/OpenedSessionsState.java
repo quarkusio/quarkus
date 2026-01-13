@@ -19,10 +19,13 @@ import io.quarkus.arc.impl.ComputingCache;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
+import org.jboss.logging.Logger;
 
 public abstract class OpenedSessionsState<T extends Mutiny.Closeable> {
     // This key is used to keep track of the Set<String> sessions created on demand
     private final String sessionOnDemandKey;
+
+    private static final Logger LOG = Logger.getLogger(OpenedSessionsState.class);
 
     protected abstract T newSessionMethod(Mutiny.SessionFactory sessionFactory);
 
@@ -109,6 +112,7 @@ public abstract class OpenedSessionsState<T extends Mutiny.Closeable> {
 
     private static <T extends Mutiny.Closeable> Uni<Void> eventuallyFlush(T session) {
         if (session instanceof Mutiny.Session) {
+            LOG.tracef("Flushing the session");
             return ((Mutiny.Session) session).flush();
         } else {
             return Uni.createFrom().voidItem();

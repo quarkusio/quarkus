@@ -1,7 +1,5 @@
 package io.quarkus.keycloak.admin.resteasy.client.deployment.devservices;
 
-import java.util.Map;
-
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.IsDevelopment;
@@ -9,7 +7,9 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.keycloak.KeycloakAdminPageBuildItem;
+import io.quarkus.devservices.keycloak.KeycloakDevServicesConfigurator.ConfigPropertiesContext;
 import io.quarkus.devservices.keycloak.KeycloakDevServicesRequiredBuildItem;
+import io.quarkus.devservices.keycloak.KeycloakDevServicesRequiredBuildItem.LazyConfigProperty;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.keycloak.admin.client.common.deployment.KeycloakAdminClientInjectionEnabled;
 
@@ -23,7 +23,7 @@ public class KeycloakDevServiceRequiredBuildStep {
     KeycloakDevServicesRequiredBuildItem requireKeycloakDevService() {
         // TODO: introduce Keycloak Admin Client feature, I just don't want to do it in this big PR
         return KeycloakDevServicesRequiredBuildItem.of(Feature.OIDC,
-                ctx -> Map.of(SERVER_URL_CONFIG_KEY, ctx.authServerInternalBaseUrl()),
+                new LazyConfigProperty(SERVER_URL_CONFIG_KEY, ConfigPropertiesContext::authServerInternalBaseUrl),
                 SERVER_URL_CONFIG_KEY);
     }
 

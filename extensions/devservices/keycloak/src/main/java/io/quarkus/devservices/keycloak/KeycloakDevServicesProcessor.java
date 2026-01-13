@@ -37,7 +37,6 @@ import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
-import org.jetbrains.annotations.NotNull;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -179,10 +178,10 @@ public class KeycloakDevServicesProcessor {
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem, List.of(imageName, "keycloak"),
                         KEYCLOAK_PORT, LaunchMode.current(), useSharedNetwork))
                 .map(containerAddress -> {
-                    // TODO: this probably needs to be addressed
+                    // TODO: this probably needs to be addressed;
+                    //      Holly, what exactly?
                     String sharedContainerUrl = getSharedContainerUrl(containerAddress);
-                    Map<String, String> configs = prepareConfiguration(config,
-                            sharedContainerUrl,
+                    Map<String, String> configs = prepareConfiguration(config, sharedContainerUrl,
                             sharedContainerUrl, List.of(), errors, devServicesConfigurator, sharedContainerUrl);
                     return DevServicesResultBuildItem.discovered()
                             .feature(feature)
@@ -231,28 +230,15 @@ public class KeycloakDevServicesProcessor {
 
     }
 
-    private static @NotNull Map<String, Function<KeycloakServer, String>> createLazyConfigMap(
+    private static Map<String, Function<KeycloakServer, String>> createLazyConfigMap(
             KeycloakDevServicesConfigurator devServicesConfigurator) {
-
-        // Generate a dummy config map, to get the keys the configurator will set
-        // We could move this method to the configurator interface, with a default implementation to avoid breaking anything, but a more efficient implementation would be non-DRY on the key list, so risky
-        KeycloakDevServicesConfigurator.ConfigPropertiesContext ctx = new KeycloakDevServicesConfigurator.ConfigPropertiesContext(
-                "", "", "", "");
-        Map<String, String> dummyConfigs = devServicesConfigurator.createProperties(ctx);
-
-        Map<String, Function<KeycloakServer, String>> configs = new HashMap<>();
-
-        configs.put(
-                KEYCLOAK_URL_KEY, s -> s.conf().get(KEYCLOAK_URL_KEY));
-        configs.put(CLIENT_AUTH_SERVER_URL_CONFIG_KEY, s -> s.conf().get(CLIENT_AUTH_SERVER_URL_CONFIG_KEY));
-        configs.put(OIDC_USERS, s -> s.conf().get(OIDC_USERS));
-        configs.put(KEYCLOAK_REALMS, s -> s.conf().get(KEYCLOAK_REALMS));
-
-        for (String key : dummyConfigs.keySet()) {
-            configs.put(key, s -> s.conf().get(key));
-        }
-
-        return configs;
+        return devServicesConfigurator
+                .getLazyConfigKeys()
+                .stream()
+                .map(configKey -> Map.<String, Function<KeycloakServer, String>> entry(configKey,
+                        keycloakServer -> devServicesConfigurator
+                                .getLazyConfigValue(configKey, keycloakServer.configPropertiesContext)))
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     private String getRealm(KeycloakServer result) {
@@ -335,7 +321,7 @@ public class KeycloakDevServicesProcessor {
         private KeycloakDevServicesConfigurator devServicesConfigurator;
         private DevServicesComposeProjectBuildItem composeProjectBuildItem;
         private Map<String, String> generatedConfig;
-        private String internalUrl;
+        private KeycloakDevServicesConfigurator.ConfigPropertiesContext configPropertiesContext;
         private String oidcClientId;
         private String oidcClientSecret;
 
@@ -414,7 +400,8 @@ public class KeycloakDevServicesProcessor {
             oidcContainer.withEnv(config.containerEnv());
             oidcContainer.start();
 
-            generatedConfig = sortConfig();
+            configPropertiesContext = createConfigPropertiesContext();
+            generatedConfig = configPropertiesContext.generatedConfig();
 
             //            return maybeContainerAddress
             //                    .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem, List.of(imageName, "keycloak"),
@@ -431,7 +418,8 @@ public class KeycloakDevServicesProcessor {
         }
 
         // TODO sort the duplication with the parent class
-        private Map<String, String> prepareConfiguration(KeycloakDevServicesConfig config,
+        private KeycloakDevServicesConfigurator.ConfigPropertiesContext prepareConfiguration(
+                KeycloakDevServicesConfig config,
                 String internalURL,
                 String hostURL, List<RealmRepresentation> realmReps, List<String> errors,
                 KeycloakDevServicesConfigurator devServicesConfigurator, String internalBaseUrl) {
@@ -441,9 +429,6 @@ public class KeycloakDevServicesProcessor {
 
             String clientAuthServerBaseUrl = hostURL != null ? hostURL : internalURL;
             String clientAuthServerUrl = realmsURL(clientAuthServerBaseUrl, realmName);
-
-            // TODO messy
-            internalUrl = authServerInternalUrl;
 
             boolean createDefaultRealm = (realmReps == null || realmReps.isEmpty())
                     && config.createRealm();
@@ -487,22 +472,41 @@ public class KeycloakDevServicesProcessor {
                 }
             }
 
-            Map<String, String> configProperties = new HashMap<>();
-            var configPropertiesContext = new KeycloakDevServicesConfigurator.ConfigPropertiesContext(authServerInternalUrl,
-                    oidcClientId, oidcClientSecret,
-                    internalBaseUrl);
-            configProperties.putAll(devServicesConfigurator.createProperties(configPropertiesContext));
-            configProperties.put(KEYCLOAK_URL_KEY, internalURL);
-            configProperties.put(CLIENT_AUTH_SERVER_URL_CONFIG_KEY, clientAuthServerUrl);
-            configProperties.put(OIDC_USERS, users.entrySet().stream().map(Object::toString).collect(Collectors.joining(",")));
-            configProperties.put(KEYCLOAK_REALMS, realmNames.stream().collect(Collectors.joining(",")));
-
             // TODO
             //        keycloakBuildItemBuildProducer
             //                .produce(new KeycloakDevServicesConfigBuildItem(configProperties,
             //                        Map.of(OIDC_USERS, users, KEYCLOAK_REALMS, realmNames), true));
 
-            return configProperties;
+            return new KeycloakDevServicesConfigurator.ConfigPropertiesContext() {
+                @Override
+                public String authServerInternalUrl() {
+                    return authServerInternalUrl;
+                }
+
+                @Override
+                public String oidcClientId() {
+                    return oidcClientId;
+                }
+
+                @Override
+                public String oidcClientSecret() {
+                    return oidcClientSecret;
+                }
+
+                @Override
+                public String authServerInternalBaseUrl() {
+                    return internalBaseUrl;
+                }
+
+                @Override
+                public Map<String, String> generatedConfig() {
+                    return Map.of(
+                            KEYCLOAK_URL_KEY, internalURL,
+                            CLIENT_AUTH_SERVER_URL_CONFIG_KEY, clientAuthServerUrl,
+                            OIDC_USERS, users.entrySet().stream().map(Object::toString).collect(Collectors.joining(",")),
+                            KEYCLOAK_REALMS, String.join(",", realmNames));
+                }
+            };
         }
 
         private static String realmsURL(String baseURL, String realmName) {
@@ -516,7 +520,7 @@ public class KeycloakDevServicesProcessor {
         }
 
         // TODO what to do with the errors
-        private Map<String, String> sortConfig() {
+        private KeycloakDevServicesConfigurator.ConfigPropertiesContext createConfigPropertiesContext() {
             List<String> errors = new ArrayList<>();
             String internalBaseUrl = getBaseURL((oidcContainer.isHttps() ? "https://" : "http://"), oidcContainer.getHost(),
                     oidcContainer.getPort());
@@ -529,29 +533,8 @@ public class KeycloakDevServicesProcessor {
                             oidcContainer.keycloakX)
                     : null;
 
-            // TODO what to do with this?
-            Map<String, String> configs = prepareConfiguration(config, internalUrl, hostUrl,
-                    oidcContainer.realmReps, errors, devServicesConfigurator, internalBaseUrl);
-
-            return configs;
-
-        }
-
-        public String authServerInternalUrl() {
-            return internalUrl;
-        }
-
-        public String getOidcApplicationType() {
-            // TODO      return ConfigProvider.getConfig().getOptionalValue(APPLICATION_TYPE_CONFIG_KEY, String.class).orElse("service");
-            return "service";
-        }
-
-        public String oidcClientId() {
-            return oidcClientId;
-        }
-
-        public String oidcClientSecret() {
-            return oidcClientSecret;
+            return prepareConfiguration(config, internalUrl, hostUrl, oidcContainer.realmReps, errors, devServicesConfigurator,
+                    internalBaseUrl);
         }
     }
 
@@ -610,22 +593,48 @@ public class KeycloakDevServicesProcessor {
             }
         }
 
-        Map<String, String> configProperties = new HashMap<>();
-        var configPropertiesContext = new KeycloakDevServicesConfigurator.ConfigPropertiesContext(authServerInternalUrl,
-                oidcClientId, oidcClientSecret,
-                internalBaseUrl);
-        configProperties.putAll(devServicesConfigurator.createProperties(configPropertiesContext));
-        configProperties.put(KEYCLOAK_URL_KEY, internalURL);
-        configProperties.put(CLIENT_AUTH_SERVER_URL_CONFIG_KEY, clientAuthServerUrl);
-        configProperties.put(OIDC_USERS, users.entrySet().stream().map(Object::toString).collect(Collectors.joining(",")));
-        configProperties.put(KEYCLOAK_REALMS, realmNames.stream().collect(Collectors.joining(",")));
+        var configPropertiesContext = new KeycloakDevServicesConfigurator.ConfigPropertiesContext() {
+
+            @Override
+            public String authServerInternalUrl() {
+                return authServerInternalUrl;
+            }
+
+            @Override
+            public String oidcClientId() {
+                return oidcClientId;
+            }
+
+            @Override
+            public String oidcClientSecret() {
+                return oidcClientSecret;
+            }
+
+            @Override
+            public String authServerInternalBaseUrl() {
+                return internalBaseUrl;
+            }
+
+            @Override
+            public Map<String, String> generatedConfig() {
+                return Map.of(
+                        KEYCLOAK_URL_KEY, internalURL,
+                        CLIENT_AUTH_SERVER_URL_CONFIG_KEY, clientAuthServerUrl,
+                        OIDC_USERS, users.entrySet().stream().map(Object::toString).collect(Collectors.joining(",")),
+                        KEYCLOAK_REALMS, String.join(",", realmNames));
+            }
+        };
 
         // TODO
         //        keycloakBuildItemBuildProducer
         //                .produce(new KeycloakDevServicesConfigBuildItem(configProperties,
         //                        Map.of(OIDC_USERS, users, KEYCLOAK_REALMS, realmNames), true));
 
-        return configProperties;
+        return devServicesConfigurator
+                .getLazyConfigKeys()
+                .stream()
+                .collect(Collectors.toUnmodifiableMap(Function.identity(),
+                        configKey -> devServicesConfigurator.getLazyConfigValue(configKey, configPropertiesContext)));
     }
 
     private static Map<String, String> resourcesMap(KeycloakDevServicesConfig config, List<String> errors) {

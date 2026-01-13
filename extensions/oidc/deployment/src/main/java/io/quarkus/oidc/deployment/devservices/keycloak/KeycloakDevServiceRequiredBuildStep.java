@@ -2,7 +2,8 @@ package io.quarkus.oidc.deployment.devservices.keycloak;
 
 import static io.quarkus.devservices.keycloak.KeycloakDevServicesRequiredBuildItem.OIDC_AUTH_SERVER_URL_CONFIG_KEY;
 
-import java.util.HashMap;
+import java.util.Collection;
+import java.util.List;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
@@ -13,7 +14,9 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.keycloak.KeycloakDevServicesConfig;
+import io.quarkus.devservices.keycloak.KeycloakDevServicesConfigurator.ConfigPropertiesContext;
 import io.quarkus.devservices.keycloak.KeycloakDevServicesRequiredBuildItem;
+import io.quarkus.devservices.keycloak.KeycloakDevServicesRequiredBuildItem.LazyConfigProperty;
 import io.quarkus.oidc.deployment.OidcBuildStep;
 
 @BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, OidcBuildStep.IsEnabled.class,
@@ -34,23 +37,22 @@ public class KeycloakDevServiceRequiredBuildStep {
             return null;
         }
 
-        return KeycloakDevServicesRequiredBuildItem.of(Feature.OIDC, ctx -> {
-            var configProperties = new HashMap<String, String>();
-            configProperties.put(OIDC_AUTH_SERVER_URL_CONFIG_KEY, ctx.authServerInternalUrl());
-            configProperties.put(APPLICATION_TYPE_CONFIG_KEY, getOidcApplicationType());
-            if (config.createClient()) {
-                configProperties.put(CLIENT_ID_CONFIG_KEY, ctx.oidcClientId());
-                configProperties.put(CLIENT_SECRET_CONFIG_KEY, ctx.oidcClientSecret());
-            }
-            return configProperties;
-        }, OIDC_AUTH_SERVER_URL_CONFIG_KEY);
+        final Collection<LazyConfigProperty> lazyConfigProperties;
+        if (config.createClient()) {
+            lazyConfigProperties = List.of(
+                    new LazyConfigProperty(OIDC_AUTH_SERVER_URL_CONFIG_KEY, ConfigPropertiesContext::authServerInternalUrl),
+                    new LazyConfigProperty(APPLICATION_TYPE_CONFIG_KEY, "${" + APPLICATION_TYPE_CONFIG_KEY + ":service}"),
+                    new LazyConfigProperty(CLIENT_ID_CONFIG_KEY, ConfigPropertiesContext::oidcClientId),
+                    new LazyConfigProperty(CLIENT_SECRET_CONFIG_KEY, ConfigPropertiesContext::oidcClientSecret));
+        } else {
+            lazyConfigProperties = List.of(
+                    new LazyConfigProperty(OIDC_AUTH_SERVER_URL_CONFIG_KEY, ConfigPropertiesContext::authServerInternalUrl),
+                    new LazyConfigProperty(APPLICATION_TYPE_CONFIG_KEY, "${" + APPLICATION_TYPE_CONFIG_KEY + ":service}"));
+        }
+        return KeycloakDevServicesRequiredBuildItem.of(Feature.OIDC, lazyConfigProperties, OIDC_AUTH_SERVER_URL_CONFIG_KEY);
     }
 
     private static boolean isOidcTenantEnabled() {
         return ConfigProvider.getConfig().getOptionalValue(TENANT_ENABLED_CONFIG_KEY, Boolean.class).orElse(true);
-    }
-
-    private static String getOidcApplicationType() {
-        return ConfigProvider.getConfig().getOptionalValue(APPLICATION_TYPE_CONFIG_KEY, String.class).orElse("service");
     }
 }

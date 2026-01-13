@@ -6,8 +6,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
@@ -15,6 +17,7 @@ import org.keycloak.representations.idm.RealmRepresentation;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.deployment.Feature;
+import io.quarkus.devservices.keycloak.KeycloakDevServicesConfigurator.ConfigPropertiesContext;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
 /**
@@ -43,6 +46,42 @@ public final class KeycloakDevServicesRequiredBuildItem extends MultiBuildItem {
         return authServerUrl;
     }
 
+    public record LazyConfigProperty(String configKey, Function<ConfigPropertiesContext, String> ctxToConfigValue) {
+
+        public LazyConfigProperty(String configKey, String configValue) {
+            this(configKey, ctx -> configValue);
+        }
+
+    }
+
+    public static KeycloakDevServicesRequiredBuildItem of(Feature feature,
+            LazyConfigProperty lazyConfigProperty, String authServerUrl, String... additionalDontStartConfigProperties) {
+        return of(feature, List.of(lazyConfigProperty), authServerUrl, additionalDontStartConfigProperties);
+    }
+
+    public static KeycloakDevServicesRequiredBuildItem of(Feature feature,
+            Collection<LazyConfigProperty> lazyConfigProperties,
+            String authServerUrl, String... additionalDontStartConfigProperties) {
+        var lazyConfigPropertiesCopy = List.copyOf(lazyConfigProperties);
+        return of(feature, new KeycloakDevServicesConfigurator() {
+            @Override
+            public Set<String> getLazyConfigKeys() {
+                return lazyConfigPropertiesCopy.stream().map(p -> p.configKey).collect(Collectors.toUnmodifiableSet());
+            }
+
+            @Override
+            public String getLazyConfigValue(String configKey, ConfigPropertiesContext context) {
+                return lazyConfigPropertiesCopy.stream()
+                        .filter(p -> p.configKey.equals(configKey))
+                        .map(p -> p.ctxToConfigValue.apply(context))
+                        .filter(Objects::nonNull)
+                        .filter(Predicate.not(String::isEmpty))
+                        .findFirst()
+                        .orElseThrow();
+            }
+        }, authServerUrl, additionalDontStartConfigProperties);
+    }
+
     public static KeycloakDevServicesRequiredBuildItem of(Feature feature,
             KeycloakDevServicesConfigurator devServicesConfigurator,
             String authServerUrl, String... additionalDontStartConfigProperties) {
@@ -63,15 +102,24 @@ public final class KeycloakDevServicesRequiredBuildItem extends MultiBuildItem {
 
     static KeycloakDevServicesConfigurator getDevServicesConfigurator(List<KeycloakDevServicesRequiredBuildItem> items) {
         return new KeycloakDevServicesConfigurator() {
+
             @Override
-            public Map<String, String> createProperties(ConfigPropertiesContext context) {
-                return items
-                        .stream()
+            public Set<String> getLazyConfigKeys() {
+                return items.stream()
+                        .flatMap(i -> i.devServicesConfigurator.getLazyConfigKeys().stream())
+                        .collect(Collectors.toUnmodifiableSet());
+            }
+
+            @Override
+            public String getLazyConfigValue(String configKey, ConfigPropertiesContext context) {
+                return items.stream()
                         .map(i -> i.devServicesConfigurator)
-                        .map(producer -> producer.createProperties(context))
-                        .map(Map::entrySet)
-                        .flatMap(Collection::stream)
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                        .filter(c -> c.getLazyConfigKeys().contains(configKey))
+                        .map(c -> c.getLazyConfigValue(configKey, context))
+                        .filter(Objects::nonNull)
+                        .filter(Predicate.not(String::isEmpty))
+                        .findFirst()
+                        .orElseThrow();
             }
 
             @Override
@@ -95,6 +143,7 @@ public final class KeycloakDevServicesRequiredBuildItem extends MultiBuildItem {
                 feature = devSvcRequiredMarkerItem.feature;
             } else if (devSvcRequiredMarkerItem.feature == Feature.OIDC) {
                 feature = Feature.OIDC;
+                break;
             }
         }
         return feature;

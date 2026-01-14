@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.oidc.common.runtime.OidcConstants;
@@ -27,7 +26,6 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 @Recorder
 public class OidcDevUiRecorder {
     private static final Logger LOG = Logger.getLogger(OidcDevUiRecorder.class);
-    private static final org.slf4j.Logger log = LoggerFactory.getLogger(OidcDevUiRecorder.class);
 
     private final RuntimeValue<VertxHttpConfig> httpConfig;
 

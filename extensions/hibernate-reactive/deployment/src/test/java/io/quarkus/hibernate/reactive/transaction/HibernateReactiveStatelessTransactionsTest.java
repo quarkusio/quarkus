@@ -39,7 +39,7 @@ public class HibernateReactiveStatelessTransactionsTest {
     @RunOnVertxContext
     public void testReactiveManualTransaction(UniAsserter asserter) {
         // initialTransactionData.sql
-        Long heroId = 60L;
+        Long heroId = 50L;
 
         // First update, make sure it's committed
         asserter.assertThat(
@@ -123,7 +123,7 @@ public class HibernateReactiveStatelessTransactionsTest {
     @Test
     @RunOnVertxContext
     public void testDontRollbackOnException(UniAsserter asserter) {
-        Long heroId = 100L;
+        Long heroId = 50L;
 
         // First update, make sure it's committed
         asserter.assertThat(
@@ -142,7 +142,7 @@ public class HibernateReactiveStatelessTransactionsTest {
     @Test
     @RunOnVertxContext
     public void testRollbackFalseAnnotation(UniAsserter asserter) {
-        Long heroId = 90L;
+        Long heroId = 50L;
 
         // First update to set baseline
         asserter.assertThat(

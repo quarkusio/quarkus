@@ -187,7 +187,7 @@ you can set the database version explicitly:
 .`{config-file}` with an explicit `db-version`
 ----
 quarkus.datasource.db-kind = postgresql
-quarkus.datasource.db-version = 14.0 <1>
+quarkus.datasource.db-version = 18.1 <1>
 
 %prod.quarkus.datasource.username = hibernate
 %prod.quarkus.datasource.password = hibernate
@@ -255,7 +255,7 @@ you can configure the DB version explicitly to get the most out of Hibernate ORM
 .`{config-file}` with an explicit `dialect` and `db-version`
 ----
 quarkus.datasource.db-kind = postgresql
-quarkus.datasource.db-version = 22.2 <1>
+quarkus.datasource.db-version = 25.4 <1>
 
 quarkus.hibernate-orm.dialect=Cockroach <2>
 

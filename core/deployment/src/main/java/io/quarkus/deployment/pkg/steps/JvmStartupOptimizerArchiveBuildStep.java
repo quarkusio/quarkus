@@ -40,9 +40,9 @@ public class JvmStartupOptimizerArchiveBuildStep {
 
     private static final Logger log = Logger.getLogger(JvmStartupOptimizerArchiveBuildStep.class);
 
+    @Deprecated(forRemoval = true, since = "3.31")
     public static final String CLASSES_LIST_FILE_NAME = "classes.lst";
     private static final String CONTAINER_IMAGE_BASE_BUILD_DIR = "/tmp/quarkus";
-    private static final String CONTAINER_IMAGE_APPCDS_DIR = CONTAINER_IMAGE_BASE_BUILD_DIR + "/appcds";
 
     @BuildStep(onlyIf = AppCDSRequired.class)
     public void requested(PackageConfig packageConfig, OutputTargetBuildItem outputTarget,

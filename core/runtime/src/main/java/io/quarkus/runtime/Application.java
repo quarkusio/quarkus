@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 import org.wildfly.common.lock.Locks;
@@ -13,6 +14,7 @@ import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.registry.ValueRegistry;
 import io.quarkus.runtime.shutdown.ShutdownRecorder;
 import io.smallrye.common.constraint.Assert;
+import io.smallrye.config.SmallRyeConfig;
 
 /**
  * The application base class, which is extended and implemented by a generated class which implements the application
@@ -57,7 +59,10 @@ public abstract class Application implements Closeable {
      */
     protected Application(boolean auxiliaryApplication) {
         this.auxiliaryApplication = auxiliaryApplication;
-        this.valueRegistry = new ValueRegistryImpl.Builder().addDiscoveredInfos().build();
+        this.valueRegistry = new ValueRegistryImpl.Builder()
+                .addDiscoveredInfos()
+                .withRuntimeSource(ConfigProvider.getConfig().unwrap(SmallRyeConfig.class))
+                .build();
     }
 
     /**

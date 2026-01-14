@@ -38,4 +38,14 @@
         </dependency>
     </dependencies>
 
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>--add-opens=io.quarkus.qute.debug/io.quarkus.qute.debug.frames=io.quarkus.qute</argLine>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

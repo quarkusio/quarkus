@@ -56,7 +56,7 @@ public abstract class TransactionalInterceptorBase {
         this.afterWorkStrategy = afterWorkStrategy;
         if (isUniReturnType(context)) {
             validateTransactionalType(context); // So far only REQUIRED is supported
-            validateAnnotations();
+            validateLegacyPanacheAnnotations();
 
             Transactional annotation = getTransactionalAnnotation(context);
             return defineReactiveTransactionalChain(annotation, method, () -> {
@@ -68,9 +68,6 @@ public abstract class TransactionalInterceptorBase {
     }
 
     protected <T> Uni<T> defineReactiveTransactionalChain(Transactional annotation, Method method, Supplier<Uni<T>> work) {
-        // TODO check that there's no other session opened by session delegators for another PU
-        // TODO check that there's no statelessSession opened by statelessSession delegators
-
         Context context = vertxContext();
 
         // This is the parent method, responsible to commit, rollback or cancel the transaction
@@ -78,8 +75,8 @@ public abstract class TransactionalInterceptorBase {
 
             /*
              * Mark the current context to be @Transactional
-             ** This is the parent method and subsequent nested method will avoid tx management
-             ** validation of other Panache interceptors
+             * This is the parent method and will handle commit / rollback
+             * Subsequent nested methods will avoid tx management
              */
             LOG.tracef("Setting this method as transactional: %s", method);
             context.putLocal(TRANSACTIONAL_METHOD_KEY, true);
@@ -199,12 +196,11 @@ public abstract class TransactionalInterceptorBase {
         }
     }
 
-    // TODO copied from Panache -- refactor and put in a common module?
     public static boolean isUniReturnType(InvocationContext context) {
         return context.getMethod().getReturnType().equals(Uni.class);
     }
 
-    protected void validateAnnotations() {
+    protected void validateLegacyPanacheAnnotations() {
         Context context = vertxContext();
         if (context.getLocal(SESSION_ON_DEMAND_KEY) != null) {
             throw new UnsupportedOperationException(

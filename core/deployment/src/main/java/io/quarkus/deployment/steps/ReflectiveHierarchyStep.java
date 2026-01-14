@@ -125,6 +125,39 @@ public class ReflectiveHierarchyStep {
             Set<DotName> processedReflectiveHierarchies, Map<DotName, Set<String>> unindexedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             Deque<ReflectiveHierarchyVisitor> visits) {
+        if (type instanceof ClassType) {
+            if (reflectiveHierarchyBuildItem.getIgnoreTypePredicate().test(type.name())) {
+                return;
+            }
+            // If the registered entity is a class make sure to register all its subclasses.
+            for (ClassInfo subclass : combinedIndexBuildItem.getIndex().getAllKnownSubclasses(type.name())) {
+                addClassTypeHierarchy(nativeConfig, combinedIndexBuildItem, capabilities, reflectiveHierarchyBuildItem,
+                        source + " > " + subclass.name().toString(),
+                        subclass.name(),
+                        subclass.name(),
+                        processedReflectiveHierarchies,
+                        unindexedClasses, reflectiveClass, visits);
+            }
+            // If the registered entity is an interface make sure to register all its implementors.
+            for (ClassInfo subclass : combinedIndexBuildItem.getIndex().getAllKnownImplementors(type.name())) {
+                addClassTypeHierarchy(nativeConfig, combinedIndexBuildItem, capabilities, reflectiveHierarchyBuildItem,
+                        source + " > " + subclass.name().toString(),
+                        subclass.name(),
+                        subclass.name(),
+                        processedReflectiveHierarchies,
+                        unindexedClasses, reflectiveClass, visits);
+            }
+        }
+        // Recursively register reachable types (excluding their subclasses and implementors)
+        addReflectiveHierarchyRecursively(nativeConfig, combinedIndexBuildItem, capabilities, reflectiveHierarchyBuildItem,
+                source, type, processedReflectiveHierarchies, unindexedClasses, reflectiveClass, visits);
+    }
+
+    private void addReflectiveHierarchyRecursively(NativeConfig nativeConfig, CombinedIndexBuildItem combinedIndexBuildItem,
+            Capabilities capabilities, ReflectiveHierarchyBuildItem reflectiveHierarchyBuildItem, String source, Type type,
+            Set<DotName> processedReflectiveHierarchies, Map<DotName, Set<String>> unindexedClasses,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            Deque<ReflectiveHierarchyVisitor> visits) {
         final String newSource = source + " > " + type.name().toString();
         if (type instanceof VoidType ||
                 type instanceof PrimitiveType ||
@@ -141,25 +174,8 @@ public class ReflectiveHierarchyStep {
                     type.name(),
                     processedReflectiveHierarchies, unindexedClasses,
                     reflectiveClass, visits);
-
-            for (ClassInfo subclass : combinedIndexBuildItem.getIndex().getAllKnownSubclasses(type.name())) {
-                addClassTypeHierarchy(nativeConfig, combinedIndexBuildItem, capabilities, reflectiveHierarchyBuildItem,
-                        newSource,
-                        subclass.name(),
-                        subclass.name(),
-                        processedReflectiveHierarchies,
-                        unindexedClasses, reflectiveClass, visits);
-            }
-            for (ClassInfo subclass : combinedIndexBuildItem.getIndex().getAllKnownImplementors(type.name())) {
-                addClassTypeHierarchy(nativeConfig, combinedIndexBuildItem, capabilities, reflectiveHierarchyBuildItem,
-                        newSource,
-                        subclass.name(),
-                        subclass.name(),
-                        processedReflectiveHierarchies,
-                        unindexedClasses, reflectiveClass, visits);
-            }
         } else if (type instanceof ArrayType) {
-            visits.addLast(() -> addReflectiveHierarchy(nativeConfig, combinedIndexBuildItem, capabilities,
+            visits.addLast(() -> addReflectiveHierarchyRecursively(nativeConfig, combinedIndexBuildItem, capabilities,
                     reflectiveHierarchyBuildItem, newSource,
                     type.asArrayType().constituent(),
                     processedReflectiveHierarchies,
@@ -175,7 +191,7 @@ public class ReflectiveHierarchyStep {
             }
             for (Type typeArgument : parameterizedType.arguments()) {
                 visits.addLast(
-                        () -> addReflectiveHierarchy(nativeConfig, combinedIndexBuildItem, capabilities,
+                        () -> addReflectiveHierarchyRecursively(nativeConfig, combinedIndexBuildItem, capabilities,
                                 reflectiveHierarchyBuildItem,
                                 newSource,
                                 typeArgument,
@@ -238,7 +254,7 @@ public class ReflectiveHierarchyStep {
                 processedReflectiveHierarchies,
                 unindexedClasses, reflectiveClass, visits));
         for (Type interfaceType : info.interfaceTypes()) {
-            visits.addLast(() -> addReflectiveHierarchy(nativeConfig, combinedIndexBuildItem, capabilities,
+            visits.addLast(() -> addReflectiveHierarchyRecursively(nativeConfig, combinedIndexBuildItem, capabilities,
                     reflectiveHierarchyBuildItem,
                     source, interfaceType, processedReflectiveHierarchies, unindexedClasses,
                     reflectiveClass, visits));
@@ -253,7 +269,7 @@ public class ReflectiveHierarchyStep {
             }
             final Type fieldType = getFieldType(combinedIndexBuildItem, initialName, info, field);
             visits.addLast(
-                    () -> addReflectiveHierarchy(nativeConfig, combinedIndexBuildItem, capabilities,
+                    () -> addReflectiveHierarchyRecursively(nativeConfig, combinedIndexBuildItem, capabilities,
                             reflectiveHierarchyBuildItem, source,
                             fieldType,
                             processedReflectiveHierarchies,
@@ -267,7 +283,7 @@ public class ReflectiveHierarchyStep {
                     method.returnType().kind() == Kind.VOID) {
                 continue;
             }
-            visits.addLast(() -> addReflectiveHierarchy(nativeConfig, combinedIndexBuildItem, capabilities,
+            visits.addLast(() -> addReflectiveHierarchyRecursively(nativeConfig, combinedIndexBuildItem, capabilities,
                     reflectiveHierarchyBuildItem, source,
                     method.returnType(),
                     processedReflectiveHierarchies,

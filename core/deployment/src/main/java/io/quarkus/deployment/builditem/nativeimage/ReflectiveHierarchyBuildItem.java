@@ -25,6 +25,7 @@ import io.quarkus.builder.item.MultiBuildItem;
  *
  * <ul>
  * <li>Superclasses</li>
+ * <li>Interfaces</li>
  * <li>Component types of collections</li>
  * <li>Types used in bean properties (if method reflection is enabled)</li>
  * <li>Field types (if field reflection is enabled)</li>

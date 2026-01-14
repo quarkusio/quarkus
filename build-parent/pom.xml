@@ -90,7 +90,7 @@
         <mariadb.image>docker.io/library/mariadb:10.11</mariadb.image>
         <db2.image>icr.io/db2_community/db2:12.1.0.0</db2.image>
         <mssql.image>mcr.microsoft.com/mssql/server:2022-latest</mssql.image>
-        <mysql.image>docker.io/library/mysql:8.4</mysql.image>
+        <mysql.image>docker.io/library/mysql:9.5</mysql.image>
         <oracle.image>docker.io/gvenzl/oracle-free:23-slim-faststart</oracle.image>
         <mongo.image>docker.io/library/mongo:7.0</mongo.image>
 

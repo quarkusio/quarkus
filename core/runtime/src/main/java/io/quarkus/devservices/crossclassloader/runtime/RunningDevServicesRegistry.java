@@ -11,6 +11,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
@@ -117,6 +118,15 @@ public final class RunningDevServicesRegistry {
 
     public Set<RunningService> getAllRunningServices(String launchMode) {
         return servicesIndexedByLaunchMode.getOrDefault(launchMode, Collections.emptySet());
+    }
+
+    public Set<RunningService> getAllRunningServicesForApp(UUID appId, String launchMode) {
+        return servicesIndexedByConfig.entrySet()
+                .stream()
+                .filter(e -> e.getKey().applicationInstanceId().equals(appId)
+                        && e.getKey().owner().launchMode().equals(launchMode))
+                .map(Map.Entry::getValue)
+                .collect(Collectors.toSet());
     }
 
     public RunningService getRunningServices(ComparableDevServicesConfig identifyingConfig) {

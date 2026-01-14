@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 
 import io.quarkus.builder.BuildResult;
+import io.quarkus.deployment.builditem.DevServicesAdditionalConfigBuildItem;
 import io.quarkus.deployment.builditem.DevServicesCustomizerBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesNetworkIdBuildItem;
@@ -29,9 +30,12 @@ public class NativeDevServicesHandler implements BiConsumer<Object, BuildResult>
         List<DevServicesResultBuildItem> devServices = buildResult.consumeMulti(DevServicesResultBuildItem.class);
         DevServicesRegistryBuildItem devServicesRegistry = buildResult.consumeOptional(DevServicesRegistryBuildItem.class);
         List<DevServicesCustomizerBuildItem> customizers = buildResult.consumeMulti(DevServicesCustomizerBuildItem.class);
+        List<DevServicesAdditionalConfigBuildItem> additionalConfigBuildItems = buildResult
+                .consumeMulti(DevServicesAdditionalConfigBuildItem.class);
         if (devServicesRegistry != null) {
-            devServicesRegistry.startAll(devServices, customizers, null);
-            for (Map.Entry<String, String> entry : devServicesRegistry.getConfigForAllRunningServices().entrySet()) {
+            devServicesRegistry.startAll(devServices, customizers, additionalConfigBuildItems, null);
+            for (Map.Entry<String, String> entry : devServicesRegistry.getConfigForAllRunningServicesOfCurrentApp()
+                    .entrySet()) {
                 propertyConsumer.accept(entry.getKey(), entry.getValue());
             }
         }

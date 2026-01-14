@@ -121,14 +121,14 @@ public final class GraalVM {
          * The current version of GraalVM supported by Quarkus.
          * This version is the one actively being tested and is expected to give the best experience.
          */
-        public static final Version CURRENT = VERSION_23_1_0;
+        public static final Version CURRENT = VERSION_25_0_0;
         /**
          * The minimum version of GraalVM officially supported by Quarkus.
          * Versions prior to this are expected to work but are not given the same level of testing or priority.
          */
-        public static final Version MINIMUM_SUPPORTED = CURRENT;
+        public static final Version MINIMUM_SUPPORTED = MINIMUM;
 
-        private static final String DEFAULT_JDK_VERSION = "21";
+        private static final String DEFAULT_JDK_VERSION = "25";
         protected final String fullVersion;
         public final Runtime.Version javaVersion;
         protected final Distribution distribution;

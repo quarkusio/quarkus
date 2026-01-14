@@ -821,7 +821,7 @@ public class NativeImageBuildStep {
                  * Always install exit handlers, it will become the default and the flag will be deprecated
                  * in GraalVM for JDK 25 see https://github.com/quarkusio/quarkus/issues/47799
                  */
-                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_25_0_0) < 0) {
+                if (graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_0_0) < 0) {
                     nativeImageArgs.add("--install-exit-handlers");
                 }
 
@@ -845,7 +845,7 @@ public class NativeImageBuildStep {
                  * @formatter:on
                  */
                 if (graalVMVersion.compareTo(GraalVM.Version.VERSION_24_2_0) >= 0
-                        && graalVMVersion.compareTo(GraalVM.Version.VERSION_25_0_0) < 0
+                        && graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_0_0) < 0
                         && (CPU.host() == CPU.x64)) {
                     addExperimentalVMOption(nativeImageArgs, "-H:+ForeignAPISupport");
                 }

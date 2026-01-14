@@ -797,7 +797,14 @@ The method will be intercepted and the returned `Uni` is triggered within a tran
 If you have multiple persistence units, you can specify which one to use by providing the persistence unit name as the annotation value: `@WithTransaction("my-persistence-unit")`. If not specified, the default persistence unit is used.
 Alternatively, you can use the `Panache.withTransaction()` method for the same effect.
 
-IMPORTANT: You cannot use the `@Transactional` annotation with Hibernate Reactive for your transactions: you must use `@WithTransaction`, and your annotated method must return a `Uni` to be non-blocking.
+[NOTE]
+====
+With the introduction of the `quarkus-reactive-transactions` extension (currently in preview status), you can now use `jakarta.transaction.Transactional` for transaction management in Hibernate Reactive applications.
+
+However, you should not mix `@Transactional` with Panache transaction annotations (`@WithTransaction`, `@WithSession`, `@WithSessionOnDemand`) in the same application. Choose one approach and use it consistently throughout your application. Mixing these annotations will result in an `UnsupportedOperationException`.
+
+See the xref:hibernate-reactive.adoc[Hibernate Reactive guide] for more details on using `@Transactional` with Hibernate Reactive.
+====
 
 Hibernate Reactive batches changes you make to your entities and sends changes (it is called flush) at the end of the transaction or before a query.
 This is usually a good thing as it is more efficient.

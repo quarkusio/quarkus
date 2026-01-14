@@ -183,6 +183,108 @@ Make sure to terminate each statement with a semicolon.
 
 This is useful to have a data set ready for your tests or demos.
 
+=== Using `@Transactional` with Hibernate Reactive
+
+You can use the standard `jakarta.transaction.Transactional` annotation with Hibernate Reactive as well.
+This provides a more familiar programming model for developers coming from Hibernate ORM.
+
+[NOTE]
+====
+The `quarkus-reactive-transactions` extension is currently in preview status. The API and behavior may change in future versions.
+====
+
+To use `@Transactional` with Hibernate Reactive, you need to add the `quarkus-reactive-transactions` extension:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-reactive-transactions</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-reactive-transactions")
+----
+
+While defining transaction handling using the annotation, you should inject `Mutiny.Session` or `Mutiny.StatelessSession` directly and use them in methods annotated with `@Transactional`.
+
+Here's an example showing how to use `@Transactional` in a REST resource:
+
+[source,java]
+.Example REST resource using @Transactional
+----
+@Path("/fruits")
+public class FruitResource {
+
+    @Inject
+    Mutiny.Session session; <1>
+
+    @GET
+    @Path("/{id}")
+    public Uni<Fruit> getFruit(Long id) {
+        return findFruit(id);
+    }
+
+    @POST
+    public Uni<Fruit> createFruit(Fruit fruit) {
+        return persistFruit(fruit);
+    }
+
+    @PUT
+    @Path("/{id}")
+    public Uni<Fruit> updateFruit(Long id, @QueryParam("name") String newName) {
+        return updateFruitName(id, newName);
+    }
+
+    @Transactional <2>
+    public Uni<Fruit> findFruit(Long id) {
+        return session.find(Fruit.class, id);
+    }
+
+    @Transactional <3>
+    public Uni<Fruit> persistFruit(Fruit fruit) {
+        return session.persist(fruit)
+                .chain(() -> session.find(Fruit.class, fruit.getId()));
+    }
+
+    @Transactional
+    public Uni<Fruit> updateFruitName(Long id, String newName) {
+        return session.find(Fruit.class, id)
+                .map(fruit -> {
+                    fruit.setName(newName);
+                    return fruit;
+                });
+    }
+}
+----
+
+<1> Inject the reactive session directly
+<2> Use `@Transactional` to define transaction boundaries for read operations
+<3> Use `@Transactional` for write operations - the transaction will be committed automatically
+
+The `@Transactional` interceptor will:
+
+* Lazily open a Hibernate Reactive session when first accessed
+* Begin a transaction automatically
+* Commit the transaction when the method completes successfully
+* Rollback the transaction if an exception is thrown or the `Uni` is cancelled
+* Close the session and release the database connection when the reactive chain completes
+
+[NOTE]
+====
+You can inject either `Mutiny.Session` or `Mutiny.StatelessSession`.
+You must not inject both session types in the same bean. Attempting to use both session types within the same transaction will throw an `IllegalStateException`.
+====
+
+[IMPORTANT]
+====
+Currently, only `Transactional.TxType.REQUIRED` is supported with reactive transactions. Other transaction types (`REQUIRES_NEW`, `MANDATORY`, etc.) will throw an `UnsupportedOperationException`.
+====
+
 [[hr-configuration-properties]]
 === Hibernate Reactive configuration properties
 
@@ -415,9 +517,15 @@ or xref:hibernate-orm.adoc#schema-approach[schema-based multitenancy] at the mom
 xref:hibernate-orm.adoc#discriminator-approach[Discriminator-based multitenancy], on the other hand, is expected to work correctly.
 See https://github.com/quarkusio/quarkus/issues/15959.
 * Integration with the Envers extension is not supported.
-* Transaction demarcation cannot be done using `jakarta.transaction.Transactional` or `QuarkusTransaction`;
-if you use xref:hibernate-reactive-panache.adoc[Hibernate Reactive with Panache],
-consider xref:hibernate-reactive-panache.adoc#transactions[using `@WithTransaction` or `Panache.withTransaction()`] instead.
+
+=== Transaction management: choosing between `@Transactional` and Panache annotations
+
+With the introduction of the `quarkus-reactive-transactions` extension, you now have two options for managing transactions in Hibernate Reactive applications:
+
+1. Use `jakarta.transaction.Transactional` for declarative transaction management
+2. Use Panache's transaction annotations (`@WithTransaction`, `@WithSession`, `@WithSessionOnDemand`, or the programmatic `Panache.withTransaction()`)
+
+Both approaches work with Panache entities. However, you must choose one approach and use it consistently throughout your application. Mixing both transaction management styles in the same application is not supported and will result in an `UnsupportedOperationException`.
 
 == Simplifying Hibernate Reactive with Panache
 

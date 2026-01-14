@@ -1,5 +1,7 @@
 package io.quarkus.smallrye.openapi.runtime;
 
+import io.quarkus.smallrye.openapi.OpenApiFilter;
+
 public class OpenApiConstants {
 
     /*
@@ -17,7 +19,9 @@ public class OpenApiConstants {
      */
     public static volatile ClassLoader classLoader;
 
-    public static final String GENERATED_DOC_BASE = "quarkus-generated-openapi-doc.";
+    public static final String DEFAULT_DOCUMENT_NAME = OpenApiFilter.DEFAULT_DOCUMENT_NAME;
+
+    public static final String GENERATED_DOC_BASE = "quarkus-generated-openapi-doc";
     public static final String BASE_NAME = "META-INF/" + GENERATED_DOC_BASE;
 
     private OpenApiConstants() {

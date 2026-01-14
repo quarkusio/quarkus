@@ -10,6 +10,7 @@ import jakarta.inject.Inject;
 import io.quarkus.assistant.runtime.dev.Assistant;
 import io.quarkus.runtime.annotations.DevMCPEnableByDefault;
 import io.quarkus.runtime.annotations.JsonRpcDescription;
+import io.quarkus.smallrye.openapi.runtime.OpenApiConstants;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentService;
 import io.smallrye.openapi.runtime.io.Format;
 
@@ -24,7 +25,8 @@ public class OpenApiJsonRpcService {
     @JsonRpcDescription("Get the running application's OpenAPI Schema Document in json format")
     @DevMCPEnableByDefault
     public String getOpenAPISchema() {
-        return new String(openApiDocumentService.getDocument(Format.JSON));
+        // For now client generation is only possible for the default document
+        return new String(openApiDocumentService.getDocument(OpenApiConstants.DEFAULT_DOCUMENT_NAME, Format.JSON));
     }
 
     public CompletionStage<Map<String, String>> generateClient(String language, String extraContext) {

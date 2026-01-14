@@ -1,5 +1,7 @@
 package io.quarkus.builder;
 
+import static io.quarkus.builder.BuildStepBuilderReshuffler.reshuffle;
+
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -154,17 +156,21 @@ public final class BuildChainBuilder {
      */
     public BuildChain build() throws ChainBuildException {
         final Set<BuildStepBuilder> included = new LinkedHashSet<>(); // the set of steps already included to avoid duplicates
-        Map<BuildStepBuilder, Set<Produce>> dependencies = wireDependencies(included);
+        final Map<BuildStepBuilder, Set<Produce>> dependencies = wireDependencies(included);
 
         detectCycles(included, dependencies);
+
+        // TODO: explain that we push logging deeper to facilitate
+        //   earlier logging availability
+        final Map<BuildStepBuilder, Set<BuildStepBuilder>> dependents = calculateDependents(dependencies);
+        reshuffle(included, dependents);
 
         // recursively build all
         final Set<StepInfo> startSteps = new LinkedHashSet<>();
         final Map<ItemId, int[]> producingOrdinals = new HashMap<>();
-        final Set<StepInfo> endSteps = buildAllSteps(included, dependencies, startSteps, producingOrdinals);
+        final Set<StepInfo> endSteps = buildAllSteps(included, dependencies, startSteps, dependents, producingOrdinals);
 
-        outputGraph(startSteps, endSteps);
-        return new BuildChain(startSteps, this, endSteps.size(), producingOrdinals);
+        return new BuildChain(startSteps, this, endSteps.size(), producingOrdinals); //
     }
 
     private Map<BuildStepBuilder, Set<Produce>> wireDependencies(Set<BuildStepBuilder> included)
@@ -379,8 +385,8 @@ public final class BuildChainBuilder {
     }
 
     private Set<StepInfo> buildAllSteps(Set<BuildStepBuilder> included, Map<BuildStepBuilder, Set<Produce>> dependencies,
-            Set<StepInfo> startSteps, Map<ItemId, int[]> producingOrdinals) {
-        Map<BuildStepBuilder, Set<BuildStepBuilder>> dependents = calculateDependents(dependencies);
+            Set<StepInfo> startSteps, final Map<BuildStepBuilder, Set<BuildStepBuilder>> dependents,
+            Map<ItemId, int[]> producingOrdinals) {
         final Set<StepInfo> endSteps = new LinkedHashSet<>();
         final Map<BuildStepBuilder, StepInfo> mappedSteps = new LinkedHashMap<>();
         final int[] ordinal = new int[] { included.size() };

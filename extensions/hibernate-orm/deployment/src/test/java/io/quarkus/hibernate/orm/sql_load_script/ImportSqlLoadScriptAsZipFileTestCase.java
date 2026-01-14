@@ -19,6 +19,6 @@ public class ImportSqlLoadScriptAsZipFileTestCase {
     @Test
     public void testSqlLoadScriptAsZipFile() {
         String name = "other-load-script sql load script entity";
-        RestAssured.when().get("/orm-sql-load-script/3").then().body(Matchers.is(SqlLoadScriptTestResource.NO_ENTITY_MESSAGE));
+        RestAssured.when().get("/orm-sql-load-script/3").then().body(Matchers.is(name));
     }
 }

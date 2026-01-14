@@ -1,15 +1,11 @@
 package io.quarkus.hibernate.orm.runtime;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 
 import javax.sql.DataSource;
 
@@ -210,11 +206,8 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                         "Attempting to boot a deactivated Hibernate ORM persistence unit");
             }
             RuntimeSettings runtimeSettings = buildRuntimeSettings(persistenceUnitName, recordedState, puConfig);
-
             StandardServiceRegistry standardServiceRegistry = rewireMetadataAndExtractServiceRegistry(persistenceUnitName,
                     recordedState, puConfig, runtimeSettings);
-
-            CompletableFuture.runAsync(() -> deleteSqlImportTempDirectories(runtimeSettings));
 
             final Object cdiBeanManager = Arc.container().beanManager();
             final Object validatorFactory = Arc.container().instance("quarkus-hibernate-validator-factory").get();
@@ -555,35 +548,5 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
 
         runtimeSettingsBuilder.put(HibernateHints.HINT_FLUSH_MODE,
                 persistenceUnitConfig.flush().mode());
-    }
-
-    /**
-     * Performs the deletion of SQL import temp directories and files.
-     * The process is done by getting the value of jakarta.persistence.sql-load-script-source property and deleting the files
-     * that were unzipped to temp directories (path has parent).
-     * Temp files' parents (temp directories) are added to a Set and deleted after.
-     *
-     * @param runtimeSettings the runtime settings
-     */
-    private void deleteSqlImportTempDirectories(RuntimeSettings runtimeSettings) {
-        String[] tempFilePaths = ((String) runtimeSettings
-                .get(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE))
-                .split(",");
-        Set<Path> tempDirPaths = new HashSet<>();
-        try {
-            for (String tempFileStringPath : tempFilePaths) {
-                Path tempFilePath = Path.of(tempFileStringPath);
-                if (tempFilePath.getParent() != null) {
-                    Files.deleteIfExists(tempFilePath);
-                    tempDirPaths.add(tempFilePath.getParent());
-                }
-            }
-
-            for (Path tempDirPath : tempDirPaths) {
-                Files.deleteIfExists(tempDirPath);
-            }
-        } catch (IOException e) {
-            log.error("Error deleting temp files: " + e.getMessage());
-        }
     }
 }

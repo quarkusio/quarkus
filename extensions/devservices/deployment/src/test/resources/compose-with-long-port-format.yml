@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres:14
+    ports:
+      - target: 5432
+        published: 5432
+      - target: 5433
+        published: 15433
+        protocol: tcp
+    environment:
+      POSTGRES_PASSWORD: postgres
+
+  redis:
+    image: redis:6
+    ports:
+      - "6379:6379"
+      - target: 6380
+        published: 16380
+
+  web:
+    image: nginx:latest
+    ports:
+      - name: web
+        target: 80
+        host_ip: 127.0.0.1
+        published: "8080"
+        protocol: tcp
+        app_protocol: http
+        mode: host
+      - name: web-secured
+        target: 443
+        host_ip: 127.0.0.1
+        published: "8083-9000"
+        protocol: tcp
+        app_protocol: https
+        mode: host

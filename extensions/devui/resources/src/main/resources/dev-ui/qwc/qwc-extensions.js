@@ -427,6 +427,7 @@ export class QwcExtensions extends observeState(LitElement) {
                                 ?embed=${page.embed}
                                 externalUrl="${page.metadata.externalUrl}"
                                 dynamicUrlMethodName="${page.metadata.dynamicUrlMethodName}"
+                                dynamicUrlMethodNameParams="${page.metadata.dynamicUrlMethodNameParams}"
                                 webcomponent="${page.componentLink}"
                                 staticLabel="${page.staticLabel}" 
                                 dynamicLabel="${page.dynamicLabel}"

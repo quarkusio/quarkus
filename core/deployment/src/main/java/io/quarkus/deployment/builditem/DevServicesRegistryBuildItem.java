@@ -7,7 +7,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -83,8 +86,25 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
             List<DevServicesCustomizerBuildItem> customizers,
             ClassLoader augmentClassLoader) {
         closeRemainingRunningServices(services);
+        Map<String, String> config = new ConcurrentHashMap<>();
+        startSelectedServices(services, customizers, augmentClassLoader, dr -> !dr.hasDependencies(), config);
+
+        // Now start everything with a dependency
+        // This won't handle the case where the dependencies also have dependencies, but that can be a follow-on work item if people ask for it
+        // I think we could implement it by getting the actual dependencies and seeing if any of them are also in the list of things we're starting, and then recursing
+        startSelectedServices(services, customizers, augmentClassLoader,
+                DevServicesResultBuildItem::hasDependencies, config);
+
+    }
+
+    private void startSelectedServices(Collection<DevServicesResultBuildItem> services,
+            List<DevServicesCustomizerBuildItem> customizers, ClassLoader augmentClassLoader,
+            Predicate<? super DevServicesResultBuildItem> filter, Map<String, String> config) {
+        // TODO Note that this does not handle chained dependencies; dependencies can only be one level deep for now
+        // It would be easy to fix that, but let's wait until we need to
         CompletableFuture.allOf(services.stream()
                 .filter(DevServicesResultBuildItem::isStartable)
+                .filter(filter)
                 .map(serv -> CompletableFuture.runAsync(() -> {
                     // We need to set the context classloader to the augment classloader, so that the dev services can be started with the right classloader
                     if (augmentClassLoader != null) {
@@ -92,25 +112,28 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
                     } else {
                         Thread.currentThread().setContextClassLoader(serv.getClass().getClassLoader());
                     }
-                    this.start(serv, customizers);
+                    this.start(serv, customizers, config);
                 }))
                 .toArray(CompletableFuture[]::new)).join();
     }
 
-    public void start(DevServicesResultBuildItem request, List<DevServicesCustomizerBuildItem> customizers) {
+    public void start(DevServicesResultBuildItem request, List<DevServicesCustomizerBuildItem> customizers,
+            Map<String, String> config) {
         // RunningService class is loaded on parent classloader
         RunningService matchedDevService = this.getRunningServices(request.getName(), request.getServiceName(),
                 request.getServiceConfig());
+
         if (matchedDevService == null) {
             // There isn't a running container that has the right config, we need to do work
             // Let's get all the running dev services associated with this feature (+ launch mode plus named section), so we can close them
             closeAllRunningServices(request.getName(), request.getServiceName());
 
-            reallyStart(request, customizers);
+            reallyStart(request, customizers, config);
         }
     }
 
-    private void reallyStart(DevServicesResultBuildItem request, List<DevServicesCustomizerBuildItem> customizers) {
+    private void reallyStart(DevServicesResultBuildItem request, List<DevServicesCustomizerBuildItem> customizers,
+            Map<String, String> configs) {
         StartupLogCompressor compressor = new StartupLogCompressor("Dev Services Startup", null, null);
         try {
             Supplier<Startable> startableSupplier = request.getStartableSupplier();
@@ -122,25 +145,64 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
             for (DevServicesCustomizerBuildItem customizer : customizers) {
                 startable = customizer.apply(request, startable);
             }
-            startable.start();
 
-            RunningService service = new RunningService(request.getName(), request.getDescription(),
-                    request.getConfig(startable), request.getOverrideConfig(startable), startable.getContainerId(), startable);
-            this.addRunningService(request.getName(), request.getServiceName(), request.getServiceConfig(), service);
+            String missingDependency = null;
 
-            compressor.close();
+            // The config from the new sources isn't easily available via ConfigProvider.getConfig(), so directly inject it into services which depend on it
+            var dependencies = request.getDependencies();
+            if (dependencies != null && !dependencies.isEmpty()) {
+                for (DevServicesResultBuildItem.DevServiceConfigDependency<? extends Startable> dependency : dependencies) {
 
-            Consumer<Startable> postStartAction = request.getPostStartAction();
-            if (postStartAction != null) {
-                try {
-                    postStartAction.accept(startable);
-                } catch (Throwable t) {
-                    log.errorf(t, "An error occurred while executing the post-start action for %s dev service: %s",
-                            request.getName(), t.getMessage());
+                    var value = configs.get(dependency.requiredConfigKey());
+                    if (value != null) {
+                        ((BiConsumer<Startable, String>) dependency.valueInjector()).accept(startable, value);
+                    } else {
+                        missingDependency = dependency.requiredConfigKey();
+                    }
+                }
+            }
+
+            var optionalDependencies = request.getOptionalDependencies();
+            if (optionalDependencies != null && !optionalDependencies.isEmpty()) {
+                for (DevServicesResultBuildItem.DevServiceConfigDependency<? extends Startable> dependency : optionalDependencies) {
+                    var value = configs.get(dependency.requiredConfigKey());
+                    if (value != null) {
+                        ((BiConsumer<Startable, String>) dependency.valueInjector()).accept(startable, value);
+                    }
+                }
+            }
+
+            if (missingDependency == null) {
+
+                startable.start();
+
+                Map<String, String> config = request.getConfig(startable);
+                Map<String, String> overrideConfig = request.getOverrideConfig(startable);
+                configs.putAll(config);
+                configs.putAll(overrideConfig);
+
+                RunningService service = new RunningService(request.getName(), request.getDescription(),
+                        config, overrideConfig, startable.getContainerId(), startable);
+                this.addRunningService(request.getName(), request.getServiceName(), request.getServiceConfig(), service);
+
+                compressor.close();
+
+                Consumer<Startable> postStartAction = request.getPostStartAction();
+                if (postStartAction != null) {
+                    try {
+                        postStartAction.accept(startable);
+                    } catch (Throwable t) {
+                        log.errorf(t, "An error occurred while executing the post-start action for %s dev service: %s",
+                                request.getName(), t.getMessage());
+                    }
+                } else {
+                    log.infof("The %s dev service is ready to accept connections on %s", request.getName(),
+                            startable.getConnectionInfo());
                 }
             } else {
-                log.infof("The %s dev service is ready to accept connections on %s", request.getName(),
-                        startable.getConnectionInfo());
+                log.infof("The %s dev service did not start because the configuration with key %s did not become available",
+                        request.getName(),
+                        missingDependency);
             }
         } catch (Throwable t) {
             compressor.closeAndDumpCaptured();

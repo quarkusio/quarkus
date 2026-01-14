@@ -1,17 +1,18 @@
-package io.quarkus.tests.simpleextension.deployment;
+package io.quarkus.tests.dependentextension.deployment;
 
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.deployment.builditem.Startable;
 
-public class SimpleContainer extends GenericContainer<io.quarkus.tests.simpleextension.deployment.SimpleContainer>
+public class OptionallyDependentContainer extends GenericContainer<OptionallyDependentContainer>
         implements Startable {
 
     private static final DockerImageName dockerImageName = DockerImageName.parse("httpd");
     public static final int HTTPD_PORT = 80;
+    private String otherConfig;
 
-    public SimpleContainer() {
+    public OptionallyDependentContainer() {
         super(dockerImageName);
         this //.waitingFor(Wait.forLogMessage(".*" + "resuming normal operations" + ".*", 1))
                 .withReuse(true)
@@ -20,6 +21,7 @@ public class SimpleContainer extends GenericContainer<io.quarkus.tests.simpleext
 
     @Override
     public void start() {
+        // Start, even if the config is not available
         super.start();
     }
 
@@ -31,5 +33,16 @@ public class SimpleContainer extends GenericContainer<io.quarkus.tests.simpleext
     @Override
     public void close() {
         super.close();
+    }
+
+    public void setOtherUrl(String value) {
+        if (otherConfig == null) {
+            throw new IllegalArgumentException("Should not attempt to set other config if it is not available");
+        }
+        otherConfig = value;
+    }
+
+    public boolean isDependencyAvailable() {
+        return otherConfig != null;
     }
 }

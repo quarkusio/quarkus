@@ -4,8 +4,10 @@ import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.set
 import static io.smallrye.common.vertx.VertxContext.getOrCreateDuplicatedContext;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -149,6 +151,23 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
+     * Sets several entries.
+     * <p>
+     * Tries to use the current Vert.x Context, if the context is non-existent
+     * meaning that it was called out of a Vert.x thread it will fall back to
+     * the thread local context map.
+     *
+     * Will look up the contextual data map just once.
+     *
+     * @param map contents to add
+     * @param vertxContext
+     */
+    public void putAll(Map<String, String> map, Context vertxContext) {
+        Objects.requireNonNull(map);
+        contextualDataMap(vertxContext).putAll(map);
+    }
+
+    /**
      * Removes a key.
      *
      * Tries to use the current Vert.x Context, if the context is non-existent
@@ -240,6 +259,20 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
+     * Determine whether the current MDC map is empty on the provided context
+     *
+     * @param vertxContext
+     * @return
+     */
+    public boolean isEmpty(Context vertxContext) {
+        return contextualDataMap(vertxContext).isEmpty();
+    }
+
+    public Set<String> getKeys() {
+        return new HashSet<>(contextualDataMap(getContext()).keySet());
+    }
+
+    /**
      * Get a copy of the MDC map. This is a relatively expensive operation.
      * If the informed context is null it falls back to the thread local context map.
      *
@@ -289,10 +322,43 @@ public enum VertxMDC implements MDCProvider {
      *
      * @param vertxContext
      */
-    public void clearVertxMdcFromContext(Context vertxContext) {
+    void clearVertxMdcFromContext(Context vertxContext) {
         if (vertxContext != null) {
             vertxContext.removeLocal(VertxMDC.class.getName());
         }
+    }
+
+    /**
+     * Clears out the object ref from the context to force a new one to be created and prevent thread crosstalk.
+     * Also copies to the new reference any previous data not in the set of MDC keys to discard.
+     *
+     * @param vertxContext
+     * @param discardMdcKeys Entries not to be copied over to the new MDC
+     */
+    public void reinitializeVertxMdc(Context vertxContext, Set<String> discardMdcKeys) {
+        if (vertxContext == null || vertxContext.getLocal(VertxMDC.class.getName()) == null) {
+            // nothing to do
+            return;
+        }
+
+        if (VertxMDC.INSTANCE.isEmpty(vertxContext)) {
+            // clear the object ref to force a new one and prevent crosstalk
+            VertxMDC.INSTANCE.clearVertxMdcFromContext(vertxContext);
+            return;
+        }
+
+        final Map<String, String> carryover = new HashMap<>();
+        final boolean hasDiscardKeys = discardMdcKeys == null || discardMdcKeys.isEmpty();
+        for (String key : VertxMDC.INSTANCE.getKeys()) {
+            if (hasDiscardKeys || !discardMdcKeys.contains(key)) {
+                carryover.put(key, VertxMDC.INSTANCE.get(key));
+            }
+        }
+
+        // clear the object ref to force a new one and prevent crosstalk
+        VertxMDC.INSTANCE.clearVertxMdcFromContext(vertxContext);
+        // Preserving relevant data
+        VertxMDC.INSTANCE.putAll(carryover, vertxContext);
     }
 
     /**

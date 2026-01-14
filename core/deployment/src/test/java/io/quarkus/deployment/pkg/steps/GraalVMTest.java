@@ -358,7 +358,7 @@ public class GraalVMTest {
      * Asserts that one version is newer than the other.
      */
     static void assertNewerThan(String version, String other) {
-        assertThat(Version.of(Stream.of(version)).isNewerThan(Version.of(Stream.of(other)))).isTrue();
+        assertThat(Version.of(Stream.of(version)).compareTo(Version.of(Stream.of(other))) > 0).isTrue();
     }
 
     @ParameterizedTest

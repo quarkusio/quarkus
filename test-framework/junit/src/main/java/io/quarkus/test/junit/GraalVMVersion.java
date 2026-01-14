@@ -1,6 +1,6 @@
 package io.quarkus.test.junit;
 
-import io.quarkus.deployment.pkg.steps.GraalVM;
+import io.quarkus.runtime.graal.GraalVM;
 
 public enum GraalVMVersion {
     GRAALVM_23_1_0(GraalVM.Version.VERSION_23_1_0),

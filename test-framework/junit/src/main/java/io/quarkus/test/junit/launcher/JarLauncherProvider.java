@@ -52,7 +52,7 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
                     testConfig.env(),
                     context.devServicesLaunchResult(),
                     context.buildOutputDirectory().resolve(pathStr),
-                    config.getOptionalValue("quarkus.package.jar.appcds.use-aot", Boolean.class)
+                    config.getOptionalValue("quarkus.package.jar.aot.enabled", Boolean.class)
                             .orElse(Boolean.FALSE)));
             return launcher;
         } else {

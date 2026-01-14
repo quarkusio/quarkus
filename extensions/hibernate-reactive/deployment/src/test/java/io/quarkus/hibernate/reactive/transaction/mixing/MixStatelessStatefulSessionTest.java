@@ -52,14 +52,14 @@ public class MixStatelessStatefulSessionTest {
 
     @Transactional
     public Uni<Object> transactionalMethodUsingRegularSessionThenStatelessSession() {
-        return session.createQuery("select count(1) from Hero h").getSingleResult()
+        return session.createQuery("select count(1) from Hero h", Long.class).getSingleResult()
                 .chain(count -> statelessSession.createQuery("select count(1) from Hero h", Long.class)
                         .getSingleResult());
     }
 
     @Transactional
     public Uni<Object> transactionalMethodUsingStatelessSessionThenRegularSession() {
-        return statelessSession.createQuery("select count(1) from Hero h").getSingleResult()
+        return statelessSession.createQuery("select count(1) from Hero h", Long.class).getSingleResult()
                 .chain(count -> session.createQuery("select count(1) from Hero h", Long.class)
                         .getSingleResult());
     }

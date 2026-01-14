@@ -38,6 +38,13 @@ public class HibernateReactiveRecorder {
     public static final OpenedSessionsState<Mutiny.Session> OPENED_SESSIONS_STATE = new OpenedSessionsStateStatefulImpl();
     public static final OpenedSessionsState<Mutiny.StatelessSession> OPENED_SESSIONS_STATE_STATELESS = new OpenedSessionsStateStatelessImpl();
 
+    private static String noSessionFoundErrorMessage() {
+        return "No current Mutiny.Session found"
+                + "\n\t- you need to annotate your method with @Transactional to open a reactive session"
+                + "\n\t- alternatively, you can use @WithSessionOnDemand, @WithSession, or @WithTransaction"
+                + "\n\t- for JAX-RS resources, annotate the method directly with an HTTP method (@GET, @POST, etc.) to automatically open a session";
+    }
+
     /**
      * The feature needs to be initialized, even if it's not enabled.
      *
@@ -124,10 +131,7 @@ public class HibernateReactiveRecorder {
         if (openedSession.isPresent()) {
             return openedSession.get().session();
         } else if (context.getLocal(TRANSACTIONAL_METHOD_KEY) == null) {
-            throw new IllegalStateException("No current Mutiny.Session found"
-                    + "\n\t- no reactive session was found in the Vert.x context and the context was not marked to open a new session lazily"
-                    + "\n\t- a session is opened automatically for JAX-RS resource methods annotated with an HTTP method (@GET, @POST, etc.); inherited annotations are not taken into account"
-                    + "\n\t- you may need to annotate the business method with @Transactional");
+            throw new IllegalStateException(noSessionFoundErrorMessage());
         } else {
 
             Optional<OpenedSessionsState.SessionWithKey<Mutiny.StatelessSession>> openedStatelessSession = OPENED_SESSIONS_STATE_STATELESS
@@ -169,10 +173,7 @@ public class HibernateReactiveRecorder {
         if (openedSession.isPresent()) {
             return openedSession.get().session();
         } else if (context.getLocal(TRANSACTIONAL_METHOD_KEY) == null) {
-            throw new IllegalStateException("No current Mutiny.Session found"
-                    + "\n\t- no reactive session was found in the Vert.x context and the context was not marked to open a new session lazily"
-                    + "\n\t- a session is opened automatically for JAX-RS resource methods annotated with an HTTP method (@GET, @POST, etc.); inherited annotations are not taken into account"
-                    + "\n\t- you may need to annotate the business method with @Transactional");
+            throw new IllegalStateException(noSessionFoundErrorMessage());
         } else {
 
             Optional<OpenedSessionsState.SessionWithKey<Mutiny.Session>> openedRegularSession = OPENED_SESSIONS_STATE

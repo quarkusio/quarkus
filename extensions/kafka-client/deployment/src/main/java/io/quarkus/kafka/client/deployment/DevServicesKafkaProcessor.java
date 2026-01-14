@@ -121,6 +121,7 @@ public class DevServicesKafkaProcessor {
                     strimzi.withPort(config.port().get());
                 }
                 strimzi.withEnv(config.containerEnv());
+                strimzi.withKafkaConfigurationMap(config.strimzi().serverConfigs());
                 configureSharedServiceLabel(strimzi, launchMode.getLaunchMode(), DEV_SERVICE_LABEL, config.serviceName());
                 yield new StartableContainer<>(strimzi, StrimziKafkaContainer::getBootstrapServers);
             }

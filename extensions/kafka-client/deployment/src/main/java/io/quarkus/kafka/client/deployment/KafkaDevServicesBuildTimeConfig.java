@@ -124,6 +124,11 @@ public interface KafkaDevServicesBuildTimeConfig {
     RedpandaBuildTimeConfig redpanda();
 
     /**
+     * Allows configuring the Strimzi broker.
+     */
+    StrimziBuildTimeConfig strimzi();
+
+    /**
      * @return the image name if set, otherwise the default image name for the provider.
      */
     default String effectiveImageName() {

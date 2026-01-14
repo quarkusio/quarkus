@@ -42,7 +42,7 @@ public class HibernateReactiveTransactionsTest {
     @RunOnVertxContext
     public void testReactiveManualTransaction(UniAsserter asserter) {
         // initialTransactionData.sql
-        Long heroId = 60L;
+        Long heroId = 50L;
 
         int originalPoolSize = pool.size();
 

@@ -198,6 +198,7 @@ public final class GraalVM {
         public static final Version VERSION_24_1_0 = new Version("GraalVM 24.1.0", "24.1.0", "23", Distribution.GRAALVM);
         public static final Version VERSION_24_1_999 = new Version("GraalVM 24.1.999", "24.1.999", "23", Distribution.GRAALVM);
         public static final Version VERSION_24_2_0 = new Version("GraalVM 24.2.0", "24.2.0", "24", Distribution.GRAALVM);
+        private static final Version VERSION_25_0_0 = new Version("GraalVM 25.0.0", "25.0.0", "25", Distribution.GRAALVM);
 
         /**
          * The minimum version of GraalVM supported by Quarkus.
@@ -214,7 +215,7 @@ public final class GraalVM {
          * @deprecated Use {@link io.quarkus.runtime.graal.GraalVM.Version.CURRENT} instead.
          */
         @Deprecated
-        public static final Version CURRENT = VERSION_23_1_0;
+        public static final Version CURRENT = VERSION_25_0_0;
         /**
          * The minimum version of GraalVM officially supported by Quarkus.
          * Versions prior to this are expected to work but are not given the same level of testing or priority.
@@ -222,7 +223,7 @@ public final class GraalVM {
          * @deprecated Use {@link io.quarkus.runtime.graal.GraalVM.Version.MINIMUM_SUPPORTED} instead.
          */
         @Deprecated
-        public static final Version MINIMUM_SUPPORTED = CURRENT;
+        public static final Version MINIMUM_SUPPORTED = MINIMUM;
 
         Version(String fullVersion, String version, Distribution distro) {
             this(fullVersion, version, "11", distro);

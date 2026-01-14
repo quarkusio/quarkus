@@ -47,9 +47,10 @@ public class TransactionalContextPool implements Pool {
                 }
                 var connection = result.result();
                 connection.begin()
-                        // Ignore the returned transaction; the caller expects a SqlConnection,
-                        // and the Transaction can be accessed through connection.transaction() anyway.
-                        .map(ignored -> connection)
+                        .map(transaction -> {
+                            storeTransactionInVertxContext(transaction);
+                            return (SqlConnection) new TransactionalContextConnection(connection);
+                        })
                         .andThen(handler);
             });
         }
@@ -66,12 +67,16 @@ public class TransactionalContextPool implements Pool {
                         LOG.tracef("New connection, about to start transaction: %s", connection);
                         return connection.begin().map(t -> {
                             Transaction transaction = connection.transaction();
-                            LOG.tracef("Transaction started: %s", transaction);
-                            Vertx.currentContext().putLocal(CURRENT_TRANSACTION_KEY, transaction);
+                            storeTransactionInVertxContext(transaction);
                             return new TransactionalContextConnection(connection);
                         });
                     });
         }
+    }
+
+    private static void storeTransactionInVertxContext(Transaction transaction) {
+        LOG.tracef("Transaction started: %s", transaction);
+        Vertx.currentContext().putLocal(CURRENT_TRANSACTION_KEY, transaction);
     }
 
     private boolean shouldOpenTransaction() {

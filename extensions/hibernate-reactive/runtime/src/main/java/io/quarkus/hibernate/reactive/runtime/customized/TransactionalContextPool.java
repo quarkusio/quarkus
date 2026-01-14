@@ -43,6 +43,7 @@ public class TransactionalContextPool implements Pool {
             delegate.getConnection(result -> {
                 if (result.failed()) {
                     handler.handle(result);
+                    return;
                 }
                 var connection = result.result();
                 connection.begin()

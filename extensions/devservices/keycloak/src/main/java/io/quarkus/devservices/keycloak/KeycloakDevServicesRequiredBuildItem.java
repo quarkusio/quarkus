@@ -6,18 +6,16 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
-import org.keycloak.representations.idm.RealmRepresentation;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.devservices.keycloak.KeycloakDevServicesConfigurator.ConfigPropertiesContext;
+import io.quarkus.devservices.keycloak.KeycloakDevServicesConfigurator.LazyConfigKeycloakDevServicesConfigurator;
+import io.quarkus.devservices.keycloak.KeycloakDevServicesConfigurator.LazyConfigProperty;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
 /**
@@ -27,9 +25,15 @@ import io.quarkus.runtime.configuration.ConfigUtils;
  */
 public final class KeycloakDevServicesRequiredBuildItem extends MultiBuildItem {
 
+    private static final String CONFIG_PREFIX = "quarkus.oidc.";
     private static final Logger LOG = Logger.getLogger(KeycloakDevServicesProcessor.class);
-    public static final String OIDC_AUTH_SERVER_URL_CONFIG_KEY = "quarkus.oidc.auth-server-url";
-    private static final String OIDC_PROVIDER_CONFIG_KEY = "quarkus.oidc.provider";
+    private static final String OIDC_PROVIDER_CONFIG_KEY = CONFIG_PREFIX + "provider";
+    // avoid the Quarkus prefix in order to prevent warnings when the application starts in container integration tests
+    private static final String CLIENT_AUTH_SERVER_URL_CONFIG_KEY = "client." + CONFIG_PREFIX + "auth-server-url";
+    private static final String OIDC_USERS = "oidc.users";
+    private static final String KEYCLOAK_REALMS = "keycloak.realms";
+    private static final String KEYCLOAK_URL_KEY = "keycloak.url";
+    public static final String OIDC_AUTH_SERVER_URL_CONFIG_KEY = CONFIG_PREFIX + "auth-server-url";
 
     private final KeycloakDevServicesConfigurator devServicesConfigurator;
     private final String authServerUrl;
@@ -46,14 +50,6 @@ public final class KeycloakDevServicesRequiredBuildItem extends MultiBuildItem {
         return authServerUrl;
     }
 
-    public record LazyConfigProperty(String configKey, Function<ConfigPropertiesContext, String> ctxToConfigValue) {
-
-        public LazyConfigProperty(String configKey, String configValue) {
-            this(configKey, ctx -> configValue);
-        }
-
-    }
-
     public static KeycloakDevServicesRequiredBuildItem of(Feature feature,
             LazyConfigProperty lazyConfigProperty, String authServerUrl, String... additionalDontStartConfigProperties) {
         return of(feature, List.of(lazyConfigProperty), authServerUrl, additionalDontStartConfigProperties);
@@ -63,23 +59,8 @@ public final class KeycloakDevServicesRequiredBuildItem extends MultiBuildItem {
             Collection<LazyConfigProperty> lazyConfigProperties,
             String authServerUrl, String... additionalDontStartConfigProperties) {
         var lazyConfigPropertiesCopy = List.copyOf(lazyConfigProperties);
-        return of(feature, new KeycloakDevServicesConfigurator() {
-            @Override
-            public Set<String> getLazyConfigKeys() {
-                return lazyConfigPropertiesCopy.stream().map(p -> p.configKey).collect(Collectors.toUnmodifiableSet());
-            }
-
-            @Override
-            public String getLazyConfigValue(String configKey, ConfigPropertiesContext context) {
-                return lazyConfigPropertiesCopy.stream()
-                        .filter(p -> p.configKey.equals(configKey))
-                        .map(p -> p.ctxToConfigValue.apply(context))
-                        .filter(Objects::nonNull)
-                        .filter(Predicate.not(String::isEmpty))
-                        .findFirst()
-                        .orElseThrow();
-            }
-        }, authServerUrl, additionalDontStartConfigProperties);
+        return of(feature, new LazyConfigKeycloakDevServicesConfigurator(lazyConfigPropertiesCopy), authServerUrl,
+                additionalDontStartConfigProperties);
     }
 
     public static KeycloakDevServicesRequiredBuildItem of(Feature feature,
@@ -101,35 +82,14 @@ public final class KeycloakDevServicesRequiredBuildItem extends MultiBuildItem {
     }
 
     static KeycloakDevServicesConfigurator getDevServicesConfigurator(List<KeycloakDevServicesRequiredBuildItem> items) {
-        return new KeycloakDevServicesConfigurator() {
-
-            @Override
-            public Set<String> getLazyConfigKeys() {
-                return items.stream()
-                        .flatMap(i -> i.devServicesConfigurator.getLazyConfigKeys().stream())
-                        .collect(Collectors.toUnmodifiableSet());
-            }
-
-            @Override
-            public String getLazyConfigValue(String configKey, ConfigPropertiesContext context) {
-                return items.stream()
-                        .map(i -> i.devServicesConfigurator)
-                        .filter(c -> c.getLazyConfigKeys().contains(configKey))
-                        .map(c -> c.getLazyConfigValue(configKey, context))
-                        .filter(Objects::nonNull)
-                        .filter(Predicate.not(String::isEmpty))
-                        .findFirst()
-                        .orElseThrow();
-            }
-
-            @Override
-            public void customizeDefaultRealm(RealmRepresentation realmRepresentation) {
-                items
-                        .stream()
-                        .map(i -> i.devServicesConfigurator)
-                        .forEach(i -> i.customizeDefaultRealm(realmRepresentation));
-            }
-        };
+        KeycloakDevServicesConfigurator baseDevServicesConfigurator = new LazyConfigKeycloakDevServicesConfigurator(List.of(
+                new LazyConfigProperty(CLIENT_AUTH_SERVER_URL_CONFIG_KEY, ConfigPropertiesContext::clientAuthServerUrl),
+                new LazyConfigProperty(KEYCLOAK_URL_KEY, ConfigPropertiesContext::keycloakUrl),
+                new LazyConfigProperty(OIDC_USERS, ConfigPropertiesContext::oidcUsers),
+                new LazyConfigProperty(KEYCLOAK_REALMS, ConfigPropertiesContext::keycloakRealms)));
+        List<KeycloakDevServicesConfigurator> configurators = Stream.concat(Stream.of(baseDevServicesConfigurator),
+                items.stream().map(i -> i.devServicesConfigurator)).toList();
+        return new KeycloakDevServicesConfigurator.ComposedKeycloakDevServicesConfigurator(configurators);
     }
 
     /**

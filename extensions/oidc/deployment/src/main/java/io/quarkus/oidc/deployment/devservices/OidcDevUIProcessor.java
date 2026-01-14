@@ -64,32 +64,26 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
             boolean discoverMetadata = isDiscoveryEnabled(providerConfig);
             String providerName = tryToGetProviderName(authServerUrl);
 
-            final String keycloakAdminUrl;
+            String keycloakAdminUrl;
             if (KEYCLOAK.equals(providerName)) {
                 keycloakAdminUrl = authServerUrl.substring(0, authServerUrl.indexOf("/realms/"));
             } else {
                 keycloakAdminUrl = null;
             }
+
             var cardPage = createProviderWebComponent(recorder,
                     capabilities,
                     providerName,
-                    getApplicationType(providerConfig),
                     oidcConfig.devui().grant().type().isPresent() ? oidcConfig.devui().grant().type().get().getGrantType()
                             : "code",
-                    null,
-                    null,
-                    null,
                     checkProviderUserInfoRequired(providerConfig),
                     beanContainer,
                     oidcConfig.devui().webClientTimeout(),
                     oidcConfig.devui().grantOptions(),
                     nonApplicationRootPathBuildItem,
-                    keycloakAdminUrl,
-                    null,
-                    null,
                     true,
                     discoverMetadata,
-                    authServerUrl);
+                    authServerUrl, keycloakAdminUrl, getApplicationType(providerConfig));
             cardPageProducer.produce(cardPage);
         }
     }

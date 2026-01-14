@@ -8,8 +8,8 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.keycloak.KeycloakAdminPageBuildItem;
 import io.quarkus.devservices.keycloak.KeycloakDevServicesConfigurator.ConfigPropertiesContext;
+import io.quarkus.devservices.keycloak.KeycloakDevServicesConfigurator.LazyConfigProperty;
 import io.quarkus.devservices.keycloak.KeycloakDevServicesRequiredBuildItem;
-import io.quarkus.devservices.keycloak.KeycloakDevServicesRequiredBuildItem.LazyConfigProperty;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.keycloak.admin.client.common.deployment.KeycloakAdminClientInjectionEnabled;
 

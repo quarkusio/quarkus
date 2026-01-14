@@ -85,10 +85,7 @@ public class KeycloakDevServicesProcessor {
     private static final Logger LOG = Logger.getLogger(KeycloakDevServicesProcessor.class);
 
     private static final String CONFIG_PREFIX = "quarkus.oidc.";
-    private static final String APPLICATION_TYPE_CONFIG_KEY = CONFIG_PREFIX + "application-type";
 
-    // avoid the Quarkus prefix in order to prevent warnings when the application starts in container integration tests
-    private static final String CLIENT_AUTH_SERVER_URL_CONFIG_KEY = "client." + CONFIG_PREFIX + "auth-server-url";
     private static final String CLIENT_ID_CONFIG_KEY = CONFIG_PREFIX + "client-id";
     private static final String CLIENT_SECRET_CONFIG_KEY = CONFIG_PREFIX + "credentials.secret";
     static final String KEYCLOAK_URL_KEY = "keycloak.url";
@@ -117,8 +114,6 @@ public class KeycloakDevServicesProcessor {
             + "--spi-user-profile-declarative-user-profile-config-file=/opt/keycloak/upconfig.json";
 
     private static final String JAVA_OPTS = "JAVA_OPTS";
-    private static final String OIDC_USERS = "oidc.users";
-    private static final String KEYCLOAK_REALMS = "keycloak.realms";
 
     /**
      * Label to add to shared Dev Service for Keycloak running in containers.
@@ -132,33 +127,36 @@ public class KeycloakDevServicesProcessor {
     private static volatile Set<FileTime> capturedRealmFileLastModifiedDate;
 
     @BuildStep
-    DevServicesResultBuildItem startKeycloakContainer(
+    void startKeycloakContainer(
             List<KeycloakDevServicesRequiredBuildItem> devSvcRequiredMarkerItems,
             DevServicesComposeProjectBuildItem composeProjectBuildItem,
-            BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             KeycloakDevServicesConfig config,
             LaunchModeBuildItem launchMode,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
-            DevServicesConfig devServicesConfig, DockerStatusBuildItem dockerStatusBuildItem) {
+            DevServicesConfig devServicesConfig, DockerStatusBuildItem dockerStatusBuildItem,
+            BuildProducer<KeycloakDevServicesPreparedBuildItem> keycloakDevServicesPreparedProducer,
+            BuildProducer<DevServicesResultBuildItem> devServicesResultProducer) {
 
         // TODO if the reused
         if (!devServicesConfig.enabled() || !config.enabled()) {
             LOG.debug("Not starting Dev Services for Keycloak as it has been disabled in the configuration");
-            return null;
+            return;
         }
 
         if (devSvcRequiredMarkerItems.isEmpty()
                 || oidcDevServicesEnabled()
                 || linuxContainersNotAvailable(dockerStatusBuildItem, devSvcRequiredMarkerItems)) {
-            return null;
+            return;
         }
         var devServicesConfigurator = getDevServicesConfigurator(devSvcRequiredMarkerItems);
         var feature = KeycloakDevServicesRequiredBuildItem.getFeature(devSvcRequiredMarkerItems);
 
         // Figure out if we need to shut down and restart any existing Keycloak container
         // if not and the Keycloak container has already started we just return
+        // TODO: correct this flag according to the ^^
+        final boolean containerRestarted = false;
 
         // TODO we need to capture and update the realm last modified
         Set<FileTime> currentRealmFileLastModifiedDate = getRealmFileLastModifiedDate(config.realmPath());
@@ -174,7 +172,8 @@ public class KeycloakDevServicesProcessor {
         // TODO do something with this
         List<String> errors = new ArrayList<>();
 
-        return KEYCLOAK_DEV_MODE_CONTAINER_LOCATOR.locateContainer(config.serviceName(), config.shared(), LaunchMode.current())
+        DevServicesResultBuildItem devServicesResultBuildItem = KEYCLOAK_DEV_MODE_CONTAINER_LOCATOR
+                .locateContainer(config.serviceName(), config.shared(), LaunchMode.current())
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem, List.of(imageName, "keycloak"),
                         KEYCLOAK_PORT, LaunchMode.current(), useSharedNetwork))
                 .map(containerAddress -> {
@@ -196,10 +195,10 @@ public class KeycloakDevServicesProcessor {
                                         composeProjectBuildItem))
                         .configProvider(createLazyConfigMap(devServicesConfigurator))
                         .build());
+        devServicesResultProducer.produce(devServicesResultBuildItem);
 
-        //        var configPropertiesContext = new KeycloakDevServicesConfigurator.ConfigPropertiesContext(authServerInternalUrl, oidcClientId, oidcClientSecret,
-        //                internalBaseUrl);
-        //        configProperties.putAll(devServicesConfigurator.createProperties(configPropertiesContext));
+        // now we know that Keycloak Dev Services will start
+        keycloakDevServicesPreparedProducer.produce(new KeycloakDevServicesPreparedBuildItem(containerRestarted));
 
         // TODO what to do for this?
         //        StartupLogCompressor compressor = new StartupLogCompressor(
@@ -276,10 +275,11 @@ public class KeycloakDevServicesProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     void produceDevUiCardWithKeycloakUrl(Optional<KeycloakDevServicesConfigBuildItem> configProps,
+            Optional<KeycloakDevServicesPreparedBuildItem> keycloakDevServicesPreparedBuildItem,
             List<KeycloakAdminPageBuildItem> keycloakAdminPageBuildItems,
             BuildProducer<CardPageBuildItem> cardPageProducer) {
         final String keycloakAdminUrl = getKeycloakUrl(configProps);
-        if (keycloakAdminUrl != null) {
+        if (keycloakDevServicesPreparedBuildItem.isPresent() && keycloakAdminUrl != null) {
             keycloakAdminPageBuildItems.forEach(i -> {
                 i.cardPage.addPage(Page
                         .externalPageBuilder("Keycloak Admin")
@@ -401,7 +401,7 @@ public class KeycloakDevServicesProcessor {
             oidcContainer.start();
 
             configPropertiesContext = createConfigPropertiesContext();
-            generatedConfig = configPropertiesContext.generatedConfig();
+            generatedConfig = null; // FIXME: impl. me!!!!!!!!!! take it from the ctx right above
 
             //            return maybeContainerAddress
             //                    .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem, List.of(imageName, "keycloak"),
@@ -472,41 +472,8 @@ public class KeycloakDevServicesProcessor {
                 }
             }
 
-            // TODO
-            //        keycloakBuildItemBuildProducer
-            //                .produce(new KeycloakDevServicesConfigBuildItem(configProperties,
-            //                        Map.of(OIDC_USERS, users, KEYCLOAK_REALMS, realmNames), true));
-
-            return new KeycloakDevServicesConfigurator.ConfigPropertiesContext() {
-                @Override
-                public String authServerInternalUrl() {
-                    return authServerInternalUrl;
-                }
-
-                @Override
-                public String oidcClientId() {
-                    return oidcClientId;
-                }
-
-                @Override
-                public String oidcClientSecret() {
-                    return oidcClientSecret;
-                }
-
-                @Override
-                public String authServerInternalBaseUrl() {
-                    return internalBaseUrl;
-                }
-
-                @Override
-                public Map<String, String> generatedConfig() {
-                    return Map.of(
-                            KEYCLOAK_URL_KEY, internalURL,
-                            CLIENT_AUTH_SERVER_URL_CONFIG_KEY, clientAuthServerUrl,
-                            OIDC_USERS, users.entrySet().stream().map(Object::toString).collect(Collectors.joining(",")),
-                            KEYCLOAK_REALMS, String.join(",", realmNames));
-                }
-            };
+            return new KeycloakDevServicesConfigurator.ConfigPropertiesContext(authServerInternalUrl, oidcClientId,
+                    oidcClientSecret, internalBaseUrl, internalURL, clientAuthServerUrl, users, realmNames);
         }
 
         private static String realmsURL(String baseURL, String realmName) {
@@ -593,48 +560,11 @@ public class KeycloakDevServicesProcessor {
             }
         }
 
-        var configPropertiesContext = new KeycloakDevServicesConfigurator.ConfigPropertiesContext() {
-
-            @Override
-            public String authServerInternalUrl() {
-                return authServerInternalUrl;
-            }
-
-            @Override
-            public String oidcClientId() {
-                return oidcClientId;
-            }
-
-            @Override
-            public String oidcClientSecret() {
-                return oidcClientSecret;
-            }
-
-            @Override
-            public String authServerInternalBaseUrl() {
-                return internalBaseUrl;
-            }
-
-            @Override
-            public Map<String, String> generatedConfig() {
-                return Map.of(
-                        KEYCLOAK_URL_KEY, internalURL,
-                        CLIENT_AUTH_SERVER_URL_CONFIG_KEY, clientAuthServerUrl,
-                        OIDC_USERS, users.entrySet().stream().map(Object::toString).collect(Collectors.joining(",")),
-                        KEYCLOAK_REALMS, String.join(",", realmNames));
-            }
-        };
-
-        // TODO
-        //        keycloakBuildItemBuildProducer
-        //                .produce(new KeycloakDevServicesConfigBuildItem(configProperties,
-        //                        Map.of(OIDC_USERS, users, KEYCLOAK_REALMS, realmNames), true));
-
-        return devServicesConfigurator
-                .getLazyConfigKeys()
-                .stream()
-                .collect(Collectors.toUnmodifiableMap(Function.identity(),
-                        configKey -> devServicesConfigurator.getLazyConfigValue(configKey, configPropertiesContext)));
+        var configPropertiesContext = new KeycloakDevServicesConfigurator.ConfigPropertiesContext(authServerInternalUrl,
+                oidcClientId, oidcClientSecret, internalBaseUrl, internalURL, clientAuthServerUrl, users, realmNames);
+        return devServicesConfigurator.getLazyConfigKeys().stream().collect(Collectors.toUnmodifiableMap(
+                Function.identity(),
+                configKey -> devServicesConfigurator.getLazyConfigValue(configKey, configPropertiesContext)));
     }
 
     private static Map<String, String> resourcesMap(KeycloakDevServicesConfig config, List<String> errors) {

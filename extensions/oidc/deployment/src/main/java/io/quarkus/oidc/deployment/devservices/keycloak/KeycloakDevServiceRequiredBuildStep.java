@@ -15,8 +15,8 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.keycloak.KeycloakDevServicesConfig;
 import io.quarkus.devservices.keycloak.KeycloakDevServicesConfigurator.ConfigPropertiesContext;
+import io.quarkus.devservices.keycloak.KeycloakDevServicesConfigurator.LazyConfigProperty;
 import io.quarkus.devservices.keycloak.KeycloakDevServicesRequiredBuildItem;
-import io.quarkus.devservices.keycloak.KeycloakDevServicesRequiredBuildItem.LazyConfigProperty;
 import io.quarkus.oidc.deployment.OidcBuildStep;
 
 @BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, OidcBuildStep.IsEnabled.class,

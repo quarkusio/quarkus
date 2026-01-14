@@ -12,8 +12,8 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.keycloak.KeycloakAdminPageBuildItem;
 import io.quarkus.devservices.keycloak.KeycloakDevServicesConfig;
 import io.quarkus.devservices.keycloak.KeycloakDevServicesConfigurator.ConfigPropertiesContext;
+import io.quarkus.devservices.keycloak.KeycloakDevServicesConfigurator.LazyConfigProperty;
 import io.quarkus.devservices.keycloak.KeycloakDevServicesRequiredBuildItem;
-import io.quarkus.devservices.keycloak.KeycloakDevServicesRequiredBuildItem.LazyConfigProperty;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.oidc.client.deployment.OidcClientBuildStep;
 

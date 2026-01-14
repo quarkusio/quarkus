@@ -3,11 +3,15 @@ package io.quarkus.oidc.runtime.dev.ui;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.runtime.OidcTenantConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
@@ -23,6 +27,7 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 @Recorder
 public class OidcDevUiRecorder {
     private static final Logger LOG = Logger.getLogger(OidcDevUiRecorder.class);
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(OidcDevUiRecorder.class);
 
     private final RuntimeValue<VertxHttpConfig> httpConfig;
 
@@ -36,12 +41,51 @@ public class OidcDevUiRecorder {
         jsonRpcService.hydrate(oidcDevUiRpcSvcPropertiesBean.getValue(), httpConfig.getValue());
     }
 
-    public RuntimeValue<OidcDevUiRpcSvcPropertiesBean> getRpcServiceProperties(String authorizationUrl, String tokenUrl,
-            String logoutUrl, Duration webClientTimeout, Map<String, Map<String, String>> grantOptions,
-            Map<String, String> oidcUsers, String oidcProviderName, String oidcApplicationType, String oidcGrantType,
-            boolean introspectionIsAvailable, String keycloakAdminUrl, List<String> keycloakRealms, boolean swaggerIsAvailable,
+    public RuntimeValue<OidcDevUiRpcSvcPropertiesBean> getRpcServiceProperties(Duration webClientTimeout,
+            Map<String, Map<String, String>> grantOptions,
+            String oidcProviderName, String oidcGrantType, boolean introspectionIsAvailable, boolean swaggerIsAvailable,
             boolean graphqlIsAvailable, String swaggerUiPath, String graphqlUiPath, boolean alwaysLogoutUserInDevUiOnReload,
-            boolean discoverMetadata, String authServerUrl, String devUiLogoutPath, String devUiReadSessionCookiePath) {
+            boolean discoverMetadata, String devUiLogoutPath, String devUiReadSessionCookiePath, String authServerUrl,
+            String buildTimeKeycloakAdminUrl, String buildTimeOidcApplicationType) {
+        var config = ConfigProvider.getConfig();
+        String authorizationUrl;
+        String tokenUrl;
+        String logoutUrl;
+        final Map<String, String> oidcUsers;
+        final List<String> keycloakRealms;
+        final String keycloakAdminUrl;
+        final String oidcApplicationType;
+        if (authServerUrl == null) {
+            // == Keycloak Dev Services
+            String realmUrl = config.getValue("quarkus.oidc.auth-server-url", String.class);
+            authorizationUrl = realmUrl + "/protocol/openid-connect/auth";
+            tokenUrl = realmUrl + "/protocol/openid-connect/token";
+            logoutUrl = realmUrl + "/protocol/openid-connect/logout";
+            oidcUsers = config.getValues("oidc.users", String.class).stream().map(item -> {
+                String[] usernameToPassword = item.split("=");
+                return Map.entry(usernameToPassword[0], usernameToPassword[1]);
+            }).collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+            keycloakRealms = config.getValues("keycloak.realms", String.class);
+            keycloakAdminUrl = config.getValue("keycloak.url", String.class);
+            oidcApplicationType = config
+                    .getOptionalValue("quarkus.oidc.application-type", OidcTenantConfig.ApplicationType.class)
+                    // constant is "WEB_APP" while documented value is "web-app" and we expect users to use "web-app"
+                    // if this get changed, we need to update qwc-oidc-provider.js as well
+                    .map(at -> OidcTenantConfig.ApplicationType.WEB_APP == at ? "web-app"
+                            : at.name().toLowerCase())
+                    .orElse(OidcTenantConfig.ApplicationType.SERVICE.name().toLowerCase());
+        } else {
+            // == OIDC Dev Services or a known provider or a test resource, or whatever user configured
+            // OIDC Dev Services are not migrated yet, hence we cannot use the runtime config
+            authorizationUrl = null;
+            tokenUrl = null;
+            logoutUrl = null;
+            oidcUsers = null;
+            keycloakRealms = null;
+            keycloakAdminUrl = buildTimeKeycloakAdminUrl;
+            oidcApplicationType = buildTimeOidcApplicationType;
+        }
+
         if (discoverMetadata) {
             JsonObject metadata = discoverMetadata(authServerUrl);
             if (metadata != null) {
@@ -52,7 +96,7 @@ public class OidcDevUiRecorder {
                         || metadata.containsKey("userinfo_endpoint");
             }
         }
-        return new RuntimeValue<OidcDevUiRpcSvcPropertiesBean>(
+        return new RuntimeValue<>(
                 new OidcDevUiRpcSvcPropertiesBean(authorizationUrl, tokenUrl, logoutUrl,
                         webClientTimeout, grantOptions, oidcUsers, oidcProviderName, oidcApplicationType, oidcGrantType,
                         introspectionIsAvailable, keycloakAdminUrl, keycloakRealms, swaggerIsAvailable,

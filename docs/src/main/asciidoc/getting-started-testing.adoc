@@ -1364,7 +1364,7 @@ Enable this by adding the following system property to your integration test run
 
 [source,bash]
 ----
--Dquarkus.package.jar.appcds.use-aot=true
+-Dquarkus.package.jar.aot.enabled=true
 ----
 
 With this flag, the tested application is launched with the JVM’s AOT cache output option, and an `app.aot` file is produced next to the built jar (for example `target/quarkus-app/app.aot`). You can then run the application with:

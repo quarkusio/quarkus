@@ -184,13 +184,25 @@ public interface PackageConfig {
         /**
          * AppCDS archive sub-configuration.
          * This configuration only applies to certain JAR types.
+         *
+         * @deprecated use {@link PackageConfig#jar#aot()} instead
          */
+        @Deprecated(forRemoval = true, since = "3.32")
         AppcdsConfig appcds();
 
         /**
+         * AOT file sub-configuration.
+         * This configuration only applies to certain JAR types.
+         */
+        AotConfig aot();
+
+        /**
          * Configuration for AppCDS generation.
+         *
+         * @Deprecated Use AotConfig instead
          */
         @ConfigGroup
+        @Deprecated(forRemoval = true, since = "3.32")
         interface AppcdsConfig {
             /**
              * Whether to automate the creation of AppCDS.
@@ -238,6 +250,46 @@ public interface PackageConfig {
              */
             @WithDefault("false")
             boolean useAot();
+        }
+
+        /**
+         * AOT file generation related configuration
+         */
+        interface AotConfig {
+            /**
+             * Whether to automate the creation of an AOT file.
+             */
+            @WithDefault("false")
+            boolean enabled();
+
+            /**
+             * The type of AOT file to generate
+             * <p>
+             * If {@link AotType#AUTO} is used, Quarkus will generate an AOT file for JDK 25+,
+             * otherwise it will generate an AppCDS file.
+             */
+            Optional<AotType> type();
+
+            /**
+             * The phase in which the AOT file should be generated.
+             * <p>
+             * For AppCDS, AUTO means BUILD (and an error will be thrown if set to INTEGRATION_TESTS).
+             * <p>
+             * For Leyden AOT, AUTO means INTEGRATION_TESTS.
+             */
+            Optional<AotPhase> phase();
+
+            enum AotType {
+                AUTO,
+                AOT,
+                AppCDS
+            }
+
+            enum AotPhase {
+                AUTO,
+                BUILD,
+                INTEGRATION_TESTS
+            }
         }
 
         /**

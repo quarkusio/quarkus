@@ -52,7 +52,9 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
                     testConfig.env(),
                     context.devServicesLaunchResult(),
                     context.buildOutputDirectory().resolve(pathStr),
-                    config.getOptionalValue("quarkus.package.jar.appcds.use-aot", Boolean.class).orElse(Boolean.FALSE)
+                    config.getOptionalValue("quarkus.package.jar.aot.enabled", Boolean.class)
+                            .or(() -> config.getOptionalValue("quarkus.package.jar.appcds.use-aot", Boolean.class))
+                            .orElse(Boolean.FALSE)
                             // only record AOT file for the default profile
                             && (context.profile() == null)));
             return launcher;

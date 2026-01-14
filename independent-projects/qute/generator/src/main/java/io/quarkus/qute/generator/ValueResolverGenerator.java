@@ -1116,7 +1116,7 @@ public class ValueResolverGenerator extends AbstractGenerator {
         if (targetPackage == null || targetPackage.isEmpty()) {
             return baseName + suffix;
         } else if (targetPackage.startsWith("java")) {
-            return "io/quarkus/qute" + "/" + baseName + suffix;
+            return "io/quarkus/qute/generated/" + baseName + suffix;
         } else {
             return targetPackage.replace('.', '/') + "/" + baseName + suffix;
         }

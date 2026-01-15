@@ -15,6 +15,7 @@ import static io.quarkus.test.junit.IntegrationTestUtil.handleDevServices;
 import static io.quarkus.test.junit.IntegrationTestUtil.readQuarkusArtifactProperties;
 import static io.quarkus.test.junit.IntegrationTestUtil.startLauncher;
 import static io.quarkus.test.junit.TestResourceUtil.TestResourceManagerReflections.copyEntriesFromProfile;
+import static java.lang.Integer.MAX_VALUE;
 import static org.junit.jupiter.api.extension.ExtensionContext.StoreScope.LAUNCHER_SESSION;
 
 import java.io.Closeable;
@@ -65,6 +66,8 @@ import io.quarkus.test.common.TestScopeManager;
 import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 import io.quarkus.test.junit.launcher.ArtifactLauncherProvider;
 import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.common.MapBackedConfigSource;
 
 public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithContextExtension
         implements BeforeTestExecutionCallback, AfterTestExecutionCallback, BeforeEachCallback, AfterEachCallback,
@@ -318,7 +321,12 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
 
             activateLogging();
             Optional<ListeningAddress> listeningAddress = startLauncher(launcher, additionalProperties);
-            ValueRegistry valueRegistry = new ValueRegistryImpl.Builder().addDiscoveredInfos().build();
+            ValueRegistry valueRegistry = new ValueRegistryImpl.Builder().addDiscoveredInfos()
+                    .withRuntimeSource(new SmallRyeConfigBuilder()
+                            .withSources(new MapBackedConfigSource("Test Properties", additionalProperties, MAX_VALUE) {
+                            }).build())
+                    .withRuntimeSource(config)
+                    .build();
             context.getStore(LAUNCHER_SESSION, CONFIG).put(ValueRegistry.class, valueRegistry);
             listeningAddress.ifPresent(address -> address.register(valueRegistry));
 

@@ -7,6 +7,7 @@ import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefaults;
 
 /**
  * gRPC configuration root.
@@ -20,6 +21,7 @@ public interface GrpcConfiguration {
      */
     @ConfigDocSection(generated = true)
     @ConfigDocMapKey("client-name")
+    @WithDefaults
     Map<String, GrpcClientConfiguration> clients();
 
     /**

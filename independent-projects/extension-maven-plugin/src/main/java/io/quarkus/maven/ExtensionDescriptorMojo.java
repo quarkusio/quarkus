@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -367,7 +368,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         addCapabilities(extObject);
         addSource(extObject);
         addExtensionDependencies(extObject);
-
+        addBuildTimestamp(extObject);
         completeCodestartArtifact(mapper, extObject);
 
         final DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter();
@@ -380,6 +381,11 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             throw new MojoExecutionException(
                     "Failed to persist " + output.resolve(BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME), e);
         }
+    }
+
+    private void addBuildTimestamp(ObjectNode extObject) {
+        ObjectNode metadata = getMetadataNode(extObject);
+        metadata.put("build-timestamp", Instant.now().toString());
     }
 
     private void recordDevModeConfig(Properties props) {

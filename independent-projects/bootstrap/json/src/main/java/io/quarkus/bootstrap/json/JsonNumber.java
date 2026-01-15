@@ -1,4 +1,4 @@
 package io.quarkus.bootstrap.json;
 
-public interface JsonNumber extends JsonValue {
+public sealed interface JsonNumber extends JsonValue permits JsonDouble, JsonInteger {
 }

@@ -1,4 +1,4 @@
 package io.quarkus.bootstrap.json;
 
-public interface JsonValue {
+public sealed interface JsonValue permits JsonBoolean, JsonMember, JsonMultiValue, JsonNull, JsonNumber, JsonString {
 }

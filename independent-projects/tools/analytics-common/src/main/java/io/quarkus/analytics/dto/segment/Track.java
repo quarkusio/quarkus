@@ -4,9 +4,6 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 public class Track implements Serializable {
     private String userId;
     private TrackEventType event;
@@ -34,7 +31,6 @@ public class Track implements Serializable {
         return userId;
     }
 
-    @JsonProperty("userId")
     public void setUserId(String userId) {
         this.userId = userId;
     }
@@ -63,7 +59,6 @@ public class Track implements Serializable {
         this.context = context;
     }
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     public Instant getTimestamp() {
         return timestamp;
     }

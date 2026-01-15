@@ -5,8 +5,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 /**
  * Allow to configure build analytics behaviour by downloading a remote configuration file from a public location.
  */
@@ -40,7 +38,6 @@ public class RemoteConfig implements AnalyticsRemoteConfig, Serializable {
         this.active = active;
     }
 
-    @JsonProperty("deny_anonymous_ids")
     public List<String> getDenyAnonymousIds() {
         return denyAnonymousIds;
     }
@@ -49,7 +46,6 @@ public class RemoteConfig implements AnalyticsRemoteConfig, Serializable {
         this.denyAnonymousIds = denyAnonymousIds;
     }
 
-    @JsonProperty("deny_quarkus_versions")
     public List<String> getDenyQuarkusVersions() {
         return denyQuarkusVersions;
     }
@@ -58,7 +54,6 @@ public class RemoteConfig implements AnalyticsRemoteConfig, Serializable {
         this.denyQuarkusVersions = denyQuarkusVersions;
     }
 
-    @JsonProperty("refresh_interval")
     public Duration getRefreshInterval() {
         return refreshInterval;
     }

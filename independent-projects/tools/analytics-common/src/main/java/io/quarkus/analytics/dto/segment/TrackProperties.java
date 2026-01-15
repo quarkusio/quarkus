@@ -3,8 +3,6 @@ package io.quarkus.analytics.dto.segment;
 import java.io.Serializable;
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 public class TrackProperties implements Serializable {
     private List<AppExtension> appExtensions;
 
@@ -19,7 +17,6 @@ public class TrackProperties implements Serializable {
         return new TrackPropertiesBuilder();
     }
 
-    @JsonProperty("app_extensions")
     public List<AppExtension> getAppExtensions() {
         return appExtensions;
     }
@@ -66,7 +63,6 @@ public class TrackProperties implements Serializable {
             return new AppExtensionBuilder();
         }
 
-        @JsonProperty("group_id")
         public String getGroupId() {
             return groupId;
         }
@@ -75,7 +71,6 @@ public class TrackProperties implements Serializable {
             this.groupId = groupId;
         }
 
-        @JsonProperty("artifact_id")
         public String getArtifactId() {
             return artifactId;
         }

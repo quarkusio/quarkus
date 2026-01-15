@@ -423,7 +423,7 @@ These are regular Quarkus config properties, so if you always want to build in a
 it is recommended you add these to your `application.properties` in order to avoid specifying them every time.
 ====
 
-Executable built that way with the container runtime will be a 64-bit Linux executable, so depending on your operating system it may no longer be runnable.
+Executable built that way with the container runtime will be a 64-bit Linux executable, so depending on your operating system, it may no longer be runnable.
 
 [IMPORTANT]
 ====
@@ -433,7 +433,7 @@ So, if you plan to build a container, make sure that the base image in your `Doc
 The native executable will not run on UBI 8 base images.
 
 You can configure the builder image used for the container build by setting the `quarkus.native.builder-image` property.
-For example to switch back to an UBI8 _builder image_ you can use:
+For example, to switch back to an UBI8 _builder image_ you can use:
 
 `quarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor}`
 
@@ -502,7 +502,7 @@ See the xref:container-image.adoc[Container Image guide] for more details.
 === Manually using the micro base image
 
 You can run the application in a container using the JAR produced by the Quarkus Maven Plugin.
-However, in this section we focus on creating a container image using the produced native executable.
+However, in this section, we focus on creating a container image using the produced native executable.
 
 image:containerization-process.png[Containerization Process]
 
@@ -510,7 +510,7 @@ When using a local GraalVM installation, the native executable targets your loca
 However, as a container may not use the same _executable_ format as the one produced by your operating system,
 we will instruct the Maven build to produce an executable by leveraging a container runtime (as described in <<#container-runtime,this section>>):
 
-The produced executable will be a 64-bit Linux executable, so depending on your operating system it may no longer be runnable.
+The produced executable will be a 64-bit Linux executable, so depending on your operating system, it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a container.
 The project generation has provided a `Dockerfile.native-micro` in the `src/main/docker` directory with the following content:
 
@@ -867,7 +867,7 @@ You will find the debug symbols for the native executable in a `.debug` file nex
 [NOTE]
 ====
 The generation of the `.debug` file depends on `objcopy`.
-As a result, when using a local GraalVM installation on common Linux distributions you will need to install the `binutils` package:
+As a result, when using a local GraalVM installation on common Linux distributions, you will need to install the `binutils` package:
 
 [source,bash]
 ----
@@ -877,14 +877,14 @@ sudo dnf install binutils
 sudo apt-get install binutils
 ----
 
-When `objcopy` is not available debug symbols are embedded in the executable.
+When `objcopy` is not available, debug symbols are embedded in the executable.
 ====
 
 Aside from debug symbols,
 setting `-Dquarkus.native.debug.enabled=true` flag generates a cache of source files
-for any JDK runtime classes, GraalVM classes and application classes resolved during native executable generation.
+for any JDK runtime classes, GraalVM classes, and application classes resolved during native executable generation.
 This source cache is useful for native debugging tools,
-to establish the link between the symbols and matching source code.
+to establish the link between the symbols and the matching source code.
 It provides a convenient way of making just the necessary sources available to the debugger/IDE when debugging a native executable.
 
 Sources for third party jar dependencies, including Quarkus source code,
@@ -924,7 +924,7 @@ For a more detailed guide about debugging native images please refer to the xref
 
 == Using Monitoring Options
 
-Monitoring options such as JDK flight recorder, jvmstat, heap dumps, NMT (starting with Mandrel 24.1 for JDK 23), and remote JMX 
+Monitoring options such as JDK flight recorder, jvmstat, heap dumps, NMT (starting with Mandrel 24.1 for JDK 23), and remote JMX
 can be added to the native executable build. Simply supply a comma separated list of the monitoring options you wish to
 include at build time.
 [source,bash]

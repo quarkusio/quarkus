@@ -19,7 +19,7 @@ The application is configured automatically.
 Dev Services for AMQP is automatically enabled unless:
 
 - `quarkus.amqp.devservices.enabled` is set to `false`
-- the `amqp-host` or `amqp-port` is configured
+- the `amqp-host` or `amqp-port` are configured
 - all the Reactive Messaging AMQP channels have the `host` or `port` attributes set
 
 Dev Services for AMQP relies on Docker to start the broker.
@@ -28,7 +28,7 @@ You can configure the broker access using the `amqp-host`, `amqp-port`, `amqp-us
 
 == Shared broker
 
-Most of the time you need to share the broker between applications.
+Most of the time, you need to share the broker between applications.
 Dev Services for AMQP implements a _service discovery_ mechanism for your multiple Quarkus applications running in _dev_ mode to share a single broker.
 
 NOTE: Dev Services for AMQP starts the container with the `quarkus-dev-service-amqp` label which is used to identify the container.

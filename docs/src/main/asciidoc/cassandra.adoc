@@ -88,7 +88,7 @@ mapper will generate proper CQL queries underneath.
 
 This is why the `Fruit` class is annotated with `@Entity`: this annotation marks it as an _entity
 class_ that is mapped to a Cassandra table. Its instances are meant to be automatically persisted
-into, and retrieved from, the Cassandra database. Here, the table name will be inferred from the
+into, and retrieved from the Cassandra database. Here, the table name will be inferred from the
 class name: `fruit`.
 
 Also, the `name` field represents a Cassandra partition key, and so we are annotating it with
@@ -131,8 +131,8 @@ public interface FruitMapper {
 }
 ----
 
-The `@Mapper` annotation is yet another annotation recognized by the DataStax Object Mapper. A
-mapper is responsible for constructing DAO instances – in this case, out mapper is constructing
+The `@Mapper` annotation is yet another annotation recognised by the DataStax Object Mapper. A
+mapper is responsible for constructing DAO instances – in this case, our mapper is constructing
 an instance of our only DAO, `FruitDao`.
 
 Think of the mapper interface as a factory for DAO beans. If you intend to construct and inject a
@@ -211,7 +211,7 @@ in use. Also, never use both annotation processors together.
 </dependency>
 ----
 
-IMPORTANT: Although this module is called "runtime", it must be declared in compile scope.
+IMPORTANT: Although this module is called "runtime", it must be declared in the compile scope.
 
 If your project is correctly set up, you should now be able to compile it without errors, and you
 should see the generated code in the `target/generated-sources/annotations` directory (if you are
@@ -240,7 +240,7 @@ public class FruitService {
 }
 ----
 
-Note how the service is being injected a `FruitDao` instance. This DAO instance is injected
+Note how the service is being injected with a `FruitDao` instance. This DAO instance is injected
 automatically, thanks to the generated implementations.
 
 The Cassandra Quarkus extension allows you to inject any of the following beans in your own
@@ -428,7 +428,7 @@ one in the background:
 docker run --name local-cassandra-instance -p 9042:9042 -d cassandra
 ----
 
-Next you need to create the keyspace and table that will be used by your application. If you are
+Next, you need to create the keyspace and table that will be used by your application. If you are
 using Docker, run the following commands:
 
 [source,shell]
@@ -521,7 +521,7 @@ Similarly, the method `updateAsync` returns a `Uni` - it is automatically conver
 original result set returned by the driver.
 
 NOTE: The Cassandra driver uses the Reactive Streams `Publisher` API for reactive calls. The Quarkus
-framework however uses Mutiny. Because of that, the `CqlQuarkusSession` interface transparently
+framework, however uses Mutiny. Because of that, the `CqlQuarkusSession` interface transparently
 converts the `Publisher` instances returned by the driver into the reactive type `Multi`.
 `CqlQuarkusSession` is also capable of converting a `Publisher` into a `Uni` – in this case, the
 publisher is expected to emit at most one row, then complete. This is suitable for write queries

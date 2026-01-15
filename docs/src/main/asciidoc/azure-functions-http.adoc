@@ -69,12 +69,12 @@ rerun the build when you are ready.
 == Configuring Root Paths
 
 The default route prefix for an Azure Function is `/api`.  All of your Jakarta REST, Servlet, Reactive Routes, and xref:funqy-http.adoc[Funqy HTTP] endpoints must
-explicitly take this into account.  In the generated project this is handled by the
+explicitly take this into account.  In the generated project, this is handled by the
 `quarkus.http.root-path` switch in `application.properties`
 
 == Quarkus dev mode
 
-Quarkus dev mode works by just running your application as a HTTP endpoint.  In dev mode,
+Quarkus dev mode works by just running your application as an HTTP endpoint.  In dev mode,
 there is no special interaction with the Azure Functions local runtime.
 
 include::{includes}/devtools/dev.adoc[]
@@ -145,7 +145,7 @@ The `quarkus-azure-functions-http` extension handles all the work to deploy to A
 Quarkus will use the Azure CLI in the background to authenticate and deploy to Azure. If you have
 multiple subscriptions associated with your account, you must set the `quarkus.azure-functions.subscription-id`
 property in your `application.properties` file to the subscription you want to use.
-For other authentication mechanisms and deployment options see <<#configuration-reference>>.
+For other authentication mechanisms and deployment options, see <<#configuration-reference>>.
 
 To deploy your application, after you built your project, execute:
 

@@ -52,7 +52,6 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
-import org.jspecify.annotations.NonNull;
 import org.wildfly.common.function.Functions;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
@@ -92,7 +91,6 @@ import io.quarkus.deployment.util.ReflectUtil;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -174,8 +172,6 @@ public final class ExtensionLoader {
         }
 
         // this has to be an identity hash map else the recorder will get angry
-        // TODO: this looks fishy as rootFields is never updated
-        Map<Object, FieldDescriptor> rootFields = new IdentityHashMap<>();
         Map<Object, ConfigClass> mappingClasses = new IdentityHashMap<>();
         for (Map.Entry<Class<?>, Object> entry : proxies.entrySet()) {
             // ConfigMapping
@@ -193,16 +189,6 @@ public final class ExtensionLoader {
             public void execute(BuildContext bc) {
                 bc.produce(new ConfigurationBuildItem(readResult));
                 bc.produce(new RunTimeConfigurationProxyBuildItem(proxies));
-
-                ObjectLoader rootLoader = new ObjectLoader() {
-                    public ResultHandle load(final BytecodeCreator body, final Object obj, final boolean staticInit) {
-                        return body.readStaticField(rootFields.get(obj));
-                    }
-
-                    public boolean canHandleObject(final Object obj, final boolean staticInit) {
-                        return rootFields.containsKey(obj);
-                    }
-                };
 
                 // Load @ConfigMapping in recorded deployment code from Recorder
                 ObjectLoader mappingLoader = new ObjectLoader() {
@@ -244,7 +230,6 @@ public final class ExtensionLoader {
                     }
                 };
 
-                bc.produce(new BytecodeRecorderObjectLoaderBuildItem(rootLoader));
                 bc.produce(new BytecodeRecorderObjectLoaderBuildItem(mappingLoader));
                 bc.produce(new BytecodeRecorderObjectLoaderBuildItem(valueRegistryLoader));
             }
@@ -858,7 +843,6 @@ public final class ExtensionLoader {
         return chainConfig;
     }
 
-    @NonNull
     private static Consumer<BuildStepBuilder> configureBuildStepFlags(Consumer<BuildStepBuilder> methodStepConfig, boolean weak,
             boolean overridable, Class<? extends BuildItem> buildItemClass) {
         final ProduceFlags flags;

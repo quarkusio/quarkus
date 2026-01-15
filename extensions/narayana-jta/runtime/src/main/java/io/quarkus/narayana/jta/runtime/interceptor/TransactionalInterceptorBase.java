@@ -32,7 +32,6 @@ import io.quarkus.narayana.jta.runtime.NotifyingTransactionManager;
 import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
 import io.quarkus.transaction.annotations.Rollback;
 import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.converters.ReactiveTypeConverter;
 import io.smallrye.reactive.converters.Registry;
 import mutiny.zero.flow.adapters.AdaptersToFlow;
@@ -41,7 +40,7 @@ import mutiny.zero.flow.adapters.AdaptersToReactiveStreams;
 public abstract class TransactionalInterceptorBase implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    protected static final Logger log = Logger.getLogger(TransactionalInterceptorBase.class);
+    private static final Logger log = Logger.getLogger(TransactionalInterceptorBase.class);
     private final Map<Method, Integer> methodTransactionTimeoutDefinedByPropertyCache = new ConcurrentHashMap<>();
 
     @Inject
@@ -433,15 +432,5 @@ public abstract class TransactionalInterceptorBase implements Serializable {
     @SuppressWarnings("unchecked")
     private static <E extends Throwable> void sneakyThrow(Throwable e) throws E {
         throw (E) e;
-    }
-
-    protected boolean disableInterceptorOnUniMethods(InvocationContext ic) throws Exception {
-        // Disable Interceptor on Reactive (uni) methods
-        // in The Reactive transaction module only REQUIRED is supported so far
-        if (ic.getMethod().getReturnType().equals(Uni.class)) {
-            log.debugf("method is annoted @Transactional but returns a Uni<?>, JTA transactions will be disabled");
-            return true;
-        }
-        return false;
     }
 }

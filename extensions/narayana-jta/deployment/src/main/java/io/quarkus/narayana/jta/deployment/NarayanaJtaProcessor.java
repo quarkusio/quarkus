@@ -141,14 +141,18 @@ class NarayanaJtaProcessor {
                 .reason(getClass().getName())
                 .build());
 
-        AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder();
-        builder.addBeanClass(TransactionalInterceptorSupports.class);
-        builder.addBeanClass(TransactionalInterceptorNever.class);
-        builder.addBeanClass(TransactionalInterceptorRequired.class);
-        builder.addBeanClass(TransactionalInterceptorRequiresNew.class);
-        builder.addBeanClass(TransactionalInterceptorMandatory.class);
-        builder.addBeanClass(TransactionalInterceptorNotSupported.class);
-        additionalBeans.produce(builder.build());
+        // Only register Narayana's transactional interceptors if reactive transactions are not present
+        // Reactive transactions provide their own interceptors with higher priority
+        if (!capabilities.isPresent("io.quarkus.reactive.transactions")) {
+            AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder();
+            builder.addBeanClass(TransactionalInterceptorSupports.class);
+            builder.addBeanClass(TransactionalInterceptorNever.class);
+            builder.addBeanClass(TransactionalInterceptorRequired.class);
+            builder.addBeanClass(TransactionalInterceptorRequiresNew.class);
+            builder.addBeanClass(TransactionalInterceptorMandatory.class);
+            builder.addBeanClass(TransactionalInterceptorNotSupported.class);
+            additionalBeans.produce(builder.build());
+        }
 
         transactionManagerBuildTimeConfig.unsafeMultipleLastResources().ifPresent(mode -> {
             if (!mode.equals(UnsafeMultipleLastResourcesMode.FAIL)) {

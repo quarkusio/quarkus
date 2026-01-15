@@ -46,6 +46,11 @@
                         </configuration>
                     </execution>
                 </executions>
+                <configuration>
+                    <capabilities>
+                        <provides>io.quarkus.reactive.transactions</provides>
+                    </capabilities>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

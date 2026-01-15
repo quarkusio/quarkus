@@ -33,7 +33,6 @@ import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.Resolver;
-import io.quarkus.qute.TestEvalContext;
 import io.quarkus.qute.ValueResolver;
 import io.quarkus.qute.generator.ExtensionMethodGenerator.NamespaceExtensionMethodInfo;
 import io.quarkus.qute.generator.ExtensionMethodGenerator.Parameters;

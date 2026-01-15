@@ -2408,7 +2408,7 @@ public class MyExceptionWrapper extends RuntimeException {
 }
 ----
 
-If you don't control that exception wrapper type, you can place the annotation on any class and specify the exception wrapper types it applies to as annotation parameter:
+If you don't control that exception wrapper type, you can place the annotation on any class and specify the exception wrapper types it applies to as an annotation parameter:
 
 [source,java]
 ----

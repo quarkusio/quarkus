@@ -49,7 +49,7 @@ NOTE: Quarkus extensions may declare additional discovery rules. For example, `@
 === How to Generate a Jandex Index
 
 A dependency with a Jandex index is automatically scanned for beans.
-To generate the index just add the following plugin to your build file:
+To generate the index, just add the following plugin to your build file:
 
 [role="primary asciidoc-tabs-sync-maven"]
 .Maven
@@ -231,7 +231,7 @@ public class Consumer {
 ----
 
 Only the first producer will get the `@Default` qualifier, the second will not.
-Hence, there will be no error and everything will work as expected.
+Hence, there will be no error, and everything will work as expected.
 
 === When To Use `@Named`?
 
@@ -274,12 +274,12 @@ Outside of this use-case, just use `@Identifier`.
 
 Quarkus is using GraalVM to build a native executable.
 One of the limitations of GraalVM is the usage of link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/Reflection/[Reflection, window="_blank"].
-Reflective operations are supported but all relevant members must be registered for reflection explicitly.
+Reflective operations are supported, but all relevant members must be registered for reflection explicitly.
 Those registrations result in a bigger native executable.
 
-And if Quarkus DI needs to access a private member it *has to use reflection*.
+And if Quarkus DI needs to access a private member it, *has to use reflection*.
 That's why Quarkus users are encouraged __not to use private members__ in their beans.
-This involves injection fields, constructors and initializers, observer methods, producer methods and fields, disposers and interceptor methods.
+This involves injection fields, constructors and initializers, observer methods, producer methods and fields, disposers, and interceptor methods.
 
 How to avoid using private members?
 You can use package-private modifiers:
@@ -391,7 +391,7 @@ public class PingResource {
 [[startup_event]]
 ==== Startup Event
 
-However, if you really need to instantiate a bean eagerly you can:
+However, if you really need to instantiate a bean eagerly, you can:
 
 * Declare an observer of the `StartupEvent` - the scope of the bean does not matter in this case:
 +
@@ -537,7 +537,7 @@ In such cases, you'll notice a big warning in the log.
 Users and extension authors have several options <<eliminate_false_positives,how to eliminate false positives>>.
 
 The optimization can be disabled by setting `quarkus.arc.remove-unused-beans` to `none` or `false`.
-Quarkus also provides a middle ground where application beans are never removed whether or not they are unused, while the optimization proceeds normally for non application classes.
+Quarkus also provides a middle ground where application beans are never removed, whether or not they are unused, while the optimization proceeds normally for non application classes.
 To use this mode, set `quarkus.arc.remove-unused-beans` to `fwk` or `framework`.
 
 ==== What's Removed?
@@ -601,7 +601,7 @@ Furthermore, extensions can eliminate false positives by producing an `Unremovab
 Quarkus adds a capability that CDI currently does not support which is to conditionally declare a bean if no other bean with equal types and qualifiers was declared by any available means (bean class, producer, synthetic bean, ...)
 This is done using the `@io.quarkus.arc.DefaultBean` annotation and is best explained with an example.
 
-Say there is a Quarkus extension that among other things declares a few CDI beans like the following code does:
+Say there is a Quarkus extension that, among other things, declares a few CDI beans like the following code does:
 
 [source,java]
 ----
@@ -669,11 +669,11 @@ public class CustomizedDefaultConfiguration {
 [[enable_build_profile]]
 === Enabling Beans for Quarkus Build Profile
 
-Quarkus adds a capability that CDI currently does not support which is to conditionally enable a bean when a Quarkus build time profile is enabled,
+Quarkus adds a capability that CDI currently does not support, which is to conditionally enable a bean when a Quarkus build time profile is enabled,
 via the `@io.quarkus.arc.profile.IfBuildProfile` and `@io.quarkus.arc.profile.UnlessBuildProfile` annotations.
 When used in conjunction with `@io.quarkus.arc.DefaultBean`, these annotations allow for the creation of different bean configurations for different build profiles.
 
-Imagine for instance that an application contains a bean named `Tracer`, which needs to do nothing when in tests or in dev mode, but works in its normal capacity for the production artifact.
+Imagine, for instance that an application contains a bean named `Tracer`, which needs to do nothing when in tests or in dev mode, but works in its normal capacity for the production artifact.
 An elegant way to create such beans is the following:
 
 [source,java]
@@ -778,11 +778,11 @@ TIP: It is also possible to use `@IfBuildProperty` and `@UnlessBuildProperty` on
 === Declaring Selected Alternatives
 
 In CDI, an alternative bean may be selected either globally for an application by means of `@Priority`, or for a bean archive using a `beans.xml` descriptor.
-Quarkus has a simplified bean discovery and the content of `beans.xml` is ignored.
+Quarkus has a simplified bean discovery, and the content of `beans.xml` is ignored.
 
 However, it is also possible to select alternatives for an application using the unified configuration.
 The `quarkus.arc.selected-alternatives` property accepts a list of string values that are used to match alternative beans.
-If any value matches then the priority of `Integer#MAX_VALUE` is used for the relevant bean.
+If any value matches, then the priority of `Integer#MAX_VALUE` is used for the relevant bean.
 The priority declared via `@Priority` or inherited from a stereotype is overridden.
 
 .Value Examples
@@ -863,7 +863,7 @@ class Services {
 
 * Only *method-level bindings* are considered for backward compatibility reasons (otherwise static methods of bean classes that declare class-level bindings would be suddenly intercepted)
 * Private static methods are never intercepted
-* `InvocationContext#getTarget()` returns `null` for obvious reasons; therefore not all existing interceptors may behave correctly when intercepting static methods
+* `InvocationContext#getTarget()` returns `null` for obvious reasons; therefore, not all existing interceptors may behave correctly when intercepting static methods
 +
 NOTE: Interceptors can use `InvocationContext.getMethod()` to detect static methods and adjust the behavior accordingly.
 
@@ -872,7 +872,7 @@ NOTE: Interceptors can use `InvocationContext.getMethod()` to detect static meth
 
 In normal CDI, classes that are marked as `final` and / or have `final` methods are not eligible for proxy creation,
 which in turn means that interceptors and normal scoped beans don't work properly.
-This situation is very common when trying to use CDI with alternative JVM languages like Kotlin where classes and methods are `final` by default.
+This situation is very common when trying to use CDI with alternative JVM languages like Kotlin, where classes and methods are `final` by default.
 
 Quarkus however, can overcome these limitations when `quarkus.arc.transform-unproxyable-classes` is set to `true` (which is the default value).
 
@@ -880,7 +880,7 @@ Quarkus however, can overcome these limitations when `quarkus.arc.transform-unpr
 
 There is no standard concurrency control mechanism for CDI beans.
 Nevertheless, a bean instance can be shared and accessed concurrently from multiple threads.
-In that case it should be thread-safe.
+In that case, it should be thread-safe.
 You can use standard Java constructs (`volatile`, `synchronized`, `ReadWriteLock`, etc.) or let the container control the concurrent access.
 Quarkus provides `@io.quarkus.arc.Lock` and a built-in interceptor for this interceptor binding.
 Each interceptor instance associated with a contextual instance of an intercepted bean holds a separate `ReadWriteLock` with non-fair ordering policy.
@@ -962,13 +962,13 @@ Other interceptors could be provided to log method invocations to different targ
 === Caching the Result of Programmatic Lookup
 
 In certain situations, it is practical to obtain a bean instance programmatically via an injected `jakarta.enterprise.inject.Instance` and `Instance.get()`.
-However, according to the specification the `get()` method must identify the matching bean and obtain a contextual reference.
+However, according to the specification, the `get()` method must identify the matching bean and obtain a contextual reference.
 As a consequence, a new instance of a  `@Dependent` bean is returned from each invocation of `get()`.
 Moreover, this instance is a dependent object of the injected `Instance`.
 This behavior is well-defined, but it may lead to unexpected errors and memory leaks.
 Therefore, Quarkus comes with the `io.quarkus.arc.WithCaching` annotation.
 An injected `Instance` annotated with this annotation will cache the result of the `Instance#get()` operation.
-The result is computed on the first call and the same value is returned for all subsequent calls, even for `@Dependent` beans.
+The result is computed on the first call, and the same value is returned for all subsequent calls, even for `@Dependent` beans.
 
 [source,java]
 ----
@@ -1200,7 +1200,7 @@ public void doSomethingElse() {
 }
 ----
 
-The `@NoClassInterceptors` annotation may be put on methods and constructors and means that all class-level interceptors are ignored for these methods and constructors.
+The `@NoClassInterceptors` annotation may be put on methods and constructors, and means that all class-level interceptors are ignored for these methods and constructors.
 In other words, if a method/constructor is annotated `@NoClassInterceptors`, then the only interceptors that will apply to this method/constructor are interceptors declared directly on the method/constructor.
 
 This annotation affects only business method interceptors (`@AroundInvoke`) and constructor lifecycle callback interceptors (`@AroundConstruct`).
@@ -1369,7 +1369,7 @@ class MyClass<T> {
 }
 ----
 
-the bindings source class must also use `T` as the name of the type variable:
+The bindings source class must also use `T` as the name of the type variable:
 
 [source,java]
 ----
@@ -1514,7 +1514,7 @@ If some observers have thrown an exception, the `CompletionStage` completes exce
 The return type of the observer _does not matter_.
 The return value of the observer is _ignored_.
 
-You may declare an observer method that has a return type of `CompletionStage<>` or `Uni<>`, but neither the return type nor the actual return value affect the result of `Event.fireAsync()`.
+You may declare an observer method that has a return type of `CompletionStage<>` or `Uni<>`, but neither the return type nor the actual return value affects the result of `Event.fireAsync()`.
 Further, if the observer declares a return type of `Uni<>`, the returned `Uni` will not be subscribed to, so it is quite possible that part of the observer logic will not even execute.
 
 Therefore, it is recommended that observer methods, both synchronous and asynchronous, are always declared `void`.

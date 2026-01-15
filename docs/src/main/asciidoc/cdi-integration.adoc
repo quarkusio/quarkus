@@ -25,7 +25,7 @@ From a high level perspective these phases go as follows:
 3. Registration of synthetic components
 4. Validation
 
-In the _initialization_ phase the preparatory work is being carried out and custom contexts are registered.
+In the _initialization_ phase, the preparatory work is being carried out, and custom contexts are registered.
 _Bean discovery_ is then the process where the container analyzes all application classes, identifies beans and wires them all together based on the provided metadata.
 Subsequently, the extensions can register _synthetic components_.
 Attributes of these components are fully controlled by the extensions, i.e. are not derived from an existing class.
@@ -35,7 +35,7 @@ For example, the container validates every injection point in the application an
 TIP: You can see more information about the bootstrap by enabling additional logging. Simply run the Maven build with `-X` or `--debug` and grep the lines that contain `io.quarkus.arc`. In <<cdi-reference.adoc#dev_mode,dev mode>>, you can use `quarkus.log.category."io.quarkus.arc.processor".level=DEBUG` and two special endpoints are also registered automatically to provide some basic debug info in the JSON format.
 
 Quarkus build steps can produce and consume various build items and hook into each phase.
-In the following sections we will describe all the relevant build items and common scenarios.
+In the following sections, we will describe all the relevant build items and common scenarios.
 
 == Metadata Sources
 
@@ -56,7 +56,7 @@ For example, a class that declares a `@Scheduled` method is always registered as
 An `UnsatisfiedResolutionException` indicates a problem during <<cdi.adoc#typesafe_resolution,typesafe resolution>>.
 Sometimes an injection point cannot be satisfied even if there is a class on the classpath that appears to be eligible for injection.
 There are several reasons why a class is not recognized and also several ways to fix it.
-In the first step we should identify the _reason_.
+In the first step, we should identify the _reason_.
 
 [[additional_bean_build_item]]
 === _Reason 1_: Class Is Not discovered
@@ -86,7 +86,7 @@ If the container considers them <<cdi-reference.adoc#remove_unused_beans,unused>
 However, you can use `AdditionalBeanBuildItem.Builder.setUnremovable()` method to instruct the container to never remove bean classes registered via this build item.
 See also <<cdi-reference.adoc#remove_unused_beans,Removing Unused Beans>> and <<unremovable_builditem>> for more details.
 
-It is aso possible to set the default scope via `AdditionalBeanBuildItem.Builder#setDefaultScope()`.
+It is also possible to set the default scope via `AdditionalBeanBuildItem.Builder#setDefaultScope()`.
 The default scope is only used if there is no scope declared on the bean class.
 
 NOTE: If no default scope is specified the `@Dependent` pseudo-scope is used.
@@ -112,7 +112,7 @@ AutoAddScopeBuildItem autoAddScope() {
 <1> Find all classes annotated with `@Scheduled`.
 <2> Add `@Singleton` as default scope. Classes already annotated with a scope are skipped automatically.
 
-_Solution 2_: If you need to process classes annotated with a specific annotation then it's possible to extend the set of bean defining annotations via the `BeanDefiningAnnotationBuildItem`.
+_Solution 2_: If you need to process classes annotated with a specific annotation, then it's possible to extend the set of bean defining annotations via the `BeanDefiningAnnotationBuildItem`.
 
 .`BeanDefiningAnnotationBuildItem` Example
 [source,java]
@@ -125,7 +125,7 @@ BeanDefiningAnnotationBuildItem additionalBeanDefiningAnnotation() {
 <1> Add `org.eclipse.microprofile.graphql.GraphQLApi` to the set of bean defining annotations.
 
 Bean classes added via `BeanDefiningAnnotationBuildItem` are _not removable_ by default, i.e. the resulting beans must not be removed even if they are considered unused.
-However, you can change the default behavior.
+However, you can change the default behaviour.
 See also <<cdi-reference.adoc#remove_unused_beans,Removing Unused Beans>> and <<unremovable_builditem>> for more details.
 
 It is also possible to specify the default scope.
@@ -138,7 +138,7 @@ NOTE: If no default scope is specified the `@Dependent` pseudo-scope is used.
 
 The container attempts to <<cdi-reference.adoc#remove_unused_beans,remove all unused beans>> during the build by default.
 This optimization allows for _framework-level dead code elimination_.
-In few special cases, it's not possible to correctly identify an unused bean.
+In a few special cases, it's not possible to correctly identify an unused bean.
 In particular, Quarkus is not able to detect the usage of the `CDI.current()` static method yet.
 Extensions can eliminate possible false positives by producing an `UnremovableBeanBuildItem`.
 
@@ -529,7 +529,7 @@ void syntheticObserver(ObserverRegistrationPhaseBuildItem observerRegistrationPh
 }
 ----
 
-The output of a `ObserverConfigurator` is recorded as bytecode.
+The output of an `ObserverConfigurator` is recorded as bytecode.
 Therefore, there are some limitations in how a synthetic observer is invoked at runtime.
 Currently, you must generate the bytecode of the method body directly.
 
@@ -537,7 +537,7 @@ Currently, you must generate the bytecode of the method body directly.
 == Use Case - I Have a Generated Bean Class
 
 No problem.
-You can generate the bytecode of a bean class manually and then all you need to do is to produce a `GeneratedBeanBuildItem` instead of `GeneratedClassBuildItem`.
+You can generate the bytecode of a bean class manually, and then all you need to do is to produce a `GeneratedBeanBuildItem` instead of `GeneratedClassBuildItem`.
 
 .`GeneratedBeanBuildItem` Example
 [source,java]
@@ -559,7 +559,7 @@ void generatedBean(BuildProducer<GeneratedBeanBuildItem> generatedBeans) {
 
 Sometimes extensions need to inspect the beans, observers and injection points, then perform additional validations and fail the build if something is wrong.
 
-_Solution_: If an extension needs to validate the deployment it should use the `ValidationPhaseBuildItem`.
+_Solution_: If an extension needs to validate the deployment, it should use the `ValidationPhaseBuildItem`.
 
 IMPORTANT: A build step that consumes the `ValidationPhaseBuildItem` should always produce a `ValidationErrorBuildItem` or at least inject a `BuildProducer` for this build item, otherwise it could be ignored or processed at the wrong time (e.g. after the correct CDI bootstrap phase).
 
@@ -614,7 +614,7 @@ _Solution_: You can inject the `CustomScopeAnnotationsBuildItem` in a build step
 [[additional_interceptor_bindings]]
 == Use Case - Additional Interceptor Bindings
 
-In rare cases it might be handy to programmatically register an existing annotation that is not annotated with `@jakarta.interceptor.InterceptorBinding` as an interceptor binding.
+In rare cases, it might be handy to programmatically register an existing annotation that is not annotated with `@jakarta.interceptor.InterceptorBinding` as an interceptor binding.
 This is similar to what CDI achieves through `BeforeBeanDiscovery#addInterceptorBinding()`.
 We are going to use `InterceptorBindingRegistrarBuildItem` to get it done.
 
@@ -678,9 +678,9 @@ If the newly registered stereotype annotation doesn't have the appropriate meta-
 [[injection_point_transformation]]
 == Use Case - Injection Point Transformation
 
-Every now and then it is handy to be able to change the qualifiers of an injection point programmatically.
+Every now and then, it is handy to be able to change the qualifiers of an injection point programmatically.
 You can do just that with `InjectionPointTransformerBuildItem`.
-The following sample shows how to apply transformation to injection points with type `Foo` that contain qualifier `MyQualifier`:
+The following sample shows how to apply a transformation to injection points with type `Foo` that contain a qualifier `MyQualifier`:
 
 .`InjectionPointTransformerBuildItem` Example
 [source,java]
@@ -741,7 +741,7 @@ INTERCEPTOR_BINDINGS:: `Map<DotName, ClassInfo>` containing all interceptor bind
 STEREOTYPES:: `Map<DotName, StereotypeInfo>` containing all stereotypes
 
 To get hold of these, simply query the extension context object for given key.
-Note that these metadata are made available as build proceeds which means that extensions can only leverage metadata that were built before the extensions are invoked.
+Note that these metadata are made available as build proceeds, which means that extensions can only leverage metadata that were built before the extensions are invoked.
 If your extension attempts to retrieve metadata that wasn't yet produced, `null` will be returned.
 Here is a summary of which extensions can access which metadata:
 

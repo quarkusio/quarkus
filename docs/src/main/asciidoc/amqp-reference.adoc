@@ -218,7 +218,7 @@ The AMQP connector supports six strategies:
 
 * `fail` - fail the application; no more AMQP messages will be processed (default).
 The AMQP message is marked as rejected.
-* `accept` - this strategy marks the AMQP message as _accepted_. The processing continues ignoring the failure.
+* `accept` - this strategy marks the AMQP message as _accepted_. The processing continues, ignoring the failure.
 Refer to the https://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-accepted[accepted delivery state documentation].
 * `release` - this strategy marks the AMQP message as _released_. The processing continues with the next message. The broker can redeliver the message.
 Refer to the https://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-released[released delivery state documentation].
@@ -290,7 +290,7 @@ NOTE: To be able to set the address per message, the connector is using an _anon
 
 === Acknowledgement
 
-By default, the Reactive Messaging `Message` is acknowledged when the broker acknowledged the message.
+By default, the Reactive Messaging `Message` is acknowledged when the broker acknowledges the message.
 When using routers, this acknowledgement may not be enabled.
 In this case, configure the `auto-acknowledgement` attribute to acknowledge the message as soon as it has been sent to the router.
 
@@ -317,7 +317,7 @@ mp.messaging.outgoing.orders.address=my-order-queue
 
 If the `address` attribute is not set, the connector uses the channel name.
 
-To use an existing queue, you need to configure the `address`, `container-id` and, optionally, the `link-name` attributes.
+To use an existing queue, you need to configure the `address`, `container-id`, and, optionally, the `link-name` attributes.
 For example, if you have an Apache ActiveMQ Artemis broker configured with:
 
 [source, xml]
@@ -376,7 +376,7 @@ More details about the AMQP Address model can be found in the https://activemq.a
 
 Reactive Messaging invokes your method on an I/O thread.
 See the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture documentation] for further details on this topic.
-But, you often need to combine Reactive Messaging with blocking processing such as database interactions.
+But, you often need to combine Reactive Messaging with blocking processing, such as database interactions.
 For this, you need to use the `@Blocking` annotation indicating that the processing is _blocking_ and should not be run on the caller thread.
 
 For example, The following code illustrates how you can store incoming payloads to a database using Hibernate with Panache:
@@ -731,7 +731,7 @@ Type: _string_ | false |
 
 Type: _boolean_ | false | `true`
 
-| [.no-hyphens]#*cloud-events-mode*# | The Cloud Event mode (`structured` or `binary` (default)). Indicates how are written the cloud events in the outgoing record
+| [.no-hyphens]#*cloud-events-mode*# | The Cloud Event mode (`structured` or `binary` (default)). Indicates how the cloud events are written in the outgoing record
 
 Type: _string_ | false | `binary`
 
@@ -827,7 +827,7 @@ Type: _boolean_ | false | `true`
 
 Type: _long_ | false | `0`
 
-| [.no-hyphens]#*use-anonymous-sender*# | Whether the connector should use an anonymous sender. Default value is `true` if the broker supports it, `false` otherwise. If not supported, it is not possible to dynamically change the destination address.
+| [.no-hyphens]#*use-anonymous-sender*# | Whether the connector should use an anonymous sender. The default value is `true` if the broker supports it, `false` otherwise. If not supported, it is not possible to dynamically change the destination address.
 
 Type: _boolean_ | false |
 

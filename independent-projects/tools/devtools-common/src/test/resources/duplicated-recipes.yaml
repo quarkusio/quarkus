@@ -1,0 +1,23 @@
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.updates.camel.camel411.CamelQuarkusMigrationRecipe
+displayName: Migrates `camel 4.10` application to `camel 4.11`
+description: Migrates `camel 4.10` quarkus application to `camel 4.11`.
+recipeList:
+  #  use the recipe from camel upgrade recipes project
+  - org.apache.camel.upgrade.camel411.CamelMigrationRecipe
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.updates.camel.camel410.CamelQuarkusMigrationRecipe
+displayName: Migrates `camel 4.9` application to `camel 4.10`
+description: Migrates `camel 4.9` quarkus application to `camel 4.10`.
+recipeList:
+ #  use the recipe from camel upgrade recipes project
+  - org.apache.camel.upgrade.camel410.CamelMigrationRecipe
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.updates.camel.camel410.CamelQuarkusMigrationRecipe
+displayName: Migrates `camel 4.10` application to `camel 4.10.4`
+description: Migrates `camel 4.10` quarkus application to `camel 4.10.4`.
+recipeList:
+  #  use the recipe from camel upgrade recipes project
+  - org.apache.camel.upgrade.camel410_4.CamelMigrationRecipe

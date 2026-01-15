@@ -86,7 +86,7 @@ public final class QuarkusUpdates {
             recipe.addRecipes(QuarkusUpdateRecipeIO.readRecipesYaml(s));
         }
 
-        QuarkusUpdateRecipeIO.write(target, recipe);
+        QuarkusUpdateRecipeIO.write(log, target, recipe);
         return result;
     }
 

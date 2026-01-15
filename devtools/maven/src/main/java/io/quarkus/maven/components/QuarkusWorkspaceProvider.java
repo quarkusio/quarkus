@@ -4,8 +4,8 @@ import java.util.List;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.inject.Singleton;
 
+import org.apache.maven.SessionScoped;
 import org.apache.maven.model.building.ModelBuilder;
 import org.apache.maven.settings.crypto.SettingsDecrypter;
 import org.eclipse.aether.RepositorySystem;
@@ -26,7 +26,7 @@ import io.smallrye.beanbag.DependencyFilter;
 import io.smallrye.beanbag.Scope;
 import io.smallrye.beanbag.maven.MavenFactory;
 
-@Singleton
+@SessionScoped
 @Named
 public class QuarkusWorkspaceProvider {
 

@@ -47,6 +47,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.hibernate.orm.deployment.IgnorableNonIndexedClasses;
 import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.SqlLoadScriptDefaultBuildItem;
 import io.quarkus.hibernate.orm.panache.deployment.EntityToPersistenceUnitBuildItem;
 import io.quarkus.hibernate.orm.panache.deployment.JavaJpaTypeBundle;
 import io.quarkus.spring.data.deployment.generate.SpringDataRepositoryCreator;
@@ -109,6 +110,11 @@ public class SpringDataJPAProcessor {
                 "org.springframework.data.domain.PageRequest",
                 "org.springframework.data.domain.AbstractPageRequest",
                 "org.springframework.data.util.Streamable").methods().build());
+    }
+
+    @BuildStep
+    SqlLoadScriptDefaultBuildItem registerDataSql() {
+        return new SqlLoadScriptDefaultBuildItem("data.sql");
     }
 
     @BuildStep

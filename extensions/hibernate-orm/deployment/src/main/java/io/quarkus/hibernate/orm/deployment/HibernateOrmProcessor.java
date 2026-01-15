@@ -126,6 +126,7 @@ import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationSt
 import io.quarkus.hibernate.orm.deployment.integration.QuarkusClassFileLocator;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.SqlLoadScriptDefaultBuildItem;
 import io.quarkus.hibernate.orm.dev.HibernateOrmDevIntegrator;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmPersistenceUnitProviderHelper;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
@@ -363,6 +364,7 @@ public final class HibernateOrmProcessor {
             List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
             JpaModelBuildItem jpaModel,
             Capabilities capabilities,
+            List<SqlLoadScriptDefaultBuildItem> additionalSqlLoadScriptDefaults,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
@@ -414,6 +416,7 @@ public final class HibernateOrmProcessor {
                     jdbcDataSources, reactiveDataSources, applicationArchivesBuildItem, launchMode.getLaunchMode(),
                     additionalJpaModelBuildItems,
                     jpaModel, capabilities,
+                    additionalSqlLoadScriptDefaults,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
                     reflectiveMethods, unremovableBeans, dbKindMetadataBuildItems);
         }
@@ -890,6 +893,7 @@ public final class HibernateOrmProcessor {
             List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
             JpaModelBuildItem jpaModel,
             Capabilities capabilities,
+            List<SqlLoadScriptDefaultBuildItem> additionalSqlLoadScriptDefaults,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
@@ -949,6 +953,7 @@ public final class HibernateOrmProcessor {
                     modelForDefaultPersistenceUnit.allModelClassAndPackageNames(),
                     jpaModel.getXmlMappings(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME),
                     jdbcDataSources, reactiveDataSources, applicationArchivesBuildItem, launchMode, capabilities,
+                    additionalSqlLoadScriptDefaults,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
                     reflectiveMethods, unremovableBeans, dbKindMetadataBuildItems);
         } else if (!modelForDefaultPersistenceUnit.entityClassNames().isEmpty()
@@ -981,6 +986,7 @@ public final class HibernateOrmProcessor {
                     model == null ? Collections.emptySet() : model.allModelClassAndPackageNames(),
                     jpaModel.getXmlMappings(persistenceUnitName),
                     jdbcDataSources, reactiveDataSources, applicationArchivesBuildItem, launchMode, capabilities,
+                    additionalSqlLoadScriptDefaults,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
                     reflectiveMethods, unremovableBeans, dbKindMetadataBuildItems);
         }
@@ -997,6 +1003,7 @@ public final class HibernateOrmProcessor {
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchMode launchMode,
             Capabilities capabilities,
+            List<SqlLoadScriptDefaultBuildItem> additionalSqlLoadScriptDefaults,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
@@ -1062,6 +1069,7 @@ public final class HibernateOrmProcessor {
         configureProperties(descriptor, persistenceUnitConfig, hibernateOrmConfig, false);
 
         configureSqlLoadScript(persistenceUnitName, persistenceUnitConfig, applicationArchivesBuildItem, launchMode,
+                additionalSqlLoadScriptDefaults,
                 nativeImageResources, hotDeploymentWatchedFiles, descriptor);
 
         Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());

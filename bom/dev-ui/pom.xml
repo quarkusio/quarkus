@@ -26,7 +26,7 @@
         <vaadin-development-mode-detector.version>2.0.7</vaadin-development-mode-detector.version>
         <polymer.version>3.5.2</polymer.version>
         <shadycss.version>1.11.2</shadycss.version>
-        <dedupe-mixin.version>1.4.0</dedupe-mixin.version>
+        <dedupe-mixin.version>2.0.1</dedupe-mixin.version>
         <style-observer.version>0.1.2</style-observer.version>
         <marked.version>17.0.1</marked.version>
         <dompurify.version>3.2.7</dompurify.version>

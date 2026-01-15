@@ -9,6 +9,7 @@ import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.quarkus.arc.Arc;
 import io.quarkus.grpc.ExceptionHandlerProvider;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.operators.multi.processors.UnicastProcessor;
@@ -58,10 +59,11 @@ public class ServerCalls {
                 onError(response, Status.fromCode(Status.Code.INTERNAL).asException());
                 return;
             }
-            handleSubscription(returnValue.subscribe().with(
-                    response::onNext,
-                    throwable -> onError(response, throwable),
-                    () -> onCompleted(response)), response);
+            StreamObserverFlowHandler<O> flowHandler = new StreamObserverFlowHandler<>(response);
+            handleSubscription(returnValue.runSubscriptionOn(Infrastructure.getDefaultWorkerPool()).subscribe().with(
+                    flowHandler::onNext,
+                    throwable -> onError(flowHandler, throwable),
+                    () -> onCompleted(flowHandler)), response);
         } catch (Throwable throwable) {
             onError(response, throwable);
         }
@@ -119,10 +121,11 @@ public class ServerCalls {
                 onError(response, Status.fromCode(Status.Code.INTERNAL).asException());
                 return null;
             }
-            handleSubscription(multi.subscribe().with(
-                    response::onNext,
-                    failure -> onError(response, failure),
-                    () -> onCompleted(response)), response);
+            StreamObserverFlowHandler<O> flowHandler = new StreamObserverFlowHandler<>(response);
+            handleSubscription(multi.runSubscriptionOn(Infrastructure.getDefaultWorkerPool()).subscribe().with(
+                    flowHandler::onNext,
+                    failure -> onError(flowHandler, failure),
+                    () -> onCompleted(flowHandler)), response);
 
             return pump;
         } catch (Throwable throwable) {

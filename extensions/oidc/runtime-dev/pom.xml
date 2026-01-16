@@ -17,10 +17,5 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-oidc</artifactId>
         </dependency>
-        <!-- Required because deployment module depends on quarkus-devservices-keycloak -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-devservices</artifactId>
-        </dependency>
     </dependencies>
 </project>

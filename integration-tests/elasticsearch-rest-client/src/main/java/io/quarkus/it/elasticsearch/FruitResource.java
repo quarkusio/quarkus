@@ -18,6 +18,8 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import org.apache.hc.core5.http.ParseException;
+
 @Path("/fruits")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -36,13 +38,14 @@ public class FruitResource {
 
     @GET
     @Path("/{id}")
-    public Fruit get(@PathParam("id") String id) throws IOException {
+    public Fruit get(@PathParam("id") String id) throws IOException, ParseException {
         return fruitService.get(id);
     }
 
     @GET
     @Path("/search")
-    public List<Fruit> search(@QueryParam("name") String name, @QueryParam("color") String color) throws IOException {
+    public List<Fruit> search(@QueryParam("name") String name, @QueryParam("color") String color)
+            throws IOException, ParseException {
         if (name != null) {
             return fruitService.searchByName(name);
         } else if (color != null) {

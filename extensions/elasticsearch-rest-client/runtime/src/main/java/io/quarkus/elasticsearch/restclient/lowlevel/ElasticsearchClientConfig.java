@@ -7,12 +7,15 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.util.function.Consumer;
 
 import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.inject.Qualifier;
 
+import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
+
 /**
- * Annotate implementations of {@code org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback} to provide further
+ * Annotate implementations of {@code ElasticsearchClientConfig.Configurer} to provide further
  * configuration of injected Elasticsearch {@code RestClient} You may provide multiple implementations each annotated with
  * {@code ElasticsearchClientConfig} and configuration provided by each implementation will be applied in a randomly ordered
  * cascading manner
@@ -23,6 +26,10 @@ import jakarta.inject.Qualifier;
 public @interface ElasticsearchClientConfig {
 
     class Literal extends AnnotationLiteral<ElasticsearchClientConfig> implements ElasticsearchClientConfig {
+
+    }
+
+    interface Configurer extends Consumer<HttpAsyncClientBuilder> {
 
     }
 }

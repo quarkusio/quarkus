@@ -1,30 +1,37 @@
 package io.quarkus.elasticsearch.restclient.lowlevel.runtime;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 
-import org.apache.http.Header;
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
-import org.apache.http.impl.nio.reactor.IOReactorConfig;
-import org.apache.http.message.BasicHeader;
-import org.apache.http.nio.conn.NoopIOSessionStrategy;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
-import org.elasticsearch.client.sniff.ElasticsearchNodesSniffer;
-import org.elasticsearch.client.sniff.NodesSniffer;
-import org.elasticsearch.client.sniff.Sniffer;
-import org.elasticsearch.client.sniff.SnifferBuilder;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.config.ConnectionConfig;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
+import org.apache.hc.core5.concurrent.FutureCallback;
+import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.HttpHeaders;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.message.BasicHeader;
+import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
+import org.apache.hc.core5.net.NamedEndpoint;
+import org.apache.hc.core5.reactor.IOReactorConfig;
+import org.apache.hc.core5.reactor.ssl.TransportSecurityLayer;
+import org.apache.hc.core5.util.Timeout;
 import org.jboss.logging.Logger;
 
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5ClientBuilder;
+import co.elastic.clients.transport.rest5_client.low_level.sniffer.ElasticsearchNodesSniffer;
+import co.elastic.clients.transport.rest5_client.low_level.sniffer.NodesSniffer;
+import co.elastic.clients.transport.rest5_client.low_level.sniffer.Sniffer;
+import co.elastic.clients.transport.rest5_client.low_level.sniffer.SnifferBuilder;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.elasticsearch.restclient.lowlevel.ElasticsearchClientConfig;
@@ -38,62 +45,79 @@ public final class RestClientBuilderHelper {
         // avoid instantiation
     }
 
-    public static RestClientBuilder createRestClientBuilder(ElasticsearchConfig config) {
+    public static Rest5ClientBuilder createRestClientBuilder(ElasticsearchConfig config) {
         List<HttpHost> hosts = new ArrayList<>(config.hosts().size());
         for (InetSocketAddress host : config.hosts()) {
-            hosts.add(new HttpHost(host.getHostString(), host.getPort(), config.protocol()));
+            hosts.add(new HttpHost(config.protocol(), host.getHostString(), host.getPort()));
         }
 
-        RestClientBuilder builder = RestClient.builder(hosts.toArray(new HttpHost[0]));
+        Rest5ClientBuilder builder = Rest5Client.builder(hosts.toArray(new HttpHost[0]));
 
-        builder.setRequestConfigCallback(new RestClientBuilder.RequestConfigCallback() {
+        builder.setRequestConfigCallback(new Consumer<>() {
             @Override
-            public RequestConfig.Builder customizeRequestConfig(RequestConfig.Builder requestConfigBuilder) {
-                return requestConfigBuilder
-                        .setConnectTimeout((int) config.connectionTimeout().toMillis())
-                        .setSocketTimeout((int) config.socketTimeout().toMillis())
-                        .setConnectionRequestTimeout(0); // Avoid requests being flagged as timed out even when they didn't time out.
+            public void accept(RequestConfig.Builder requestConfigBuilder) {
+                requestConfigBuilder
+                        .setConnectionRequestTimeout(Timeout.INFINITE); // Avoid requests being flagged as timed out even when they didn't time out.
             }
         });
 
-        builder.setHttpClientConfigCallback(new RestClientBuilder.HttpClientConfigCallback() {
+        builder.setHttpClientConfigCallback(new Consumer<>() {
             @Override
-            public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
+            public void accept(HttpAsyncClientBuilder httpClientBuilder) {
                 applyAuthentication(httpClientBuilder, config);
 
                 if (config.ioThreadCounts().isPresent()) {
                     IOReactorConfig ioReactorConfig = IOReactorConfig.custom()
                             .setIoThreadCount(config.ioThreadCounts().get())
                             .build();
-                    httpClientBuilder.setDefaultIOReactorConfig(ioReactorConfig);
+                    httpClientBuilder.setIOReactorConfig(ioReactorConfig);
                 }
 
-                httpClientBuilder.setMaxConnTotal(config.maxConnections());
-                httpClientBuilder.setMaxConnPerRoute(config.maxConnectionsPerRoute());
+                PoolingAsyncClientConnectionManagerBuilder connectionManagerBuilder = PoolingAsyncClientConnectionManagerBuilder
+                        .create()
+                        .setMaxConnTotal(config.maxConnections())
+                        .setMaxConnPerRoute(config.maxConnectionsPerRoute());
 
                 if ("http".equalsIgnoreCase(config.protocol())) {
                     // In this case disable the SSL capability as it might have an impact on
                     // bootstrap time, for example consuming entropy for no reason
-                    httpClientBuilder.setSSLStrategy(NoopIOSessionStrategy.INSTANCE);
+                    // connectionManagerBuilder.setTlsStrategy(
+                    //         ClientTlsStrategyBuilder.create()
+                    //                 .setSslContext(
+                    //                         SSLContextBuilder.create()
+                    //                                 .loadTrustMaterial(null, new TrustAllStrategy())
+                    //                                 .buildAsync()
+                    //                 )
+                    //                 .setHostnameVerifier(NoopHostnameVerifier.INSTANCE)
+                    //                 .build()
+                    // );
+                    connectionManagerBuilder.setTlsStrategy(NoopTlsStrategy.INSTANCE);
                 }
 
-                // Apply configuration from RestClientBuilder.HttpClientConfigCallback implementations annotated with ElasticsearchClientConfig
-                HttpAsyncClientBuilder result = httpClientBuilder;
-                Iterable<InstanceHandle<RestClientBuilder.HttpClientConfigCallback>> handles = Arc.container()
-                        .select(RestClientBuilder.HttpClientConfigCallback.class, new ElasticsearchClientConfig.Literal())
+                httpClientBuilder.setConnectionManager(
+                        connectionManagerBuilder
+                                .setDefaultConnectionConfig(
+                                        ConnectionConfig.copy(ConnectionConfig.DEFAULT)
+                                                .setConnectTimeout(Timeout.of(config.connectionTimeout()))
+                                                .setSocketTimeout(Timeout.of(config.socketTimeout()))
+                                                .build())
+                                .build());
+
+                // Apply configuration from ElasticsearchClientConfig.Configurer implementations annotated with ElasticsearchClientConfig
+                Iterable<InstanceHandle<ElasticsearchClientConfig.Configurer>> handles = Arc.container()
+                        .select(ElasticsearchClientConfig.Configurer.class, new ElasticsearchClientConfig.Literal())
                         .handles();
-                for (InstanceHandle<RestClientBuilder.HttpClientConfigCallback> handle : handles) {
-                    result = handle.get().customizeHttpClient(result);
+                for (InstanceHandle<ElasticsearchClientConfig.Configurer> handle : handles) {
+                    handle.get().accept(httpClientBuilder);
                     handle.close();
                 }
-                return result;
             }
         });
 
         return builder;
     }
 
-    public static Sniffer createSniffer(RestClient client, ElasticsearchConfig config) {
+    public static Sniffer createSniffer(Rest5Client client, ElasticsearchConfig config) {
         SnifferBuilder builder = Sniffer.builder(client)
                 .setSniffIntervalMillis((int) config.discovery().refreshInterval().toMillis());
 
@@ -122,14 +146,37 @@ public final class RestClientBuilderHelper {
                     "information as plain text over an unencrypted channel. Use the HTTPS protocol instead.");
         }
         if (hasBasic) {
-            CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-            credentialsProvider.setCredentials(AuthScope.ANY,
+            BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+            credentialsProvider.setCredentials(
+                    new AuthScope(null, null, -1, null, null),
                     new UsernamePasswordCredentials(config.username().get(), config.password().orElse(null)));
             httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
         } else if (hasApiKey) {
             String apiKey = config.apiKey().get();
             Header apiKeyHeader = new BasicHeader(HttpHeaders.AUTHORIZATION, "ApiKey " + apiKey);
             httpClientBuilder.setDefaultHeaders(Collections.singleton(apiKeyHeader));
+        }
+    }
+
+    private static class NoopTlsStrategy implements TlsStrategy {
+        private static final NoopTlsStrategy INSTANCE = new NoopTlsStrategy();
+
+        private NoopTlsStrategy() {
+        }
+
+        @SuppressWarnings("deprecation")
+        @Override
+        public boolean upgrade(TransportSecurityLayer sessionLayer, HttpHost host, SocketAddress localAddress,
+                SocketAddress remoteAddress, Object attachment, Timeout handshakeTimeout) {
+            throw new UnsupportedOperationException("upgrade is not supported.");
+        }
+
+        @Override
+        public void upgrade(TransportSecurityLayer sessionLayer, NamedEndpoint endpoint, Object attachment,
+                Timeout handshakeTimeout, FutureCallback<TransportSecurityLayer> callback) {
+            if (callback != null) {
+                callback.completed(sessionLayer);
+            }
         }
     }
 }

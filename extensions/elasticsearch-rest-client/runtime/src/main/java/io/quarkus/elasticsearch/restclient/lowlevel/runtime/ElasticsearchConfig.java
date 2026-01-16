@@ -36,7 +36,7 @@ public interface ElasticsearchConfig {
     /**
      * The password for basic HTTP authentication.
      */
-    Optional<String> password();
+    Optional<char[]> password();
 
     /**
      * The API key for authentication.

@@ -167,7 +167,7 @@ public class JibProcessor {
         JibContainerBuilder jibContainerBuilder;
         PackageConfig.JarConfig.JarType jarType = packageConfig.jar().type();
         jibContainerBuilder = switch (jarType) {
-            case LEGACY_JAR, UBER_JAR ->
+            case LEGACY_JAR, UBER_JAR, AOT_JAR ->
                 createContainerBuilderFromLegacyJar(determineBaseJvmImage(jibConfig, compiledJavaVersion),
                         jibConfig, containerImageConfig,
                         sourceJar, outputTarget, mainClass, containerImageLabels);

@@ -40,6 +40,7 @@ import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarIgnoredResourceBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarMergedResourceBuildItem;
+import io.quarkus.deployment.pkg.jar.AotJarBuilder;
 import io.quarkus.deployment.pkg.jar.FastJarBuilder;
 import io.quarkus.deployment.pkg.jar.LegacyThinJarBuilder;
 import io.quarkus.deployment.pkg.jar.NativeImageSourceJarBuilder;
@@ -134,6 +135,18 @@ public class JarResultBuildStep {
                     buildExecutor,
                     jvmRequirements).build();
             case LEGACY_JAR -> new LegacyThinJarBuilder(curateOutcomeBuildItem,
+                    outputTargetBuildItem,
+                    applicationInfo,
+                    packageConfig,
+                    mainClassBuildItem,
+                    applicationArchivesBuildItem,
+                    transformedClasses,
+                    generatedClasses,
+                    generatedResources,
+                    removedArtifactKeys,
+                    buildExecutor,
+                    jvmRequirements).build();
+            case AOT_JAR -> new AotJarBuilder(curateOutcomeBuildItem,
                     outputTargetBuildItem,
                     applicationInfo,
                     packageConfig,

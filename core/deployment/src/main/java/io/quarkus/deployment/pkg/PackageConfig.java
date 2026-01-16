@@ -335,6 +335,13 @@ public interface PackageConfig {
              */
             MUTABLE_JAR("mutable-jar"),
             /**
+             * The "AOT JAR" packaging type.
+             * This packaging type is optimized for Ahead-of-Time (AOT) compilation with Java 25 and Project Leyden.
+             * It uses standard Java classloaders for maximum AOT compatibility while maintaining a thin caching layer
+             * for frequently-accessed resources like service files and configuration files.
+             */
+            AOT_JAR("aot-jar"),
+            /**
              * The "legacy JAR" packaging type.
              * This corresponds to the packaging type used in Quarkus before version 1.12.
              *

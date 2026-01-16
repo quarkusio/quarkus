@@ -3,8 +3,6 @@ package io.quarkus.bootstrap.forkjoin;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinWorkerThread;
 
-import io.quarkus.bootstrap.runner.RunnerClassLoader;
-
 public class QuarkusForkJoinWorkerThread extends ForkJoinWorkerThread {
 
     private static volatile ClassLoader qClassloader;
@@ -13,7 +11,7 @@ public class QuarkusForkJoinWorkerThread extends ForkJoinWorkerThread {
         super(pool);
     }
 
-    public static synchronized void setQuarkusAppClassloader(RunnerClassLoader runnerClassLoader) {
+    public static synchronized void setQuarkusAppClassloader(ClassLoader runnerClassLoader) {
         qClassloader = runnerClassLoader;
     }
 

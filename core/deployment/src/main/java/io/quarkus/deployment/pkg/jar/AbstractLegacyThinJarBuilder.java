@@ -137,7 +137,7 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
         }
     }
 
-    private static Predicate<String> getThinJarIgnoredEntriesPredicate(PackageConfig packageConfig) {
+    protected static Predicate<String> getThinJarIgnoredEntriesPredicate(PackageConfig packageConfig) {
         return packageConfig.jar().userConfiguredIgnoredEntries().map(Set::copyOf).orElse(Set.of())::contains;
     }
 }

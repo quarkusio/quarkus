@@ -37,6 +37,8 @@ public class RunCommandProcessor {
             // todo: legacy JAR should be using runnerSuffix()
             case LEGACY_JAR -> jar.getOutputDirectory()
                     .resolve(jar.getBaseName() + packageConfig.computedRunnerSuffix() + ".jar");
+            case AOT_JAR -> jar.getOutputDirectory()
+                    .resolve(jar.getBaseName() + packageConfig.computedRunnerSuffix() + ".jar");
             case FAST_JAR, MUTABLE_JAR -> jar.getOutputDirectory()
                     .resolve(DEFAULT_FAST_JAR_DIRECTORY_NAME).resolve(QUARKUS_RUN_JAR);
         };

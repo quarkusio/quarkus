@@ -41,13 +41,17 @@ public class KeycloakDevServiceRequiredBuildStep {
         if (config.createClient()) {
             lazyConfigProperties = List.of(
                     new LazyConfigProperty(OIDC_AUTH_SERVER_URL_CONFIG_KEY, ConfigPropertiesContext::authServerInternalUrl),
-                    new LazyConfigProperty(APPLICATION_TYPE_CONFIG_KEY, "${" + APPLICATION_TYPE_CONFIG_KEY + ":service}"),
+                    // FIXME circular dependency
+                    //                    new LazyConfigProperty(APPLICATION_TYPE_CONFIG_KEY, "${" + APPLICATION_TYPE_CONFIG_KEY + ":service}"),
                     new LazyConfigProperty(CLIENT_ID_CONFIG_KEY, ConfigPropertiesContext::oidcClientId),
                     new LazyConfigProperty(CLIENT_SECRET_CONFIG_KEY, ConfigPropertiesContext::oidcClientSecret));
         } else {
             lazyConfigProperties = List.of(
-                    new LazyConfigProperty(OIDC_AUTH_SERVER_URL_CONFIG_KEY, ConfigPropertiesContext::authServerInternalUrl),
-                    new LazyConfigProperty(APPLICATION_TYPE_CONFIG_KEY, "${" + APPLICATION_TYPE_CONFIG_KEY + ":service}"));
+                    new LazyConfigProperty(OIDC_AUTH_SERVER_URL_CONFIG_KEY, ConfigPropertiesContext::authServerInternalUrl)
+            // FIXME circular dependency
+            //                    ,
+            //                    new LazyConfigProperty(APPLICATION_TYPE_CONFIG_KEY, "${" + APPLICATION_TYPE_CONFIG_KEY + ":service}")
+            );
         }
         return KeycloakDevServicesRequiredBuildItem.of(Feature.OIDC, lazyConfigProperties, OIDC_AUTH_SERVER_URL_CONFIG_KEY);
     }

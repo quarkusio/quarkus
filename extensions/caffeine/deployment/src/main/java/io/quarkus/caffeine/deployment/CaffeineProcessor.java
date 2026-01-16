@@ -46,7 +46,7 @@ public class CaffeineProcessor {
                     .reason(getClass().getName())
                     .methods().build());
 
-            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(effectiveImplementorNames.toArray(new String[0]))
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(effectiveImplementorNames)
                     .reason(getClass().getName())
                     .methods().build());
         }

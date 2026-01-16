@@ -560,7 +560,7 @@ public final class HibernateOrmProcessor {
             for (DotName name : ClassNames.HIBERNATE_MAPPING_ANNOTATIONS) {
                 annotationClassNames.add(name.toString());
             }
-            reflective.produce(ReflectiveClassBuildItem.builder(annotationClassNames.toArray(new String[0]))
+            reflective.produce(ReflectiveClassBuildItem.builder(annotationClassNames)
                     .reason(ClassNames.HIBERNATE_ORM_PROCESSOR.toString())
                     .methods().fields().build());
             for (String annotationClassName : annotationClassNames) {

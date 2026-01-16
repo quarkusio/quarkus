@@ -268,7 +268,7 @@ class KubernetesProcessor {
             PackageConfig packageConfig) {
         PackageConfig.JarConfig.JarType jarType = packageConfig.jar().type();
         return switch (jarType) {
-            case LEGACY_JAR, UBER_JAR -> outputTarget.getOutputDirectory()
+            case LEGACY_JAR, UBER_JAR, AOT_JAR -> outputTarget.getOutputDirectory()
                     .resolve(outputTarget.getBaseName() + packageConfig.computedRunnerSuffix() + ".jar");
             case FAST_JAR, MUTABLE_JAR -> {
                 //thin JAR

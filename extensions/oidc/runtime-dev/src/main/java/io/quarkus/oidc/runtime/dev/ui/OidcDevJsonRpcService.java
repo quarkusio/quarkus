@@ -23,6 +23,11 @@ public class OidcDevJsonRpcService {
     Vertx vertx;
 
     @NonBlocking
+    public String getAdminConsoleUrl() {
+        return props.getKeycloakAdminUrl();
+    }
+
+    @NonBlocking
     public OidcDevUiRuntimePropertiesDTO getProperties() {
         return new OidcDevUiRuntimePropertiesDTO(props.getAuthorizationUrl(), props.getTokenUrl(), props.getLogoutUrl(),
                 ConfigProvider.getConfig(), httpConfig.port(),

@@ -23,6 +23,7 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 @Recorder
 public class OidcDevUiRecorder {
     private static final Logger LOG = Logger.getLogger(OidcDevUiRecorder.class);
+    public static final String KEYCLOAK_URL = "keycloak.url";
 
     private final RuntimeValue<VertxHttpConfig> httpConfig;
 

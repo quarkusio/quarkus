@@ -811,7 +811,7 @@ public class ResteasyReactiveProcessor {
                 all.add(dotName);
                 index.getAllKnownSubclasses(dotName).forEach(c2 -> all.add(c2.name()));
                 index.getAllKnownSubinterfaces(dotName).forEach(c2 -> all.add(c2.name()));
-                index.getAllKnownImplementors(dotName).forEach(c2 -> all.add(c2.name()));
+                index.getAllKnownImplementations(dotName).forEach(c2 -> all.add(c2.name()));
 
                 subClassesBySubResources.put(dotName, all);
             }
@@ -874,7 +874,7 @@ public class ResteasyReactiveProcessor {
                                 //they may have type variables that need to be handled
                                 index.getAllKnownSubclasses(name).forEach(c2 -> all.add(c2.name()));
                                 index.getAllKnownSubinterfaces(name).forEach(c2 -> all.add(c2.name()));
-                                index.getAllKnownImplementors(name).forEach(c2 -> all.add(c2.name()));
+                                index.getAllKnownImplementations(name).forEach(c2 -> all.add(c2.name()));
                             }
                         } else {
                             // index the returntype, might already be a sub resource locator
@@ -884,7 +884,7 @@ public class ResteasyReactiveProcessor {
                             //they may have type variables that need to be handled
                             index.getAllKnownSubclasses(dotName).forEach(c2 -> all.add(c2.name()));
                             index.getAllKnownSubinterfaces(dotName).forEach(c2 -> all.add(c2.name()));
-                            index.getAllKnownImplementors(dotName).forEach(c2 -> all.add(c2.name()));
+                            index.getAllKnownImplementations(dotName).forEach(c2 -> all.add(c2.name()));
                         }
 
                         return all;

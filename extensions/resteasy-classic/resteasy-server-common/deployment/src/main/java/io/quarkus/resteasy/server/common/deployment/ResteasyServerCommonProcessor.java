@@ -321,7 +321,7 @@ public class ResteasyServerCommonProcessor {
 
         // look for all implementations of interfaces annotated @Path
         for (final DotName iface : pathInterfaces) {
-            final Collection<ClassInfo> implementors = index.getAllKnownImplementors(iface);
+            final Collection<ClassInfo> implementors = index.getAllKnownImplementations(iface);
             for (final ClassInfo implementor : implementors) {
                 if (implementor.isAbstract()) {
                     continue;
@@ -384,7 +384,7 @@ public class ResteasyServerCommonProcessor {
         registerReflectionForSerialization(reflectiveClass, reflectiveHierarchy, combinedIndexBuildItem,
                 beanArchiveIndexBuildItem, additionalJaxRsResourceMethodAnnotations);
 
-        for (ClassInfo implementation : index.getAllKnownImplementors(ResteasyDotNames.DYNAMIC_FEATURE)) {
+        for (ClassInfo implementation : index.getAllKnownImplementations(ResteasyDotNames.DYNAMIC_FEATURE)) {
             reflectiveClass.produce(
                     ReflectiveClassBuildItem.builder(implementation.name().toString()).build());
         }
@@ -561,7 +561,7 @@ public class ResteasyServerCommonProcessor {
         }
         Map<DotName, ClassInfo> pathInterfaceImplementors = new HashMap<>();
         for (DotName iface : pathInterfaces) {
-            for (ClassInfo implementor : index.getAllKnownImplementors(iface)) {
+            for (ClassInfo implementor : index.getAllKnownImplementations(iface)) {
                 if (!pathInterfaceImplementors.containsKey(implementor.name())) {
                     pathInterfaceImplementors.put(implementor.name(), implementor);
                 }
@@ -1024,7 +1024,7 @@ public class ResteasyServerCommonProcessor {
             return !excludedClasses.contains(className);
         } else if (Modifier.isAbstract(classInfo.flags())) {
             // Only keep the annotation if a concrete implementation or a subclass has been included
-            return (Modifier.isInterface(classInfo.flags()) ? index.getAllKnownImplementors(classInfo.name())
+            return (Modifier.isInterface(classInfo.flags()) ? index.getAllKnownImplementations(classInfo.name())
                     : index.getAllKnownSubclasses(classInfo.name()))
                     .stream()
                     .filter(clazz -> !Modifier.isAbstract(clazz.flags()))

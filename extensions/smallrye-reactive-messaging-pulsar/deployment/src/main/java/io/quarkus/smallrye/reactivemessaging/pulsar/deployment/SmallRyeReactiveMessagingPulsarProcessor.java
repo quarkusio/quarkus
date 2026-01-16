@@ -165,7 +165,7 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
                 .constructors().build());
 
         Collection<ClassInfo> authPluginClasses = combinedIndex.getIndex()
-                .getAllKnownImplementors(DotNames.PULSAR_AUTHENTICATION);
+                .getAllKnownImplementations(DotNames.PULSAR_AUTHENTICATION);
         for (ClassInfo authPluginClass : authPluginClasses) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(authPluginClass.name().toString())
                     .constructors().build());

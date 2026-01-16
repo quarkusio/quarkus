@@ -35,7 +35,7 @@ final class GrpcInterceptors {
         Set<String> globalInterceptors = new HashSet<>();
         Set<String> nonGlobalInterceptors = new HashSet<>();
 
-        Collection<ClassInfo> interceptorImplClasses = index.getAllKnownImplementors(interceptorInterface);
+        Collection<ClassInfo> interceptorImplClasses = index.getAllKnownImplementations(interceptorInterface);
         for (ClassInfo interceptorImplClass : interceptorImplClasses) {
             if (Modifier.isAbstract(interceptorImplClass.flags())
                     || Modifier.isInterface(interceptorImplClass.flags())) {

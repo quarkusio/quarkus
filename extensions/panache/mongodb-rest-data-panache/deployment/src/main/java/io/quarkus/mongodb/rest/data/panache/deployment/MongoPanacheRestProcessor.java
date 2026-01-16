@@ -77,7 +77,7 @@ class MongoPanacheRestProcessor {
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
 
         for (ClassInfo resourceInterface : index.getComputingIndex()
-                .getKnownDirectImplementors(PANACHE_MONGO_ENTITY_RESOURCE_INTERFACE)) {
+                .getKnownDirectImplementations(PANACHE_MONGO_ENTITY_RESOURCE_INTERFACE)) {
             validateResource(index.getComputingIndex(), resourceInterface);
 
             List<Type> generics = getGenericTypes(resourceInterface);
@@ -109,7 +109,7 @@ class MongoPanacheRestProcessor {
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
 
         for (ClassInfo resourceInterface : index.getComputingIndex()
-                .getKnownDirectImplementors(PANACHE_MONGO_REPOSITORY_RESOURCE_INTERFACE)) {
+                .getKnownDirectImplementations(PANACHE_MONGO_REPOSITORY_RESOURCE_INTERFACE)) {
             validateResource(index.getComputingIndex(), resourceInterface);
 
             List<Type> generics = getGenericTypes(resourceInterface);
@@ -142,7 +142,7 @@ class MongoPanacheRestProcessor {
             throw new RuntimeException(classInfo.name() + " should only extend REST Data Panache interface");
         }
 
-        if (!index.getKnownDirectImplementors(classInfo.name()).isEmpty()) {
+        if (!index.getKnownDirectImplementations(classInfo.name()).isEmpty()) {
             throw new RuntimeException(classInfo.name() + " should not be extended or implemented");
         }
     }

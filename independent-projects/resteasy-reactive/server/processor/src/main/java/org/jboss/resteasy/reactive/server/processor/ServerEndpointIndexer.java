@@ -222,7 +222,7 @@ public class ServerEndpointIndexer
         // 1. go down - find exactly one non-abstract class
         ClassInfo clazz = null;
         if (actualEndpointClass.isInterface()) {
-            for (var implementor : index.getAllKnownImplementors(actualEndpointClass.name())) {
+            for (var implementor : index.getAllKnownImplementations(actualEndpointClass.name())) {
                 if (!implementor.isInterface() && !implementor.isAbstract()) {
                     if (clazz == null) {
                         clazz = implementor;

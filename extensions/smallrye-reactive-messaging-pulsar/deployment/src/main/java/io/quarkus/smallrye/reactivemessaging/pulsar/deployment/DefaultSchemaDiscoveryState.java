@@ -156,7 +156,7 @@ class DefaultSchemaDiscoveryState {
     }
 
     List<ClassInfo> findImplementedSchemaWithIdentifier(String identifier) {
-        return index.getAllKnownImplementors(DotNames.PULSAR_SCHEMA)
+        return index.getAllKnownImplementations(DotNames.PULSAR_SCHEMA)
                 .stream()
                 .filter(t -> t.hasAnnotation(DotNames.IDENTIFIER) &&
                         Objects.equals(t.annotation(DotNames.IDENTIFIER).value().asString(), identifier))

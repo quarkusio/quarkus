@@ -99,7 +99,7 @@ public class TestsAsBeansProcessor {
     @BuildStep(onlyIf = IsTest.class)
     AnnotationsTransformerBuildItem vetoTestProfileBeans(Optional<TestProfileBuildItem> testProfile,
             CustomScopeAnnotationsBuildItem customScopes, CombinedIndexBuildItem index) {
-        if (index.getIndex().getAllKnownImplementors(QUARKUS_TEST_PROFILE).isEmpty()) {
+        if (index.getIndex().getAllKnownImplementations(QUARKUS_TEST_PROFILE).isEmpty()) {
             // No test profiles found
             return null;
         }

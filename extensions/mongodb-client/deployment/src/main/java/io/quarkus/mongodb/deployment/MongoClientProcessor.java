@@ -148,7 +148,7 @@ public class MongoClientProcessor {
     @BuildStep
     CodecProviderBuildItem collectCodecProviders(CombinedIndexBuildItem indexBuildItem) {
         Collection<ClassInfo> codecProviderClasses = indexBuildItem.getIndex()
-                .getAllKnownImplementors(DotName.createSimple(CodecProvider.class.getName()));
+                .getAllKnownImplementations(DotName.createSimple(CodecProvider.class.getName()));
         List<String> names = codecProviderClasses.stream().map(ci -> ci.name().toString()).collect(Collectors.toList());
         return new CodecProviderBuildItem(names);
     }
@@ -156,7 +156,7 @@ public class MongoClientProcessor {
     @BuildStep
     PropertyCodecProviderBuildItem collectPropertyCodecProviders(CombinedIndexBuildItem indexBuildItem) {
         Collection<ClassInfo> propertyCodecProviderClasses = indexBuildItem.getIndex()
-                .getAllKnownImplementors(DotName.createSimple(PropertyCodecProvider.class.getName()));
+                .getAllKnownImplementations(DotName.createSimple(PropertyCodecProvider.class.getName()));
         List<String> names = propertyCodecProviderClasses.stream().map(ci -> ci.name().toString()).collect(Collectors.toList());
         return new PropertyCodecProviderBuildItem(names);
     }
@@ -174,7 +174,7 @@ public class MongoClientProcessor {
     @BuildStep
     CommandListenerBuildItem collectCommandListeners(CombinedIndexBuildItem indexBuildItem) {
         Collection<ClassInfo> commandListenerClasses = indexBuildItem.getIndex()
-                .getAllKnownImplementors(DotName.createSimple(CommandListener.class.getName()));
+                .getAllKnownImplementations(DotName.createSimple(CommandListener.class.getName()));
         List<String> names = commandListenerClasses.stream()
                 .map(ci -> ci.name().toString())
                 .collect(Collectors.toList());
@@ -184,7 +184,7 @@ public class MongoClientProcessor {
     @BuildStep
     ContextProviderBuildItem collectContextProviders(CombinedIndexBuildItem indexBuildItem) {
         Collection<ClassInfo> contextProviders = indexBuildItem.getIndex()
-                .getAllKnownImplementors(DotName.createSimple(ReactiveContextProvider.class.getName()));
+                .getAllKnownImplementations(DotName.createSimple(ReactiveContextProvider.class.getName()));
         List<String> names = contextProviders.stream()
                 .map(ci -> ci.name().toString())
                 .collect(Collectors.toList());

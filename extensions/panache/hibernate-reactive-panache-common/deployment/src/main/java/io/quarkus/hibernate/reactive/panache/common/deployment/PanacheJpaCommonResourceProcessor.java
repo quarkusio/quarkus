@@ -137,18 +137,18 @@ public final class PanacheJpaCommonResourceProcessor {
                     entities.add(subclass.name());
                 }
             }
-            for (ClassInfo implementor : index.getIndex().getAllKnownImplementors(DotNames.PANACHE_KOTLIN_ENTITY_BASE)) {
+            for (ClassInfo implementor : index.getIndex().getAllKnownImplementations(DotNames.PANACHE_KOTLIN_ENTITY_BASE)) {
                 if (!implementor.name().equals(DotNames.PANACHE_KOTLIN_ENTITY)) {
                     entities.add(implementor.name());
                 }
             }
             Set<DotName> repos = new HashSet<>();
-            for (ClassInfo subclass : index.getIndex().getAllKnownImplementors(DotNames.PANACHE_REPOSITORY_BASE)) {
+            for (ClassInfo subclass : index.getIndex().getAllKnownImplementations(DotNames.PANACHE_REPOSITORY_BASE)) {
                 if (!subclass.name().equals(DotNames.PANACHE_REPOSITORY)) {
                     repos.add(subclass.name());
                 }
             }
-            for (ClassInfo implementor : index.getIndex().getAllKnownImplementors(DotNames.PANACHE_KOTLIN_REPOSITORY_BASE)) {
+            for (ClassInfo implementor : index.getIndex().getAllKnownImplementations(DotNames.PANACHE_KOTLIN_REPOSITORY_BASE)) {
                 if (!implementor.name().equals(DotNames.PANACHE_KOTLIN_REPOSITORY)) {
                     repos.add(implementor.name());
                 }

@@ -59,15 +59,15 @@ public class MetricProcessor {
         // Find all known SpanExporters and SpanProcessors
         Collection<String> knownClasses = new HashSet<>();
         knownClasses.add(METRIC_EXPORTER.toString());
-        index.getAllKnownImplementors(METRIC_EXPORTER)
+        index.getAllKnownImplementations(METRIC_EXPORTER)
                 .forEach(classInfo -> knownClasses.add(classInfo.name().toString()));
 
         knownClasses.add(METRIC_READER.toString());
-        index.getAllKnownImplementors(METRIC_READER)
+        index.getAllKnownImplementations(METRIC_READER)
                 .forEach(classInfo -> knownClasses.add(classInfo.name().toString()));
 
         knownClasses.add(METRIC_PROCESSOR.toString());
-        index.getAllKnownImplementors(METRIC_PROCESSOR)
+        index.getAllKnownImplementations(METRIC_PROCESSOR)
                 .forEach(classInfo -> knownClasses.add(classInfo.name().toString()));
 
         Set<String> retainProducers = new HashSet<>();

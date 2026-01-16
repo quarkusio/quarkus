@@ -253,11 +253,11 @@ public class QuarkusServerEndpointIndexer
     }
 
     private boolean isServerMessageBodyReader(ClassInfo classInfo) {
-        return index.getAllKnownImplementors(SERVER_MESSAGE_BODY_READER).contains(classInfo);
+        return index.getAllKnownImplementations(SERVER_MESSAGE_BODY_READER).contains(classInfo);
     }
 
     private boolean isServerMessageBodyWriter(ClassInfo classInfo) {
-        return index.getAllKnownImplementors(SERVER_MESSAGE_BODY_WRITER).contains(classInfo);
+        return index.getAllKnownImplementations(SERVER_MESSAGE_BODY_WRITER).contains(classInfo);
     }
 
     @Override

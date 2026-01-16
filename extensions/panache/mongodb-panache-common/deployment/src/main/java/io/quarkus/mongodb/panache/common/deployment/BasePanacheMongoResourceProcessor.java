@@ -342,7 +342,7 @@ public abstract class BasePanacheMongoResourceProcessor {
         Set<String> daoClasses = new HashSet<>();
         Set<Type> daoTypeParameters = new HashSet<>();
         DotName dotName = typeBundle.repositoryBase().dotName();
-        for (ClassInfo classInfo : index.getComputingIndex().getAllKnownImplementors(dotName)) {
+        for (ClassInfo classInfo : index.getComputingIndex().getAllKnownImplementations(dotName)) {
             // Skip PanacheMongoRepository and abstract repositories
             if (classInfo.name().equals(typeBundle.repository().dotName()) || repositoryEnhancer.skipRepository(classInfo)) {
                 continue;
@@ -351,7 +351,7 @@ public abstract class BasePanacheMongoResourceProcessor {
             daoTypeParameters.addAll(
                     resolveTypeParameters(classInfo.name(), typeBundle.repositoryBase().dotName(), index.getComputingIndex()));
         }
-        for (ClassInfo classInfo : index.getComputingIndex().getAllKnownImplementors(typeBundle.repository().dotName())) {
+        for (ClassInfo classInfo : index.getComputingIndex().getAllKnownImplementations(typeBundle.repository().dotName())) {
             if (repositoryEnhancer.skipRepository(classInfo)) {
                 continue;
             }

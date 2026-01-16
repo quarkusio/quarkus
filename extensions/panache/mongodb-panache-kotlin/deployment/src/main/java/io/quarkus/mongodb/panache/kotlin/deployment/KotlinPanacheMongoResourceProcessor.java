@@ -115,13 +115,13 @@ public class KotlinPanacheMongoResourceProcessor extends BasePanacheMongoResourc
         Set<String> modelClasses = new HashSet<>();
         // Note that we do this in two passes because for some reason Jandex does not give us subtypes
         // of PanacheMongoEntity if we ask for subtypes of PanacheMongoEntityBase
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(typeBundle.entityCompanionBase().dotName())) {
+        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementations(typeBundle.entityCompanionBase().dotName())) {
             if (classInfo.name().equals(typeBundle.entityCompanion().dotName())) {
                 continue;
             }
             modelClasses.add(classInfo.name().toString());
         }
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(typeBundle.entityCompanion().dotName())) {
+        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementations(typeBundle.entityCompanion().dotName())) {
             modelClasses.add(classInfo.name().toString());
         }
 

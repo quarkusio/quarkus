@@ -16,7 +16,7 @@ final class FragmentMethodsUtil {
      * exception indicating the problem
      */
     static DotName getImplementationDotName(DotName customInterfaceToImplement, IndexView index) {
-        Collection<ClassInfo> knownImplementors = index.getAllKnownImplementors(customInterfaceToImplement);
+        Collection<ClassInfo> knownImplementors = index.getAllKnownImplementations(customInterfaceToImplement);
 
         if (knownImplementors.size() > 1) {
             DotName previouslyFound = null;

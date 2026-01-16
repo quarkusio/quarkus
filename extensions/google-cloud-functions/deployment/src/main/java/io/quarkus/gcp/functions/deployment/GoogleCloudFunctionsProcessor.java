@@ -54,10 +54,10 @@ public class GoogleCloudFunctionsProcessor {
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans)
             throws BuildException {
         IndexView index = combinedIndex.getIndex();
-        Collection<ClassInfo> httpFunctions = index.getAllKnownImplementors(DOTNAME_HTTP_FUNCTION);
-        Collection<ClassInfo> backgroundFunctions = index.getAllKnownImplementors(DOTNAME_BACKGROUND_FUNCTION);
-        Collection<ClassInfo> rawBackgroundFunctions = index.getAllKnownImplementors(DOTNAME_RAW_BACKGROUND_FUNCTION);
-        Collection<ClassInfo> cloudEventFunctions = index.getAllKnownImplementors(DOTNAME_CLOUD_EVENT_FUNCTION);
+        Collection<ClassInfo> httpFunctions = index.getAllKnownImplementations(DOTNAME_HTTP_FUNCTION);
+        Collection<ClassInfo> backgroundFunctions = index.getAllKnownImplementations(DOTNAME_BACKGROUND_FUNCTION);
+        Collection<ClassInfo> rawBackgroundFunctions = index.getAllKnownImplementations(DOTNAME_RAW_BACKGROUND_FUNCTION);
+        Collection<ClassInfo> cloudEventFunctions = index.getAllKnownImplementations(DOTNAME_CLOUD_EVENT_FUNCTION);
 
         List<CloudFunctionBuildItem> cloudFunctions = new ArrayList<>();
         cloudFunctions.addAll(

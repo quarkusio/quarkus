@@ -60,7 +60,7 @@ public final class H2JDBCReflections {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     GeneratedResourceBuildItem listStatefulDataTypeFactories(CombinedIndexBuildItem index) {
         return generateListBy(H2Reflections.REZ_NAME_STATEFUL_DATATYPES, index,
-                i -> i.getAllKnownImplementors(StatefulDataType.Factory.class).stream());
+                i -> i.getAllKnownImplementations(StatefulDataType.Factory.class).stream());
     }
 
     /**
@@ -72,7 +72,7 @@ public final class H2JDBCReflections {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     GeneratedResourceBuildItem listBasicDataTypes(CombinedIndexBuildItem index) {
         return generateListBy(H2Reflections.REZ_NAME_DATA_TYPE_SINGLETONS, index,
-                i -> i.getAllKnownImplementors(DataType.class)
+                i -> i.getAllKnownImplementations(DataType.class)
                         .stream().filter(classInfo -> classInfo.field("INSTANCE") != null));
     }
 

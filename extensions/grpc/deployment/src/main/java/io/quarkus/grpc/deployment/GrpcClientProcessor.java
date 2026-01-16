@@ -128,7 +128,7 @@ public class GrpcClientProcessor {
 
         // Collect a map of service interface name to the generated client class
         Map<DotName, DotName> generatedClients = new HashMap<>();
-        for (ClassInfo generatedClient : index.getIndex().getKnownDirectImplementors(GrpcDotNames.MUTINY_CLIENT)) {
+        for (ClassInfo generatedClient : index.getIndex().getKnownDirectImplementations(GrpcDotNames.MUTINY_CLIENT)) {
             // Mutiny client implements MutinyClient and the service interface
             DotName serviceInterface = null;
             for (DotName name : generatedClient.interfaceNames()) {
@@ -307,7 +307,7 @@ public class GrpcClientProcessor {
         // Attempt to detect wrong service interface injection points
         // Note that we cannot use injection points metadata because the build can fail with unsatisfied dependency before
         Set<DotName> serviceInterfaces = new HashSet<>();
-        for (ClassInfo serviceInterface : index.getIndex().getKnownDirectImplementors(GrpcDotNames.MUTINY_SERVICE)) {
+        for (ClassInfo serviceInterface : index.getIndex().getKnownDirectImplementations(GrpcDotNames.MUTINY_SERVICE)) {
             serviceInterfaces.add(serviceInterface.name());
         }
 

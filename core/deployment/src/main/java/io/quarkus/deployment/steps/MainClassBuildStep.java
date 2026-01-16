@@ -418,7 +418,7 @@ public class MainClassBuildStep {
             }
         } else {
             Collection<ClassInfo> impls = index
-                    .getAllKnownImplementors(QUARKUS_APPLICATION);
+                    .getAllKnownImplementations(QUARKUS_APPLICATION);
             ClassInfo classByName = index.getClassByName(DotName.createSimple(mainClassName));
             if (classByName != null) {
                 mainClassMethod = classByName
@@ -460,7 +460,7 @@ public class MainClassBuildStep {
             MethodInfo mainMethod = mainClass.method("main",
                     ArrayType.create(Type.create(DotName.createSimple(String.class.getName()), Type.Kind.CLASS), 1));
             if (mainMethod == null) {
-                boolean hasQuarkusApplicationInterface = index.getAllKnownImplementors(QUARKUS_APPLICATION).stream().map(
+                boolean hasQuarkusApplicationInterface = index.getAllKnownImplementations(QUARKUS_APPLICATION).stream().map(
                         ClassInfo::name).anyMatch(d -> d.equals(mainClassDotName));
                 if (!hasQuarkusApplicationInterface) {
                     className += "Kt";

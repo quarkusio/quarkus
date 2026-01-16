@@ -77,7 +77,7 @@ public class RedisDatasourceProcessor {
     public void makeCodecsUnremovable(CombinedIndexBuildItem index, BuildProducer<AdditionalBeanBuildItem> producer) {
         producer.produce(AdditionalBeanBuildItem.unremovableOf(Codec.class));
 
-        for (ClassInfo implementor : index.getIndex().getAllKnownImplementors(Codec.class.getName())) {
+        for (ClassInfo implementor : index.getIndex().getAllKnownImplementations(Codec.class.getName())) {
             producer.produce(AdditionalBeanBuildItem.unremovableOf(implementor.name().toString()));
         }
     }

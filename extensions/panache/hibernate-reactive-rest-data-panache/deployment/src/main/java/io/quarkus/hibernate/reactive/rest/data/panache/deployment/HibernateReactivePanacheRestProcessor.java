@@ -54,7 +54,8 @@ class HibernateReactivePanacheRestProcessor {
     @BuildStep
     void findResourceMethodListeners(CombinedIndexBuildItem index,
             BuildProducer<ResourceMethodListenerBuildItem> resourceMethodListeners) {
-        for (ClassInfo classInfo : index.getIndex().getKnownDirectImplementors(REST_DATA_RESOURCE_METHOD_LISTENER_INTERFACE)) {
+        for (ClassInfo classInfo : index.getIndex()
+                .getKnownDirectImplementations(REST_DATA_RESOURCE_METHOD_LISTENER_INTERFACE)) {
             List<Type> generics = getGenericTypes(classInfo);
             Type entityType = generics.get(0);
             resourceMethodListeners.produce(new ResourceMethodListenerBuildItem(classInfo, entityType));
@@ -73,7 +74,7 @@ class HibernateReactivePanacheRestProcessor {
         ResourceImplementor resourceImplementor = new ResourceImplementor(new EntityClassHelper(index));
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
 
-        for (ClassInfo resourceInterface : index.getKnownDirectImplementors(PANACHE_ENTITY_RESOURCE_INTERFACE)) {
+        for (ClassInfo resourceInterface : index.getKnownDirectImplementations(PANACHE_ENTITY_RESOURCE_INTERFACE)) {
             validateResource(index, resourceInterface);
 
             List<Type> generics = getGenericTypes(resourceInterface);
@@ -104,7 +105,7 @@ class HibernateReactivePanacheRestProcessor {
         ResourceImplementor resourceImplementor = new ResourceImplementor(new EntityClassHelper(index));
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
 
-        for (ClassInfo resourceInterface : index.getKnownDirectImplementors(PANACHE_REPOSITORY_RESOURCE_INTERFACE)) {
+        for (ClassInfo resourceInterface : index.getKnownDirectImplementations(PANACHE_REPOSITORY_RESOURCE_INTERFACE)) {
             validateResource(index, resourceInterface);
 
             List<Type> generics = getGenericTypes(resourceInterface);
@@ -135,7 +136,7 @@ class HibernateReactivePanacheRestProcessor {
             throw new RuntimeException(classInfo.name() + " should only extend REST Data Panache interface");
         }
 
-        if (!index.getKnownDirectImplementors(classInfo.name()).isEmpty()) {
+        if (!index.getKnownDirectImplementations(classInfo.name()).isEmpty()) {
             throw new RuntimeException(classInfo.name() + " should not be extended or implemented");
         }
     }

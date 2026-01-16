@@ -44,7 +44,7 @@ public class ResteasyReactiveExceptionMappingScanner {
 
         ExceptionMapping exceptionMapping = new ExceptionMapping();
         Collection<ClassInfo> exceptionMappers = index
-                .getAllKnownImplementors(ResteasyReactiveDotNames.EXCEPTION_MAPPER);
+                .getAllKnownImplementations(ResteasyReactiveDotNames.EXCEPTION_MAPPER);
         for (ClassInfo mapperClass : exceptionMappers) {
             ApplicationScanningResult.KeepProviderResult keepProviderResult = result
                     .keepProvider(mapperClass);

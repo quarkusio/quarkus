@@ -16,7 +16,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -63,7 +62,7 @@ public class IndexWrapper implements IndexView {
         Collection<ClassInfo> known = index.getKnownClasses();
         Collection<ClassInfo> additional = additionalClasses.values().stream().filter(Optional::isPresent)
                 .map(Optional::get)
-                .collect(Collectors.toList());
+                .toList();
         List<ClassInfo> all = new ArrayList<>(known.size() + additional.size());
         all.addAll(known);
         all.addAll(additional);
@@ -203,11 +202,11 @@ public class IndexWrapper implements IndexView {
     @Override
     public Collection<ClassInfo> getKnownDirectImplementors(DotName className) {
         if (additionalClasses.isEmpty()) {
-            return index.getKnownDirectImplementors(className);
+            return index.getKnownDirectImplementations(className);
         }
-        Set<ClassInfo> directImplementors = new HashSet<ClassInfo>(index.getKnownDirectImplementors(className));
+        Set<ClassInfo> directImplementors = new HashSet<ClassInfo>(index.getKnownDirectImplementations(className));
         for (Optional<ClassInfo> additional : additionalClasses.values()) {
-            if (!additional.isPresent()) {
+            if (additional.isEmpty()) {
                 continue;
             }
             for (Type interfaceType : additional.get().interfaceTypes()) {
@@ -223,7 +222,7 @@ public class IndexWrapper implements IndexView {
     @Override
     public Collection<ClassInfo> getAllKnownImplementors(DotName interfaceName) {
         if (additionalClasses.isEmpty()) {
-            return index.getAllKnownImplementors(interfaceName);
+            return index.getAllKnownImplementations(interfaceName);
         }
         final Set<ClassInfo> allKnown = new HashSet<ClassInfo>();
         final Set<DotName> subInterfacesToProcess = new HashSet<DotName>();

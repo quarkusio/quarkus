@@ -2,6 +2,7 @@ package io.quarkus.it.flyway;
 
 import java.util.Objects;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -18,6 +19,7 @@ public class AppEntity {
 
     private String name;
 
+    @Column(nullable = false)
     private String createdBy;
 
     public int getId() {

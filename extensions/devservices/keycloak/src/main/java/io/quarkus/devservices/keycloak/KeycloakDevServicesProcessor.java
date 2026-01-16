@@ -3,7 +3,6 @@ package io.quarkus.devservices.keycloak;
 import static io.quarkus.devservices.common.ConfigureUtil.getDefaultImageNameFor;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
-import static io.quarkus.devservices.keycloak.KeycloakDevServicesConfigBuildItem.getKeycloakUrl;
 import static io.quarkus.devservices.keycloak.KeycloakDevServicesRequiredBuildItem.getDevServicesConfigurator;
 import static io.quarkus.devservices.keycloak.KeycloakDevServicesUtils.createWebClient;
 import static io.quarkus.devservices.keycloak.KeycloakDevServicesUtils.getPasswordAccessToken;
@@ -192,7 +191,7 @@ public class KeycloakDevServicesProcessor {
                         .serviceConfig(config)
                         .startable(
                                 () -> new KeycloakServer(useSharedNetwork, config, devServicesConfig, devServicesConfigurator,
-                                        composeProjectBuildItem))
+                                        composeProjectBuildItem, imageName))
                         .configProvider(createLazyConfigMap(devServicesConfigurator))
                         .build());
         devServicesResultProducer.produce(devServicesResultBuildItem);
@@ -274,18 +273,17 @@ public class KeycloakDevServicesProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    void produceDevUiCardWithKeycloakUrl(Optional<KeycloakDevServicesConfigBuildItem> configProps,
+    void produceDevUiCardWithKeycloakUrl(
             Optional<KeycloakDevServicesPreparedBuildItem> keycloakDevServicesPreparedBuildItem,
             List<KeycloakAdminPageBuildItem> keycloakAdminPageBuildItems,
             BuildProducer<CardPageBuildItem> cardPageProducer) {
-        final String keycloakAdminUrl = getKeycloakUrl(configProps);
-        if (keycloakDevServicesPreparedBuildItem.isPresent() && keycloakAdminUrl != null) {
+        if (keycloakDevServicesPreparedBuildItem.isPresent()) {
             keycloakAdminPageBuildItems.forEach(i -> {
                 i.cardPage.addPage(Page
                         .externalPageBuilder("Keycloak Admin")
                         .icon("font-awesome-solid:key")
                         .doNotEmbed(true)
-                        .url(keycloakAdminUrl));
+                        .dynamicUrlJsonRPCMethodName("getAdminConsoleUrl"));
                 cardPageProducer.produce(i.cardPage);
             });
         }
@@ -316,6 +314,7 @@ public class KeycloakDevServicesProcessor {
         private final boolean useSharedNetwork;
         private final KeycloakDevServicesConfig config;
         private final DevServicesConfig devServicesConfig;
+        private final String imageName;
         Vertx vertxInstance;
         QuarkusOidcContainer oidcContainer;
         private KeycloakDevServicesConfigurator devServicesConfigurator;
@@ -327,12 +326,13 @@ public class KeycloakDevServicesProcessor {
 
         public KeycloakServer(boolean useSharedNetwork, KeycloakDevServicesConfig config, DevServicesConfig devServicesConfig,
                 KeycloakDevServicesConfigurator devServicesConfigurator,
-                DevServicesComposeProjectBuildItem composeProjectBuildItem) {
+                DevServicesComposeProjectBuildItem composeProjectBuildItem, String imageName) {
             this.useSharedNetwork = useSharedNetwork;
             this.config = config;
             this.devServicesConfig = devServicesConfig;
             this.devServicesConfigurator = devServicesConfigurator;
             this.composeProjectBuildItem = composeProjectBuildItem;
+            this.imageName = imageName;
         }
 
         Map<String, String> conf() {
@@ -378,7 +378,6 @@ public class KeycloakDevServicesProcessor {
                     config.shared(),
                     LaunchMode.current());
 
-            String imageName = config.imageName().orElse(null); // TODO handle the null properly
             DockerImageName dockerImageName = DockerImageName.parse(imageName).asCompatibleSubstituteFor(imageName);
 
             oidcContainer = new QuarkusOidcContainer(config, dockerImageName,
@@ -401,7 +400,11 @@ public class KeycloakDevServicesProcessor {
             oidcContainer.start();
 
             configPropertiesContext = createConfigPropertiesContext();
-            generatedConfig = null; // FIXME: impl. me!!!!!!!!!! take it from the ctx right above
+            generatedConfig = new HashMap<>();
+            // TODO this is a wrong value
+            generatedConfig.put(KEYCLOAK_URL_KEY, dockerImageName.toString());
+
+            // FIXME: impl. me!!!!!!!!!! take it from the ctx right above
 
             //            return maybeContainerAddress
             //                    .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem, List.of(imageName, "keycloak"),

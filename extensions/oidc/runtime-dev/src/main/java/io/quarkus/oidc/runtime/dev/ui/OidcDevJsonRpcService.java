@@ -23,6 +23,13 @@ public class OidcDevJsonRpcService {
     Vertx vertx;
 
     @NonBlocking
+    public String getAdminConsoleUrl() {
+        // FIXME dummy url pending proper config
+        return "https://news.bbc.co.uk";
+
+    }
+
+    @NonBlocking
     public OidcDevUiRuntimePropertiesDTO getProperties() {
         return new OidcDevUiRuntimePropertiesDTO(props.getAuthorizationUrl(), props.getTokenUrl(), props.getLogoutUrl(),
                 ConfigProvider.getConfig(), httpConfig.port(),

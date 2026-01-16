@@ -53,6 +53,7 @@ import io.vertx.core.buffer.impl.VertxByteBufAllocator;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.impl.Http1xServerResponse;
+import io.vertx.core.net.HostAndPort;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 
@@ -137,6 +138,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
         return ((ConnectionBase) context.request().connection()).channel().eventLoop();
     }
 
+    @Override
     public Executor getContextExecutor() {
         return contextExecutor;
     }
@@ -204,8 +206,16 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     }
 
     @Override
-    public String getRequestHost() {
-        return request.authority().toString();
+    public String getRequestHostAndPort() {
+        HostAndPort authority = request.authority();
+        if (authority == null) {
+            return null;
+        }
+        if (authority.port() >= 0) {
+            return authority.host() + ':' + authority.port();
+        } else {
+            return authority.host();
+        }
     }
 
     @Override

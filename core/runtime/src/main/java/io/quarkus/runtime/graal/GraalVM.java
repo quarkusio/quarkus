@@ -89,6 +89,10 @@ public final class GraalVM {
     public static class Version implements Comparable<Version> {
 
         public static final Version VERSION_23_1_0 = new Version("GraalVM 23.1.0", "23.1.0", "21", Distribution.GRAALVM);
+        public static final Version VERSION_24_0_0 = new Version("GraalVM 24.0.0", "24.0.0", "22", Distribution.GRAALVM);
+        public static final Version VERSION_24_0_999 = new Version("GraalVM 24.0.999", "24.0.999", "22", Distribution.GRAALVM);
+        public static final Version VERSION_24_1_0 = new Version("GraalVM 24.1.0", "24.1.0", "23", Distribution.GRAALVM);
+        public static final Version VERSION_24_1_999 = new Version("GraalVM 24.1.999", "24.1.999", "23", Distribution.GRAALVM);
         public static final Version VERSION_24_2_0 = new Version("GraalVM 24.2.0", "24.2.0", "24", Distribution.GRAALVM);
         public static final Version VERSION_25_0_0 = new Version("GraalVM 25.0.0", "25.0.0", "25", Distribution.GRAALVM);
 
@@ -144,6 +148,14 @@ public final class GraalVM {
 
         Version(String fullVersion, String version, String javaVersion, Distribution distro) {
             this(fullVersion, version, Runtime.Version.parse(javaVersion), distro);
+        }
+
+        protected Version(Version version) {
+            this.fullVersion = version.fullVersion;
+            this.javaVersion = version.javaVersion;
+            this.distribution = version.distribution;
+            this.versions = version.versions;
+            this.suffix = version.suffix;
         }
 
         protected Version(String fullVersion, String version, Runtime.Version javaVersion, Distribution distro) {

@@ -698,8 +698,8 @@ public class NativeImageBuildStep {
                 return this;
             }
 
-            public Builder setGraalVMVersion(GraalVM.Version graalVMVersion) {
-                this.graalVMVersion = graalVMVersion;
+            public Builder setGraalVMVersion(io.quarkus.runtime.graal.GraalVM.Version graalVMVersion) {
+                this.graalVMVersion = new GraalVM.Version(graalVMVersion);
                 return this;
             }
 

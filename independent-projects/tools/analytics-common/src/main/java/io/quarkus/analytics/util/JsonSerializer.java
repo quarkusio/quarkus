@@ -326,4 +326,26 @@ public final class JsonSerializer {
         }
         return sb.toString();
     }
+
+    public static Identity parseIdentity(String json) {
+        JsonObject obj = JsonReader.of(json).read();
+        Identity.IdentityBuilder builder = Identity.builder();
+
+        JsonString userId = obj.get("userId");
+        if (userId != null) {
+            builder.userId(userId.value());
+        }
+
+        JsonObject ctx = obj.get("context");
+        if (ctx != null) {
+            builder.context(toMap(ctx));
+        }
+
+        JsonString timestamp = obj.get("timestamp");
+        if (timestamp != null) {
+            builder.timestamp(Instant.parse(timestamp.value()));
+        }
+
+        return builder.build();
+    }
 }

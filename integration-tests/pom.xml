@@ -329,7 +329,9 @@
                 <module>smallrye-graphql</module>
                 <module>smallrye-graphql-client</module>
                 <module>smallrye-graphql-client-keycloak</module>
-                <module>smallrye-stork-registration</module>
+                <module>smallrye-stork-consul-registration-prod-mode</module>
+                <module>smallrye-stork-consul-registration</module>
+                <module>smallrye-stork-consul-registration-health-check</module>
                 <module>jpa-without-entity</module>
                 <module>quartz</module>
                 <module>quartz-deferred-datasource</module>

@@ -1,0 +1,139 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Automatic service registration with SmallRye Stork for Quarkus
+:extension-status: preview
+include::_attributes.adoc[]
+:categories: cloud
+:topics: service-discovery, consul
+:extensions: io.quarkus:quarkus-smallrye-stork
+
+This guide explains how to enable automatic registration and deregistration of a Quarkus application using SmallRye Stork and Consul, with minimal or no configuration.
+
+== Overview
+
+SmallRye Stork supports service registration backends like Consul and Eureka.
+Traditionally, developers link:{quickstarts-tree-url}/stork-programmatic-custom-registration-quickstart[had to explicitly configure and manually register] their service instances using code.
+With this feature, Quarkus applications can automatically register with a supported registry (e.g., Consul) during startup and deregister during shutdown — without writing boilerplate code.
+
+**IMPORTANT**: Note that automatic registration is possible **only** for built-in registrars such as Consul, Eureka, and Static.
+If you're using a custom registrar, registration must still be handled programmatically.
+Check the `stork-programmatic-custom-registration-quickstart` link:{quickstarts-tree-url}/stork-programmatic-custom-registration-quickstart[directory] example for this use case.
+
+This integration minimizes configuration effort and adheres to Quarkus' philosophy of doing as much as possible at build time.
+
+== How it works
+
+When the application starts and the `stork-service-registration-consul` dependency, besides the `quarkus-smallrye-stork`, is present:
+
+- Quarkus performs a build-time check for registration configuration.
+- If valid configuration is detected (or can be inferred), registration metadata is generated.
+- **During startup**, the application registers itself automatically using the detected or configured IP address and port.
+- During shutdown, the service is automatically deregistered.
+
+The solution is located in the `stork-automatic-consul-registration-quickstart` link:{quickstarts-tree-url}/stork-automatic-consul-registration-quickstart[directory].
+
+
+== Use cases/configuration options
+
+The registration system uses sensible defaults but also allows for fine-grained control per service.
+
+=== Case 1: implicit configuration
+
+No configuration required at all:
+
+[source,xml]
+----
+<dependency>
+  <groupId>io.smallrye.stork</groupId>
+  <artifactId>stork-service-registration-consul</artifactId>
+</dependency>
+----
+
+Quarkus automatically uses:
+
+- Application name
+- Detected IP address
+- HTTP port
+
+The service is registered and unregistered automatically.
+
+=== Case 2: minimal explicit configuration
+
+Only override what's necessary:
+
+[source,properties]
+----
+quarkus.stork.my-service.service-registrar.ip-address=192.168.0.42
+----
+
+No `quarkus.stork.my-service.service-registrar.type` is needed because there's only one registrar configuration in `application.properties`.
+
+=== Case 3: multiple services registrars
+
+When multiple services are configured, you must specify the `quarkus.stork.<service-name>.service-registrar.type`:
+
+[source,properties]
+----
+quarkus.stork.red-service.service-registrar.type=consul
+quarkus.stork.red-service.service-registrar.port=8083
+
+quarkus.stork.blue-service.service-registrar.type=consul
+quarkus.stork.blue-service.service-registrar.port=8084
+----
+
+=== Case 4: disabling registration
+
+Automatic registration is enabled by default. If you want to disable registration, you can do it per service using the following property:
+
+[source,properties]
+----
+quarkus.stork.red-service.service-registrar.enabled=false
+----
+
+=== Case 5: advanced health check configuration
+
+Customize how Consul polls service health:
+
+[source,properties]
+----
+quarkus.stork.my-service.service-registrar.parameters.health-check-url=/q/health/live
+quarkus.stork.my-service.service-registrar.parameters.health-check-interval=10s
+quarkus.stork.my-service.service-registrar.parameters.health-check-deregister-after=1m
+----
+
+=== Case 6: static IP and port
+
+Useful when behind a proxy or in production with known IPs:
+
+[source,properties]
+----
+quarkus.stork.my-service.service-registrar.ip-address=203.0.113.25
+quarkus.stork.my-service.service-registrar.port=80
+----
+
+== IP detection
+
+By default, Quarkus attempts to determine the IP address using the first available, non-loopback network interface.
+If this fails, it falls back to `localhost`.
+
+Note that in Docker/Kubernetes environments, this detection may result in internal IPs that are not externally reachable.
+In such cases, it's recommended to explicitly set the IP and port.
+
+== Summary
+
+- Minimal or zero config to get service registration working
+- Seamless integration with Consul via build-time processing
+- Per-service override support
+- Auto-deregistration on shutdown
+- Easily extendable to support other backends
+
+[[stork-configuration-reference]]
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-smallrye-stork.adoc[opts=optional, leveloffset=+1]
+
+
+

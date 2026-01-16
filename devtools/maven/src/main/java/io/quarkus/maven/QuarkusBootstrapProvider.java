@@ -16,8 +16,8 @@ import java.util.function.Consumer;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.inject.Singleton;
 
+import org.apache.maven.SessionScoped;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.model.Model;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -51,7 +51,7 @@ import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.runtime.LaunchMode;
 import io.smallrye.common.expression.Expression;
 
-@Singleton
+@SessionScoped
 @Named
 public class QuarkusBootstrapProvider implements Closeable {
 

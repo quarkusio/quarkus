@@ -6,10 +6,10 @@ import java.util.Properties;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.inject.Singleton;
 
 import org.apache.maven.AbstractMavenLifecycleParticipant;
 import org.apache.maven.MavenExecutionException;
+import org.apache.maven.SessionScoped;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.project.MavenProject;
@@ -19,7 +19,7 @@ import org.codehaus.plexus.util.xml.Xpp3Dom;
 import io.quarkus.maven.BuildAnalyticsProvider;
 import io.quarkus.maven.QuarkusBootstrapProvider;
 
-@Singleton
+@SessionScoped
 @Named("quarkus-bootstrap")
 public class BootstrapSessionListener extends AbstractMavenLifecycleParticipant {
 

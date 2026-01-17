@@ -31,6 +31,36 @@ public interface NativeConfig {
     boolean enabled();
 
     /**
+     * Native-Image bundle options.
+     */
+    Bundle bundle();
+
+    default boolean isCreateNativeBundle() {
+        return bundle().enabled().orElse(bundle().name().isPresent() || bundle().dryRun());
+    }
+
+    @ConfigGroup
+    interface Bundle {
+        /**
+         * Set to enable native-image bundle generation.
+         */
+        Optional<Boolean> enabled();
+
+        /**
+         * Generates the native-image bundle through a dry-run build, skipping the actual native-image build.
+         */
+        @WithDefault("false")
+        boolean dryRun();
+
+        /**
+         * Set to define the native-image bundle name.
+         * If not set the default name will match the native-executable's name suffixed by `.nib`.
+         * i.e. `{project.name}-{project.version}-runner.nib`
+         */
+        Optional<String> name();
+    }
+
+    /**
      * Set to prevent the native-image process from actually building the native image.
      */
     @WithDefault("false")

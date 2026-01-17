@@ -18,7 +18,6 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,6 +29,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -147,13 +147,6 @@ public class KeycloakDevServicesProcessor {
         // TODO: correct this flag according to the ^^
         final boolean containerRestarted = false;
 
-        // TODO we need to capture and update the realm last modified
-        Set<FileTime> currentRealmFileLastModifiedDate = getRealmFileLastModifiedDate(config.realmPath());
-        //        if (currentRealmFileLastModifiedDate != null
-        //                && !currentRealmFileLastModifiedDate.equals(capturedRealmFileLastModifiedDate)) {
-        //
-        //        }
-
         boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                 devServicesSharedNetworkBuildItem);
 
@@ -161,12 +154,15 @@ public class KeycloakDevServicesProcessor {
         // TODO do something with this
         List<String> errors = new ArrayList<>();
 
+        // TODO: this can't be, we cannot use the locator to detect the services we started, because there the config
+        //  won't be reflected; now, if we used the "owned" then such a service we do not want to locate!
         DevServicesResultBuildItem devServicesResultBuildItem = KEYCLOAK_DEV_MODE_CONTAINER_LOCATOR
                 .locateContainer(config.serviceName(), config.shared(), LaunchMode.current())
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem, List.of(imageName, "keycloak"),
                         KEYCLOAK_PORT, LaunchMode.current(), useSharedNetwork))
                 .map(containerAddress -> {
                     String sharedContainerUrl = getSharedContainerUrl(containerAddress);
+                    // TODO: this cannot try to create the realm on the second time!!! only the first time, we should detect it!
                     Map<String, String> configs = prepareConfiguration(config, sharedContainerUrl,
                             sharedContainerUrl, List.of(), errors, devServicesConfigurator, sharedContainerUrl);
                     return DevServicesResultBuildItem.discovered()
@@ -176,7 +172,7 @@ public class KeycloakDevServicesProcessor {
                             .build();
                 }).orElseGet(() -> DevServicesResultBuildItem.owned().feature(feature)
                         .serviceName(feature.getName())
-                        .serviceConfig(config)
+                        .serviceConfig(getServiceConfigIdentifier(config))
                         .startable(
                                 () -> new KeycloakServer(useSharedNetwork, config, devServicesConfig, devServicesConfigurator,
                                         composeProjectBuildItem, imageName))
@@ -187,6 +183,19 @@ public class KeycloakDevServicesProcessor {
 
         // now we know that Keycloak Dev Services will start
         keycloakDevServicesPreparedProducer.produce(new KeycloakDevServicesPreparedBuildItem(containerRestarted));
+    }
+
+    private static String getServiceConfigIdentifier(KeycloakDevServicesConfig config) {
+        // Dev Services are restarted if the "service config" is different then the previous one
+        // we can't rely on the static variables, hence the idea in this method is to trust the hash code is
+        // same if the config and the realm file modified times are same and the other way around
+        StringBuilder serviceConfigIdentifier = new StringBuilder();
+        serviceConfigIdentifier.append(config.hashCode());
+        for (int fileTimeHashCode : getRealmFileLastModifiedDateHashCode(config.realmPath())) {
+            serviceConfigIdentifier.append(";"); // separator
+            serviceConfigIdentifier.append(fileTimeHashCode);
+        }
+        return serviceConfigIdentifier.toString();
     }
 
     private static Map<String, Function<KeycloakServer, String>> createLazyConfigMap(
@@ -667,14 +676,15 @@ public class KeycloakDevServicesProcessor {
         }
     }
 
-    private static Set<FileTime> getRealmFileLastModifiedDate(Optional<List<String>> realms) {
+    private static Set<Integer> getRealmFileLastModifiedDateHashCode(Optional<List<String>> realms) {
         if (realms.isPresent()) {
-            Set<FileTime> times = new HashSet<>();
+            Set<Integer> times = new TreeSet<>();
 
             for (String realm : realms.get()) {
                 Path realmPath = Paths.get(realm);
                 try {
-                    times.add(Files.getLastModifiedTime(realmPath));
+                    var lastModifiedTime = Files.getLastModifiedTime(realmPath);
+                    times.add(lastModifiedTime.hashCode());
                 } catch (IOException ex) {
                     LOG.tracef("Unable to get the last modified date of the realm file %s", realmPath);
                 }
@@ -682,7 +692,7 @@ public class KeycloakDevServicesProcessor {
 
             return times;
         }
-        return null;
+        return Set.of();
     }
 
     private static void createDefaultRealm(KeycloakDevServicesConfig config, WebClient client, String token, String keycloakUrl,

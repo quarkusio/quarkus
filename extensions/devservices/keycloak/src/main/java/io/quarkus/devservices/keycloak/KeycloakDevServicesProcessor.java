@@ -189,6 +189,7 @@ public class KeycloakDevServicesProcessor {
                         .startable(
                                 () -> new KeycloakServer(useSharedNetwork, config, devServicesConfig, devServicesConfigurator,
                                         composeProjectBuildItem, imageName))
+                        .postStartHook(keycloakServer -> LOG.info("Dev Services for Keycloak started."))
                         .configProvider(createLazyConfigMap(devServicesConfigurator))
                         .build());
         devServicesResultProducer.produce(devServicesResultBuildItem);

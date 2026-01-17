@@ -104,27 +104,25 @@ public final class JpaJandexScavenger {
 
         Set<String> managedClassNames = new HashSet<>(collector.entityTypes);
         managedClassNames.addAll(collector.modelTypes);
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(managedClassNames).methods().fields().build());
+        List<String> forReflection = new ArrayList<>(collector.entityTypes.size());
         for (String className : managedClassNames) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).methods().fields().build());
             // Register static metamodel classes as well, so that their `class_` attribute can be populated.
             // See org.hibernate.metamodel.internal.MetadataContext.populateStaticMetamodel
             // Note: registering classes that do not exist is not a problem -- and is necessary if the application
             //       tries to access these classes via reflection anyway (which it will, through Hibernate ORM).
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(className + "_").fields().build());
+            forReflection.add(className + "_");
         }
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(forReflection).fields().build());
 
         if (!collector.enumTypes.isEmpty()) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.lang.Enum").methods().build());
-            for (String className : collector.enumTypes) {
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).methods().build());
-            }
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(collector.enumTypes).methods().build());
         }
 
         // for the java types we collected (usually from java.time but it could be from other types),
         // we just register them for reflection
-        for (String javaType : collector.javaTypes) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(javaType).methods().build());
-        }
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(collector.javaTypes).methods().build());
 
         if (!collector.unindexedClasses.isEmpty()) {
             Set<String> unIgnorableIndexedClasses = collector.unindexedClasses.stream().map(DotName::toString)
@@ -144,9 +142,11 @@ public final class JpaJandexScavenger {
 
         // Hibernate ORM will fall back to instantiating these types using reflection if they are not CDI beans,
         // so we need to enable that.
+        forReflection = new ArrayList<>(collector.potentialCdiBeanTypes.size());
         for (DotName javaType : collector.potentialCdiBeanTypes) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(javaType.toString()).constructors().build());
+            forReflection.add(javaType.toString());
         }
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(forReflection).constructors().build());
 
         return new JpaModelBuildItem(collector.packages, collector.entityTypes, managedClassNames,
                 collector.potentialCdiBeanTypes, collector.xmlMappingsByPU);

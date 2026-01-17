@@ -739,7 +739,7 @@ public class JaxrsClientReactiveProcessor {
     public void registerInvocationCallbacks(CombinedIndexBuildItem index, JaxrsClientReactiveRecorder recorder) {
 
         Collection<ClassInfo> invocationCallbacks = index.getComputingIndex()
-                .getAllKnownImplementors(ResteasyReactiveDotNames.INVOCATION_CALLBACK);
+                .getAllKnownImplementations(ResteasyReactiveDotNames.INVOCATION_CALLBACK);
 
         GenericTypeMapping genericTypeMapping = new GenericTypeMapping();
         for (ClassInfo invocationCallback : invocationCallbacks) {

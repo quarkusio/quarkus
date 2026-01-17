@@ -109,10 +109,10 @@ public class SmallRyeFaultToleranceProcessor {
         // (reflective access to fallback methods and before retry methods is added
         // in `FaultToleranceScanner.searchForMethods`)
         Set<String> handlers = new HashSet<>();
-        for (ClassInfo implementor : index.getAllKnownImplementors(DotNames.FALLBACK_HANDLER)) {
+        for (ClassInfo implementor : index.getAllKnownImplementations(DotNames.FALLBACK_HANDLER)) {
             handlers.add(implementor.name().toString());
         }
-        for (ClassInfo implementor : index.getAllKnownImplementors(DotNames.BEFORE_RETRY_HANDLER)) {
+        for (ClassInfo implementor : index.getAllKnownImplementations(DotNames.BEFORE_RETRY_HANDLER)) {
             handlers.add(implementor.name().toString());
         }
         if (!handlers.isEmpty()) {
@@ -125,7 +125,7 @@ public class SmallRyeFaultToleranceProcessor {
             beans.produce(handlerBeans.build());
         }
         // Add reflective access to custom backoff strategies
-        for (ClassInfo strategy : index.getAllKnownImplementors(DotNames.CUSTOM_BACKOFF_STRATEGY)) {
+        for (ClassInfo strategy : index.getAllKnownImplementations(DotNames.CUSTOM_BACKOFF_STRATEGY)) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(strategy.name().toString()).methods().build());
         }
         // Add reflective access to retry predicates

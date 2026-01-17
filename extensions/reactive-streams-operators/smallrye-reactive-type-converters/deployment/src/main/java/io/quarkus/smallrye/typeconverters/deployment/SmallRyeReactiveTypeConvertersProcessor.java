@@ -27,7 +27,7 @@ public class SmallRyeReactiveTypeConvertersProcessor {
     public void build(BuildProducer<ServiceProviderBuildItem> serviceProvider, BuildProducer<FeatureBuildItem> feature,
             CombinedIndexBuildItem indexBuildItem) {
         feature.produce(new FeatureBuildItem(Feature.SMALLRYE_REACTIVE_TYPE_CONVERTERS));
-        Collection<ClassInfo> implementors = indexBuildItem.getIndex().getAllKnownImplementors(REACTIVE_TYPE_CONVERTER);
+        Collection<ClassInfo> implementors = indexBuildItem.getIndex().getAllKnownImplementations(REACTIVE_TYPE_CONVERTER);
 
         implementors.forEach(info -> serviceProvider
                 .produce(new ServiceProviderBuildItem(REACTIVE_TYPE_CONVERTER.toString(), info.toString())));

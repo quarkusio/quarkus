@@ -150,7 +150,7 @@ public class ResteasyReactiveScanner {
             ApplicationScanningResult applicationScanningResult) {
 
         Collection<ClassInfo> readers = index
-                .getAllKnownImplementors(ResteasyReactiveDotNames.MESSAGE_BODY_READER);
+                .getAllKnownImplementations(ResteasyReactiveDotNames.MESSAGE_BODY_READER);
         List<ScannedSerializer> readerList = new ArrayList<>();
 
         for (ClassInfo readerClass : readers) {
@@ -186,7 +186,7 @@ public class ResteasyReactiveScanner {
 
         List<ScannedSerializer> writerList = new ArrayList<>();
         Collection<ClassInfo> writers = index
-                .getAllKnownImplementors(ResteasyReactiveDotNames.MESSAGE_BODY_WRITER);
+                .getAllKnownImplementations(ResteasyReactiveDotNames.MESSAGE_BODY_WRITER);
 
         for (ClassInfo writerClass : writers) {
             ApplicationScanningResult.KeepProviderResult keepProviderResult = applicationScanningResult
@@ -307,7 +307,7 @@ public class ResteasyReactiveScanner {
         }
 
         for (Map.Entry<DotName, String> i : pathInterfaces.entrySet()) {
-            for (ClassInfo clazz : index.getAllKnownImplementors(i.getKey())) {
+            for (ClassInfo clazz : index.getAllKnownImplementations(i.getKey())) {
                 if (!Modifier.isAbstract(clazz.flags())) {
                     if ((clazz.enclosingClass() == null || Modifier.isStatic(clazz.flags())) &&
                             clazz.enclosingMethod() == null) {
@@ -390,7 +390,7 @@ public class ResteasyReactiveScanner {
             possibleSubResources.put(classInfo.name(), classInfo);
             //we need to also look for all subclasses and interfaces
             //they may have type variables that need to be handled
-            toScan.addAll(index.getKnownDirectImplementors(classInfo.name()));
+            toScan.addAll(index.getKnownDirectImplementations(classInfo.name()));
             toScan.addAll(index.getKnownDirectSubclasses(classInfo.name()));
         }
 
@@ -402,7 +402,7 @@ public class ResteasyReactiveScanner {
     private static void addClientSubInterfaces(DotName interfaceName, IndexView index,
             Map<DotName, String> clientInterfaces) {
 
-        Collection<ClassInfo> subclasses = index.getKnownDirectImplementors(interfaceName);
+        Collection<ClassInfo> subclasses = index.getKnownDirectImplementations(interfaceName);
         for (ClassInfo subclass : subclasses) {
             if (!clientInterfaces.containsKey(subclass.name()) && Modifier.isInterface(subclass.flags())) {
                 clientInterfaces.put(subclass.name(), clientInterfaces.get(interfaceName));

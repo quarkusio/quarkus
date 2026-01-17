@@ -71,7 +71,7 @@ public class RESTEasyExtension {
     }
 
     private void scanAsyncResponseProviders(IndexView index) {
-        for (ClassInfo providerClass : index.getAllKnownImplementors(DOTNAME_ASYNC_RESPONSE_PROVIDER)) {
+        for (ClassInfo providerClass : index.getAllKnownImplementations(DOTNAME_ASYNC_RESPONSE_PROVIDER)) {
             for (AnnotationInstance annotation : providerClass.declaredAnnotations()) {
                 if (annotation.name().equals(DOTNAME_PROVIDER)) {
                     for (Type interf : providerClass.interfaceTypes()) {

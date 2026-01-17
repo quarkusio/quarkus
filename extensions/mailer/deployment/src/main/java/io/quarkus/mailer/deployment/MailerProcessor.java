@@ -150,7 +150,7 @@ public class MailerProcessor {
             }
         }
 
-        Collection<ClassInfo> mailTemplateInstances = index.getAllKnownImplementors(MAIL_TEMPLATE_INSTANCE);
+        Collection<ClassInfo> mailTemplateInstances = index.getAllKnownImplementations(MAIL_TEMPLATE_INSTANCE);
         for (ClassInfo mailTemplateInstance : mailTemplateInstances) {
             if (mailTemplateInstance.isRecord()) {
                 // Java record that implements MailTemplateInstance found

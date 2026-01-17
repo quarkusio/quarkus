@@ -139,7 +139,7 @@ public class ArcProcessor {
     AdditionalBeanBuildItem quarkusApplication(CombinedIndexBuildItem combinedIndex) {
         List<String> quarkusApplications = new ArrayList<>();
         for (ClassInfo quarkusApplication : combinedIndex.getIndex()
-                .getAllKnownImplementors(DotName.createSimple(QuarkusApplication.class.getName()))) {
+                .getAllKnownImplementations(DotName.createSimple(QuarkusApplication.class.getName()))) {
             if (quarkusApplication.declaredAnnotation(DotNames.DECORATOR) == null) {
                 quarkusApplications.add(quarkusApplication.name().toString());
             }

@@ -45,7 +45,7 @@ public class ResteasyReactiveContextResolverScanner {
 
         ContextResolvers contextResolvers = new ContextResolvers();
         Collection<ClassInfo> resolvers = index
-                .getAllKnownImplementors(ResteasyReactiveDotNames.CONTEXT_RESOLVER);
+                .getAllKnownImplementations(ResteasyReactiveDotNames.CONTEXT_RESOLVER);
         for (ClassInfo resolverClass : resolvers) {
             ApplicationScanningResult.KeepProviderResult keepProviderResult = result
                     .keepProvider(resolverClass);

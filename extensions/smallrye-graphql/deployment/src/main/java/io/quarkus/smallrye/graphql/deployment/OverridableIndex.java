@@ -79,13 +79,13 @@ public class OverridableIndex implements IndexView {
 
     @Override
     public Collection<ClassInfo> getKnownDirectImplementors(DotName dn) {
-        return overrideCollection(original.getKnownDirectImplementors(dn), override.getKnownDirectImplementors(dn),
+        return overrideCollection(original.getKnownDirectImplementations(dn), override.getKnownDirectImplementations(dn),
                 classInfoComparator);
     }
 
     @Override
     public Collection<ClassInfo> getAllKnownImplementors(DotName dn) {
-        return overrideCollection(original.getAllKnownImplementors(dn), override.getAllKnownImplementors(dn),
+        return overrideCollection(original.getAllKnownImplementations(dn), override.getAllKnownImplementations(dn),
                 classInfoComparator);
     }
 
@@ -151,7 +151,7 @@ public class OverridableIndex implements IndexView {
         @Override
         public int compare(FieldInfo t, FieldInfo t1) {
             if (classInfoComparator.compare(t.declaringClass(), t1.declaringClass()) == 0) { // Same class
-                return t.name().toString().compareTo(t1.name().toString());
+                return t.name().compareTo(t1.name());
             }
             return -1;
         }
@@ -161,7 +161,7 @@ public class OverridableIndex implements IndexView {
         @Override
         public int compare(RecordComponentInfo t, RecordComponentInfo t1) {
             if (classInfoComparator.compare(t.declaringClass(), t1.declaringClass()) == 0) { // Same class
-                return t.name().toString().compareTo(t1.name().toString());
+                return t.name().compareTo(t1.name());
             }
             return -1;
         }
@@ -171,7 +171,7 @@ public class OverridableIndex implements IndexView {
         @Override
         public int compare(MethodInfo t, MethodInfo t1) {
             if (classInfoComparator.compare(t.declaringClass(), t1.declaringClass()) == 0) { // Same class
-                if (t.name().toString().compareTo(t1.name().toString()) == 0) { // Same method name
+                if (t.name().compareTo(t1.name()) == 0) { // Same method name
                     if (t.parametersCount() == t1.parametersCount()) { // Same number of parameters
                         for (int i = 0; i < t.parametersCount(); i++) {
                             int typeTheSame = typeComparator.compare(t.parameterType(i), t1.parameterType(i));

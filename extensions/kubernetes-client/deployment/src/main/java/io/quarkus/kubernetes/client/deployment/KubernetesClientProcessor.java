@@ -143,9 +143,9 @@ public class KubernetesClientProcessor {
             }
         }
 
-        Collection<ClassInfo> kubernetesResourceImpls = fullIndex.getAllKnownImplementors(KUBERNETES_RESOURCE);
-        Collection<ClassInfo> kubernetesResourceListImpls = fullIndex.getAllKnownImplementors(KUBERNETES_RESOURCE_LIST);
-        Collection<ClassInfo> visitableBuilderImpls = fullIndex.getAllKnownImplementors(VISITABLE_BUILDER);
+        Collection<ClassInfo> kubernetesResourceImpls = fullIndex.getAllKnownImplementations(KUBERNETES_RESOURCE);
+        Collection<ClassInfo> kubernetesResourceListImpls = fullIndex.getAllKnownImplementations(KUBERNETES_RESOURCE_LIST);
+        Collection<ClassInfo> visitableBuilderImpls = fullIndex.getAllKnownImplementations(VISITABLE_BUILDER);
 
         // default sizes determined experimentally - these are only set in order to prevent continuous expansion of the array list
         int defSize = kubernetesResourceImpls.size() + kubernetesResourceListImpls.size() + visitableBuilderImpls.size();
@@ -258,7 +258,7 @@ public class KubernetesClientProcessor {
             IndexView targetIndex,
             IndexView fullIndex) {
 
-        final var implementors = isTargetClassAnInterface ? targetIndex.getAllKnownImplementors(implementedOrExtendedClass)
+        final var implementors = isTargetClassAnInterface ? targetIndex.getAllKnownImplementations(implementedOrExtendedClass)
                 : targetIndex.getAllKnownSubclasses(implementedOrExtendedClass);
         implementors.forEach(c -> {
             try {

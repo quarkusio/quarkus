@@ -594,7 +594,7 @@ public class ResteasyReactiveJacksonProcessor {
                 hasSecureFields = false;
             } else {
                 // check interface implementors as anyone of them can be returned
-                hasSecureFields = indexView.getAllKnownImplementors(currentClassInfo.name()).stream()
+                hasSecureFields = indexView.getAllKnownImplementations(currentClassInfo.name()).stream()
                         .anyMatch(ci -> hasSecureFields(indexView, ci, typeToHasSecureField, needToDeleteCache, null));
             }
         } else {

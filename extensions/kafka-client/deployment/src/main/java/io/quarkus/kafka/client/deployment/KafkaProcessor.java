@@ -426,7 +426,7 @@ public class KafkaProcessor {
             sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.KAFKA_CLIENT));
         }
 
-        for (ClassInfo loginModule : index.getIndex().getAllKnownImplementors(LOGIN_MODULE)) {
+        for (ClassInfo loginModule : index.getIndex().getAllKnownImplementations(LOGIN_MODULE)) {
             reflectiveClass.produce(
                     ReflectiveClassBuildItem.builder(loginModule.name().toString())
                             .reason(getClass().getName() + " sasl support " + LOGIN_MODULE + " known implementors")
@@ -436,7 +436,8 @@ public class KafkaProcessor {
         registerJDKLoginModules(reflectiveClass);
         // Accessed through org.apache.kafka.common.security.plain.PlainLoginModule.initialize
         resources.produce(new NativeImageResourceBundleBuildItem("sun.security.util.resources.security"));
-        for (ClassInfo authenticateCallbackHandler : index.getIndex().getAllKnownImplementors(AUTHENTICATE_CALLBACK_HANDLER)) {
+        for (ClassInfo authenticateCallbackHandler : index.getIndex()
+                .getAllKnownImplementations(AUTHENTICATE_CALLBACK_HANDLER)) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(authenticateCallbackHandler.name().toString())
                     .reason(getClass().getName() + " sasl support " + AUTHENTICATE_CALLBACK_HANDLER
                             + " known implementors")
@@ -466,11 +467,11 @@ public class KafkaProcessor {
     }
 
     private static void collectImplementors(Set<DotName> set, CombinedIndexBuildItem indexBuildItem, Class<?> cls) {
-        collectClassNames(set, indexBuildItem.getIndex().getAllKnownImplementors(DotName.createSimple(cls.getName())));
+        collectClassNames(set, indexBuildItem.getIndex().getAllKnownImplementations(DotName.createSimple(cls.getName())));
     }
 
     private static void collectImplementors(Set<DotName> set, CombinedIndexBuildItem indexBuildItem, DotName className) {
-        collectClassNames(set, indexBuildItem.getIndex().getAllKnownImplementors(className));
+        collectClassNames(set, indexBuildItem.getIndex().getAllKnownImplementations(className));
     }
 
     private static void collectSubclasses(Set<DotName> set, CombinedIndexBuildItem indexBuildItem, Class<?> cls) {

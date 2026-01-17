@@ -222,8 +222,8 @@ public class BeanArchiveProcessor {
 
     private boolean isImplicitBeanArchive(IndexView index, Set<DotName> beanDefiningAnnotations) {
         // NOTE: Implicit bean archive without beans.xml contains one or more bean classes with a bean defining annotation and no extension
-        return index.getAllKnownImplementors(DotNames.EXTENSION).isEmpty()
-                && index.getAllKnownImplementors(DotNames.BUILD_COMPATIBLE_EXTENSION).isEmpty()
+        return index.getAllKnownImplementations(DotNames.EXTENSION).isEmpty()
+                && index.getAllKnownImplementations(DotNames.BUILD_COMPATIBLE_EXTENSION).isEmpty()
                 && containsBeanDefiningAnnotation(index, beanDefiningAnnotations);
     }
 
@@ -308,7 +308,7 @@ public class BeanArchiveProcessor {
                 && (artifactId.isEmpty() || Objects.equals(key.getArtifactId(), artifactId.get()))) {
             if (classifier.isPresent() && Objects.equals(key.getClassifier(), classifier.get())) {
                 return true;
-            } else if (!classifier.isPresent() && ArtifactCoords.DEFAULT_CLASSIFIER.equals(key.getClassifier())) {
+            } else if (classifier.isEmpty() && ArtifactCoords.DEFAULT_CLASSIFIER.equals(key.getClassifier())) {
                 return true;
             }
         }

@@ -41,7 +41,7 @@ public class ResteasyReactiveParamConverterScanner {
     public static ParamConverterProviders scanForParamConverters(IndexView index, ApplicationScanningResult result) {
 
         Collection<ClassInfo> paramConverterProviders = index
-                .getAllKnownImplementors(ResteasyReactiveDotNames.PARAM_CONVERTER_PROVIDER);
+                .getAllKnownImplementations(ResteasyReactiveDotNames.PARAM_CONVERTER_PROVIDER);
         ParamConverterProviders providers = new ParamConverterProviders();
         for (ClassInfo converterClass : paramConverterProviders) {
             ApplicationScanningResult.KeepProviderResult keepProviderResult = result.keepProvider(converterClass);

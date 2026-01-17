@@ -82,7 +82,7 @@ public class ServerWebSocketProcessor {
     void scanForCodecs(CombinedIndexBuildItem index,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyBuildItemProducer) {
         CODECS.stream().forEach(
-                codec -> index.getIndex().getAllKnownImplementors(codec).stream()
+                codec -> index.getIndex().getAllKnownImplementations(codec).stream()
                         .filter(implementor -> !Modifier.isAbstract(implementor.flags()))
                         .forEach(implementor -> JandexUtil.resolveTypeParameters(
                                 implementor.name(),

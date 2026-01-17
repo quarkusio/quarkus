@@ -95,7 +95,7 @@ public class WebsocketClientProcessor {
         final Set<String> config = new HashSet<>();
 
         final IndexView index = indexBuildItem.getIndex();
-        final Collection<ClassInfo> subclasses = index.getAllKnownImplementors(SERVER_APPLICATION_CONFIG);
+        final Collection<ClassInfo> subclasses = index.getAllKnownImplementations(SERVER_APPLICATION_CONFIG);
 
         for (final ClassInfo clazz : subclasses) {
             if (!Modifier.isAbstract(clazz.flags())) {

@@ -104,7 +104,7 @@ public class HibernateReactivePanacheKotlinProcessor {
 
         Set<String> modelClasses = new HashSet<>();
         // Note that we do this in two passes because for some reason Jandex does not give us subtypes
-        for (ClassInfo classInfo : index.getComputingIndex().getAllKnownImplementors(TYPE_BUNDLE.entityBase().dotName())) {
+        for (ClassInfo classInfo : index.getComputingIndex().getAllKnownImplementations(TYPE_BUNDLE.entityBase().dotName())) {
             if (classInfo.name().equals(TYPE_BUNDLE.entity().dotName())) {
                 continue;
             }
@@ -149,7 +149,7 @@ public class HibernateReactivePanacheKotlinProcessor {
 
         Set<org.jboss.jandex.Type> typeParameters = new HashSet<>();
         for (ClassInfo classInfo : index.getComputingIndex()
-                .getAllKnownImplementors(TYPE_BUNDLE.entityCompanionBase().dotName())) {
+                .getAllKnownImplementations(TYPE_BUNDLE.entityCompanionBase().dotName())) {
             if (classInfo.name().equals(TYPE_BUNDLE.entityCompanion().dotName())) {
                 continue;
             }
@@ -169,7 +169,8 @@ public class HibernateReactivePanacheKotlinProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass, PanacheRepositoryEnhancer enhancer) {
 
         Set<org.jboss.jandex.Type> typeParameters = new HashSet<>();
-        for (ClassInfo classInfo : index.getComputingIndex().getAllKnownImplementors(TYPE_BUNDLE.repositoryBase().dotName())) {
+        for (ClassInfo classInfo : index.getComputingIndex()
+                .getAllKnownImplementations(TYPE_BUNDLE.repositoryBase().dotName())) {
             if (classInfo.name().equals(TYPE_BUNDLE.repository().dotName()) || enhancer.skipRepository(classInfo)) {
                 continue;
             }

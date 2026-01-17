@@ -359,7 +359,7 @@ public class ResteasyReactiveScanningProcessor {
             BuildProducer<ParamConverterBuildItem> paramConverterBuildItemBuildProducer) {
         IndexView index = combinedIndexBuildItem.getComputingIndex();
         Collection<ClassInfo> paramConverterProviders = index
-                .getAllKnownImplementors(ResteasyReactiveDotNames.PARAM_CONVERTER_PROVIDER);
+                .getAllKnownImplementations(ResteasyReactiveDotNames.PARAM_CONVERTER_PROVIDER);
 
         for (ClassInfo converterClass : paramConverterProviders) {
             ApplicationScanningResult.KeepProviderResult keepProviderResult = applicationResultBuildItem.getResult()

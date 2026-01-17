@@ -85,7 +85,7 @@ class NarayanaSTMProcessor {
                 log.debugf("Registering transactional interface %s%n", name);
 
                 final var className = getClass().getSimpleName();
-                for (ClassInfo ci : index.getAllKnownImplementors(name)) {
+                for (ClassInfo ci : index.getAllKnownImplementations(name)) {
                     final var implName = ci.name();
                     reflectiveHierarchyClass.produce(
                             ReflectiveHierarchyBuildItem

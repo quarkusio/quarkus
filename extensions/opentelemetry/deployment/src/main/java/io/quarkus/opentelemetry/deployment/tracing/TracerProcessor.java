@@ -84,22 +84,22 @@ public class TracerProcessor {
         // Find all known SpanExporters and SpanProcessors
         Collection<String> knownClasses = new HashSet<>();
         knownClasses.add(ID_GENERATOR.toString());
-        index.getAllKnownImplementors(ID_GENERATOR)
+        index.getAllKnownImplementations(ID_GENERATOR)
                 .forEach(classInfo -> knownClasses.add(classInfo.name().toString()));
         knownClasses.add(RESOURCE.toString());
-        index.getAllKnownImplementors(RESOURCE)
+        index.getAllKnownImplementations(RESOURCE)
                 .forEach(classInfo -> knownClasses.add(classInfo.name().toString()));
         knownClasses.add(SAMPLER.toString());
-        index.getAllKnownImplementors(SAMPLER)
+        index.getAllKnownImplementations(SAMPLER)
                 .forEach(classInfo -> knownClasses.add(classInfo.name().toString()));
         knownClasses.add(SPAN_EXPORTER.toString());
-        index.getAllKnownImplementors(SPAN_EXPORTER)
+        index.getAllKnownImplementations(SPAN_EXPORTER)
                 .forEach(classInfo -> knownClasses.add(classInfo.name().toString()));
         knownClasses.add(SPAN_PROCESSOR.toString());
-        index.getAllKnownImplementors(SPAN_PROCESSOR)
+        index.getAllKnownImplementations(SPAN_PROCESSOR)
                 .forEach(classInfo -> knownClasses.add(classInfo.name().toString()));
         knownClasses.add(TEXT_MAP_PROPAGATOR.toString());
-        index.getAllKnownImplementors(TEXT_MAP_PROPAGATOR)
+        index.getAllKnownImplementations(TEXT_MAP_PROPAGATOR)
                 .forEach(classInfo -> knownClasses.add(classInfo.name().toString()));
 
         Set<String> retainProducers = new HashSet<>();

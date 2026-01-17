@@ -139,7 +139,7 @@ public class ReflectiveHierarchyStep {
                         unindexedClasses, reflectiveClass, visits);
             }
             // If the registered entity is an interface make sure to register all its implementors.
-            for (ClassInfo subclass : combinedIndexBuildItem.getIndex().getAllKnownImplementors(type.name())) {
+            for (ClassInfo subclass : combinedIndexBuildItem.getIndex().getAllKnownImplementations(type.name())) {
                 addClassTypeHierarchy(nativeConfig, combinedIndexBuildItem, capabilities, reflectiveHierarchyBuildItem,
                         source + " > " + subclass.name().toString(),
                         subclass.name(),

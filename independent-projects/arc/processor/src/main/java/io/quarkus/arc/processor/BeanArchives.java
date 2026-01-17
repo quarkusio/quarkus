@@ -64,7 +64,6 @@ public final class BeanArchives {
 
     /**
      *
-     * @param wrappedIndexes
      * @return the computing bean archive index
      */
     public static IndexView buildComputingBeanArchiveIndex(ClassLoader deploymentClassLoader,
@@ -119,9 +118,7 @@ public final class BeanArchives {
             }
             List<ClassInfo> all = new ArrayList<>(index.getKnownClasses());
             for (Optional<ClassInfo> additional : additionalClasses.values()) {
-                if (additional.isPresent()) {
-                    all.add(additional.get());
-                }
+                additional.ifPresent(all::add);
             }
             return all;
         }
@@ -259,11 +256,11 @@ public final class BeanArchives {
         @Override
         public Collection<ClassInfo> getKnownDirectImplementors(DotName className) {
             if (additionalClasses.isEmpty()) {
-                return index.getKnownDirectImplementors(className);
+                return index.getKnownDirectImplementations(className);
             }
-            Set<ClassInfo> directImplementors = new HashSet<ClassInfo>(index.getKnownDirectImplementors(className));
+            Set<ClassInfo> directImplementors = new HashSet<ClassInfo>(index.getKnownDirectImplementations(className));
             for (Optional<ClassInfo> additional : additionalClasses.values()) {
-                if (!additional.isPresent()) {
+                if (additional.isEmpty()) {
                     continue;
                 }
                 for (Type interfaceType : additional.get().interfaceTypes()) {
@@ -279,7 +276,7 @@ public final class BeanArchives {
         @Override
         public Collection<ClassInfo> getAllKnownImplementors(DotName interfaceName) {
             if (additionalClasses.isEmpty()) {
-                return index.getAllKnownImplementors(interfaceName);
+                return index.getAllKnownImplementations(interfaceName);
             }
             final Set<ClassInfo> allKnown = new HashSet<ClassInfo>();
             final Set<DotName> subInterfacesToProcess = new HashSet<DotName>();

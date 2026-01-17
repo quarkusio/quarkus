@@ -144,7 +144,7 @@ class SpringDataRestProcessor {
     private Set<ClassInfo> getRepositoriesToImplement(IndexView indexView, DotName... repositoryInterfaces) {
         Set<ClassInfo> result = new LinkedHashSet<>();
         for (DotName repositoryInterface : repositoryInterfaces) {
-            for (ClassInfo classInfo : indexView.getKnownDirectImplementors(repositoryInterface)) {
+            for (ClassInfo classInfo : indexView.getKnownDirectImplementations(repositoryInterface)) {
                 if (!hasImplementors(indexView, classInfo) && !EXCLUDED_INTERFACES.contains(classInfo.name())) {
                     validateResource(classInfo);
                     result.add(classInfo);
@@ -155,7 +155,7 @@ class SpringDataRestProcessor {
     }
 
     private boolean hasImplementors(IndexView index, ClassInfo classInfo) {
-        return !index.getKnownDirectImplementors(classInfo.name()).isEmpty();
+        return !index.getKnownDirectImplementations(classInfo.name()).isEmpty();
     }
 
     private void validateResource(ClassInfo classInfo) {

@@ -236,7 +236,7 @@ public class GrpcDevUIProcessor {
     private Collection<Class<?>> getGrpcServices(IndexView index) throws ClassNotFoundException {
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         Set<String> serviceClassNames = new HashSet<>();
-        for (ClassInfo mutinyGrpc : index.getAllKnownImplementors(GrpcDotNames.MUTINY_GRPC)) {
+        for (ClassInfo mutinyGrpc : index.getAllKnownImplementations(GrpcDotNames.MUTINY_GRPC)) {
             // Find the original impl class
             // e.g. examples.MutinyGreeterGrpc -> examples.GreeterGrpc
             DotName originalImplName = DotName

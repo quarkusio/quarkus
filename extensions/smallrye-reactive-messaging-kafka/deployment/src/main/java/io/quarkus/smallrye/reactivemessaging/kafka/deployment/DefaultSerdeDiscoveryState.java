@@ -194,7 +194,7 @@ class DefaultSerdeDiscoveryState {
     }
 
     ClassInfo getImplementorOfWithTypeArgument(DotName implementedInterface, DotName expectedTypeArgument) {
-        return index.getAllKnownImplementors(implementedInterface)
+        return index.getAllKnownImplementations(implementedInterface)
                 .stream()
                 .filter(ci -> !ci.isAbstract() && JandexUtil.resolveTypeParameters(ci.name(), implementedInterface, index)
                         .stream().anyMatch(t -> t.name().equals(expectedTypeArgument)))

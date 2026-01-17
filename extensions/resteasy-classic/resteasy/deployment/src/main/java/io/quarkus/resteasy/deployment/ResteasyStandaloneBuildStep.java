@@ -157,7 +157,7 @@ public class ResteasyStandaloneBuildStep {
     }
 
     private static boolean notFoundCustomExMapper(String exSignatureStr, String exMapperSignatureStr, IndexView index) {
-        for (var implementor : index.getAllKnownImplementors(EXCEPTION_MAPPER)) {
+        for (var implementor : index.getAllKnownImplementations(EXCEPTION_MAPPER)) {
             if (exMapperSignatureStr.equals(implementor.name().toString())) {
                 continue;
             }

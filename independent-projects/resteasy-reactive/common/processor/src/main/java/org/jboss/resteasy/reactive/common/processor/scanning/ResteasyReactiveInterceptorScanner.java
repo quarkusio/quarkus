@@ -64,10 +64,10 @@ public class ResteasyReactiveInterceptorScanner {
         //so you need an explicit check for both
 
         Collection<ClassInfo> specReqFilters = new HashSet<>(index
-                .getAllKnownImplementors(CONTAINER_REQUEST_FILTER));
+                .getAllKnownImplementations(CONTAINER_REQUEST_FILTER));
         Collection<ClassInfo> allReqFilters = new HashSet<>(specReqFilters);
         allReqFilters.addAll(index
-                .getAllKnownImplementors(RESTEASY_REACTIVE_CONTAINER_REQUEST_FILTER));
+                .getAllKnownImplementations(RESTEASY_REACTIVE_CONTAINER_REQUEST_FILTER));
         for (var filterClass : allReqFilters) {
             var interceptor = handleDiscoveredInterceptor(applicationScanningResult, interceptors.getContainerRequestFilters(),
                     index, filterClass);
@@ -78,10 +78,10 @@ public class ResteasyReactiveInterceptorScanner {
         }
 
         Collection<ClassInfo> specRespFilters = new HashSet<>(index
-                .getAllKnownImplementors(CONTAINER_RESPONSE_FILTER));
+                .getAllKnownImplementations(CONTAINER_RESPONSE_FILTER));
         Collection<ClassInfo> allRespFilters = new HashSet<>(specRespFilters);
         allRespFilters.addAll(index
-                .getAllKnownImplementors(RESTEASY_REACTIVE_CONTAINER_RESPONSE_FILTER));
+                .getAllKnownImplementations(RESTEASY_REACTIVE_CONTAINER_RESPONSE_FILTER));
 
         for (var filterClass : allRespFilters) {
             var interceptor = handleDiscoveredInterceptor(applicationScanningResult, interceptors.getContainerResponseFilters(),
@@ -180,9 +180,9 @@ public class ResteasyReactiveInterceptorScanner {
     public static void scanForIOInterceptors(ResourceInterceptors interceptors, IndexView index,
             ApplicationScanningResult applicationScanningResult) {
         Collection<ClassInfo> readerInterceptors = index
-                .getAllKnownImplementors(READER_INTERCEPTOR);
+                .getAllKnownImplementations(READER_INTERCEPTOR);
         Collection<ClassInfo> writerInterceptors = index
-                .getAllKnownImplementors(WRITER_INTERCEPTOR);
+                .getAllKnownImplementations(WRITER_INTERCEPTOR);
 
         for (ClassInfo filterClass : writerInterceptors) {
             handleDiscoveredInterceptor(applicationScanningResult, interceptors.getWriterInterceptors(), index, filterClass);

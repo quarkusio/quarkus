@@ -219,7 +219,7 @@ public class ResteasyReactiveCDIProcessor {
         List<String> impls = new ArrayList<>();
         for (Map.Entry<DotName, String> i : pathInterfaces.entrySet()) {
             List<ClassInfo> candidateBeans = new ArrayList<>(1);
-            for (ClassInfo clazz : resourceScanningResult.getIndex().getAllKnownImplementors(i.getKey())) {
+            for (ClassInfo clazz : resourceScanningResult.getIndex().getAllKnownImplementations(i.getKey())) {
                 if (!Modifier.isAbstract(clazz.flags())) {
                     if ((clazz.enclosingClass() == null || Modifier.isStatic(clazz.flags())) &&
                             clazz.enclosingMethod() == null) {

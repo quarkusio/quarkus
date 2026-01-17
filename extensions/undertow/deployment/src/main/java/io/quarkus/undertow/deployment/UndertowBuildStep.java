@@ -286,7 +286,7 @@ public class UndertowBuildStep {
                         for (ClassInfo classInfo : combinedIndexBuildItem.getIndex().getAllKnownSubclasses(typeName)) {
                             handledTypes.add(classInfo.name().toString());
                         }
-                        for (ClassInfo classInfo : combinedIndexBuildItem.getIndex().getAllKnownImplementors(typeName)) {
+                        for (ClassInfo classInfo : combinedIndexBuildItem.getIndex().getAllKnownImplementations(typeName)) {
                             handledTypes.add(classInfo.name().toString());
                         }
                         for (AnnotationInstance annotationInstance : combinedIndexBuildItem.getIndex()

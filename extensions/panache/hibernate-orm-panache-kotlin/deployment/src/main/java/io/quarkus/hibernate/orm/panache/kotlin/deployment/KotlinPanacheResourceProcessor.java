@@ -130,7 +130,7 @@ public final class KotlinPanacheResourceProcessor {
 
         Set<String> modelClasses = new HashSet<>();
         // Note that we do this in two passes because for some reason Jandex does not give us subtypes
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(baseType.dotName())) {
+        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementations(baseType.dotName())) {
             if (classInfo.name().equals(type.dotName())) {
                 continue;
             }
@@ -177,7 +177,7 @@ public final class KotlinPanacheResourceProcessor {
             ByteCodeType type) {
 
         Set<Type> typeParameters = new HashSet<>();
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(baseType.dotName())) {
+        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementations(baseType.dotName())) {
             if (classInfo.name().equals(type.dotName()) || enhancer.skipRepository(classInfo)) {
                 continue;
             }
@@ -199,7 +199,7 @@ public final class KotlinPanacheResourceProcessor {
             ByteCodeType type) {
 
         Set<Type> typeParameters = new HashSet<>();
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(baseType.dotName())) {
+        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementations(baseType.dotName())) {
             if (classInfo.name().equals(type.dotName())) {
                 continue;
             }

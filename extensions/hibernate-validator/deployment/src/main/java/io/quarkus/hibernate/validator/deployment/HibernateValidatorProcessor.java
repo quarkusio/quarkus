@@ -584,7 +584,7 @@ class HibernateValidatorProcessor {
         // Prevent the removal of ValueExtractor beans
         // and collect all classes implementing ValueExtractor (for use in HibernateValidatorRecorder)
         Set<DotName> valueExtractorClassNames = new HashSet<>();
-        for (ClassInfo valueExtractorType : indexView.getAllKnownImplementors(VALUE_EXTRACTOR)) {
+        for (ClassInfo valueExtractorType : indexView.getAllKnownImplementations(VALUE_EXTRACTOR)) {
             valueExtractorClassNames.add(valueExtractorType.name());
         }
         unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(valueExtractorClassNames));
@@ -775,7 +775,7 @@ class HibernateValidatorProcessor {
             }
             classNamesCollector.add(subclass.name());
         }
-        for (ClassInfo implementor : indexView.getAllKnownImplementors(classInfo.name())) {
+        for (ClassInfo implementor : indexView.getAllKnownImplementations(classInfo.name())) {
             if (Modifier.isAbstract(implementor.flags())) {
                 // we can avoid adding the abstract classes here: either they are parent classes
                 // and they will be dealt with by Hibernate Validator or they are child classes
@@ -832,7 +832,7 @@ class HibernateValidatorProcessor {
                 .add(new SimpleMethodSignatureKey(method));
 
         if (Modifier.isInterface(clazz.flags())) {
-            for (ClassInfo implementor : indexView.getAllKnownImplementors(clazz.name())) {
+            for (ClassInfo implementor : indexView.getAllKnownImplementations(clazz.name())) {
                 methodsWithInheritedValidation.computeIfAbsent(implementor.name(), k -> new HashSet<>())
                         .add(new SimpleMethodSignatureKey(method));
             }
@@ -868,7 +868,7 @@ class HibernateValidatorProcessor {
                             .add(new SimpleMethodSignatureKey(method));
 
                     if (Modifier.isInterface(method.declaringClass().flags())) {
-                        for (ClassInfo implementor : indexView.getAllKnownImplementors(method.declaringClass().name())) {
+                        for (ClassInfo implementor : indexView.getAllKnownImplementations(method.declaringClass().name())) {
                             jaxRsMethods.computeIfAbsent(implementor.name(), k -> new HashSet<>())
                                     .add(new SimpleMethodSignatureKey(method));
                         }

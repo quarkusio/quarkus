@@ -212,7 +212,7 @@ class RestClientProcessor {
         findInterfaces(index, interfaces, returnTypes, REGISTER_REST_CLIENT, classInfo -> true);
         // in there, we are overly cautious it could be an interface for a server class
         findInterfaces(index, interfaces, returnTypes, PATH,
-                classInfo -> index.getAllKnownImplementors(classInfo.name()).isEmpty());
+                classInfo -> index.getAllKnownImplementations(classInfo.name()).isEmpty());
 
         if (interfaces.isEmpty()) {
             return;
@@ -486,11 +486,11 @@ class RestClientProcessor {
 
         // now retain all un-annotated implementations of ClientRequestFilter and ClientResponseFilter
         // in case they are programmatically registered by applications
-        for (ClassInfo info : index.getAllKnownImplementors(CLIENT_REQUEST_FILTER)) {
+        for (ClassInfo info : index.getAllKnownImplementations(CLIENT_REQUEST_FILTER)) {
             reflectiveClass
                     .produce(ReflectiveClassBuildItem.builder(info.name().toString()).build());
         }
-        for (ClassInfo info : index.getAllKnownImplementors(CLIENT_RESPONSE_FILTER)) {
+        for (ClassInfo info : index.getAllKnownImplementations(CLIENT_RESPONSE_FILTER)) {
             reflectiveClass
                     .produce(ReflectiveClassBuildItem.builder(info.name().toString()).build());
         }

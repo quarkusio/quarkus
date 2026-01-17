@@ -60,6 +60,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-keycloak-admin-client-common</artifactId>
         </dependency>
+        <!-- Required because deployment module depends on quarkus-devservices-keycloak -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devservices</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

@@ -41,6 +41,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-websockets-next-spi</artifactId>
         </dependency>
+        <!-- Required because deployment module depends on quarkus-devservices-keycloak -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devservices</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.smallrye</groupId>
             <artifactId>smallrye-jwt</artifactId>

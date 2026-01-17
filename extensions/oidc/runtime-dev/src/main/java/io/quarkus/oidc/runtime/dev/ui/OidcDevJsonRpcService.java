@@ -1,13 +1,10 @@
 package io.quarkus.oidc.runtime.dev.ui;
 
 import static io.quarkus.oidc.runtime.dev.ui.OidcDevServicesUtils.getTokens;
-import static io.quarkus.oidc.runtime.dev.ui.OidcDevUiRecorder.KEYCLOAK_URL;
 
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.smallrye.common.annotation.NonBlocking;
@@ -27,9 +24,7 @@ public class OidcDevJsonRpcService {
 
     @NonBlocking
     public String getAdminConsoleUrl() {
-        Config globalConfig = ConfigProviderResolver.instance().getConfig();
-
-        return globalConfig.getOptionalValue(KEYCLOAK_URL, String.class).orElse("");
+        return props.getKeycloakAdminUrl();
     }
 
     @NonBlocking

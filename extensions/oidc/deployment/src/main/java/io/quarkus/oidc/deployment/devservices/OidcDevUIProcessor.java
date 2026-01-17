@@ -64,13 +64,12 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
             boolean discoverMetadata = isDiscoveryEnabled(providerConfig);
             String providerName = tryToGetProviderName(authServerUrl);
 
-            String keycloakAdminUrl;
+            final String keycloakAdminUrl;
             if (KEYCLOAK.equals(providerName)) {
                 keycloakAdminUrl = authServerUrl.substring(0, authServerUrl.indexOf("/realms/"));
             } else {
                 keycloakAdminUrl = null;
             }
-
             var cardPage = createProviderWebComponent(recorder,
                     capabilities,
                     providerName,

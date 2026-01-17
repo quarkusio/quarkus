@@ -58,9 +58,7 @@ import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.Startable;
-import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
-import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerAddress;
@@ -120,17 +118,12 @@ public class KeycloakDevServicesProcessor {
     private static final ContainerLocator KEYCLOAK_DEV_MODE_CONTAINER_LOCATOR = locateContainerWithLabels(KEYCLOAK_PORT,
             DEV_SERVICE_LABEL);
 
-    // TODO can't be correct
-    private static volatile Set<FileTime> capturedRealmFileLastModifiedDate;
-
     @BuildStep
     void startKeycloakContainer(
             List<KeycloakDevServicesRequiredBuildItem> devSvcRequiredMarkerItems,
             DevServicesComposeProjectBuildItem composeProjectBuildItem,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             KeycloakDevServicesConfig config,
-            Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
-            LoggingSetupBuildItem loggingSetupBuildItem,
             DevServicesConfig devServicesConfig, DockerStatusBuildItem dockerStatusBuildItem,
             BuildProducer<KeycloakDevServicesPreparedBuildItem> keycloakDevServicesPreparedProducer,
             BuildProducer<DevServicesResultBuildItem> devServicesResultProducer) {
@@ -156,10 +149,10 @@ public class KeycloakDevServicesProcessor {
 
         // TODO we need to capture and update the realm last modified
         Set<FileTime> currentRealmFileLastModifiedDate = getRealmFileLastModifiedDate(config.realmPath());
-        if (currentRealmFileLastModifiedDate != null
-                && !currentRealmFileLastModifiedDate.equals(capturedRealmFileLastModifiedDate)) {
-
-        }
+        //        if (currentRealmFileLastModifiedDate != null
+        //                && !currentRealmFileLastModifiedDate.equals(capturedRealmFileLastModifiedDate)) {
+        //
+        //        }
 
         boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                 devServicesSharedNetworkBuildItem);
@@ -173,8 +166,6 @@ public class KeycloakDevServicesProcessor {
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem, List.of(imageName, "keycloak"),
                         KEYCLOAK_PORT, LaunchMode.current(), useSharedNetwork))
                 .map(containerAddress -> {
-                    // TODO: this probably needs to be addressed;
-                    //      Holly, what exactly?
                     String sharedContainerUrl = getSharedContainerUrl(containerAddress);
                     Map<String, String> configs = prepareConfiguration(config, sharedContainerUrl,
                             sharedContainerUrl, List.of(), errors, devServicesConfigurator, sharedContainerUrl);
@@ -196,34 +187,6 @@ public class KeycloakDevServicesProcessor {
 
         // now we know that Keycloak Dev Services will start
         keycloakDevServicesPreparedProducer.produce(new KeycloakDevServicesPreparedBuildItem(containerRestarted));
-
-        // TODO what to do for this?
-        //        StartupLogCompressor compressor = new StartupLogCompressor(
-        //                (launchMode.isTest() ? "(test) " : "") + "Keycloak Dev Services Starting:",
-        //                consoleInstalledBuildItem, loggingSetupBuildItem);
-        //            List<String> errors = new ArrayList<>();
-        //
-        //            if (newDevService == null) {
-        //                if (errors.isEmpty()) {
-        //                    compressor.close();
-        //                } else {
-        //                    compressor.closeAndDumpCaptured();
-        //                }
-        //                return null;
-        //            }
-        //
-        //
-        //            capturedRealmFileLastModifiedDate = getRealmFileLastModifiedDate(config.realmPath());
-        //            if (devService != null && errors.isEmpty()) {
-        //                compressor.close();
-        //            } else {
-        //                compressor.closeAndDumpCaptured();
-        //            }
-        //        } catch (Throwable t) {
-        //            compressor.closeAndDumpCaptured();
-        //            throw new RuntimeException(t);
-        //        }
-
     }
 
     private static Map<String, Function<KeycloakServer, String>> createLazyConfigMap(

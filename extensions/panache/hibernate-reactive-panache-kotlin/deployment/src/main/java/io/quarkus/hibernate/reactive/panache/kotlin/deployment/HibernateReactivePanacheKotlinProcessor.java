@@ -111,7 +111,7 @@ public class HibernateReactivePanacheKotlinProcessor {
             String name = classInfo.name().toString();
             if (modelClasses.add(name)) {
                 transformers.produce(new BytecodeTransformerBuildItem(name, entityEnhancer));
-                reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, name));
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(name).methods().fields().build());
             }
         }
 
@@ -161,7 +161,8 @@ public class HibernateReactivePanacheKotlinProcessor {
 
         for (org.jboss.jandex.Type parameterType : typeParameters) {
             // Register for reflection the type parameters of the repository: this should be the entity class and the ID class
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, parameterType.name().toString()));
+            reflectiveClass
+                    .produce(ReflectiveClassBuildItem.builder(parameterType.name().toString()).methods().fields().build());
         }
     }
 
@@ -180,7 +181,8 @@ public class HibernateReactivePanacheKotlinProcessor {
         }
         for (org.jboss.jandex.Type parameterType : typeParameters) {
             // Register for reflection the type parameters of the repository: this should be the entity class and the ID class
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, parameterType.name().toString()));
+            reflectiveClass
+                    .produce(ReflectiveClassBuildItem.builder(parameterType.name().toString()).methods().fields().build());
         }
     }
 

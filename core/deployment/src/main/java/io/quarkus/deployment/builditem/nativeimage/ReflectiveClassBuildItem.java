@@ -47,86 +47,8 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         return new Builder().className(classNames);
     }
 
-    private ReflectiveClassBuildItem(boolean constructors, boolean queryConstructors, boolean methods, boolean queryMethods,
-            boolean fields, boolean getClasses, boolean weak, boolean serialization, boolean unsafeAllocated, String reason,
-            Class<?>... classes) {
-        this(constructors, false, queryConstructors, methods, queryMethods, fields, getClasses, weak, serialization,
-                unsafeAllocated, reason, stream(classes).map(Class::getName).toArray(String[]::new));
-    }
-
-    /**
-     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
-     *             instead.
-     */
-    @Deprecated(since = "3.0", forRemoval = true)
-    public ReflectiveClassBuildItem(boolean methods, boolean fields, Class<?>... classes) {
-        this(true, methods, fields, classes);
-    }
-
-    /**
-     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
-     *             instead.
-     */
-    @Deprecated(since = "3.0", forRemoval = true)
-    public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, Class<?>... classes) {
-        this(constructors, false, methods, false, fields, false, false, false, false, null, classes);
-    }
-
-    /**
-     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
-     *             instead.
-     */
-    @Deprecated(since = "3.0", forRemoval = true)
-    public ReflectiveClassBuildItem(boolean methods, boolean fields, String... classNames) {
-        this(true, methods, fields, classNames);
-    }
-
-    /**
-     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
-     *             instead.
-     */
-    @Deprecated(since = "3.0", forRemoval = true)
-    public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, String... classNames) {
-        this(constructors, false, methods, false, fields, false, false, false, classNames);
-    }
-
-    /**
-     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
-     *             instead.
-     */
-    @Deprecated(since = "3.0", forRemoval = true)
-    public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean serialization,
-            String... classNames) {
-        this(constructors, false, methods, false, fields, false, serialization, false, classNames);
-    }
-
-    public static ReflectiveClassBuildItem weakClass(String... classNames) {
-        return ReflectiveClassBuildItem.builder(classNames).constructors().methods().fields().weak().build();
-    }
-
-    /**
-     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
-     *             instead.
-     */
-    public static ReflectiveClassBuildItem weakClass(boolean constructors, boolean methods, boolean fields,
-            String... classNames) {
-        return ReflectiveClassBuildItem.builder(classNames).constructors(constructors).methods(methods).fields(fields).weak()
-                .build();
-    }
-
-    public static ReflectiveClassBuildItem serializationClass(String... classNames) {
-        return ReflectiveClassBuildItem.builder(classNames).serialization().build();
-    }
-
-    @Deprecated(since = "3.14", forRemoval = true)
-    ReflectiveClassBuildItem(boolean constructors, boolean queryConstructors, boolean methods, boolean queryMethods,
-            boolean fields, boolean weak, boolean serialization,
-            boolean unsafeAllocated, String... className) {
-        this(constructors, false, queryConstructors, methods, queryMethods, fields, false, weak, serialization, unsafeAllocated,
-                null, className);
-    }
-
-    ReflectiveClassBuildItem(boolean constructors, boolean publicConstructors, boolean queryConstructors, boolean methods,
+    private ReflectiveClassBuildItem(boolean constructors, boolean publicConstructors, boolean queryConstructors,
+            boolean methods,
             boolean queryMethods,
             boolean fields, boolean classes, boolean weak, boolean serialization,
             boolean unsafeAllocated, String reason, String... className) {

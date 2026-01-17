@@ -180,8 +180,6 @@ public class KeycloakDevServicesProcessor {
                             .build();
                 }).orElseGet(() -> DevServicesResultBuildItem.owned().feature(feature)
                         .serviceName(feature.getName())
-                        // TODO: this does not work as expected, when I added quarkus.keycloak.devservices.users.michal=michal
-                        //      then Quarkus restarted, but the Keycloak Dev Services did not!
                         .serviceConfig(getServiceConfigIdentifier(config))
                         .startable(
                                 () -> new KeycloakServer(useSharedNetwork, config, devServicesConfig, devServicesConfigurator,

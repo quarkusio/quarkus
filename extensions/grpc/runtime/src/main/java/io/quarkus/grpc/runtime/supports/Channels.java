@@ -3,7 +3,6 @@ package io.quarkus.grpc.runtime.supports;
 import static io.grpc.internal.GrpcUtil.DEFAULT_MAX_HEADER_LIST_SIZE;
 import static io.grpc.internal.GrpcUtil.DEFAULT_MAX_MESSAGE_SIZE;
 import static io.grpc.netty.NettyChannelBuilder.DEFAULT_FLOW_CONTROL_WINDOW;
-import static io.quarkus.grpc.runtime.GrpcTestPortUtils.testPort;
 import static io.quarkus.grpc.runtime.config.GrpcClientConfiguration.DNS;
 import static io.quarkus.grpc.runtime.supports.SSLConfigHelper.*;
 
@@ -21,8 +20,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalInt;
-import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -32,6 +29,7 @@ import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.util.TypeLiteral;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.jboss.logging.Logger;
 
@@ -58,18 +56,21 @@ import io.quarkus.grpc.RegisterClientInterceptor;
 import io.quarkus.grpc.api.ChannelBuilderCustomizer;
 import io.quarkus.grpc.runtime.ClientInterceptorStorage;
 import io.quarkus.grpc.runtime.GrpcClientInterceptorContainer;
+import io.quarkus.grpc.runtime.GrpcServer;
 import io.quarkus.grpc.runtime.config.GrpcClientConfiguration;
+import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
-import io.quarkus.grpc.runtime.config.InProcess;
 import io.quarkus.grpc.runtime.stork.StorkGrpcChannel;
 import io.quarkus.grpc.runtime.stork.StorkMeasuringGrpcInterceptor;
 import io.quarkus.grpc.runtime.stork.VertxStorkMeasuringGrpcInterceptor;
 import io.quarkus.grpc.spi.GrpcBuilderProvider;
+import io.quarkus.registry.ValueRegistry;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.tls.runtime.config.TlsConfigUtils;
+import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.stork.Stork;
 import io.vertx.core.Vertx;
@@ -98,34 +99,36 @@ public class Channels {
         if (!instance.isAvailable()) {
             throw new IllegalStateException("Unable to find the GrpcClientConfigProvider");
         }
+        instance.get();
 
-        GrpcClientConfigProvider configProvider = instance.get();
-        GrpcClientConfiguration config = configProvider.getConfiguration(name);
+        ValueRegistry valueRegistry = container.instance(ValueRegistry.class).get();
+        GrpcServer grpcServer = valueRegistry.get(GrpcServer.GRPC_SERVER);
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        GrpcConfiguration grpcConfig = config.getConfigMapping(GrpcConfiguration.class);
+        GrpcClientConfiguration clientConfig = grpcConfig.clients().get(name);
+        GrpcServerConfiguration serverConfig = grpcConfig.server();
 
-        if (config == null && LaunchMode.current() == LaunchMode.TEST) {
-            LOGGER.infof(
-                    "gRPC client %s created without configuration. We are assuming that it's created to test your gRPC services.",
-                    name);
-            config = testConfig(configProvider.getServerConfiguration());
-        }
+        GrpcBuilderProvider provider = GrpcBuilderProvider.findChannelBuilderProvider(clientConfig);
 
-        if (config == null) {
-            throw new IllegalStateException("gRPC client " + name + " is missing configuration.");
-        }
+        boolean vertxGrpc = clientConfig.useQuarkusGrpcClient();
 
-        GrpcBuilderProvider provider = GrpcBuilderProvider.findChannelBuilderProvider(config);
-
-        boolean vertxGrpc = config.useQuarkusGrpcClient();
-
-        String host = config.host();
-
-        // handle client port
-        int port = config.port();
+        String host = clientConfig.host();
+        int port = clientConfig.port();
         if (LaunchMode.current() == LaunchMode.TEST) {
-            port = config.testPort().orElse(testPort(configProvider.getServerConfiguration()));
+            port = clientConfig.testPort().orElse(grpcServer.getPort());
+            if (port == -1) {
+                // In same cases, a Channel may be created without the port being assigned
+                port = serverConfig.testPort();
+            }
+
+            if (!grpcConfig.clients().containsKey(name)
+                    && (serverConfig.ssl().certificate().isPresent() || serverConfig.ssl().keyStore().isPresent())) {
+                LOGGER.warn("gRPC client created without configuration and the gRPC server is configured for SSL. " +
+                        "Configuring SSL for such clients is not supported.");
+            }
         }
 
-        String nameResolver = config.nameResolver();
+        String nameResolver = clientConfig.nameResolver();
 
         boolean stork = Stork.STORK.equalsIgnoreCase(nameResolver);
 
@@ -158,8 +161,8 @@ public class Channels {
                 .sorted(Comparator.<ChannelBuilderCustomizer<?>, Integer> comparing(ChannelBuilderCustomizer::priority))
                 .toList();
 
-        boolean plainText = config.ssl().trustStore().isEmpty();
-        Optional<Boolean> usePlainText = config.plainText();
+        boolean plainText = clientConfig.ssl().trustStore().isEmpty();
+        Optional<Boolean> usePlainText = clientConfig.plainText();
         if (usePlainText.isPresent()) {
             plainText = usePlainText.get();
         }
@@ -170,9 +173,9 @@ public class Channels {
 
             SslContext context = null;
             if (!plainText && provider == null) {
-                Path trustStorePath = config.ssl().trustStore().orElse(null);
-                Path certificatePath = config.ssl().certificate().orElse(null);
-                Path keyPath = config.ssl().key().orElse(null);
+                Path trustStorePath = clientConfig.ssl().trustStore().orElse(null);
+                Path certificatePath = clientConfig.ssl().certificate().orElse(null);
+                Path keyPath = clientConfig.ssl().key().orElse(null);
                 SslContextBuilder sslContextBuilder = GrpcSslContexts.forClient();
                 if (trustStorePath != null) {
                     try (InputStream stream = streamFor(trustStorePath, "trust store")) {
@@ -194,23 +197,23 @@ public class Channels {
                 context = sslContextBuilder.build();
             }
 
-            String loadBalancingPolicy = stork ? Stork.STORK : config.loadBalancingPolicy();
+            String loadBalancingPolicy = stork ? Stork.STORK : clientConfig.loadBalancingPolicy();
 
             ManagedChannelBuilder<?> builder;
             if (provider != null) {
-                builder = provider.createChannelBuilder(config, target);
+                builder = provider.createChannelBuilder(clientConfig, target);
             } else {
                 builder = NettyChannelBuilder.forTarget(target);
             }
 
             Map<String, Object> configMap = new LinkedHashMap<>();
             for (ChannelBuilderCustomizer customizer : channelBuilderCustomizers) {
-                Map<String, Object> map = customizer.customize(name, config, builder);
+                Map<String, Object> map = customizer.customize(name, clientConfig, builder);
                 configMap.putAll(map);
             }
             builder.defaultServiceConfig(configMap);
 
-            if (config.useVertxEventLoop() && builder instanceof NettyChannelBuilder) {
+            if (clientConfig.useVertxEventLoop() && builder instanceof NettyChannelBuilder) {
                 NettyChannelBuilder ncBuilder = (NettyChannelBuilder) builder;
                 // just use the existing Vertx event loop group, if possible
                 Vertx vertx = container.instance(Vertx.class).get();
@@ -231,51 +234,51 @@ public class Channels {
                         .directExecutor() // will use I/O thread - must not be blocked.
                         .offloadExecutor(Infrastructure.getDefaultExecutor())
                         .defaultLoadBalancingPolicy(loadBalancingPolicy)
-                        .flowControlWindow(config.flowControlWindow().orElse(DEFAULT_FLOW_CONTROL_WINDOW))
-                        .keepAliveWithoutCalls(config.keepAliveWithoutCalls())
-                        .maxHedgedAttempts(config.maxHedgedAttempts())
-                        .maxRetryAttempts(config.maxRetryAttempts())
-                        .maxInboundMetadataSize(config.maxInboundMetadataSize().orElse(DEFAULT_MAX_HEADER_LIST_SIZE))
-                        .maxInboundMessageSize(config.maxInboundMessageSize().orElse(DEFAULT_MAX_MESSAGE_SIZE))
-                        .negotiationType(NegotiationType.valueOf(config.negotiationType().toUpperCase()));
+                        .flowControlWindow(clientConfig.flowControlWindow().orElse(DEFAULT_FLOW_CONTROL_WINDOW))
+                        .keepAliveWithoutCalls(clientConfig.keepAliveWithoutCalls())
+                        .maxHedgedAttempts(clientConfig.maxHedgedAttempts())
+                        .maxRetryAttempts(clientConfig.maxRetryAttempts())
+                        .maxInboundMetadataSize(clientConfig.maxInboundMetadataSize().orElse(DEFAULT_MAX_HEADER_LIST_SIZE))
+                        .maxInboundMessageSize(clientConfig.maxInboundMessageSize().orElse(DEFAULT_MAX_MESSAGE_SIZE))
+                        .negotiationType(NegotiationType.valueOf(clientConfig.negotiationType().toUpperCase()));
 
                 if (context != null) {
                     ncBuilder.sslContext(context);
                 }
             }
 
-            if (config.retry()) {
+            if (clientConfig.retry()) {
                 builder.enableRetry();
             } else {
                 builder.disableRetry();
             }
 
-            if (config.maxTraceEvents().isPresent()) {
-                builder.maxTraceEvents(config.maxTraceEvents().getAsInt());
+            if (clientConfig.maxTraceEvents().isPresent()) {
+                builder.maxTraceEvents(clientConfig.maxTraceEvents().getAsInt());
             }
-            Optional<String> userAgent = config.userAgent();
+            Optional<String> userAgent = clientConfig.userAgent();
             if (userAgent.isPresent()) {
                 builder.userAgent(userAgent.get());
             }
-            if (config.retryBufferSize().isPresent()) {
-                builder.retryBufferSize(config.retryBufferSize().getAsLong());
+            if (clientConfig.retryBufferSize().isPresent()) {
+                builder.retryBufferSize(clientConfig.retryBufferSize().getAsLong());
             }
-            if (config.perRpcBufferLimit().isPresent()) {
-                builder.perRpcBufferLimit(config.perRpcBufferLimit().getAsLong());
+            if (clientConfig.perRpcBufferLimit().isPresent()) {
+                builder.perRpcBufferLimit(clientConfig.perRpcBufferLimit().getAsLong());
             }
-            Optional<String> overrideAuthority = config.overrideAuthority();
+            Optional<String> overrideAuthority = clientConfig.overrideAuthority();
             if (overrideAuthority.isPresent()) {
                 builder.overrideAuthority(overrideAuthority.get());
             }
-            Optional<Duration> keepAliveTime = config.keepAliveTime();
+            Optional<Duration> keepAliveTime = clientConfig.keepAliveTime();
             if (keepAliveTime.isPresent()) {
                 builder.keepAliveTime(keepAliveTime.get().toMillis(), TimeUnit.MILLISECONDS);
             }
-            Optional<Duration> keepAliveTimeout = config.keepAliveTimeout();
+            Optional<Duration> keepAliveTimeout = clientConfig.keepAliveTimeout();
             if (keepAliveTimeout.isPresent()) {
                 builder.keepAliveTimeout(keepAliveTimeout.get().toMillis(), TimeUnit.MILLISECONDS);
             }
-            Optional<Duration> idleTimeout = config.idleTimeout();
+            Optional<Duration> idleTimeout = clientConfig.idleTimeout();
             if (idleTimeout.isPresent()) {
                 builder.idleTimeout(idleTimeout.get().toMillis(), TimeUnit.MILLISECONDS);
             }
@@ -288,7 +291,7 @@ public class Channels {
             interceptorContainer.getSortedGlobalInterceptors().forEach(builder::intercept);
 
             LOGGER.info(String.format("Creating %s gRPC channel ...",
-                    provider != null ? provider.channelInfo(config) : "Netty"));
+                    provider != null ? provider.channelInfo(clientConfig) : "Netty"));
 
             return builder.build();
         } else {
@@ -299,10 +302,10 @@ public class Channels {
             // Start with almost empty options and default max msg size ...
             GrpcClientOptions clientOptions = new GrpcClientOptions()
                     .setTransportOptions(options)
-                    .setMaxMessageSize(config.maxInboundMessageSize().orElse(DEFAULT_MAX_MESSAGE_SIZE));
+                    .setMaxMessageSize(clientConfig.maxInboundMessageSize().orElse(DEFAULT_MAX_MESSAGE_SIZE));
 
             for (ChannelBuilderCustomizer customizer : channelBuilderCustomizers) {
-                customizer.customize(name, config, clientOptions);
+                customizer.customize(name, clientConfig, clientOptions);
             }
 
             if (!plainText) {
@@ -313,11 +316,11 @@ public class Channels {
                 options.setUseAlpn(true);
 
                 TlsConfiguration configuration = null;
-                if (config.tlsConfigurationName().isPresent()) {
-                    Optional<TlsConfiguration> maybeConfiguration = registry.get(config.tlsConfigurationName().get());
+                if (clientConfig.tlsConfigurationName().isPresent()) {
+                    Optional<TlsConfiguration> maybeConfiguration = registry.get(clientConfig.tlsConfigurationName().get());
                     if (!maybeConfiguration.isPresent()) {
                         throw new IllegalStateException("Unable to find the TLS configuration "
-                                + config.tlsConfigurationName().get() + " for the gRPC client " + name + ".");
+                                + clientConfig.tlsConfigurationName().get() + " for the gRPC client " + name + ".");
                     }
                     configuration = maybeConfiguration.get();
                 } else if (registry.getDefault().isPresent() && (registry.getDefault().get().getTrustStoreOptions() != null
@@ -327,8 +330,8 @@ public class Channels {
 
                 if (configuration != null) {
                     TlsConfigUtils.configure(options, configuration);
-                } else if (config.tls().enabled()) {
-                    GrpcClientConfiguration.TlsClientConfig tls = config.tls();
+                } else if (clientConfig.tls().enabled()) {
+                    GrpcClientConfiguration.TlsClientConfig tls = clientConfig.tls();
                     options.setSsl(true).setTrustAll(tls.trustAll());
 
                     configurePemTrustOptions(options, tls.trustCertificatePem());
@@ -340,13 +343,13 @@ public class Channels {
                     configurePfxKeyCertOptions(options, tls.keyCertificateP12());
                     options.setVerifyHost(tls.verifyHostname());
                 } else {
-                    if (config.ssl().trustStore().isPresent()) {
-                        Optional<Path> trustStorePath = config.ssl().trustStore();
+                    if (clientConfig.ssl().trustStore().isPresent()) {
+                        Optional<Path> trustStorePath = clientConfig.ssl().trustStore();
                         PemTrustOptions to = new PemTrustOptions();
                         to.addCertValue(bufferFor(trustStorePath.get(), "trust store"));
                         options.setTrustOptions(to);
-                        Optional<Path> certificatePath = config.ssl().certificate();
-                        Optional<Path> keyPath = config.ssl().key();
+                        Optional<Path> certificatePath = clientConfig.ssl().certificate();
+                        Optional<Path> keyPath = clientConfig.ssl().key();
                         if (certificatePath.isPresent() && keyPath.isPresent()) {
                             PemKeyCertOptions cko = new PemKeyCertOptions();
                             cko.setCertValue(bufferFor(certificatePath.get(), "certificate"));
@@ -357,14 +360,14 @@ public class Channels {
                 }
             }
 
-            options.setKeepAlive(config.keepAliveWithoutCalls());
-            Optional<Duration> keepAliveTimeout = config.keepAliveTimeout();
+            options.setKeepAlive(clientConfig.keepAliveWithoutCalls());
+            Optional<Duration> keepAliveTimeout = clientConfig.keepAliveTimeout();
             if (keepAliveTimeout.isPresent()) {
                 int keepAliveTimeoutN = (int) keepAliveTimeout.get().toSeconds();
                 options.setKeepAliveTimeout(keepAliveTimeoutN);
                 options.setHttp2KeepAliveTimeout(keepAliveTimeoutN);
             }
-            Optional<Duration> idleTimeout = config.idleTimeout();
+            Optional<Duration> idleTimeout = clientConfig.idleTimeout();
             if (idleTimeout.isPresent()) {
                 options.setIdleTimeout((int) idleTimeout.get().toMillis());
                 options.setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
@@ -383,7 +386,7 @@ public class Channels {
             Channel channel;
             if (stork) {
                 ManagedExecutor executor = container.instance(ManagedExecutor.class).get();
-                channel = new StorkGrpcChannel(client, config.host(), config.stork(), executor); // host = service-name
+                channel = new StorkGrpcChannel(client, clientConfig.host(), clientConfig.stork(), executor); // host = service-name
             } else {
                 channel = new GrpcClientChannel(client, SocketAddress.inetSocketAddress(port, host));
             }
@@ -397,291 +400,6 @@ public class Channels {
 
             return new InternalGrpcChannel(client, channel, ClientInterceptors.intercept(channel, interceptors));
         }
-    }
-
-    private static GrpcClientConfiguration testConfig(GrpcServerConfiguration serverConfiguration) {
-        if (serverConfiguration.ssl().certificate().isPresent() || serverConfiguration.ssl().keyStore().isPresent()) {
-            LOGGER.warn("gRPC client created without configuration and the gRPC server is configured for SSL. " +
-                    "Configuring SSL for such clients is not supported.");
-        }
-
-        return new GrpcClientConfiguration() {
-
-            @Override
-            public boolean useQuarkusGrpcClient() {
-                return false;
-            }
-
-            @Override
-            public boolean useVertxEventLoop() {
-                return true;
-            }
-
-            @Override
-            public ClientXds xds() {
-                return null;
-            }
-
-            @Override
-            public InProcess inProcess() {
-                return null;
-            }
-
-            @Override
-            public StorkConfig stork() {
-                return null;
-            }
-
-            @Override
-            public int port() {
-                return serverConfiguration.testPort();
-            }
-
-            @Override
-            public OptionalInt testPort() {
-                return OptionalInt.empty();
-            }
-
-            @Override
-            public String host() {
-                return serverConfiguration.host();
-            }
-
-            @Override
-            public SslClientConfig ssl() {
-                return new SslClientConfig() {
-                    @Override
-                    public Optional<Path> certificate() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public Optional<Path> key() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public Optional<Path> trustStore() {
-                        return Optional.empty();
-                    }
-                };
-            }
-
-            @Override
-            public Optional<String> tlsConfigurationName() {
-                return Optional.empty();
-            }
-
-            @Override
-            public TlsClientConfig tls() {
-                return new TlsClientConfig() {
-                    @Override
-                    public boolean enabled() {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean trustAll() {
-                        return false;
-                    }
-
-                    @Override
-                    public PemTrustCertConfiguration trustCertificatePem() {
-                        return new PemTrustCertConfiguration() {
-                            @Override
-                            public Optional<List<String>> certs() {
-                                return Optional.empty();
-                            }
-                        };
-                    }
-
-                    @Override
-                    public JksConfiguration trustCertificateJks() {
-                        return new JksConfiguration() {
-                            @Override
-                            public Optional<String> path() {
-                                return Optional.empty();
-                            }
-
-                            @Override
-                            public Optional<String> password() {
-                                return Optional.empty();
-                            }
-                        };
-                    }
-
-                    @Override
-                    public PfxConfiguration trustCertificateP12() {
-                        return new PfxConfiguration() {
-                            @Override
-                            public Optional<String> path() {
-                                return Optional.empty();
-                            }
-
-                            @Override
-                            public Optional<String> password() {
-                                return Optional.empty();
-                            }
-                        };
-                    }
-
-                    @Override
-                    public PemKeyCertConfiguration keyCertificatePem() {
-                        return new PemKeyCertConfiguration() {
-                            @Override
-                            public Optional<List<String>> keys() {
-                                return Optional.empty();
-                            }
-
-                            @Override
-                            public Optional<List<String>> certs() {
-                                return Optional.empty();
-                            }
-                        };
-                    }
-
-                    @Override
-                    public JksConfiguration keyCertificateJks() {
-                        return new JksConfiguration() {
-                            @Override
-                            public Optional<String> path() {
-                                return Optional.empty();
-                            }
-
-                            @Override
-                            public Optional<String> password() {
-                                return Optional.empty();
-                            }
-                        };
-                    }
-
-                    @Override
-                    public PfxConfiguration keyCertificateP12() {
-                        return new PfxConfiguration() {
-                            @Override
-                            public Optional<String> path() {
-                                return Optional.empty();
-                            }
-
-                            @Override
-                            public Optional<String> password() {
-                                return Optional.empty();
-                            }
-                        };
-                    }
-
-                    @Override
-                    public boolean verifyHostname() {
-                        return false;
-                    }
-                };
-            }
-
-            @Override
-            public String nameResolver() {
-                return DNS;
-            }
-
-            @Override
-            public Optional<Boolean> plainText() {
-                return Optional.of(serverConfiguration.plainText());
-            }
-
-            @Override
-            public Optional<Duration> keepAliveTime() {
-                return Optional.empty();
-            }
-
-            @Override
-            public OptionalInt flowControlWindow() {
-                return OptionalInt.empty();
-            }
-
-            @Override
-            public Optional<Duration> idleTimeout() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Duration> keepAliveTimeout() {
-                return Optional.empty();
-            }
-
-            @Override
-            public boolean keepAliveWithoutCalls() {
-                return false;
-            }
-
-            @Override
-            public int maxHedgedAttempts() {
-                return 5;
-            }
-
-            @Override
-            public int maxRetryAttempts() {
-                return 0;
-            }
-
-            @Override
-            public OptionalInt maxTraceEvents() {
-                return OptionalInt.empty();
-            }
-
-            @Override
-            public OptionalInt maxInboundMessageSize() {
-                return OptionalInt.empty();
-            }
-
-            @Override
-            public OptionalInt maxInboundMetadataSize() {
-                return OptionalInt.empty();
-            }
-
-            @Override
-            public String negotiationType() {
-                return "PLAINTEXT";
-            }
-
-            @Override
-            public Optional<String> overrideAuthority() {
-                return Optional.empty();
-            }
-
-            @Override
-            public OptionalLong perRpcBufferLimit() {
-                return OptionalLong.empty();
-            }
-
-            @Override
-            public boolean retry() {
-                return false;
-            }
-
-            @Override
-            public OptionalLong retryBufferSize() {
-                return OptionalLong.empty();
-            }
-
-            @Override
-            public Optional<String> userAgent() {
-                return Optional.empty();
-            }
-
-            @Override
-            public String loadBalancingPolicy() {
-                return "pick_first";
-            }
-
-            @Override
-            public Optional<String> compression() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Duration> deadline() {
-                return Optional.empty();
-            }
-        };
     }
 
     private static Buffer bufferFor(Path path, String resourceName) throws IOException {

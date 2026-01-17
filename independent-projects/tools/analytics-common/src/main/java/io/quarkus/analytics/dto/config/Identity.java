@@ -4,9 +4,6 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import io.quarkus.analytics.dto.segment.SegmentContext;
 
 /**
@@ -32,7 +29,6 @@ public class Identity implements Serializable, SegmentContext {
      *
      * @return
      */
-    @JsonProperty("userId")
     public String getUserId() {
         return userId;
     }
@@ -55,7 +51,6 @@ public class Identity implements Serializable, SegmentContext {
         this.context = context;
     }
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     public Instant getTimestamp() {
         return timestamp;
     }

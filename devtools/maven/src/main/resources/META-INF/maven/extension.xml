@@ -2,7 +2,5 @@
     <exportedPackages>
         <exportedPackage>io.quarkus.maven</exportedPackage>
         <exportedPackage>io.quarkus.maven.components</exportedPackage>
-        <exportedPackage>com.fasterxml.jackson.datatype.jdk8</exportedPackage>
-        <exportedPackage>com.fasterxml.jackson.datatype.jsr310</exportedPackage>
     </exportedPackages>
 </extension>

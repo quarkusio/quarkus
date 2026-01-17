@@ -1,15 +1,14 @@
 package io.quarkus.analytics.util;
 
-import static io.quarkus.analytics.util.StringUtils.getObjectMapper;
-
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
+import io.quarkus.analytics.dto.config.LocalConfig;
+import io.quarkus.analytics.dto.config.RemoteConfig;
+import io.quarkus.analytics.dto.segment.Track;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 
 public class FileUtils {
@@ -53,8 +52,10 @@ public class FileUtils {
      * @throws IOException
      */
     public static <T> void write(T content, Path path) throws IOException {
-        final ObjectMapper mapper = getObjectMapper();
-        mapper.writeValue(path.toFile(), content);
+        String json = toJson(content);
+        try (Writer writer = Files.newBufferedWriter(path)) {
+            writer.write(json);
+        }
     }
 
     /**
@@ -70,14 +71,18 @@ public class FileUtils {
             Files.delete(path);
         }
         createFileAndParent(path);
-        final ObjectMapper mapper = getObjectMapper();
-        mapper.writeValue(path.toFile(), content);
+        String json = toJson(content);
+        try (Writer writer = Files.newBufferedWriter(path)) {
+            writer.write(json);
+        }
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> Optional<T> read(Class<T> clazz, Path path, MessageWriter log) throws IOException {
         try {
-            final ObjectMapper mapper = getObjectMapper();
-            return Optional.of(mapper.readValue(path.toFile(), clazz));
+            String json = Files.readString(path);
+            T result = (T) fromJson(clazz, json);
+            return Optional.of(result);
         } catch (Exception e) {
             log.warn("[Quarkus build analytics] Could not read {}", path.toString(), e);
             return Optional.empty();
@@ -88,5 +93,27 @@ public class FileUtils {
                     ". Attempting to continue...");
             return Optional.empty();
         }
+    }
+
+    private static <T> String toJson(T content) {
+        if (content instanceof RemoteConfig remoteConfig) {
+            return JsonSerializer.toJson(remoteConfig);
+        } else if (content instanceof LocalConfig localConfig) {
+            return JsonSerializer.toJson(localConfig);
+        } else if (content instanceof Track track) {
+            return JsonSerializer.toJson(track);
+        }
+        throw new IllegalArgumentException("Unsupported type for JSON serialization: " + content.getClass().getName());
+    }
+
+    private static Object fromJson(Class<?> clazz, String json) {
+        if (clazz == RemoteConfig.class) {
+            return JsonSerializer.parseRemoteConfig(json);
+        } else if (clazz == LocalConfig.class) {
+            return JsonSerializer.parseLocalConfig(json);
+        } else if (clazz == Track.class) {
+            return JsonSerializer.parseTrack(json);
+        }
+        throw new IllegalArgumentException("Unsupported type for JSON deserialization: " + clazz.getName());
     }
 }

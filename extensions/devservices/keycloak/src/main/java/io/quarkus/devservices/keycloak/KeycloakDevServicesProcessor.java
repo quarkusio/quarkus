@@ -111,6 +111,15 @@ public class KeycloakDevServicesProcessor {
     private static final String JAVA_OPTS = "JAVA_OPTS";
 
     /**
+     * This is a container label we use to mark the Keycloak container we started, as opposite to the ones we discovered.
+     * This value must be different to the {@link KeycloakDevServicesConfig#serviceName()}, because we don't want to
+     * confuse the discovered and the owned container. This is important because if the configuration for the owned
+     * container changes (e.g. user configured additional realms, or users, or changed the realm file), we need to
+     * restart the container. However, we do not restart the discovered container because we do not own it.
+     */
+    private static final String OWNED_KEYCLOAK_SERVER_LABEL_VALUE = "quarkus-dev-service-keycloak";
+
+    /**
      * Label to add to shared Dev Service for Keycloak running in containers.
      * This allows other applications to discover the running service and use it instead of starting a new instance.
      */
@@ -154,8 +163,6 @@ public class KeycloakDevServicesProcessor {
         // TODO do something with this
         List<String> errors = new ArrayList<>();
 
-        // TODO: this can't be, we cannot use the locator to detect the services we started, because there the config
-        //  won't be reflected; now, if we used the "owned" then such a service we do not want to locate!
         DevServicesResultBuildItem devServicesResultBuildItem = KEYCLOAK_DEV_MODE_CONTAINER_LOCATOR
                 .locateContainer(config.serviceName(), config.shared(), LaunchMode.current())
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem, List.of(imageName, "keycloak"),
@@ -172,6 +179,8 @@ public class KeycloakDevServicesProcessor {
                             .build();
                 }).orElseGet(() -> DevServicesResultBuildItem.owned().feature(feature)
                         .serviceName(feature.getName())
+                        // TODO: this does not work as expected, when I added quarkus.keycloak.devservices.users.michal=michal
+                        //      then Quarkus restarted, but the Keycloak Dev Services did not!
                         .serviceConfig(getServiceConfigIdentifier(config))
                         .startable(
                                 () -> new KeycloakServer(useSharedNetwork, config, devServicesConfig, devServicesConfigurator,
@@ -373,7 +382,7 @@ public class KeycloakDevServicesProcessor {
                     useSharedNetwork,
                     config.realmPath().orElse(List.of()),
                     resourcesMap(config, errors),
-                    config.serviceName(),
+                    OWNED_KEYCLOAK_SERVER_LABEL_VALUE,
                     config.shared(),
                     config.javaOpts(),
                     config.startCommand(),

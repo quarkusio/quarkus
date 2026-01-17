@@ -29,6 +29,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-oidc-client-spi</artifactId>
         </dependency>
+        <!-- Required because deployment module depends on quarkus-devservices-keycloak -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devservices</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.eclipse.microprofile.health</groupId>
             <artifactId>microprofile-health-api</artifactId>

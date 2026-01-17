@@ -331,10 +331,14 @@ class ComponentContainer {
                                 configuration)) {
                             continue;
                         }
-                        if (requiredType.kind() == Kind.PRIMITIVE || requiredType.kind() == Kind.ARRAY) {
+                        if (requiredType.kind() == Kind.PRIMITIVE
+                                || requiredType.kind() == Kind.ARRAY
+                                || isIllegalBeanType(requiredType)) {
                             throw new IllegalStateException(
-                                    "Found an unmockable unsatisfied injection point: " + injectionPoint.getTargetInfo());
+                                    "Unsatisfied injection point with required type '%s' cannot be mocked automatically: %s"
+                                            .formatted(requiredType, injectionPoint.getTargetInfo()));
                         }
+
                         unsatisfiedInjectionPoints.add(new TypeAndQualifiers(requiredType, requiredQualifiers));
                         LOG.debugf("Unsatisfied injection point found: %s", injectionPoint.getTargetInfo());
                     }
@@ -996,6 +1000,25 @@ class ComponentContainer {
     @SuppressWarnings("unchecked")
     static <T> T cast(Object obj) {
         return (T) obj;
+    }
+
+    static boolean isIllegalBeanType(Type type) {
+        if (type.kind() == Kind.TYPE_VARIABLE) {
+            return true;
+        } else if (type.kind() == Kind.PARAMETERIZED_TYPE) {
+            for (Type typeArgument : type.asParameterizedType().arguments()) {
+                if (typeArgument.kind() == Kind.TYPE_VARIABLE) {
+                    // Parameterized type with type variable is legal
+                    continue;
+                } else if (typeArgument.kind() == Kind.WILDCARD_TYPE
+                        || isIllegalBeanType(typeArgument)) {
+                    return true;
+                }
+            }
+        } else if (type.kind() == Kind.ARRAY) {
+            isIllegalBeanType(type.asArrayType().elementType());
+        }
+        return false;
     }
 
     public static class TracingClassVisitor extends ClassVisitor {

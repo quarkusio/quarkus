@@ -62,7 +62,8 @@ public class ComposeDevServicesProcessor {
     private static final Logger log = Logger.getLogger(ComposeDevServicesProcessor.class);
 
     static final String PROJECT_PREFIX = "quarkus-devservices";
-    // If you change this, please adapt similar field in io.quarkus.gradle.GradleUtils
+    // If you change this, please adapt similar field in
+    // io.quarkus.gradle.GradleUtils
     static final Pattern COMPOSE_FILE = Pattern.compile("(^docker-compose|^compose)(-dev(-)?service).*.(yml|yaml)");
 
     static volatile ComposeRunningService runningCompose;
@@ -231,7 +232,8 @@ public class ComposeDevServicesProcessor {
         timeout.ifPresent(builder::withStartupTimeout);
         ComposeProject compose = builder.build();
 
-        // if compose is configured to not start services, only try discovering existing services
+        // if compose is configured to not start services, only try discovering existing
+        // services
         if (!cfg.startServices) {
             log.infof("Discovering existing Compose services for project %s", compose.getProject());
             // discover existing services
@@ -242,25 +244,11 @@ public class ComposeDevServicesProcessor {
                 return null;
             }
         }
-        // try discovering existing services, without checking for required services
-        compose.discoverServiceInstances(false);
-        if (!compose.getServices().isEmpty()) {
-            // if services are discovered, and compose files are defined, wait and check for them to be ready
-            if (!cfg.files.isEmpty()) {
-                compose.waitUntilServicesReady(buildExecutor);
-            }
-            log.infof("Discovered existing Compose services for project %s", compose.getProject());
-            return new ComposeRunningService(compose, false);
-        }
-        // failed discovering existing services, no compose files found
-        if (cfg.files.isEmpty()) {
-            log.debug("Could not find any compose files, not starting Compose dev services");
-            return null;
-        }
-
-        // Start compose
+        // ALWAYS start/ensure all containers for configured profiles
+        // This is idempotent - running containers are left alone
         try {
-            compose.start();
+            log.debug("Starting/ensuring Compose dev services for project %s", compose.getProject());
+            compose.start(); // Calls: docker compose up -d
         } catch (Exception e) {
             log.warnf("Could not start successfully Compose dev services for project %s, reason: %s",
                     compose.getProject(), e.getMessage());
@@ -273,8 +261,16 @@ public class ComposeDevServicesProcessor {
             }
             throw e;
         }
+
+        // NOW discover all running containers (should be complete set)
+        compose.discoverServiceInstances(true);
+
         // Wait for services to be ready
         compose.waitUntilServicesReady(buildExecutor);
+
+        log.debug("All configured Compose dev services started and ready for project %s",
+                compose.getProject());
+
         return new ComposeRunningService(compose, true);
     }
 

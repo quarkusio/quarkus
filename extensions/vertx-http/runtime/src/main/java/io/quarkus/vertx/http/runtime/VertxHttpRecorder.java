@@ -862,17 +862,20 @@ public class VertxHttpRecorder {
 
         AtomicInteger connectionCount = new AtomicInteger();
 
-        // Note that a new HttpServer is created for each IO thread but we only want to fire the events (HttpServerStart etc.) once,
+        // Note that a new HttpServer is created for each IO thread, but we only want register once,
         // for the first server that started listening
         // See https://vertx.io/docs/vertx-core/java/#_server_sharing for more information
         AtomicBoolean startEventsFired = new AtomicBoolean();
+        AtomicBoolean registerHttpServer = new AtomicBoolean();
+        AtomicBoolean registerHttpsServer = new AtomicBoolean();
 
         vertx.deployVerticle(new Supplier<>() {
             @Override
             public Verticle get() {
-                return new WebDeploymentVerticle(httpMainServerOptions, httpMainSslServerOptions, httpMainDomainSocketOptions,
-                        launchMode, insecureRequestStrategy, connectionCount, registry, startEventsFired, httpBuildTimeConfig,
-                        httpConfig);
+                return new WebDeploymentVerticle(
+                        httpMainServerOptions, httpMainSslServerOptions, httpMainDomainSocketOptions,
+                        launchMode, insecureRequestStrategy, connectionCount, registry, startEventsFired,
+                        httpBuildTimeConfig, httpConfig, registerHttpServer, registerHttpsServer);
             }
         }, new DeploymentOptions().setInstances(ioThreads), new Handler<>() {
             @Override
@@ -1187,9 +1190,6 @@ public class VertxHttpRecorder {
     }
 
     private static class WebDeploymentVerticle extends AbstractVerticle implements Resource {
-        private static final AtomicBoolean registerHttpServer = new AtomicBoolean();
-        private static final AtomicBoolean registerHttpsServer = new AtomicBoolean();
-
         private final TlsConfigurationRegistry registry;
         private HttpServer httpServer;
         private HttpServer httpsServer;
@@ -1205,6 +1205,8 @@ public class VertxHttpRecorder {
         private final VertxHttpBuildTimeConfig httpBuildTimeConfig;
         private final VertxHttpConfig httpConfig;
         private final ValueRegistry valueRegistry;
+        private final AtomicBoolean registerHttpServer;
+        private final AtomicBoolean registerHttpsServer;
 
         public WebDeploymentVerticle(
                 HttpServerOptions httpOptions,
@@ -1216,7 +1218,9 @@ public class VertxHttpRecorder {
                 TlsConfigurationRegistry registry,
                 AtomicBoolean startEventsFired,
                 VertxHttpBuildTimeConfig httpBuildTimeConfig,
-                VertxHttpConfig httpConfig) {
+                VertxHttpConfig httpConfig,
+                AtomicBoolean registerHttpServer,
+                AtomicBoolean registerHttpsServer) {
 
             this.httpOptions = httpOptions;
             this.httpsOptions = httpsOptions;
@@ -1228,8 +1232,10 @@ public class VertxHttpRecorder {
             this.registry = registry;
             this.startEventsFired = startEventsFired;
             this.httpBuildTimeConfig = httpBuildTimeConfig;
+            this.registerHttpServer = registerHttpServer;
+            this.registerHttpsServer = registerHttpsServer;
             this.valueRegistry = VertxHttpRecorder.valueRegistry != null ? VertxHttpRecorder.valueRegistry.getValue()
-                    : new ValueRegistryImpl.Builder().build();
+                    : ValueRegistryImpl.builder().build();
             if (CracSupport.isEnabled()) {
                 org.crac.Core.getGlobalContext().register(this);
             }

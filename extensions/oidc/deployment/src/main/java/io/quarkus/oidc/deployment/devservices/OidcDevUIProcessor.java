@@ -33,6 +33,7 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
     private static final String DISCOVERY_ENABLED_CONFIG_KEY = CONFIG_PREFIX + "discovery-enabled";
     private static final String AUTH_SERVER_URL_CONFIG_KEY = CONFIG_PREFIX + "auth-server-url";
     private static final String OIDC_PROVIDER_CONFIG_KEY = "quarkus.oidc.provider";
+    private static final String ALWAYS_LOGOUT_USER_IN_DEV_UI_ON_RELOAD = Boolean.TRUE.toString();
 
     // Well-known providers
 
@@ -73,23 +74,16 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
             var cardPage = createProviderWebComponent(recorder,
                     capabilities,
                     providerName,
-                    getApplicationType(providerConfig),
                     oidcConfig.devui().grant().type().isPresent() ? oidcConfig.devui().grant().type().get().getGrantType()
                             : "code",
-                    null,
-                    null,
-                    null,
                     checkProviderUserInfoRequired(providerConfig),
                     beanContainer,
                     oidcConfig.devui().webClientTimeout(),
                     oidcConfig.devui().grantOptions(),
                     nonApplicationRootPathBuildItem,
-                    keycloakAdminUrl,
-                    null,
-                    null,
-                    true,
+                    ALWAYS_LOGOUT_USER_IN_DEV_UI_ON_RELOAD,
                     discoverMetadata,
-                    authServerUrl);
+                    authServerUrl, keycloakAdminUrl, getApplicationType(providerConfig));
             cardPageProducer.produce(cardPage);
         }
     }

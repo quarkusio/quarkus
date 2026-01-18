@@ -47,11 +47,14 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.reactive.datasource.deployment.StealingPoolWrapperGenerator;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig;
@@ -298,5 +301,12 @@ class ReactivePgClientProcessor {
         public boolean test(Set<Type> types) {
             return types.contains(PG_POOL_CREATOR);
         }
+    }
+
+    @BuildStep
+    void generateStealingWrapper(BuildProducer<GeneratedClassBuildItem> gen,
+            BuildProducer<ReflectiveClassBuildItem> ref) {
+        StealingPoolWrapperGenerator.generate(gen, ref, PgPool.class,
+                "io.quarkus.reactive.pg.client.runtime.StealingPgPoolWrapper");
     }
 }

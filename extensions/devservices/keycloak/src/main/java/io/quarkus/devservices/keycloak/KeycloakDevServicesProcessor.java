@@ -155,8 +155,6 @@ public class KeycloakDevServicesProcessor {
                 devServicesSharedNetworkBuildItem);
 
         String imageName = config.imageName().orElseGet(() -> getDefaultImageNameFor(KEYCLOAK_CONTAINER_NAME));
-        // TODO do something with this
-        List<String> errors = new ArrayList<>();
 
         final String serviceConfigHashCode = getServiceConfigIdentifier(config);
         DevServicesResultBuildItem devServicesResultBuildItem = KEYCLOAK_DEV_MODE_CONTAINER_LOCATOR
@@ -166,7 +164,7 @@ public class KeycloakDevServicesProcessor {
                 .map(containerAddress -> {
                     String sharedContainerUrl = getSharedContainerUrl(containerAddress);
                     Map<String, String> configs = prepareConfiguration(config, sharedContainerUrl,
-                            sharedContainerUrl, List.of(), errors, devServicesConfigurator, sharedContainerUrl);
+                            sharedContainerUrl, List.of(), new ArrayList<>(), devServicesConfigurator, sharedContainerUrl);
                     return DevServicesResultBuildItem.discovered()
                             .feature(feature)
                             .containerId(containerAddress.getId())
@@ -178,7 +176,14 @@ public class KeycloakDevServicesProcessor {
                         .startable(
                                 () -> new KeycloakServer(useSharedNetwork, config, devServicesConfig, devServicesConfigurator,
                                         composeProjectBuildItem, imageName))
-                        .postStartHook(keycloakServer -> LOG.info("Dev Services for Keycloak started."))
+                        .postStartHook(keycloakServer -> {
+                            for (String error : keycloakServer.errors) {
+                                // these errors would be hidden by the 'StartupLogCompressor' if the capture was not dumped
+                                // hence, we log them here, as by now, the compressor will surely be closed
+                                LOG.trace(error);
+                            }
+                            LOG.info("Dev Services for Keycloak started.");
+                        })
                         .configProvider(createLazyConfigMap(devServicesConfigurator))
                         .build());
         devServicesResultProducer.produce(devServicesResultBuildItem);
@@ -381,6 +386,7 @@ public class KeycloakDevServicesProcessor {
         private final DevServicesComposeProjectBuildItem composeProjectBuildItem;
         private KeycloakDevServicesConfigurator.ConfigPropertiesContext configPropertiesContext;
         private QuarkusOidcContainer oidcContainer;
+        private final List<String> errors;
 
         private KeycloakServer(boolean useSharedNetwork, KeycloakDevServicesConfig config, DevServicesConfig devServicesConfig,
                 KeycloakDevServicesConfigurator devServicesConfigurator,
@@ -391,13 +397,11 @@ public class KeycloakDevServicesProcessor {
             this.devServicesConfigurator = devServicesConfigurator;
             this.composeProjectBuildItem = composeProjectBuildItem;
             this.imageName = imageName;
+            this.errors = new ArrayList<>();
         }
 
         @Override
         public void start() {
-            // TODO do something with this
-            List<String> errors = new ArrayList<>();
-
             startContainer(config,
                     useSharedNetwork,
                     devServicesConfig.timeout(),

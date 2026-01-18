@@ -6,6 +6,9 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
+
 import io.quarkus.registry.RuntimeInfoProvider;
 import io.quarkus.registry.RuntimeInfoProvider.RuntimeSource;
 import io.quarkus.registry.ValueRegistry;
@@ -65,9 +68,16 @@ public class ValueRegistryImpl implements ValueRegistry {
         return values.get(key);
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     public static class Builder {
         private boolean discoverInfos;
         private final List<RuntimeSource> sources = new ArrayList<>();
+
+        private Builder() {
+        }
 
         public Builder addDiscoveredInfos() {
             this.discoverInfos = true;
@@ -75,12 +85,7 @@ public class ValueRegistryImpl implements ValueRegistry {
         }
 
         public Builder withRuntimeSource(final SmallRyeConfig config) {
-            this.sources.add(new RuntimeSource() {
-                @Override
-                public <T> T get(RuntimeKey<T> key) {
-                    return config.getOptionalValue(key.key(), key.type()).orElse(null);
-                }
-            });
+            this.sources.add(new ConfigRuntimeSource(config));
             return this;
         }
 
@@ -105,6 +110,27 @@ public class ValueRegistryImpl implements ValueRegistry {
                 }
             }
             return valueRegistry;
+        }
+    }
+
+    public static class ConfigRuntimeSource implements RuntimeSource {
+        private final Config config;
+
+        ConfigRuntimeSource(Config config) {
+            this.config = config;
+        }
+
+        @Override
+        public <T> T get(RuntimeKey<T> key) {
+            return config.getOptionalValue(key.key(), key.type()).orElse(null);
+        }
+
+        public static RuntimeSource runtimeSource(Config config) {
+            return new ConfigRuntimeSource(config);
+        }
+
+        public static RuntimeSource runtimeSource() {
+            return new ConfigRuntimeSource(ConfigProvider.getConfig());
         }
     }
 }

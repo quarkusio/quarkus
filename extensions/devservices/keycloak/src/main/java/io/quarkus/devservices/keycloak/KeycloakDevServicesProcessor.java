@@ -165,7 +165,6 @@ public class KeycloakDevServicesProcessor {
                         KEYCLOAK_PORT, LaunchMode.current(), useSharedNetwork))
                 .map(containerAddress -> {
                     String sharedContainerUrl = getSharedContainerUrl(containerAddress);
-                    // TODO: this cannot try to create the realm on the second time!!! only the first time, we should detect it!
                     Map<String, String> configs = prepareConfiguration(config, sharedContainerUrl,
                             sharedContainerUrl, List.of(), errors, devServicesConfigurator, sharedContainerUrl);
                     return DevServicesResultBuildItem.discovered()
@@ -326,16 +325,20 @@ public class KeycloakDevServicesProcessor {
                 try {
                     String adminToken = getAdminToken(config, client, clientAuthServerBaseUrl);
                     if (createDefaultRealm) {
-                        createDefaultRealm(config, client, adminToken, clientAuthServerBaseUrl, users, oidcClientId,
-                                oidcClientSecret, errors, devServicesConfigurator);
+                        if (realmDoesNotExist(realmName, client, clientAuthServerBaseUrl, config, adminToken, errors)) {
+                            createDefaultRealm(config, client, adminToken, clientAuthServerBaseUrl, users, oidcClientId,
+                                    oidcClientSecret, errors, devServicesConfigurator);
+                        }
                         realmNames.add(realmName);
                     } else {
                         for (RealmRepresentation realmRep : realmReps) {
-                            createRealm(config, client, adminToken, clientAuthServerBaseUrl, realmRep, errors);
+                            if (realmDoesNotExist(realmRep.getRealm(), client, clientAuthServerBaseUrl, config, adminToken,
+                                    errors)) {
+                                createRealm(config, client, adminToken, clientAuthServerBaseUrl, realmRep, errors);
+                            }
                             realmNames.add(realmRep.getRealm());
                         }
                     }
-
                 } finally {
                     client.close();
                 }
@@ -346,6 +349,26 @@ public class KeycloakDevServicesProcessor {
 
         return new KeycloakDevServicesConfigurator.ConfigPropertiesContext(authServerInternalUrl, oidcClientId,
                 oidcClientSecret, internalBaseUrl, internalURL, clientAuthServerUrl, users, realmNames);
+    }
+
+    private static boolean realmDoesNotExist(String realmName, WebClient client, String keycloakUrl,
+            KeycloakDevServicesConfig config, String token, List<String> errors) {
+        LOG.tracef("Detecting if the Keycloak realm '%s' exists", realmName);
+        try {
+            var response = client.getAbs(keycloakUrl + "/admin/realms/" + realmName)
+                    .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
+                    .putHeader(HttpHeaders.AUTHORIZATION.toString(), "Bearer " + token)
+                    .send().await().atMost(config.webClientTimeout());
+            if (response.statusCode() == 200) {
+                LOG.tracef("Keycloak realm '%s' already exists", realmName);
+                return false;
+            }
+            return true;
+        } catch (Exception exception) {
+            LOG.tracef(exception, "Failed to detect whether the Keycloak Realm '%s' already exists", realmName);
+            errors.add("Failed to detect whether the Keycloak Realm '" + realmName + "' already exists");
+            return false;
+        }
     }
 
     // Wrap the vertx instance and the container, since both need to be started and closed

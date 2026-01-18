@@ -40,7 +40,7 @@ public class KeycloakDevServiceRequiredBuildStep {
                 if (OIDC_CLIENT_REG_AUTH_SERVER_URL_CONFIG_KEY.equals(configKey)) {
                     return context.authServerInternalUrl();
                 }
-                return null;
+                return "";
             }
 
             @Override

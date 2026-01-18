@@ -74,7 +74,7 @@ public interface KeycloakDevServicesConfigurator {
                     .filter(Objects::nonNull)
                     .filter(Predicate.not(String::isEmpty))
                     .findFirst()
-                    .orElse(null);
+                    .orElse("");
         }
     }
 
@@ -95,7 +95,7 @@ public interface KeycloakDevServicesConfigurator {
                     .filter(Objects::nonNull)
                     .filter(Predicate.not(String::isEmpty))
                     .findFirst()
-                    .orElse(null);
+                    .orElse("");
         }
 
         @Override

@@ -452,7 +452,6 @@ public class KeycloakDevServicesProcessor {
             configPropertiesContext = createConfigPropertiesContext();
         }
 
-        // TODO what to do with the errors
         private KeycloakDevServicesConfigurator.ConfigPropertiesContext createConfigPropertiesContext() {
             List<String> errors = new ArrayList<>();
             String internalBaseUrl = getBaseURL((oidcContainer.isHttps() ? "https://" : "http://"), oidcContainer.getHost(),

@@ -380,7 +380,7 @@ public class EngineProducer {
         LOGGER.debugf("Locate template contents for %s", path);
         TemplateInfo template = templates.get(path);
         if (template != null && template.hasContent()) {
-            return getTemplateLocation(template.content, path);
+            return getTemplateLocation(template, path);
         }
 
         // Try path with suffixes
@@ -391,7 +391,7 @@ public class EngineProducer {
             }
             template = templates.get(pathWithSuffix);
             if (template != null && template.hasContent()) {
-                return getTemplateLocation(template.content, pathWithSuffix);
+                return getTemplateLocation(template, pathWithSuffix);
             }
         }
 
@@ -421,8 +421,11 @@ public class EngineProducer {
         return Optional.empty();
     }
 
-    private Optional<TemplateLocation> getTemplateLocation(String content, String pathWithSuffix) {
-        return Optional.of(new StringTemplateLocation(content, Optional.ofNullable(createVariant(pathWithSuffix))));
+    private Optional<TemplateLocation> getTemplateLocation(TemplateInfo templateInfo, String pathWithSuffix) {
+        String content = templateInfo.content;
+        URI source = templateInfo.parseSource();
+        return Optional.of(new StringTemplateLocation(content, Optional.ofNullable(createVariant(pathWithSuffix)),
+                Optional.ofNullable(source)));
     }
 
     private Optional<TemplateLocation> getTemplateLocation(URL resource, String templatePath, String path) {

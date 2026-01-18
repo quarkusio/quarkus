@@ -41,6 +41,9 @@ import io.quarkus.qute.debug.agent.frames.RemoteStackFrame;
 import io.quarkus.qute.debug.agent.source.SourceReferenceRegistry;
 import io.quarkus.qute.debug.agent.source.SourceTemplateRegistry;
 import io.quarkus.qute.debug.agent.variables.VariablesRegistry;
+import io.quarkus.qute.debug.client.JavaSourceLocationArguments;
+import io.quarkus.qute.debug.client.JavaSourceLocationResponse;
+import io.quarkus.qute.debug.client.JavaSourceResolver;
 import io.quarkus.qute.trace.ResolveEvent;
 import io.quarkus.qute.trace.TemplateEvent;
 
@@ -102,6 +105,8 @@ public class DebuggeeAgent implements Debugger {
 
     /** Indicates whether the debugging agent is enabled. */
     private boolean enabled;
+
+    private JavaSourceResolver javaSourceResolver;
 
     /**
      * Creates a new {@link DebuggeeAgent} instance.
@@ -472,7 +477,11 @@ public class DebuggeeAgent implements Debugger {
 
     public SourceTemplateRegistry getSourceTemplateRegistry(Engine engine) {
         return this.sourceTemplateRegistry.computeIfAbsent(engine,
-                k -> new SourceTemplateRegistry(breakpointsRegistry, sourceReferenceRegistry, engine));
+                k -> new SourceTemplateRegistry(breakpointsRegistry, sourceReferenceRegistry, this, engine));
+    }
+
+    public void setJavaSourceResolver(JavaSourceResolver javaSourceResolver) {
+        this.javaSourceResolver = javaSourceResolver;
     }
 
     @Override
@@ -515,5 +524,17 @@ public class DebuggeeAgent implements Debugger {
         unlockAllDebuggeeThreads();
         this.sourceTemplateRegistry.clear();
         this.sourceReferenceRegistry.reset();
+    }
+
+    @Override
+    public CompletableFuture<JavaSourceLocationResponse> resolveJavaSource(JavaSourceLocationArguments params) {
+        if (javaSourceResolver != null) {
+            return javaSourceResolver.resolveJavaSource(params);
+        }
+        return CompletableFuture.completedFuture(null);
+    }
+
+    public JavaSourceResolver getJavaSourceResolver() {
+        return javaSourceResolver;
     }
 }

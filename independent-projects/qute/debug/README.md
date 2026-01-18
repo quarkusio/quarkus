@@ -1,6 +1,6 @@
 # Qute Debugger
 
-Qute Debugger allows you to **debug Qute templates using breakpoints** in any IDE or editor that supports the [Debug Adapter Protocol (DAP)](https://microsoft.github.io/debug-adapter-protocol/).
+Since Quarkus **3.29**, Qute Debugger allows you to **debug Qute templates using breakpoints** in any IDE or editor that supports the [Debug Adapter Protocol (DAP)](https://microsoft.github.io/debug-adapter-protocol/).
 
 It works seamlessly with:
 
@@ -138,6 +138,12 @@ Pause only when certain conditions are met.
 
 ![Conditional Breakpoint](./images/ConditionalBreakpoint.png)
 
+### Hover
+
+Hover
+
+![Hover](./images/Hover.png)
+
 ### Expression Evaluation
 
 Evaluate expressions on the fly while debugging templates.
@@ -156,12 +162,6 @@ Inspect the current context and variables in real-time.
 
 ![Variables](./images/Variables.png)
 
-## Feature Summary
+### Degugging in Java file
 
-| Feature                | Supported |
-|------------------------|-----------|
-| Simple Breakpoints     | ✅         |
-| Conditional Breakpoints| ✅         |
-| Expression Evaluation  | ✅         |
-| Code Completion        | ✅         |
-| Variable Inspection    | ✅         |
+Since Quarkus **3.31** ...

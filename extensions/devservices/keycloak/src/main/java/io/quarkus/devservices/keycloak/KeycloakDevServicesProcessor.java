@@ -59,6 +59,7 @@ import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
+import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.Startable;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ComposeLocator;
@@ -274,6 +275,23 @@ public class KeycloakDevServicesProcessor {
             LOG.warnf("Please configure '%s' or get a working docker instance", requirement.getAuthServerUrl());
         }
         return true;
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    void watchRealmFilesModification(
+            Optional<KeycloakDevServicesPreparedBuildItem> keycloakDevServicesPreparedBuildItem,
+            KeycloakDevServicesConfig config,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFileProducer) {
+        if (keycloakDevServicesPreparedBuildItem.isPresent() && config.realmPath().isPresent()) {
+            var realmFiles = config.realmPath().get().stream().map(Path::of).filter(Files::exists).toList();
+            if (!realmFiles.isEmpty()) {
+                // without this, if only a realm path in filesystem changes, Quarkus does not run the build step producing
+                // our dev service, hence the service config won't change and user either has to force restart manually
+                // or change some other file
+                realmFiles.forEach(p -> hotDeploymentWatchedFileProducer
+                        .produce(new HotDeploymentWatchedFileBuildItem(p.toAbsolutePath().toString(), true)));
+            }
+        }
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)

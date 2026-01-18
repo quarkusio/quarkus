@@ -33,6 +33,8 @@ public final class KeycloakDevServicesRequiredBuildItem extends MultiBuildItem {
     private static final String OIDC_USERS = "oidc.users";
     private static final String KEYCLOAK_REALMS = "keycloak.realms";
     private static final String KEYCLOAK_URL_KEY = "keycloak.url";
+    // the authentication server URL required by the OIDC DEV UI
+    private static final String KEYCLOAK_AUTH_SERVER_INTERNAL_URL = "keycloak.auth-server-internal-url";
     public static final String OIDC_AUTH_SERVER_URL_CONFIG_KEY = CONFIG_PREFIX + "auth-server-url";
 
     private final KeycloakDevServicesConfigurator devServicesConfigurator;
@@ -86,6 +88,7 @@ public final class KeycloakDevServicesRequiredBuildItem extends MultiBuildItem {
                 new LazyConfigProperty(CLIENT_AUTH_SERVER_URL_CONFIG_KEY, ConfigPropertiesContext::clientAuthServerUrl),
                 new LazyConfigProperty(KEYCLOAK_URL_KEY, ConfigPropertiesContext::keycloakUrl),
                 new LazyConfigProperty(OIDC_USERS, ConfigPropertiesContext::oidcUsers),
+                new LazyConfigProperty(KEYCLOAK_AUTH_SERVER_INTERNAL_URL, ConfigPropertiesContext::authServerInternalUrl),
                 new LazyConfigProperty(KEYCLOAK_REALMS, ConfigPropertiesContext::keycloakRealms)));
         List<KeycloakDevServicesConfigurator> configurators = Stream.concat(Stream.of(baseDevServicesConfigurator),
                 items.stream().map(i -> i.devServicesConfigurator)).toList();

@@ -56,15 +56,30 @@ public class OidcDevUiRecorder {
         final String oidcApplicationType;
         if (authServerUrl == null) {
             // == Keycloak Dev Services
-            String realmUrl = config.getValue("quarkus.oidc.auth-server-url", String.class);
+
+            // the "keycloak.auth-server-internal-url" is in most cases 'quarkus.oidc.auth-server-url'
+            // however, if the OIDC extension is disabled, but the Keycloak Dev Service is running in a DEV mode
+            // for example because it is required by the OIDC Client, the 'quarkus.oidc.auth-server-url' will not be present
+            // TODO: eventually, we should probably move this DEV UI to a separate component shared by all the extensions
+            //  that may require keycloak dev service in DEV MODE
+            String realmUrl = config.getValue("keycloak.auth-server-internal-url", String.class);
+
             authorizationUrl = realmUrl + "/protocol/openid-connect/auth";
             tokenUrl = realmUrl + "/protocol/openid-connect/token";
             logoutUrl = realmUrl + "/protocol/openid-connect/logout";
-            oidcUsers = config.getValues("oidc.users", String.class).stream().map(item -> {
-                String[] usernameToPassword = item.split("=");
-                return Map.entry(usernameToPassword[0], usernameToPassword[1]);
-            }).collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
-            keycloakRealms = config.getValues("keycloak.realms", String.class);
+            if (config.getOptionalValue("oidc.users", String.class).isPresent()) {
+                oidcUsers = config.getValues("oidc.users", String.class).stream().map(item -> {
+                    String[] usernameToPassword = item.split("=");
+                    return Map.entry(usernameToPassword[0], usernameToPassword[1]);
+                }).collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+            } else {
+                oidcUsers = Map.of();
+            }
+            if (config.getOptionalValue("keycloak.realms", String.class).isPresent()) {
+                keycloakRealms = config.getValues("keycloak.realms", String.class);
+            } else {
+                keycloakRealms = List.of();
+            }
             keycloakAdminUrl = config.getValue(KEYCLOAK_URL, String.class);
             oidcApplicationType = config
                     .getOptionalValue("quarkus.oidc.application-type", OidcTenantConfig.ApplicationType.class)

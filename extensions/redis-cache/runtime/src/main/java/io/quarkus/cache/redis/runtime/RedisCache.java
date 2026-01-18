@@ -80,17 +80,6 @@ public interface RedisCache extends Cache {
      * Put a value in the cache.
      *
      * @param key the key
-     * @param value the value
-     * @param <K> the type of key
-     * @param <V> the type of value
-     * @return a Uni emitting {@code null} when the operation completes
-     */
-    <K, V> Uni<Void> put(K key, V value);
-
-    /**
-     * Put a value in the cache.
-     *
-     * @param key the key
      * @param supplier supplier of the value
      * @param <K> the type of key
      * @param <V> the type of value

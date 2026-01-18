@@ -83,6 +83,20 @@ public interface Cache {
     Uni<Void> invalidateIf(Predicate<Object> predicate);
 
     /**
+     * Put a value in the cache.
+     *
+     * @param <K> the type of key
+     * @param <V> the type of value
+     * @param key the key
+     * @param value the value
+     * @return a Uni emitting {@code null} when the operation completes
+     * @throws NullPointerException if the key is {@code null}
+     * @throws CacheException if an exception is thrown during a cache value computation
+     */
+    @CheckReturnValue
+    <K, V> Uni<Void> put(K key, V value);
+
+    /**
      * Returns this cache as an instance of the provided type if possible.
      *
      * @return cache instance of the provided type

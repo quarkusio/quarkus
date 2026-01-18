@@ -43,7 +43,7 @@ public class OidcDevUiRecorder {
     public RuntimeValue<OidcDevUiRpcSvcPropertiesBean> getRpcServiceProperties(Duration webClientTimeout,
             Map<String, Map<String, String>> grantOptions,
             String oidcProviderName, String oidcGrantType, boolean introspectionIsAvailable, boolean swaggerIsAvailable,
-            boolean graphqlIsAvailable, String swaggerUiPath, String graphqlUiPath, boolean alwaysLogoutUserInDevUiOnReload,
+            boolean graphqlIsAvailable, String swaggerUiPath, String graphqlUiPath, String devServiceConfigHashCode,
             boolean discoverMetadata, String devUiLogoutPath, String devUiReadSessionCookiePath, String authServerUrl,
             String buildTimeKeycloakAdminUrl, String buildTimeOidcApplicationType) {
         var config = ConfigProvider.getConfig();
@@ -99,7 +99,7 @@ public class OidcDevUiRecorder {
                 new OidcDevUiRpcSvcPropertiesBean(authorizationUrl, tokenUrl, logoutUrl,
                         webClientTimeout, grantOptions, oidcUsers, oidcProviderName, oidcApplicationType, oidcGrantType,
                         introspectionIsAvailable, keycloakAdminUrl, keycloakRealms, swaggerIsAvailable,
-                        graphqlIsAvailable, swaggerUiPath, graphqlUiPath, alwaysLogoutUserInDevUiOnReload,
+                        graphqlIsAvailable, swaggerUiPath, graphqlUiPath, devServiceConfigHashCode,
                         devUiLogoutPath, devUiReadSessionCookiePath));
     }
 

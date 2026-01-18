@@ -49,7 +49,7 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
                     oidcConfig.devui().webClientTimeout(),
                     oidcConfig.devui().grantOptions(),
                     nonApplicationRootPathBuildItem,
-                    keycloakDevServicesPreparedBuildItem.get().isContainerRestarted(),
+                    keycloakDevServicesPreparedBuildItem.get().getDevServiceConfigHashCode(),
                     false, null, null, null);
 
             cardPageBuildItem.setLogo("keycloak_logo.svg", "keycloak_logo.svg");

@@ -33,7 +33,7 @@ public abstract class AbstractDevUIProcessor {
             Duration webClientTimeout,
             Map<String, Map<String, String>> grantOptions,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            boolean alwaysLogoutUserInDevUiOnReload,
+            String devServiceConfigHashCode,
             boolean discoverMetadata,
             String authServerUrl,
             String buildTimeKeycloakAdminUrl,
@@ -78,7 +78,7 @@ public abstract class AbstractDevUIProcessor {
 
         RuntimeValue<OidcDevUiRpcSvcPropertiesBean> runtimeProperties = recorder.getRpcServiceProperties(
                 webClientTimeout, grantOptions, oidcProviderName, oidcGrantType, introspectionIsAvailable,
-                swaggerIsAvailable, graphqlIsAvailable, swaggerUiPath, graphqlUiPath, alwaysLogoutUserInDevUiOnReload,
+                swaggerIsAvailable, graphqlIsAvailable, swaggerUiPath, graphqlUiPath, devServiceConfigHashCode,
                 discoverMetadata, devUiLogoutPath, devUiReadSessionCookiePath, authServerUrl, buildTimeKeycloakAdminUrl,
                 buildTimeOidcApplicationType);
 

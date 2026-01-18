@@ -10,13 +10,13 @@ import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
  */
 public final class KeycloakDevServicesPreparedBuildItem extends SimpleBuildItem {
 
-    private final boolean containerRestarted;
+    private final String devServiceConfigHashCode;
 
-    KeycloakDevServicesPreparedBuildItem(boolean containerRestarted) {
-        this.containerRestarted = containerRestarted;
+    KeycloakDevServicesPreparedBuildItem(String devServiceConfigHashCode) {
+        this.devServiceConfigHashCode = devServiceConfigHashCode;
     }
 
-    public boolean isContainerRestarted() {
-        return containerRestarted;
+    public String getDevServiceConfigHashCode() {
+        return devServiceConfigHashCode;
     }
 }

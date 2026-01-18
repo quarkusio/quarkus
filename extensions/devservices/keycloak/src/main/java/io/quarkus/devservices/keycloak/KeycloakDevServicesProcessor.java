@@ -138,7 +138,6 @@ public class KeycloakDevServicesProcessor {
             BuildProducer<KeycloakDevServicesPreparedBuildItem> keycloakDevServicesPreparedProducer,
             BuildProducer<DevServicesResultBuildItem> devServicesResultProducer) {
 
-        // TODO if the reused
         if (!devServicesConfig.enabled() || !config.enabled()) {
             LOG.debug("Not starting Dev Services for Keycloak as it has been disabled in the configuration");
             return;
@@ -152,11 +151,6 @@ public class KeycloakDevServicesProcessor {
         var devServicesConfigurator = getDevServicesConfigurator(devSvcRequiredMarkerItems);
         var feature = KeycloakDevServicesRequiredBuildItem.getFeature(devSvcRequiredMarkerItems);
 
-        // Figure out if we need to shut down and restart any existing Keycloak container
-        // if not and the Keycloak container has already started we just return
-        // TODO: correct this flag according to the ^^
-        final boolean containerRestarted = false;
-
         boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                 devServicesSharedNetworkBuildItem);
 
@@ -164,6 +158,7 @@ public class KeycloakDevServicesProcessor {
         // TODO do something with this
         List<String> errors = new ArrayList<>();
 
+        final String serviceConfigHashCode = getServiceConfigIdentifier(config);
         DevServicesResultBuildItem devServicesResultBuildItem = KEYCLOAK_DEV_MODE_CONTAINER_LOCATOR
                 .locateContainer(config.serviceName(), config.shared(), LaunchMode.current())
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem, List.of(imageName, "keycloak"),
@@ -180,7 +175,7 @@ public class KeycloakDevServicesProcessor {
                             .build();
                 }).orElseGet(() -> DevServicesResultBuildItem.owned().feature(feature)
                         .serviceName(feature.getName())
-                        .serviceConfig(getServiceConfigIdentifier(config))
+                        .serviceConfig(serviceConfigHashCode)
                         .startable(
                                 () -> new KeycloakServer(useSharedNetwork, config, devServicesConfig, devServicesConfigurator,
                                         composeProjectBuildItem, imageName))
@@ -190,7 +185,7 @@ public class KeycloakDevServicesProcessor {
         devServicesResultProducer.produce(devServicesResultBuildItem);
 
         // now we know that Keycloak Dev Services will start
-        keycloakDevServicesPreparedProducer.produce(new KeycloakDevServicesPreparedBuildItem(containerRestarted));
+        keycloakDevServicesPreparedProducer.produce(new KeycloakDevServicesPreparedBuildItem(serviceConfigHashCode));
     }
 
     private static String getServiceConfigIdentifier(KeycloakDevServicesConfig config) {

@@ -52,7 +52,7 @@ class OidcPropertiesState extends LitState {
             webAppLoginObserver: null,
             isWebApp: false,
             logoutPath: null,
-            readSessionCookiePath: null
+            readSessionCookiePath: null,
         };
     }
 
@@ -67,8 +67,16 @@ class OidcPropertiesState extends LitState {
             // when we are confident it won't happen again, however it is simple and it prevents ugly behavior
             const propertiesStateDontMatchesSessionState = sessionStorage.getItem('oidcPropertiesStateId')
                 !== response.result.propertiesStateId;
-            const logout = propertiesStateDontMatchesSessionState && response.result.alwaysLogoutUserInDevUiOnReload;
+            const alwaysLogoutUserInDevUiOnReload = sessionStorage.getItem('oidcDevServiceConfigHashCode')
+                !== response.result.devServiceConfigHashCode;
+            console.log("propertiesStateDontMatchesSessionState " + propertiesStateDontMatchesSessionState)
+            console.log("alwaysLogoutUserInDevUiOnReload " + alwaysLogoutUserInDevUiOnReload)
+            console.log("response.result.propertiesStateId " + response.result.propertiesStateId)
+            console.log("response.result.devServiceConfigHashCode " + response.result.devServiceConfigHashCode)
+            console.log("sessionStorage.getItem('oidcDevServiceConfigHashCode') " + sessionStorage.getItem('oidcDevServiceConfigHashCode'))
+            const logout = propertiesStateDontMatchesSessionState && alwaysLogoutUserInDevUiOnReload;
             sessionStorage.setItem('oidcPropertiesStateId', response.result.propertiesStateId);
+            sessionStorage.setItem('oidcDevServiceConfigHashCode', response.result.devServiceConfigHashCode);
 
             this.clearTestServiceResponses();
             propertiesState.clientId = response.result.clientId;

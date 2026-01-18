@@ -730,8 +730,7 @@ public class JaxrsClientReactiveProcessor {
         if (defaultMediaTypes == null || defaultMediaTypes.isEmpty()) {
             return defaultMediaType;
         }
-        defaultMediaTypes.sort(Comparator.comparingInt(MediaTypeWithPriority::getPriority));
-        return defaultMediaTypes.get(0).getMediaType();
+        return defaultMediaTypes.stream().min(Comparator.comparingInt(MediaTypeWithPriority::getPriority)).get().getMediaType();
     }
 
     @BuildStep

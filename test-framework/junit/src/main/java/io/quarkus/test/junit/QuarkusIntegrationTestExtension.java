@@ -321,7 +321,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
 
             activateLogging();
             Optional<ListeningAddress> listeningAddress = startLauncher(launcher, additionalProperties);
-            ValueRegistry valueRegistry = new ValueRegistryImpl.Builder().addDiscoveredInfos()
+            ValueRegistry valueRegistry = ValueRegistryImpl.builder().addDiscoveredInfos()
                     .withRuntimeSource(new SmallRyeConfigBuilder()
                             .withSources(new MapBackedConfigSource("Test Properties", additionalProperties, MAX_VALUE) {
                             }).build())

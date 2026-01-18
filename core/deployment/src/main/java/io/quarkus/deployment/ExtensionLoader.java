@@ -223,7 +223,7 @@ public final class ExtensionLoader {
                     }
                 };
 
-                proxies.put(ValueRegistry.class, new ValueRegistryImpl.Builder().build());
+                proxies.put(ValueRegistry.class, ValueRegistryImpl.builder().build());
                 ObjectLoader valueRegistryLoader = new ObjectLoader() {
                     @Override
                     public ResultHandle load(BytecodeCreator body, Object obj, boolean staticInit) {

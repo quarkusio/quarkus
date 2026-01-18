@@ -740,11 +740,21 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
         metricsConfiguration.ifPresent(m -> {
             String path = m.metricsEndpoint();
             String prefix = config.prometheus().prefix();
+
             if (port.isPresent() && path != null) {
+                // Determine the effective Prometheus port: management port if enabled, otherwise use container port
+                final int containerPort = port.get().getContainerPort();
+                final int managementPort = ConfigProvider.getConfig()
+                        .getOptionalValue("quarkus.management.port", Integer.class)
+                        .orElse(9000);
+                final int prometheusPort = KubernetesConfigUtil.managementPortIsEnabled()
+                        ? managementPort
+                        : containerPort;
+
                 if (config.prometheus().generateServiceMonitor()) {
                     context.add(new AddServiceMonitorResourceDecorator(
                             config.prometheus().scheme().orElse("http"),
-                            config.prometheus().port().orElse(String.valueOf(port.get().getContainerPort())),
+                            String.valueOf(prometheusPort),
                             config.prometheus().path().orElse(path),
                             10,
                             true));
@@ -756,11 +766,6 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
                             PROMETHEUS_ANNOTATION_TARGETS));
                     context.add(new AddAnnotationDecorator(name,
                             config.prometheus().path().orElse(prefix + "/path"), path, PROMETHEUS_ANNOTATION_TARGETS));
-
-                    final var managementPort = ConfigProvider.getConfig()
-                            .getOptionalValue("quarkus.management.port", Integer.class).orElse(9000);
-                    final var prometheusPort = KubernetesConfigUtil.managementPortIsEnabled() ? managementPort
-                            : port.get().getContainerPort();
                     context.add(new AddAnnotationDecorator(name,
                             config.prometheus().port().orElse(prefix + "/port"), "" + prometheusPort,
                             PROMETHEUS_ANNOTATION_TARGETS));

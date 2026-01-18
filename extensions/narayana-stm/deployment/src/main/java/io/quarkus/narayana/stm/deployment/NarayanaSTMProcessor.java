@@ -3,7 +3,7 @@ package io.quarkus.narayana.stm.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 
 import jakarta.inject.Inject;
 
@@ -74,8 +74,9 @@ class NarayanaSTMProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         final DotName TRANSACTIONAL = DotName.createSimple(Transactional.class.getName());
         IndexView index = combinedIndexBuildItem.getIndex();
-        Collection<String> proxies = new ArrayList<>();
+        List<String> proxies = new ArrayList<>();
 
+        final var className = getClass().getSimpleName();
         for (AnnotationInstance stm : index.getAnnotations(TRANSACTIONAL)) {
             if (AnnotationTarget.Kind.CLASS.equals(stm.target().kind())) {
                 DotName name = stm.target().asClass().name();
@@ -84,8 +85,7 @@ class NarayanaSTMProcessor {
 
                 log.debugf("Registering transactional interface %s%n", name);
 
-                final var className = getClass().getSimpleName();
-                for (ClassInfo ci : index.getAllKnownImplementors(name)) {
+                for (ClassInfo ci : index.getAllKnownImplementations(name)) {
                     final var implName = ci.name();
                     reflectiveHierarchyClass.produce(
                             ReflectiveHierarchyBuildItem
@@ -96,12 +96,10 @@ class NarayanaSTMProcessor {
             }
         }
 
-        String[] classNames = proxies.toArray(new String[0]);
-
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(classNames)
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(proxies)
                 .reason(getClass().getName())
                 .methods().fields().build());
 
-        return new NativeImageProxyDefinitionBuildItem(classNames);
+        return new NativeImageProxyDefinitionBuildItem(proxies);
     }
 }

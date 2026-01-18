@@ -7,6 +7,7 @@ import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -87,7 +88,7 @@ import io.quarkus.jaxb.runtime.JaxbContextProducer;
 
 public class JaxbProcessor {
 
-    private static Logger LOG = Logger.getLogger(JaxbProcessor.class);
+    private static final Logger LOG = Logger.getLogger(JaxbProcessor.class);
 
     private static final List<Class<? extends Annotation>> JAXB_ANNOTATIONS = List.of(
             XmlAccessorType.class,
@@ -189,6 +190,14 @@ public class JaxbProcessor {
             "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.Wildcard",
             "com.sun.xml.txw2.TypedXmlWriter");
 
+    private static final String CLASS_NAME = JaxbProcessor.class.getName();
+    private static final String JAXB_REFLECTIVE = CLASS_NAME + " JAXB reflective class";
+    private static final String XML_SEE_ALSO_VALUE = CLASS_NAME + " @" + XML_SEE_ALSO + " value";
+    private static final String JAXB_ANNOTATION = CLASS_NAME + " JAXB annotation";
+    private static final String XML_ANY_ELEMENT_PRESENT = CLASS_NAME + " @" + XML_ANY_ELEMENT + " annotation present";
+    private static final String TYPE_ADAPTER_VALUE = CLASS_NAME + " @" + XML_JAVA_TYPE_ADAPTER + " value";
+    private static final String ANNOTATED_WITH_XML_SCHEMA = CLASS_NAME + " annotated with @" + XML_SCHEMA;
+
     @BuildStep
     void processAnnotationsAndIndexFiles(
             BuildProducer<NativeImageSystemPropertyBuildItem> nativeImageProps,
@@ -238,50 +247,49 @@ public class JaxbProcessor {
         }
 
         // Register package-infos for reflection
-        for (AnnotationInstance xmlSchemaInstance : index.getAnnotations(XML_SCHEMA)) {
-            if (xmlSchemaInstance.target().kind() == Kind.CLASS) {
-                String className = xmlSchemaInstance.target().asClass().name().toString();
-
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(className)
-                        .reason(getClass().getName() + " annotated with @" + XML_SCHEMA)
-                        .build());
-            }
-        }
+        final var xmlSchemaAnnotated = index.getAnnotations(XML_SCHEMA).stream()
+                .filter(ai -> ai.target().kind() == Kind.CLASS)
+                .map(JaxbProcessor::targetClassName)
+                .toList();
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(xmlSchemaAnnotated)
+                .reason(ANNOTATED_WITH_XML_SCHEMA)
+                .build());
 
         // Register XML Java type adapters for reflection
-        for (AnnotationInstance xmlJavaTypeAdapterInstance : index.getAnnotations(XML_JAVA_TYPE_ADAPTER)) {
-            reflectiveClass.produce(
-                    ReflectiveClassBuildItem.builder(xmlJavaTypeAdapterInstance.value().asClass().name().toString())
-                            .reason(getClass().getName() + " @" + XML_JAVA_TYPE_ADAPTER + " value")
-                            .methods().fields().build());
-        }
+        final var xmlTypeAdapters = index.getAnnotations(XML_JAVA_TYPE_ADAPTER).stream()
+                .map(ai -> ai.value().asClass().name().toString())
+                .toList();
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(xmlTypeAdapters)
+                .reason(TYPE_ADAPTER_VALUE)
+                .methods().fields().build());
 
         if (!index.getAnnotations(XML_ANY_ELEMENT).isEmpty()) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder("jakarta.xml.bind.annotation.W3CDomHandler")
-                    .reason(getClass().getName() + " @" + XML_ANY_ELEMENT + " annotation present")
+                    .reason(XML_ANY_ELEMENT_PRESENT)
                     .build());
         }
 
-        JAXB_ANNOTATIONS.stream()
-                .map(Class::getName)
-                .forEach(className -> {
-                    reflectiveClass.produce(ReflectiveClassBuildItem.builder(className)
-                            .reason(getClass().getName() + " JAXB annotation")
-                            .methods().build());
-                });
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder(JAXB_ANNOTATIONS.stream().map(Class::getName).toList())
+                .reason(JAXB_ANNOTATION)
+                .methods().build());
 
         // Register @XmlSeeAlso
         proxyDefinitions.produce(new NativeImageProxyDefinitionBuildItem(XmlSeeAlso.class.getName(),
                 "org.glassfish.jaxb.core.v2.model.annotation.Locatable"));
-        for (AnnotationInstance xmlSeeAlsoAnn : index.getAnnotations(XML_SEE_ALSO)) {
+        final var xmlSeeAlsoAnnotations = index.getAnnotations(XML_SEE_ALSO);
+        Set<String> xmlSeeAlsoClasses = new HashSet<>(xmlSeeAlsoAnnotations.size());
+        for (AnnotationInstance xmlSeeAlsoAnn : xmlSeeAlsoAnnotations) {
             AnnotationValue value = xmlSeeAlsoAnn.value();
             Type[] types = value.asClassArray();
             for (Type t : types) {
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(t.name().toString())
-                        .reason(getClass().getName() + " @" + XML_SEE_ALSO + " value")
-                        .build());
+                xmlSeeAlsoClasses.add(t.name().toString());
             }
         }
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(xmlSeeAlsoClasses)
+                .reason(XML_SEE_ALSO_VALUE)
+                .build());
+
         // Register Native proxy definitions
         for (String s : NATIVE_PROXY_DEFINITIONS) {
             proxyDefinitions.produce(new NativeImageProxyDefinitionBuildItem(s));
@@ -292,6 +300,10 @@ public class JaxbProcessor {
         }
 
         classesToBeBoundProducer.produce(new JaxbClassesToBeBoundBuildItem(classesToBeBound));
+    }
+
+    private static String targetClassName(AnnotationInstance ai) {
+        return ai.target().asClass().name().toString();
     }
 
     @BuildStep
@@ -313,7 +325,7 @@ public class JaxbProcessor {
                 "com.sun.xml.internal.stream.XMLOutputFactoryImpl",
                 "com.sun.org.apache.xpath.internal.functions.FuncNot",
                 "com.sun.org.apache.xerces.internal.impl.dv.xs.SchemaDVFactoryImpl")
-                .reason(getClass().getName())
+                .reason(CLASS_NAME)
                 .methods().build());
 
         addResourceBundle(resourceBundle, "jakarta.xml.bind.Messages");
@@ -322,11 +334,10 @@ public class JaxbProcessor {
         nativeImageProps
                 .produce(new NativeImageSystemPropertyBuildItem("com.sun.xml.bind.v2.bytecode.ClassTailor.noOptimize", "true"));
 
-        JAXB_REFLECTIVE_CLASSES.stream()
-                .map(Class::getName)
-                .forEach(className -> reflectiveClass.produce(ReflectiveClassBuildItem.builder(className)
-                        .reason(getClass().getName() + " JAXB reflective class")
-                        .methods().build()));
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder(JAXB_REFLECTIVE_CLASSES.stream().map(Class::getName).toList())
+                .reason(JAXB_REFLECTIVE)
+                .methods().build());
 
         providerItem
                 .produce(new ServiceProviderBuildItem(JAXBContext.class.getName(),
@@ -420,8 +431,8 @@ public class JaxbProcessor {
                     }
                 }
             }
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(classes.toArray(new Class[0]))
-                    .reason(getClass().getName() + " jaxb.index file " + path)
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(classes.stream().map(Class::getName).toList())
+                    .reason(CLASS_NAME + " jaxb.index file " + path)
                     .methods().fields().build());
         } catch (Exception e) {
             throw new RuntimeException(e);

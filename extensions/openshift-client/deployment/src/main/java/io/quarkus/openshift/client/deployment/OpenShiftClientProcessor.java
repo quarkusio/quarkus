@@ -35,22 +35,22 @@ public class OpenShiftClientProcessor {
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ServiceProviderBuildItem> serviceProviderProducer) {
 
-        final String[] deserializerClasses = combinedIndexBuildItem.getIndex()
+        final var deserializerClasses = combinedIndexBuildItem.getIndex()
                 .getAllKnownSubclasses(DotName.createSimple("com.fasterxml.jackson.databind.JsonDeserializer"))
                 .stream()
                 .map(c -> c.name().toString())
                 .filter(s -> s.startsWith("io.fabric8.openshift"))
-                .toArray(String[]::new);
+                .toList();
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(deserializerClasses)
                 .reason(getClass().getName())
                 .methods().build());
 
-        final String[] serializerClasses = combinedIndexBuildItem.getIndex()
+        final var serializerClasses = combinedIndexBuildItem.getIndex()
                 .getAllKnownSubclasses(DotName.createSimple("com.fasterxml.jackson.databind.JsonSerializer"))
                 .stream()
                 .map(c -> c.name().toString())
                 .filter(s -> s.startsWith("io.fabric8.openshift"))
-                .toArray(String[]::new);
+                .toList();
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(serializerClasses)
                 .reason(getClass().getName())
                 .methods().build());

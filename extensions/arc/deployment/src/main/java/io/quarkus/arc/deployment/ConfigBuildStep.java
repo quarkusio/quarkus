@@ -88,6 +88,7 @@ public class ConfigBuildStep {
     private static final DotName SET_NAME = DotName.createSimple(Set.class.getName());
     private static final DotName LIST_NAME = DotName.createSimple(List.class.getName());
     private static final DotName SUPPLIER_NAME = DotName.createSimple(Supplier.class.getName());
+    private static final DotName CONFIG_BEAN_CREATOR_NAME = DotName.createSimple(ConfigBeanCreator.class.getName());
 
     @BuildStep
     void additionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
@@ -118,22 +119,26 @@ public class ConfigBuildStep {
             }
         }
 
+        final var reason = getClass().getName() + " Custom config bean";
         for (Type type : customBeanTypes) {
+            final var typeName = type.name().toString();
+            final DotName implClazz;
             if (type.kind() != Kind.ARRAY) {
                 // Implicit converters are most likely used
-                reflectiveClass
-                        .produce(ReflectiveClassBuildItem.builder(type.name().toString()).methods()
-                                .reason(getClass().getName() + " Custom config bean")
-                                .build());
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(typeName)
+                        .methods()
+                        .reason(reason)
+                        .build());
+                implClazz = type.name();
+            } else {
+                implClazz = CONFIG_BEAN_CREATOR_NAME;
             }
-            DotName implClazz = type.kind() == Kind.ARRAY ? DotName.createSimple(ConfigBeanCreator.class.getName())
-                    : type.name();
             syntheticBeans.produce(SyntheticBeanBuildItem.configure(implClazz)
                     .creator(ConfigBeanCreator.class)
                     .providerType(type)
                     .types(type)
                     .addQualifier(MP_CONFIG_PROPERTY_NAME)
-                    .param("requiredType", type.name().toString()).done());
+                    .param("requiredType", typeName).done());
         }
     }
 
@@ -523,14 +528,20 @@ public class ConfigBuildStep {
         if (configProperty.getPropertyType().kind() == Kind.PARAMETERIZED_TYPE) {
             List<Type> argumentTypes = configProperty.getPropertyType().asParameterizedType().arguments();
             typeArgumentNames = new ArrayList<>(argumentTypes.size());
+            final var toRegisterForReflection = new ArrayList<String>(argumentTypes.size());
+            final var reason = ConfigBuildStep.class.getSimpleName() + " Configuration property's " + typeName
+                    + " parameter";
             for (Type argumentType : argumentTypes) {
-                typeArgumentNames.add(argumentType.name().toString());
+                final var argTypeClassName = argumentType.name().toString();
+                typeArgumentNames.add(argTypeClassName);
                 if (argumentType.kind() != Kind.PRIMITIVE) {
-                    reflectiveClass.produce(ReflectiveClassBuildItem.builder(argumentType.name().toString())
-                            .reason(ConfigBuildStep.class.getSimpleName() + " Configuration property's " + typeName
-                                    + " parameter")
-                            .build());
+                    toRegisterForReflection.add(argTypeClassName);
                 }
+            }
+            if (!toRegisterForReflection.isEmpty()) {
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(toRegisterForReflection)
+                        .reason(reason)
+                        .build());
             }
         }
 

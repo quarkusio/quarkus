@@ -141,15 +141,10 @@ class NettyProcessor {
                 new ReflectiveFieldBuildItem("Reflectively accessed through PlatformDependent0's static initializer",
                         "java.nio.Bits", "MAX_MEMORY"));
 
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("io.netty.channel.socket.nio.NioSocketChannel")
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder("io.netty.channel.socket.nio.NioSocketChannel", "io.netty.channel.socket.nio.NioServerSocketChannel",
+                        "io.netty.channel.socket.nio.NioDatagramChannel", "java.util.LinkedHashMap")
                 .build());
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder("io.netty.channel.socket.nio.NioServerSocketChannel")
-                        .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("io.netty.channel.socket.nio.NioDatagramChannel")
-                .build());
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder("java.util.LinkedHashMap").build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("sun.nio.ch.SelectorImpl").methods().fields().build());
 
         String maxOrder = calculateMaxOrder(config.allocatorMaxOrder(), minMaxOrderBuildItems, false);

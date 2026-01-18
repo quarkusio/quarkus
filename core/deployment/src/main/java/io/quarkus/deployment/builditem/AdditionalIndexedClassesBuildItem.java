@@ -16,6 +16,10 @@ public final class AdditionalIndexedClassesBuildItem extends MultiBuildItem {
         this.classesToIndex = Set.of(classesToIndex);
     }
 
+    public AdditionalIndexedClassesBuildItem(Set<String> classesToIndex) {
+        this.classesToIndex = classesToIndex;
+    }
+
     public AdditionalIndexedClassesBuildItem(String classToIndex) {
         this.classesToIndex = Set.of(classToIndex);
     }

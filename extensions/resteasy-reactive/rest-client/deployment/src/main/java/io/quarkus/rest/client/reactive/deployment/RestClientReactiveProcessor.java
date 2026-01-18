@@ -300,6 +300,8 @@ class RestClientReactiveProcessor {
                     .add(bi.getAnnotationInstance());
         }
 
+        // record class names for reflection
+        final var classNamesForReflection = new ArrayList<String>();
         try (ClassCreator classCreator = ClassCreator.builder()
                 .className(annotationRegisteredProvidersImpl)
                 .classOutput(new GeneratedBeanGizmoAdaptor(generatedBeansProducer))
@@ -329,7 +331,7 @@ class RestClientReactiveProcessor {
                         continue;
                     }
 
-                    registerGlobalProvider(providerClass.name(), index, constructor, reflectiveClassesProducer);
+                    registerGlobalProvider(providerClass.name(), index, constructor, classNamesForReflection);
                 }
             }
 
@@ -342,19 +344,19 @@ class RestClientReactiveProcessor {
                             Collectors.toSet()));
             if (!providersFromBuildItems.isEmpty()) {
                 for (DotName dotName : providersFromBuildItems) {
-                    registerGlobalProvider(dotName, index, constructor, reflectiveClassesProducer);
+                    registerGlobalProvider(dotName, index, constructor, classNamesForReflection);
                 }
                 unremovableBeansProducer.produce(UnremovableBeanBuildItem.beanTypes(providersFromBuildItems));
             }
 
             MultivaluedMap<String, GeneratedClassResult> generatedProviders = new QuarkusMultivaluedHashMap<>();
-            populateClientExceptionMapperFromAnnotations(index, generatedClassesProducer, reflectiveClassesProducer,
+            populateClientExceptionMapperFromAnnotations(index, generatedClassesProducer, classNamesForReflection,
                     executionModelAnnotationsAllowedProducer)
                     .forEach(generatedProviders::add);
-            populateClientRedirectHandlerFromAnnotations(generatedClassesProducer, reflectiveClassesProducer, index)
+            populateClientRedirectHandlerFromAnnotations(generatedClassesProducer, classNamesForReflection, index)
                     .forEach(generatedProviders::add);
             for (AnnotationToRegisterIntoClientContextBuildItem annotation : annotationsToRegisterIntoClientContext) {
-                populateClientProviderFromAnnotations(annotation, generatedClassesProducer, reflectiveClassesProducer, index)
+                populateClientProviderFromAnnotations(annotation, generatedClassesProducer, classNamesForReflection, index)
                         .forEach(generatedProviders::add);
 
             }
@@ -364,24 +366,29 @@ class RestClientReactiveProcessor {
             constructor.returnValue(null);
         }
 
+        reflectiveClassesProducer.produce(ReflectiveClassBuildItem.builder(classNamesForReflection)
+                .reason(getClass().getName())
+                .build());
+
         unremovableBeansProducer.produce(UnremovableBeanBuildItem.beanClassNames(annotationRegisteredProvidersImpl));
     }
 
     private void registerGlobalProvider(DotName providerClassName,
             IndexView index, MethodCreator methodCreator,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer) {
-        int priority = getAnnotatedPriority(index, providerClassName.toString(), Priorities.USER);
+            ArrayList<String> classNamesForReflection) {
+        final var name = providerClassName.toString();
+        int priority = getAnnotatedPriority(index, name, Priorities.USER);
 
         methodCreator.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(AnnotationRegisteredProviders.class, "addGlobalProvider",
                         void.class, Class.class,
                         int.class),
-                methodCreator.getThis(), methodCreator.loadClassFromTCCL(providerClassName.toString()),
+                methodCreator.getThis(), methodCreator.loadClassFromTCCL(name),
                 methodCreator.load(priority));
 
         // when the server is not included, providers are not automatically registered for reflection,
         // so we need to always do it for the client to be on the safe side
-        reflectiveClassesProducer.produce(ReflectiveClassBuildItem.builder(providerClassName.toString()).build());
+        classNamesForReflection.add(name);
     }
 
     @BuildStep
@@ -433,7 +440,7 @@ class RestClientReactiveProcessor {
                 filterClassNames.add(filterClassName.toString());
             }
         }
-        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(filterClassNames.toArray(new String[0]))
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(filterClassNames)
                 .reason(getClass().getName())
                 .build());
     }
@@ -718,7 +725,7 @@ class RestClientReactiveProcessor {
     private Map<String, GeneratedClassResult> populateClientExceptionMapperFromAnnotations(
             IndexView index,
             BuildProducer<GeneratedClassBuildItem> generatedClassesProducer,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer,
+            List<String> classNamesForReflection,
             BuildProducer<ExecutionModelAnnotationsAllowedBuildItem> executionModelAnnotationsAllowedProducer) {
 
         executionModelAnnotationsAllowedProducer.produce(new ExecutionModelAnnotationsAllowedBuildItem(
@@ -742,16 +749,14 @@ class RestClientReactiveProcessor {
                         + "' is allowed per REST Client interface. Offending class is '" + classResult.interfaceName + "'");
             }
             result.put(classResult.interfaceName, classResult);
-            reflectiveClassesProducer.produce(ReflectiveClassBuildItem.builder(classResult.generatedClassName)
-                    .reason(getClass().getName())
-                    .build());
+            classNamesForReflection.add(classResult.generatedClassName);
         }
         return result;
     }
 
     private Map<String, GeneratedClassResult> populateClientRedirectHandlerFromAnnotations(
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses, IndexView index) {
+            List<String> reflectiveClasses, IndexView index) {
 
         var result = new HashMap<String, GeneratedClassResult>();
         ClientRedirectHandler clientHandler = new ClientRedirectHandler(new GeneratedClassGizmoAdaptor(generatedClasses, true));
@@ -768,9 +773,7 @@ class RestClientReactiveProcessor {
                         + "Offending class is '" + classResult.interfaceName + "'");
             } else if (existing == null || existing.priority < classResult.priority) {
                 result.put(classResult.interfaceName, classResult);
-                reflectiveClasses.produce(ReflectiveClassBuildItem.builder(classResult.generatedClassName)
-                        .reason(getClass().getName())
-                        .build());
+                reflectiveClasses.add(classResult.generatedClassName);
             }
         }
         return result;
@@ -779,7 +782,7 @@ class RestClientReactiveProcessor {
     private Map<String, GeneratedClassResult> populateClientProviderFromAnnotations(
             AnnotationToRegisterIntoClientContextBuildItem annotationBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses, IndexView index) {
+            List<String> reflectiveClasses, IndexView index) {
 
         var result = new HashMap<String, GeneratedClassResult>();
         ClientContextResolverHandler handler = new ClientContextResolverHandler(annotationBuildItem.getAnnotation(),
@@ -795,9 +798,7 @@ class RestClientReactiveProcessor {
                         + "' is allowed per REST Client interface. Offending class is '" + classResult.interfaceName + "'");
             }
             result.put(classResult.interfaceName, classResult);
-            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(classResult.generatedClassName)
-                    .reason(getClass().getName())
-                    .build());
+            reflectiveClasses.add(classResult.generatedClassName);
         }
         return result;
     }

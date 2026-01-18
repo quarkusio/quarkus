@@ -69,18 +69,21 @@ public final class KotlinPanacheResourceProcessor {
             Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping) {
 
         List<PanacheMethodCustomizer> methodCustomizers = methodCustomizersBuildItems.stream()
-                .map(bi -> bi.getMethodCustomizer()).collect(Collectors.toList());
+                .map(PanacheMethodCustomizerBuildItem::getMethodCustomizer).collect(Collectors.toList());
 
         TypeBundle bundle = KotlinJpaTypeBundle.BUNDLE;
 
-        processRepositories(index, transformers, reflectiveClass, createRepositoryEnhancer(index, methodCustomizers),
+        List<String> toRegisterForReflection = new ArrayList<>(100); // to avoid constant growth of array
+        processRepositories(index, transformers, toRegisterForReflection, createRepositoryEnhancer(index, methodCustomizers),
                 bundle.repositoryBase(), bundle.repository());
 
-        processEntities(index, transformers, reflectiveClass, recorder, jpaModelPersistenceUnitMapping,
+        processEntities(index, transformers, toRegisterForReflection, recorder, jpaModelPersistenceUnitMapping,
                 createEntityEnhancer(index, methodCustomizers), bundle.entityBase(), bundle.entity());
 
-        processCompanions(index, transformers, reflectiveClass, createCompanionEnhancer(index, methodCustomizers),
+        processCompanions(index, transformers, toRegisterForReflection, createCompanionEnhancer(index, methodCustomizers),
                 bundle.entityCompanionBase(), bundle.entityCompanion());
+
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(toRegisterForReflection).methods().fields().build());
     }
 
     private PanacheEntityEnhancer createEntityEnhancer(CombinedIndexBuildItem index,
@@ -121,7 +124,7 @@ public final class KotlinPanacheResourceProcessor {
 
     private void processEntities(CombinedIndexBuildItem index,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            List<String> classNamesToRegisterForReflection,
             PanacheKotlinHibernateOrmRecorder recorder,
             Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
             PanacheEntityEnhancer entityEnhancer,
@@ -130,14 +133,14 @@ public final class KotlinPanacheResourceProcessor {
 
         Set<String> modelClasses = new HashSet<>();
         // Note that we do this in two passes because for some reason Jandex does not give us subtypes
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(baseType.dotName())) {
+        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementations(baseType.dotName())) {
             if (classInfo.name().equals(type.dotName())) {
                 continue;
             }
             String name = classInfo.name().toString();
             if (modelClasses.add(name)) {
                 transformers.produce(new BytecodeTransformerBuildItem(name, entityEnhancer));
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(name).methods().fields().build());
+                classNamesToRegisterForReflection.add(name);
             }
         }
 
@@ -171,13 +174,13 @@ public final class KotlinPanacheResourceProcessor {
 
     private void processRepositories(CombinedIndexBuildItem index,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            List<String> classNamesToRegisterForReflection,
             PanacheRepositoryEnhancer enhancer,
             ByteCodeType baseType,
             ByteCodeType type) {
 
         Set<Type> typeParameters = new HashSet<>();
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(baseType.dotName())) {
+        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementations(baseType.dotName())) {
             if (classInfo.name().equals(type.dotName()) || enhancer.skipRepository(classInfo)) {
                 continue;
             }
@@ -186,20 +189,19 @@ public final class KotlinPanacheResourceProcessor {
         }
         for (Type parameterType : typeParameters) {
             // Register for reflection the type parameters of the repository: this should be the entity class and the ID class
-            reflectiveClass.produce(
-                    ReflectiveClassBuildItem.builder(parameterType.name().toString()).methods().fields().build());
+            classNamesToRegisterForReflection.add(parameterType.name().toString());
         }
     }
 
     private void processCompanions(CombinedIndexBuildItem index,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            List<String> classNamesToRegisterForReflection,
             KotlinPanacheCompanionEnhancer enhancer,
             ByteCodeType baseType,
             ByteCodeType type) {
 
         Set<Type> typeParameters = new HashSet<>();
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(baseType.dotName())) {
+        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementations(baseType.dotName())) {
             if (classInfo.name().equals(type.dotName())) {
                 continue;
             }
@@ -208,9 +210,8 @@ public final class KotlinPanacheResourceProcessor {
         }
 
         for (Type parameterType : typeParameters) {
-            // Register for reflection the type parameters of the repository: this should be the entity class and the ID class
-            reflectiveClass.produce(
-                    ReflectiveClassBuildItem.builder(parameterType.name().toString()).methods().fields().build());
+            // Register for reflection the type parameters of the companion
+            classNamesToRegisterForReflection.add(parameterType.name().toString());
         }
     }
 

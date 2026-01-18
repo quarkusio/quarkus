@@ -1,5 +1,6 @@
 package io.quarkus.grpc.common.deployment;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 import org.jboss.jandex.ClassInfo;
@@ -20,52 +21,44 @@ public class GrpcCommonProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
 
         // we force the usage of the reflection invoker.
-        Collection<ClassInfo> messagesV3 = combinedIndex.getIndex()
-                .getAllKnownSubclasses(GrpcDotNames.GENERATED_MESSAGE_V3);
-        for (ClassInfo message : messagesV3) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(message.name().toString()).methods()
-                    .fields().build());
-        }
-
-        // we force the usage of the reflection invoker.
-        Collection<ClassInfo> messages = combinedIndex.getIndex()
-                .getAllKnownSubclasses(GrpcDotNames.GENERATED_MESSAGE);
-        for (ClassInfo message : messages) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(message.name().toString()).methods()
-                    .fields().build());
-        }
-
+        Collection<ClassInfo> messagesV3 = combinedIndex.getIndex().getAllKnownSubclasses(GrpcDotNames.GENERATED_MESSAGE_V3);
+        Collection<ClassInfo> messages = combinedIndex.getIndex().getAllKnownSubclasses(GrpcDotNames.GENERATED_MESSAGE);
         // We also need to include enums.
-        Collection<ClassInfo> enums = combinedIndex.getIndex()
-                .getAllKnownImplementations(GrpcDotNames.PROTOCOL_MESSAGE_ENUM);
-        for (ClassInfo en : enums) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(en.name().toString()).methods()
-                    .fields().build());
-        }
-
+        Collection<ClassInfo> enums = combinedIndex.getIndex().getAllKnownImplementations(GrpcDotNames.PROTOCOL_MESSAGE_ENUM);
         Collection<ClassInfo> buildersV3 = combinedIndex.getIndex().getAllKnownSubclasses(GrpcDotNames.MESSAGE_BUILDER_V3);
-        for (ClassInfo builder : buildersV3) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(builder.name().toString()).methods()
-                    .fields().build());
-        }
-
         Collection<ClassInfo> builders = combinedIndex.getIndex().getAllKnownSubclasses(GrpcDotNames.MESSAGE_BUILDER);
-        for (ClassInfo builder : builders) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(builder.name().toString()).methods()
-                    .fields().build());
+
+        Collection<String> reflectedMethodsAndFields = new ArrayList<>(
+                messagesV3.size() + messages.size() + enums.size() + buildersV3.size() + builders.size());
+        for (ClassInfo message : messagesV3) {
+            reflectedMethodsAndFields.add(message.name().toString());
         }
+        for (ClassInfo message : messages) {
+            reflectedMethodsAndFields.add(message.name().toString());
+        }
+        for (ClassInfo en : enums) {
+            reflectedMethodsAndFields.add(en.name().toString());
+        }
+        for (ClassInfo builder : buildersV3) {
+            reflectedMethodsAndFields.add(builder.name().toString());
+        }
+        for (ClassInfo builder : builders) {
+            reflectedMethodsAndFields.add(builder.name().toString());
+        }
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(reflectedMethodsAndFields)
+                .methods()
+                .fields().build());
 
         Collection<ClassInfo> lbs = combinedIndex.getIndex().getAllKnownSubclasses(GrpcDotNames.LOAD_BALANCER_PROVIDER);
-        for (ClassInfo lb : lbs) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(lb.name().toString()).methods()
-                    .build());
-        }
-
         Collection<ClassInfo> nrs = combinedIndex.getIndex().getAllKnownSubclasses(GrpcDotNames.NAME_RESOLVER_PROVIDER);
-        for (ClassInfo nr : nrs) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(nr.name().toString()).methods()
-                    .build());
+        Collection<String> reflectedMethodsOnly = new ArrayList<>(lbs.size() + nrs.size());
+        for (ClassInfo lb : lbs) {
+            reflectedMethodsOnly.add(lb.name().toString());
         }
+        for (ClassInfo nr : nrs) {
+            reflectedMethodsOnly.add(nr.name().toString());
+        }
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(reflectedMethodsOnly).methods().build());
 
         // Built-In providers:
         reflectiveClass.produce(ReflectiveClassBuildItem

@@ -508,6 +508,7 @@ public class WebSocketProcessor {
         Gizmo gizmo = Gizmo.create(classOutput)
                 .withDebugInfo(false)
                 .withParameters(false);
+        final var forReflection = new ArrayList<String>(endpoints.size());
         for (WebSocketEndpointBuildItem endpoint : endpoints) {
             // For each WebSocket endpoint bean we generate an implementation of WebSocketEndpoint
             // A new instance of this generated endpoint is created for each client connection
@@ -517,10 +518,11 @@ public class WebSocketProcessor {
                     index.getIndex(), gizmo, globalErrorHandlers,
                     endpoint.isClient() ? CLIENT_ENDPOINT_SUFFIX : SERVER_ENDPOINT_SUFFIX,
                     invokerFactory, metricsSupportEnabled);
-            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(generatedName).constructors().build());
+            forReflection.add(generatedName);
             generatedEndpoints.produce(new GeneratedEndpointBuildItem(endpoint.id,
                     endpoint.bean.getImplClazz().name().toString(), generatedName, endpoint.path, endpoint.isClient));
         }
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(forReflection).constructors().build());
     }
 
     @Consume(RuntimeConfigSetupCompleteBuildItem.class) // HTTP Upgrade checks may need config during the initialization

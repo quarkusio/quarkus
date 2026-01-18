@@ -3,6 +3,7 @@ package io.quarkus.oidc.token.propagation.deployment;
 import static io.quarkus.oidc.token.propagation.common.runtime.TokenPropagationConstants.JWT_PROPAGATE_TOKEN_CREDENTIAL;
 import static io.quarkus.oidc.token.propagation.common.runtime.TokenPropagationConstants.OIDC_PROPAGATE_TOKEN_CREDENTIAL;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 
@@ -60,13 +61,18 @@ public class OidcTokenPropagationBuildStep {
             restAnnotationProvider.produce(new RestClientAnnotationProviderBuildItem(JWT_ACCESS_TOKEN_CREDENTIAL,
                     JsonWebTokenRequestFilter.class));
             if (!accessTokenInstances.isEmpty()) {
-                var filterGenerator = new AccessTokenRequestFilterGenerator(unremovableBeanProducer, reflectiveClass,
-                        generatedBeanProducer, AccessTokenRequestFilter.class);
+                var filterGenerator = new AccessTokenRequestFilterGenerator(unremovableBeanProducer, generatedBeanProducer,
+                        AccessTokenRequestFilter.class);
+                final var forReflection = new ArrayList<String>(accessTokenInstances.size());
                 for (AccessTokenInstanceBuildItem instance : accessTokenInstances) {
                     String providerClass = filterGenerator.generateClass(instance);
+                    forReflection.add(providerClass);
                     providerPredicateProducer.produce(new RestClientPredicateProviderBuildItem(providerClass,
                             ci -> instance.targetClass().equals(ci.name().toString())));
                 }
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(forReflection)
+                        .reason(getClass().getName())
+                        .methods().fields().constructors().build());
             }
         }
     }

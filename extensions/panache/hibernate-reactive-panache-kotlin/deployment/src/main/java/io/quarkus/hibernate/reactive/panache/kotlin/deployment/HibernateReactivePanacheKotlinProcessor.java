@@ -104,16 +104,16 @@ public class HibernateReactivePanacheKotlinProcessor {
 
         Set<String> modelClasses = new HashSet<>();
         // Note that we do this in two passes because for some reason Jandex does not give us subtypes
-        for (ClassInfo classInfo : index.getComputingIndex().getAllKnownImplementors(TYPE_BUNDLE.entityBase().dotName())) {
+        for (ClassInfo classInfo : index.getComputingIndex().getAllKnownImplementations(TYPE_BUNDLE.entityBase().dotName())) {
             if (classInfo.name().equals(TYPE_BUNDLE.entity().dotName())) {
                 continue;
             }
             String name = classInfo.name().toString();
             if (modelClasses.add(name)) {
                 transformers.produce(new BytecodeTransformerBuildItem(name, entityEnhancer));
-                reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, name));
             }
         }
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(modelClasses).constructors().methods().build());
 
         Map<String, Set<String>> collectedEntityToPersistenceUnits;
         boolean incomplete;
@@ -149,7 +149,7 @@ public class HibernateReactivePanacheKotlinProcessor {
 
         Set<org.jboss.jandex.Type> typeParameters = new HashSet<>();
         for (ClassInfo classInfo : index.getComputingIndex()
-                .getAllKnownImplementors(TYPE_BUNDLE.entityCompanionBase().dotName())) {
+                .getAllKnownImplementations(TYPE_BUNDLE.entityCompanionBase().dotName())) {
             if (classInfo.name().equals(TYPE_BUNDLE.entityCompanion().dotName())) {
                 continue;
             }
@@ -159,17 +159,17 @@ public class HibernateReactivePanacheKotlinProcessor {
                             index.getComputingIndex()));
         }
 
-        for (org.jboss.jandex.Type parameterType : typeParameters) {
-            // Register for reflection the type parameters of the repository: this should be the entity class and the ID class
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, parameterType.name().toString()));
-        }
+        // Register for reflection the type parameters of the repository: this should be the entity class and the ID class
+        final var parameterTypeNames = typeParameters.stream().map(type -> type.name().toString()).toList();
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(parameterTypeNames).constructors().methods().build());
     }
 
     private void processRepositories(CombinedIndexBuildItem index, BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass, PanacheRepositoryEnhancer enhancer) {
 
         Set<org.jboss.jandex.Type> typeParameters = new HashSet<>();
-        for (ClassInfo classInfo : index.getComputingIndex().getAllKnownImplementors(TYPE_BUNDLE.repositoryBase().dotName())) {
+        for (ClassInfo classInfo : index.getComputingIndex()
+                .getAllKnownImplementations(TYPE_BUNDLE.repositoryBase().dotName())) {
             if (classInfo.name().equals(TYPE_BUNDLE.repository().dotName()) || enhancer.skipRepository(classInfo)) {
                 continue;
             }
@@ -178,10 +178,9 @@ public class HibernateReactivePanacheKotlinProcessor {
                     .addAll(resolveTypeParameters(classInfo.name(), TYPE_BUNDLE.repositoryBase().dotName(),
                             index.getComputingIndex()));
         }
-        for (org.jboss.jandex.Type parameterType : typeParameters) {
-            // Register for reflection the type parameters of the repository: this should be the entity class and the ID class
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, parameterType.name().toString()));
-        }
+        // Register for reflection the type parameters of the repository: this should be the entity class and the ID class
+        final var parameterTypeNames = typeParameters.stream().map(type -> type.name().toString()).toList();
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(parameterTypeNames).constructors().methods().build());
     }
 
     @BuildStep

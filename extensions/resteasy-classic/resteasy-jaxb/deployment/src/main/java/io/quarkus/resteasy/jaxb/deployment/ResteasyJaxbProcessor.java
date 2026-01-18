@@ -1,6 +1,7 @@
 package io.quarkus.resteasy.jaxb.deployment;
 
 import java.lang.annotation.Annotation;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -33,7 +34,8 @@ public class ResteasyJaxbProcessor {
     void addReflectiveClasses(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             CombinedIndexBuildItem combinedIndexBuildItem) {
         // Handle RESTEasy Validation API classes
-        addReflectiveClass(reflectiveClass, true, true, ConstraintType.Type.class.getName());
+        final var toRegisterForReflection = new ArrayList<String>(4);
+        toRegisterForReflection.add(ConstraintType.Type.class.getName());
 
         // Handle RESTEasy annotations usage.
         IndexView index = combinedIndexBuildItem.getIndex();
@@ -41,12 +43,14 @@ public class ResteasyJaxbProcessor {
             DotName annotation = DotName.createSimple(annotationClazz.getName());
 
             if (!index.getAnnotations(annotation).isEmpty()) {
-                addReflectiveClass(reflectiveClass, true, true, "org.jboss.resteasy.plugins.providers.jaxb.JaxbCollection");
-                addReflectiveClass(reflectiveClass, true, true, "org.jboss.resteasy.plugins.providers.jaxb.JaxbMap");
-                addReflectiveClass(reflectiveClass, true, true, "jakarta.xml.bind.annotation.W3CDomHandler");
+                toRegisterForReflection.add("org.jboss.resteasy.plugins.providers.jaxb.JaxbCollection");
+                toRegisterForReflection.add("org.jboss.resteasy.plugins.providers.jaxb.JaxbMap");
+                toRegisterForReflection.add("jakarta.xml.bind.annotation.W3CDomHandler");
                 break;
             }
         }
+
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(toRegisterForReflection).methods().fields().build());
     }
 
     @BuildStep
@@ -78,10 +82,5 @@ public class ResteasyJaxbProcessor {
         for (String provider : providers) {
             jaxrsProviders.produce(new ResteasyJaxrsProviderBuildItem(provider));
         }
-    }
-
-    private void addReflectiveClass(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, boolean methods, boolean fields,
-            String... className) {
-        reflectiveClass.produce(new ReflectiveClassBuildItem(methods, fields, className));
     }
 }

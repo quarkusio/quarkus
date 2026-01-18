@@ -130,28 +130,30 @@ public class ConfigMappingUtils {
         // all the config interfaces including nested ones
         Set<Class<?>> configComponentInterfaces = new HashSet<>();
         configMappingsMetadata.forEach(mappingMetadata -> {
-            generatedClassesNames.add(mappingMetadata.getClassName());
+            final var className = mappingMetadata.getClassName();
+            generatedClassesNames.add(className);
             // This is the generated implementation of the mapping by SmallRye Config.
             byte[] classBytes = mappingMetadata.getClassBytes();
-            generatedConfigClasses.put(mappingMetadata.getClassName(),
-                    new GeneratedClassBuildItem(isApplicationClass(configClass.getName()), mappingMetadata.getClassName(),
-                            classBytes));
-            additionalConstrainedClasses.produce(AdditionalConstrainedClassBuildItem.of(mappingMetadata.getClassName(),
-                    classBytes));
-            ReflectiveClassBuildItem.Builder reflection = ReflectiveClassBuildItem.builder(mappingMetadata.getClassName());
-            reflection.methods();
-            reflectiveClasses.produce(reflection
-                    .reason(ConfigMappingUtils.class.getName())
-                    .build());
+            generatedConfigClasses.put(className,
+                    new GeneratedClassBuildItem(isApplicationClass(configClass.getName()), className, classBytes));
+            additionalConstrainedClasses.produce(AdditionalConstrainedClassBuildItem.of(className, classBytes));
             reflectiveMethods.produce(new ReflectiveMethodBuildItem(ConfigMappingUtils.class.getName(),
-                    mappingMetadata.getClassName(), "getProperties", new String[0]));
+                    className, "getProperties", new String[0]));
             reflectiveMethods.produce(new ReflectiveMethodBuildItem(ConfigMappingUtils.class.getName(),
-                    mappingMetadata.getClassName(), "getSecrets", new String[0]));
+                    className, "getSecrets", new String[0]));
 
             configComponentInterfaces.add(mappingMetadata.getInterfaceType());
 
             processProperties(mappingMetadata.getInterfaceType(), reflectiveClasses);
         });
+
+        if (!generatedClassesNames.isEmpty()) {
+            final var reflection = ReflectiveClassBuildItem.builder(generatedClassesNames)
+                    .methods()
+                    .reason(ConfigMappingUtils.class.getName())
+                    .build();
+            reflectiveClasses.produce(reflection);
+        }
 
         configClasses.produce(new ConfigClassBuildItem(configClass, configComponentInterfaces,
                 collectTypes(combinedIndex, configClass),

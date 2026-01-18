@@ -398,10 +398,11 @@ public class SchedulerProcessor {
                 .withDebugInfo(false)
                 .withParameters(false);
 
+        final var forReflection = new ArrayList<String>(scheduledMethods.size());
         for (ScheduledBusinessMethodItem scheduledMethod : scheduledMethods) {
             MutableScheduledMethod metadata = new MutableScheduledMethod();
             String invokerClass = generateInvoker(scheduledMethod, gizmo);
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(invokerClass).constructors().methods().fields().build());
+            forReflection.add(invokerClass);
             metadata.setInvokerClassName(invokerClass);
             List<Scheduled> schedules = new ArrayList<>();
             for (AnnotationInstance scheduled : scheduledMethod.getSchedules()) {
@@ -412,6 +413,7 @@ public class SchedulerProcessor {
             metadata.setMethodName(scheduledMethod.getMethod().name());
             scheduledMetadata.add(metadata);
         }
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(forReflection).constructors().methods().fields().build());
 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(SchedulerContext.class).setRuntimeInit()
                 .supplier(recorder.createContext(scheduledMetadata, !schedulerForcedStartItems.isEmpty(),

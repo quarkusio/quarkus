@@ -7,12 +7,14 @@ import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDescs;
 import java.lang.constant.MethodTypeDesc;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -37,7 +39,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -91,7 +92,6 @@ public class JacksonProcessor {
 
     private static final DotName JSON_TYPE_ID_RESOLVER = DotName.createSimple(JsonTypeIdResolver.class.getName());
     private static final DotName JSON_SUBTYPES = DotName.createSimple(JsonSubTypes.class.getName());
-    private static final DotName JACKSON_NAMING = DotName.createSimple(JsonNaming.class.getName());
     private static final DotName JSON_CREATOR = DotName.createSimple("com.fasterxml.jackson.annotation.JsonCreator");
 
     private static final DotName JSON_NAMING = DotName.createSimple("com.fasterxml.jackson.databind.annotation.JsonNaming");
@@ -113,7 +113,30 @@ public class JacksonProcessor {
     // this list can probably be enriched with more modules
     private static final List<String> MODULES_NAMES_TO_AUTO_REGISTER = Arrays.asList(TIME_MODULE, JDK8_MODULE,
             PARAMETER_NAMES_MODULE);
-    private static final String[] EMPTY_STRING = new String[0];
+    private static final String CLASS_NAME = JacksonProcessor.class.getName();
+    private static final String MIXIN_VALUE_PREFIX = CLASS_NAME + " @" + JACKSON_MIXIN + " value of ";
+    private static final String ANNOTATED_WITH_MIXIN = CLASS_NAME + " annotated with @" + JACKSON_MIXIN;
+    private static final String JSON_SUBTYPES_VALUE = CLASS_NAME + " @" + JSON_SUBTYPES + " value";
+    private static final String JSON_IDENTITY_RESOLVER_DEFAULT_VALUE = CLASS_NAME + " @" + JSON_IDENTITY_INFO
+            + " resolver default value";
+    private static final String JSON_IDENTITY_RESOLVER = CLASS_NAME + " @" + JSON_IDENTITY_INFO + " resolver";
+    private static final String JSON_IDENTITY_GENERATOR = CLASS_NAME + " @" + JSON_IDENTITY_INFO + " generator";
+    private static final String JSON_NAMING_VALUE = CLASS_NAME + " @" + JSON_NAMING + " value";
+    private static final String TYPE_ID_RESOLVER_VALUE = CLASS_NAME + " @" + JSON_TYPE_ID_RESOLVER + " value";
+    private static final String ANNOTATED_WITH_AUTO_DETECT = CLASS_NAME + " annotated with @" + JSON_AUTO_DETECT;
+    private static final String SERIALIZE_NULLS_USING = CLASS_NAME + " @" + JSON_SERIALIZE + " nullsUsing";
+    private static final String SERIALIZE_USING = CLASS_NAME + " @" + JSON_SERIALIZE + " using";
+    private static final String SERIALIZE_KEY_USING = CLASS_NAME + " @" + JSON_SERIALIZE + " keyUsing";
+    private static final String SERIALIZE_CONTENT_USING = CLASS_NAME + " @" + JSON_SERIALIZE + " contentUsing";
+    private static final String DESERIALIZE_USING = CLASS_NAME + " @" + JSON_DESERIALIZE + " using";
+    private static final String DESERIALIZE_KEY_USING = CLASS_NAME + " @" + JSON_DESERIALIZE + " keyUsing";
+    private static final String DESERIALIZE_CONTENT_USING = CLASS_NAME + " @" + JSON_DESERIALIZE + " contentUsing";
+
+    private static final String SIMPLE_CLASS_NAME = JacksonProcessor.class.getSimpleName();
+    private static final String ANNOTATED_WITH_TYPE_ID_RESOLVER = SIMPLE_CLASS_NAME + " annotated with @"
+            + JSON_TYPE_ID_RESOLVER;
+    private static final String DESERIALIZE_BUILDER_OF = SIMPLE_CLASS_NAME + " @" + JSON_DESERIALIZE + " builder of ";
+    private static final String ANNOTATED_WITH_DESERIALIZE = SIMPLE_CLASS_NAME + " annotated with @" + JSON_DESERIALIZE;
 
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
@@ -145,14 +168,14 @@ public class JacksonProcessor {
                         "com.fasterxml.jackson.databind.deser.std.DateDeserializers$SqlDateDeserializer",
                         "com.fasterxml.jackson.databind.deser.std.DateDeserializers$TimestampDeserializer",
                         "com.fasterxml.jackson.annotation.SimpleObjectIdResolver")
-                        .reason(getClass().getName())
+                        .reason(CLASS_NAME)
                         .methods().build());
         reflectiveClass.produce(
                 ReflectiveClassBuildItem.builder(
                         "com.fasterxml.jackson.databind.ser.std.ClassSerializer",
                         "com.fasterxml.jackson.databind.ext.CoreXMLSerializers",
                         "com.fasterxml.jackson.databind.ext.CoreXMLDeserializers")
-                        .reason(getClass().getName())
+                        .reason(CLASS_NAME)
                         .constructors()
                         .build());
 
@@ -161,7 +184,7 @@ public class JacksonProcessor {
                         && x.getArtifactId().equals("jackson-module-jaxb-annotations"))) {
             reflectiveClass.produce(
                     ReflectiveClassBuildItem.builder("com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector")
-                            .reason(getClass().getName())
+                            .reason(CLASS_NAME)
                             .methods().build());
         }
 
@@ -180,84 +203,41 @@ public class JacksonProcessor {
             if (CLASS.equals(annotationTarget.kind())) {
                 DotName dotName = annotationTarget.asClass().name();
                 if (!ignoredDotNames.contains(dotName)) {
-                    addReflectiveHierarchyClass(getClass().getSimpleName() + " annotated with @" + JSON_DESERIALIZE,
-                            dotName, reflectiveHierarchyClass);
+                    addReflectiveHierarchyClass(ANNOTATED_WITH_DESERIALIZE, dotName, reflectiveHierarchyClass);
                 }
 
                 AnnotationValue annotationValue = deserializeInstance.value("builder");
                 if (null != annotationValue && AnnotationValue.Kind.CLASS.equals(annotationValue.kind())) {
                     DotName builderClassName = annotationValue.asClass().name();
                     if (!BUILDER_VOID.equals(builderClassName)) {
-                        addReflectiveHierarchyClass(
-                                getClass().getSimpleName() + " @" + JSON_DESERIALIZE + " builder of " + dotName,
+                        addReflectiveHierarchyClass(DESERIALIZE_BUILDER_OF + dotName,
                                 builderClassName, reflectiveHierarchyClass);
                     }
                 }
             }
-            AnnotationValue usingValue = deserializeInstance.value("using");
-            if (usingValue != null) {
-                // the Deserializers are constructed internally by Jackson using a no-args constructor
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(usingValue.asClass().name().toString())
-                        .reason(getClass().getName() + " @" + JSON_DESERIALIZE + " using")
-                        .build());
-            }
-            AnnotationValue keyUsingValue = deserializeInstance.value("keyUsing");
-            if (keyUsingValue != null) {
-                // the Deserializers are constructed internally by Jackson using a no-args constructor
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(keyUsingValue.asClass().name().toString())
-                        .reason(getClass().getName() + " @" + JSON_DESERIALIZE + " keyUsing")
-                        .build());
-            }
-            AnnotationValue contentUsingValue = deserializeInstance.value("contentUsing");
-            if (contentUsingValue != null) {
-                // the Deserializers are constructed internally by Jackson using a no-args constructor
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(contentUsingValue.asClass().name().toString())
-                        .reason(getClass().getName() + " @" + JSON_DESERIALIZE + " contentUsing")
-                        .build());
-            }
+            registerUsingValuesForReflection(reflectiveClass, deserializeInstance, true);
         }
 
         // handle the various @JsonSerialize cases
         for (AnnotationInstance serializeInstance : index.getAnnotations(JSON_SERIALIZE)) {
-            AnnotationValue usingValue = serializeInstance.value("using");
-            if (usingValue != null) {
-                // the Serializers are constructed internally by Jackson using a no-args constructor
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(usingValue.asClass().name().toString())
-                        .reason(getClass().getName() + " @" + JSON_SERIALIZE + " using")
-                        .build());
-            }
-            AnnotationValue keyUsingValue = serializeInstance.value("keyUsing");
-            if (keyUsingValue != null) {
-                // the Deserializers are constructed internally by Jackson using a no-args constructor
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(keyUsingValue.asClass().name().toString())
-                        .reason(getClass().getName() + " @" + JSON_SERIALIZE + " keyUsing")
-                        .build());
-            }
-            AnnotationValue contentUsingValue = serializeInstance.value("contentUsing");
-            if (contentUsingValue != null) {
-                // the Deserializers are constructed internally by Jackson using a no-args constructor
-                reflectiveClass
-                        .produce(ReflectiveClassBuildItem.builder(contentUsingValue.asClass().name().toString())
-                                .reason(getClass().getName() + " @" + JSON_SERIALIZE + " contentUsing")
-                                .build());
-            }
+            registerUsingValuesForReflection(reflectiveClass, serializeInstance, false);
             AnnotationValue nullsUsingValue = serializeInstance.value("nullsUsing");
             if (nullsUsingValue != null) {
                 // the Deserializers are constructed internally by Jackson using a no-args constructor
                 reflectiveClass
                         .produce(ReflectiveClassBuildItem.builder(nullsUsingValue.asClass().name().toString())
-                                .reason(getClass().getName() + " @" + JSON_SERIALIZE + " nullsUsing")
+                                .reason(SERIALIZE_NULLS_USING)
                                 .build());
             }
         }
 
-        for (AnnotationInstance creatorInstance : index.getAnnotations(JSON_AUTO_DETECT)) {
-            if (creatorInstance.target().kind() == CLASS) {
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(creatorInstance.target().asClass().name().toString())
-                        .reason(getClass().getName() + " annotated with @" + JSON_AUTO_DETECT)
-                        .methods().fields().build());
-            }
-        }
+        final var autoDetects = index.getAnnotations(JSON_AUTO_DETECT).stream()
+                .filter(ai -> ai.target().kind() == CLASS)
+                .map(ai -> ai.target().asClass().name().toString())
+                .toList();
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(autoDetects)
+                .reason(ANNOTATED_WITH_AUTO_DETECT)
+                .methods().fields().build());
 
         // Register @JsonTypeIdResolver implementations for reflection.
         // Note: @JsonTypeIdResolver is, simply speaking, the "dynamic version" of @JsonSubTypes, i.e. sub-types are
@@ -270,11 +250,11 @@ public class JacksonProcessor {
                 // Add the type-id-resolver class
                 reflectiveClass
                         .produce(ReflectiveClassBuildItem.builder(value.asClass().name().toString()).methods().fields()
-                                .reason(getClass().getName() + " @" + JSON_TYPE_ID_RESOLVER + " value")
+                                .reason(TYPE_ID_RESOLVER_VALUE)
                                 .build());
                 if (resolverInstance.target().kind() == CLASS) {
                     // Add the whole hierarchy of the annotated class
-                    addReflectiveHierarchyClass(getClass().getSimpleName() + " annotated with @" + JSON_TYPE_ID_RESOLVER,
+                    addReflectiveHierarchyClass(ANNOTATED_WITH_TYPE_ID_RESOLVER,
                             resolverInstance.target().asClass().name(), reflectiveHierarchyClass);
                 }
             }
@@ -284,39 +264,51 @@ public class JacksonProcessor {
         for (AnnotationInstance creatorInstance : index.getAnnotations(JSON_CREATOR)) {
             if (METHOD == creatorInstance.target().kind()) {
                 reflectiveMethod
-                        .produce(new ReflectiveMethodBuildItem(getClass().getName(), creatorInstance.target().asMethod()));
+                        .produce(new ReflectiveMethodBuildItem(CLASS_NAME, creatorInstance.target().asMethod()));
             }
         }
 
         // register @JsonNaming strategy implementations for reflection
-        for (AnnotationInstance jsonNamingInstance : index.getAnnotations(JSON_NAMING)) {
-            AnnotationValue strategyValue = jsonNamingInstance.value("value");
-            if (strategyValue != null) {
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(strategyValue.asClass().name().toString())
-                        .reason(getClass().getName() + " @" + JSON_NAMING + " value")
-                        .methods().fields().build());
-            }
-        }
+        final var namingValueClasses = index.getAnnotations(JSON_NAMING).stream()
+                .map(ai -> ai.value("value"))
+                .filter(Objects::nonNull)
+                .map(av -> av.asClass().name().toString())
+                .toList();
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(namingValueClasses)
+                .reason(JSON_NAMING_VALUE)
+                .methods().fields().build());
 
         // register @JsonIdentityInfo strategy implementations for reflection
+        Collection<String> identityGenerators = new ArrayList<>();
+        Collection<String> identityResolvers = new ArrayList<>();
+        boolean hasRegisteredDefault = false;
         for (AnnotationInstance jsonIdentityInfoInstance : index.getAnnotations(JSON_IDENTITY_INFO)) {
             AnnotationValue generatorValue = jsonIdentityInfoInstance.value("generator");
             AnnotationValue resolverValue = jsonIdentityInfoInstance.value("resolver");
             if (generatorValue != null) {
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(generatorValue.asClass().name().toString())
-                        .reason(getClass().getName() + " @" + JSON_IDENTITY_INFO + " generator")
-                        .methods().fields().build());
+                identityGenerators.add(generatorValue.asClass().name().toString());
             }
             if (resolverValue != null) {
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(resolverValue.asClass().name().toString())
-                        .reason(getClass().getName() + " @" + JSON_IDENTITY_INFO + " resolver")
-                        .methods().fields().build());
+                identityResolvers.add(resolverValue.asClass().name().toString());
             } else {
-                // Registering since SimpleObjectIdResolver is the default value of @JsonIdentityInfo.resolver
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(SimpleObjectIdResolver.class)
-                        .reason(getClass().getName() + " @" + JSON_IDENTITY_INFO + " resolver default value")
-                        .methods().fields().build());
+                if (!hasRegisteredDefault) {
+                    // Registering since SimpleObjectIdResolver is the default value of @JsonIdentityInfo.resolver
+                    reflectiveClass.produce(ReflectiveClassBuildItem.builder(SimpleObjectIdResolver.class)
+                            .reason(JSON_IDENTITY_RESOLVER_DEFAULT_VALUE)
+                            .methods().fields().build());
+                    hasRegisteredDefault = true;
+                }
             }
+        }
+        if (!identityGenerators.isEmpty()) {
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(identityGenerators)
+                    .reason(JSON_IDENTITY_GENERATOR)
+                    .methods().fields().build());
+        }
+        if (!identityResolvers.isEmpty()) {
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(identityResolvers)
+                    .reason(JSON_IDENTITY_RESOLVER)
+                    .methods().fields().build());
         }
 
         // register @JsonSubTypes.Type values for reflection
@@ -334,27 +326,39 @@ public class JacksonProcessor {
             }
         }
         if (!subTypeTypesNames.isEmpty()) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(subTypeTypesNames.toArray(EMPTY_STRING))
-                    .reason(getClass().getName() + " @" + JSON_SUBTYPES + " value")
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(subTypeTypesNames)
+                    .reason(JSON_SUBTYPES_VALUE)
                     .methods().fields().build());
-        }
-
-        // register @JsonNaming for reflection
-        Set<String> namingTypesNames = new HashSet<>();
-        for (AnnotationInstance namingInstance : index.getAnnotations(JSON_NAMING)) {
-            AnnotationValue namingValue = namingInstance.value();
-            if (namingValue != null) {
-                namingTypesNames.add(namingValue.asClass().name().toString());
-            }
-        }
-        if (!namingTypesNames.isEmpty()) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(namingTypesNames.toArray(EMPTY_STRING))
-                    .reason(getClass().getName() + " @" + JACKSON_NAMING + " value")
-                    .build());
         }
 
         // this needs to be registered manually since the runtime module is not indexed by Jandex
         additionalBeans.produce(new AdditionalBeanBuildItem(ObjectMapperProducer.class));
+    }
+
+    private void registerUsingValuesForReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            AnnotationInstance annotationInstance, boolean forDeserialization) {
+        AnnotationValue usingValue = annotationInstance.value("using");
+        if (usingValue != null) {
+            // the Serializers are constructed internally by Jackson using a no-args constructor
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(usingValue.asClass().name().toString())
+                    .reason(forDeserialization ? DESERIALIZE_USING : SERIALIZE_USING)
+                    .build());
+        }
+        AnnotationValue keyUsingValue = annotationInstance.value("keyUsing");
+        if (keyUsingValue != null) {
+            // the Deserializers are constructed internally by Jackson using a no-args constructor
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(keyUsingValue.asClass().name().toString())
+                    .reason(forDeserialization ? DESERIALIZE_KEY_USING : SERIALIZE_KEY_USING)
+                    .build());
+        }
+        AnnotationValue contentUsingValue = annotationInstance.value("contentUsing");
+        if (contentUsingValue != null) {
+            // the Deserializers are constructed internally by Jackson using a no-args constructor
+            reflectiveClass
+                    .produce(ReflectiveClassBuildItem.builder(contentUsingValue.asClass().name().toString())
+                            .reason(forDeserialization ? DESERIALIZE_CONTENT_USING : SERIALIZE_CONTENT_USING)
+                            .build());
+        }
     }
 
     private void addReflectiveHierarchyClass(String reason, DotName className,
@@ -485,32 +489,38 @@ public class JacksonProcessor {
         }
 
         Map<Class<?>, Class<?>> mixinsMap = new HashMap<>();
+        Collection<String> mixinClasses = new ArrayList<>(jacksonMixins.size());
         for (AnnotationInstance instance : jacksonMixins) {
             if (instance.target().kind() != CLASS) {
                 continue;
             }
             ClassInfo mixinClassInfo = instance.target().asClass();
             String mixinClassName = mixinClassInfo.name().toString();
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(mixinClassName)
-                    .reason(getClass().getName() + " annotated with @" + JACKSON_MIXIN)
-                    .methods().fields().build());
+            mixinClasses.add(mixinClassName);
             try {
                 Type[] targetTypes = instance.value().asClassArray();
                 if ((targetTypes == null) || targetTypes.length == 0) {
                     continue;
                 }
                 Class<?> mixinClass = Thread.currentThread().getContextClassLoader().loadClass(mixinClassName);
+                final var targetClassNames = new ArrayList<String>(targetTypes.length);
                 for (Type targetType : targetTypes) {
                     String targetClassName = targetType.name().toString();
-                    reflectiveClass.produce(ReflectiveClassBuildItem.builder(targetClassName)
-                            .reason(getClass().getName() + " @" + JACKSON_MIXIN + " value of " + mixinClassName)
-                            .methods().fields().build());
+                    targetClassNames.add(targetClassName);
                     mixinsMap.put(Thread.currentThread().getContextClassLoader().loadClass(targetClassName),
                             mixinClass);
                 }
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(targetClassNames)
+                        .reason(MIXIN_VALUE_PREFIX + mixinClassName)
+                        .methods().fields().build());
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException("Unable to determine Jackson mixin usage at build", e);
             }
+        }
+        if (!mixinClasses.isEmpty()) {
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(mixinClasses)
+                    .reason(ANNOTATED_WITH_MIXIN)
+                    .methods().fields().build());
         }
         if (mixinsMap.isEmpty()) {
             return;

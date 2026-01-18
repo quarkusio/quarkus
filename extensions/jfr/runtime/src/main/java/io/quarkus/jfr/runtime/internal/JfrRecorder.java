@@ -5,7 +5,7 @@ import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.jfr.runtime.internal.config.JfrRuntimeConfig;
+import io.quarkus.jfr.api.config.JfrRuntimeConfig;
 import io.quarkus.jfr.runtime.internal.http.rest.RestEndEvent;
 import io.quarkus.jfr.runtime.internal.http.rest.RestPeriodEvent;
 import io.quarkus.jfr.runtime.internal.http.rest.RestStartEvent;

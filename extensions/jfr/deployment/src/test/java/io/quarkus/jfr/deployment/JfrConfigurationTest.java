@@ -7,7 +7,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.jfr.runtime.internal.config.JfrRuntimeConfig;
+import io.quarkus.jfr.api.config.JfrRuntimeConfig;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class JfrConfigurationTest {

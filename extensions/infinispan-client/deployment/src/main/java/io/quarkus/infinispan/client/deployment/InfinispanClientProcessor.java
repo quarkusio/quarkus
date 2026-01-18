@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -56,6 +57,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
@@ -99,6 +101,7 @@ import io.quarkus.infinispan.client.runtime.cache.CacheInvalidateInterceptor;
 import io.quarkus.infinispan.client.runtime.cache.CacheResultInterceptor;
 import io.quarkus.infinispan.client.runtime.cache.SynchronousInfinispanGet;
 import io.quarkus.infinispan.client.runtime.graal.DisableLoggingFeature;
+import io.quarkus.infinispan.client.runtime.jfr.*;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 class InfinispanClientProcessor {
@@ -179,7 +182,8 @@ class InfinispanClientProcessor {
             BuildProducer<InfinispanClientNameBuildItem> infinispanClientNames,
             MarshallingBuildItem marshallingBuildItem,
             BuildProducer<NativeImageResourceBuildItem> resourceBuildItem,
-            CombinedIndexBuildItem applicationIndexBuildItem) throws ClassNotFoundException, IOException {
+            CombinedIndexBuildItem applicationIndexBuildItem,
+            Capabilities capabilities) throws ClassNotFoundException, IOException {
 
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(InfinispanClientProducer.class));
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(CacheInvalidateAllInterceptor.class));
@@ -188,6 +192,15 @@ class InfinispanClientProcessor {
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(SynchronousInfinispanGet.class));
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(InfinispanClientName.class).build());
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(Remote.class).build());
+        if (capabilities.isPresent(Capability.JFR)) {
+            additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(AsyncMultiEntryInterceptor.class));
+            additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(SyncMultiEntryInterceptor.class));
+            additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(AsyncSingleEntryInterceptor.class));
+            additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(SyncSingleEntryInterceptor.class));
+            additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(AsyncCacheWideInterceptor.class));
+            additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(SyncCacheWideInterceptor.class));
+            additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(JfrInfinispanBean.class));
+        }
 
         resourceBuildItem.produce(new NativeImageResourceBuildItem("org/infinispan/commons/query/client/query.proto"));
         resourceBuildItem.produce(new NativeImageResourceBuildItem(WrappedMessage.PROTO_FILE));
@@ -520,8 +533,8 @@ class InfinispanClientProcessor {
             BeanDiscoveryFinishedBuildItem finishedBuildItem,
             List<InfinispanClientNameBuildItem> infinispanClientNames,
             BeanDiscoveryFinishedBuildItem beans,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
-
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
+            Capabilities capabilities) {
         Set<String> clientNames = infinispanClientNames.stream().map(icn -> icn.getName()).collect(Collectors.toSet());
 
         Set<RemoteCacheBean> remoteCacheBeans = beans.getInjectionPoints().stream()
@@ -562,10 +575,17 @@ class InfinispanClientProcessor {
 
         // Produce RemoteCache beans
         for (RemoteCacheBean remoteCacheBean : remoteCacheBeans) {
-            syntheticBeanBuildItemBuildProducer.produce(
-                    configureAndCreateSyntheticBean(remoteCacheBean,
-                            recorder.infinispanRemoteCacheClientSupplier(remoteCacheBean.clientName,
-                                    remoteCacheBean.cacheName)));
+            SyntheticBeanBuildItem syntheticBeanBuildItem;
+            if (capabilities.isPresent(Capability.JFR)) {
+                Function<SyntheticCreationalContext<RemoteCache<?, ?>>, RemoteCache<?, ?>> remoteCacheFunc = recorder
+                        .infinispanJfrRemoteCacheClientFunction(remoteCacheBean.clientName, remoteCacheBean.cacheName);
+                syntheticBeanBuildItem = configureAndCreateJfrSyntheticBean(remoteCacheBean, remoteCacheFunc);
+            } else {
+                Supplier<RemoteCache<Object, Object>> remoteCacheSupplier = recorder.infinispanRemoteCacheClientSupplier(
+                        remoteCacheBean.clientName, remoteCacheBean.cacheName);
+                syntheticBeanBuildItem = configureAndCreateSyntheticBean(remoteCacheBean, remoteCacheSupplier);
+            }
+            syntheticBeanBuildItemBuildProducer.produce(syntheticBeanBuildItem);
         }
     }
 
@@ -595,6 +615,25 @@ class InfinispanClientProcessor {
                 .types(remoteCacheBean.type)
                 .scope(ApplicationScoped.class)
                 .supplier(supplier)
+                .unremovable()
+                .setRuntimeInit();
+
+        configurator.addQualifier().annotation(INFINISPAN_REMOTE_ANNOTATION).addValue("value", remoteCacheBean.cacheName)
+                .done();
+
+        configurator.addQualifier().annotation(INFINISPAN_CLIENT_ANNOTATION).addValue("value", remoteCacheBean.clientName)
+                .done();
+        return configurator.done();
+    }
+
+    static <T> SyntheticBeanBuildItem configureAndCreateJfrSyntheticBean(RemoteCacheBean remoteCacheBean,
+            Function<SyntheticCreationalContext<T>, T> func) {
+        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem.configure(RemoteCache.class)
+                .types(remoteCacheBean.type)
+                .scope(ApplicationScoped.class)
+                .createWith(func)
+                .injectInterceptionProxy(JfrRemoteCacheWrapper.class)
+                .providerType(Type.create(JfrRemoteCacheWrapper.class))
                 .unremovable()
                 .setRuntimeInit();
 

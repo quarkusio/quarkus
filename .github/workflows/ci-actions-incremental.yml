@@ -278,7 +278,15 @@ jobs:
         env:
           CAPTURE_BUILD_SCAN: true
         run: |
-          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-format -Dtcks -Prelocations clean install
+          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dtcks -Prelocations,!validate,!format clean install
+      - name: Validate Formatting
+        run: |
+          MSG="Most likely this error is caused by formatting problems. Please run './mvnw process-sources'"
+          if [[ "$GITHUB_REPOSITORY" != "quarkusio/quarkus" ]]; then
+            MSG+=" . Workflow will not fail since this build is running on the CI of a fork."
+          fi
+          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipDocs -Dinvoker.skip -Djbang.skip -Dtruststore.skip -Dno-format -Dtcks -Prelocations process-sources || { echo "::error title=Validate Formatting::${MSG}"; false; }
+        continue-on-error: ${{ github.repository != 'quarkusio/quarkus' }}
       - name: Verify extension dependencies
         run: ./update-extension-dependencies.sh $COMMON_MAVEN_ARGS
       - name: Configure GIB

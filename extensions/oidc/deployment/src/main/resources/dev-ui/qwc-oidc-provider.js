@@ -52,7 +52,7 @@ class OidcPropertiesState extends LitState {
             webAppLoginObserver: null,
             isWebApp: false,
             logoutPath: null,
-            readSessionCookiePath: null,
+            readSessionCookiePath: null
         };
     }
 
@@ -69,11 +69,6 @@ class OidcPropertiesState extends LitState {
                 !== response.result.propertiesStateId;
             const alwaysLogoutUserInDevUiOnReload = sessionStorage.getItem('oidcDevServiceConfigHashCode')
                 !== response.result.devServiceConfigHashCode;
-            console.log("propertiesStateDontMatchesSessionState " + propertiesStateDontMatchesSessionState)
-            console.log("alwaysLogoutUserInDevUiOnReload " + alwaysLogoutUserInDevUiOnReload)
-            console.log("response.result.propertiesStateId " + response.result.propertiesStateId)
-            console.log("response.result.devServiceConfigHashCode " + response.result.devServiceConfigHashCode)
-            console.log("sessionStorage.getItem('oidcDevServiceConfigHashCode') " + sessionStorage.getItem('oidcDevServiceConfigHashCode'))
             const logout = propertiesStateDontMatchesSessionState && alwaysLogoutUserInDevUiOnReload;
             sessionStorage.setItem('oidcPropertiesStateId', response.result.propertiesStateId);
             sessionStorage.setItem('oidcDevServiceConfigHashCode', response.result.devServiceConfigHashCode);

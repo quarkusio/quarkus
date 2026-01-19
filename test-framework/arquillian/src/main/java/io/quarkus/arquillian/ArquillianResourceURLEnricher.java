@@ -3,6 +3,7 @@ package io.quarkus.arquillian;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 
@@ -66,7 +67,11 @@ public class ArquillianResourceURLEnricher implements TestEnricher {
             ArquillianResource resource = getResourceAnnotation(method.getParameterAnnotations()[i]);
             if (resource != null) {
                 if (parameterTypes[i].equals(URL.class)) {
-                    values[i] = testUrl(deployment);
+                    try {
+                        values[i] = new URL(testUrl(deployment));
+                    } catch (MalformedURLException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
                 if (parameterTypes[i].equals(URI.class)) {
                     values[i] = URI.create(testUrl(deployment));

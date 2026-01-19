@@ -1,5 +1,6 @@
 package io.quarkus.agroal.runtime;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.ShardingKeyBuilder;
 import java.util.Collection;
@@ -28,6 +29,11 @@ public class OpenTelemetryAgroalDataSource extends OpenTelemetryDataSource imple
     @Override
     public boolean isHealthy(boolean newConnection) throws SQLException {
         return delegate.isHealthy(newConnection);
+    }
+
+    @Override
+    public Connection getReadOnlyConnection() throws SQLException {
+        return delegate.getReadOnlyConnection();
     }
 
     @Override

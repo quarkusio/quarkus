@@ -32,7 +32,9 @@ public class SimpleJsonTest extends AbstractSimpleJsonTest {
                                     ItemJsonValuePrivateMethod.class, ItemJsonValuePrivateField.class, StringWrapper.class)
                             .addAsResource(new StringAsset("admin-expression=admin\n" +
                                     "user-expression=user\n" +
-                                    "birth-date-roles=alice,bob\n"), "application.properties");
+                                    "birth-date-roles=alice,bob\n" +
+                                    "quarkus.rest.jackson.optimization.enable-reflection-free-serializers=false\n"),
+                                    "application.properties");
                 }
             });
 }

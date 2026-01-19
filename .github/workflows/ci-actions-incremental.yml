@@ -252,7 +252,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Populate the .m2 repository (for cache and for shipping to follow-up builds)
         run: |
-          ./mvnw -T2C $COMMON_MAVEN_ARGS dependency:go-offline -Dgo-offline
+          ./mvnw -T2C $COMMON_MAVEN_ARGS -q dependency:go-offline -Dgo-offline
       - name: Cache Develocity local cache
         uses: actions/cache@v5
         if: github.event_name == 'pull_request' || github.event_name == 'push' && github.repository != 'quarkusio/quarkus'

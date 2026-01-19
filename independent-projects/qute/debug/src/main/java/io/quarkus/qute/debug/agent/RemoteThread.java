@@ -118,13 +118,9 @@ public class RemoteThread extends Thread {
     public void pause() {
         synchronized (this.lock) {
             switch (state) {
-                case STOPPED:
-                    throw new DebuggerStoppedException();
-                case RUNNING:
-                    this.stopCondition = TRUE_CONDITION;
-                    break;
-                default:
-                    throw new IllegalStateException();
+                case STOPPED -> throw new DebuggerStoppedException();
+                case RUNNING -> this.stopCondition = TRUE_CONDITION;
+                default -> throw new IllegalStateException();
             }
         }
     }
@@ -138,15 +134,14 @@ public class RemoteThread extends Thread {
     public void resume() {
         synchronized (this.lock) {
             switch (state) {
-                case STOPPED:
-                    throw new DebuggerStoppedException();
-                case RUNNING:
-                default:
+                case STOPPED -> throw new DebuggerStoppedException();
+                default -> {
                     if (state != DebuggerState.SUSPENDED) {
                         throw new IllegalStateException();
                     }
                     this.state = DebuggerState.RUNNING;
                     this.lock.notifyAll();
+                }
             }
         }
     }
@@ -277,6 +272,7 @@ public class RemoteThread extends Thread {
      * @param reason the reason for suspension (e.g. breakpoint, step)
      */
     private void suspendAndWait(StoppedReason reason) {
+        boolean intr = false;
         try {
             synchronized (this.lock) {
                 // Mark thread as suspended and notify the debugger
@@ -291,30 +287,36 @@ public class RemoteThread extends Thread {
                 // Loop until the debugger resumes or stops the thread
                 while (this.state == DebuggerState.SUSPENDED) {
 
-                    // If a pending task (e.g., expression evaluation) was scheduled by the debugger:
-                    if (pendingTask != null) {
-                        try {
-                            // Execute the task directly in this render thread context.
-                            // This ensures access to the active HTTP request context,
-                            // avoiding "RequestScoped was not active" errors.
-                            taskResult = pendingTask.call();
-                        } catch (Exception e1) {
-                            // Should never happen — failures are handled by the caller
-                        } finally {
-                            // Clear the pending task and notify the waiting debugger
-                            pendingTask = null;
-                            lock.notifyAll();
+                    try {
+                        // If a pending task (e.g., expression evaluation) was scheduled by the debugger:
+                        if (pendingTask != null) {
+                            try {
+                                // Execute the task directly in this render thread context.
+                                // This ensures access to the active HTTP request context,
+                                // avoiding "RequestScoped was not active" errors.
+                                taskResult = pendingTask.call();
+                            } catch (Exception e1) {
+                                // Should never happen — failures are handled by the caller
+                            } finally {
+                                // Clear the pending task and notify the waiting debugger
+                                pendingTask = null;
+                                lock.notifyAll();
+                            }
                         }
-                    }
 
-                    // Continue waiting until resume/step or another evaluation task is scheduled
-                    this.lock.wait(50); // small timeout to periodically recheck
+                        // Continue waiting until resume/step or another evaluation task is scheduled
+                        this.lock.wait(50); // small timeout to periodically recheck
+                    } catch (InterruptedException ignored) {
+                        intr = true;
+                    }
                 }
 
                 // If resumed or stopped, the method exits, letting template rendering continue
             }
-        } catch (InterruptedException e) {
-            java.lang.Thread.currentThread().interrupt();
+        } finally {
+            if (intr) {
+                java.lang.Thread.currentThread().interrupt();
+            }
         }
     }
 
@@ -373,10 +375,17 @@ public class RemoteThread extends Thread {
             lock.notifyAll();
 
             // Wait for the render thread to process and complete the pending task
-            while (pendingTask != null) {
-                try {
-                    lock.wait();
-                } catch (InterruptedException e) {
+            boolean intr = false;
+            try {
+                while (pendingTask != null) {
+                    try {
+                        lock.wait();
+                    } catch (InterruptedException e) {
+                        intr = true;
+                    }
+                }
+            } finally {
+                if (intr) {
                     java.lang.Thread.currentThread().interrupt();
                 }
             }
@@ -427,9 +436,7 @@ public class RemoteThread extends Thread {
      */
     public void stepOver() {
         int frameSize = this.frames.size();
-        this.stopCondition = node -> {
-            return this.frames.size() <= frameSize;
-        };
+        this.stopCondition = node -> this.frames.size() <= frameSize;
         this.resume();
     }
 

@@ -3,7 +3,6 @@ package io.quarkus.devservices.keycloak;
 import static io.quarkus.devservices.common.ConfigureUtil.getDefaultImageNameFor;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
-import static io.quarkus.devservices.keycloak.KeycloakDevServicesConfigBuildItem.getKeycloakUrl;
 import static io.quarkus.devservices.keycloak.KeycloakDevServicesRequiredBuildItem.getDevServicesConfigurator;
 import static io.quarkus.devservices.keycloak.KeycloakDevServicesUtils.createWebClient;
 import static io.quarkus.devservices.keycloak.KeycloakDevServicesUtils.getPasswordAccessToken;
@@ -283,14 +282,13 @@ public class KeycloakDevServicesProcessor {
     void produceDevUiCardWithKeycloakUrl(Optional<KeycloakDevServicesConfigBuildItem> configProps,
             List<KeycloakAdminPageBuildItem> keycloakAdminPageBuildItems,
             BuildProducer<CardPageBuildItem> cardPageProducer) {
-        final String keycloakAdminUrl = getKeycloakUrl(configProps);
-        if (keycloakAdminUrl != null) {
+        if (configProps.isPresent()) {
             keycloakAdminPageBuildItems.forEach(i -> {
                 i.cardPage.addPage(Page
                         .externalPageBuilder("Keycloak Admin")
                         .icon("font-awesome-solid:key")
                         .doNotEmbed(true)
-                        .url(keycloakAdminUrl));
+                        .dynamicUrlJsonRPCMethodName("getKeycloakAdminConsoleUrl"));
                 cardPageProducer.produce(i.cardPage);
             });
         }

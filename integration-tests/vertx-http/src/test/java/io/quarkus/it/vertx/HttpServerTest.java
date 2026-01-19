@@ -12,5 +12,6 @@ class HttpServerTest {
     @Test
     void httpServer(HttpServer httpServer) {
         assertEquals(8081, httpServer.getPort());
+        assertEquals(8081, httpServer.getLocalBaseUri().getPort());
     }
 }

@@ -1268,6 +1268,10 @@ public interface ExtensionsService {
 org.eclipse.microprofile.rest.client.propagateHeaders=Authorization,Proxy-Authorization
 ----
 
+[NOTE]
+For non JAX-RS inbound request like from Vert.x, REST Client provides a `VertxRequestClientHeadersFactory`.
+It looks the `org.eclipse.microprofile.rest.client.propagateHeaders` property propagate the configured headers from `io.vertx.core.http.HttpServerRequest` requests.
+
 == Multiple `@Consumes` media types
 
 Some REST Client interface methods may have a `@Consumes` annotation with multiple media type values, for example:

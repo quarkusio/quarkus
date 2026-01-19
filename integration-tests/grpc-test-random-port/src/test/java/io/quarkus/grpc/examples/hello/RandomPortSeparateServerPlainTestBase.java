@@ -13,9 +13,4 @@ abstract class RandomPortSeparateServerPlainTestBase extends RandomPortTestBase 
                     "quarkus.grpc.clients.hello.host", "localhost");
         }
     }
-
-    @Override
-    protected String serverPortProperty() {
-        return "quarkus.grpc.server.test-port";
-    }
 }

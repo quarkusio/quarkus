@@ -234,7 +234,7 @@ public class QuarkusDevModeTest
             ExtensionContext extensionContext) throws Throwable {
         T actualTestInstance = invocation.proceed();
         // TODO - QuarkusDevModeTest does not read the actual port from the logs. We need to implement it
-        ValueRegistry valueRegistry = new ValueRegistryImpl.Builder().build();
+        ValueRegistry valueRegistry = ValueRegistryImpl.builder().build();
         valueRegistry.register(ListeningAddress.HTTP_TEST_PORT, 8080);
         TestHTTPResourceManager.inject(actualTestInstance, valueRegistry);
         return actualTestInstance;

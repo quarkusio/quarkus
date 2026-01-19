@@ -52,12 +52,57 @@ To select the gRPC server implementation, set the `quarkus.grpc.server.use-separ
 
 [source,properties,subs=attributes+]
 ----
-quarkus.grpc.server.use-separate-server=false # Use the Vert.x based server
+# Use the Vert.x based server
+quarkus.grpc.server.use-separate-server=false
 ----
 
 We recommend the usage of the Vert.x based gRPC server, as it is more flexible and better integrated in the Quarkus ecosystem.
 
 IMPORTANT: You cannot use both servers at the same time.
+
+== Listening on a Random Port
+
+If you don't want to specify a port you can set `quarkus.http.port=0` and `quarkus.http.test-port=0` when using Vert.x
+(`quarkus.grpc.server.use-separate-server=false)` or `quarkus.grpc.server.port=0` and `quarkus.grpc.server.test-port=0`
+when using the gRPC server. A random open port will be picked by the OS, and a log message printed in the console.
+
+To retrieve the real port, use the `io.quarkus.grpc.runtime.GrpcServer` API, which can be injected into the application
+code as a CDI Bean:
+
+[source,java]
+----
+import jakarta.inject.Singleton;
+import io.quarkus.grpc.runtime.GrpcServer;
+
+@Singleton
+public class MyService  {
+    @Inject
+    GrpcServer grpcServer;
+
+    public void connectToServer() {
+        int port = grpcServer.getPort();
+    }
+}
+----
+
+Or into any kind of test, either as a field or test parameter:
+
+[source,java]
+----
+import org.junit.jupiter.api.Test;
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.grpc.runtime.GrpcServer;
+
+@QuarkusTest
+class GrpcServerTest {
+    GrpcServer grpcServer;
+
+    @Test
+    void connectToServer(GrpcServer grpcServer) {
+        int port = grpcServer.getPort();
+    }
+}
+----
 
 == Selecting gRPC clients
 

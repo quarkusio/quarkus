@@ -17,9 +17,4 @@ abstract class RandomPortSeparateServerTlsTestBase extends RandomPortTestBase {
                     "quarkus.grpc.clients.hello.ssl.trust-store", "tls/ca.pem");
         }
     }
-
-    @Override
-    protected String serverPortProperty() {
-        return "quarkus.grpc.server.test-port";
-    }
 }

@@ -979,6 +979,44 @@ include at build time.
 Please see the Quarkus Native Reference Guide for more detailed information on these monitoring options.
 
 [[configuration-reference]]
+
+== Creating a Native Image Bundle
+
+A native image bundle containing everything required to build a native image can be generated.
+This is useful to inspect the build inputs and configuration.
+
+The generation of the bundle can be activated by setting any of the following parameters:
+
+|===
+|Parameter |Description |Default
+
+|quarkus.native.bundle.enabled
+|Enables the native-image bundle generation
+|`false`
+
+|quarkus.native.bundle.dry-run
+|Generates the bundle without building the native executable
+|`false`
+
+|quarkus.native.bundle.name
+|Sets the name of the bundle
+|
+|===
+
+To use this feature, run:
+
+[source,bash]
+----
+./mvnw package -Dnative -Dquarkus.native.bundle.enabled=true
+----
+
+This command will generate all the files and configuration needed for the native image build in `target/{project.name}-{project.version}-runner.nib`.
+
+[NOTE]
+====
+More details on the GraalVM native-image bundle are available in the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/overview/Bundles[GraalVM documentation].
+====
+
 == Configuring the Native Executable
 
 There are a lot of different configuration options that can affect how the native executable is generated.

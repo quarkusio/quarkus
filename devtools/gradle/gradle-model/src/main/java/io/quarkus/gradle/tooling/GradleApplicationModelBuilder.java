@@ -34,7 +34,6 @@ import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.initialization.IncludedBuild;
-import org.gradle.api.internal.tasks.TaskDependencyFactory;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskCollection;
@@ -82,14 +81,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
     private static final byte COLLECT_RELOADABLE_MODULES =          0b100;
     /* @formatter:on */
 
-    private final TaskDependencyFactory taskDepFactory;
-
     public GradleApplicationModelBuilder() {
-        taskDepFactory = null;
-    }
-
-    public GradleApplicationModelBuilder(TaskDependencyFactory taskDepFactory) {
-        this.taskDepFactory = taskDepFactory;
     }
 
     @Override
@@ -113,8 +105,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
     public Object buildAll(String modelName, ModelParameter parameter, Project project) {
         final LaunchMode mode = LaunchMode.valueOf(parameter.getMode());
 
-        final ApplicationDeploymentClasspathBuilder classpathBuilder = new ApplicationDeploymentClasspathBuilder(project, mode,
-                taskDepFactory);
+        final ApplicationDeploymentClasspathBuilder classpathBuilder = new ApplicationDeploymentClasspathBuilder(project, mode);
         final Configuration classpathConfig = classpathBuilder.getRuntimeConfiguration();
         final Configuration deploymentConfig = classpathBuilder.getDeploymentConfiguration();
         final PlatformImports platformImports = classpathBuilder.getPlatformImports();

@@ -42,6 +42,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -722,5 +723,92 @@ class NettyProcessor {
                             }
                         })
                 .build();
+    }
+
+    /**
+     * When the application targets Java 21+, then we can convert {@code io.netty.util.internal.PlatformDependent0} to depend
+     * explicitly on Virtual Threads instead of Netty needing to use reflection (that has a noticeable impact on startup).
+     * The change makes the {@code IS_VIRTUAL_THREAD_METHOD} and {@code BASE_VIRTUAL_THREAD_CLASS} fields {@code null} while
+     * also
+     * converting the {@code isVirtualThread} method to:
+     *
+     * <pre>{@code
+     * static boolean isVirtualThread() {
+     *     return thread != null && thread.isVirtual();
+     * }
+     * }</pre>
+     *
+     * The reason we don't remove the aforementioned fields is that to do that we would have to transform the class loading
+     * initialization method,
+     * which would be to brittle.
+     */
+    @BuildStep
+    void transformPlatformDependent0(CompiledJavaVersionBuildItem compiledJavaVersion,
+            BuildProducer<BytecodeTransformerBuildItem> producer) {
+        if (compiledJavaVersion.getJavaVersion().isJava21OrHigher() != CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
+            return;
+        }
+        String className = "io.netty.util.internal.PlatformDependent0";
+        producer.produce(new BytecodeTransformerBuildItem.Builder().setClassToTransform(className)
+                .setCacheable(true).setVisitorFunction(
+                        new BiFunction<>() {
+                            @Override
+                            public ClassVisitor apply(String s, ClassVisitor classVisitor) {
+                                ClassTransformer transformer = new ClassTransformer(className);
+
+                                {
+                                    MethodDescriptor methodDescriptor = MethodDescriptor.ofMethod(className,
+                                            "getIsVirtualThreadMethod",
+                                            Method.class);
+                                    transformer.removeMethod(methodDescriptor);
+                                    MethodCreator getIsVirtualThreadMethod = transformer.addMethod(methodDescriptor)
+                                            .setModifiers(Modifier.STATIC | Modifier.PRIVATE);
+                                    getIsVirtualThreadMethod.returnValue(getIsVirtualThreadMethod.loadNull());
+                                }
+
+                                {
+                                    MethodDescriptor methodDescriptor = MethodDescriptor.ofMethod(className,
+                                            "getBaseVirtualThreadClass",
+                                            Class.class);
+                                    transformer.removeMethod(methodDescriptor);
+                                    MethodCreator getBaseVirtualThreadClassMethod = transformer.addMethod(methodDescriptor)
+                                            .setModifiers(Modifier.STATIC | Modifier.PRIVATE);
+                                    getBaseVirtualThreadClassMethod.returnValue(getBaseVirtualThreadClassMethod.loadNull());
+                                }
+
+                                {
+                                    MethodDescriptor methodDescriptor = MethodDescriptor.ofMethod(className, "isVirtualThread",
+                                            boolean.class, Thread.class);
+                                    transformer.removeMethod(methodDescriptor);
+
+                                    MethodCreator isVirtualThreadMethod = transformer.addMethod(methodDescriptor)
+                                            .setModifiers(Modifier.STATIC);
+
+                                    // Get the thread parameter
+                                    ResultHandle threadParam = isVirtualThreadMethod.getMethodParam(0);
+
+                                    // Check if thread is null
+                                    BranchResult nullCheck = isVirtualThreadMethod.ifNull(threadParam);
+
+                                    // If null, return false
+                                    nullCheck.trueBranch().returnValue(nullCheck.trueBranch().load(false));
+
+                                    // If not null, call thread.isVirtual()
+                                    MethodDescriptor isVirtualMethod = MethodDescriptor.ofMethod(
+                                            Thread.class,
+                                            "isVirtual",
+                                            boolean.class);
+                                    ResultHandle isVirtualResult = nullCheck.falseBranch().invokeVirtualMethod(
+                                            isVirtualMethod,
+                                            threadParam);
+
+                                    // Return the result
+                                    nullCheck.falseBranch().returnValue(isVirtualResult);
+                                }
+
+                                return transformer.applyTo(classVisitor);
+                            }
+                        })
+                .build());
     }
 }

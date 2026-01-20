@@ -19,7 +19,7 @@
         <!-- Plugin versions (please keep in alphabetical order) -->
         <version.archetype.plugin>3.4.1</version.archetype.plugin>
         <version.buildhelper.plugin>3.6.1</version.buildhelper.plugin>
-        <version.buildnumber.plugin>3.2.1</version.buildnumber.plugin>
+        <version.buildnumber.plugin>3.3.0</version.buildnumber.plugin>
         <version.clean.plugin>3.5.0</version.clean.plugin>
         <version.compiler.plugin>3.14.1</version.compiler.plugin>
         <version.dependency.plugin>3.8.1</version.dependency.plugin>

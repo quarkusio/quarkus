@@ -220,7 +220,7 @@ public class StartupBuildSteps {
                             b1.invokeVirtual(methodDescOf(startupMethod), instance);
                         });
                         tc.catch_(Exception.class, "e", (b1, e) -> {
-                            b0.invokeInterface(CONTEXTUAL_DESTROY, rtBean, instance, creationalContext);
+                            b1.invokeInterface(CONTEXTUAL_DESTROY, rtBean, instance, creationalContext);
                             b1.throw_(b1.new_(ConstructorDesc.of(RuntimeException.class, String.class, Throwable.class),
                                     Const.of("Error calling @Startup method"), e));
                         });

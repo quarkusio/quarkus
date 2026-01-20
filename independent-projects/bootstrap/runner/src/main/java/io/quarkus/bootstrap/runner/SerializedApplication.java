@@ -250,9 +250,14 @@ public class SerializedApplication {
                 ZipEntry entry = entries.nextElement();
                 if (!entry.getName().contains("/")) {
                     hasDefaultPackage = true;
-                    if (!entry.getName().isEmpty() && FULLY_INDEXED_PATHS.contains("")) {
-                        fullyIndexedPaths.computeIfAbsent("", SerializedApplication::newFullyIndexedPathsValue)
-                                .add(entry.getName());
+                    if (!entry.getName().isEmpty()) {
+                        if (FULLY_INDEXED_PATHS.contains("")) {
+                            fullyIndexedPaths.computeIfAbsent("", SerializedApplication::newFullyIndexedPathsValue)
+                                    .add(entry.getName());
+                        }
+                        if (writeAllEntries) {
+                            allEntries.add(entry.getName());
+                        }
                     }
                 } else if (!entry.isDirectory()) {
                     //some jars don't have correct directory entries

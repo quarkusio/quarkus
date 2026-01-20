@@ -23,11 +23,6 @@ The document header ends at the first blank line. Do not remove the blank line b
 A short introduction that summarizes or frames the concept.
 This summary should help a reader determine whether or not this document is what they want to read.
 
-////
-TODO: If this is a concept related to an experimental or tech-preview extension, uncomment the following (otherwise delete)
-include::{includes}/extension-status.adoc[]
-////
-
 == Create additional sections
 
 - xref:../doc-concept.adoc#concept[Quarkus documentation content types: Concept guides]

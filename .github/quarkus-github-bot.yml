@@ -521,7 +521,6 @@ triage:
         - docs/src/main/asciidoc/_includes/devtools/extension-list.adoc
         - docs/src/main/asciidoc/_includes/devtools/maven-opts.adoc
         - docs/src/main/asciidoc/_includes/duration-format-note.adoc
-        - docs/src/main/asciidoc/_includes/extension-status.adoc
         - docs/src/main/asciidoc/_includes/platform-include.adoc
         - docs/src/main/asciidoc/_includes/prerequisites.adoc
         - docs/src/main/asciidoc/datasource.adoc

@@ -19,8 +19,6 @@ This allows you to inject any service or component initialized by Quarkus direct
 classes. You can also change the lifecycle of your function class from request scoped (the default)
 to application scoped too if you want your function class to be a singleton.
 
-include::{includes}/extension-status.adoc[]
-
 [source, java]
 ----
 import com.microsoft.azure.functions.ExecutionContext;

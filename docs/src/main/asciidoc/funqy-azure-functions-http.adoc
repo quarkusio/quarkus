@@ -20,9 +20,6 @@ is very minimalistic and you will lose REST features like linking and the abilit
 HTTP features like cache-control and conditional GETs.  You may want to consider using Quarkus's
 Jakarta REST, Spring MVC, or Vert.x Web Reactive Route xref:azure-functions-http.adoc[support] instead.  They also work with Quarkus and Azure Functions.
 
-
-include::{includes}/extension-status.adoc[]
-
 Follow the xref:azure-functions-http.adoc[Azure Functions HTTP Guide].  It walks through using a variety of HTTP
 frameworks on Azure Functions.  Including Funqy.
 

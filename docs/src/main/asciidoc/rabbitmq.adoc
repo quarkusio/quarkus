@@ -12,8 +12,6 @@ include::_attributes.adoc[]
 
 This guide demonstrates how your Quarkus application can utilize Quarkus Messaging to interact with RabbitMQ.
 
-include::{includes}/extension-status.adoc[]
-
 == Prerequisites
 
 :prerequisites-docker-compose:

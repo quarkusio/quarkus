@@ -1,9 +1,13 @@
 package io.quarkus.qute.deployment;
 
+import java.net.URI;
+
 import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
+import io.quarkus.qute.i18n.Message;
+import io.quarkus.qute.runtime.MessageBundleRecorder.MessageInfo;
 
 /**
  * Represents a message bundle method.
@@ -19,6 +23,7 @@ public final class MessageBundleMethodBuildItem extends MultiBuildItem {
     private final String template;
     private final boolean isDefaultBundle;
     private final boolean hasGeneratedTemplate;
+    private final MessageInfo messageInfo;
 
     MessageBundleMethodBuildItem(String bundleName, String key, String templateId, MethodInfo method, String template,
             boolean isDefaultBundle, boolean hasGeneratedTemplate) {
@@ -29,6 +34,8 @@ public final class MessageBundleMethodBuildItem extends MultiBuildItem {
         this.template = template;
         this.isDefaultBundle = isDefaultBundle;
         this.hasGeneratedTemplate = hasGeneratedTemplate;
+        URI source = hasMethod() ? JandexElementUriBuilder.getSource(method, Message.class) : null;
+        this.messageInfo = new MessageInfo(source != null ? source.toString() : null, template);
     }
 
     public String getBundleName() {
@@ -67,6 +74,10 @@ public final class MessageBundleMethodBuildItem extends MultiBuildItem {
 
     public String getTemplate() {
         return template;
+    }
+
+    public MessageInfo getMessageInfo() {
+        return messageInfo;
     }
 
     /**

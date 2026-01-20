@@ -15,7 +15,6 @@ import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
 import io.quarkus.devui.runtime.mcp.model.tool.Tool;
 import io.quarkus.runtime.annotations.DevMCPEnableByDefault;
 import io.quarkus.runtime.annotations.JsonRpcDescription;
-import io.quarkus.runtime.annotations.Usage;
 
 /**
  * This exposes all Dev UI Runtime and Deployment JsonRPC Methods as MCP Tools
@@ -76,25 +75,9 @@ public class McpToolsService {
     }
 
     private void addTool(List<Tool> tools, JsonRpcMethod method, Filter filter) {
-        if (isEnabled(method, filter)) {
+        if (mcpDevUIJsonRpcService.isEnabled(method, filter)) {
             tools.add(toTool(method));
         }
-    }
-
-    private boolean isEnabled(JsonRpcMethod method, Filter filter) {
-
-        if (method.getUsage().contains(Usage.DEV_MCP)) {
-            if (mcpDevUIJsonRpcService.isExplicitlyEnabled(method.getMethodName())) {
-                return filter.equals(Filter.enabled);
-            } else if (mcpDevUIJsonRpcService.isExplicitlyDisabled(method.getMethodName())) {
-                return filter.equals(Filter.disabled);
-            } else if (filter.equals(Filter.enabled)) {
-                return method.isMcpEnabledByDefault();
-            } else if (filter.equals(Filter.disabled)) {
-                return !method.isMcpEnabledByDefault();
-            }
-        }
-        return false;
     }
 
     private Tool toTool(JsonRpcMethod jsonRpcMethod) {

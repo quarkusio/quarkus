@@ -4,8 +4,6 @@ import java.util.Map;
 
 import jakarta.enterprise.inject.spi.CDI;
 
-import org.jboss.logging.Logger;
-
 import io.quarkus.devui.runtime.comms.JsonRpcRouter;
 import io.quarkus.devui.runtime.comms.MessageType;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcCodec;
@@ -21,7 +19,6 @@ import io.vertx.ext.web.RoutingContext;
  * Alternative Json RPC communication using Streamable HTTP for MCP
  */
 public class McpHttpHandler implements Handler<RoutingContext> {
-    private static final Logger LOG = Logger.getLogger(McpHttpHandler.class.getName());
     private final String quarkusVersion;
     private final JsonMapper jsonMapper;
     private final JsonRpcCodec codec;
@@ -123,8 +120,12 @@ public class McpHttpHandler implements Handler<RoutingContext> {
                 jsonRpcRequest.setParams(Map.of("uri", uri));
                 jsonRpcRouter.route(jsonRpcRequest, writer);
             } else {
-                // This is a normal extension method
-                jsonRpcRouter.route(jsonRpcRequest, writer);
+                if (jsonRpcRouter.isEnabled(jsonRpcRequest)) {
+                    jsonRpcRouter.route(jsonRpcRequest, writer);
+                } else {
+                    codec.writeErrorResponse(writer, jsonRpcRequest.getId(), methodName,
+                            new McpMethodNotEnabledException("Method not enabled"));
+                }
             }
         });
     }

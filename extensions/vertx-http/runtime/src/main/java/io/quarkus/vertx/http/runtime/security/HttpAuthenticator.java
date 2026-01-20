@@ -464,7 +464,7 @@ public final class HttpAuthenticator {
 
         @Override
         public Uni<ChallengeData> getChallenge(RoutingContext context) {
-            ChallengeData challengeData = new ChallengeData(HttpResponseStatus.FORBIDDEN.code(), null, null);
+            ChallengeData challengeData = new ChallengeData(HttpResponseStatus.FORBIDDEN.code());
             return Uni.createFrom().item(challengeData);
         }
 

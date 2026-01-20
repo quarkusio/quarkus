@@ -5,9 +5,11 @@ import java.util.Set;
 import java.util.function.Function;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.oidc.DPoPNonceProvider;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.common.runtime.OidcConstants;
@@ -30,15 +32,16 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
     private static final HttpCredentialTransport OIDC_WEB_APP_TRANSPORT = new HttpCredentialTransport(
             HttpCredentialTransport.Type.AUTHORIZATION_CODE, OidcConstants.CODE_FLOW_CODE);
 
-    private final BearerAuthenticationMechanism bearerAuth = new BearerAuthenticationMechanism();
+    private final BearerAuthenticationMechanism bearerAuth;
     private final CodeAuthenticationMechanism codeAuth;
     private final DefaultTenantConfigResolver resolver;
 
-    public OidcAuthenticationMechanism(DefaultTenantConfigResolver resolver, BlockingSecurityExecutor blockingExecutor) {
+    OidcAuthenticationMechanism(DefaultTenantConfigResolver resolver, BlockingSecurityExecutor blockingExecutor,
+            Instance<DPoPNonceProvider> dPoPNonceProviderInstance) {
         this.resolver = resolver;
-        this.codeAuth = new CodeAuthenticationMechanism(blockingExecutor);
-        this.bearerAuth.init(this, resolver);
-        this.codeAuth.init(this, resolver);
+        this.codeAuth = new CodeAuthenticationMechanism(blockingExecutor, resolver, this);
+        this.bearerAuth = new BearerAuthenticationMechanism(
+                dPoPNonceProviderInstance.isResolvable() ? dPoPNonceProviderInstance.get() : null, resolver, this);
     }
 
     @Override

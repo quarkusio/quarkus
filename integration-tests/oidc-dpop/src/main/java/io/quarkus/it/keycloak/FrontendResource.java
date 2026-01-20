@@ -15,6 +15,9 @@ import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 
+import org.jboss.resteasy.reactive.RestPath;
+import org.jboss.resteasy.reactive.RestQuery;
+
 import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
@@ -50,9 +53,22 @@ public class FrontendResource {
     }
 
     @GET
+    @Path("login-jwt-with-nonce/{nonce}")
+    public Response loginJwtWithNonce(@RestPath String nonce) {
+        return redirect("dpop-jwt", "callback-jwt-with-nonce/" + nonce);
+    }
+
+    @GET
     @Path("login-jwt")
     public Response loginJwt() {
         return redirect("dpop-jwt", "callback-jwt");
+    }
+
+    @GET
+    @Path("callback-jwt-with-nonce/{nonce}")
+    public Response callbackJwtWithNonce(@RestQuery String code, @RestPath String nonce) throws Exception {
+        return callProtectedEndpoint(code, "dpop-jwt", "callback-jwt-with-nonce/" + nonce, "GET", "dpop-jwt", "dpop-jwt", false,
+                false, false, nonce);
     }
 
     @GET
@@ -132,6 +148,16 @@ public class FrontendResource {
             boolean wrongDpopJwkKey,
             boolean wrongDpopTokenHash)
             throws Exception {
+        return callProtectedEndpoint(code, tenantId, redirectPath, dPopHttpMethod, dPopEndpointPath, quarkusEndpointPath,
+                wrongDpopSignature, wrongDpopJwkKey, wrongDpopTokenHash, null);
+    }
+
+    private Response callProtectedEndpoint(String code, String tenantId, String redirectPath, String dPopHttpMethod,
+            String dPopEndpointPath, String quarkusEndpointPath,
+            boolean wrongDpopSignature,
+            boolean wrongDpopJwkKey,
+            boolean wrongDpopTokenHash, String resourceNonce)
+            throws Exception {
         String redirectUriParam = ui.getBaseUriBuilder().path("single-page-app").path(redirectPath).build().toString();
 
         MultiMap grantParams = MultiMap.caseInsensitiveMultiMap();
@@ -155,9 +181,18 @@ public class FrontendResource {
         requestToQuarkus.putHeader("Accept", "text/plain");
         String absoluteDpopEndpointUri = ui.getBaseUriBuilder().path("service").path(dPopEndpointPath).build().toString();
         requestToQuarkus.putHeader("DPoP", createDPopProofForQuarkus(keyPair, accessToken, dPopHttpMethod,
-                absoluteDpopEndpointUri, wrongDpopSignature, wrongDpopJwkKey, wrongDpopTokenHash));
+                absoluteDpopEndpointUri, wrongDpopSignature, wrongDpopJwkKey, wrongDpopTokenHash, resourceNonce));
         requestToQuarkus.putHeader("Authorization", "DPoP " + accessToken);
         HttpResponse<Buffer> response = requestToQuarkus.sendAndAwait();
+        if (response.statusCode() == 401) {
+            var responseBuilder = Response.ok("401 status from ProtectedResource");
+            response.headers().forEach((s, o) -> {
+                if (!"content-length".equals(s)) {
+                    responseBuilder.header(s, o);
+                }
+            });
+            return responseBuilder.build();
+        }
         return Response.ok(response.bodyAsString()).build();
     }
 
@@ -202,10 +237,15 @@ public class FrontendResource {
             String dPopEndpointPath,
             boolean wrongDpopSignature,
             boolean wrongDpopJwkKey,
-            boolean wrongAccesstokenHash) throws Exception {
+            boolean wrongAccesstokenHash, String nonce) throws Exception {
 
         JwtClaimsBuilder jwtClaimsBuilder = Jwt.claim("htm", dPopHttpMethod)
                 .claim("htu", dPopEndpointPath);
+
+        if (nonce != null) {
+            jwtClaimsBuilder.claim("nonce", nonce);
+        }
+
         JwtSignatureBuilder jwtSignatureBuilder = jwtClaimsBuilder
                 .claim("ath", wrongAccesstokenHash ? accessToken
                         : OidcCommonUtils.base64UrlEncode(

@@ -23,15 +23,17 @@ abstract class AbstractOidcAuthenticationMechanism {
             "AbstractOidcAuthenticationMechanism.PROPAGATE_TOKEN_CREDENTIAL_WITH_DUPLICATED_CTX";
     private static final String ERROR_MSG = "OIDC requires a safe (isolated) Vert.x sub-context for propagation of the '"
             + TokenCredential.class.getName() + "', but the current context hasn't been flagged as such.";
-    protected DefaultTenantConfigResolver resolver;
+    protected final DefaultTenantConfigResolver resolver;
     /**
      * Propagate {@link TokenCredential} via Vert.X duplicated context if explicitly enabled and request context
      * can not be activated.
      */
     private final boolean propagateTokenCredentialWithDuplicatedCtx;
-    private HttpAuthenticationMechanism parent;
+    private final HttpAuthenticationMechanism parent;
 
-    AbstractOidcAuthenticationMechanism() {
+    AbstractOidcAuthenticationMechanism(DefaultTenantConfigResolver resolver, HttpAuthenticationMechanism parent) {
+        this.resolver = resolver;
+        this.parent = parent;
         // we use system property in order to keep this option internal and avoid introducing SPI
         this.propagateTokenCredentialWithDuplicatedCtx = Boolean
                 .getBoolean(OIDC_PROPAGATE_TOKEN_CREDENTIAL);
@@ -64,11 +66,6 @@ abstract class AbstractOidcAuthenticationMechanism {
 
         return identityProviderManager.authenticate(HttpSecurityUtils.setRoutingContextAttribute(
                 new TokenAuthenticationRequest(token), context));
-    }
-
-    void init(HttpAuthenticationMechanism parent, DefaultTenantConfigResolver resolver) {
-        this.parent = parent;
-        this.resolver = resolver;
     }
 
 }

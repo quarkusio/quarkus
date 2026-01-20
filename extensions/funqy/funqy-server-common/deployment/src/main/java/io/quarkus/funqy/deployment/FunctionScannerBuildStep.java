@@ -107,14 +107,14 @@ public class FunctionScannerBuildStep {
             }
         }
         Set<ClassInfo> withoutDefaultCtor = new HashSet<>();
-        for (ClassInfo clazz : classes) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(clazz.name().toString())
-                    .reason(getClass().getName())
-                    .methods().fields().build());
-            if (!clazz.hasNoArgsConstructor()) {
-                withoutDefaultCtor.add(clazz);
-            }
-        }
+        classes.stream()
+                .filter(clazz -> !clazz.hasNoArgsConstructor())
+                .forEach(withoutDefaultCtor::add);
+
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(classNames)
+                .reason(getClass().getName())
+                .methods().fields().build());
+
         unremovableBeans.produce(new UnremovableBeanBuildItem(b -> classNames.contains(b.getBeanClass().toString())));
         generateDefaultConstructors(transformers, withoutDefaultCtor);
 

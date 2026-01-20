@@ -1,6 +1,7 @@
 package io.quarkus.spring.web.deployment;
 
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -204,6 +205,7 @@ public class SpringWebProcessor {
 
         ClassInfo controllerAdvice = controllerAdviceInstance.target().asClass();
         List<MethodInfo> methods = controllerAdvice.methods();
+        final var forReflection = new ArrayList<String>(methods.size());
         for (MethodInfo method : methods) {
             AnnotationInstance exceptionHandlerInstance = method.annotation(EXCEPTION_HANDLER);
             if (exceptionHandlerInstance == null) {
@@ -222,8 +224,7 @@ public class SpringWebProcessor {
             }
 
             if (!RESPONSE_ENTITY.equals(returnTypeDotName)) {
-                reflectiveClassProducer.produce(
-                        ReflectiveClassBuildItem.builder(returnTypeDotName.toString()).methods().fields().build());
+                forReflection.add(returnTypeDotName.toString());
             }
 
             // we need to generate one JAX-RS ExceptionMapper per Exception type
@@ -237,6 +238,9 @@ public class SpringWebProcessor {
             }
 
         }
+
+        reflectiveClassProducer.produce(
+                ReflectiveClassBuildItem.builder(forReflection).methods().fields().build());
 
         // allow access to HttpHeaders from Arc.container()
         if (!isResteasyClassic) {

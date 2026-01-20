@@ -274,9 +274,9 @@ public class SecurityProcessor {
             List<String> providerClasses = registerProvider(provider.getProviderName(), provider.getProviderConfig(),
                     additionalProviders);
             for (String className : providerClasses) {
-                classes.produce(ReflectiveClassBuildItem.builder(className).methods().fields().build());
                 log.debugf("Register JCA class: %s", className);
             }
+            classes.produce(ReflectiveClassBuildItem.builder(providerClasses).methods().fields().build());
         }
     }
 
@@ -289,10 +289,9 @@ public class SecurityProcessor {
         Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider = getOne(bouncyCastleJsseProviders);
         if (bouncyCastleJsseProvider.isPresent()) {
             reflection.produce(
-                    ReflectiveClassBuildItem.builder(SecurityProviderUtils.BOUNCYCASTLE_JSSE_PROVIDER_CLASS_NAME).methods()
-                            .fields().build());
-            reflection.produce(
-                    ReflectiveClassBuildItem.builder("org.bouncycastle.jsse.provider.DefaultSSLContextSpi$LazyManagers")
+                    ReflectiveClassBuildItem
+                            .builder(SecurityProviderUtils.BOUNCYCASTLE_JSSE_PROVIDER_CLASS_NAME,
+                                    "org.bouncycastle.jsse.provider.DefaultSSLContextSpi$LazyManagers")
                             .methods().fields().build());
             runtimeReInitialized
                     .produce(new RuntimeInitializedClassBuildItem(
@@ -301,10 +300,9 @@ public class SecurityProcessor {
                     bouncyCastleJsseProvider.get().isInFipsMode());
         } else {
             Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider = getOne(bouncyCastleProviders);
-            if (bouncyCastleProvider.isPresent()) {
-                prepareBouncyCastleProvider(curateOutcomeBuildItem, reflection, runtimeReInitialized,
-                        bouncyCastleProvider.get().isInFipsMode());
-            }
+            bouncyCastleProvider.ifPresent(bouncyCastleProviderBuildItem -> prepareBouncyCastleProvider(curateOutcomeBuildItem,
+                    reflection, runtimeReInitialized,
+                    bouncyCastleProviderBuildItem.isInFipsMode()));
         }
     }
 
@@ -1002,11 +1000,12 @@ public class SecurityProcessor {
             classNameToPermCheck = securityChecks.getClassNameSecurityChecks();
 
             // register used permission classes for reflection
-            for (String permissionClass : securityChecks.permissionClasses()) {
-                reflectiveClassBuildItemBuildProducer
-                        .produce(ReflectiveClassBuildItem.builder(permissionClass).constructors().fields().methods().build());
+            final var permissionClasses = securityChecks.permissionClasses();
+            for (String permissionClass : permissionClasses) {
                 log.debugf("Register Permission class for reflection: %s", permissionClass);
             }
+            reflectiveClassBuildItemBuildProducer
+                    .produce(ReflectiveClassBuildItem.builder(permissionClasses).constructors().fields().methods().build());
         } else {
             classNameToPermCheck = Map.of();
         }

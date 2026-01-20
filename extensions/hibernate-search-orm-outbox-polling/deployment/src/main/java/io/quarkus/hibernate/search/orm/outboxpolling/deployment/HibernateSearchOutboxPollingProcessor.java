@@ -31,9 +31,9 @@ class HibernateSearchOutboxPollingProcessor {
     void registerInternalModel(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<AdditionalJpaModelBuildItem> additionalJpaModel) {
-        String[] avroTypes = HibernateOrmMapperOutboxPollingClasses.avroTypes().toArray(String[]::new);
-        additionalIndexedClasses.produce(new AdditionalIndexedClassesBuildItem(avroTypes));
-        String[] hibernateOrmTypes = HibernateOrmMapperOutboxPollingClasses.hibernateOrmTypes().toArray(String[]::new);
+        additionalIndexedClasses
+                .produce(new AdditionalIndexedClassesBuildItem(HibernateOrmMapperOutboxPollingClasses.avroTypes()));
+        final var hibernateOrmTypes = HibernateOrmMapperOutboxPollingClasses.hibernateOrmTypes();
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(hibernateOrmTypes)
                 .reason(getClass().getName())
                 .methods().fields().build());

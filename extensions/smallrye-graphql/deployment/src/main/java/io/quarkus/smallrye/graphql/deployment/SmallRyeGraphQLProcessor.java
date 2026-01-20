@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
@@ -370,13 +371,13 @@ public class SmallRyeGraphQLProcessor {
         graphQLInitializedProducer.produce(new SmallRyeGraphQLInitializedBuildItem(initialized));
 
         // Make sure the complex object from the application can work in native mode
-        reflectiveClassProducer
-                .produce(ReflectiveClassBuildItem.builder(getSchemaJavaClasses(schema))
-                        .reason(getClass().getName())
-                        .methods().fields().build());
+        final var forReflection = new HashSet<String>(50); // to avoid constant size expansion
+        getSchemaJavaClasses(schema, forReflection);
 
         // Make sure the GraphQL Java classes needed for introspection can work in native mode
-        reflectiveClassProducer.produce(ReflectiveClassBuildItem.builder(getGraphQLJavaClasses())
+        getGraphQLJavaClasses(forReflection);
+
+        reflectiveClassProducer.produce(ReflectiveClassBuildItem.builder(forReflection)
                 .reason(getClass().getName())
                 .methods().fields().build());
     }
@@ -522,119 +523,98 @@ public class SmallRyeGraphQLProcessor {
         return false;
     }
 
-    private String[] getSchemaJavaClasses(Schema schema) {
+    private void getSchemaJavaClasses(Schema schema, Set<String> forReflection) {
         // Unique list of classes we need to do reflection on
-        Set<String> classes = new HashSet<>();
-        classes.addAll(getOperationClassNames(schema.getAllOperations()));
-        classes.addAll(getTypeClassNames(schema.getTypes().values()));
-        classes.addAll(getInputClassNames(schema.getInputs().values()));
-        classes.addAll(getInterfaceClassNames(schema.getInterfaces().values()));
-        classes.addAll(getUnionClassNames(schema.getUnions().values()));
-        classes.addAll(getDirectiveTypeClassNames(schema.getDirectiveTypes()));
-
-        return classes.toArray(String[]::new);
+        getOperationClassNames(schema.getAllOperations(), forReflection);
+        getTypeClassNames(schema.getTypes().values(), forReflection);
+        getInputClassNames(schema.getInputs().values(), forReflection);
+        getInterfaceClassNames(schema.getInterfaces().values(), forReflection);
+        getUnionClassNames(schema.getUnions().values(), forReflection);
+        getDirectiveTypeClassNames(schema.getDirectiveTypes(), forReflection);
     }
 
-    private Class[] getGraphQLJavaClasses() {
-        Set<Class> classes = new HashSet<>();
-        classes.add(graphql.schema.FieldCoordinates.class);
-        classes.add(graphql.schema.GraphQLArgument.class);
-        classes.add(graphql.schema.GraphQLCodeRegistry.class);
-        classes.add(graphql.schema.GraphQLEnumType.class);
-        classes.add(graphql.schema.GraphQLFieldDefinition.class);
-        classes.add(graphql.schema.GraphQLInputObjectField.class);
-        classes.add(graphql.schema.GraphQLInputObjectType.class);
-        classes.add(graphql.schema.GraphQLInputType.class);
-        classes.add(graphql.schema.GraphQLInterfaceType.class);
-        classes.add(graphql.schema.GraphQLUnionType.class);
-        classes.add(graphql.schema.GraphQLList.class);
-        classes.add(graphql.schema.GraphQLNonNull.class);
-        classes.add(graphql.schema.GraphQLObjectType.class);
-        classes.add(graphql.schema.GraphQLOutputType.class);
-        classes.add(graphql.schema.GraphQLScalarType.class);
-        classes.add(graphql.schema.GraphQLSchema.class);
-        classes.add(graphql.schema.GraphQLTypeReference.class);
-        classes.add(List.class);
-        classes.add(Collection.class);
-        return classes.toArray(Class[]::new);
+    private void getGraphQLJavaClasses(Set<String> classes) {
+        classes.add(graphql.schema.FieldCoordinates.class.getName());
+        classes.add(graphql.schema.GraphQLArgument.class.getName());
+        classes.add(graphql.schema.GraphQLCodeRegistry.class.getName());
+        classes.add(graphql.schema.GraphQLEnumType.class.getName());
+        classes.add(graphql.schema.GraphQLFieldDefinition.class.getName());
+        classes.add(graphql.schema.GraphQLInputObjectField.class.getName());
+        classes.add(graphql.schema.GraphQLInputObjectType.class.getName());
+        classes.add(graphql.schema.GraphQLInputType.class.getName());
+        classes.add(graphql.schema.GraphQLInterfaceType.class.getName());
+        classes.add(graphql.schema.GraphQLUnionType.class.getName());
+        classes.add(graphql.schema.GraphQLList.class.getName());
+        classes.add(graphql.schema.GraphQLNonNull.class.getName());
+        classes.add(graphql.schema.GraphQLObjectType.class.getName());
+        classes.add(graphql.schema.GraphQLOutputType.class.getName());
+        classes.add(graphql.schema.GraphQLScalarType.class.getName());
+        classes.add(graphql.schema.GraphQLSchema.class.getName());
+        classes.add(graphql.schema.GraphQLTypeReference.class.getName());
+        classes.add(List.class.getName());
+        classes.add(Collection.class.getName());
     }
 
-    private Set<String> getOperationClassNames(Set<Operation> operations) {
-        Set<String> classes = new HashSet<>();
+    private void getOperationClassNames(Set<Operation> operations, Set<String> classes) {
         for (Operation operation : operations) {
             classes.add(operation.getClassName());
             for (Argument argument : operation.getArguments()) {
-                classes.addAll(getAllReferenceClasses(argument.getReference()));
+                getAllReferenceClasses(argument.getReference(), classes);
             }
-            classes.addAll(getAllReferenceClasses(operation.getReference()));
+            getAllReferenceClasses(operation.getReference(), classes);
         }
-        return classes;
+
     }
 
-    private Set<String> getTypeClassNames(Collection<Type> complexGraphQLTypes) {
-        Set<String> classes = new HashSet<>();
+    private void getTypeClassNames(Collection<Type> complexGraphQLTypes, Set<String> classes) {
         for (Type complexGraphQLType : complexGraphQLTypes) {
             classes.add(complexGraphQLType.getClassName());
-            classes.addAll(getFieldClassNames(complexGraphQLType.getFields()));
+            getFieldClassNames(complexGraphQLType.getFields(), classes);
         }
-        return classes;
     }
 
-    private Set<String> getDirectiveTypeClassNames(Collection<DirectiveType> complexGraphQLDirectiveTypes) {
-        Set<String> classes = new HashSet<>();
-        for (DirectiveType complexGraphQLDirectiveType : complexGraphQLDirectiveTypes) {
-            if (complexGraphQLDirectiveType.getClassName() != null) {
-                classes.add(complexGraphQLDirectiveType.getClassName());
-            }
-        }
-        return classes;
+    private void getDirectiveTypeClassNames(Collection<DirectiveType> complexGraphQLDirectiveTypes, Set<String> classes) {
+        complexGraphQLDirectiveTypes.stream()
+                .map(DirectiveType::getClassName)
+                .filter(Objects::nonNull)
+                .forEach(classes::add);
     }
 
-    private Set<String> getInputClassNames(Collection<InputType> complexGraphQLTypes) {
-        Set<String> classes = new HashSet<>();
+    private void getInputClassNames(Collection<InputType> complexGraphQLTypes, Set<String> classes) {
         for (InputType complexGraphQLType : complexGraphQLTypes) {
             classes.add(complexGraphQLType.getClassName());
-            classes.addAll(getFieldClassNames(complexGraphQLType.getFields()));
+            getFieldClassNames(complexGraphQLType.getFields(), classes);
         }
-        return classes;
     }
 
-    private Set<String> getInterfaceClassNames(Collection<Type> complexGraphQLTypes) {
-        Set<String> classes = new HashSet<>();
+    private void getInterfaceClassNames(Collection<Type> complexGraphQLTypes, Set<String> classes) {
         for (Type complexGraphQLType : complexGraphQLTypes) {
             classes.add(complexGraphQLType.getClassName());
-            classes.addAll(getFieldClassNames(complexGraphQLType.getFields()));
+            getFieldClassNames(complexGraphQLType.getFields(), classes);
         }
-        return classes;
     }
 
-    private Set<String> getUnionClassNames(Collection<UnionType> unionTypes) {
-        Set<String> classes = new HashSet<>();
+    private void getUnionClassNames(Collection<UnionType> unionTypes, Set<String> classes) {
         for (UnionType unionType : unionTypes) {
             classes.add(unionType.getClassName());
         }
-        return classes;
     }
 
-    private Set<String> getFieldClassNames(Map<String, Field> fields) {
-        Set<String> classes = new HashSet<>();
+    private void getFieldClassNames(Map<String, Field> fields, Set<String> classes) {
         for (Field field : fields.values()) {
-            classes.addAll(getAllReferenceClasses(field.getReference()));
+            getAllReferenceClasses(field.getReference(), classes);
         }
-        return classes;
     }
 
-    private Set<String> getAllReferenceClasses(Reference reference) {
-        Set<String> classes = new HashSet<>();
+    private void getAllReferenceClasses(Reference reference, Set<String> classes) {
         classes.add(reference.getClassName());
         if (reference.getClassParametrizedTypes() != null && !reference.getClassParametrizedTypes().isEmpty()) {
 
             Collection<Reference> parametrized = reference.getClassParametrizedTypes().values();
             for (Reference r : parametrized) {
-                classes.addAll(getAllReferenceClasses(r));
+                getAllReferenceClasses(r, classes);
             }
         }
-        return classes;
     }
 
     @BuildStep

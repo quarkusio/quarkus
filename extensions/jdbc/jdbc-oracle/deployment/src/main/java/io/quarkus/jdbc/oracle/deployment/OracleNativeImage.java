@@ -42,11 +42,10 @@ public final class OracleNativeImage {
         // These are:
         // com.sun.jndi.ldap.LdapCtxFactory, com.sun.jndi.dns.DnsContextFactory and com.sun.jndi.rmi.registry.RegistryContextFactory
         reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder("com.sun.jndi.ldap.LdapCtxFactory").build());
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder("com.sun.jndi.dns.DnsContextFactory").build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("com.sun.jndi.rmi.registry.RegistryContextFactory")
-                .build());
+                ReflectiveClassBuildItem
+                        .builder("com.sun.jndi.ldap.LdapCtxFactory", "com.sun.jndi.dns.DnsContextFactory",
+                                "com.sun.jndi.rmi.registry.RegistryContextFactory")
+                        .build());
     }
 
 }

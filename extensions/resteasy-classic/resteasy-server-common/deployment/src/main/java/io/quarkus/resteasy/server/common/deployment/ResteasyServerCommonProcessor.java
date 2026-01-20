@@ -294,6 +294,7 @@ public class ResteasyServerCommonProcessor {
         Set<DotName> pathInterfaces = new HashSet<>();
         Set<DotName> pathAbstract = new HashSet<>();
         Map<DotName, ClassInfo> withoutDefaultCtor = new HashMap<>();
+        final var forReflection = new ArrayList<String>(50); // guess to avoid constant size expansion
         for (AnnotationInstance annotation : allPaths) {
             if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
                 ClassInfo clazz = annotation.target().asClass();
@@ -307,7 +308,7 @@ public class ResteasyServerCommonProcessor {
                                 scannedResources.putIfAbsent(clazz.name(), clazz);
                             }
                         }
-                        reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).methods().fields().build());
+                        forReflection.add(className);
 
                         if (!clazz.hasNoArgsConstructor()) {
                             withoutDefaultCtor.put(clazz.name(), clazz);
@@ -321,14 +322,14 @@ public class ResteasyServerCommonProcessor {
 
         // look for all implementations of interfaces annotated @Path
         for (final DotName iface : pathInterfaces) {
-            final Collection<ClassInfo> implementors = index.getAllKnownImplementors(iface);
+            final Collection<ClassInfo> implementors = index.getAllKnownImplementations(iface);
             for (final ClassInfo implementor : implementors) {
                 if (implementor.isAbstract()) {
                     continue;
                 }
 
                 String className = implementor.name().toString();
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).methods().fields().build());
+                forReflection.add(className);
                 scannedResources.putIfAbsent(implementor.name(), implementor);
 
                 if (!implementor.hasNoArgsConstructor()) {
@@ -341,7 +342,7 @@ public class ResteasyServerCommonProcessor {
             final Collection<ClassInfo> implementors = index.getAllKnownSubclasses(cls);
             for (final ClassInfo implementor : implementors) {
                 String className = implementor.name().toString();
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).methods().fields().build());
+                forReflection.add(className);
                 if (!Modifier.isAbstract(implementor.flags())) {
                     scannedResources.putIfAbsent(implementor.name(), implementor);
                 }
@@ -363,14 +364,15 @@ public class ResteasyServerCommonProcessor {
         Set<DotName> subresources = findSubresources(beanArchiveIndexBuildItem.getIndex(), scannedResources);
         if (!subresources.isEmpty()) {
             for (DotName locator : subresources) {
-                reflectiveClass
-                        .produce(ReflectiveClassBuildItem.builder(locator.toString()).methods().fields().build());
+                forReflection.add(locator.toString());
             }
             // Sub-resource locators are unremovable beans
             unremovableBeans.produce(
                     new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanClassNamesExclusion(
                             subresources.stream().map(Object::toString).collect(Collectors.toSet()))));
         }
+
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(forReflection).methods().fields().build());
 
         // generate default constructors for suitable concrete @Path classes that don't have them
         // see https://issues.jboss.org/browse/RESTEASY-2183
@@ -384,10 +386,10 @@ public class ResteasyServerCommonProcessor {
         registerReflectionForSerialization(reflectiveClass, reflectiveHierarchy, combinedIndexBuildItem,
                 beanArchiveIndexBuildItem, additionalJaxRsResourceMethodAnnotations);
 
-        for (ClassInfo implementation : index.getAllKnownImplementors(ResteasyDotNames.DYNAMIC_FEATURE)) {
-            reflectiveClass.produce(
-                    ReflectiveClassBuildItem.builder(implementation.name().toString()).build());
-        }
+        final var dynamicFeaturesNames = index.getAllKnownImplementations(ResteasyDotNames.DYNAMIC_FEATURE).stream()
+                .map(ci -> ci.name().toString())
+                .toList();
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(dynamicFeaturesNames).build());
 
         Map<String, String> resteasyInitParameters = new HashMap<>();
 
@@ -711,6 +713,7 @@ public class ResteasyServerCommonProcessor {
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem, IndexView index) {
 
+        final var providers = jaxrsProvidersToRegisterBuildItem.getProviders();
         if (jaxrsProvidersToRegisterBuildItem.useBuiltIn()) {
             // if we find a wildcard media type, we just use the built-in providers
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_USE_BUILTIN_PROVIDERS, "true");
@@ -723,21 +726,29 @@ public class ResteasyServerCommonProcessor {
             }
         } else {
             deployment.setRegisterBuiltin(false);
-            deployment.getProviderClasses().addAll(jaxrsProvidersToRegisterBuildItem.getProviders());
+            deployment.getProviderClasses().addAll(providers);
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_USE_BUILTIN_PROVIDERS, "false");
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_PROVIDERS,
-                    String.join(",", jaxrsProvidersToRegisterBuildItem.getProviders()));
+                    String.join(",", providers));
         }
 
         // register the providers for reflection
-        for (String providerToRegister : jaxrsProvidersToRegisterBuildItem.getProviders()) {
+        final var withFields = new ArrayList<String>(providers.size());
+        final var withoutFields = new ArrayList<String>(providers.size());
+        for (String providerToRegister : providers) {
             ClassInfo classInfo = index.getClassByName(DotName.createSimple(providerToRegister));
             boolean includeFields = false;
             if (classInfo != null) {
                 includeFields = classInfo.annotationsMap().containsKey(CONTEXT);
             }
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, includeFields, providerToRegister));
+            if (includeFields) {
+                withFields.add(providerToRegister);
+            } else {
+                withoutFields.add(providerToRegister);
+            }
         }
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(withFields).fields().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(withoutFields).build());
 
         // special case: our config providers
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(ServletConfigSource.class,
@@ -907,11 +918,11 @@ public class ResteasyServerCommonProcessor {
         IndexView beanArchiveIndex = beanArchiveIndexBuildItem.getIndex();
 
         // This is probably redundant with the automatic resolution we do just below but better be safe
-        for (AnnotationInstance annotation : index.getAnnotations(JSONB_ANNOTATION)) {
+        final var jsonbAnnotations = index.getAnnotations(JSONB_ANNOTATION);
+        final var forReflection = new ArrayList<String>(jsonbAnnotations.size() + 5);
+        for (AnnotationInstance annotation : jsonbAnnotations) {
             if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
-                reflectiveClass
-                        .produce(ReflectiveClassBuildItem.builder(annotation.target().asClass().name().toString()).methods()
-                                .fields().build());
+                forReflection.add(annotation.target().asClass().name().toString());
             }
         }
 
@@ -931,10 +942,9 @@ public class ResteasyServerCommonProcessor {
         }
 
         // In the case of a constraint violation, these elements might be returned as entities and will be serialized
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder(ViolationReport.class.getName()).methods().fields().build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(ResteasyConstraintViolation.class.getName()).methods()
-                .fields().build());
+        forReflection.add(ViolationReport.class.getName());
+        forReflection.add(ResteasyConstraintViolation.class.getName());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(forReflection).methods().fields().build());
     }
 
     private static void scanMethods(DotName annotationType,

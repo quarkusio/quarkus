@@ -249,7 +249,7 @@ public class MicrometerProcessor {
             }
         }
 
-        return ReflectiveClassBuildItem.builder(classes.toArray(new String[0])).reason(getClass().getName()).build();
+        return ReflectiveClassBuildItem.builder(classes).reason(getClass().getName()).build();
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)

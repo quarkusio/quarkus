@@ -54,115 +54,61 @@ public final class MySQLJDBCReflections {
     @BuildStep
     void registerDriverForReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
 
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(Driver.class.getName()).build());
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(FailoverDnsSrvConnectionUrl.class.getName())
-                        .build());
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(FailoverConnectionUrl.class.getName()).build());
         reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder(SingleConnectionUrl.class.getName())
-                        .build());
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(LoadBalanceConnectionUrl.class.getName())
-                        .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(LoadBalanceDnsSrvConnectionUrl.class.getName())
-                .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(ReplicationDnsSrvConnectionUrl.class.getName())
-                .build());
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(ReplicationConnectionUrl.class.getName())
-                        .build());
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(XDevApiConnectionUrl.class.getName()).build());
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(XDevApiDnsSrvConnectionUrl.class.getName())
-                        .build());
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(com.mysql.cj.jdbc.ha.LoadBalancedAutoCommitInterceptor.class.getName())
-                        .build());
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder(StandardLogger.class.getName()).build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(Wrapper.class.getName()).build());
+                .produce(ReflectiveClassBuildItem.builder(Driver.class.getName(), FailoverDnsSrvConnectionUrl.class.getName(),
+                        FailoverConnectionUrl.class.getName(), SingleConnectionUrl.class.getName(),
+                        LoadBalanceConnectionUrl.class.getName(), LoadBalanceDnsSrvConnectionUrl.class.getName(),
+                        ReplicationDnsSrvConnectionUrl.class.getName(), ReplicationConnectionUrl.class.getName(),
+                        XDevApiConnectionUrl.class.getName(), XDevApiDnsSrvConnectionUrl.class.getName(),
+                        com.mysql.cj.jdbc.ha.LoadBalancedAutoCommitInterceptor.class.getName(), StandardLogger.class.getName(),
+                        Wrapper.class.getName()).build());
+
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(com.mysql.cj.jdbc.MysqlDataSource.class.getName())
                 .methods().build());
     }
 
     @BuildStep
     void registerSocketFactoryForReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(NamedPipeSocketFactory.class.getName()).build());
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(StandardSocketFactory.class.getName()).build());
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(SocksProxySocketFactory.class.getName()).build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(
+                NamedPipeSocketFactory.class.getName(),
+                StandardSocketFactory.class.getName(),
+                SocksProxySocketFactory.class.getName()).build());
     }
 
     @BuildStep
     void registerExceptionsForReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(CJCommunicationsException.class.getName())
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(
+                CJCommunicationsException.class.getName(),
+                CJConnectionFeatureNotAvailableException.class.getName(),
+                CJOperationNotSupportedException.class.getName(),
+                CJTimeoutException.class.getName(),
+                CJPacketTooBigException.class.getName(),
+                CJException.class.getName(),
+                AssertionFailedException.class.getName(),
+                CJOperationNotSupportedException.class.getName(),
+                ClosedOnExpiredPasswordException.class.getName(),
+                ConnectionIsClosedException.class.getName(),
+                DataConversionException.class.getName(),
+                DataReadException.class.getName(),
+                DataTruncationException.class.getName(),
+                DeadlockTimeoutRollbackMarker.class.getName(),
+                FeatureNotAvailableException.class.getName(),
+                InvalidConnectionAttributeException.class.getName(),
+                NumberOutOfRange.class.getName(),
+                OperationCancelledException.class.getName(),
+                PasswordExpiredException.class.getName(),
+                PropertyNotModifiableException.class.getName(),
+                RSAException.class.getName(),
+                SSLParamsException.class.getName(),
+                StatementIsClosedException.class.getName(),
+                StreamingNotifiable.class.getName(),
+                UnableToConnectException.class.getName(),
+                UnsupportedConnectionStringException.class.getName(),
+                WrongArgumentException.class.getName(),
+                StandardLoadBalanceExceptionChecker.class.getName(),
+                NdbLoadBalanceExceptionChecker.class.getName())
                 .build());
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder(CJConnectionFeatureNotAvailableException.class.getName())
-                        .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(CJOperationNotSupportedException.class.getName())
-                .build());
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(CJTimeoutException.class.getName()).build());
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(CJPacketTooBigException.class.getName()).build());
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder(CJException.class.getName()).build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(AssertionFailedException.class.getName())
-                .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(CJOperationNotSupportedException.class.getName())
-                .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(ClosedOnExpiredPasswordException.class.getName())
-                .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(ConnectionIsClosedException.class.getName())
-                .build());
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(DataConversionException.class.getName()).build());
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(DataReadException.class.getName()).build());
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(DataTruncationException.class.getName()).build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(DeadlockTimeoutRollbackMarker.class.getName())
-                .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(FeatureNotAvailableException.class.getName())
-                .build());
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder(InvalidConnectionAttributeException.class.getName())
-                        .build());
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(NumberOutOfRange.class.getName()).build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(OperationCancelledException.class.getName())
-                .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(PasswordExpiredException.class.getName())
-                .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(PropertyNotModifiableException.class.getName())
-                .build());
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder(RSAException.class.getName()).build());
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(SSLParamsException.class.getName()).build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(StatementIsClosedException.class.getName())
-                .build());
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(StreamingNotifiable.class.getName()).build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(UnableToConnectException.class.getName())
-                .build());
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder(UnsupportedConnectionStringException.class.getName())
-                        .build());
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(WrongArgumentException.class.getName()).build());
         reflectiveClass.produce(
                 ReflectiveClassBuildItem.builder("com.mysql.cj.jdbc.MysqlXAException").methods().fields().build());
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder(StandardLoadBalanceExceptionChecker.class.getName())
-                        .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(NdbLoadBalanceExceptionChecker.class.getName())
-                .build());
     }
 }

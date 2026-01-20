@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.common.deployment;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,12 +34,15 @@ public class SerializersUtil {
             ApplicationResultBuildItem applicationResultBuildItem,
             Serialisers serialisers, RuntimeType runtimeType) {
 
+        final var writers = RuntimeTypeItem.filter(messageBodyWriterBuildItems, runtimeType);
+        final var readers = RuntimeTypeItem.filter(messageBodyReaderBuildItems, runtimeType);
+        final var forReflection = new ArrayList<String>(writers.size() + readers.size());
+
         Map<String, MessageBodyReaderWriterOverrideData> writerOverrides = new HashMap<>();
         for (MessageBodyWriterOverrideBuildItem writerOverride : messageBodyWriterOverrideBuildItems) {
             writerOverrides.put(writerOverride.getClassName(), writerOverride.getOverrideData());
         }
-        for (MessageBodyWriterBuildItem additionalWriter : RuntimeTypeItem.filter(messageBodyWriterBuildItems,
-                runtimeType)) {
+        for (MessageBodyWriterBuildItem additionalWriter : writers) {
             ResourceWriter writer = new ResourceWriter();
             String writerClassName = additionalWriter.getClassName();
             MessageBodyReaderWriterOverrideData overrideData = writerOverrides.get(writerClassName);
@@ -60,16 +64,14 @@ public class SerializersUtil {
                 writer.setPriority(additionalWriter.getPriority());
             }
             recorder.registerWriter(serialisers, additionalWriter.getHandledClassName(), writer);
-            reflectiveClass.produce(
-                    ReflectiveClassBuildItem.builder(writerClassName).build());
+            forReflection.add(writerClassName);
         }
 
         Map<String, MessageBodyReaderWriterOverrideData> readerOverrides = new HashMap<>();
         for (MessageBodyReaderOverrideBuildItem readerOverride : messageBodyReaderOverrideBuildItems) {
             readerOverrides.put(readerOverride.getClassName(), readerOverride.getOverrideData());
         }
-        for (MessageBodyReaderBuildItem additionalReader : RuntimeTypeItem.filter(messageBodyReaderBuildItems,
-                runtimeType)) {
+        for (MessageBodyReaderBuildItem additionalReader : readers) {
             ResourceReader reader = new ResourceReader();
             String readerClassName = additionalReader.getClassName();
             MessageBodyReaderWriterOverrideData overrideData = readerOverrides.get(readerClassName);
@@ -91,9 +93,9 @@ public class SerializersUtil {
                 reader.setPriority(additionalReader.getPriority());
             }
             recorder.registerReader(serialisers, additionalReader.getHandledClassName(), reader);
-            reflectiveClass.produce(
-                    ReflectiveClassBuildItem.builder(readerClassName).build());
+            forReflection.add(readerClassName);
         }
 
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(forReflection).build());
     }
 }

@@ -142,7 +142,7 @@ class LiquibaseMongodbProcessor {
         reflective.produce(ReflectiveClassBuildItem
                 .builder(combinedIndex.getIndex().getAllKnownSubclasses(AbstractPluginFactory.class).stream()
                         .map(classInfo -> classInfo.name().toString())
-                        .toArray(String[]::new))
+                        .toList())
                 .reason(getClass().getName())
                 .constructors().build());
 
@@ -186,12 +186,11 @@ class LiquibaseMongodbProcessor {
             }
         }
         reflective.produce(
-                ReflectiveClassBuildItem.builder(classesMarkedWithDatabaseChangeProperty.toArray(new String[0]))
+                ReflectiveClassBuildItem.builder(classesMarkedWithDatabaseChangeProperty)
                         .reason(getClass().getName())
                         .constructors().methods().fields().build());
 
-        resource.produce(
-                new NativeImageResourceBuildItem(getChangeLogs(liquibaseBuildConfig).toArray(new String[0])));
+        resource.produce(new NativeImageResourceBuildItem(getChangeLogs(liquibaseBuildConfig)));
 
         // Register Precondition services, and the implementation class for reflection while also registering fields for reflection
         addService(services, reflective, liquibase.precondition.Precondition.class.getName(), true);
@@ -225,10 +224,10 @@ class LiquibaseMongodbProcessor {
                 implementations = new HashSet<>(implementations);
                 Arrays.asList(excludedImpls).forEach(implementations::remove);
             }
-            services.produce(new ServiceProviderBuildItem(serviceClassName, implementations.toArray(new String[0])));
+            services.produce(new ServiceProviderBuildItem(serviceClassName, implementations));
 
             reflective.produce(
-                    ReflectiveClassBuildItem.builder(implementations.toArray(new String[0])).reason(getClass().getName())
+                    ReflectiveClassBuildItem.builder(implementations).reason(getClass().getName())
                             .constructors().methods().fields(shouldRegisterFieldForReflection).build());
         } catch (IOException ex) {
             throw new IllegalStateException(ex);

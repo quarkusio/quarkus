@@ -250,16 +250,17 @@ public class SpringDataJPAProcessor {
         ClassOutput beansClassOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
         ClassOutput otherClassOutput = new GeneratedClassGizmoAdaptor(generatedClasses, true);
 
+        final var forReflection = new ArrayList<String>();
         SpringDataRepositoryCreator repositoryCreator = new SpringDataRepositoryCreator(beansClassOutput, otherClassOutput,
                 index, (n) -> {
                     // the implementation of fragments don't need to be beans themselves
                     additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(n));
                 },
-                (className -> {
-                    // the generated classes that implement interfaces for holding custom query results need
-                    // to be registered for reflection here since this is the only point where the generated class is known
-                    reflectiveClasses.produce(ReflectiveClassBuildItem.builder(className).methods().build());
-                }), JavaJpaTypeBundle.BUNDLE);
+                // the generated classes that implement interfaces for holding custom query results need
+                // to be registered for reflection here since this is the only point where the generated class is known
+                forReflection::add,
+                JavaJpaTypeBundle.BUNDLE);
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(forReflection).methods().build());
 
         Set<String> entities = new HashSet<>();
         for (ClassInfo crudRepositoryToImplement : crudRepositoriesToImplement) {

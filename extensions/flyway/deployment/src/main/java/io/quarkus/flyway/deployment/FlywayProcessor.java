@@ -94,7 +94,7 @@ class FlywayProcessor {
                 ReflectiveClassBuildItem.builder(index.getIndex().getAllKnownSubclasses(FlywaySqlException.class).stream()
                         .map(ci -> ci.name().toString()).toArray(String[]::new)).methods().constructors().build());
 
-        for (ClassInfo configurationExtension : index.getIndex().getAllKnownImplementors(ConfigurationExtension.class)) {
+        for (ClassInfo configurationExtension : index.getIndex().getAllKnownImplementations(ConfigurationExtension.class)) {
             var extensionName = configurationExtension.name();
             // we also register Model from the extension fields so that 'ConfigurationExtension#copy' works
             var reflectiveHierarchyItem = ReflectiveHierarchyBuildItem
@@ -174,14 +174,12 @@ class FlywayProcessor {
     private void addJavaMigrations(Collection<ClassInfo> candidates, RecorderContext context,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
             Set<Class<? extends JavaMigration>> javaMigrationClasses) {
-        for (ClassInfo javaMigration : candidates) {
-            if (Modifier.isAbstract(javaMigration.flags())) {
-                continue;
-            }
-            javaMigrationClasses.add((Class<JavaMigration>) context.classProxy(javaMigration.name().toString()));
-            reflectiveClassProducer.produce(
-                    ReflectiveClassBuildItem.builder(javaMigration.name().toString()).build());
-        }
+        final var migrationClassNames = candidates.stream()
+                .filter(c -> !Modifier.isAbstract(c.flags()))
+                .map(c -> c.name().toString())
+                .peek(className -> javaMigrationClasses.add((Class<JavaMigration>) context.classProxy(className)))
+                .toList();
+        reflectiveClassProducer.produce(ReflectiveClassBuildItem.builder(migrationClassNames).build());
     }
 
     @BuildStep

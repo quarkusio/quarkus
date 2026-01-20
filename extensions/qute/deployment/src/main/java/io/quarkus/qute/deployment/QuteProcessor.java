@@ -2132,8 +2132,8 @@ public class QuteProcessor {
 
         for (String generatedType : generatedValueResolvers) {
             generatedResolvers.produce(new GeneratedValueResolverBuildItem(generatedType));
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(generatedType).build());
         }
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(generatedValueResolvers).build());
 
         if (!templateGlobals.isEmpty()) {
             Set<String> generatedGlobals = new HashSet<>();
@@ -2175,8 +2175,8 @@ public class QuteProcessor {
 
             for (String globalType : generatedGlobals) {
                 globalProviders.produce(new TemplateGlobalProviderBuildItem(globalType));
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(globalType).build());
             }
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(generatedGlobals).build());
         }
     }
 

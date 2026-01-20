@@ -52,31 +52,20 @@ public final class OracleMetadataOverrides {
         //This is to match the Oracle metadata (which we excluded so that we can apply fixes):
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.internal.ACProxyable")
                 .constructors().methods().build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.driver.T4CDriverExtension")
-                .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.driver.T2CDriverExtension")
-                .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.driver.ShardingDriverExtension")
-                .build());
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder("oracle.net.ano.Ano").build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.net.ano.AuthenticationService")
-                .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.net.ano.DataIntegrityService")
-                .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.net.ano.EncryptionService")
-                .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.net.ano.SupervisorService")
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder("oracle.jdbc.driver.T4CDriverExtension", "oracle.jdbc.driver.T2CDriverExtension",
+                        "oracle.jdbc.driver.ShardingDriverExtension", "oracle.net.ano.Ano",
+                        "oracle.net.ano.AuthenticationService", "oracle.net.ano.DataIntegrityService",
+                        "oracle.net.ano.EncryptionService", "oracle.net.ano.SupervisorService")
                 .build());
         //This is listed in the original metadata, but it doesn't actually exist:
         //        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.driver.Message11")
         //                .build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.sql.TypeDescriptor")
                 .constructors().fields().build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.sql.TypeDescriptorFactory")
-                .constructors().build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.sql.AnyDataFactory")
-                .constructors().build());
+        reflectiveClass
+                .produce(ReflectiveClassBuildItem.builder("oracle.sql.TypeDescriptorFactory", "oracle.sql.AnyDataFactory")
+                        .constructors().build());
     }
 
     @BuildStep

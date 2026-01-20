@@ -275,14 +275,11 @@ class InfinispanClientProcessor {
         // Add any user project listeners to allow reflection in native code
         Collection<AnnotationInstance> listenerInstances = index.getAnnotations(
                 DotName.createSimple(ClientListener.class.getName()));
-        for (AnnotationInstance instance : listenerInstances) {
-            AnnotationTarget target = instance.target();
-            if (target.kind() == AnnotationTarget.Kind.CLASS) {
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(
-                        target.asClass().name().toString())
-                        .methods().build());
-            }
-        }
+        final var targetClassNames = listenerInstances.stream()
+                .filter(ai -> ai.target().kind() == AnnotationTarget.Kind.CLASS)
+                .map(ai -> ai.target().asClass().name().toString())
+                .toList();
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(targetClassNames).methods().build());
 
         // This is required for netty to work properly
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(

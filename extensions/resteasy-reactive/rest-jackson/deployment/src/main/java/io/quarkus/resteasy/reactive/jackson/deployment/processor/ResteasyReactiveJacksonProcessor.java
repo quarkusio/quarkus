@@ -263,6 +263,7 @@ public class ResteasyReactiveJacksonProcessor {
         allResourceClasses.addAll(resourceScanningResultBuildItem.get().getResult().getPossibleSubResources().values());
 
         Set<JacksonFeatureBuildItem.Feature> jacksonFeatures = new HashSet<>();
+        final var forReflection = new ArrayList<String>(allResourceClasses.size()); // guess
         for (ClassInfo resourceClass : allResourceClasses) {
             if (resourceClass.annotationsMap().containsKey(JSON_VIEW)) {
                 jacksonFeatures.add(JacksonFeatureBuildItem.Feature.JSON_VIEW);
@@ -278,9 +279,10 @@ public class ResteasyReactiveJacksonProcessor {
                     recorder.recordJsonView(getTargetId(instance), jsonViews[0].name().toString());
                 }
             }
-            if (resourceClass.annotationsMap().containsKey(CUSTOM_SERIALIZATION)) {
+            final var customSerializations = resourceClass.annotationsMap().get(CUSTOM_SERIALIZATION);
+            if (customSerializations != null) {
                 jacksonFeatures.add(JacksonFeatureBuildItem.Feature.CUSTOM_SERIALIZATION);
-                for (AnnotationInstance instance : resourceClass.annotationsMap().get(CUSTOM_SERIALIZATION)) {
+                for (AnnotationInstance instance : customSerializations) {
                     AnnotationValue annotationValue = instance.value();
                     if (annotationValue == null) {
                         continue;
@@ -298,16 +300,15 @@ public class ResteasyReactiveJacksonProcessor {
                                     "Class '" + biFunctionClassInfo.name() + "' must contain a no-args constructor");
                         }
                     }
-                    reflectiveClassProducer.produce(
-                            ReflectiveClassBuildItem.builder(biFunctionType.name().toString())
-                                    .reason(getClass().getName())
-                                    .build());
-                    recorder.recordCustomSerialization(getTargetId(instance), biFunctionType.name().toString());
+                    final var name = biFunctionType.name().toString();
+                    forReflection.add(name);
+                    recorder.recordCustomSerialization(getTargetId(instance), name);
                 }
             }
-            if (resourceClass.annotationsMap().containsKey(CUSTOM_DESERIALIZATION)) {
+            final var customDeserializations = resourceClass.annotationsMap().get(CUSTOM_DESERIALIZATION);
+            if (customDeserializations != null) {
                 jacksonFeatures.add(JacksonFeatureBuildItem.Feature.CUSTOM_DESERIALIZATION);
-                for (AnnotationInstance instance : resourceClass.annotationsMap().get(CUSTOM_DESERIALIZATION)) {
+                for (AnnotationInstance instance : customDeserializations) {
                     AnnotationValue annotationValue = instance.value();
                     if (annotationValue == null) {
                         continue;
@@ -325,11 +326,9 @@ public class ResteasyReactiveJacksonProcessor {
                                     "Class '" + biFunctionClassInfo.name() + "' must contain a no-args constructor");
                         }
                     }
-                    reflectiveClassProducer.produce(
-                            ReflectiveClassBuildItem.builder(biFunctionType.name().toString())
-                                    .reason(getClass().getName())
-                                    .build());
-                    recorder.recordCustomDeserialization(getTargetId(instance), biFunctionType.name().toString());
+                    final var name = biFunctionType.name().toString();
+                    forReflection.add(name);
+                    recorder.recordCustomDeserialization(getTargetId(instance), name);
                 }
             }
         }
@@ -337,12 +336,13 @@ public class ResteasyReactiveJacksonProcessor {
         for (ResourceMethodCustomSerializationBuildItem bi : resourceMethodCustomSerializationBuildItems) {
             jacksonFeatures.add(JacksonFeatureBuildItem.Feature.CUSTOM_SERIALIZATION);
             String className = bi.getCustomSerializationProvider().getName();
-            reflectiveClassProducer.produce(
-                    ReflectiveClassBuildItem.builder(className)
-                            .reason(getClass().getName())
-                            .build());
+            forReflection.add(className);
             recorder.recordCustomSerialization(getMethodId(bi.getMethodInfo(), bi.getDeclaringClassInfo()), className);
         }
+
+        reflectiveClassProducer.produce(ReflectiveClassBuildItem.builder(forReflection)
+                .reason(getClass().getName())
+                .build());
 
         if (!jacksonFeatures.isEmpty()) {
             for (JacksonFeatureBuildItem.Feature jacksonFeature : jacksonFeatures) {

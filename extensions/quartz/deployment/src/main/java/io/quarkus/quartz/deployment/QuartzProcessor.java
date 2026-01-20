@@ -187,7 +187,7 @@ public class QuartzProcessor {
                                 : i.isDefault())
                         .findFirst();
 
-                if (!selectedJdbcDataSourceBuildItem.isPresent()) {
+                if (selectedJdbcDataSourceBuildItem.isEmpty()) {
                     String message = String.format(
                             "JDBC Store configured but the '%s' datasource is not configured properly. You can configure your datasource by following the guide available at: https://quarkus.io/guides/datasource",
                             config.dataSourceName().isPresent() ? config.dataSourceName().get() : "default");
@@ -285,11 +285,14 @@ public class QuartzProcessor {
             }
         }
 
-        reflectiveClasses
-                .addAll(getAdditionalConfigurationReflectiveClasses(config.instanceIdGenerators(), InstanceIdGenerator.class));
-        reflectiveClasses.addAll(getAdditionalConfigurationReflectiveClasses(config.triggerListeners(), TriggerListener.class));
-        reflectiveClasses.addAll(getAdditionalConfigurationReflectiveClasses(config.jobListeners(), JobListener.class));
-        reflectiveClasses.addAll(getAdditionalConfigurationReflectiveClasses(config.plugins(), SchedulerPlugin.class));
+        final var classNames = new ArrayList<String>();
+        getAdditionalConfigurationReflectiveClasses(classNames, config.instanceIdGenerators(), InstanceIdGenerator.class);
+        getAdditionalConfigurationReflectiveClasses(classNames, config.triggerListeners(), TriggerListener.class);
+        getAdditionalConfigurationReflectiveClasses(classNames, config.jobListeners(), JobListener.class);
+        getAdditionalConfigurationReflectiveClasses(classNames, config.plugins(), SchedulerPlugin.class);
+        reflectiveClasses.add(ReflectiveClassBuildItem.builder(classNames)
+                .reason(getClass().getName())
+                .methods().build());
         reflectiveClasses
                 .add(ReflectiveClassBuildItem.builder("io.quarkus.quartz.runtime.QuartzSchedulerImpl$NonconcurrentInvokerJob")
                         .reason(getClass().getName())
@@ -297,9 +300,8 @@ public class QuartzProcessor {
         return reflectiveClasses;
     }
 
-    private List<ReflectiveClassBuildItem> getAdditionalConfigurationReflectiveClasses(
+    private void getAdditionalConfigurationReflectiveClasses(List<String> classNamesForReflection,
             Map<String, QuartzExtensionPointConfig> config, Class<?> clazz) {
-        List<ReflectiveClassBuildItem> reflectiveClasses = new ArrayList<>();
         for (QuartzExtensionPointConfig props : config.values()) {
             try {
                 if (!clazz
@@ -310,11 +312,8 @@ public class QuartzProcessor {
             } catch (ClassNotFoundException e) {
                 throw new IllegalArgumentException(e);
             }
-            reflectiveClasses.add(ReflectiveClassBuildItem.builder(props.clazz())
-                    .reason(getClass().getName())
-                    .methods().build());
+            classNamesForReflection.add(props.clazz());
         }
-        return reflectiveClasses;
     }
 
     @BuildStep
@@ -336,7 +335,7 @@ public class QuartzProcessor {
         logCleanUps.add(new LogCleanupFilterBuildItem(config.storeType().clazz, config.storeType().simpleName
                 + " initialized.", "Handling", "Using db table-based data access locking",
                 "JDBCJobStore threads will inherit ContextClassLoader of thread",
-                "Couldn't rollback jdbc connection", "Database connection shutdown unsuccessful"));
+                "Couldn't rollback jdbc connection", "Database connection shutdown unsuccessful"));
         logCleanUps.add(new LogCleanupFilterBuildItem(SchedulerSignalerImpl.class.getName(),
                 "Initialized Scheduler Signaller of type"));
         logCleanUps.add(new LogCleanupFilterBuildItem(QuartzSchedulerThread.class.getName(),

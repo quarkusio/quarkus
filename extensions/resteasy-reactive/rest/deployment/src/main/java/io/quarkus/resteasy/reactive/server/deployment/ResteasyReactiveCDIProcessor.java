@@ -244,25 +244,24 @@ public class ResteasyReactiveCDIProcessor {
             List<JaxrsFeatureBuildItem> featureBuildItems,
             BuildProducer<AdditionalBeanBuildItem> additionalBean) {
 
+        final var forReflection = new ArrayList<String>(additionalDynamicFeatures.size() + featureBuildItems.size());
         AdditionalBeanBuildItem.Builder additionalProviders = AdditionalBeanBuildItem.builder();
         for (DynamicFeatureBuildItem dynamicFeature : additionalDynamicFeatures) {
             if (dynamicFeature.isRegisterAsBean()) {
                 additionalProviders.addBeanClass(dynamicFeature.getClassName());
             } else {
-                reflectiveClassBuildItemBuildProducer
-                        .produce(ReflectiveClassBuildItem.builder(dynamicFeature.getClassName())
-                                .build());
+                forReflection.add(dynamicFeature.getClassName());
             }
         }
         for (JaxrsFeatureBuildItem feature : featureBuildItems) {
             if (feature.isRegisterAsBean()) {
                 additionalProviders.addBeanClass(feature.getClassName());
             } else {
-                reflectiveClassBuildItemBuildProducer
-                        .produce(ReflectiveClassBuildItem.builder(feature.getClassName())
-                                .build());
+                forReflection.add(feature.getClassName());
             }
         }
+
+        reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(forReflection).build());
         additionalBean.produce(additionalProviders.setUnremovable().setDefaultScope(DotNames.SINGLETON).build());
     }
 

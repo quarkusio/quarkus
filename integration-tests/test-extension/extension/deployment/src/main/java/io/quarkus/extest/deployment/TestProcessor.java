@@ -337,9 +337,9 @@ public final class TestProcessor {
             }
         }
         for (String className : providerClasses) {
-            classes.produce(ReflectiveClassBuildItem.builder(className).methods().fields().build());
             log.debugf("Register SUN.provider class: %s", className);
         }
+        classes.produce(ReflectiveClassBuildItem.builder(providerClasses).methods().fields().build());
     }
 
     @BuildStep

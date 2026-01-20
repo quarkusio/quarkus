@@ -186,22 +186,33 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                         mergeResourcePaths);
             }
 
-            Set<Set<Dependency>> explained = new HashSet<>();
+            Map<Set<Dependency>, List<String>> explained = new HashMap<>();
             for (Map.Entry<String, Set<Dependency>> entry : duplicateCatcher.entrySet()) {
                 if (entry.getValue().size() > 1) {
-                    if (explained.add(entry.getValue())) {
-                        LOG.warn("Dependencies with duplicate files detected. The dependencies " + entry.getValue()
-                                + " contain duplicate files, e.g. " + entry.getKey());
-                    }
+                    explained.computeIfAbsent(entry.getValue(), k -> new ArrayList<>()).add(entry.getKey());
                 }
             }
+            if (!explained.isEmpty()) {
+                for (Map.Entry<Set<Dependency>, List<String>> entry : explained.entrySet()) {
+                    var msg = new StringBuilder().append("Dependencies:");
+                    for (var dep : entry.getKey()) {
+                        msg.append(System.lineSeparator()).append("- ").append(dep.toCompactCoords());
+                    }
+                    msg.append(System.lineSeparator()).append("contain duplicate files:");
+                    for (var path : entry.getValue()) {
+                        msg.append(System.lineSeparator()).append("- ").append(path);
+                    }
+                    LOG.warn(msg);
+                }
+            }
+
             copyCommonContent(archiveCreator, concatenatedEntries, allIgnoredEntriesPredicate);
             // now that all entries have been added, check if there's a META-INF/versions/ entry. If present,
             // mark this jar as multi-release jar. Strictly speaking, the jar spec expects META-INF/versions/N
             // directory where N is an integer greater than 8, but we don't do that level of checks here but that
             // should be OK.
             if (archiveCreator.isMultiVersion()) {
-                LOG.debug("uber jar will be marked as multi-release jar");
+                LOG.debug("Uber jar will be marked as multi-release jar");
                 archiveCreator.makeMultiVersion();
             }
         }

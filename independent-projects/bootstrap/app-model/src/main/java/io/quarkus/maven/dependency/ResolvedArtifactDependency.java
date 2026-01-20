@@ -104,7 +104,7 @@ public class ResolvedArtifactDependency extends ArtifactDependency implements Re
             return false;
         if (!(obj instanceof ResolvableDependency other))
             return false;
-        return Objects.equals(module, other.getWorkspaceModule()) && Objects.equals(paths, other.getResolvedPaths());
+        return Objects.equals(paths, other.getResolvedPaths()) && Objects.equals(module, other.getWorkspaceModule());
     }
 
     @Override

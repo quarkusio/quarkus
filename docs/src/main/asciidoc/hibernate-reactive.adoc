@@ -285,6 +285,52 @@ You must not inject both session types in the same bean. Attempting to use both 
 Currently, only `Transactional.TxType.REQUIRED` is supported with reactive transactions. Other transaction types (`REQUIRES_NEW`, `MANDATORY`, etc.) will throw an `UnsupportedOperationException`.
 ====
 
+**Transaction Context Leakage with Declarative Transaction Management**
+
+[WARNING]
+====
+
+
+When using declarative transaction management with Vert.x context-based interceptors (`@Transactional`, `@WithTransaction`, `@WithSession`, `@WithSessionOnDemand`) and combining transactional methods with non-transactional methods in parallel reactive chains (e.g., using `Uni.combine().all().unis()`), the transaction context may leak from the transactional method to the non-transactional method if they execute on the same Vert.x context.
+
+This is a known limitation of declarative transaction management. A non-transactional method running in parallel with a declarative transactional method might inadvertently have access to the reactive session opened by the transactional method, leading to unexpected behavior.
+
+====
+
+**Workarounds**:
+
+1. **Use programmatic transaction management**: Use `sessionFactory.withTransaction()` or `Panache.withTransaction()` instead of declarative annotations. Programmatic transaction management doesn't have this problem because you explicitly control where the transaction is created. Make sure you're actually using the session passed as a parameter and not the session injected via `@Inject`.
++
+[source,java]
+----
+// SAFE: Programmatic transaction management
+Uni.combine().all().unis(
+    sessionFactory.withTransaction(session -> {
+        // transactional work
+    }),
+    nonTransactionalMethod()
+)
+----
+
+2. **Execute sequentially**: Ensure that transactional and non-transactional methods are not combined in parallel. Execute them sequentially instead.
++
+[source,java]
+----
+// SAFE: Execute sequentially
+transactionalMethod()
+    .chain(() -> nonTransactionalMethod())
+----
+
+Example of problematic code:
+[source,java]
+----
+// PROBLEMATIC: Transaction may leak to nonTransactionalMethod when using declarative @Transactional
+Uni.combine().all().unis(
+    transactionalMethod(),  // uses @Transactional
+    nonTransactionalMethod()
+)
+----
+
 [[hr-configuration-properties]]
 === Hibernate Reactive configuration properties
 

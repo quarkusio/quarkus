@@ -95,7 +95,8 @@ abstract class AbstractFormatter implements Formatter {
             if (enableEnumTooltips) {
                 typeContent = configProperty.getEnumAcceptedValues().values().entrySet().stream()
                         .map(e -> {
-                            Optional<JavadocElement> javadocElement = javadocRepository.getElement(configProperty.getType(),
+                            String enumQualifiedName = configProperty.getEnumAcceptedValues().qualifiedName();
+                            Optional<JavadocElement> javadocElement = javadocRepository.getElement(enumQualifiedName,
                                     e.getKey());
                             if (javadocElement.isEmpty()) {
                                 return "`" + e.getValue().configValue() + "`";

@@ -267,7 +267,7 @@ Let's see what happens if we start from one day in the future using the `http://
 You should get an answer two seconds later since two of the requested days were already loaded in the cache.
 
 You can also try calling the same URL with a different city and see the cache in action again.
-The first call will take six seconds and the following ones will be answered immediately.
+The first call will take six seconds, and the following ones will be answered immediately.
 
 Congratulations! You just added application data caching to your Quarkus application with a single line of code!
 
@@ -291,12 +291,12 @@ Loads a method result from the cache without executing the method body whenever 
 
 When a method annotated with `@CacheResult` is invoked, Quarkus will compute a cache key and use it to check in the cache whether the method has been already invoked.
 See the <<cache-keys-building-logic>> section of this guide to learn how the cache key is computed.
-If a value is found in the cache, it is returned and the annotated method is never actually executed.
-If no value is found, the annotated method is invoked and the returned value is stored in the cache using the computed key.
+If a value is found in the cache, it is returned, and the annotated method is never actually executed.
+If no value is found, the annotated method is invoked, and the returned value is stored in the cache using the computed key.
 
 A method annotated with `CacheResult` is protected by a lock on cache miss mechanism.
 If several concurrent invocations try to retrieve a cache value from the same missing key, the method will only be invoked once.
-The first concurrent invocation will trigger the method invocation while the subsequent concurrent invocations will wait for the end of the method invocation to get the cached result.
+The first concurrent invocation will trigger the method invocation, while the subsequent concurrent invocations will wait for the end of the method invocation to get the cached result.
 The `lockTimeout` parameter can be used to interrupt the lock after a given delay.
 The lock timeout is disabled by default, meaning the lock is never interrupted.
 See the parameter Javadoc for more details.
@@ -495,8 +495,8 @@ public class CachedService {
 WARNING: This API is experimental and may change in the future.
 
 The `@io.quarkus.cache.CachedResults` qualifier may be applied to injection points to instruct the container to inject a _generated wrapper bean_ that
-delegates all method invocations to the original bean but the return values of selected business methods are cached. 
-By default, all non-void non-static business methods are included. 
+delegates all method invocations to the original bean but the return values of selected business methods are cached.
+By default, all non-void non-static business methods are included.
 However, it is possible to exclude methods whose names match one of the regular expressions defined by `@CachedResults#exclude()`.
 The injected class must be either an interface or declare a no-args constructor.
 
@@ -515,7 +515,7 @@ public class MyBean {
     @Inject
     @CachedResults
     PingService service; <1>
-   
+
     int ping() {
         return service.ping(); <2>
     }
@@ -1116,7 +1116,7 @@ We are registering the most common implementations but, depending on your cache 
 <1> `PSAMS` is one of the many cache implementation classes of Caffeine so this part may vary.
 
 When you encounter this error, you can easily fix it by adding the following annotation to any of your application classes
-(or you can create a new class such as `Reflections` just to host this annotation if you prefer):
+(or you can create a new class, such as `Reflections` just to host this annotation if you prefer):
 
 [source,java]
 ----

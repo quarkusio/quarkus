@@ -10,8 +10,8 @@ import java.util.function.Function;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.inject.Singleton;
 
+import org.apache.maven.SessionScoped;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.apache.maven.rtinfo.RuntimeInformation;
@@ -22,7 +22,7 @@ import io.quarkus.analytics.dto.segment.TrackEventType;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.platform.tools.maven.MojoMessageWriter;
 
-@Singleton
+@SessionScoped
 @Named
 public class BuildAnalyticsProvider {
 

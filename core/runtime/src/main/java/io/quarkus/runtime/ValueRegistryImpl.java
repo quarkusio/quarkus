@@ -1,12 +1,19 @@
 package io.quarkus.runtime;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
+
 import io.quarkus.registry.RuntimeInfoProvider;
+import io.quarkus.registry.RuntimeInfoProvider.RuntimeSource;
 import io.quarkus.registry.ValueRegistry;
 import io.quarkus.registry.ValueRegistry.RuntimeInfo.SimpleRuntimeInfo;
+import io.smallrye.config.SmallRyeConfig;
 
 /**
  * Implementation of {@link ValueRegistry}.
@@ -61,11 +68,24 @@ public class ValueRegistryImpl implements ValueRegistry {
         return values.get(key);
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     public static class Builder {
         private boolean discoverInfos;
+        private final List<RuntimeSource> sources = new ArrayList<>();
+
+        private Builder() {
+        }
 
         public Builder addDiscoveredInfos() {
             this.discoverInfos = true;
+            return this;
+        }
+
+        public Builder withRuntimeSource(final SmallRyeConfig config) {
+            this.sources.add(new ConfigRuntimeSource(config));
             return this;
         }
 
@@ -74,10 +94,43 @@ public class ValueRegistryImpl implements ValueRegistry {
             if (discoverInfos) {
                 ServiceLoader<RuntimeInfoProvider> infoProviders = ServiceLoader.load(RuntimeInfoProvider.class);
                 for (RuntimeInfoProvider runtimeInfoProvider : infoProviders) {
-                    runtimeInfoProvider.register(valueRegistry);
+                    runtimeInfoProvider.register(valueRegistry, new RuntimeSource() {
+                        @Override
+                        public <T> T get(RuntimeKey<T> key) {
+                            T value;
+                            for (RuntimeSource source : sources) {
+                                value = source.get(key);
+                                if (value != null) {
+                                    return value;
+                                }
+                            }
+                            return null;
+                        }
+                    });
                 }
             }
             return valueRegistry;
+        }
+    }
+
+    public static class ConfigRuntimeSource implements RuntimeSource {
+        private final Config config;
+
+        ConfigRuntimeSource(Config config) {
+            this.config = config;
+        }
+
+        @Override
+        public <T> T get(RuntimeKey<T> key) {
+            return config.getOptionalValue(key.key(), key.type()).orElse(null);
+        }
+
+        public static RuntimeSource runtimeSource(Config config) {
+            return new ConfigRuntimeSource(config);
+        }
+
+        public static RuntimeSource runtimeSource() {
+            return new ConfigRuntimeSource(ConfigProvider.getConfig());
         }
     }
 }

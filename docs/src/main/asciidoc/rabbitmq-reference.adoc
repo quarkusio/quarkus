@@ -220,7 +220,7 @@ If a message produced from a RabbitMQ message is nacked, a failure strategy is a
 three strategies, controlled by the failure-strategy channel setting:
 
 * `fail` - fail the application; no more RabbitMQ messages will be processed. The RabbitMQ message is marked as rejected.
-* `accept` - this strategy marks the RabbitMQ message as _accepted_. The processing continues ignoring the failure.
+* `accept` - this strategy marks the RabbitMQ message as _accepted_. The processing continues, ignoring the failure.
 * `reject` - this strategy marks the RabbitMQ message as rejected (default). The processing continues with the next message.
 
 == Sending RabbitMQ messages
@@ -413,7 +413,7 @@ On the inbound side (receiving messages from RabbitMQ), the check verifies that 
 
 On the outbound side (sending records to RabbitMQ), the check verifies that the sender is not disconnected from the broker; the sender _may_ still be in an initialised state (connection not yet attempted), but this is regarded as live/ready.
 
-Note that a message processing failures nacks the message, which is then handled by the `failure-strategy`.
+Note that a message processing failure nacks the message, which is then handled by the `failure-strategy`.
 It's the responsibility of the `failure-strategy` to report the failure and influence the outcome of the checks.
 The `fail` failure strategy reports the failure, and so the check will report the fault.
 

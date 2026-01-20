@@ -88,10 +88,10 @@ It includes an example.
 
 == Examining the project
 
-If you open the `pom.xml` or `build.gradle` build file of the generated project you'll see that
+If you open the `pom.xml` or `build.gradle` build file of the generated project, you'll see that
 the project is similar to any other Quarkus project.
 The `quarkus-azure-functions` extension is the integration point between
-Quarkus and Azure Functions. It registers callbacsk with the Azure Functions runtime to bootstrap
+Quarkus and Azure Functions. It registers callbacks with the Azure Functions runtime to bootstrap
 Quarkus and to set up Quarkus/ArC as the function factory for your function classes.
 
 The current implementation of the `quarkus-azure-functions` extension no longer requires the
@@ -120,8 +120,8 @@ include::{includes}/devtools/run.adoc[]
 
 [TIP]
 ====
-Gradle is a bit quirky with process management, so you need the `--no-daemon` switch or control-c will not
-destroy the process cleanly and you'll have open ports.
+Gradle is a bit quirky with process management, so you need the `--no-daemon` switch, or control-c will not
+destroy the process cleanly, and you'll have open ports.
 ====
 
 [NOTE]
@@ -177,7 +177,7 @@ The `quarkus-azure-functions` extension handles all the work to deploy to Azure.
 Quarkus will use the Azure CLI in the background to authenticate and deploy to Azure. If you have
 multiple subscriptions associated with your account, you must set the `quarkus.azure-functions.subscription-id`
 property in your `application.properties` file to the subscription you want to use.
-For other authentication mechanisms and deployment options see our config properties <<#configuration-reference>>.
+For other authentication mechanisms and deployment options, see our config properties <<#configuration-reference>>.
 
 To deploy your application, after you built your project, execute:
 

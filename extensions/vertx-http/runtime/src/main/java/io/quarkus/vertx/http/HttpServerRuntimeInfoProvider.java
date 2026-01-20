@@ -6,14 +6,11 @@ import io.quarkus.registry.ValueRegistry;
 /**
  * Registers the {@link HttpServer} with {@link ValueRegistry}.
  * <p>
- * The discovery is only enabled for integration tests. In normal mode, the registration is done with a CDI bean to
- * avoid the ServiceLoader.
- *
- * @see io.quarkus.vertx.http.HttpServerProducer
+ * In normal mode, the {@link HttpServer} is also registered with a CDI Bean to support injection.
  */
 public class HttpServerRuntimeInfoProvider implements RuntimeInfoProvider {
     @Override
-    public void register(ValueRegistry valueRegistry) {
+    public void register(ValueRegistry valueRegistry, RuntimeSource runtimeSource) {
         valueRegistry.registerInfo(HttpServer.HTTP_SERVER, HttpServer.INFO);
     }
 }

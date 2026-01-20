@@ -12,7 +12,7 @@ include::_attributes.adoc[]
 
 If an extension for schema registry, such as `quarkus-apicurio-registry-avro` or `quarkus-confluent-registry-avro`, is present, Dev Services for Apicurio Registry automatically starts an Apicurio Registry instance in dev mode and when running tests.
 Also, all Kafka channels in SmallRye Reactive Messaging are automatically configured to use this registry.
-This automatic configuration only applies to serializers and deserializers from Apicurio Registry serde libraries and Confluent Schema Registry serde libraries, because there properties are set:
+This automatic configuration only applies to serializers and deserializers from Apicurio Registry serde libraries and Confluent Schema Registry serde libraries, because their properties are set:
 
 [source,properties]
 ----
@@ -51,10 +51,10 @@ mp.messaging.connector.smallrye-kafka.schema.registry.url=... your Confluent Sch
 
 == Shared registry
 
-Most of the time you need to share the registry between applications.
+Most of the time, you need to share the registry between applications.
 Dev Services for Apicurio Registry implements a _service discovery_ mechanism for your multiple Quarkus applications running in _dev_ mode to share a single registry.
 
-NOTE: Dev Services for Apicurio Registry starts the container with the `quarkus-dev-service-apicurio-registry` label which is used to identify the container.
+NOTE: Dev Services for Apicurio Registry starts the container with the `quarkus-dev-service-apicurio-registry` label, which is used to identify the container.
 
 If you need multiple (shared) registries, you can configure the `quarkus.apicurio-registry.devservices.service-name` attribute and indicate the registry name.
 It looks for a container with the same value, or starts a new one if none can be found.

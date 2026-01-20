@@ -331,10 +331,24 @@ class ComponentContainer {
                                 configuration)) {
                             continue;
                         }
-                        if (requiredType.kind() == Kind.PRIMITIVE || requiredType.kind() == Kind.ARRAY) {
-                            throw new IllegalStateException(
-                                    "Found an unmockable unsatisfied injection point: " + injectionPoint.getTargetInfo());
+                        if (requiredType.kind() == Kind.PRIMITIVE
+                                || requiredType.kind() == Kind.ARRAY
+                                || isIllegalBeanType(requiredType)) {
+                            String msg = "Unsatisfied injection point with required type '%s' cannot be mocked automatically: %s\n"
+                                    +
+                                    "- primitive types, arrays and illegal bean types cannot be mocked; see https://quarkus.io/guides/testing-components#auto_mocking for more details about auto mocking of unsatisfied dependencies\n"
+                                    +
+                                    "- you can use the mock configurator API via the QuarkusComponentTestExtensionBuilder#mock() to create a new mock of a bean dependency\n"
+                                    +
+                                    "- maybe the set of tested components is missing the required dependency; see https://quarkus.io/guides/testing-components#tested-components for more details about tested components\n"
+                                    + "- you can add the class to the set of component types with @QuarkusComponentTest#value() or with QuarkusComponentTestExtensionBuilder#addComponentClasses()\n"
+                                    +
+                                    "- here is the list of tested components:\n\t* %s";
+                            throw new IllegalStateException(msg.formatted(requiredType, injectionPoint.getTargetInfo(),
+                                    configuration.componentClasses.stream().map(Object::toString)
+                                            .collect(Collectors.joining("\n\t* "))));
                         }
+
                         unsatisfiedInjectionPoints.add(new TypeAndQualifiers(requiredType, requiredQualifiers));
                         LOG.debugf("Unsatisfied injection point found: %s", injectionPoint.getTargetInfo());
                     }
@@ -996,6 +1010,25 @@ class ComponentContainer {
     @SuppressWarnings("unchecked")
     static <T> T cast(Object obj) {
         return (T) obj;
+    }
+
+    static boolean isIllegalBeanType(Type type) {
+        if (type.kind() == Kind.TYPE_VARIABLE) {
+            return true;
+        } else if (type.kind() == Kind.PARAMETERIZED_TYPE) {
+            for (Type typeArgument : type.asParameterizedType().arguments()) {
+                if (typeArgument.kind() == Kind.TYPE_VARIABLE) {
+                    // Parameterized type with type variable is legal
+                    continue;
+                } else if (typeArgument.kind() == Kind.WILDCARD_TYPE
+                        || isIllegalBeanType(typeArgument)) {
+                    return true;
+                }
+            }
+        } else if (type.kind() == Kind.ARRAY) {
+            isIllegalBeanType(type.asArrayType().elementType());
+        }
+        return false;
     }
 
     public static class TracingClassVisitor extends ClassVisitor {

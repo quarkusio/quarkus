@@ -99,13 +99,24 @@ public interface ValueRegistry {
      */
     final class RuntimeKey<T> {
         private final String key;
+        private final Class<T> type;
 
+        @SuppressWarnings("unchecked")
         RuntimeKey(String key) {
+            this(key, (Class<T>) String.class);
+        }
+
+        RuntimeKey(String key, Class<T> type) {
             this.key = key;
+            this.type = type;
         }
 
         public String key() {
             return key;
+        }
+
+        public Class<T> type() {
+            return type;
         }
 
         @Override
@@ -124,15 +135,23 @@ public interface ValueRegistry {
             return new RuntimeKey<>(key);
         }
 
+        public static <T> RuntimeKey<T> key(final String key, final Class<T> type) {
+            return new RuntimeKey<>(key, type);
+        }
+
         public static <T> RuntimeKey<T> key(final Class<T> type) {
-            return new RuntimeKey<>(type.getName());
+            return new RuntimeKey<>(type.getName(), type);
         }
 
         public static RuntimeKey<Integer> intKey(final String key) {
-            return new RuntimeKey<>(key);
+            return new RuntimeKey<>(key, Integer.class);
         }
 
-        // TODO - Add static constructors as needed
+        public static RuntimeKey<Boolean> booleanKey(final String key) {
+            return new RuntimeKey<>(key, Boolean.class);
+        }
+
+        // Add static constructors as needed
     }
 
     /**

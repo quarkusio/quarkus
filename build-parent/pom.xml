@@ -41,7 +41,7 @@
 
         <!-- Dev tools -->
         <freemarker.version>2.3.34</freemarker.version>
-        <commonmark.version>0.27.0</commonmark.version>
+        <commonmark.version>0.27.1</commonmark.version>
         <jgit.version>7.5.0.202512021534-r</jgit.version>
 
         <!-- Arquillian BOM -->
@@ -63,7 +63,7 @@
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.9.12</proposed-maven-version>
         <maven-wrapper.version>3.3.4</maven-wrapper.version>
-        <gradle-wrapper.version>9.2.1</gradle-wrapper.version>
+        <gradle-wrapper.version>9.3.0</gradle-wrapper.version>
         <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
         <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
         <maven-plugin-plugin.version>3.8.1</maven-plugin-plugin.version>

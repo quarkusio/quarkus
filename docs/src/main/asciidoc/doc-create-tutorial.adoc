@@ -226,7 +226,7 @@ We'll start with the steps required to create and add an endpoint to a file.
 -----
 == Hello, World! as an Acme REST service
 
-Let's create a Http endpoint using the `@Anvil` annotation.
+Let's create an Http endpoint using the `@Anvil` annotation.
 
 Create a new source file, `src/main/java/org/acme/MyAcmeApplication.java`, and define the `MyAcmeApplication` bean as follows:
 

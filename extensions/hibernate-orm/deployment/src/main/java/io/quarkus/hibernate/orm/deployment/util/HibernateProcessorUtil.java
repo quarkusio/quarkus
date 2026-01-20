@@ -44,7 +44,9 @@ import io.quarkus.hibernate.orm.deployment.HibernateConfigUtil;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.SqlLoadScriptDefaultBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.customized.BuiltinFormatMapperBehaviour;
 import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
@@ -421,7 +423,9 @@ public final class HibernateProcessorUtil {
         descriptor.getProperties().setProperty(AvailableSettings.MAX_FETCH_DEPTH, String.valueOf(maxFetchDepth.getAsInt()));
     }
 
-    private static List<String> getSqlLoadScript(Optional<List<String>> sqlLoadScript, LaunchMode launchMode) {
+    private static List<String> getSqlLoadScript(Optional<List<String>> sqlLoadScript,
+            LaunchMode launchMode, String persistenceUnitName,
+            List<SqlLoadScriptDefaultBuildItem> additionalDefaults) {
         if (sqlLoadScript.isPresent()) {
             return sqlLoadScript.get().stream()
                     .filter(s -> !NO_SQL_LOAD_SCRIPT_FILE.equalsIgnoreCase(s))
@@ -430,7 +434,14 @@ public final class HibernateProcessorUtil {
         if (launchMode.isProduction()) {
             return Collections.emptyList();
         }
-        return List.of("import.sql");
+        List<String> defaults = new ArrayList<>();
+        defaults.add("import.sql");
+        if (PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
+            for (SqlLoadScriptDefaultBuildItem additionalDefault : additionalDefaults) {
+                defaults.add(additionalDefault.getResourceName());
+            }
+        }
+        return defaults;
     }
 
     private static boolean isMySQLOrMariaDB(Optional<String> dbKind, Optional<String> dialect) {
@@ -500,11 +511,13 @@ public final class HibernateProcessorUtil {
     public static void configureSqlLoadScript(String persistenceUnitName,
             HibernateOrmConfigPersistenceUnit persistenceUnitConfig,
             ApplicationArchivesBuildItem applicationArchivesBuildItem, LaunchMode launchMode,
+            List<SqlLoadScriptDefaultBuildItem> additionalSqlLoadScriptDefaults,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             QuarkusPersistenceUnitDescriptor descriptor) {
-        // This defaults to 'import.sql' in non-production modes
-        List<String> importFiles = getSqlLoadScript(persistenceUnitConfig.sqlLoadScript(), launchMode);
+        // This defaults to 'import.sql', and potentially 'data.sql', in non-production modes
+        List<String> importFiles = getSqlLoadScript(persistenceUnitConfig.sqlLoadScript(),
+                launchMode, persistenceUnitName, additionalSqlLoadScriptDefaults);
         if (!importFiles.isEmpty()) {
             List<String> existingImportFiles = new ArrayList<>();
             for (String importFile : importFiles) {

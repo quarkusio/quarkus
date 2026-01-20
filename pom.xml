@@ -55,7 +55,7 @@
         <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
 
         <gitflow-incremental-builder.version>4.5.4</gitflow-incremental-builder.version>
-        <quarkus-platform-bom-plugin.version>0.0.126</quarkus-platform-bom-plugin.version>
+        <quarkus-platform-bom-plugin.version>0.0.128</quarkus-platform-bom-plugin.version>
 
         <skipDocs>false</skipDocs>
         <skip.gradle.tests>false</skip.gradle.tests>
@@ -71,7 +71,7 @@
         <jacoco.version>0.8.14</jacoco.version>
         <kubernetes-client.version>7.4.0</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
         <rest-assured.version>5.5.6</rest-assured.version>
-        <hibernate-orm.version>7.2.0.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
+        <hibernate-orm.version>7.2.1.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
         <jakarta.persistence-api.version>3.2.0</jakarta.persistence-api.version> <!-- version controlled by Hibernate ORM's needs -->
         <jakarta.data-api.version>1.0.1</jakarta.data-api.version> <!-- version controlled by Hibernate ORM's needs -->
         <antlr.version>4.13.2</antlr.version> <!-- version controlled by Hibernate ORM's needs -->
@@ -81,7 +81,7 @@
         <hibernate-reactive.version>3.2.1.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
         <hibernate-validator.version>9.1.0.Final</hibernate-validator.version>
         <hibernate-search.version>8.2.1.Final</hibernate-search.version>
-        <hibernate-tools.version>7.2.0.Final</hibernate-tools.version>
+        <hibernate-tools.version>7.2.1.Final</hibernate-tools.version>
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
         <grpc.version>1.78.0</grpc.version> <!-- when updating, verify if following versions should not be updated too: -->

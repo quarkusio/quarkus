@@ -616,7 +616,9 @@ public class OidcCommonUtils {
                 .flatMap(resp -> filterHttpResponse(requestProps, resp, responseFilters, Type.DISCOVERY)
                         .map(buffer -> {
                             if (resp.statusCode() == 200) {
-                                return buffer.toJsonObject();
+                                JsonObject discoveredJson = buffer.toJsonObject();
+                                LOG.debugf("Discovered OIDC metadata: %s", discoveredJson);
+                                return discoveredJson;
                             } else if (resp.statusCode() == 302) {
                                 throw createOidcClientRedirectException(resp);
                             } else {

@@ -170,7 +170,7 @@ mvn clean install -Dquarkus.analytics.disabled=true
 
 Values can be `true` or `false`.
 
-Setting this property to `true` will disable the collection of analytics data on that specific project regardless of any other configuration.
+Setting this property to `true` will disable the collection of analytics data on that specific project, regardless of any other configuration.
 | boolean
 | false
 | [[build-analytics-quarkus-analytics-uri-base]]`link:#build-analytics.quarkus-analytics-uri-base[quarkus.analytics.uri.base]`

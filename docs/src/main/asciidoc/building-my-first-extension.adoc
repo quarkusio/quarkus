@@ -14,12 +14,12 @@ The role of the extensions is to leverage Quarkus paradigms to integrate seamles
 This is how you can use your battle-tested ecosystem and take advantage of Quarkus performance and native compilation.
 Go to https://code.quarkus.io/[code.quarkus.io] to get the list of the supported extensions.
 
-In this guide we are going to develop the *Sample Greeting Extension*.
-The extension will expose a customizable HTTP endpoint which simply greets the visitor.
+In this guide, we are going to develop the *Sample Greeting Extension*.
+The extension will expose a customizable HTTP endpoint that simply greets the visitor.
 
 [NOTE]
 .Disclaimer
-To be sure it's extra clear you don't need an extension to add a Servlet to your application.
+To be sure it's extra clear that you don't need an extension to add a Servlet to your application.
 This guide is a simplified example to explain the concepts of extensions development, see the xref:writing-extensions.adoc[full documentation] if you need more information.
 Keep in mind it's not representative of the power of moving things to build time or simplifying the build of native images.
 
@@ -31,7 +31,7 @@ include::{includes}/prerequisites.adoc[]
 
 [CAUTION]
 ====
-Writing extension with any other than Java and Maven has **not** been tested by the Quarkus team so your mileage may vary
+Writing extension with any other than Java and Maven has **not** been tested by the Quarkus team, so your mileage may vary
 if you stray off this path
 ====
 
@@ -40,7 +40,7 @@ if you stray off this path
 First things first, we will need to start with some basic concepts.
 
 * JVM mode vs Native mode
-  ** Quarkus is first and foremost a Java framework, that means you can develop, package and run classic JAR applications, that's what we call *JVM mode*.
+  ** Quarkus is first and foremost a Java framework, that means you can develop, package, and run classic JAR applications, that's what we call *JVM mode*.
   ** Thanks to https://graalvm.org/[GraalVM] you can compile your Java application into machine specific code (like you do in Go or C++) and that's what we call *Native mode*.
 
 The operation of compiling Java bytecode into a native system-specific machine code is named *Ahead of Time Compilation* (aka AoT).
@@ -65,7 +65,7 @@ A Quarkus extension consists of two parts:
 
 * The *runtime module* which represents the capabilities the extension developer exposes to the application's developer (an authentication filter, an enhanced data layer API, etc).
 Runtime dependencies are the ones the users will add as their application dependencies (in Maven POMs or Gradle build scripts).
-* The *deployment module* which is used during the augmentation phase of the build, it describes how to "deploy" a library
+* The *deployment module*, which is used during the augmentation phase of the build, describes how to "deploy" a library
 following the Quarkus philosophy.
 In other words, it applies all the Quarkus optimizations to your application during the build.
 The deployment module is also where we prepare things for GraalVM's native compilation.
@@ -73,7 +73,7 @@ The deployment module is also where we prepare things for GraalVM's native compi
 IMPORTANT: Users should not be adding the deployment modules of extension as application dependencies. The deployment dependencies are resolved by
 Quarkus during the augmentation phase from the runtime dependencies of the application.
 
-At this point, you should have understood that most of the magic will happen at the Augmentation build time thanks to the deployment module.
+At this point, you should have understood that most of the magic will happen at the Augmentation build time, thanks to the deployment module.
 
 == Quarkus Application Bootstrap
 
@@ -81,7 +81,7 @@ There are three distinct bootstrap phases of a Quarkus application.
 
 * *Augmentation*. During the build time, the Quarkus extensions will load and scan your application's bytecode (including the dependencies) and configuration.
 At this stage, the extension can read configuration files, scan classes for specific annotations, etc.
-Once all the metadata has been collected, the extensions can pre-process the libraries bootstrap actions like your ORM, DI or REST controllers configurations.
+Once all the metadata has been collected, the extensions can pre-process the libraries bootstrap actions like your ORM, DI, or REST controllers configurations.
 The result of the bootstrap is directly recorded into bytecode and will be part of your final application package.
 * *Static Init*. During the run time, Quarkus will execute first a static init method which contains some extensions actions/configurations.
 When you will do your native packaging, this static method will be pre-processed during the build time and the objects it has generated will be serialized into the final native executable, so the initialization code will not be executed in the native mode (imagine you execute a Fibonacci function during this phase, the result of the computation will be directly recorded in the native executable).
@@ -149,7 +149,7 @@ applying codestarts...
 <4> From a directory with no pom.xml and without any further options, the generator will automatically pick the 'standalone' extension layout
 <5> With the 'standalone' layout, the `namespaceId` is empty by default, so the computed runtime module artifactId is the `extensionId`
 
-Maven has generated a `greeting-extension` directory containing the extension project which consists of the parent `pom.xml`, the `runtime` and the `deployment` modules.
+Maven has generated a `greeting-extension` directory containing the extension project, which consists of the parent `pom.xml`, the `runtime`, and the `deployment` modules.
 
 ==== The parent pom.xml
 
@@ -322,7 +322,7 @@ The name of the feature gets displayed in the log during application bootstrap.
 An extension should provide at most one feature.
 
 Be patient, we will explain the `Build Step Processor` concept and all the extension deployment API later on.
-At this point, you just need to understand that this class explains to Quarkus how to deploy a feature named `greeting` which is your extension.
+At this point, you just need to understand that this class explains to Quarkus how to deploy a feature named `greeting`, which is your extension.
 In other words, you are augmenting your application to use the `greeting` extension with all the Quarkus benefits (build time optimization, native support, etc.).
 
 ==== The Runtime module
@@ -392,7 +392,7 @@ The key points are:
 
 <1> By convention, the runtime module has no suffix (`greeting-extension`) as it is the artifact exposed to the end user.
 <2> The runtime module depends on the `quarkus-arc` artifact.
-<3> We add  the `quarkus-extension-maven-plugin` to generate the Quarkus extension descriptor included into the runtime artifact which links it with the corresponding deployment artifact.
+<3> We add  the `quarkus-extension-maven-plugin` to generate the Quarkus extension descriptor included into the runtime artifact, which links it with the corresponding deployment artifact.
 <4> We add  the `quarkus-extension-processor` to the compiler annotation processors.
 
 === Gradle setup
@@ -471,7 +471,7 @@ dependencies {
 
 The runtime module applies the `io.quarkus.extension` plugin. This will:
 
-* Add `quarkus-extension-process` as annotation processor to both modules.
+* Add `quarkus-extension-process` as an annotation processor to both modules.
 * Generate extension description files.
 
 Here is an example of `build.gradle` file for the `runtime` module:
@@ -501,10 +501,10 @@ To do so, our extension will deploy, in the user application, a Servlet exposing
 
 The `runtime` module is where you develop the feature you want to propose to your users, so it's time to create our Web Servlet.
 
-To use Servlets in your applications you need to have a Servlet Container such as https://undertow.io[Undertow].
+To use Servlets in your applications, you need to have a Servlet Container such as https://undertow.io[Undertow].
 Luckily, `quarkus-bom` imported by our parent `pom.xml` already includes the Undertow Quarkus extension.
 
-All we need to do is add `quarkus-undertow` as dependency to our `./greeting-extension/runtime/pom.xml`:
+All we need to do is add `quarkus-undertow` as a dependency to our `./greeting-extension/runtime/pom.xml`:
 [source, xml]
 ----
     <dependency>
@@ -556,7 +556,7 @@ public class GreetingExtensionServlet extends HttpServlet { // <1>
 === Deploying the Greeting feature
 
 Quarkus magic relies on bytecode generation at build time rather than waiting for the runtime code evaluation, that's the role of your extension's `deployment` module.
-Calm down, we know, bytecode is hard and you don't want to do it manually. Quarkus proposes a high level API to make your life easier.
+Calm down, we know, bytecode is hard, and you don't want to do it manually. Quarkus proposes a high level API to make your life easier.
 Thanks to basic concepts, you will describe the items to produce/consume and the corresponding steps in order to generate the bytecode to produce during the deployment time.
 
 The `io.quarkus.builder.item.BuildItem` concept represents object instances you will produce or consume (and at some point convert into bytecode) thanks to methods annotated with `@io.quarkus.deployment.annotations.BuildStep` which describe your extension's deployment tasks.
@@ -658,14 +658,14 @@ class GreetingExtensionProcessor {
 <1> We add a `createServlet` method which returns a `ServletBuildItem` and annotate it with `@BuildStep`.
 Now, Quarkus will process this new task which will result in the bytecode generation of the Servlet registration at build time.
 
-<2> `ServletBuildItem` proposes a fluent API to instantiate a Servlet named `greeting-extension` of type `GreetingExtensionServlet` (it's our class provided by our extension `runtime` module), and map it the `/greeting` path.
+<2> `ServletBuildItem` proposes a fluent API to instantiate a Servlet named `greeting-extension` of type `GreetingExtensionServlet` (it's our class provided by our extension `runtime` module), and map it to the `/greeting` path.
 
 === Testing the Greeting Extension feature
 
-When developing a Quarkus extension, you mainly want to test your feature is properly deployed in an application and works as expected.
+When developing a Quarkus extension, you mainly want to test that your feature is properly deployed in an application and works as expected.
 That's why the tests will be hosted in the `deployment` module.
 
-Quarkus proposes facilities to test extensions via the `quarkus-junit-internal` artifact (which should already be in the deployment pom.xml), in particular the `io.quarkus.test.QuarkusUnitTest` runner which starts an application with your extension.
+Quarkus proposes facilities to test extensions via the `quarkus-junit-internal` artifact (which should already be in the deployment pom.xml), in particular the `io.quarkus.test.QuarkusUnitTest` runner, which starts an application with your extension.
 
 We will use https://rest-assured.io[RestAssured] (massively used in Quarkus) to test our HTTP endpoint.
 Let's add the `rest-assured` dependency into the  `./greeting-extension/deployment/pom.xml`.
@@ -834,7 +834,7 @@ By default, Maven will wait for a connection on `localhost:5005`.
 
 === Time to use your new extension
 
-Now that you just finished building your first extension you should be eager to use it in a Quarkus application!
+Now that you just finished building your first extension, you should be eager to use it in a Quarkus application!
 
 *Classic Maven publication*
 
@@ -885,7 +885,7 @@ __  ____  __  _____   ___  __ ____  ______
 2022-11-20 04:25:36,913 INFO  [io.quarkus] (Quarkus Main Thread) Installed features: [cdi, greetin-extension, resteasy-reactive, smallrye-context-propagation, vertx]
 ----
 
-From an extension developer standpoint the Maven publication strategy is very handy and fast but Quarkus wants to go one step further by also ensuring a reliability of the ecosystem for the people who will use the extensions.
+From an extension developer standpoint, the Maven publication strategy is very handy and fast, but Quarkus wants to go one step further by also ensuring a reliability of the ecosystem for the people who will use the extensions.
 Think about it, we all had a poor Developer Experience with an unmaintained library, an incompatibility between dependencies (and we don't even talk about legal issues).
 That's why there is the Quarkus Platform.
 
@@ -915,9 +915,9 @@ For more information, check link:https://github.com/quarkiverse/quarkiverse/wiki
 
 == Conclusion
 
-Creating new extensions may appear to be an intricate task at first but once you understood the Quarkus game-changer paradigm (build time vs runtime) the structure of an extension makes perfectly sense.
+Creating new extensions may appear to be an intricate task at first, but once you understand the Quarkus game-changer paradigm (build time vs runtime) the structure of an extension makes perfectly sense.
 
-As usual, along the path Quarkus simplifies things under the hood (Maven Mojo, bytecode generation or testing) to make it pleasant to develop new features.
+As usual, along the path, Quarkus simplifies things under the hood (Maven Mojo, bytecode generation, or testing) to make it pleasant to develop new features.
 
 == Further reading
 

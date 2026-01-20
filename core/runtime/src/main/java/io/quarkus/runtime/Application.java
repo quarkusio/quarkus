@@ -57,7 +57,7 @@ public abstract class Application implements Closeable {
      */
     protected Application(boolean auxiliaryApplication) {
         this.auxiliaryApplication = auxiliaryApplication;
-        this.valueRegistry = new ValueRegistryImpl.Builder().addDiscoveredInfos().build();
+        this.valueRegistry = ValueRegistryImpl.builder().build();
     }
 
     /**

@@ -33,11 +33,11 @@ image::amqp-qs-architecture.png[alt=Architecture, align=center,width=80%]
 
 The first application, the `producer`, will let the user request some quotes over an HTTP endpoint.
 For each quote request, a random identifier is generated and returned to the user, to put the quote request on _pending_.
-At the same time the generated request id is sent over the `quote-requests` queue.
+At the same time, the generated request id is sent over the `quote-requests` queue.
 
 image::amqp-qs-app-screenshot.png[alt=Producer App UI, align=center]
 
-The second application, the `processor`, in turn, will read from the `quote-requests` queue put a random price to the quote, and send it to a queue named `quotes`.
+The second application, the `processor`, in turn, will read from the `quote-requests` queue, put a random price to the quote, and send it to a queue named `quotes`.
 
 Lastly, the `producer` will read the quotes and send them to the browser using server-sent events.
 The user will therefore see the quote price updated from _pending_ to the received price in real-time.
@@ -62,7 +62,7 @@ To create the _producer_ project, in a terminal run:
 :create-app-post-command:
 include::{includes}/devtools/create-app.adoc[]
 
-This command creates the project structure and select the two Quarkus extensions we will be using:
+This command creates the project structure and selects the two Quarkus extensions we will be using:
 
 1. Quarkus REST (formerly RESTEasy Reactive) and its Jackson support to handle JSON payloads
 2. The Reactive Messaging AMQP connector
@@ -74,7 +74,7 @@ To create the _processor_ project, from the same directory, run:
 :create-app-post-command:
 include::{includes}/devtools/create-app.adoc[]
 
-At that point you should have the following structure:
+At that point, you should have the following structure:
 
 [source, text]
 ----
@@ -108,7 +108,7 @@ Open the two projects in your favorite IDE.
 == The Quote object
 
 The `Quote` class will be used in both `producer` and `processor` projects.
-For the sake of simplicity we will duplicate the class.
+For the sake of simplicity, we will duplicate the class.
 In both projects, create the `src/main/java/org/acme/amqp/model/Quote.java` file, with the following content:
 
 [source,java]
@@ -159,7 +159,7 @@ More details about the `@RegisterForReflection` annotation can be found on  the 
 
 == Sending quote request
 
-Inside the `producer` project locate the generated  `src/main/java/org/acme/amqp/producer/QuotesResource.java` file, and update the content to be:
+Inside the `producer` project, locate the generated  `src/main/java/org/acme/amqp/producer/QuotesResource.java` file, and update the content to be:
 
 [source,java]
 ----
@@ -355,7 +355,7 @@ And, in a separate terminal:
 > mvn -f amqp-quickstart-processor quarkus:dev
 ----
 
-Quarkus starts a AMQP broker automatically, configures the application and shares the broker instance between different applications.
+Quarkus starts an AMQP broker automatically, configures the application, and shares the broker instance between different applications.
 See xref:amqp-dev-services.adoc[Dev Services for AMQP] for more details.
 
 

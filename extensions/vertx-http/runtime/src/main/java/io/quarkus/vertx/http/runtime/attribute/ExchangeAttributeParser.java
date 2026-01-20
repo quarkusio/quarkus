@@ -94,7 +94,7 @@ public class ExchangeAttributeParser {
                     }
                     break;
                 }
-                case 2: {
+                case 2, 4: {
                     if (c == '}') {
                         attributes.add(wrap(parseSingleToken(valueString.substring(pos, i + 1))));
                         pos = i + 1;
@@ -111,14 +111,6 @@ public class ExchangeAttributeParser {
                         pos = i + 1;
                         state = 0;
                     } else {
-                        attributes.add(wrap(parseSingleToken(valueString.substring(pos, i + 1))));
-                        pos = i + 1;
-                        state = 0;
-                    }
-                    break;
-                }
-                case 4: {
-                    if (c == '}') {
                         attributes.add(wrap(parseSingleToken(valueString.substring(pos, i + 1))));
                         pos = i + 1;
                         state = 0;

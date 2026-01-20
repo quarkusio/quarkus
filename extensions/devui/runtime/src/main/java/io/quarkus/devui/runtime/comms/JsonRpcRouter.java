@@ -23,6 +23,8 @@ import io.quarkus.devui.runtime.jsonrpc.JsonRpcCodec;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcRequest;
 import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
+import io.quarkus.devui.runtime.mcp.Filter;
+import io.quarkus.devui.runtime.mcp.McpDevUIJsonRpcService;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -55,6 +57,9 @@ public class JsonRpcRouter {
 
     private static final List<JsonRpcResponseWriter> SESSIONS = Collections.synchronizedList(new ArrayList<>());
     private JsonRpcCodec codec;
+
+    @Inject
+    McpDevUIJsonRpcService mcpDevUIJsonRpcService;
 
     @Produces
     @DefaultBean
@@ -175,6 +180,33 @@ public class JsonRpcRouter {
         }
     }
 
+    public boolean isEnabled(JsonRpcRequest jsonRpcRequest) {
+        String jsonRpcMethodName = jsonRpcRequest.getMethod();
+
+        if (jsonRpcMethodName.equalsIgnoreCase(UNSUBSCRIBE)) { // TODO: Move to protocol specific ?
+            return true;
+        } else if (this.runtimeMethodsMap.containsKey(jsonRpcMethodName)) {
+            JsonRpcMethod m = this.runtimeMethodsMap.get(jsonRpcRequest.getMethod());
+            return mcpDevUIJsonRpcService.isEnabled(m, Filter.enabled);
+        } else if (this.runtimeSubscriptionMap.containsKey(jsonRpcMethodName)) {
+            JsonRpcMethod m = this.runtimeSubscriptionMap.get(jsonRpcRequest.getMethod());
+            return mcpDevUIJsonRpcService.isEnabled(m, Filter.enabled);
+        } else if (this.deploymentMethodsMap.containsKey(jsonRpcMethodName)) {
+            JsonRpcMethod m = this.deploymentMethodsMap.get(jsonRpcRequest.getMethod());
+            return mcpDevUIJsonRpcService.isEnabled(m, Filter.enabled);
+        } else if (this.deploymentSubscriptionsMap.containsKey(jsonRpcMethodName)) {
+            JsonRpcMethod m = this.deploymentSubscriptionsMap.get(jsonRpcRequest.getMethod());
+            return mcpDevUIJsonRpcService.isEnabled(m, Filter.enabled);
+        } else if (this.recordedMethodsMap.containsKey(jsonRpcMethodName)) {
+            JsonRpcMethod m = this.recordedMethodsMap.get(jsonRpcRequest.getMethod());
+            return mcpDevUIJsonRpcService.isEnabled(m, Filter.enabled);
+        } else if (this.recordedSubscriptionsMap.containsKey(jsonRpcMethodName)) {
+            JsonRpcMethod m = this.recordedSubscriptionsMap.get(jsonRpcRequest.getMethod());
+            return mcpDevUIJsonRpcService.isEnabled(m, Filter.enabled);
+        }
+        return false;
+    }
+
     private void routeToDevUIUnsubscribe(JsonRpcRequest jsonRpcRequest, JsonRpcResponseWriter jrrw) {
         if (this.activeSubscriptions.containsKey(jsonRpcRequest.getId())) {
             Cancellable cancellable = this.activeSubscriptions.remove(jsonRpcRequest.getId());
@@ -224,7 +256,7 @@ public class JsonRpcRouter {
                     // InvocationTargetException, so unwrap it here
                     if (failure instanceof InvocationTargetException f) {
                         actualFailure = f.getTargetException();
-                    } else if (failure.getCause() != null
+                    } else if (failure != null && failure.getCause() != null
                             && failure.getCause() instanceof InvocationTargetException f) {
                         actualFailure = f.getTargetException();
                     } else {

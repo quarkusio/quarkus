@@ -56,8 +56,6 @@ public final class RunnerClassLoader extends ClassLoader {
     //Protected by synchronization on the above field, as they are related.
     private boolean postBootPhase = false;
 
-    private final CracResource resource;
-
     RunnerClassLoader(ClassLoader parent, Map<String, ClassLoadingResource[]> resourceDirectoryMap,
             Set<String> parentFirstPackages, Set<String> nonExistentResources,
             List<String> fullyIndexedDirectories, Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap,
@@ -75,10 +73,7 @@ public final class RunnerClassLoader extends ClassLoader {
         this.transformedBytecode = transformedBytecode;
 
         if (CracSupport.isEnabled()) {
-            resource = new CracResource();
-            org.crac.Core.getGlobalContext().register(resource);
-        } else {
-            resource = null;
+            org.crac.Core.getGlobalContext().register(new CracResource());
         }
     }
 

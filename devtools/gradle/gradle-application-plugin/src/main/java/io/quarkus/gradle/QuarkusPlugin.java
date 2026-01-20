@@ -25,7 +25,6 @@ import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ProjectDependency;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.internal.tasks.TaskDependencyFactory;
 import org.gradle.api.java.archives.Attributes;
 import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.plugins.JavaPlugin;
@@ -130,13 +129,11 @@ public class QuarkusPlugin implements Plugin<Project> {
     public static final String IMAGE_CHECK_REQUIREMENTS_NAME = "quarkusImageExtensionChecks";
 
     private final ToolingModelBuilderRegistry registry;
-    private final TaskDependencyFactory taskDependencyFactory;
 
     @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
-    public QuarkusPlugin(ToolingModelBuilderRegistry registry, TaskDependencyFactory taskDepFactory) {
+    public QuarkusPlugin(ToolingModelBuilderRegistry registry) {
         this.registry = registry;
-        this.taskDependencyFactory = taskDepFactory;
     }
 
     @Override
@@ -185,11 +182,11 @@ public class QuarkusPlugin implements Plugin<Project> {
         });
 
         ApplicationDeploymentClasspathBuilder normalClasspath = new ApplicationDeploymentClasspathBuilder(project,
-                LaunchMode.NORMAL, taskDependencyFactory);
+                LaunchMode.NORMAL);
         ApplicationDeploymentClasspathBuilder testClasspath = new ApplicationDeploymentClasspathBuilder(project,
-                LaunchMode.TEST, taskDependencyFactory);
+                LaunchMode.TEST);
         ApplicationDeploymentClasspathBuilder devClasspath = new ApplicationDeploymentClasspathBuilder(project,
-                LaunchMode.DEVELOPMENT, taskDependencyFactory);
+                LaunchMode.DEVELOPMENT);
 
         Provider<DefaultProjectDescriptor> projectDescriptor = ProjectDescriptorBuilder.buildForApp(project);
         TaskProvider<QuarkusApplicationModelTask> quarkusGenerateTestAppModelTask = tasks.register(
@@ -554,7 +551,7 @@ public class QuarkusPlugin implements Plugin<Project> {
     }
 
     private ApplicationDeploymentClasspathBuilder getDeploymentClasspathBuilder(Project project, LaunchMode mode) {
-        return new ApplicationDeploymentClasspathBuilder(project, mode, taskDependencyFactory);
+        return new ApplicationDeploymentClasspathBuilder(project, mode);
     }
 
     private static void configureApplicationModelTask(Project project, QuarkusApplicationModelTask task,

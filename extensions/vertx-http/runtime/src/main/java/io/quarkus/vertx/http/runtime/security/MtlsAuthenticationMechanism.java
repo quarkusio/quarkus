@@ -101,8 +101,7 @@ public final class MtlsAuthenticationMechanism implements HttpAuthenticationMech
 
     @Override
     public Uni<ChallengeData> getChallenge(RoutingContext context) {
-        return Uni.createFrom().item(new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(),
-                null, null));
+        return Uni.createFrom().item(new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code()));
     }
 
     @Override

@@ -52,6 +52,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
+import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.build.JwtClaimsBuilder;
 import io.smallrye.jwt.build.JwtSignatureBuilder;
@@ -82,7 +83,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     private final BlockingTaskRunner<AuthorizationCodeTokens> getTokenStateRequestContext;
     private final SecureRandom secureRandom = new SecureRandom();
 
-    public CodeAuthenticationMechanism(BlockingSecurityExecutor blockingExecutor) {
+    CodeAuthenticationMechanism(BlockingSecurityExecutor blockingExecutor, DefaultTenantConfigResolver resolver,
+            HttpAuthenticationMechanism parent) {
+        super(resolver, parent);
         this.createTokenStateRequestContext = new BlockingTaskRunner<>(blockingExecutor);
         this.getTokenStateRequestContext = new BlockingTaskRunner<>(blockingExecutor);
     }

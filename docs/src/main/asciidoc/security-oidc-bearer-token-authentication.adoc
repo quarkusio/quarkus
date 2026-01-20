@@ -1311,6 +1311,7 @@ Quarkus `web-app` applications always require the `quarkus.oidc.client-id` prope
 
 == Sender-constraining access tokens
 
+[[demonstrating-proof-of-possession-dpop]]
 === Demonstrating Proof of Possession (DPoP)
 
 https://datatracker.ietf.org/doc/html/rfc9449[RFC9449] describes a Demonstrating Proof of Possession (DPoP) mechanism for cryprographically binding an access token to the current client, preventing the access token loss and replay.
@@ -1330,7 +1331,8 @@ quarkus.oidc.token.authorization-scheme=dpop <1>
 
 After accepting such tokens, Quarkus will go through the full https://datatracker.ietf.org/doc/html/rfc9449#name-checking-dpop-proofs[DPoP token verification process].
 
-Support for custom DPoP nonce providers may be offered in the future.
+You can define a link:https://www.rfc-editor.org/rfc/rfc9449.html#name-resource-server-provided-no[custom DPoP nonce provider] by implementing the `io.quarkus.oidc.DPoPNonceProvider` interface as a CDI bean.
+If the DPoP proof nonce is missing or invalid, Quarkus responds with the `401 Unauthorized` status and attaches the expected nonce as the `DPoP-Nonce` header value.
 
 === Mutual TLS token binding
 

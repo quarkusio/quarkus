@@ -107,6 +107,17 @@ public final class OidcConstants {
     public static final String DPOP_ACCESS_TOKEN_THUMBPRINT = "ath";
     public static final String DPOP_HTTP_METHOD = "htm";
     public static final String DPOP_HTTP_REQUEST_URI = "htu";
+    public static final String DPOP_NONCE = "DPoP-Nonce";
+    /**
+     * <a href="https://www.rfc-editor.org/rfc/rfc9449.html#section-12.2-2.2.2.2">Invalid DPoP proof value of the error
+     * parameter</a>
+     */
+    public static final String INVALID_DPOP_PROOF = "invalid_dpop_proof";
+    /**
+     * <a href="https://www.rfc-editor.org/rfc/rfc9449.html#section-12.2-3.2.2.2">Use DPoP nonce value of the error
+     * parameter</a>
+     */
+    public static final String USE_DPOP_NONCE = "use_dpop_nonce";
 
     public static final String ACR = "acr";
     public static final String ACR_VALUES = "acr_values";

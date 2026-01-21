@@ -79,9 +79,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
             waitForStartedFunction(startedFunction, quarkusProcess, waitTimeSeconds, logFile);
             return Optional.empty();
         } else {
-            ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logRuntimeConfig.file().path().toPath(),
-                    waitTimeSeconds);
-            return Optional.of(result);
+            return waitForCapturedListeningData(quarkusProcess, logRuntimeConfig.file().path().toPath(), waitTimeSeconds);
         }
     }
 

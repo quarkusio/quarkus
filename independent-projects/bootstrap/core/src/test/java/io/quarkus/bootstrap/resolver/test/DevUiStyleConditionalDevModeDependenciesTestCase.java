@@ -10,6 +10,7 @@ import io.quarkus.bootstrap.resolver.CollectDependenciesBase;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
 import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependency;
 
@@ -48,16 +49,23 @@ public class DevUiStyleConditionalDevModeDependenciesTestCase extends CollectDep
                 case "ext-a":
                     assertThat(d.getDependencies()).containsExactlyInAnyOrder(
                             ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-lib-dev", TsArtifact.DEFAULT_VERSION));
+                    assertThat(d.getDirectDependencies()).containsExactlyInAnyOrder(
+                            Dependency.jarWithFlags(TsArtifact.DEFAULT_GROUP_ID, "ext-lib-dev", TsArtifact.DEFAULT_VERSION,
+                                    DependencyFlags.DIRECT |
+                                            DependencyFlags.RUNTIME_CP |
+                                            DependencyFlags.DEPLOYMENT_CP));
                     break;
                 case "ext-a-deployment":
-                    assertThat(d.getDependencies()).containsExactlyInAnyOrder(
-                            ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID,
-                                    d.getArtifactId().substring(0, d.getArtifactId().length() - "-deployment".length()),
-                                    TsArtifact.DEFAULT_VERSION));
-                    break;
                 case "ext-lib-dev":
                     assertThat(d.getDependencies()).containsExactlyInAnyOrder(
                             ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-a", TsArtifact.DEFAULT_VERSION));
+                    assertThat(d.getDirectDependencies()).containsExactlyInAnyOrder(
+                            Dependency.jarWithFlags(TsArtifact.DEFAULT_GROUP_ID, "ext-a", TsArtifact.DEFAULT_VERSION,
+                                    DependencyFlags.RUNTIME_CP |
+                                            DependencyFlags.DEPLOYMENT_CP |
+                                            DependencyFlags.RUNTIME_EXTENSION_ARTIFACT |
+                                            DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT |
+                                            DependencyFlags.DIRECT));
                     break;
                 default:
                     throw new RuntimeException("unexpected dependency " + d.toCompactCoords());

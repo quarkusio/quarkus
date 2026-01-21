@@ -22,6 +22,15 @@ public interface Dependency extends ArtifactCoords, Mappable {
         return new ArtifactDependency(groupId, artifactId, null, ArtifactCoords.TYPE_POM, version, SCOPE_IMPORT, false);
     }
 
+    static Dependency withFlags(String groupId, String artifactId, String classifier, String type, String version, int flags) {
+        return new ArtifactDependency(groupId, artifactId, classifier, type, version,
+                flags);
+    }
+
+    static Dependency jarWithFlags(String groupId, String artifactId, String version, int flags) {
+        return withFlags(groupId, artifactId, ArtifactCoords.DEFAULT_CLASSIFIER, ArtifactCoords.TYPE_JAR, version, flags);
+    }
+
     String getScope();
 
     default Collection<ArtifactKey> getExclusions() {

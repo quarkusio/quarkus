@@ -47,6 +47,13 @@ public class ArtifactDependency extends GACTV implements Dependency, Serializabl
         this.exclusions = List.of();
     }
 
+    public ArtifactDependency(String groupId, String artifactId, String classifier, String type, String version, int flags) {
+        super(groupId, artifactId, classifier, type, version);
+        this.scope = SCOPE_COMPILE;
+        this.flags = flags;
+        this.exclusions = List.of();
+    }
+
     public ArtifactDependency(ArtifactCoords coords, int... flags) {
         this(coords, SCOPE_COMPILE, flags);
     }

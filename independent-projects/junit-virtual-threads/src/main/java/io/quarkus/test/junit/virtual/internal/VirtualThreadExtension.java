@@ -178,14 +178,52 @@ public class VirtualThreadExtension
         StringBuilder builder = new StringBuilder();
         for (RecordedEvent pinEvent : pinEvents) {
             builder.append("* Pinning event captured: \n");
-            for (RecordedFrame recordedFrame : pinEvent.getStackTrace().getFrames()) {
-                String output = String.format(STACK_TRACE_TEMPLATE, recordedFrame.getMethod().getType().getName(),
-                        recordedFrame.getMethod().getName(), recordedFrame.getMethod().getType().getName(),
-                        recordedFrame.getLineNumber());
-                builder.append(output);
+
+            // Display all available event fields dynamically
+            // This ensures we capture new fields added in Java 24, 25, and beyond
+            dumpEventFields(pinEvent, builder);
+
+            // Duration (always available)
+            builder.append("\tDuration (ns): ").append(pinEvent.getDuration().toNanos()).append("\n");
+
+            // Stack trace
+            if (pinEvent.getStackTrace() != null) {
+                builder.append("\tStack trace:\n");
+                for (RecordedFrame recordedFrame : pinEvent.getStackTrace().getFrames()) {
+                    String output = String.format(STACK_TRACE_TEMPLATE, recordedFrame.getMethod().getType().getName(),
+                            recordedFrame.getMethod().getName(), recordedFrame.getMethod().getType().getName(),
+                            recordedFrame.getLineNumber());
+                    builder.append("\t\t").append(output);
+                }
             }
         }
         return builder.toString();
+    }
+
+    private void dumpEventFields(RecordedEvent event, StringBuilder builder) {
+        // Iterate through all fields available in the event
+        for (jdk.jfr.ValueDescriptor field : event.getEventType().getFields()) {
+            String fieldName = field.getName();
+
+            // Skip standard JFR fields that we handle separately or aren't relevant
+            if (fieldName.equals("startTime") || fieldName.equals("duration") ||
+                    fieldName.equals("eventThread") || fieldName.equals("stackTrace")) {
+                continue;
+            }
+
+            // Get the field value
+            get(fieldName, event)
+                    .ifPresent(value -> builder.append("\t").append(field.getLabel()).append(": ").append(value).append("\n"));
+        }
+    }
+
+    private java.util.Optional<Object> get(String fieldName, RecordedEvent event) {
+        try {
+            return java.util.Optional.ofNullable(event.getValue(fieldName));
+        } catch (IllegalArgumentException iae) {
+            // Field not present
+            return java.util.Optional.empty();
+        }
     }
 
     @Override

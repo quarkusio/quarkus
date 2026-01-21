@@ -129,27 +129,56 @@ public interface KubernetesClientBuildConfig {
     Optional<Duration> requestRetryBackoffInterval();
 
     /**
-     * HTTP proxy used to access the Kubernetes API server
+     * The name of the proxy configuration to use for configuring <b>HTTP</b> proxy; ignored if
+     * {@code quarkus.kubernetes-client.http-proxy} or
+     * {@code quarkus.kubernetes-client.https-proxy} is set.
+     * <p>
+     * If not set and the default proxy configuration is configured ({@code quarkus.proxy.*}) then that will be used.
+     * If the proxy configuration name is set, the configuration from {@code quarkus.proxy.<name>.*} will be used.
+     * If the proxy configuration name is set, but no proxy configuration is found with that name, then an error will be thrown
+     * at runtime.
+     * <p>
+     * Can be overwritten by Kubernetes client-specific settings.
+     * <p>
+     * Use the value {@code none} to disable using the default configuration defined via {@code quarkus.proxy.*}.
      */
+    Optional<String> proxyConfigurationName();
+
+    /**
+     * HTTP proxy used to access the Kubernetes API server
+     *
+     * @deprecated Use {@code quarkus.kubernetes-client.proxy-configuration-name} instead
+     */
+    @Deprecated
     Optional<String> httpProxy();
 
     /**
      * HTTPS proxy used to access the Kubernetes API server
+     *
+     * @deprecated Use {@code quarkus.kubernetes-client.proxy-configuration-name} instead
      */
+    @Deprecated
     Optional<String> httpsProxy();
 
     /**
      * Proxy username
+     *
+     * @deprecated Use {@code quarkus.kubernetes-client.proxy-configuration-name} instead
      */
+    @Deprecated
     Optional<String> proxyUsername();
 
     /**
      * Proxy password
+     *
+     * @deprecated Use {@code quarkus.kubernetes-client.proxy-configuration-name} instead
      */
     Optional<String> proxyPassword();
 
     /**
      * IP addresses or hosts to exclude from proxying
+     *
+     * @deprecated Use {@code quarkus.kubernetes-client.proxy-configuration-name} instead
      */
     Optional<List<String>> noProxy();
 

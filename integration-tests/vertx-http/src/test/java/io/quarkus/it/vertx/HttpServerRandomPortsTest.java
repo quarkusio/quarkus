@@ -24,6 +24,7 @@ class HttpServerRandomPortsTest {
         assertTrue(httpServer.getPort() > 0);
         assertTrue(httpServer.getPort() != 8080);
         assertTrue(httpServer.getPort() != 8081);
+        assertEquals(httpServer.getPort(), httpServer.getLocalBaseUri().getPort());
 
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         Optional<Integer> httpPort = config.getOptionalValue("quarkus.http.port", Integer.class);

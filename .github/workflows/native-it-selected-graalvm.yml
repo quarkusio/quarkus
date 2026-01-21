@@ -21,12 +21,12 @@ on:
       NATIVE_COMPILER_VERSION:
         description: 'the native compiler version to use'
         required: true
-        default: '21'
+        default: '25'
         type: choice
         options:
           - '17'
           - '21'
-          - '22'
+          - '25'
 
 env:
   # Workaround testsuite locale issue

@@ -26,7 +26,6 @@ import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.artifacts.dependencies.DefaultDependencyArtifact;
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency;
-import org.gradle.api.internal.tasks.TaskDependencyFactory;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
@@ -162,7 +161,6 @@ public class ApplicationDeploymentClasspathBuilder {
 
     private final Project project;
     private final LaunchMode mode;
-    private final TaskDependencyFactory taskDependencyFactory;
 
     private final String runtimeConfigurationName;
     private final String platformConfigurationName;
@@ -183,11 +181,9 @@ public class ApplicationDeploymentClasspathBuilder {
     private final List<Dependency> platformDataDeps = new ArrayList<>();
     private final Map<ArtifactKey, PlatformSpec.Constraint> platformConstraints = new HashMap<>();
 
-    public ApplicationDeploymentClasspathBuilder(Project project, LaunchMode mode,
-            TaskDependencyFactory taskDependencyFactory) {
+    public ApplicationDeploymentClasspathBuilder(Project project, LaunchMode mode) {
         this.project = project;
         this.mode = mode;
-        this.taskDependencyFactory = taskDependencyFactory;
         this.runtimeConfigurationName = getFinalRuntimeConfigName(mode);
         this.platformConfigurationName = ToolingUtils.toPlatformConfigurationName(this.runtimeConfigurationName);
         this.deploymentConfigurationName = ToolingUtils.toDeploymentConfigurationName(this.runtimeConfigurationName);
@@ -360,8 +356,7 @@ public class ApplicationDeploymentClasspathBuilder {
                     })));
                 });
             } else {
-                DeploymentConfigurationResolver.registerDeploymentConfiguration(project, mode,
-                        deploymentConfigurationName, taskDependencyFactory);
+                DeploymentConfigurationResolver.registerDeploymentConfiguration(project, mode, deploymentConfigurationName);
             }
         }
     }

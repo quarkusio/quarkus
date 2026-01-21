@@ -328,7 +328,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                     .withRuntimeSource(config)
                     .build();
             context.getStore(LAUNCHER_SESSION, CONFIG).put(ValueRegistry.class, valueRegistry);
-            listeningAddress.ifPresent(address -> address.register(valueRegistry));
+            listeningAddress.ifPresent(address -> address.register(valueRegistry, config));
 
             Closeable resource = new IntegrationTestExtensionStateResource(launcher,
                     devServicesLaunchResult.getCuratedApplication());

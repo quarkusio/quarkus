@@ -16,8 +16,10 @@ import jakarta.enterprise.inject.Produces;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
 import io.quarkus.devui.runtime.spi.McpEvent;
 import io.quarkus.devui.runtime.spi.McpServerConfiguration;
+import io.quarkus.runtime.annotations.Usage;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
 
@@ -99,6 +101,21 @@ public class McpDevUIJsonRpcService {
 
     public boolean isExplicitlyDisabled(String methodName) {
         return this.mcpServerConfiguration.isExplicitlyDisabled(methodName);
+    }
+
+    public boolean isEnabled(JsonRpcMethod method, Filter filter) {
+        if (method.getUsage().contains(Usage.DEV_MCP)) {
+            if (isExplicitlyEnabled(method.getMethodName())) {
+                return filter.equals(Filter.enabled);
+            } else if (isExplicitlyDisabled(method.getMethodName())) {
+                return filter.equals(Filter.disabled);
+            } else if (filter.equals(Filter.enabled)) {
+                return method.isMcpEnabledByDefault();
+            } else if (filter.equals(Filter.disabled)) {
+                return !method.isMcpEnabledByDefault();
+            }
+        }
+        return false;
     }
 
     private Properties loadConfiguration() {

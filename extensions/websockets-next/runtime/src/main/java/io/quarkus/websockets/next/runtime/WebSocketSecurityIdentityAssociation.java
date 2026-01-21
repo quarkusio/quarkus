@@ -5,6 +5,7 @@ import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -48,10 +49,18 @@ public class WebSocketSecurityIdentityAssociation implements CurrentIdentityAsso
             return delegate.getDeferredIdentity();
         }
 
-        SecurityIdentity securityIdentity = getSecurityIdentityFromCtx();
-        if (securityIdentity != null) {
-            return Uni.createFrom().item(securityIdentity);
+        SecuritySupport securitySupport = getSecuritySupportFromCtx();
+        if (securitySupport != null) {
+            if (securitySupport.getIdentity() != null) {
+                return Uni.createFrom().item(securitySupport.getIdentity());
+            }
+            Uni<SecurityIdentity> deferredIdentity = securitySupport.getDeferredIdentity();
+            if (deferredIdentity != null) {
+                // calling to the delegate should return anonymous identity, so that we avoid NPEs
+                return deferredIdentity.onItem().ifNull().switchTo(delegate::getDeferredIdentity);
+            }
         }
+
         return delegate.getDeferredIdentity();
     }
 
@@ -73,18 +82,30 @@ public class WebSocketSecurityIdentityAssociation implements CurrentIdentityAsso
             return delegate.getIdentity();
         }
 
-        SecurityIdentity securityIdentity = getSecurityIdentityFromCtx();
-        if (securityIdentity != null) {
-            return securityIdentity;
+        SecuritySupport securitySupport = getSecuritySupportFromCtx();
+        if (securitySupport != null) {
+            if (securitySupport.getIdentity() != null) {
+                return securitySupport.getIdentity();
+            }
+            if (BlockingOperationControl.isBlockingAllowed()) {
+                Uni<SecurityIdentity> deferredIdentity = securitySupport.getDeferredIdentity();
+                if (deferredIdentity != null) {
+                    SecurityIdentity resolvedIdentity = deferredIdentity.await().indefinitely();
+                    if (resolvedIdentity != null) {
+                        return resolvedIdentity;
+                    }
+                }
+            }
         }
+
         return delegate.getIdentity();
     }
 
-    private static SecurityIdentity getSecurityIdentityFromCtx() {
+    private static SecuritySupport getSecuritySupportFromCtx() {
         Context context = Vertx.currentContext();
         if (context != null && VertxContext.isDuplicatedContext(context)) {
             if (context.getLocal(ContextSupport.WEB_SOCKET_CONN_KEY) instanceof WebSocketConnectionImpl connection) {
-                return connection.securitySupport().getIdentity();
+                return connection.securitySupport();
             }
         }
         return null;

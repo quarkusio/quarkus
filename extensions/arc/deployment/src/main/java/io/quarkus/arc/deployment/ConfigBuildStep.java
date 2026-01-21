@@ -523,14 +523,20 @@ public class ConfigBuildStep {
         if (configProperty.getPropertyType().kind() == Kind.PARAMETERIZED_TYPE) {
             List<Type> argumentTypes = configProperty.getPropertyType().asParameterizedType().arguments();
             typeArgumentNames = new ArrayList<>(argumentTypes.size());
+            final List<String> forReflection = new ArrayList<>(argumentTypes.size());
+            final var reason = ConfigBuildStep.class.getSimpleName() + " Configuration property's " + typeName
+                    + " parameter";
             for (Type argumentType : argumentTypes) {
-                typeArgumentNames.add(argumentType.name().toString());
+                final var argTypeClassName = argumentType.name().toString();
+                typeArgumentNames.add(argTypeClassName);
                 if (argumentType.kind() != Kind.PRIMITIVE) {
-                    reflectiveClass.produce(ReflectiveClassBuildItem.builder(argumentType.name().toString())
-                            .reason(ConfigBuildStep.class.getSimpleName() + " Configuration property's " + typeName
-                                    + " parameter")
-                            .build());
+                    forReflection.add(argTypeClassName);
                 }
+            }
+            if (!forReflection.isEmpty()) {
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(forReflection)
+                        .reason(reason)
+                        .build());
             }
         }
 

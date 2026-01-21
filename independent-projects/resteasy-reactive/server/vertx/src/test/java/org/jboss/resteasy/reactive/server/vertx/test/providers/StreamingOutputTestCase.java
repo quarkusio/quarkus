@@ -11,6 +11,8 @@ import java.util.function.Supplier;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.StreamingOutput;
 
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
@@ -39,17 +41,41 @@ public class StreamingOutputTestCase {
                 .body(equalTo("hello world"));
     }
 
+    @Test
+    public void testWithResponse() {
+        get("/test/response")
+                .then()
+                .statusCode(200)
+                .body(equalTo("hello world"));
+    }
+
     @Path("test")
     public static class TestResource {
+
+        public static final byte[] HELLO_WORLD_BYTES = "hello world".getBytes(StandardCharsets.UTF_8);
 
         @GET
         public StreamingOutput with() {
             return new StreamingOutput() {
                 @Override
                 public void write(OutputStream output) throws IOException, WebApplicationException {
-                    output.write("hello world".getBytes(StandardCharsets.UTF_8));
+                    output.write(HELLO_WORLD_BYTES);
                 }
             };
+        }
+
+        @GET
+        @Path("response")
+        public Response withResponse() {
+            return Response.ok()
+                    .entity(new StreamingOutput() {
+                        @Override
+                        public void write(OutputStream output) throws IOException, WebApplicationException {
+                            output.write(HELLO_WORLD_BYTES);
+                        }
+                    })
+                    .type(MediaType.TEXT_PLAIN)
+                    .build();
         }
     }
 }

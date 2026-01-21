@@ -210,6 +210,9 @@ public class WebSocketServerRecorder {
             if (ctx.user() instanceof QuarkusHttpUser user) {
                 return connection -> new SecuritySupport(user.getSecurityIdentity(), connection, ctx);
             }
+            if (ctx.get(QuarkusHttpUser.DEFERRED_IDENTITY_KEY) != null) {
+                return connection -> new SecuritySupport(null, connection, ctx);
+            }
         }
         return ignored -> SecuritySupport.NOOP;
     }

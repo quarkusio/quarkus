@@ -68,7 +68,7 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
             try {
                 RemoteSyncHandler.class.wait(30000);
             } catch (InterruptedException e) {
-                log.error("interrupted", e);
+                log.debug("interrupted", e);
             }
         }
     }
@@ -139,7 +139,11 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
                             }
                             synchronized (RemoteSyncHandler.class) {
                                 RemoteSyncHandler.class.notifyAll();
-                                RemoteSyncHandler.class.wait(10000);
+                                try {
+                                    RemoteSyncHandler.class.wait(10000);
+                                } catch (InterruptedException e) {
+                                    log.debug("interrupted", e);
+                                }
                                 if (checkForChanges) {
                                     checkForChanges = false;
                                     event.response().setStatusCode(200);

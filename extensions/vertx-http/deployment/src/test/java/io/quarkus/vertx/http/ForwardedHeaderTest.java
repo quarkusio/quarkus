@@ -97,4 +97,19 @@ public class ForwardedHeaderTest {
                 .then()
                 .body(Matchers.equalTo("https|somehost|[2001:db8:cafe::17]:47011"));
     }
+
+    /**
+     * Reproducer for <a href="https://github.com/quarkusio/quarkus/issues/46078">GitHub issue #46078</a>.
+     * See the linked issue for reasoning behind the expectation that the Host header should not leak internal port.
+     */
+    @Test
+    public void testForwardedHostWithoutProtoShouldNotLeakPort() {
+        assertThat(RestAssured.get("/forward").asString()).startsWith("http|");
+
+        RestAssured.given()
+                .header("Forwarded", "host=somehost")
+                .get("/forward")
+                .then()
+                .body(Matchers.startsWith("http|somehost|"));
+    }
 }

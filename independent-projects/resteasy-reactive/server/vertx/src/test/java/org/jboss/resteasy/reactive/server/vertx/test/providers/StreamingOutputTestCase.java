@@ -15,11 +15,14 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.StreamingOutput;
 
+import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.vertx.core.impl.NoStackTraceException;
 
 public class StreamingOutputTestCase {
 
@@ -49,6 +52,13 @@ public class StreamingOutputTestCase {
                 .body(equalTo("hello world"));
     }
 
+    @Test
+    public void testWithErrorAndResponse() {
+        get("/test/response/error")
+                .then()
+                .statusCode(400);
+    }
+
     @Path("test")
     public static class TestResource {
 
@@ -75,6 +85,31 @@ public class StreamingOutputTestCase {
                         }
                     })
                     .type(MediaType.TEXT_PLAIN)
+                    .build();
+        }
+
+        @GET
+        @Path("response/error")
+        public Response withErrorAndResponse() {
+            return Response.ok()
+                    .entity(new StreamingOutput() {
+                        @Override
+                        public void write(OutputStream output) throws WebApplicationException {
+                            throw new NoStackTraceException("test");
+                        }
+                    })
+                    .type(MediaType.TEXT_PLAIN)
+                    .build();
+        }
+    }
+
+    public static class Mappers {
+
+        @ServerExceptionMapper
+        public Response handleNoStackTraceException(NoStackTraceException ex) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .type(MediaType.TEXT_PLAIN)
+                    .entity("NoStackTraceException: " + ex.getMessage())
                     .build();
         }
     }

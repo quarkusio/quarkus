@@ -26,7 +26,7 @@ public class TransactionalInterceptorRequired extends TransactionalInterceptorBa
     @Override
     @AroundInvoke
     public Object intercept(InvocationContext ic) throws Exception {
-        if (disableInterceptorOnUniMethods(ic)) {
+        if (willTransactionalInterceptorRun()) {
             return ic.proceed();
         }
 

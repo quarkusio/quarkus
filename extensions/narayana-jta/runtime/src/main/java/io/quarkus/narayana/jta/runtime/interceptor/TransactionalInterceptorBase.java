@@ -2,6 +2,9 @@ package io.quarkus.narayana.jta.runtime.interceptor;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Optional;
@@ -32,9 +35,9 @@ import io.quarkus.narayana.jta.runtime.NotifyingTransactionManager;
 import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
 import io.quarkus.transaction.annotations.Rollback;
 import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.converters.ReactiveTypeConverter;
 import io.smallrye.reactive.converters.Registry;
+import io.vertx.core.Context;
 import mutiny.zero.flow.adapters.AdaptersToFlow;
 import mutiny.zero.flow.adapters.AdaptersToReactiveStreams;
 
@@ -48,6 +51,17 @@ public abstract class TransactionalInterceptorBase implements Serializable {
     TransactionManager transactionManager;
 
     private final boolean userTransactionAvailable;
+
+    private static final MethodHandle IS_ON_EVENT_LOOP_THREAD = isOnEventLoopThread();
+
+    private static MethodHandle isOnEventLoopThread() {
+        try {
+            return MethodHandles.publicLookup().findStatic(Context.class, "isOnEventLoopThread",
+                    MethodType.methodType(boolean.class));
+        } catch (NoClassDefFoundError | NoSuchMethodException | IllegalAccessException e) {
+            return null;
+        }
+    }
 
     protected TransactionalInterceptorBase(boolean userTransactionAvailable) {
         this.userTransactionAvailable = userTransactionAvailable;
@@ -435,13 +449,11 @@ public abstract class TransactionalInterceptorBase implements Serializable {
         throw (E) e;
     }
 
-    protected boolean disableInterceptorOnUniMethods(InvocationContext ic) throws Exception {
-        // Disable Interceptor on Reactive (uni) methods
-        // in The Reactive transaction module only REQUIRED is supported so far
-        if (ic.getMethod().getReturnType().equals(Uni.class)) {
-            log.debugf("method is annoted @Transactional but returns a Uni<?>, JTA transactions will be disabled");
-            return true;
+    protected boolean willTransactionalInterceptorRun() throws Exception {
+        try {
+            return IS_ON_EVENT_LOOP_THREAD == null ? false : (boolean) IS_ON_EVENT_LOOP_THREAD.invokeExact();
+        } catch (Throwable e) {
+            return false;
         }
-        return false;
     }
 }

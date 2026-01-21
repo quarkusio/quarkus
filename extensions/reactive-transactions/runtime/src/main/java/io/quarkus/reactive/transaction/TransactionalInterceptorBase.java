@@ -54,7 +54,8 @@ public abstract class TransactionalInterceptorBase {
         Method method = context.getMethod();
         LOG.tracef("Starting Transactional interceptor from method %s", method);
         this.afterWorkStrategy = afterWorkStrategy;
-        if (isUniReturnType(context)) {
+
+        if (reactiveInterceptorShouldRun()) {
             validateTransactionalType(context); // So far only REQUIRED is supported
             validateLegacyPanacheAnnotations();
 
@@ -196,8 +197,10 @@ public abstract class TransactionalInterceptorBase {
         }
     }
 
-    public static boolean isUniReturnType(InvocationContext context) {
-        return context.getMethod().getReturnType().equals(Uni.class);
+    public static boolean reactiveInterceptorShouldRun() {
+        boolean condition = Context.isOnEventLoopThread();
+        LOG.tracef("Transactional interceptor should run: ", condition);
+        return condition;
     }
 
     protected void validateLegacyPanacheAnnotations() {

@@ -25,6 +25,12 @@ public class HibernateReactiveCompatibilityORMTest {
 
         RestAssured.given().when()
                 .auth().preemptive().basic("scott", "jb0ss")
+                .get("/tests/reactiveCowPersistTransactional")
+                .then()
+                .body(containsString("\"name\":\"Carolina Reactive Transactional\"}"));
+
+        RestAssured.given().when()
+                .auth().preemptive().basic("scott", "jb0ss")
                 .get("/testsORM/blockingCowPersist")
                 .then()
                 .body(containsString("\"name\":\"Carolina\"}"));

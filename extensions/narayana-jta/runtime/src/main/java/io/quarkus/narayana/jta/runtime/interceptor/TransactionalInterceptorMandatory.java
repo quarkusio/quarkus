@@ -32,8 +32,8 @@ public class TransactionalInterceptorMandatory extends TransactionalInterceptorB
 
     @Override
     protected Object doIntercept(TransactionManager tm, Transaction tx, InvocationContext ic) throws Exception {
-        if (disableInterceptorOnUniMethods(ic)) {
-            return ic.proceed();
+        if (willTransactionalInterceptorRun()) {
+            return ic.proceed(); // Skip the blocking interceptor
         }
 
         if (tx == null) {

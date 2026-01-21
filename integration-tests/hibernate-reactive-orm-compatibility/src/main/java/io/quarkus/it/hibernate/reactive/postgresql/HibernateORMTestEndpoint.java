@@ -26,14 +26,9 @@ public class HibernateORMTestEndpoint {
     public FriesianCow reactiveCowPersist() {
         final FriesianCow cow = new FriesianCow();
         cow.name = "Carolina";
-
         log.info("Blocking persist, session factory:" + sessionFactory);
-
-        Session session = (Session) sessionFactory.createEntityManager();
-
-        session.persist(cow);
-        return session.createQuery("from FriesianCow f where f.name = :name", FriesianCow.class)
-                .setParameter("name", cow.name).getSingleResult();
+        FriesianCow persistedCow = persistAndGet(cow);
+        return persistedCow;
     }
 
     /**
@@ -47,16 +42,18 @@ public class HibernateORMTestEndpoint {
     public Uni<FriesianCow> reactiveCowPersistReturningUni() {
         final FriesianCow cow = new FriesianCow();
         cow.name = "Carolina returning Uni";
+        log.info("Blocking persist returning Uni, session factory:" + sessionFactory);
+        FriesianCow persistedCow = persistAndGet(cow);
+        return Uni.createFrom().item(persistedCow);
+    }
 
-        log.info("Blocking persist, session factory:" + sessionFactory);
-
-        Session session = (Session) sessionFactory.createEntityManager();
+    private FriesianCow persistAndGet(FriesianCow cow) {
+        Session session = sessionFactory.createEntityManager();
 
         session.persist(cow);
-        FriesianCow name = session.createQuery("from FriesianCow f where f.name = :name", FriesianCow.class)
+        FriesianCow persistedCow = session.createQuery("from FriesianCow f where f.name = :name", FriesianCow.class)
                 .setParameter("name", cow.name).getSingleResult();
-
-        return Uni.createFrom().item(name);
+        return persistedCow;
     }
 
 }

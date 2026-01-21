@@ -40,6 +40,7 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.InvokerBuilder;
 import io.quarkus.arc.processor.InvokerInfo;
 import io.quarkus.arc.processor.KotlinUtils;
+import io.quarkus.arc.spi.NonBlockingProvider;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -77,6 +78,7 @@ import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.deployment.spi.EventConsumerInvokerCustomizerBuildItem;
 import io.quarkus.vertx.runtime.EventConsumerInfo;
 import io.quarkus.vertx.runtime.VertxEventBusConsumerRecorder;
+import io.quarkus.vertx.runtime.VertxNonBlockingProvider;
 import io.quarkus.vertx.runtime.VertxProducer;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.RunOnVirtualThread;
@@ -264,6 +266,11 @@ class VertxProcessor {
                     "io.smallrye.faulttolerance.core.event.loop.EventLoop",
                     "io.smallrye.faulttolerance.vertx.VertxEventLoop"));
         }
+    }
+
+    @BuildStep
+    ServiceProviderBuildItem arcIntegration() {
+        return new ServiceProviderBuildItem(NonBlockingProvider.class.getName(), VertxNonBlockingProvider.class.getName());
     }
 
     /**

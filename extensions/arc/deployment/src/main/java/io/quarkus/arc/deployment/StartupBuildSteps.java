@@ -3,12 +3,14 @@ package io.quarkus.arc.deployment;
 import static io.quarkus.arc.processor.Annotations.getAnnotations;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
 
+import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.OptionalInt;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import jakarta.enterprise.context.spi.Contextual;
 import jakarta.enterprise.context.spi.CreationalContext;
@@ -22,6 +24,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
@@ -40,20 +43,26 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.ObserverConfigurator;
+import io.quarkus.arc.runtime.NonBlockingSupport;
+import io.quarkus.arc.spi.NonBlockingProvider;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.Var;
 import io.quarkus.gizmo2.creator.BlockCreator;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.runtime.Startup;
 import io.quarkus.runtime.StartupEvent;
+import io.smallrye.mutiny.Uni;
 
 public class StartupBuildSteps {
 
     static final DotName STARTUP_NAME = DotName.createSimple(Startup.class.getName());
+    static final DotName DOTNAME_UNI = DotName.createSimple(Uni.class.getName());
 
     static final MethodDesc ARC_CONTAINER = MethodDesc.of(Arc.class, "container", ArcContainer.class);
     static final MethodDesc ARC_CONTAINER_BEAN = MethodDesc.of(ArcContainer.class, "bean",
@@ -69,6 +78,8 @@ public class StartupBuildSteps {
             void.class, Object.class, CreationalContext.class);
     static final ConstructorDesc CREATIONAL_CONTEXT_IMPL_CTOR = ConstructorDesc.of(CreationalContextImpl.class,
             Contextual.class);
+    static final MethodDesc SUBSCRIBE_AND_AWAIT = MethodDesc.of(NonBlockingSupport.class, "subscribeAndAwait",
+            Object.class, Supplier.class);
 
     private static final Logger LOG = Logger.getLogger(StartupBuildSteps.class);
 
@@ -119,10 +130,10 @@ public class StartupBuildSteps {
 
     @BuildStep
     void registerStartupObservers(ObserverRegistrationPhaseBuildItem observerRegistration,
-            BuildProducer<ObserverConfiguratorBuildItem> configurators) {
+            BuildProducer<ObserverConfiguratorBuildItem> configurators) throws IOException {
 
         AnnotationStore annotationStore = observerRegistration.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
-
+        boolean checkNonBlockingProviders = false;
         for (BeanInfo bean : observerRegistration.getContext().beans()) {
             if (bean.isSynthetic()) {
                 OptionalInt startupPriority = bean.getStartupPriority();
@@ -151,6 +162,9 @@ public class StartupBuildSteps {
                                     && method.parametersCount() == 0
                                     && !annotationStore.hasAnnotation(method, DotNames.PRODUCES)) {
                                 startupMethods.add(method);
+                                if (isUniReturningMethod(method)) {
+                                    checkNonBlockingProviders = true;
+                                }
                             } else {
                                 if (!annotationStore.hasAnnotation(method, DotNames.PRODUCES)) {
                                     // Producer methods annotated with @Startup are valid and processed above
@@ -169,6 +183,13 @@ public class StartupBuildSteps {
                         }
                     }
                 }
+            }
+        }
+        // Verify at build-time that we do have the non-blocking provider
+        if (checkNonBlockingProviders) {
+            if (ServiceUtil.classNamesNamedIn(Thread.currentThread().getContextClassLoader(),
+                    "META-INF/services/" + NonBlockingProvider.class.getName()).isEmpty()) {
+                throw new IllegalStateException(NonBlockingSupport.ERROR_MSG);
             }
         }
     }
@@ -217,7 +238,7 @@ public class StartupBuildSteps {
                 if (startupMethod != null) {
                     b0.try_(tc -> {
                         tc.body(b1 -> {
-                            b1.invokeVirtual(methodDescOf(startupMethod), instance);
+                            invokeStartupMethod(startupMethod, b1, instance);
                         });
                         tc.catch_(Exception.class, "e", (b1, e) -> {
                             b1.invokeInterface(CONTEXTUAL_DESTROY, rtBean, instance, creationalContext);
@@ -233,17 +254,40 @@ public class StartupBuildSteps {
                 // InstanceHandle<Foo> handle = Arc.container().instance(bean);
                 Expr instanceHandle = b0.invokeInterface(ARC_CONTAINER_INSTANCE, arc, rtBean);
                 Expr instance = b0.invokeInterface(INSTANCE_HANDLE_GET, instanceHandle);
+                LocalVar instanceVar = b0.localVar("instance", instance);
                 if (startupMethod != null) {
-                    b0.invokeVirtual(methodDescOf(startupMethod), instance);
+                    invokeStartupMethod(startupMethod, b0, instanceVar);
                 } else if (btBean.getScope().isNormal()) {
                     // We need to unwrap the client proxy
                     // ((ClientProxy) handle.get()).arc_contextualInstance();
-                    Expr proxy = b0.cast(instance, ClientProxy.class);
+                    Expr proxy = b0.cast(instanceVar, ClientProxy.class);
                     b0.invokeInterface(CLIENT_PROXY_CONTEXTUAL_INSTANCE, proxy);
                 }
             }
             b0.return_();
         });
         configurator.done();
+    }
+
+    private static void invokeStartupMethod(MethodInfo startupMethod, BlockCreator b0, LocalVar instanceVar) {
+        // If the startup method returns a Uni, delegate it to a non-blocking thread
+        if (isUniReturningMethod(startupMethod)) {
+            b0.invokeStatic(
+                    SUBSCRIBE_AND_AWAIT,
+                    b0.lambda(Supplier.class, lc -> {
+                        Var capture = lc.capture(instanceVar);
+                        lc.body(lbc -> {
+                            lbc.return_(lbc.invokeVirtual(methodDescOf(startupMethod), capture));
+                        });
+                    }));
+        } else {
+            b0.invokeVirtual(methodDescOf(startupMethod), instanceVar);
+        }
+    }
+
+    private static boolean isUniReturningMethod(MethodInfo startupMethod) {
+        return startupMethod.returnType().kind() == Type.Kind.PARAMETERIZED_TYPE
+                && startupMethod.returnType().asParameterizedType().name()
+                        .equals(DOTNAME_UNI);
     }
 }

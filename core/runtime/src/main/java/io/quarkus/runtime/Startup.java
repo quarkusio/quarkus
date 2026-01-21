@@ -59,6 +59,25 @@ import jakarta.enterprise.inject.spi.ObserverMethod;
  * }
  * </pre>
  *
+ * <h2>Reactive startup methods</h2>
+ *
+ * <p>
+ * You can also declare startup methods that return a <code>Uni</code>, in which case your startup method will
+ * be executed in a non-blocking thread.
+ * </p>
+ *
+ * <pre>
+ * &#064;ApplicationScoped
+ * class Bean4 {
+ *
+ *     &#064;Startup
+ *     Uni&lt;Void&gt; init() {
+ *         // place the logic here
+ *         return Uni.createFrom().voidItem();
+ *     }
+ * }
+ * </pre>
+ *
  * @see StartupEvent
  */
 @Target({ TYPE, METHOD, FIELD })

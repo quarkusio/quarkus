@@ -17,15 +17,16 @@ public class KubernetesClientProxyConfigHttpsTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withConfigurationResource("using-same-named-proxy-configuration.properties");
+            .withConfigurationResource("using-https-proxy-configuration.properties");
 
     @Test
     public void usingSameNamedProxyConfiguration() {
         SoftAssertions.assertSoftly(softly -> {
             Config configuration = kubernetesClient.getConfiguration();
-            softly.assertThat(configuration.getHttpsProxy()).isEqualTo("https://localhost:8443");
+            softly.assertThat(configuration.getHttpsProxy()).isEqualTo("https://secure.localhost:8443");
             softly.assertThat(configuration.getHttpProxy()).isNull();
-            softly.assertThat(configuration.getNoProxy()).contains("kubernetes-client-test.com", "api.example.com");
+            softly.assertThat(configuration.getNoProxy()).contains("secure.kubernetes-client-test.com",
+                    "secure.api.example.com");
         });
     }
 }

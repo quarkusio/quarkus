@@ -348,7 +348,7 @@
             <dependency>
                 <groupId>org.mvnpm</groupId>
                 <artifactId>entities</artifactId>
-                <version>4.5.0</version>
+                <version>7.0.1</version>
                 <scope>runtime</scope>
             </dependency>
             <dependency>

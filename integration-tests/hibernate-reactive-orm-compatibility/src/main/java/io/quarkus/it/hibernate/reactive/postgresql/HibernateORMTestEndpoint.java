@@ -10,6 +10,7 @@ import org.hibernate.SessionFactory;
 import org.jboss.logging.Logger;
 
 import io.quarkus.security.Authenticated;
+import io.smallrye.mutiny.Uni;
 
 @Path("/testsORM")
 @Authenticated
@@ -34,4 +35,28 @@ public class HibernateORMTestEndpoint {
         return session.createQuery("from FriesianCow f where f.name = :name", FriesianCow.class)
                 .setParameter("name", cow.name).getSingleResult();
     }
+
+    /**
+     * This test is returning a Uni, but it's using Hibernate ORM, not reactive
+     *
+     * @return
+     */
+    @GET
+    @Path("/blockingCowPersistReturningUni")
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    public Uni<FriesianCow> reactiveCowPersistReturningUni() {
+        final FriesianCow cow = new FriesianCow();
+        cow.name = "Carolina returning Uni";
+
+        log.info("Blocking persist, session factory:" + sessionFactory);
+
+        Session session = (Session) sessionFactory.createEntityManager();
+
+        session.persist(cow);
+        FriesianCow name = session.createQuery("from FriesianCow f where f.name = :name", FriesianCow.class)
+                .setParameter("name", cow.name).getSingleResult();
+
+        return Uni.createFrom().item(name);
+    }
+
 }

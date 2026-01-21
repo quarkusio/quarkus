@@ -22,7 +22,7 @@ public class HibernateORMTestEndpoint {
 
     @GET
     @Path("/blockingCowPersist")
-    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    @Transactional
     public FriesianCow reactiveCowPersist() {
         final FriesianCow cow = new FriesianCow();
         cow.name = "Carolina";
@@ -43,7 +43,7 @@ public class HibernateORMTestEndpoint {
      */
     @GET
     @Path("/blockingCowPersistReturningUni")
-    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    @Transactional
     public Uni<FriesianCow> reactiveCowPersistReturningUni() {
         final FriesianCow cow = new FriesianCow();
         cow.name = "Carolina returning Uni";

@@ -83,6 +83,7 @@ import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
+import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
@@ -92,6 +93,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBuildItem;
@@ -914,6 +916,16 @@ public class WebSocketProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
         if (capabilities.isPresent(Capability.SECURITY)) {
             additionalBeanProducer.produce(AdditionalBeanBuildItem.unremovableOf(WebSocketSecurityIdentityAssociation.class));
+        }
+    }
+
+    @BuildStep(onlyIf = IsTest.class)
+    void delegateToWebSocketSecurityIdentityAssociationFromTestSecurity(Capabilities capabilities,
+            BuildProducer<SystemPropertyBuildItem> systemPropertyProducer) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            systemPropertyProducer
+                    .produce(new SystemPropertyBuildItem("test.quarkus.test-security.delegate-identity-association",
+                            WebSocketSecurityIdentityAssociation.class.getName()));
         }
     }
 

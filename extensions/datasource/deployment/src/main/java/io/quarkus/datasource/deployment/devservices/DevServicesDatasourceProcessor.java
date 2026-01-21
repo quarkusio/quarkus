@@ -307,21 +307,7 @@ public class DevServicesDatasourceProcessor {
                 loggingSetupBuildItem);
 
         try {
-            DevServicesDatasourceContainerConfig containerConfig = new DevServicesDatasourceContainerConfig(
-                    dataSourceBuildTimeConfig.devservices().imageName(),
-                    dataSourceBuildTimeConfig.devservices().containerEnv(),
-                    dataSourceBuildTimeConfig.devservices().containerProperties(),
-                    dataSourceBuildTimeConfig.devservices().properties(),
-                    dataSourceBuildTimeConfig.devservices().port(),
-                    dataSourceBuildTimeConfig.devservices().command(),
-                    dataSourceBuildTimeConfig.devservices().dbName(),
-                    dataSourceBuildTimeConfig.devservices().username(),
-                    dataSourceBuildTimeConfig.devservices().password(),
-                    dataSourceBuildTimeConfig.devservices().initScriptPath(),
-                    dataSourceBuildTimeConfig.devservices().initPrivilegedScriptPath(),
-                    dataSourceBuildTimeConfig.devservices().volumes(),
-                    dataSourceBuildTimeConfig.devservices().reuse(),
-                    dataSourceBuildTimeConfig.devservices().showLogs());
+            DevServicesDatasourceContainerConfig containerConfig = getContainerConfig(dataSourceBuildTimeConfig);
 
             DevServicesDatasourceProvider.RunningDevServicesDatasource datasource = devDbProvider
                     .startDatabase(
@@ -399,6 +385,25 @@ public class DevServicesDatasourceProcessor {
             compressor.closeAndDumpCaptured();
             throw new RuntimeException(t);
         }
+    }
+
+    private static DevServicesDatasourceContainerConfig getContainerConfig(
+            DataSourceBuildTimeConfig dataSourceBuildTimeConfig) {
+        return new DevServicesDatasourceContainerConfig(
+                dataSourceBuildTimeConfig.devservices().imageName(),
+                dataSourceBuildTimeConfig.devservices().containerEnv(),
+                dataSourceBuildTimeConfig.devservices().containerProperties(),
+                dataSourceBuildTimeConfig.devservices().properties(),
+                dataSourceBuildTimeConfig.devservices().port(),
+                dataSourceBuildTimeConfig.devservices().command(),
+                dataSourceBuildTimeConfig.devservices().dbName(),
+                dataSourceBuildTimeConfig.devservices().username(),
+                dataSourceBuildTimeConfig.devservices().password(),
+                dataSourceBuildTimeConfig.devservices().initScriptPath(),
+                dataSourceBuildTimeConfig.devservices().initPrivilegedScriptPath(),
+                dataSourceBuildTimeConfig.devservices().volumes(),
+                dataSourceBuildTimeConfig.devservices().reuse(),
+                dataSourceBuildTimeConfig.devservices().showLogs());
     }
 
     private void setDataSourceProperties(Map<String, String> propertiesMap, String dbName, String propertyKeyRadical,

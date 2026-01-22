@@ -10,9 +10,7 @@ import java.util.stream.Collectors;
 
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.spi.CreationalContext;
-import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
-import jakarta.enterprise.inject.literal.NamedLiteral;
 import jakarta.enterprise.inject.spi.Bean;
 import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.inject.Inject;
@@ -36,8 +34,6 @@ import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.SerializationContext;
 import org.infinispan.protostream.SerializationContextInitializer;
 import org.infinispan.protostream.schema.Schema;
-
-import io.quarkus.arc.Arc;
 
 /**
  * Produces a configured remote cache manager instance
@@ -441,13 +437,7 @@ public class InfinispanClientProducer {
     }
 
     public <K, V> RemoteCache<K, V> getRemoteCache(String clientName, String cacheName) {
-        RemoteCacheManager cacheManager;
-        if (InfinispanClientUtil.isDefault(clientName)) {
-            cacheManager = Arc.container().instance(RemoteCacheManager.class, Default.Literal.INSTANCE).get();
-        } else {
-            cacheManager = Arc.container().instance(RemoteCacheManager.class, NamedLiteral.of(clientName))
-                    .get();
-        }
+        RemoteCacheManager cacheManager = getNamedRemoteCacheManager(clientName);
 
         if (cacheManager != null && cacheName != null && !cacheName.isEmpty()) {
             RemoteCache<K, V> cache = cacheManager.getCache(cacheName);

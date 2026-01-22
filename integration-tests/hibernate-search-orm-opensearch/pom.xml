@@ -113,12 +113,62 @@
                 <configuration>
                     <skip>true</skip>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>default-test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <!--
+                                These tests expect that dev service is not started,
+                                But when executed in the default group, devservice
+                                 properties from the previous runs get in th way.
+                             -->
+                            <excludedGroups>disableddevservices</excludedGroups>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>disableddevservices-test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <groups>disableddevservices</groups>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>default-test</id>
+                        <goals>
+                            <goal>integration-test</goal>
+                        </goals>
+                        <configuration>
+                            <!--
+                                These tests expect that dev service is not started,
+                                But when executed in the default group, devservice
+                                 properties from the previous runs get in th way.
+                             -->
+                            <excludedGroups>disableddevservices</excludedGroups>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>disableddevservices-test</id>
+                        <goals>
+                            <goal>integration-test</goal>
+                        </goals>
+                        <configuration>
+                            <groups>disableddevservices</groups>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>io.quarkus</groupId>

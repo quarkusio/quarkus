@@ -607,7 +607,7 @@ class InfinispanClientProcessor {
     }
 
     @BuildStep
-    @Record(value = RUNTIME_INIT, optional = true)
+    @Record(value = RUNTIME_INIT)
     List<InfinispanClientBuildItem> infinispanClients(InfinispanRecorder recorder,
             List<InfinispanClientNameBuildItem> infinispanClientNames,
             // make sure all beans have been initialized
@@ -615,7 +615,7 @@ class InfinispanClientProcessor {
         List<InfinispanClientBuildItem> result = new ArrayList<>(infinispanClientNames.size());
         for (InfinispanClientNameBuildItem ic : infinispanClientNames) {
             String name = ic.getName();
-            result.add(new InfinispanClientBuildItem(recorder.getClient(name), name));
+            result.add(new InfinispanClientBuildItem(recorder.initializeClient(name), name));
         }
         return result;
     }

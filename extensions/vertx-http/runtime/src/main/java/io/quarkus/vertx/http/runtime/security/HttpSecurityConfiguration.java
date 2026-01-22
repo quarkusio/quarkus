@@ -3,6 +3,8 @@ package io.quarkus.vertx.http.runtime.security;
 import static io.quarkus.vertx.http.runtime.options.HttpServerTlsConfig.getTlsClientAuth;
 import static io.quarkus.vertx.http.runtime.security.HttpAuthenticator.BASIC_AUTH_ANNOTATION_DETECTED;
 import static io.quarkus.vertx.http.runtime.security.HttpAuthenticator.TEST_IF_BASIC_AUTH_IMPLICITLY_REQUIRED;
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityImpl.getMechanismClass;
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityImpl.unwrapMechanism;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -120,8 +122,8 @@ public final class HttpSecurityConfiguration {
             return null;
         }
         for (HttpAuthenticationMechanism additionalMechanism : additionalMechanisms) {
-            if (additionalMechanism.getClass() == MtlsAuthenticationMechanism.class) {
-                return (MtlsAuthenticationMechanism) additionalMechanism;
+            if (getMechanismClass(additionalMechanism) == MtlsAuthenticationMechanism.class) {
+                return (MtlsAuthenticationMechanism) unwrapMechanism(additionalMechanism);
             }
         }
         var mTLS = Arc.container().select(MtlsAuthenticationMechanism.class).orNull();
@@ -137,10 +139,11 @@ public final class HttpSecurityConfiguration {
         Instance<HttpAuthenticationMechanism> mechanismsFromCdi = Arc.container().select(HttpAuthenticationMechanism.class);
         final HttpAuthenticationMechanism[] result;
         List<HttpAuthenticationMechanism> mechanisms = new ArrayList<>();
-        for (HttpAuthenticationMechanism mechanism : mechanismsFromCdi) {
+        for (HttpAuthenticationMechanism mechanism : additionalMechanisms) {
+            // prioritize programmatically configured mechanisms over CDI beans
             addAuthenticationMechanism(providers, mechanism, mechanisms);
         }
-        for (HttpAuthenticationMechanism mechanism : additionalMechanisms) {
+        for (HttpAuthenticationMechanism mechanism : mechanismsFromCdi) {
             addAuthenticationMechanism(providers, mechanism, mechanisms);
         }
         addBasicAuthMechanismIfImplicitlyRequired(mechanismsFromCdi, mechanisms, providers);
@@ -159,14 +162,14 @@ public final class HttpSecurityConfiguration {
             // if inclusive auth and mTLS are enabled, the mTLS must have the highest priority
             if (inclusiveAuth && getMtlsAuthenticationMechanism() != null) {
                 var topMechanism = ClientProxy.unwrap(result[0]);
-                boolean isMutualTls = topMechanism instanceof MtlsAuthenticationMechanism;
+                boolean isMutualTls = unwrapMechanism(topMechanism) instanceof MtlsAuthenticationMechanism;
                 if (!isMutualTls) {
                     throw new IllegalStateException(
                             """
                                     Inclusive authentication is enabled and '%s' does not have
                                     the highest priority. Please lower priority of the '%s' authentication mechanism under '%s'.
                                     """.formatted(MtlsAuthenticationMechanism.class.getName(),
-                                    topMechanism.getClass().getName(),
+                                    getMechanismClass(topMechanism).getName(),
                                     MtlsAuthenticationMechanism.INCLUSIVE_AUTHENTICATION_PRIORITY));
                 }
             }
@@ -213,7 +216,7 @@ public final class HttpSecurityConfiguration {
             if (basicAuthEnabled.isEmpty() || !basicAuthEnabled.get()) {
                 for (HttpAuthenticationMechanism mechanism : mechanisms) {
                     // not using instance of as we are not considering subclasses
-                    if (mechanism.getClass() == BasicAuthenticationMechanism.class) {
+                    if (getMechanismClass(mechanism) == BasicAuthenticationMechanism.class) {
                         basicAuthEnabled = Optional.of(Boolean.TRUE);
                         break;
                     }
@@ -225,9 +228,10 @@ public final class HttpSecurityConfiguration {
             if (!formAuthEnabled) {
                 for (HttpAuthenticationMechanism mechanism : mechanisms) {
                     // not using instance of as we are not considering subclasses
-                    if (mechanism.getClass() == FormAuthenticationMechanism.class) {
+                    if (getMechanismClass(mechanism) == FormAuthenticationMechanism.class) {
                         formAuthEnabled = true;
-                        formPostLocation = ((FormAuthenticationMechanism) mechanism).getPostLocation();
+                        var formMechanism = (FormAuthenticationMechanism) unwrapMechanism(mechanism);
+                        formPostLocation = formMechanism.getPostLocation();
                         break;
                     }
                 }
@@ -327,10 +331,20 @@ public final class HttpSecurityConfiguration {
 
     private void addAuthenticationMechanism(Instance<IdentityProvider<?>> providers,
             HttpAuthenticationMechanism mechanism, List<HttpAuthenticationMechanism> mechanisms) {
+        if (isBuiltinMechanism(mechanism)) {
+            var clazz = getMechanismClass(mechanism);
+            for (var m : mechanisms) {
+                if (getMechanismClass(m) == clazz) {
+                    return;
+                }
+            }
+        }
+
         if (mechanism.getCredentialTypes().isEmpty()) {
             // mechanism does not require any IdentityProvider
             LOG.debugf("HttpAuthenticationMechanism '%s' provided no required credential types, therefore it needs "
-                    + "to be able to perform authentication without any IdentityProvider", mechanism.getClass().getName());
+                    + "to be able to perform authentication without any IdentityProvider",
+                    getMechanismClass(mechanism).getName());
             mechanisms.add(mechanism);
             return;
         }
@@ -350,7 +364,7 @@ public final class HttpSecurityConfiguration {
         }
         if (found) {
             mechanisms.add(mechanism);
-        } else if (BasicAuthenticationMechanism.class.equals(mechanism.getClass()) && basicAuthEnabled.isEmpty()) {
+        } else if (BasicAuthenticationMechanism.class.equals(getMechanismClass(mechanism)) && basicAuthEnabled.isEmpty()) {
             LOG.debug("""
                     BasicAuthenticationMechanism has been enabled because no other authentication mechanism has been
                     detected, but there is no IdentityProvider based on username and password. Please use
@@ -362,7 +376,7 @@ public final class HttpSecurityConfiguration {
                     HttpAuthenticationMechanism '%s' requires one or more IdentityProviders supporting at least one
                     of the following credentials types: %s.
                     Please refer to the https://quarkus.io/guides/security-identity-providers for more information.
-                    """.formatted(mechanism.getClass().getName(), mechanism.getCredentialTypes()));
+                    """.formatted(getMechanismClass(mechanism).getName(), mechanism.getCredentialTypes()));
         }
     }
 
@@ -469,6 +483,17 @@ public final class HttpSecurityConfiguration {
 
     private static boolean isHttpSecurityEventNotObserved(ArcContainer container) {
         return container.beanManager().resolveObserverMethods(new HttpSecurityImpl(null, null, Optional.empty())).isEmpty();
+    }
+
+    private static boolean isBuiltinMechanism(HttpAuthenticationMechanism actualMechanism) {
+        // whether this is one of 3 mechanisms we allow to configure programmatically, but we also may need
+        // for backward compatibility as CDI beans; for example, basic authentication mechanism enabled when no other
+        // mechanism recognizable during the build time was present is a CDI bean, but users may still configure
+        // the basic authentication during the runtime programmatically, which must have a priority;
+        // following 3 beans are singletons, and we only care for exact matches, not subclasses
+        var clazz = getMechanismClass(actualMechanism);
+        return clazz == BasicAuthenticationMechanism.class || clazz == MtlsAuthenticationMechanism.class
+                || clazz == FormAuthenticationMechanism.class;
     }
 
     public static final class ProgrammaticTlsConfig {

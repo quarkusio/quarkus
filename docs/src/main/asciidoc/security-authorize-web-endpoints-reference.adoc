@@ -600,6 +600,7 @@ The same authorization can be required with the `@PermissionsAllowed(value = { "
 * xref:security-authentication-mechanisms.adoc#mtls-programmatic-set-up[Set up the mutual TLS client authentication programmatically]
 * xref:security-cors.adoc#cors-filter-programmatic-set-up[Configuring the CORS filter programmatically]
 * xref:security-csrf-prevention.adoc#csrf-prevention-programmatic-set-up[Configuring the CSRF prevention programmatically]
+* xref:security-jpa.adoc#programmatic-set-up[Set up Security JPA programmatically]
 
 [[standard-security-annotations]]
 == Authorization using annotations

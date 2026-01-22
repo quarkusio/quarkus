@@ -34,8 +34,14 @@ public class IdentityProviderManagerCreator {
 
     @Produces
     @ApplicationScoped
-    public IdentityProviderManager ipm(Instance<IdentityProvider<?>> identityProviders,
+    IdentityProviderManager ipm(Instance<IdentityProvider<?>> identityProviders,
             Instance<SecurityIdentityAugmentor> augmentors, BlockingSecurityExecutor blockingExecutor) {
+        return createIdentityProviderManager(identityProviders, augmentors, blockingExecutor);
+    }
+
+    static QuarkusIdentityProviderManagerImpl createIdentityProviderManager(
+            Iterable<IdentityProvider<?>> identityProviders, Iterable<SecurityIdentityAugmentor> augmentors,
+            BlockingSecurityExecutor blockingExecutor) {
         boolean customAnon = false;
         QuarkusIdentityProviderManagerImpl.Builder builder = QuarkusIdentityProviderManagerImpl.builder();
         for (var i : identityProviders) {
@@ -53,5 +59,4 @@ public class IdentityProviderManagerCreator {
         builder.setBlockingExecutor(blockingExecutor);
         return builder.build();
     }
-
 }

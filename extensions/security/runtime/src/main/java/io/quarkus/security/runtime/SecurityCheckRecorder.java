@@ -1,5 +1,6 @@
 package io.quarkus.security.runtime;
 
+import static io.quarkus.security.runtime.IdentityProviderManagerCreator.createIdentityProviderManager;
 import static io.quarkus.security.runtime.QuarkusSecurityRolesAllowedConfigBuilder.transformToKey;
 
 import java.lang.invoke.MethodHandle;
@@ -9,6 +10,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.security.Permission;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -30,6 +32,9 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.StringPermission;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
+import io.quarkus.security.identity.IdentityProvider;
+import io.quarkus.security.identity.IdentityProviderManager;
+import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.quarkus.security.runtime.interceptor.SecurityCheckStorageBuilder;
 import io.quarkus.security.runtime.interceptor.SecurityConstrainer;
 import io.quarkus.security.runtime.interceptor.check.AuthenticatedCheck;
@@ -442,6 +447,24 @@ public class SecurityCheckRecorder {
             public QuarkusPermissionSecurityIdentityAugmentor apply(
                     SyntheticCreationalContext<QuarkusPermissionSecurityIdentityAugmentor> ctx) {
                 return new QuarkusPermissionSecurityIdentityAugmentor(ctx.getInjectedReference(BlockingSecurityExecutor.class));
+            }
+        };
+    }
+
+    public Function<Collection<IdentityProvider<?>>, IdentityProviderManager> createIdentityProviderManagerBuilder() {
+        return new Function<Collection<IdentityProvider<?>>, IdentityProviderManager>() {
+            @Override
+            public IdentityProviderManager apply(Collection<IdentityProvider<?>> localIdentityProviders) {
+                final Iterable<IdentityProvider<?>> identityProviders;
+                if (localIdentityProviders == null || localIdentityProviders.isEmpty()) {
+                    throw new IllegalStateException("Cannot build IdentityProviderManager without IdentityProviders");
+                } else {
+                    identityProviders = localIdentityProviders;
+                }
+                var container = Arc.requireContainer();
+                var globalAugmentors = container.select(SecurityIdentityAugmentor.class);
+                var blockingExecutor = container.select(BlockingSecurityExecutor.class).get();
+                return createIdentityProviderManager(identityProviders, globalAugmentors, blockingExecutor);
             }
         };
     }

@@ -1,6 +1,5 @@
 package io.quarkus.security.spi.runtime;
 
-import jakarta.annotation.Priority;
 import jakarta.interceptor.Interceptor;
 
 public class SecurityHandlerConstants {

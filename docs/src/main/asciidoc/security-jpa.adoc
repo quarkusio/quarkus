@@ -222,6 +222,36 @@ For more information about proactive authentication, see the Quarkus xref:securi
 
 include::{generated-dir}/config/quarkus-security-jpa.adoc[opts=optional, leveloffset=+2]
 
+[[programmatic-set-up]]
+== Set up Security JPA programmatically
+
+If you need to combine authentication mechanisms with different identity providers or persistence units, you can leverage the `io.quarkus.vertx.http.security.HttpSecurity` CDI event.
+For example, if you combine the built-in Basic and the Form-based authentication mechanisms, you can configure different persistence unit for each of mechanism like in the example below:
+
+[source,java]
+----
+package org.acme.http.security;
+
+import static io.quarkus.security.jpa.SecurityJpa.jpa;
+import static io.quarkus.security.jpa.SecurityJpa.jpaTrustedProvider;
+
+import io.quarkus.vertx.http.security.Form;
+import io.quarkus.vertx.http.security.HttpSecurity;
+import jakarta.enterprise.event.Observes;
+
+class HttpSecurityConfiguration {
+
+    void configure(@Observes HttpSecurity httpSecurity) {
+            httpSecurity
+                    .basic(jpa("basic-pu"))   <1>
+                    .mechanism(Form.builder().identityProviders(jpa("form-pu"), jpaTrustedProvider("form-pu")).build());    <2>
+    }
+
+}
+----
+<1> Configure the Basic authentication to store the users information in the `basic-pu` persistence unit.
+<2> Also use the Security JPA identity providers, but this time with the `form-pu` persistence unit.
+
 == References
 
 * xref:security-getting-started-tutorial.adoc[Getting started with Security by using Basic authentication and Jakarta Persistence]

@@ -2,6 +2,7 @@ package io.quarkus.vertx.http.runtime.security;
 
 import static io.quarkus.security.spi.runtime.SecurityEventHelper.fire;
 import static io.quarkus.vertx.http.runtime.security.FormAuthenticationEvent.createLoginEvent;
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityImpl.createMechanism;
 import static io.quarkus.vertx.http.runtime.security.RoutingContextAwareSecurityIdentity.addRoutingCtxToIdentityIfMissing;
 
 import java.net.URI;
@@ -12,6 +13,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -29,6 +31,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.arc.Arc;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.credential.PasswordCredential;
+import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
@@ -402,6 +405,15 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         cookie.setMaxAge(0);
         cookie.setPath(cookiePath);
         routingContext.response().addCookie(cookie);
+    }
+
+    public static HttpAuthenticationMechanism of(FormAuthConfig runtimeForm, Optional<String> encKey,
+            IdentityProvider<TrustedAuthenticationRequest> trustedIdentityProvider,
+            IdentityProvider<UsernamePasswordAuthenticationRequest> usernamePasswordIdentityProvider) {
+        Objects.requireNonNull(trustedIdentityProvider);
+        Objects.requireNonNull(usernamePasswordIdentityProvider);
+        var formBasedMechanism = new FormAuthenticationMechanism(runtimeForm, encKey);
+        return createMechanism(formBasedMechanism, List.of(trustedIdentityProvider, usernamePasswordIdentityProvider));
     }
 
     private static String startWithSlash(String page) {

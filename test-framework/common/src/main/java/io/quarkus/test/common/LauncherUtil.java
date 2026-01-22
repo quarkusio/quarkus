@@ -14,6 +14,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -86,7 +87,7 @@ public final class LauncherUtil {
      * listening on.
      * If the wait time is exceeded an {@code IllegalStateException} is thrown.
      */
-    static ListeningAddress waitForCapturedListeningData(Process quarkusProcess, Path logFile, long waitTimeSeconds) {
+    static Optional<ListeningAddress> waitForCapturedListeningData(Process quarkusProcess, Path logFile, long waitTimeSeconds) {
         ensureProcessIsAlive(quarkusProcess);
 
         CountDownLatch signal = new CountDownLatch(1);
@@ -98,7 +99,7 @@ public final class LauncherUtil {
             signal.await(waitTimeSeconds + 2, TimeUnit.SECONDS); // wait enough for the signal to be given by the capturing thread
             ListeningAddress result = resultReference.get();
             if (result != null) {
-                return result;
+                return result.port() != null && result.protocol() != null ? Optional.of(result) : Optional.empty();
             }
             // a null result means that we could not determine the status of the process so we need to abort testing
             destroyProcess(quarkusProcess);

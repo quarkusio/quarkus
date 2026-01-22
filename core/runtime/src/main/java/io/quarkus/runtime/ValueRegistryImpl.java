@@ -34,10 +34,22 @@ public class ValueRegistryImpl implements ValueRegistry {
     }
 
     public <T> void register(final RuntimeKey<T> key, final T value) {
+        if (key == null || key.key() == null) {
+            throw new IllegalArgumentException("Key cannot be null");
+        }
+        if (value == null) {
+            throw new IllegalArgumentException("Value cannot be null");
+        }
         registerInfo(key, SimpleRuntimeInfo.of(value));
     }
 
     public <T> void registerInfo(final RuntimeKey<T> key, final RuntimeInfo<T> runtimeInfo) {
+        if (key == null || key.key() == null) {
+            throw new IllegalArgumentException("Key cannot be null");
+        }
+        if (runtimeInfo == null) {
+            throw new IllegalArgumentException("Value cannot be null");
+        }
         RuntimeInfo<?> mapValue = values.putIfAbsent(key.key(), runtimeInfo);
         if (mapValue != null) {
             throw new IllegalArgumentException("Key already registered " + key.key());

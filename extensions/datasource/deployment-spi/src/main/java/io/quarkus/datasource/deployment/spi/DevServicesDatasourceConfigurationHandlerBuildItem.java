@@ -1,11 +1,10 @@
 package io.quarkus.datasource.deployment.spi;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
@@ -59,12 +58,7 @@ public final class DevServicesDatasourceConfigurationHandlerBuildItem extends Mu
                     public Map<String, String> apply(String dsName,
                             DevServicesDatasourceProvider.RunningDevServicesDatasource runningDevDb) {
                         String jdbcUrl = runningDevDb.jdbcUrl();
-                        // we use datasourceURLPropNames to generate quoted and unquoted versions of the property key,
-                        // because depending on whether a user configured other JDBC properties
-                        // one of the URLs may be ignored
-                        // see https://github.com/quarkusio/quarkus/issues/21387
-                        return datasourceURLPropNames(dsName).stream()
-                                .collect(Collectors.toMap(Function.identity(), ignored -> jdbcUrl));
+                        return fromKeys(datasourceURLPropNames(dsName), jdbcUrl);
                     }
 
                 }, new Predicate<String>() {
@@ -76,6 +70,10 @@ public final class DevServicesDatasourceConfigurationHandlerBuildItem extends Mu
     }
 
     private static List<String> datasourceURLPropNames(String dsName) {
+        // we use datasourceURLPropNames to generate quoted and unquoted versions of the property key,
+        // because depending on whether a user configured other JDBC properties
+        // one of the URLs may be ignored
+        // see https://github.com/quarkusio/quarkus/issues/21387
         return DataSourceUtil.dataSourcePropertyKeys(dsName, "jdbc.url");
     }
 
@@ -86,12 +84,7 @@ public final class DevServicesDatasourceConfigurationHandlerBuildItem extends Mu
                     public Map<String, String> apply(String dsName,
                             DevServicesDatasourceProvider.RunningDevServicesDatasource runningDevDb) {
                         String reactiveUrl = runningDevDb.reactiveUrl();
-                        // we use datasourceURLPropNames to generate quoted and unquoted versions of the property key,
-                        // because depending on whether a user configured other reactive properties
-                        // one of the URLs may be ignored
-                        // see https://github.com/quarkusio/quarkus/issues/21387
-                        return datasourceReactiveURLPropNames(dsName).stream()
-                                .collect(Collectors.toMap(Function.identity(), ignored -> reactiveUrl));
+                        return fromKeys(datasourceReactiveURLPropNames(dsName), reactiveUrl);
                     }
                 }, new Predicate<String>() {
                     @Override
@@ -103,5 +96,15 @@ public final class DevServicesDatasourceConfigurationHandlerBuildItem extends Mu
 
     private static List<String> datasourceReactiveURLPropNames(String dsName) {
         return DataSourceUtil.dataSourcePropertyKeys(dsName, "reactive.url");
+    }
+
+    private static <T> Map<String, T> fromKeys(
+            List<String> keys,
+            T value) {
+        Map<String, T> result = new HashMap<>(keys.size());
+        for (String propertyName : keys) {
+            result.put(propertyName, value);
+        }
+        return result;
     }
 }

@@ -160,6 +160,7 @@
                 </property>
             </activation>
             <modules>
+                <module>core</module>
                 <module>avro-reload</module>
                 <module>awt</module>
                 <module>awt-packaging</module>

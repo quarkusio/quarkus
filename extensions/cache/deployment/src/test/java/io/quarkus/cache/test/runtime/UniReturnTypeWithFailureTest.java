@@ -30,13 +30,17 @@ public class UniReturnTypeWithFailureTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClass(CachedService.class).addClass(ConcurrentFailureService.class));
+            .withApplicationRoot((jar) -> jar.addClass(CachedService.class).addClass(ConcurrentFailureService.class)
+                    .addClass(FailureCachingService.class));
 
     @Inject
     CachedService cachedService;
 
     @Inject
     ConcurrentFailureService concurrentFailureService;
+
+    @Inject
+    FailureCachingService failureCachingService;
 
     @Test
     void testCacheResult() {
@@ -46,6 +50,46 @@ public class UniReturnTypeWithFailureTest {
         assertEquals(2, cachedService.getCacheResultInvocations());
         assertEquals("", cachedService.cacheResult("k1").await().indefinitely());
         assertEquals(2, cachedService.getCacheResultInvocations());
+    }
+
+    /**
+     * Reproducer for #39677: Failures are cached instead of being retried.
+     */
+    @Test
+    void testFailureCaching() {
+        String key = "failure-test-key";
+        failureCachingService.resetCounter(key);
+
+        assertThrows(NoStackTraceException.class,
+                () -> failureCachingService.getUsernameById(key).await().indefinitely());
+        assertEquals(1, failureCachingService.getInvocations(key));
+
+        assertThrows(NoStackTraceException.class,
+                () -> failureCachingService.getUsernameById(key).await().indefinitely());
+
+        assertEquals(2, failureCachingService.getInvocations(key),
+                "Failures should not be cached - method should be invoked again (issue #39677)");
+    }
+
+    /**
+     * Reproducer for #39677: Timeout failures are cached instead of being retried.
+     */
+    @Test
+    void testTimeoutFailureCaching() {
+        String key = "timeout-test-key";
+        failureCachingService.resetCounter(key);
+
+        assertThrows(io.smallrye.mutiny.TimeoutException.class,
+                () -> failureCachingService.getUsernameByIdWithTimeout(key).await()
+                        .atMost(Duration.ofMillis(100)));
+        assertEquals(1, failureCachingService.getInvocations(key));
+
+        assertThrows(io.smallrye.mutiny.TimeoutException.class,
+                () -> failureCachingService.getUsernameByIdWithTimeout(key).await()
+                        .atMost(Duration.ofMillis(100)));
+
+        assertEquals(2, failureCachingService.getInvocations(key),
+                "Timeout failures should not be cached - method should be invoked again (issue #39677)");
     }
 
     /**
@@ -142,6 +186,36 @@ public class UniReturnTypeWithFailureTest {
             } else {
                 return Uni.createFrom().item("success-" + key);
             }
+        }
+    }
+
+    @ApplicationScoped
+    static class FailureCachingService {
+
+        private final Map<String, AtomicInteger> counters = new ConcurrentHashMap<>();
+
+        public void resetCounter(String key) {
+            counters.put(key, new AtomicInteger(0));
+        }
+
+        public int getInvocations(String key) {
+            return counters.getOrDefault(key, new AtomicInteger(0)).get();
+        }
+
+        @CacheResult(cacheName = "failure-cache")
+        public Uni<String> getUsernameById(String userId) {
+            AtomicInteger counter = counters.computeIfAbsent(userId, k -> new AtomicInteger(0));
+            counter.incrementAndGet();
+            return Uni.createFrom().failure(new NoStackTraceException("Error when getUsername"));
+        }
+
+        @CacheResult(cacheName = "timeout-failure-cache")
+        public Uni<String> getUsernameByIdWithTimeout(String userId) {
+            AtomicInteger counter = counters.computeIfAbsent(userId, k -> new AtomicInteger(0));
+            counter.incrementAndGet();
+            return Uni.createFrom().item("delayed")
+                    .onItem().delayIt().by(Duration.ofMillis(500))
+                    .onItem().transform(s -> "username-" + userId);
         }
     }
 }

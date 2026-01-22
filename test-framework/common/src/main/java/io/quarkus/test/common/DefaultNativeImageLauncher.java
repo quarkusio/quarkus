@@ -92,9 +92,7 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
             waitForStartedFunction(startedFunction, quarkusProcess, waitTimeSeconds, logRuntimeConfig.file().path().toPath());
             return Optional.empty();
         } else {
-            ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logRuntimeConfig.file().path().toPath(),
-                    waitTimeSeconds);
-            return Optional.of(result);
+            return waitForCapturedListeningData(quarkusProcess, logRuntimeConfig.file().path().toPath(), waitTimeSeconds);
         }
     }
 

@@ -4,14 +4,15 @@ import java.util.List;
 
 import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
 import io.quarkus.deployment.builditem.ModuleOpenBuildItem;
 import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 
 /**
  * Build step that resolves and aggregates JVM requirements for the Quarkus application.
  * <p>
- * This build step processes module open requirements (--add-opens) that are needed
- * at runtime for the generated application.
+ * This build step processes module open requirements (--add-opens) and access
+ * to native (--enable-native-access) that are needed at runtime for the generated application.
  * More JVM requirements in the same ballpark might be added in the future.
  */
 public class JvmRequirementsBuildStep {
@@ -27,8 +28,9 @@ public class JvmRequirementsBuildStep {
      * @return a resolved JVM requirements build item containing all JVM requirements.
      */
     @BuildStep
-    ResolvedJVMRequirements resolveJVMRequirements(final List<ModuleOpenBuildItem> addOpens) throws BuildException {
-        return new ResolvedJVMRequirements(addOpens);
+    ResolvedJVMRequirements resolveJVMRequirements(final List<ModuleOpenBuildItem> addOpens,
+            final List<ModuleEnableNativeAccessBuildItem> enableNativeAccesses) throws BuildException {
+        return new ResolvedJVMRequirements(addOpens, enableNativeAccesses);
     }
 
 }

@@ -7,6 +7,7 @@ import java.util.List;
 
 import jakarta.inject.Inject;
 
+import org.elasticsearch.client.RestClient;
 import org.hibernate.SessionFactory;
 import org.hibernate.search.mapper.orm.outboxpolling.cfg.HibernateOrmMapperOutboxPollingSettings;
 import org.hibernate.search.mapper.orm.outboxpolling.cfg.UuidGenerationStrategy;
@@ -15,10 +16,12 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.InjectableInstance;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.search.orm.outboxpolling.test.configuration.defaultpu.IndexedEntity;
 import io.quarkus.hibernate.search.orm.outboxpolling.test.configuration.pu1.IndexedEntityForPU1;
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.common.annotation.Identifier;
 
 /**
  * Tests that configuration properties set in Quarkus are translated to the right key and value in Hibernate Search.
@@ -125,6 +128,10 @@ public class ConfigPropertiesTest {
             .overrideConfigKey(
                     "quarkus.hibernate-search-orm.coordination.tenants.\"" + TENANT_ID + "\".mass-indexer.pulse-expiration",
                     "250S");
+
+    @Inject
+    @Identifier("another-es")
+    InjectableInstance<RestClient> restClient2;
 
     @Inject
     SessionFactory sessionFactory;

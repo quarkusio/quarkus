@@ -46,6 +46,8 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
     private static final Predicate<String> UBER_JAR_IGNORED_ENTRIES_PREDICATE = new IsEntryIgnoredForUberJarPredicate();
 
+    private static final Predicate<String> UBER_JAR_IGNORED_DUPLICATE_ENTRIES_PREDICATE = new IsDuplicateEntryIgnoredForUberJarPredicate();
+
     private static final Predicate<String> UBER_JAR_CONCATENATED_ENTRIES_PREDICATE = new Predicate<>() {
         @Override
         public boolean test(String path) {
@@ -273,8 +275,10 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                             concatenatedEntries.computeIfAbsent(relativePath, (u) -> new ArrayList<>())
                                     .add(Files.readAllBytes(file));
                         } else if (!ignoredEntriesPredicate.test(relativePath)) {
-                            duplicateCatcher.computeIfAbsent(relativePath, (a) -> new HashSet<>())
-                                    .add(appDep);
+                            if (!UBER_JAR_IGNORED_DUPLICATE_ENTRIES_PREDICATE.test(relativePath)) {
+                                duplicateCatcher.computeIfAbsent(relativePath, (a) -> new HashSet<>())
+                                        .add(appDep);
+                            }
                             archiveCreator.addFileIfNotExists(file, relativePath, appDep.toString());
                         }
                     }
@@ -328,12 +332,25 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 "META-INF/panache-archive.marker", // deprecated and unused, but still present in some archives
                 "META-INF/build.metadata", // present in the Red Hat Build of Quarkus
                 "META-INF/quarkus-config-doc/quarkus-config-javadoc.json",
+                "META-INF/quarkus-config-doc/quarkus-config-model-version",
+                "META-INF/quarkus-config-doc/quarkus-config-model.json",
                 "LICENSE");
 
         @Override
         public boolean test(String path) {
             return UBER_JAR_IGNORED_ENTRIES.contains(path)
                     || path.endsWith("module-info.class");
+        }
+    }
+
+    /**
+     * When this predicate is true, the entry will be added to the jar, but we won't log any warning if there is a duplicate.
+     */
+    private static class IsDuplicateEntryIgnoredForUberJarPredicate implements Predicate<String> {
+
+        @Override
+        public boolean test(String path) {
+            return path.startsWith("META-INF/maven/");
         }
     }
 }

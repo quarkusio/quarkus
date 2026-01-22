@@ -30,7 +30,7 @@ public class InfinispanRecorder {
     }
 
     public Supplier<RemoteCacheManager> infinispanRemoteCacheManagerSupplier(String clientName) {
-        return new InfinispanClientSupplier<>(new Function<InfinispanClientProducer, RemoteCacheManager>() {
+        return new InfinispanClientSupplier<>(new Function<>() {
             @Override
             public RemoteCacheManager apply(InfinispanClientProducer infinispanClientProducer) {
                 return infinispanClientProducer.getNamedRemoteCacheManager(clientName);
@@ -39,7 +39,7 @@ public class InfinispanRecorder {
     }
 
     public Supplier<CounterManager> infinispanCounterManagerSupplier(String clientName) {
-        return new InfinispanClientSupplier<>(new Function<InfinispanClientProducer, CounterManager>() {
+        return new InfinispanClientSupplier<>(new Function<>() {
             @Override
             public CounterManager apply(InfinispanClientProducer infinispanClientProducer) {
                 return infinispanClientProducer.getNamedCounterManager(clientName);
@@ -48,7 +48,7 @@ public class InfinispanRecorder {
     }
 
     public <K, V> Supplier<RemoteCache<K, V>> infinispanRemoteCacheSupplier(String clientName, String cacheName) {
-        return new InfinispanClientSupplier<>(new Function<InfinispanClientProducer, RemoteCache<K, V>>() {
+        return new InfinispanClientSupplier<>(new Function<>() {
             @Override
             public RemoteCache<K, V> apply(InfinispanClientProducer infinispanClientProducer) {
                 return infinispanClientProducer.getRemoteCache(clientName, cacheName);

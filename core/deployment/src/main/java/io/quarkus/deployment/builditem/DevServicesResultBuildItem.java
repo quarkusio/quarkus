@@ -114,7 +114,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
     /**
      * @deprecated use {@link DevServicesResultBuildItem#owned()} or {@link DevServicesResultBuildItem#discovered()} instead
      */
-    @Deprecated
+    @Deprecated(since = "3.25")
     public DevServicesResultBuildItem(String name, String containerId, Map<String, String> config) {
         this(name, null, containerId, config);
     }
@@ -122,7 +122,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
     /**
      * @deprecated use {@link DevServicesResultBuildItem#owned()} or {@link DevServicesResultBuildItem#discovered()} instead
      */
-    @Deprecated
+    @Deprecated(since = "3.25")
     public DevServicesResultBuildItem(String name, String description, String containerId, Map<String, String> config) {
         this.name = name;
         this.description = description;
@@ -141,7 +141,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
     /**
      * @deprecated use {@link DevServicesResultBuildItem#owned()} or {@link DevServicesResultBuildItem#discovered()} instead
      */
-    @Deprecated
+    @Deprecated(since = "3.25")
     public DevServicesResultBuildItem(String name,
             String description,
             String serviceName,
@@ -227,7 +227,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
     /**
      * @deprecated Subject to changes due to <a href="https://github.com/quarkusio/quarkus/pull/51209">#51209</a>
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated(since = "3.27", forRemoval = true)
     public Map<String, String> getOverrideConfig(Startable startable) {
 
         SupplierMap<String, String> map = new SupplierMap<>();
@@ -259,13 +259,23 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         private Map<String, String> config;
         private String description;
 
+        /**
+         * Use {@link #feature(String)} instead
+         *
+         * @param name the name of the owning feature
+         * @return the builder, for chaining
+         */
+        @Deprecated(since = "3.31")
         public DiscoveredServiceBuilder name(String name) {
-            this.name = Objects.requireNonNull(name, "name cannot be null");
-            return this;
+            return feature(name);
         }
 
         public DiscoveredServiceBuilder feature(Feature feature) {
-            this.name = feature.getName();
+            return feature(feature.getName());
+        }
+
+        public DiscoveredServiceBuilder feature(String feature) {
+            this.name = Objects.requireNonNull(feature, "name cannot be null");
             return this;
         }
 
@@ -314,10 +324,9 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
          * @param name the name of the owning feature
          * @return the builder, for chaining
          */
-        @Deprecated()
+        @Deprecated(since = "3.31")
         public OwnedServiceBuilder<T> name(String name) {
-            this.name = name;
-            return this;
+            return feature(name);
         }
 
         /**
@@ -329,8 +338,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
          * @return the builder, for chaining
          */
         public OwnedServiceBuilder<T> feature(Feature feature) {
-            this.name = feature.getName();
-            return this;
+            return feature(feature.getName());
         }
 
         /**
@@ -342,7 +350,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
          * @return the builder, for chaining
          */
         public OwnedServiceBuilder<T> feature(String featureName) {
-            this.name = featureName;
+            this.name = Objects.requireNonNull(featureName, "name cannot be null");
             return this;
         }
 

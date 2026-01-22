@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.is;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -16,6 +17,7 @@ import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import io.restassured.RestAssured;
 
+@Tag("disableddevservices")
 @QuarkusTest
 @DisabledOnOs(OS.WINDOWS)
 @TestProfile(HibernateSearchOpenSearchDevServicesDisabledExplicitlyTest.Profile.class)

@@ -148,6 +148,9 @@ public class OpenTelemetryMDCTest {
                     assertThat(map.get(ReqRespFilter.REQUEST_METHOD_FIELD))
                             .withFailMessage(() -> "Failing map: " + map)
                             .isEqualTo(ReqRespFilter.REQUEST_METHOD_FIELD_VALUE);
+                    assertThat(map.get(ReqRespFilter.REQUEST_METHOD_NON_STRING_FIELD))
+                            .withFailMessage(() -> "Failing map: " + map)
+                            .isEqualTo(ReqRespFilter.REQUEST_METHOD_NON_STRING_VALUE);
                 });
     }
 
@@ -278,10 +281,13 @@ public class OpenTelemetryMDCTest {
     public static class ReqRespFilter implements ContainerResponseFilter, ContainerRequestFilter {
         public static final String REQUEST_METHOD_FIELD = "request.filter.field";
         public static final String REQUEST_METHOD_FIELD_VALUE = "from the request filter";
+        public static final String REQUEST_METHOD_NON_STRING_FIELD = "request.filter.non_string_field";
+        public static final Map<String, Integer> REQUEST_METHOD_NON_STRING_VALUE = Map.of("hello", 42);
 
         @Override
         public void filter(ContainerRequestContext requestContext) {
             VertxMDC.INSTANCE.put(REQUEST_METHOD_FIELD, REQUEST_METHOD_FIELD_VALUE);
+            VertxMDC.INSTANCE.putObject(REQUEST_METHOD_NON_STRING_FIELD, REQUEST_METHOD_NON_STRING_VALUE);
         }
 
         @Override

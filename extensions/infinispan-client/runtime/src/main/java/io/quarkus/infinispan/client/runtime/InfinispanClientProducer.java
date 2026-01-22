@@ -1,10 +1,11 @@
 package io.quarkus.infinispan.client.runtime;
 
 import java.net.URL;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import jakarta.annotation.PreDestroy;
@@ -50,7 +51,7 @@ public class InfinispanClientProducer {
     public static final String PROTOBUF_FILE_PREFIX = "infinispan.client.hotrod.protofile.";
     public static final String PROTOBUF_SCHEMAS = "infinispan.client.hotrod.proto-schemas";
 
-    private final Map<String, RemoteCacheManager> remoteCacheManagers = new HashMap<>();
+    private final Map<String, RemoteCacheManager> remoteCacheManagers = new ConcurrentHashMap<>();
 
     @Inject
     private BeanManager beanManager;
@@ -131,29 +132,6 @@ public class InfinispanClientProducer {
                 cacheManager.switchToDefaultCluster();
             }
         });
-    }
-
-    private void initialize(String infinispanConfigName, Map<String, Properties> properties) {
-        log.debug("Initializing default RemoteCacheManager");
-        if (properties.isEmpty()) {
-            // We already loaded and it wasn't present - so don't initialize the cache manager
-            return;
-        }
-
-        ConfigurationBuilder conf = builderFromProperties(infinispanConfigName, properties);
-        if (conf.servers().isEmpty()) {
-            return;
-        }
-        // Build de cache manager if the server list is present
-        InfinispanClientsRuntimeConfig infinispanClientsRuntimeConfig = this.infinispanClientsRuntimeConfigHandle.get();
-
-        RemoteCacheManager cacheManager = new RemoteCacheManager(conf.build(),
-                infinispanClientsRuntimeConfig.startClient().orElse(Boolean.TRUE));
-        remoteCacheManagers.put(infinispanConfigName, cacheManager);
-
-        if (infinispanClientsRuntimeConfig.useSchemaRegistration().orElse(Boolean.TRUE)) {
-            registerSchemaInServer(infinispanConfigName, properties, cacheManager);
-        }
     }
 
     /**
@@ -503,10 +481,32 @@ public class InfinispanClientProducer {
     }
 
     public RemoteCacheManager getNamedRemoteCacheManager(String clientName) {
-        if (!remoteCacheManagers.containsKey(clientName)) {
-            initialize(clientName, properties);
-        }
-        return remoteCacheManagers.get(clientName);
+        return remoteCacheManagers.computeIfAbsent(clientName, new Function<>() {
+            @Override
+            public RemoteCacheManager apply(String cn) {
+                if (properties.isEmpty()) {
+                    // TODO: this should probably be an error, but keeping `null` as that's what the previous version of the code did
+                    return null;
+                }
+
+                ConfigurationBuilder conf = builderFromProperties(cn, properties);
+                if (conf.servers().isEmpty()) {
+                    // TODO: this should probably be an error, but keeping `null` as that's what the previous version of the code did
+                    return null;
+                }
+                // Build the cache manager if the server list is present
+                InfinispanClientsRuntimeConfig infinispanClientsRuntimeConfig = infinispanClientsRuntimeConfigHandle.get();
+
+                RemoteCacheManager result = new RemoteCacheManager(conf.build(),
+                        infinispanClientsRuntimeConfig.startClient().orElse(Boolean.TRUE));
+
+                if (infinispanClientsRuntimeConfig.useSchemaRegistration().orElse(Boolean.TRUE)) {
+                    registerSchemaInServer(cn, properties, result);
+                }
+
+                return result;
+            }
+        });
     }
 
     public CounterManager getNamedCounterManager(String clientName) {

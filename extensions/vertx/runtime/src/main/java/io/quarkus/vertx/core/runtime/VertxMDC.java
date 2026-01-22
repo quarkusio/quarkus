@@ -162,7 +162,7 @@ public enum VertxMDC implements MDCProvider {
      * @param map contents to add
      * @param vertxContext
      */
-    public void putAll(Map<String, String> map, Context vertxContext) {
+    public void putAll(Map<String, Object> map, Context vertxContext) {
         Objects.requireNonNull(map);
         contextualDataMap(vertxContext).putAll(map);
     }
@@ -347,11 +347,11 @@ public enum VertxMDC implements MDCProvider {
             return;
         }
 
-        final Map<String, String> carryover = new HashMap<>();
+        final Map<String, Object> carryover = new HashMap<>();
         final boolean hasDiscardKeys = discardMdcKeys == null || discardMdcKeys.isEmpty();
         for (String key : VertxMDC.INSTANCE.getKeys()) {
             if (hasDiscardKeys || !discardMdcKeys.contains(key)) {
-                carryover.put(key, VertxMDC.INSTANCE.get(key));
+                carryover.put(key, VertxMDC.INSTANCE.getObject(key));
             }
         }
 

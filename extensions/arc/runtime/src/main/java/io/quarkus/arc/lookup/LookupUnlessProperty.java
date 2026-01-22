@@ -11,8 +11,8 @@ import jakarta.enterprise.inject.Instance;
 /**
  * Indicates that a bean should only be obtained by programmatic lookup if the property does not match the provided value.
  * <p>
- * This annotation is repeatable. A bean will be included if all the conditions defined by the {@link LookupUnlessProperty}
- * and {@link LookupIfProperty} annotations are satisfied.
+ * This annotation is repeatable and may be put on a stereotype. A bean will be included if all the conditions
+ * defined by the {@link LookupUnlessProperty} and {@link LookupIfProperty} annotations are satisfied.
  *
  * <pre>
  * <code>
@@ -60,19 +60,19 @@ import jakarta.enterprise.inject.Instance;
 public @interface LookupUnlessProperty {
 
     /**
-     * Name of the runtime time property to check
+     * Name of the runtime property to check.
      */
     String name();
 
     /**
-     * Expected {@code String} value of the runtime time property (specified by {@code name}) if the bean should be skipped at
-     * runtime.
+     * Expected {@code String} value of the runtime property (specified by {@code name})
+     * if the bean should NOT be looked up at runtime.
      */
     String stringValue();
 
     /**
-     * Determines if the bean should be looked up when the property name specified by {@code name} has not been specified at
-     * all
+     * Determines if the bean should be looked up when the property specified by {@code name}
+     * has not been specified at all.
      */
     boolean lookupIfMissing() default false;
 

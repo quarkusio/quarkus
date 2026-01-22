@@ -15,15 +15,24 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Response;
 
+import org.elasticsearch.client.RestClient;
 import org.hibernate.search.mapper.orm.session.SearchSession;
 
+import io.quarkus.arc.InjectableInstance;
 import io.quarkus.hibernate.orm.PersistenceUnit;
+import io.smallrye.common.annotation.Identifier;
 
 @ApplicationScoped
 @Produces("application/json")
 @Consumes("application/json")
 @Path("/books")
 public class BookResource {
+
+    // TODO: remove once HS can use configured rest clients from the ES extension directly
+    //  for now we need it just so that an ES service is started for HS to use.
+    @Inject
+    @Identifier("another-es")
+    InjectableInstance<RestClient> restClient2;
 
     @Inject
     @PersistenceUnit("books")

@@ -19,14 +19,15 @@ import org.hibernate.search.util.common.SearchException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.InjectableInstance;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.search.orm.elasticsearch.test.multiplepersistenceunits.defaultpu.DefaultPUEntity;
 import io.quarkus.hibernate.search.orm.elasticsearch.test.multiplepersistenceunits.pu1.PU1Entity;
 import io.quarkus.hibernate.search.orm.elasticsearch.test.multiplepersistenceunits.pu2.PU2Entity;
 import io.quarkus.hibernate.search.orm.elasticsearch.test.multiplepersistenceunits.pu3.PU3Entity;
 import io.quarkus.hibernate.search.orm.elasticsearch.test.util.TransactionUtils;
-import io.smallrye.common.annotation.Identifier;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.smallrye.common.annotation.Identifier;
 
 public class MultiplePersistenceUnitsCdiTest {
 
@@ -39,6 +40,10 @@ public class MultiplePersistenceUnitsCdiTest {
                     .addPackage(PU2Entity.class.getPackage())
                     .addPackage(PU3Entity.class.getPackage())
                     .addAsResource("application-multiple-persistence-units.properties", "application.properties"));
+
+    @Inject
+    @Identifier("another-es")
+    InjectableInstance<RestClient> restClient2;
 
     @Inject
     SearchMapping defaultPUMapping;

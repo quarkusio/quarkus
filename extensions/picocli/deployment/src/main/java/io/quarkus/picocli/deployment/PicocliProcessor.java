@@ -22,6 +22,7 @@ import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
+import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
 import io.quarkus.deployment.builditem.QuarkusApplicationClassBuildItem;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.picocli.runtime.DefaultPicocliCommandLineFactory;
@@ -35,6 +36,12 @@ class PicocliProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.PICOCLI);
+    }
+
+    @BuildStep
+    ModuleEnableNativeAccessBuildItem allowNativeLibraryLoad() {
+        // Need to generate an --enable-native-access because of org.fusesource.jansi.internal.JansiLoader
+        return new ModuleEnableNativeAccessBuildItem("org.fusesource.jansi");
     }
 
     @BuildStep

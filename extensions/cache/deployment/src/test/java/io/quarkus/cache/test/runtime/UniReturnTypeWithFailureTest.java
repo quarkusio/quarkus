@@ -92,6 +92,29 @@ public class UniReturnTypeWithFailureTest {
                 "Timeout failures should not be cached - method should be invoked again (issue #39677)");
     }
 
+    @Test
+    void testSuccessfulCachingAfterFailure() {
+        String key = "recovery-test-key";
+        failureCachingService.resetCounter(key);
+
+        assertThrows(NoStackTraceException.class,
+                () -> failureCachingService.getUsernameByIdWithRecovery(key).await().indefinitely());
+        assertEquals(1, failureCachingService.getInvocations(key));
+
+        assertThrows(NoStackTraceException.class,
+                () -> failureCachingService.getUsernameByIdWithRecovery(key).await().indefinitely());
+        assertEquals(2, failureCachingService.getInvocations(key));
+
+        String result = failureCachingService.getUsernameByIdWithRecovery(key).await().indefinitely();
+        assertEquals("username-" + key, result);
+        assertEquals(3, failureCachingService.getInvocations(key));
+
+        String cachedResult = failureCachingService.getUsernameByIdWithRecovery(key).await().indefinitely();
+        assertEquals("username-" + key, cachedResult);
+        assertEquals(3, failureCachingService.getInvocations(key),
+                "Successful result should be cached - method should not be invoked again");
+    }
+
     /**
      * Reproducer for #51928: After a failed Uni, several concurrent invocations
      * may result in multiple method invocations instead of being synchronized.
@@ -216,6 +239,16 @@ public class UniReturnTypeWithFailureTest {
             return Uni.createFrom().item("delayed")
                     .onItem().delayIt().by(Duration.ofMillis(500))
                     .onItem().transform(s -> "username-" + userId);
+        }
+
+        @CacheResult(cacheName = "failure-cache")
+        public Uni<String> getUsernameByIdWithRecovery(String userId) {
+            AtomicInteger counter = counters.computeIfAbsent(userId, k -> new AtomicInteger(0));
+            int invocationNumber = counter.incrementAndGet();
+            if (invocationNumber <= 2) {
+                return Uni.createFrom().failure(new NoStackTraceException("Error when getUsername"));
+            }
+            return Uni.createFrom().item("username-" + userId);
         }
     }
 }

@@ -34,7 +34,7 @@ class ExtensionPhaseRegistration extends ExtensionPhaseBase {
         this.assignability = new io.quarkus.arc.processor.AssignabilityCheck(beanArchiveIndex, null);
     }
 
-    void runExtensionMethod(ExtensionMethod method) throws ReflectiveOperationException {
+    void runExtensionMethod(ExtensionMethod method) throws Exception {
         int numQueryParameters = 0;
         List<ExtensionMethodParameter> parameters = new ArrayList<>(method.parametersCount());
         for (org.jboss.jandex.Type parameterType : method.parameterTypes()) {

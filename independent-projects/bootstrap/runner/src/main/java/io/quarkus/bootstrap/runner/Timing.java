@@ -89,6 +89,8 @@ public class Timing {
         }
     }
 
+    @SuppressWarnings("unused")
+    // used in generated code
     public static void printStartupTime(String name, String version, String quarkusVersion, String features,
             List<String> profiles, boolean liveCoding, boolean anc) {
         Timing t = get(anc);

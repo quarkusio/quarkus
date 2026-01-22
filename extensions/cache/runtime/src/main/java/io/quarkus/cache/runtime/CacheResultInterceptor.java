@@ -65,11 +65,6 @@ public class CacheResultInterceptor extends CacheInterceptor {
                             throw new CacheException(e);
                         }
                     }
-                }).onFailure().call(new Function<>() {
-                    @Override
-                    public Uni<?> apply(Throwable throwable) {
-                        return cache.invalidate(key).replaceWith(throwable);
-                    }
                 });
 
                 if (binding.lockTimeout() <= 0) {

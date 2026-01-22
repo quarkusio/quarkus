@@ -419,9 +419,11 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             }
         }
 
-        ExtensionsEntryPoint buildCompatibleExtensions = new ExtensionsEntryPoint(this.buildCompatibleExtensions);
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
 
-        {
+        try {
+            ExtensionsEntryPoint buildCompatibleExtensions = new ExtensionsEntryPoint(this.buildCompatibleExtensions);
+
             IndexView overallIndex = applicationIndex != null
                     ? CompositeIndex.create(immutableBeanArchiveIndex, applicationIndex)
                     : immutableBeanArchiveIndex;
@@ -438,19 +440,15 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
                 throw new IllegalStateException("Failed to create index", e);
             }
             immutableBeanArchiveIndex = CompositeIndex.create(immutableBeanArchiveIndex, additionalIndex);
-        }
 
-        ClassLoader old = Thread.currentThread().getContextClassLoader();
-
-        if (reproducibilityRuns > 0 && !shouldFail) {
-            ExtensionContext.Store classStore = getClassExtensionStore(context);
-            if (classStore.get(KEY_REPRODUCIBILITY_DONE) == null) {
-                classStore.put(KEY_IMMUTABLE_INDEX, immutableBeanArchiveIndex);
-                classStore.put(KEY_APPLICATION_INDEX, applicationIndex);
+            if (reproducibilityRuns > 0 && !shouldFail) {
+                ExtensionContext.Store classStore = getClassExtensionStore(context);
+                if (classStore.get(KEY_REPRODUCIBILITY_DONE) == null) {
+                    classStore.put(KEY_IMMUTABLE_INDEX, immutableBeanArchiveIndex);
+                    classStore.put(KEY_APPLICATION_INDEX, applicationIndex);
+                }
             }
-        }
 
-        try {
             String arcContainerAbsolutePath = ArcTestContainer.class.getClassLoader()
                     .getResource(ArcTestContainer.class.getName().replace(".", "/") + ".class").getFile();
             int targetClassesIndex = arcContainerAbsolutePath.indexOf(TARGET_TEST_CLASSES);

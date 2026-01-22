@@ -554,7 +554,7 @@ class InfinispanClientProcessor {
         for (String clientName : clientNames) {
             syntheticBeanBuildItemBuildProducer.produce(
                     configureAndCreateSyntheticBean(clientName, RemoteCacheManager.class,
-                            recorder.infinispanClientSupplier(clientName)));
+                            recorder.infinispanRemoteCacheManagerSupplier(clientName)));
             syntheticBeanBuildItemBuildProducer.produce(
                     configureAndCreateSyntheticBean(clientName, CounterManager.class,
                             recorder.infinispanCounterManagerSupplier(clientName)));
@@ -564,7 +564,7 @@ class InfinispanClientProcessor {
         for (RemoteCacheBean remoteCacheBean : remoteCacheBeans) {
             syntheticBeanBuildItemBuildProducer.produce(
                     configureAndCreateSyntheticBean(remoteCacheBean,
-                            recorder.infinispanRemoteCacheClientSupplier(remoteCacheBean.clientName,
+                            recorder.infinispanRemoteCacheSupplier(remoteCacheBean.clientName,
                                     remoteCacheBean.cacheName)));
         }
     }

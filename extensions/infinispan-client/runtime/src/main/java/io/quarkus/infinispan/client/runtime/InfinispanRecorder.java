@@ -29,7 +29,7 @@ public class InfinispanRecorder {
         };
     }
 
-    public Supplier<RemoteCacheManager> infinispanClientSupplier(String clientName) {
+    public Supplier<RemoteCacheManager> infinispanRemoteCacheManagerSupplier(String clientName) {
         return new InfinispanClientSupplier<>(new Function<InfinispanClientProducer, RemoteCacheManager>() {
             @Override
             public RemoteCacheManager apply(InfinispanClientProducer infinispanClientProducer) {
@@ -47,7 +47,7 @@ public class InfinispanRecorder {
         });
     }
 
-    public <K, V> Supplier<RemoteCache<K, V>> infinispanRemoteCacheClientSupplier(String clientName, String cacheName) {
+    public <K, V> Supplier<RemoteCache<K, V>> infinispanRemoteCacheSupplier(String clientName, String cacheName) {
         return new InfinispanClientSupplier<>(new Function<InfinispanClientProducer, RemoteCache<K, V>>() {
             @Override
             public RemoteCache<K, V> apply(InfinispanClientProducer infinispanClientProducer) {

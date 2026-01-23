@@ -1,6 +1,7 @@
 package io.quarkus.extest.deployment;
 
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
 import io.quarkus.deployment.builditem.ModuleOpenBuildItem;
 
 public class ModulesCustomProcessor {
@@ -9,4 +10,10 @@ public class ModulesCustomProcessor {
     ModuleOpenBuildItem openModules() {
         return new ModuleOpenBuildItem("java.base", "test-module-fake-name", "java.util");
     }
+
+    @BuildStep
+    ModuleEnableNativeAccessBuildItem allowNativeLibraryLoad() {
+        return new ModuleEnableNativeAccessBuildItem("another-fake-module");
+    }
+
 }

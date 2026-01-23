@@ -4,7 +4,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.runtime.DefaultTokenStateManager;
-import io.quarkus.oidc.runtime.OidcUtils;
+import io.quarkus.oidc.runtime.OidcHelper;
 import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
@@ -19,7 +19,7 @@ final class OidcDevSessionCookieReaderHandler implements Handler<RoutingContext>
 
     @Override
     public void handle(RoutingContext rc) {
-        Cookie cookie = rc.request().getCookie(OidcUtils.SESSION_COOKIE_NAME);
+        Cookie cookie = rc.request().getCookie(OidcHelper.getSessionCookieName());
         if (cookie != null) {
             DefaultTokenStateManager tokenStateManager = Arc.container().instance(DefaultTokenStateManager.class).get();
             OidcTenantConfig defaultTenantConfig = getDefaultTenantConfig();

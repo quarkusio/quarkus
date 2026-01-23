@@ -9,7 +9,6 @@ import static io.quarkus.oidc.common.runtime.OidcConstants.CODE_FLOW_CODE;
 import static io.quarkus.oidc.runtime.OidcRecorder.ACR_VALUES_TO_MAX_AGE_SEPARATOR;
 import static io.quarkus.oidc.runtime.OidcUtils.DEFAULT_TENANT_ID;
 import static io.quarkus.security.spi.ClassSecurityAnnotationBuildItem.useClassLevelSecurity;
-import static io.quarkus.security.spi.SecurityTransformerBuildItem.createSecurityTransformer;
 import static io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBindingBuildItem.toTargetName;
 import static io.quarkus.vertx.http.deployment.HttpSecurityProcessor.collectAnnotatedClasses;
 import static io.quarkus.vertx.http.deployment.HttpSecurityProcessor.collectClassMethodsWithoutRbacAnnotation;
@@ -71,7 +70,6 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
-import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.oidc.AuthenticationContext;
 import io.quarkus.oidc.AuthorizationCodeFlow;
@@ -93,6 +91,7 @@ import io.quarkus.oidc.runtime.DefaultTokenStateManager;
 import io.quarkus.oidc.runtime.Jose4jRecorder;
 import io.quarkus.oidc.runtime.OidcAuthenticationMechanism;
 import io.quarkus.oidc.runtime.OidcConfigurationAndProviderProducer;
+import io.quarkus.oidc.runtime.OidcHelper;
 import io.quarkus.oidc.runtime.OidcIdentityProvider;
 import io.quarkus.oidc.runtime.OidcJsonWebTokenProducer;
 import io.quarkus.oidc.runtime.OidcRecorder;
@@ -219,7 +218,8 @@ public class OidcBuildStep {
                 .addBeanClass(OidcSessionImpl.class)
                 .addBeanClass(BackChannelLogoutHandler.class)
                 .addBeanClass(ResourceMetadataHandler.class)
-                .addBeanClass(AzureAccessTokenCustomizer.class);
+                .addBeanClass(AzureAccessTokenCustomizer.class)
+                .addBeanClass(OidcHelper.class);
         additionalBeans.produce(builder.build());
     }
 
@@ -349,7 +349,6 @@ public class OidcBuildStep {
     }
 
     @Produce(PreRouterFinalizationBuildItem.class)
-    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @Consume(BeanContainerBuildItem.class)
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)

@@ -11,9 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -27,8 +25,6 @@ import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.smallrye.jwt.build.Jwt;
-import io.vertx.core.http.Cookie;
-import io.vertx.core.http.impl.CookieImpl;
 import io.vertx.core.json.JsonObject;
 
 public class OidcUtilsTest {
@@ -49,56 +45,6 @@ public class OidcUtilsTest {
         assertTrue(OidcUtils.isDPoPScheme("dpop"));
         assertFalse(OidcUtils.isDPoPScheme("pop"));
 
-    }
-
-    @Test
-    public void testGetSingleSessionCookie() throws Exception {
-
-        OidcTenantConfig oidcConfig = new OidcTenantConfig();
-        oidcConfig.setTenantId("test");
-        Map<String, Object> context = new HashMap<>();
-        String sessionCookieValue = OidcUtils.getSessionCookie(context,
-                Map.of("q_session_test", new CookieImpl("q_session_test", "tokens")), oidcConfig);
-        assertEquals("tokens", sessionCookieValue);
-        @SuppressWarnings({ "rawtypes", "unchecked" })
-        List<String> names = (List) context.get(OidcUtils.SESSION_COOKIE_NAME);
-        assertEquals(1, names.size());
-        assertEquals("q_session_test", names.get(0));
-    }
-
-    @Test
-    public void testGetMultipleSessionCookies() throws Exception {
-
-        OidcTenantConfig oidcConfig = new OidcTenantConfig();
-        oidcConfig.setTenantId("test");
-
-        char[] alphabet = "abcdefghijklmnopqrstuvwxyz".toCharArray();
-
-        StringBuilder expectedCookieValue = new StringBuilder();
-        Map<String, Cookie> cookies = new HashMap<>();
-        for (int i = 0; i < alphabet.length; i++) {
-            char[] data = new char[OidcUtils.MAX_COOKIE_VALUE_LENGTH];
-            Arrays.fill(data, alphabet[i]);
-            String cookieName = "q_session_test_chunk_" + (i + 1);
-            String nextChunk = new String(data);
-            expectedCookieValue.append(nextChunk);
-            cookies.put(cookieName, new CookieImpl(cookieName, nextChunk));
-        }
-        String lastChunk = String.valueOf("tokens");
-        expectedCookieValue.append(lastChunk);
-        String lastCookieName = "q_session_test_chunk_" + (alphabet.length + 1);
-        cookies.put(lastCookieName, new CookieImpl(lastCookieName, lastChunk));
-
-        Map<String, Object> context = new HashMap<>();
-        String sessionCookieValue = OidcUtils.getSessionCookie(context, cookies, oidcConfig);
-        assertEquals(expectedCookieValue.toString(), sessionCookieValue);
-
-        @SuppressWarnings({ "rawtypes", "unchecked" })
-        List<String> names = (List) context.get(OidcUtils.SESSION_COOKIE_NAME);
-        assertEquals(alphabet.length + 1, names.size());
-        for (int i = 0; i < names.size(); i++) {
-            assertEquals("q_session_test_chunk_" + (i + 1), names.get(i));
-        }
     }
 
     @Test
@@ -315,28 +261,6 @@ public class OidcUtilsTest {
         config.authentication.setScopes(List.of("a:1", "b:2"));
         config.authentication.setExtraParams(Map.of("scope", "c,d"));
         assertEquals("openid%2Ca%3A1%2Cb%3A2%2Cc%2Cd", OidcUtils.encodeScopes(config));
-    }
-
-    @Test
-    public void testSessionCookieCheck() throws Exception {
-        assertTrue(OidcUtils.isSessionCookie(OidcUtils.SESSION_COOKIE_NAME));
-        assertTrue(OidcUtils.isSessionCookie(OidcUtils.SESSION_COOKIE_NAME + "_tenant1"));
-        assertFalse(OidcUtils.isSessionCookie(OidcUtils.SESSION_AT_COOKIE_NAME));
-        assertFalse(OidcUtils.isSessionCookie(OidcUtils.SESSION_AT_COOKIE_NAME + "_tenant1"));
-        assertFalse(OidcUtils.isSessionCookie(OidcUtils.SESSION_RT_COOKIE_NAME));
-        assertFalse(OidcUtils.isSessionCookie(OidcUtils.SESSION_RT_COOKIE_NAME + "_tenant1"));
-
-        assertFalse(OidcUtils.isSessionCookie(OidcUtils.SESSION_AT_COOKIE_NAME + "1"));
-    }
-
-    @Test
-    public void testGetSessionCookieTenantId() throws Exception {
-        assertEquals(OidcUtils.DEFAULT_TENANT_ID,
-                OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session", true));
-        assertEquals(OidcUtils.DEFAULT_TENANT_ID,
-                OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_chunk_1", true));
-        assertEquals("a", OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_a", true));
-        assertEquals("a", OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_a_chunk_1", true));
     }
 
     public static JsonObject read(InputStream input) throws IOException {

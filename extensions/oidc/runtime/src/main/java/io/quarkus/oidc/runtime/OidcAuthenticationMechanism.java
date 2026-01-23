@@ -129,11 +129,11 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
     private static void setTenantIdAttribute(RoutingContext context) {
         if (context.get(OidcUtils.TENANT_ID_ATTRIBUTE) == null) {
             for (String cookieName : context.cookieMap().keySet()) {
-                if (OidcUtils.isSessionCookie(cookieName)) {
-                    setTenantIdAttribute(context, OidcUtils.SESSION_COOKIE_NAME, cookieName, true);
+                if (OidcHelper.isSessionCookie(cookieName)) {
+                    setTenantIdAttribute(context, OidcHelper.getSessionCookieName(), cookieName, true);
                     break;
-                } else if (cookieName.startsWith(OidcUtils.STATE_COOKIE_NAME)) {
-                    setTenantIdAttribute(context, OidcUtils.STATE_COOKIE_NAME, cookieName, false);
+                } else if (cookieName.startsWith(OidcHelper.getStateCookieName())) {
+                    setTenantIdAttribute(context, OidcHelper.getStateCookieName(), cookieName, false);
                     break;
                 }
             }

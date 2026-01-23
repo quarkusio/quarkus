@@ -292,7 +292,7 @@ public class DefaultTenantConfigResolver {
                                         @Override
                                         public Uni<Void> apply(OidcTenantConfig oidcConfig) {
                                             OidcUtils.setClearSiteData(context, oidcConfig);
-                                            return OidcUtils.removeSessionCookie(context, oidcConfig, tokenStateManager.get());
+                                            return OidcHelper.removeSessionCookie(context, oidcConfig, tokenStateManager.get());
                                         }
                                     })
                                     // Deal with updating or replacing the dynamic context

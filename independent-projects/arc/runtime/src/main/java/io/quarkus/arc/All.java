@@ -6,13 +6,13 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+import java.lang.annotation.Annotation;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.List;
 
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
-import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.inject.Qualifier;
 
 /**
@@ -68,16 +68,30 @@ import jakarta.inject.Qualifier;
 @Retention(RUNTIME)
 @Target({ TYPE, FIELD, METHOD, PARAMETER })
 public @interface All {
-
     /**
      * Supports inline instantiation of this qualifier.
      */
-    public static final class Literal extends AnnotationLiteral<All> implements All {
-
+    final class Literal extends AbstractAnnotationLiteral implements All {
         public static final Literal INSTANCE = new Literal();
 
-        private static final long serialVersionUID = 1L;
+        public Class<? extends Annotation> annotationType() {
+            return All.class;
+        }
 
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            } else {
+                return other instanceof Annotation that && All.class.equals(that.annotationType());
+            }
+        }
+
+        public int hashCode() {
+            return 0;
+        }
+
+        public String toString() {
+            return "@io.quarkus.arc.All()";
+        }
     }
-
 }

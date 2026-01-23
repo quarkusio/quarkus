@@ -1,6 +1,7 @@
 package io.quarkus.arc.processor;
 
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.genericTypeOf;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
 
 import java.lang.annotation.Annotation;
@@ -30,9 +31,11 @@ import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.FieldVar;
+import io.quarkus.gizmo2.GenericType;
 import io.quarkus.gizmo2.Gizmo;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.TypeArgument;
 import io.quarkus.gizmo2.creator.BlockCreator;
 import io.quarkus.gizmo2.creator.ClassCreator;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
@@ -83,7 +86,7 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
         cache.forEachExistingValue(literal -> {
             futures.add(executor.submit(new Callable<Collection<Resource>>() {
                 @Override
-                public Collection<Resource> call() throws Exception {
+                public Collection<Resource> call() {
                     ResourceClassOutput classOutput = new ResourceClassOutput(literal.isApplicationClass, generateSources);
                     createAnnotationLiteralClass(classOutput, literal, existingClasses);
                     return classOutput.getResources();
@@ -125,7 +128,7 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
                     .map(it -> cc.field(it.name(), fc -> {
                         fc.private_();
                         fc.final_();
-                        fc.setType(classDescOf(it.returnType()));
+                        fc.setType(genericTypeOf(it.returnType()));
                     }))
                     .toArray(FieldDesc[]::new);
 
@@ -137,7 +140,7 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
                 }
 
                 ParamVar[] params = annotationMembers.stream()
-                        .map(it -> mc.parameter(it.name(), classDescOf(it.returnType())))
+                        .map(it -> mc.parameter(it.name(), genericTypeOf(it.returnType())))
                         .toArray(ParamVar[]::new);
                 mc.body(bc -> {
                     bc.invokeSpecial(ConstructorDesc.of(AbstractAnnotationLiteral.class), cc.this_());
@@ -150,7 +153,7 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
 
             cc.method("annotationType", mc -> {
                 mc.public_();
-                mc.returning(Class.class);
+                mc.returning(GenericType.ofClass(Class.class, TypeArgument.ofExtends(GenericType.ofClass(Annotation.class))));
                 mc.body(bc -> {
                     bc.return_(Const.of(classDescOf(literal.annotationClass)));
                 });
@@ -161,7 +164,7 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
                 FieldDesc field = fields[i];
                 cc.method(annotationMember.name(), mc -> {
                     mc.public_();
-                    mc.returning(classDescOf(annotationMember.returnType()));
+                    mc.returning(genericTypeOf(annotationMember.returnType()));
                     mc.body(bc -> {
                         bc.return_(cc.this_().field(field));
                     });
@@ -271,7 +274,7 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
                     // checking that the other object is an instance of the same annotation interface,
                     // as specified by the `Annotation.equals()` contract, we check that it implements
                     // the `Annotation` interface and have the same `annotationType()`
-                    bc.ifNotInstanceOf(other, ClassDesc.of(Annotation.class.getName()), BlockCreator::returnFalse);
+                    bc.ifNotInstanceOf(other, Annotation.class, BlockCreator::returnFalse);
                     Expr thisAnnType = Const.of(classDescOf(literal.annotationClass));
                     Expr thatAnnType = bc.invokeInterface(MethodDesc.of(Annotation.class, "annotationType", Class.class),
                             other);

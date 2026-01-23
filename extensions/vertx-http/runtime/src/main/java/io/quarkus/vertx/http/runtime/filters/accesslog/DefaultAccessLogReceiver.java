@@ -18,10 +18,10 @@
 
 package io.quarkus.vertx.http.runtime.filters.accesslog;
 
+import java.io.BufferedWriter;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -80,7 +80,7 @@ public class DefaultAccessLogReceiver implements AccessLogReceiver, Runnable, Cl
     private final String logBaseName;
     private final String logNameSuffix; // always starts with a '.' character
 
-    private Writer writer = null;
+    private BufferedWriter writer = null;
 
     private volatile boolean closed = false;
     private boolean initialRun = true;
@@ -268,14 +268,14 @@ public class DefaultAccessLogReceiver implements AccessLogReceiver, Runnable, Cl
                     String header = fileHeaderGenerator.generateHeader();
                     if (header != null) {
                         writer.write(header);
-                        writer.write("\n");
+                        writer.newLine();
                         writer.flush();
                     }
                 }
             }
             for (String message : messages) {
                 writer.write(message);
-                writer.write('\n');
+                writer.newLine();
             }
             writer.flush();
         } catch (IOException e) {

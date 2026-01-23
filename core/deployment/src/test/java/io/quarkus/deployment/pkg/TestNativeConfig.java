@@ -9,6 +9,8 @@ import io.quarkus.deployment.util.ContainerRuntimeUtil;
 public class TestNativeConfig implements NativeConfig {
 
     private final NativeConfig.BuilderImageConfig builderImage;
+    private List<String> additionalBuildArgs;
+    private List<String> additionalBuildArgsAppend;
 
     public TestNativeConfig(String builderImage) {
         this(builderImage, ImagePullStrategy.ALWAYS);
@@ -20,6 +22,12 @@ public class TestNativeConfig implements NativeConfig {
 
     public TestNativeConfig(String builderImage, ImagePullStrategy builderImagePull) {
         this.builderImage = new TestBuildImageConfig(builderImage, builderImagePull);
+    }
+
+    public TestNativeConfig(List<String> additionalBuildArgs, List<String> additionalBuildArgsAppend) {
+        this("dummy", ImagePullStrategy.NEVER);
+        this.additionalBuildArgs = additionalBuildArgs;
+        this.additionalBuildArgsAppend = additionalBuildArgsAppend;
     }
 
     public boolean enabled() {
@@ -37,12 +45,18 @@ public class TestNativeConfig implements NativeConfig {
 
     @Override
     public Optional<List<String>> additionalBuildArgs() {
-        return Optional.empty();
+        if (additionalBuildArgs == null) {
+            return Optional.empty();
+        }
+        return Optional.of(additionalBuildArgs);
     }
 
     @Override
     public Optional<List<String>> additionalBuildArgsAppend() {
-        return Optional.empty();
+        if (additionalBuildArgsAppend == null) {
+            return Optional.empty();
+        }
+        return Optional.of(additionalBuildArgsAppend);
     }
 
     @Override

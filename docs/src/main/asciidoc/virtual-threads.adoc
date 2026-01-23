@@ -127,19 +127,28 @@ The memory usage may be higher than with regular worker threads because of the i
 The promise of "cheap blocking" might not always hold: a virtual thread might _pin_ its carrier on certain occasions.
 The platform thread is blocked in this situation, precisely as it would have been in a typical blocking scenario.
 
-According to link:{vthreadjep}[JEP 425] this can happen in two situations:
+IMPORTANT: **Java 24+ Improvement:** Starting with Java 24, thanks to link:https://openjdk.org/jeps/491[JEP 491: Synchronize Virtual Threads without Pinning], `synchronized` blocks and methods **no longer cause pinning**.
+This is a major improvement that eliminates one of the most common pinning scenarios.
+However, native code interactions can still cause pinning (see below).
+
+According to link:{vthreadjep}[JEP 425], pinning can happen in the following situations:
+
+*On Java 21-23:*
 
 - when a virtual thread performs a blocking operation inside a `synchronized` block or method
 - when it executes a blocking operation inside a native method or a foreign function
 
+*On Java 24+:*
+
+- when a virtual thread calls native code (via JNI or the Foreign Function & Memory API) and that native code calls back to Java code that performs a blocking operation
+
 It can be reasonably easy to avoid these situations in your code, but verifying every dependency you use is hard.
-Typically, while experimenting with virtual threads, we realized that versions older than 42.6.0 of the link:{pgsql-driver}[postgresql-JDBC driver] result in frequent pinning.
-Most JDBC drivers still pin the carrier thread.
-Even worse, many libraries require code changes.
+Typically, while experimenting with virtual threads, we realized that versions older than 42.6.0 of the link:{pgsql-driver}[postgresql-JDBC driver] result in frequent pinning on Java 21-23.
+On Java 24+, most JDBC drivers no longer pin the carrier thread due to the synchronized improvements.
 
 For more information, see link:https://quarkus.io/blog/virtual-thread-1/[When Quarkus meets Virtual Threads]
 
-IMPORTANT: This information about pinning cases applies to PostgreSQL JDBC driver 42.5.4 and earlier.
+IMPORTANT: This information about pinning cases applies to PostgreSQL JDBC driver 42.5.4 and earlier on Java 21-23.
 For PostgreSQL JDBC driver 42.6.0 and later, virtually all synchronized methods have been replaced by reentrant locks.
 For more information, see the link:https://jdbc.postgresql.org/changelogs/2023-03-17-42.6.0-release/[Notable Changes] for PostgreSQL JDBC driver 42.6.0.
 
@@ -307,8 +316,12 @@ This includes the REST Client, the Redis client, the mailer...
 
 == Detect pinned thread in tests
 
-We recommend to use the following configuration when running tests in application using virtual threads.
-If would not fail the tests, but at least dump start traces if the code pins the carrier thread:
+IMPORTANT: **Java 24+ Change:** The `-Djdk.tracePinnedThreads` system property is **no longer available starting with Java 24**. This flag has been removed as part of the virtual thread improvements introduced in link:https://openjdk.org/jeps/491[JEP 491]. For Java 24+, use the JFR (Java Flight Recorder) events or the Quarkus testing extensions described below to detect pinning.
+
+*For Java 21-23 only:*
+
+We recommend using the following configuration when running tests in applications using virtual threads.
+It will not fail the tests, but at least dump stack traces if the code pins the carrier thread:
 
 [source, xml]
 ----
@@ -320,10 +333,14 @@ If would not fail the tests, but at least dump start traces if the code pins the
         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
         <maven.home>${maven.home}</maven.home>
       </systemPropertyVariables>
-      <argLine>-Djdk.tracePinnedThreads</argLine>
+      <argLine>-Djdk.tracePinnedThreads</argLine> <!-- Only works on Java 21-23 -->
   </configuration>
 </plugin>
 ----
+
+*For all Java versions (21+):*
+
+For a more robust approach that works on all Java versions, use the `junit-virtual-threads` extension described in the xref:testing-virtual-thread-applications[Testing virtual thread applications] section below. This extension uses JFR events to detect pinning and works consistently across Java 21, 24, and later versions.
 
 == Run application using virtual threads
 

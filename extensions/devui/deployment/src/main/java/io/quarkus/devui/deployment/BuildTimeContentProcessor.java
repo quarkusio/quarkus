@@ -133,6 +133,7 @@ public class BuildTimeContentProcessor {
         internalImportMapBuildItem.add("qui-themed-code-block", contextRoot + "qui/qui-themed-code-block.js");
         internalImportMapBuildItem.add("qui-assistant-warning", contextRoot + "qui/qui-assistant-warning.js");
         internalImportMapBuildItem.add("qui-assistant-button", contextRoot + "qui/qui-assistant-button.js");
+        internalImportMapBuildItem.add("qui-assistant-chat", contextRoot + "qui/qui-assistant-chat.js");
 
         // Echarts
         internalImportMapBuildItem.add("echarts/", contextRoot + "echarts/");

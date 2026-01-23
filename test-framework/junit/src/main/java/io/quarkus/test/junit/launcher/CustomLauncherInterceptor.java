@@ -162,10 +162,12 @@ public class CustomLauncherInterceptor
      * <p>
      * Called from the same thread as {@link #testPlanExecutionFinished(TestPlan)}.
      *
-     * In continuous testing, the test plan listener seems not to be called, perhaps because of a different execution model.
+     * In continuous testing, the test plan listener seems not to be called, perhaps because it passes in its own
+     * TestExecutionListener and that overrides what is found with service loading.
      *
      * @param testPlan describes the tree of tests about to be executed
      */
+    @Override
     public void testPlanExecutionStarted(TestPlan testPlan) {
         // Do nothing, but have the method here for symmetry :)
     }
@@ -180,10 +182,12 @@ public class CustomLauncherInterceptor
      * If tests failed and are rerun by surefire, the same session will be used for all runs, so we need to get rid of the
      * FacadeClassLoader associated with the previous run, since its app will be closed and its classloaders will all be stale.
      *
-     * In continuous testing, the test plan listener seems not to be called, perhaps because of a different execution model.
+     * In continuous testing, the test plan listener seems not to be called, perhaps because it passes in its own
+     * TestExecutionListener and that overrides what is found with service loading.
      *
      * @param testPlan describes the tree of tests that have been executed
      */
+    @Override
     public void testPlanExecutionFinished(TestPlan testPlan) {
         clearContextClassloader();
     }

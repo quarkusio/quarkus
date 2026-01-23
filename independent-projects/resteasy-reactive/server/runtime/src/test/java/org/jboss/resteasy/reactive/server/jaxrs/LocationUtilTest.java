@@ -5,7 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.net.URISyntaxException;
 
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.spi.ForwardedInfo;
+import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mockito;
 
 public class LocationUtilTest {
@@ -34,4 +38,21 @@ public class LocationUtilTest {
         assertEquals("https:/", LocationUtil.getUri("", mockContext(null), false).toString());
     }
 
+    @ParameterizedTest
+    @CsvSource({
+            "''                 , https://host:999/prefix/",
+            "forwarded-prefix   , https://host:999/forwarded-prefix/prefix/",
+            "/forwarded-prefix  , https://host:999/forwarded-prefix/prefix/",
+            "forwarded-prefix/  , https://host:999/forwarded-prefix/prefix/",
+            "/forwarded-prefix/ , https://host:999/forwarded-prefix/prefix/",
+    })
+    public void uriWithForwardedPrefix(String forwardedPrefix, String expected) {
+        var context = mockContext("host:999");
+        var serverRequest = Mockito.mock(ServerHttpRequest.class);
+        var forwardedInfo = Mockito.mock(ForwardedInfo.class);
+        Mockito.when(context.serverRequest()).thenReturn(serverRequest);
+        Mockito.when(serverRequest.getForwardedInfo()).thenReturn(forwardedInfo);
+        Mockito.when(forwardedInfo.getPrefix()).thenReturn(forwardedPrefix);
+        assertEquals(expected, LocationUtil.getUri("", context, true).toString());
+    }
 }

@@ -6,7 +6,6 @@ import java.util.function.Function;
 
 import org.jboss.jandex.IndexView;
 
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
@@ -71,12 +70,6 @@ public interface ApplicationArchive {
      * @return The paths representing the application root paths.
      */
     PathCollection getResolvedPaths();
-
-    /**
-     * @deprecated in favor of {@link #getKey()}
-     * @return the artifact key or null if not available
-     */
-    AppArtifactKey getArtifactKey();
 
     /**
      *

@@ -8,7 +8,6 @@ import java.util.function.Function;
 
 import org.jboss.jandex.IndexView;
 
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -60,21 +59,6 @@ public final class ApplicationArchiveImpl extends MultiBuildItem implements Appl
     @Override
     public PathCollection getResolvedPaths() {
         return PathList.from(openTree.getOriginalTree().getRoots());
-    }
-
-    @Override
-    @Deprecated
-    /**
-     * @deprecated in favor of {@link #getKey()}
-     * @return archive key
-     */
-    public AppArtifactKey getArtifactKey() {
-        if (resolvedDependency == null) {
-            return null;
-        }
-        ArtifactKey artifactKey = resolvedDependency.getKey();
-        return new AppArtifactKey(artifactKey.getGroupId(), artifactKey.getArtifactId(), artifactKey.getClassifier(),
-                artifactKey.getType());
     }
 
     @Override

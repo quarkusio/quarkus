@@ -62,6 +62,8 @@ export const templates = {
     // Assistant
     'assistant-warning-explanation': 'Quarkus assistant can make mistakes. Check responses.',
     'assistant-warning': 'Warning',
+    'assistant-chat-title' : 'Go to the assistant chat screen to continue this discussion.',
+    'assistant-chat-button' : 'Chat',
     
     // Footer
     'footer-server': 'Server',

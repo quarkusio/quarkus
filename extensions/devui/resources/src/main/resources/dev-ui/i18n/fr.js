@@ -56,6 +56,8 @@ export const templates = {
     'devmcp-no-data': 'Aucune donnée trouvée',
     'assistant-warning-explanation': 'L\'assistant Quarkus peut faire des erreurs. Vérifiez les réponses.',
     'assistant-warning': 'Avertissement',
+    'assistant-chat-title' : 'Aller au chat de l’assistant pour continuer la discussion.',
+    'assistant-chat-button' : 'Chat',
     'footer-server': 'Serveur',
     'footer-testing': 'Test de fonctionnement',
     'footer-dev_ui': 'Interface de développement',

@@ -5,12 +5,13 @@ import '@vaadin/progress-bar';
 import '@vaadin/button';
 import '@vaadin/icon';
 import 'qui-themed-code-block';
+import 'qui-assistant-chat';
 import { notifier } from 'notifier';
 import { msg, str, updateWhenLocaleChanges } from 'localization';
 
 export class QwcGraphqlGenerateClient extends LitElement {
     jsonRpc = new JsonRpc(this);
-
+    
     static styles = css`
     :host {
         display: flex;
@@ -45,7 +46,10 @@ export class QwcGraphqlGenerateClient extends LitElement {
         color: var(--lumo-secondary-text-color);
         margin-bottom: 1em;
     }
-    
+    .buttons {
+        display: flex;
+        gap: 5px;
+    }
   `;
 
     static properties = {
@@ -135,10 +139,13 @@ export class QwcGraphqlGenerateClient extends LitElement {
         return html`
       <div class="generatedcode">
         <div class="heading">${msg(str`${ll} code generated from the GraphQL Schema with Quarkus assistant:`, { id: 'quarkus-smallrye-graphql-code-generated' })}
-            <vaadin-button theme="secondary" @click="${() => this._copyGeneratedContent(lang.value)}">
-                <vaadin-icon icon="font-awesome-solid:copy"></vaadin-icon>
-                ${msg('Copy', { id: 'quarkus-smallrye-graphql-copy' })}
-            </vaadin-button>
+            <div class="buttons">
+                <vaadin-button theme="secondary" @click="${() => this._copyGeneratedContent(lang.value)}">
+                    <vaadin-icon icon="font-awesome-solid:copy"></vaadin-icon>
+                    ${msg('Copy', { id: 'quarkus-smallrye-graphql-copy' })}
+                </vaadin-button>
+                <qui-assistant-chat></qui-assistant-chat>
+            </div>
         </div>
         <qui-themed-code-block
             mode="${lang.mode}"

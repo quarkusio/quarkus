@@ -163,6 +163,13 @@ export class RouterController {
         Router.go({pathname: pageRef});
     }
 
+    goToPath(path){
+        const [before, after] = path.split("?", 2);
+        const pathname = RouterController.getBasePath() + before;
+        const search = after ? `?${new URLSearchParams(after).toString()}` : "";
+        Router.go({ pathname, search });
+    }
+
     navigate(pageRef){
         Router.go(pageRef);
     }

@@ -300,6 +300,7 @@ To maintain visual consistency with other Dev Assistant features, use the follow
 
 - `<qui-assistant-button>`: A pre-styled pink button with a robot icon.
 - `<qui-assistant-warning>`: A standard warning message with the text: `"Quarkus assistant can make mistakes. Check responses."`
+- `<qui-assistant-chat>`: A button that deep-link to the chat screen with the current chat.`
 
 You can also use the CSS var `--quarkus-assistant` anywhere you want to apply the assistant's theme color.
 

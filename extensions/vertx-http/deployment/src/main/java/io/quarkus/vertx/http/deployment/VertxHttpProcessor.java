@@ -43,6 +43,7 @@ import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
+import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
@@ -637,10 +638,22 @@ class VertxHttpProcessor {
 
     @BuildStep
     NativeImageFeatureBuildItem Brotli4jFeature(VertxHttpBuildTimeConfig httpBuildTimeConfig) {
-        if (httpBuildTimeConfig.compressors().isPresent()
-                && httpBuildTimeConfig.compressors().get().stream().anyMatch(s -> s.equalsIgnoreCase("br"))) {
+        if (isBrotliEnabled(httpBuildTimeConfig)) {
             return new NativeImageFeatureBuildItem(Brotli4jFeature.class.getName());
         }
         return null;
+    }
+
+    @BuildStep
+    ModuleEnableNativeAccessBuildItem brotli4jEnableNativeAccess(VertxHttpBuildTimeConfig httpBuildTimeConfig) {
+        if (isBrotliEnabled(httpBuildTimeConfig)) {
+            return new ModuleEnableNativeAccessBuildItem("com.aayushatharva.brotli4j");
+        }
+        return null;
+    }
+
+    private static boolean isBrotliEnabled(VertxHttpBuildTimeConfig httpBuildTimeConfig) {
+        return httpBuildTimeConfig.compressors().isPresent()
+                && httpBuildTimeConfig.compressors().get().stream().anyMatch(s -> s.equalsIgnoreCase("br"));
     }
 }

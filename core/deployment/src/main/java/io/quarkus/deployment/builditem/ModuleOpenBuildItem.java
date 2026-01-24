@@ -34,7 +34,7 @@ public final class ModuleOpenBuildItem extends MultiBuildItem {
      * (yes technically there's multiple: each classloader comes with one)
      * so to encourage future-proofing of code using this API.
      */
-    private static final String ALL_UNNAMED = "ALL-UNNAMED";
+    static final String ALL_UNNAMED = "ALL-UNNAMED";
 
     private final String openedModuleName;
     private final String openingModuleName;

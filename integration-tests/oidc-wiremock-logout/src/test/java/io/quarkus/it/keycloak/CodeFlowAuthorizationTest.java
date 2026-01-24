@@ -126,6 +126,6 @@ public class CodeFlowAuthorizationTest {
     }
 
     private Cookie getSessionCookie(WebClient webClient, String tenantId) {
-        return webClient.getCookieManager().getCookie("q_session" + (tenantId == null ? "" : "_" + tenantId));
+        return webClient.getCookieManager().getCookie("my_app_session" + (tenantId == null ? "" : "_" + tenantId));
     }
 }

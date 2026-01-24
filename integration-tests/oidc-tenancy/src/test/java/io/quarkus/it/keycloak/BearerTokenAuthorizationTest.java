@@ -1272,8 +1272,7 @@ public class BearerTokenAuthorizationTest {
     }
 
     private Set<Cookie> getSessionAtCookie(WebClient webClient, String tenantId) {
-        String baseName = "q_session_at" + (tenantId == null ? "_Default_test" : "_" + tenantId)
-                + OidcUtils.SESSION_COOKIE_CHUNK;
+        String baseName = "q_session_at" + (tenantId == null ? "_Default_test" : "_" + tenantId) + "_chunk_";
         Set<Cookie> atSessionCookies = new TreeSet<>(new Comparator<Cookie>() {
 
             @Override

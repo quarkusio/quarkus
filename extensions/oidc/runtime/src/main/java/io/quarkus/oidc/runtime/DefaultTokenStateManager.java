@@ -184,7 +184,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
             OidcRequestContext<Void> requestContext) {
         if (oidcConfig.tokenStateManager().splitTokens()) {
             getAccessTokenCookie(routingContext, oidcConfig);
-            List<String> atCookieNames = routingContext.get(OidcUtils.SESSION_AT_COOKIE_NAME);
+            List<String> atCookieNames = routingContext.get(OidcHelper.getSessionAtCookieName());
             if (atCookieNames != null) {
                 LOG.debugf("Remove session access cookie names: %s", atCookieNames);
                 for (String cookieName : atCookieNames) {
@@ -213,7 +213,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
 
     private static String getAccessTokenCookie(RoutingContext routingContext, OidcTenantConfig oidcConfig) {
         final Map<String, Cookie> cookies = routingContext.request().cookieMap();
-        return OidcUtils.getSessionCookie(routingContext.data(), cookies, oidcConfig, OidcUtils.SESSION_AT_COOKIE_NAME,
+        return OidcHelper.getSessionCookie(routingContext.data(), cookies, OidcHelper.getSessionAtCookieName(),
                 getAccessTokenCookieName(oidcConfig));
     }
 
@@ -223,12 +223,12 @@ public class DefaultTokenStateManager implements TokenStateManager {
 
     private static String getAccessTokenCookieName(OidcTenantConfig oidcConfig) {
         String cookieSuffix = OidcUtils.getCookieSuffix(oidcConfig);
-        return OidcUtils.SESSION_AT_COOKIE_NAME + cookieSuffix;
+        return OidcHelper.getSessionAtCookieName() + cookieSuffix;
     }
 
     private static String getRefreshTokenCookieName(OidcTenantConfig oidcConfig) {
         String cookieSuffix = OidcUtils.getCookieSuffix(oidcConfig);
-        return OidcUtils.SESSION_RT_COOKIE_NAME + cookieSuffix;
+        return OidcHelper.getSessionRtCookieName() + cookieSuffix;
     }
 
     private static String encodeScopes(OidcTenantConfig oidcConfig, String accessTokenScope) {
@@ -278,7 +278,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
                             + " or register a custom 'quarkus.oidc.TokenStateManager'"
                             + " CDI bean with the alternative priority set to 1 and save the tokens on the server.",
                     oidcConfig.tenantId().get(), OidcUtils.MAX_COOKIE_VALUE_LENGTH);
-            OidcUtils.createChunkedCookie(routingContext, oidcConfig, cookieName, cookieValue,
+            OidcHelper.createChunkedCookie(routingContext, oidcConfig, cookieName, cookieValue,
                     routingContext.get(CodeAuthenticationMechanism.SESSION_MAX_AGE_PARAM));
         } else {
             // Create a `q_session_at` cookie.

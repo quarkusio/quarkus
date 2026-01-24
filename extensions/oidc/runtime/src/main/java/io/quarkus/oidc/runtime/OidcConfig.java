@@ -44,6 +44,12 @@ public interface OidcConfig {
     boolean resolveTenantsWithIssuer();
 
     /**
+     * Cookie prefix for OIDC session, state, and post-logout cookies.
+     */
+    @WithDefault(OidcHelper.DEFAULT_COOKIE_PREFIX)
+    String cookiePrefix();
+
+    /**
      * Default TokenIntrospection and UserInfo cache configuration.
      */
     interface TokenCache {

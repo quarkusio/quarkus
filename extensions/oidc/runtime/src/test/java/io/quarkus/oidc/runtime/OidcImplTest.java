@@ -44,6 +44,11 @@ public class OidcImplTest {
             public boolean resolveTenantsWithIssuer() {
                 return false;
             }
+
+            @Override
+            public String cookiePrefix() {
+                return OidcHelper.DEFAULT_COOKIE_PREFIX;
+            }
         };
     }
 }

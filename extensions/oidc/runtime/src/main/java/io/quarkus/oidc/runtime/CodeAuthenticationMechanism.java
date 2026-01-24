@@ -93,7 +93,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager, OidcTenantConfig oidcTenantConfig) {
         final Map<String, Cookie> cookies = context.request().cookieMap();
-        final String sessionCookieValue = OidcUtils.getSessionCookie(context.data(), cookies, oidcTenantConfig);
+        final String sessionCookieValue = OidcHelper.getSessionCookie(context.data(), cookies, oidcTenantConfig);
 
         // If the session is already established then try to re-authenticate
         if (sessionCookieValue != null) {
@@ -140,7 +140,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private boolean isStateCookieAvailable(Map<String, Cookie> cookies) {
         for (String name : cookies.keySet()) {
-            if (name.startsWith(OidcUtils.STATE_COOKIE_NAME)) {
+            if (name.startsWith(OidcHelper.getStateCookieName())) {
                 return true;
             }
         }
@@ -318,7 +318,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private void removeStateCookies(OidcTenantConfig oidcTenantConfig, RoutingContext context, Map<String, Cookie> cookies) {
         for (String name : cookies.keySet()) {
-            if (name.startsWith(OidcUtils.STATE_COOKIE_NAME)) {
+            if (name.startsWith(OidcHelper.getStateCookieName())) {
                 OidcUtils.removeCookie(context, oidcTenantConfig, name);
             }
         }
@@ -662,7 +662,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             if (previousTenantConfig != null) {
                 sessionCookieConfig = previousTenantConfig;
                 LOG.debugf("Removing the session cookie for the previous tenant id: %s", sessionTenantIdSetByCookie);
-                OidcUtils.getSessionCookie(context, sessionCookieConfig);
+                OidcHelper.getSessionCookie(context, sessionCookieConfig);
             }
         }
         return removeSessionCookie(context, sessionCookieConfig)
@@ -1128,7 +1128,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                                     @Override
                                     public Void apply(String cookieValue) {
-                                        String sessionName = OidcUtils.getSessionCookieName(configContext.oidcConfig());
+                                        String sessionName = OidcHelper.getSessionCookieName(configContext.oidcConfig());
                                         LOG.debugf("Session cookie length for the tenant %s is %d bytes.",
                                                 configContext.oidcConfig().tenantId().get(), cookieValue.length());
                                         if (cookieValue.length() > OidcUtils.MAX_COOKIE_VALUE_LENGTH) {
@@ -1148,7 +1148,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                             + " CDI bean with the alternative priority set to 1 and save the tokens on the server.",
                                                     configContext.oidcConfig().tenantId().get(),
                                                     OidcUtils.MAX_COOKIE_VALUE_LENGTH);
-                                            OidcUtils.createChunkedCookie(context, configContext.oidcConfig(), sessionName,
+                                            OidcHelper.createChunkedCookie(context, configContext.oidcConfig(), sessionName,
                                                     cookieValue, sessionMaxAge);
                                         } else {
                                             OidcUtils.createSessionCookie(context, configContext.oidcConfig(), sessionName,
@@ -1555,15 +1555,15 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private static String getStateCookieName(OidcTenantConfig oidcConfig) {
-        return OidcUtils.STATE_COOKIE_NAME + OidcUtils.getCookieSuffix(oidcConfig);
+        return OidcHelper.getStateCookieName() + OidcUtils.getCookieSuffix(oidcConfig);
     }
 
     private static String getPostLogoutCookieName(OidcTenantConfig oidcConfig) {
-        return OidcUtils.POST_LOGOUT_COOKIE_NAME + OidcUtils.getCookieSuffix(oidcConfig);
+        return OidcHelper.getPostLogoutCookieName() + OidcUtils.getCookieSuffix(oidcConfig);
     }
 
     private Uni<Void> removeSessionCookie(RoutingContext context, OidcTenantConfig oidcConfig) {
-        return OidcUtils.removeSessionCookie(context, oidcConfig, resolver.getTokenStateManager());
+        return OidcHelper.removeSessionCookie(context, oidcConfig, resolver.getTokenStateManager());
     }
 
     private class LogoutCall implements Function<SecurityIdentity, Uni<?>> {

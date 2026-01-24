@@ -15,15 +15,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.StringTokenizer;
-import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -53,7 +50,6 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.TenantFeature;
 import io.quarkus.oidc.TokenIntrospection;
-import io.quarkus.oidc.TokenStateManager;
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcRequestFilter;
@@ -81,7 +77,6 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
-import io.vertx.core.http.Cookie;
 import io.vertx.core.http.CookieSameSite;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
@@ -104,14 +99,6 @@ public final class OidcUtils {
     public static final String TENANT_ID_SET_BY_SESSION_COOKIE = "tenant-id-set-by-session-cookie";
     public static final String TENANT_ID_SET_BY_STATE_COOKIE = "tenant-id-set-by-state-cookie";
     public static final String DEFAULT_TENANT_ID = "Default";
-    public static final String SESSION_COOKIE_NAME = "q_session";
-    public static final String SESSION_COOKIE_CHUNK_START = "chunk_";
-    public static final String SESSION_COOKIE_CHUNK = "_" + SESSION_COOKIE_CHUNK_START;
-    public static final String ACCESS_TOKEN_COOKIE_SUFFIX = "_at";
-    public static final String REFRESH_TOKEN_COOKIE_SUFFIX = "_rt";
-    public static final String SESSION_AT_COOKIE_NAME = SESSION_COOKIE_NAME + ACCESS_TOKEN_COOKIE_SUFFIX;
-    public static final String SESSION_RT_COOKIE_NAME = SESSION_COOKIE_NAME + REFRESH_TOKEN_COOKIE_SUFFIX;
-    public static final String STATE_COOKIE_NAME = "q_auth";
     public static final String JWT_THUMBPRINT = "jwt_thumbprint";
     public static final String INTROSPECTION_THUMBPRINT = "introspection_thumbprint";
     public static final String DPOP_JWT_THUMBPRINT = "dpop_jwt_thumbprint";
@@ -128,7 +115,6 @@ public final class OidcUtils {
     // Setting the max cookie value length to 4056 gives extra 40 bytes to cover for the name, path, expires attributes in most cases
     // and can be tuned further if necessary.
     public static final Integer MAX_COOKIE_VALUE_LENGTH = 4056;
-    public static final String POST_LOGOUT_COOKIE_NAME = "q_post_logout";
     public static final String DEFAULT_SCOPE_SEPARATOR = " ";
     public static final String ANNOTATION_BASED_TENANT_RESOLUTION_ENABLED = "io.quarkus.oidc.runtime.select-tenants-with-annotation";
     static final String UNDERSCORE = "_";
@@ -156,64 +142,6 @@ public final class OidcUtils {
 
     public static String getJwtContentPart(String jwt) {
         return OidcCommonUtils.getJwtContentPart(jwt);
-    }
-
-    public static String getSessionCookie(RoutingContext context, OidcTenantConfig oidcTenantConfig) {
-        final Map<String, Cookie> cookies = context.request().cookieMap();
-        return getSessionCookie(context.data(), cookies, oidcTenantConfig);
-    }
-
-    public static String getSessionCookie(Map<String, Object> context, Map<String, Cookie> cookies,
-            OidcTenantConfig oidcTenantConfig) {
-        return getSessionCookie(context, cookies, oidcTenantConfig, SESSION_COOKIE_NAME,
-                getSessionCookieName(oidcTenantConfig));
-    }
-
-    public static String getSessionCookie(Map<String, Object> context, Map<String, Cookie> cookies,
-            OidcTenantConfig oidcTenantConfig, String defaultSessionCookieName, String sessionCookieName) {
-        if (cookies.isEmpty()) {
-            return null;
-        }
-
-        if (cookies.containsKey(sessionCookieName)) {
-            context.put(defaultSessionCookieName, List.of(sessionCookieName));
-            return cookies.get(sessionCookieName).getValue();
-        } else {
-            final String sessionChunkPrefix = sessionCookieName + SESSION_COOKIE_CHUNK;
-
-            SortedMap<String, String> sessionCookies = new TreeMap<>(new Comparator<String>() {
-
-                @Override
-                public int compare(String s1, String s2) {
-                    // at this point it is guaranteed cookie names end with `chunk_<somenumber>`
-                    int lastUnderscoreIndex1 = s1.lastIndexOf(UNDERSCORE);
-                    int lastUnderscoreIndex2 = s2.lastIndexOf(UNDERSCORE);
-                    Integer pos1 = Integer.valueOf(s1.substring(lastUnderscoreIndex1 + 1));
-                    Integer pos2 = Integer.valueOf(s2.substring(lastUnderscoreIndex2 + 1));
-                    return pos1.compareTo(pos2);
-                }
-
-            });
-            for (String cookieName : cookies.keySet()) {
-                if (cookieName.startsWith(sessionChunkPrefix)) {
-                    sessionCookies.put(cookieName, cookies.get(cookieName).getValue());
-                }
-            }
-            if (!sessionCookies.isEmpty()) {
-                context.put(defaultSessionCookieName, new ArrayList<String>(sessionCookies.keySet()));
-
-                StringBuilder sessionCookieValue = new StringBuilder();
-                for (String value : sessionCookies.values()) {
-                    sessionCookieValue.append(value);
-                }
-                return sessionCookieValue.toString();
-            }
-        }
-        return null;
-    }
-
-    public static String getSessionCookieName(OidcTenantConfig oidcConfig) {
-        return OidcUtils.SESSION_COOKIE_NAME + getCookieSuffix(oidcConfig);
     }
 
     public static String getCookieSuffix(OidcTenantConfig oidcConfig) {
@@ -467,22 +395,6 @@ public final class OidcUtils {
         }
     }
 
-    static Uni<Void> removeSessionCookie(RoutingContext context, OidcTenantConfig oidcConfig,
-            TokenStateManager tokenStateManager) {
-        List<String> cookieNames = context.get(SESSION_COOKIE_NAME);
-        if (cookieNames != null) {
-            LOG.debugf("Remove session cookie names: %s", cookieNames);
-            StringBuilder cookieValue = new StringBuilder();
-            for (String cookieName : cookieNames) {
-                cookieValue.append(removeCookie(context, oidcConfig, cookieName));
-            }
-            return tokenStateManager.deleteTokens(context, oidcConfig, cookieValue.toString(),
-                    deleteTokensRequestContext);
-        } else {
-            return VOID_UNI;
-        }
-    }
-
     public static String removeCookie(RoutingContext context, OidcTenantConfig oidcConfig, String cookieName) {
         ServerCookie cookie = (ServerCookie) context.cookieMap().get(cookieName);
         String cookieValue = null;
@@ -716,12 +628,6 @@ public final class OidcUtils {
         return scopes;
     }
 
-    public static boolean isSessionCookie(String cookieName) {
-        return cookieName.startsWith(SESSION_COOKIE_NAME)
-                && !cookieName.regionMatches(SESSION_COOKIE_NAME.length(), ACCESS_TOKEN_COOKIE_SUFFIX, 0, 3)
-                && !cookieName.regionMatches(SESSION_COOKIE_NAME.length(), REFRESH_TOKEN_COOKIE_SUFFIX, 0, 3);
-    }
-
     static String extractBearerToken(RoutingContext context, OidcTenantConfig oidcConfig) {
         if (context.get(EXTRACTED_BEARER_TOKEN) != null) {
             return context.get(EXTRACTED_BEARER_TOKEN);
@@ -767,7 +673,7 @@ public final class OidcUtils {
         } else {
             String suffix = cookieName.substring(cookiePrefix.length() + 1);
 
-            if (sessionCookie && suffix.startsWith(OidcUtils.SESSION_COOKIE_CHUNK_START)) {
+            if (sessionCookie && suffix.startsWith(OidcHelper.SESSION_COOKIE_CHUNK_START)) {
                 return OidcUtils.DEFAULT_TENANT_ID;
             } else {
                 // It can be either a tenant_id, or a tenant_id and cookie suffix property, example, q_session_github or q_session_github_test
@@ -1010,21 +916,6 @@ public final class OidcUtils {
         ServerCookie cookie = createCookie(context, oidcConfig, name, value, maxAge);
         cookie.setSameSite(CookieSameSite.valueOf(oidcConfig.authentication().cookieSameSite().name()));
         return cookie;
-    }
-
-    static void createChunkedCookie(RoutingContext context, OidcTenantConfig oidcConfig, String baseCookieName,
-            String cookieValue, long maxAge) {
-        for (int chunkIndex = 1, currentPos = 0; currentPos < cookieValue.length(); chunkIndex++) {
-            int nextPos = currentPos + MAX_COOKIE_VALUE_LENGTH;
-            int nextValueUpperPos = nextPos < cookieValue.length() ? nextPos
-                    : cookieValue.length();
-            String nextValue = cookieValue.substring(currentPos, nextValueUpperPos);
-            // q_session_session_chunk_1, etc
-            String nextName = baseCookieName + SESSION_COOKIE_CHUNK + chunkIndex;
-            LOG.debugf("Creating the %s cookie chunk, size: %d", nextName, nextValue.length());
-            createSessionCookie(context, oidcConfig, nextName, nextValue, maxAge);
-            currentPos = nextPos;
-        }
     }
 
     public static String encryptToken(String token, RoutingContext context, OidcTenantConfig oidcConfig) {

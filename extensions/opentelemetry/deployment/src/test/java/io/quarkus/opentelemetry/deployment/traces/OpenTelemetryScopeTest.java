@@ -1,15 +1,17 @@
 package io.quarkus.opentelemetry.deployment.traces;
 
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -18,6 +20,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
@@ -52,13 +56,35 @@ public class OpenTelemetryScopeTest {
 
     @Test
     void telemetry() {
-        RestAssured.when()
-                .get("/hello/many-scopes").then()
+        final int requests = 1;
+
+        RestAssured.given()
+                .pathParam("reqs", requests)
+                .when()
+                .get("/hello/many-scopes/{reqs}").then()
                 .statusCode(200)
                 .body(is("hello"));
 
-        List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
+        List<SpanData> spans = spanExporter.getFinishedSpanItems(requests * 2 + 1);
 
+        assertEquals(1, spans.stream()
+                .filter(spanData -> spanData.getName().equals("GET /hello/many-scopes/{reqs}"))
+                .collect(toList())
+                .size());
+
+        List<SpanData> incomingSpans = spans.stream()
+                .filter(spanData -> spanData.getName().equals("HelloBean.manyScopes"))
+                .collect(toList());
+        assertEquals(requests, incomingSpans.size());
+        //        incomingSpans.stream()
+        //                .map(spanData -> spanData.getAttributes())
+        //                .map(attributes -> attributes.asMap())
+
+        List<SpanData> childSpans = spans.stream()
+                .filter(spanData -> spanData.getName().equals("child-span-pair-scopes"))
+                .collect(toList());
+        assertEquals(requests, childSpans
+                .size());
     }
 
     @Path("/hello")
@@ -82,11 +108,10 @@ public class OpenTelemetryScopeTest {
         }
 
         @GET
-        @Path("/many-scopes")
-        public String manyScopes() {
+        @Path("/many-scopes/{reqs}")
+        public String manyScopes(@PathParam("reqs") int requests) {
 
-            int requests = 1;
-            for (int i = 0; i < requests; i++){
+            for (int i = 0; i < requests; i++) {
                 executor.execute(() -> helloBean.manyScopes());
             }
             return "hello";
@@ -103,35 +128,32 @@ public class OpenTelemetryScopeTest {
         public String helloWithSpan() {
             return "hello";
         }
+
         @WithSpan
         public String manyScopes() {
-            Span inbound = Span.current();
-            Span child = tracer.spanBuilder("child-span").startSpan();
+            final Span inbound = Span.current();
+            final String inboundName = "HelloBean.manyScopes";
+            final String childName = "child-span-pair-scopes";
+            final Span child = tracer.spanBuilder(childName).startSpan();
 
-            Span.current().addEvent("current is inbound - scope 1");
+            recordScopeInCurrentSpan(inboundName, 1);
 
             try (Scope scope2 = child.makeCurrent()) {
-                Span.current().addEvent("current is child - scope 2");
-
+                recordScopeInCurrentSpan(childName, 2);
                 try (Scope scope3 = inbound.makeCurrent()) {
-                    Span.current().addEvent("current is inbound - scope 3");
+                    recordScopeInCurrentSpan(inboundName, 3);
                 }
-
-                Span.current().addEvent("current is child - scope 2");
-
+                recordScopeInCurrentSpan(childName, 2);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
 
             try (Scope scope4 = child.makeCurrent()) {
-                Span.current().addEvent("current is child - scope 4");
-
+                recordScopeInCurrentSpan(childName, 4);
                 try (Scope scope5 = inbound.makeCurrent()) {
-                    Span.current().addEvent("current is inbound - scope 5");
+                    recordScopeInCurrentSpan(inboundName, 5);
                 }
-
-                Span.current().addEvent("current is child - scope 4");
-
+                recordScopeInCurrentSpan(childName, 4);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             } finally {
@@ -139,21 +161,25 @@ public class OpenTelemetryScopeTest {
             }
 
             try (Scope scope6 = child.makeCurrent()) {
-                Span.current().addEvent("current is child - scope 6"); // invalid. Span closed.
-
+                recordScopeInCurrentSpan(childName, 6);// invalid. Span closed.
                 try (Scope scope7 = inbound.makeCurrent()) {
-                    Span.current().addEvent("current is inbound - scope 7");
+                    recordScopeInCurrentSpan(inboundName, 7);
                 }
-
-                Span.current().addEvent("current is child - scope 6"); // invalid. Span closed.
-
+                recordScopeInCurrentSpan(childName, 6); // invalid. Span closed.
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
 
-            Span.current().addEvent("current is inbound - scope 1");
+            recordScopeInCurrentSpan(inboundName, 1);
 
             return "hello";
+        }
+
+        private static Span recordScopeInCurrentSpan(String expectedSpanName, long scopeId) {
+            return Span.current().addEvent("current is " + expectedSpanName + " - scope " + scopeId,
+                    Attributes.of(
+                            AttributeKey.stringKey("expectedSpanName"), expectedSpanName,
+                            AttributeKey.longKey("scope"), scopeId));
         }
     }
 }

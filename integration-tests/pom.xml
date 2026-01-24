@@ -378,6 +378,7 @@
                 <module>opentelemetry-jdbc-instrumentation</module>
                 <module>opentelemetry-minimal</module>
                 <module>opentelemetry-mongodb-client-instrumentation</module>
+                <module>opentelemetry-mutiny</module>
                 <module>opentelemetry-quartz</module>
                 <module>opentelemetry-scheduler</module>
                 <module>opentelemetry-vertx</module>

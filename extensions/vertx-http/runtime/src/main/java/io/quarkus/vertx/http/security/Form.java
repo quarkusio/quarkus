@@ -61,6 +61,7 @@ public interface Form {
         private Optional<Set<String>> landingPageQueryParams;
         private Optional<Set<String>> errorPageQueryParams;
         private Optional<Set<String>> loginPageQueryParams;
+        private int priority;
 
         public Builder() {
             this(ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getConfigMapping(VertxHttpConfig.class));
@@ -87,6 +88,7 @@ public interface Form {
             this.landingPageQueryParams = formAuthConfig.landingPageQueryParams();
             this.errorPageQueryParams = formAuthConfig.errorPageQueryParams();
             this.loginPageQueryParams = formAuthConfig.loginPageQueryParams();
+            this.priority = formAuthConfig.priority();
         }
 
         /**
@@ -341,6 +343,18 @@ public interface Form {
             return this;
         }
 
+        /**
+         * Form-based authentication mechanism priority.
+         *
+         * @param priority {@link HttpAuthenticationMechanism#getPriority()}
+         * @return Builder
+         * @see FormAuthConfig#priority()
+         */
+        public Builder priority(int priority) {
+            this.priority = priority;
+            return this;
+        }
+
         public HttpAuthenticationMechanism build() {
             return new FormAuthenticationMechanism(createFormConfig(), encryptionKey);
         }
@@ -352,12 +366,12 @@ public interface Form {
                     Optional<String> cookiePath, Optional<String> cookieDomain, boolean httpOnlyCookie,
                     CookieSameSite cookieSameSite, Optional<Duration> cookieMaxAge, String postLocation,
                     Optional<Set<String>> landingPageQueryParams, Optional<Set<String>> errorPageQueryParams,
-                    Optional<Set<String>> loginPageQueryParams) implements FormAuthConfig {
+                    Optional<Set<String>> loginPageQueryParams, int priority) implements FormAuthConfig {
             }
             return new FormConfigImpl(loginPage, usernameParameter, passwordParameter, errorPage,
                     landingPage, locationCookie, timeout, newCookieInterval, cookieName, cookiePath,
                     cookieDomain, httpOnlyCookie, cookieSameSite, cookieMaxAge, postLocation, landingPageQueryParams,
-                    errorPageQueryParams, loginPageQueryParams);
+                    errorPageQueryParams, loginPageQueryParams, priority);
         }
     }
 }

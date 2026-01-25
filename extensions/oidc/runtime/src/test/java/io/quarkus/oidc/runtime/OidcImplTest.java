@@ -44,6 +44,11 @@ public class OidcImplTest {
             public boolean resolveTenantsWithIssuer() {
                 return false;
             }
+
+            @Override
+            public int priority() {
+                return 0;
+            }
         };
     }
 }

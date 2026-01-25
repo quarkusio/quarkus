@@ -51,18 +51,19 @@ import io.vertx.ext.web.RoutingContext;
 public final class MtlsAuthenticationMechanism implements HttpAuthenticationMechanism {
     public static final int INCLUSIVE_AUTHENTICATION_PRIORITY = 3000;
     private static final String ROLES_MAPPER_ATTRIBUTE = "roles_mapper";
-    private final boolean inclusiveAuthentication;
     private final ClientAuth tlsClientAuth;
     private final Optional<String> httpServerTlsConfigName;
     private final TlsConfiguration initialTlsConfiguration;
+    private final int priority;
     private Function<X509Certificate, Set<String>> certificateToRoles = null;
 
     @Inject
-    MtlsAuthenticationMechanism(@ConfigProperty(name = "quarkus.http.auth.inclusive") boolean inclusiveAuthentication) {
-        this.inclusiveAuthentication = inclusiveAuthentication;
+    MtlsAuthenticationMechanism(@ConfigProperty(name = "quarkus.http.auth.inclusive") boolean inclusiveAuthentication,
+            @ConfigProperty(name = "quarkus.http.auth.mtls.priority") Optional<Integer> priority) {
         this.tlsClientAuth = null;
         this.httpServerTlsConfigName = Optional.empty();
         this.initialTlsConfiguration = null;
+        this.priority = priority.orElse(inclusiveAuthentication ? INCLUSIVE_AUTHENTICATION_PRIORITY : DEFAULT_PRIORITY);
     }
 
     public MtlsAuthenticationMechanism(MTLS.Builder.MTLSConfig mtlsConfig) {
@@ -71,7 +72,10 @@ public final class MtlsAuthenticationMechanism implements HttpAuthenticationMech
         this.tlsClientAuth = Objects.requireNonNull(mtlsConfig.tlsClientAuth);
         this.httpServerTlsConfigName = Objects.requireNonNull(mtlsConfig.httpServerTlsConfigName);
         this.initialTlsConfiguration = mtlsConfig.initialTlsConfiguration;
-        this.inclusiveAuthentication = ConfigProvider.getConfig().getValue("quarkus.http.auth.inclusive", boolean.class);
+        this.priority = mtlsConfig.priority.orElseGet(() -> {
+            boolean inclusiveAuthentication = ConfigProvider.getConfig().getValue("quarkus.http.auth.inclusive", boolean.class);
+            return inclusiveAuthentication ? INCLUSIVE_AUTHENTICATION_PRIORITY : DEFAULT_PRIORITY;
+        });
     }
 
     @Override
@@ -116,7 +120,7 @@ public final class MtlsAuthenticationMechanism implements HttpAuthenticationMech
 
     @Override
     public int getPriority() {
-        return inclusiveAuthentication ? INCLUSIVE_AUTHENTICATION_PRIORITY : DEFAULT_PRIORITY;
+        return priority;
     }
 
     ClientAuth getTlsClientAuth() {

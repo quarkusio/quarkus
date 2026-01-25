@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 
@@ -157,4 +158,12 @@ public interface FormAuthConfig {
      */
     @WithDefault("/j_security_check")
     String postLocation();
+
+    /**
+     * Form-based authentication mechanism priority.
+     *
+     * @see HttpAuthenticationMechanism#getPriority()
+     */
+    @WithDefault(HttpAuthenticationMechanism.DEFAULT_PRIORITY + "")
+    int priority();
 }

@@ -75,6 +75,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
+import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
@@ -332,6 +333,11 @@ public class KafkaProcessor {
             loadFromSharedClassLoader = config.snappyLoadFromSharedClassLoader();
         }
         recorder.loadSnappy(loadFromSharedClassLoader);
+    }
+
+    @BuildStep(onlyIf = HasSnappy.class)
+    ModuleEnableNativeAccessBuildItem snappyEnableNativeAccess() {
+        return new ModuleEnableNativeAccessBuildItem("org.xerial.snappy");
     }
 
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)

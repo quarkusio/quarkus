@@ -127,6 +127,7 @@ public interface MTLS {
         private Map<String, Set<String>> certificateAttributeValueToRoles;
         private Optional<String> httpServerTlsConfigName;
         private TlsConfiguration tlsConfiguration;
+        private Optional<Integer> priority;
 
         public Builder() {
             this.certificateAttribute = null;
@@ -135,6 +136,7 @@ public interface MTLS {
             this.certificateAttributeValueToRoles = null;
             this.httpServerTlsConfigName = Optional.empty();
             this.tlsConfiguration = null;
+            this.priority = Optional.empty();
         }
 
         /**
@@ -276,6 +278,18 @@ public interface MTLS {
         }
 
         /**
+         * Mutual TLS authentication mechanism priority.
+         *
+         * @param priority {@link MtlsAuthenticationMechanism#getPriority()}
+         * @return Builder
+         * @see AuthRuntimeConfig#mTlsPriority()
+         */
+        public Builder priority(int priority) {
+            this.priority = Optional.of(priority);
+            return this;
+        }
+
+        /**
          * @return MtlsAuthenticationMechanism that can be registered
          *         with the {@link HttpSecurity#mTLS(MtlsAuthenticationMechanism)} method.
          */
@@ -287,7 +301,8 @@ public interface MTLS {
                 certificateToRolesMapper = new CertificateRoleAttribute(certificateAttribute, certificateAttributeValueToRoles)
                         .rolesMapper();
             }
-            var mTlsConfig = new MTLSConfig(certificateToRolesMapper, clientAuth, httpServerTlsConfigName, tlsConfiguration);
+            var mTlsConfig = new MTLSConfig(certificateToRolesMapper, clientAuth, httpServerTlsConfigName, tlsConfiguration,
+                    priority);
             return new MtlsAuthenticationMechanism(mTlsConfig);
         }
 
@@ -297,14 +312,17 @@ public interface MTLS {
             public final ClientAuth tlsClientAuth;
             public final Optional<String> httpServerTlsConfigName;
             public final TlsConfiguration initialTlsConfiguration;
+            public final Optional<Integer> priority;
 
             // please keep this constructor private, so that we have flexibility in classes that are not part of public API
             private MTLSConfig(Function<X509Certificate, Set<String>> certificateToRoles, ClientAuth tlsClientAuth,
-                    Optional<String> httpServerTlsConfigName, TlsConfiguration initialTlsConfiguration) {
+                    Optional<String> httpServerTlsConfigName, TlsConfiguration initialTlsConfiguration,
+                    Optional<Integer> priority) {
                 this.certificateToRoles = certificateToRoles;
                 this.tlsClientAuth = tlsClientAuth;
                 this.httpServerTlsConfigName = httpServerTlsConfigName;
                 this.initialTlsConfiguration = initialTlsConfiguration;
+                this.priority = priority;
             }
         }
 

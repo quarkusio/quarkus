@@ -103,7 +103,8 @@ public final class HttpSecurityConfiguration {
                 return (BasicAuthenticationMechanism) additionalMechanism;
             }
         }
-        return new BasicAuthenticationMechanism(httpConfig.auth().realm().orElse(null), formAuthEnabled);
+        return new BasicAuthenticationMechanism(httpConfig.auth().realm().orElse(null), formAuthEnabled,
+                httpConfig.auth().basicPriority());
     }
 
     FormAuthenticationMechanism getFormAuthenticationMechanism() {

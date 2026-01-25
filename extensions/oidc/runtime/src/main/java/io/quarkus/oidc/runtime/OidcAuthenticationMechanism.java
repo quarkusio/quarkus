@@ -35,13 +35,15 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
     private final BearerAuthenticationMechanism bearerAuth;
     private final CodeAuthenticationMechanism codeAuth;
     private final DefaultTenantConfigResolver resolver;
+    private final int priority;
 
     OidcAuthenticationMechanism(DefaultTenantConfigResolver resolver, BlockingSecurityExecutor blockingExecutor,
-            Instance<DPoPNonceProvider> dPoPNonceProviderInstance) {
+            Instance<DPoPNonceProvider> dPoPNonceProviderInstance, OidcConfig oidcConfig) {
         this.resolver = resolver;
         this.codeAuth = new CodeAuthenticationMechanism(blockingExecutor, resolver, this);
         this.bearerAuth = new BearerAuthenticationMechanism(
                 dPoPNonceProviderInstance.isResolvable() ? dPoPNonceProviderInstance.get() : null, resolver, this);
+        this.priority = oidcConfig.priority();
     }
 
     @Override
@@ -152,6 +154,6 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
 
     @Override
     public int getPriority() {
-        return HttpAuthenticationMechanism.DEFAULT_PRIORITY + 1;
+        return priority;
     }
 }

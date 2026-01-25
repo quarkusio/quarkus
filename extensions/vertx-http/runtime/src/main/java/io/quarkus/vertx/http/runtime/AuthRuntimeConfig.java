@@ -1,11 +1,17 @@
 package io.quarkus.vertx.http.runtime;
 
+import static io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism.DEFAULT_PRIORITY;
+import static io.quarkus.vertx.http.runtime.security.MtlsAuthenticationMechanism.INCLUSIVE_AUTHENTICATION_PRIORITY;
+
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
+import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 
@@ -109,6 +115,23 @@ public interface AuthRuntimeConfig {
      */
     @WithDefault("strict")
     InclusiveMode inclusiveMode();
+
+    /**
+     * Mutual TLS authentication mechanism priority.
+     */
+    @ConfigDocDefault(DEFAULT_PRIORITY + " by default, " + INCLUSIVE_AUTHENTICATION_PRIORITY
+            + " when an inclusive authentication is enabled")
+    @WithName("mtls.priority")
+    Optional<Integer> mTlsPriority();
+
+    /**
+     * Basic authentication mechanism priority.
+     *
+     * @see HttpAuthenticationMechanism#getPriority()
+     */
+    @WithDefault(BasicAuthenticationMechanism.PRIORITY + "")
+    @WithName("basic.priority")
+    int basicPriority();
 
     enum InclusiveMode {
         /**

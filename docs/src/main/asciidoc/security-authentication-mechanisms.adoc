@@ -787,6 +787,48 @@ For example, you can combine the built-in Basic and the Quarkus `quarkus-oidc` B
 
 The authentication process completes as soon as the first `SecurityIdentity` is produced by one of the authentication mechanisms.
 
+[[authentication-mechanisms-priority]]
+=== Priority of authentication mechanisms
+
+Quarkus Security uses a priority system to determine which mechanism gets the first chance to produce `SecurityIdentity`.
+The authentication mechanism priority affects the order of:
+
+* **Credential Verification:** Mechanisms with a higher priority are asked to verify credentials first. The first one to validate credentials wins.
+* **Authentication Challenge:** If the request is unauthenticated, mechanisms with a higher priority are asked to issue a challenge first.
+
+The default priorities can be overridden using the configuration properties listed below.
+
+.Priorities of the supported authentication mechanisms
+|===
+^|Authentication mechanism^| Configuration property^| Default priority
+
+s|Basic authentication mechanism
+^|`quarkus.http.auth.basic.priority`
+^|2000
+
+s|Form-based authentication mechanism
+^|`quarkus.http.auth.form.priority`
+^|1000
+
+s|Mutual TLS authentication mechanism
+^|`quarkus.http.auth.mtls.priority`
+^|1000 by default, 3000 when an inclusive authentication is enabled
+
+ifndef::no-webauthn-authentication[]
+s|WebAuthn authentication mechanism
+^|`quarkus.webauthn.priority`
+^|1000
+endif::no-webauthn-authentication[]
+
+s|OIDC authentication mechanism
+^|`quarkus.oidc.priority`
+^|1001
+
+s|SmallRye JWT authentication mechanism
+^|`quarkus.smallrye-jwt.priority`
+^|1000
+|===
+
 [[inclusive-authentication]]
 === Inclusive Authentication
 
@@ -808,9 +850,11 @@ injected into the application code.
 For example, if both <<mutual-tls>> and basic authentication mechanism authentications are required,
 the <<mutual-tls>> mechanism will create `SecurityIdentity` first.
 
-NOTE: The <<mutual-tls>> mechanism has the highest priority when inclusive authentication is enabled, to ensure
-that an injected `SecurityIdentity` always represents <<mutual-tls>> and can be used to get access to `SecurityIdentity`
-identities provided by other authentication mechanisms.
+[NOTE]
+====
+When an inclusive authentication is enabled, the <<mutual-tls>> mechanism has the highest priority by default, to reflect on the fact that when it is used, it is enforced early at the transport level, and to ensure that an injected `SecurityIdentity` represents a <<mutual-tls>> authentication.
+If you need an injected `SecurityIdentity` to represent another authentication mechanism, <<authentication-mechanisms-priority, configure the mechanism priority>>.
+====
 
 Additional `SecurityIdentity` instances can be accessed as a `quarkus.security.identities` attribute on the first
 `SecurityIdentity`, however, accessing these extra identities directly may not be necessary, for example,
@@ -860,6 +904,67 @@ public class InclusiveAuthExampleBean {
 ====
 You cannot combine the Quarkus `quarkus-oidc` Bearer token and `smallrye-jwt` authentication mechanisms because both mechanisms attempt to verify the token extracted from the HTTP Bearer token authentication scheme.
 ====
+
+==== Authorization with multiple identities
+
+Authorization is always performed on the first produced `SecurityIdentity`. For example:
+
+[source,java]
+----
+package org.acme.security;
+
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+class DataService {
+
+    @RolesAllowed("admin")  <1>
+    void deleteEntity(Long entityId) {
+        // business logic
+    }
+
+}
+----
+<1> The `deleteEntity` method can only be accessed if the first `SecurityIdentity` has the `admin` role. <<authentication-mechanisms-priority, Configure the mechanism priority>> to impact which authentication mechanism is used to produce the first `SecurityIdentity`.
+
+If you want to perform authorization on all `SecurityIdentity` instances, you must do it manually.
+For example, to check if a permission is allowed at least by one of the identities, use a `@PermissionChecker` annotation:
+
+[source,java]
+----
+package org.acme.security;
+
+import io.quarkus.security.PermissionChecker;
+import io.quarkus.security.PermissionsAllowed;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+class DataService {
+
+    @PermissionsAllowed("canDeleteEntity")
+    void deleteEntity(Long entityId) {
+        // business logic
+    }
+
+    @PermissionChecker("canDeleteEntity")
+    boolean canDeleteEntity(SecurityIdentity firstIdentity) {
+        var allSecurityIdentities = HttpSecurityUtils.getSecurityIdentities(firstIdentity);
+        if (allSecurityIdentities != null) {
+            for (SecurityIdentity identity : allSecurityIdentities.values()) {
+                if (identity.hasRole("admin")) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+}
+----
 
 [[path-based-authentication]]
 === Path-based authentication

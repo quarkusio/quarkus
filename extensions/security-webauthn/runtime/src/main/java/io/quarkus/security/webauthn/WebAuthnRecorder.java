@@ -81,7 +81,8 @@ public class WebAuthnRecorder {
                         config.cookiePath().orElse(null),
                         config.cookieMaxAge().map(Duration::toSeconds).orElse(-1L), null);
                 String loginPage = config.loginPage().startsWith("/") ? config.loginPage() : "/" + config.loginPage();
-                return new WebAuthnAuthenticationMechanism(loginManager, loginPage);
+                int priority = config.priority();
+                return new WebAuthnAuthenticationMechanism(loginManager, loginPage, priority);
             }
         };
     }

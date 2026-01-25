@@ -32,10 +32,12 @@ public class WebAuthnAuthenticationMechanism implements HttpAuthenticationMechan
 
     private PersistentLoginManager loginManager;
     private String loginPage;
+    private final int priority;
 
-    WebAuthnAuthenticationMechanism(PersistentLoginManager loginManager, String loginPage) {
+    WebAuthnAuthenticationMechanism(PersistentLoginManager loginManager, String loginPage, int priority) {
         this.loginManager = loginManager;
         this.loginPage = loginPage;
+        this.priority = priority;
     }
 
     @Override
@@ -79,5 +81,10 @@ public class WebAuthnAuthenticationMechanism implements HttpAuthenticationMechan
 
     public PersistentLoginManager getLoginManager() {
         return loginManager;
+    }
+
+    @Override
+    public int getPriority() {
+        return priority;
     }
 }

@@ -51,6 +51,7 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
     @Inject
     JWTAuthContextInfo authContextInfo;
     private final boolean silent;
+    private final int priority;
 
     public JWTAuthMechanism(SmallRyeJwtConfig config) {
         this.silent = config == null ? false : config.silent();
@@ -58,6 +59,7 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
         this.propagateTokenCredentialWithDuplicatedCtx = Boolean
                 .getBoolean("io.quarkus.smallrye.jwt.runtime.auth.JWTAuthMechanism." +
                         "PROPAGATE_TOKEN_CREDENTIAL_WITH_DUPLICATED_CTX");
+        this.priority = config == null ? HttpAuthenticationMechanism.DEFAULT_PRIORITY : config.priority();
     }
 
     @Override
@@ -163,5 +165,10 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
             return Uni.createFrom()
                     .item(new HttpCredentialTransport(HttpCredentialTransport.Type.OTHER_HEADER, tokenHeaderName));
         }
+    }
+
+    @Override
+    public int getPriority() {
+        return priority;
     }
 }

@@ -49,12 +49,12 @@ public class TokenIntrospectionCacheTest {
 
     private static OidcConfig createOidcConfig() {
         record OidcConfigImpl(OidcTenantConfig defaultTenant, Map<String, OidcTenantConfig> namedTenants, TokenCache tokenCache,
-                boolean resolveTenantsWithIssuer) implements OidcConfig {
+                boolean resolveTenantsWithIssuer, int priority) implements OidcConfig {
         }
         record TokenCacheImpl(int maxSize, Duration timeToLive,
                 Optional<Duration> cleanUpTimerInterval) implements OidcConfig.TokenCache {
         }
         var tokenCache = new TokenCacheImpl(2, Duration.ofMinutes(3), Optional.empty());
-        return new OidcConfigImpl(null, Map.of(), tokenCache, false);
+        return new OidcConfigImpl(null, Map.of(), tokenCache, false, 0);
     }
 }

@@ -22,16 +22,17 @@ public class ORMReactiveCompatbilityDefaultBothUnitTest extends CompatibilityUni
                     .addClasses(Hero.class)
                     .addAsResource("complexMultilineImports.sql", "import.sql"))
             .setForcedDependencies(List.of(
-                    Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion()) // this triggers Agroal
-            ))
-            .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", SCHEMA_MANAGEMENT_STRATEGY)
-            .overrideConfigKey("quarkus.datasource.reactive", "true")
-            .overrideConfigKey("quarkus.datasource.db-kind", POSTGRES_KIND)
-            .overrideConfigKey("quarkus.datasource.username", USERNAME_PWD)
-            .overrideConfigKey("quarkus.datasource.password", USERNAME_PWD)
-            .overrideConfigKey("quarkus.hibernate-orm.log.format-sql", "false")
-            .overrideConfigKey("quarkus.hibernate-orm.log.highlight-sql", "false")
-            .overrideConfigKey("quarkus.log.category.\"org.hibernate.SQL\".level", "DEBUG")
+                    Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion())))
+            .withConfiguration("""
+                    quarkus.hibernate-orm.schema-management.strategy=%s
+                    quarkus.datasource.reactive=true
+                    quarkus.datasource.db-kind=%s
+                    quarkus.datasource.username=%s
+                    quarkus.datasource.password=%s
+                    quarkus.hibernate-orm.log.format-sql=false
+                    quarkus.hibernate-orm.log.highlight-sql=false
+                    quarkus.log.category."org.hibernate.SQL".level=DEBUG
+                    """.formatted(SCHEMA_MANAGEMENT_STRATEGY, POSTGRES_KIND, USERNAME_PWD))
             .setLogRecordPredicate(record -> "org.hibernate.SQL".equals(record.getLoggerName()))
             .assertLogRecords(
                     records -> // When using both blocking and reactive we don't want migration to be applied twice

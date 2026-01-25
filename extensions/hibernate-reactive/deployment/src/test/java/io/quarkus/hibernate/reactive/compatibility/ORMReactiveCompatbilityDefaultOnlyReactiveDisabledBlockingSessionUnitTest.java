@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.reactive.compatibility;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -15,7 +14,6 @@ import io.quarkus.test.vertx.UniAsserter;
 
 public class ORMReactiveCompatbilityDefaultOnlyReactiveDisabledBlockingSessionUnitTest extends CompatibilityUnitTestBase {
 
-    // We disable the blocking data source but keep the persistence unit by using the quarkus.hibernate-orm.blocking property
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
@@ -23,12 +21,15 @@ public class ORMReactiveCompatbilityDefaultOnlyReactiveDisabledBlockingSessionUn
                     .addAsResource("complexMultilineImports.sql", "import.sql"))
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion())))
-            .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", SCHEMA_MANAGEMENT_STRATEGY)
-            .overrideConfigKey("quarkus.hibernate-orm.blocking", "false")
-            .overrideConfigKey("quarkus.datasource.reactive", "true")
-            .overrideConfigKey("quarkus.datasource.db-kind", POSTGRES_KIND)
-            .overrideConfigKey("quarkus.datasource.username", USERNAME_PWD)
-            .overrideConfigKey("quarkus.datasource.password", USERNAME_PWD);
+            .withConfiguration("""
+                    quarkus.hibernate-orm.schema-management.strategy=%s
+                    quarkus.hibernate-orm.enabled=false
+                    quarkus.datasource.jdbc=false
+                    quarkus.datasource.reactive=true
+                    quarkus.datasource.db-kind=%s
+                    quarkus.datasource.username=%s
+                    quarkus.datasource.password=%s
+                    """.formatted(SCHEMA_MANAGEMENT_STRATEGY, POSTGRES_KIND, USERNAME_PWD));
 
     @Test
     @RunOnVertxContext
@@ -37,7 +38,7 @@ public class ORMReactiveCompatbilityDefaultOnlyReactiveDisabledBlockingSessionUn
     }
 
     @Test
-    public void testBlocking() throws IOException {
+    public void testBlockingDisabled() {
         testBlockingDisabled();
     }
 }

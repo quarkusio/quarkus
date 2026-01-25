@@ -25,33 +25,27 @@ public class ORMReactiveCompatbilityDifferentNamedDataSourceNamedPersistenceUnit
                     .addClasses(Hero.class)
                     .addAsResource("complexMultilineImports.sql", "import.sql"))
             .setForcedDependencies(List.of(
-                    Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion()) // this triggers Agroal
-            ))
-            // Reactive named datasource
-            .overrideConfigKey("quarkus.datasource.\"named-datasource-reactive\".jdbc", "false")
-            .overrideConfigKey("quarkus.datasource.\"named-datasource-reactive\".reactive", "true")
-            .overrideConfigKey("quarkus.datasource.\"named-datasource-reactive\".db-kind", POSTGRES_KIND)
-            .overrideConfigKey("quarkus.datasource.\"named-datasource-reactive\".username", USERNAME_PWD)
-            .overrideConfigKey("quarkus.datasource.\"named-datasource-reactive\".password", USERNAME_PWD)
-            // Reactive named persistence unit
-            .overrideConfigKey("quarkus.hibernate-orm.\"named-pu-reactive\".schema-management.strategy",
-                    SCHEMA_MANAGEMENT_STRATEGY)
-            .overrideConfigKey("quarkus.hibernate-orm.\"named-pu-reactive\".datasource", "named-datasource-reactive")
-            .overrideConfigKey("quarkus.hibernate-orm.\"named-pu-reactive\".packages", "io.quarkus.hibernate.reactive.entities")
-
-            // Blocking named datasource
-            .overrideConfigKey("quarkus.datasource.\"named-datasource-blocking\".jdbc", "true")
-            .overrideConfigKey("quarkus.datasource.\"named-datasource-blocking\".reactive", "false")
-            .overrideConfigKey("quarkus.datasource.\"named-datasource-blocking\".db-kind", POSTGRES_KIND)
-            .overrideConfigKey("quarkus.datasource.\"named-datasource-blocking\".username", USERNAME_PWD)
-            .overrideConfigKey("quarkus.datasource.\"named-datasource-blocking\".password", USERNAME_PWD)
-            // Blocking named persistence unit
-            .overrideConfigKey("quarkus.hibernate-orm.\"named-pu-blocking\".schema-management.strategy",
-                    SCHEMA_MANAGEMENT_STRATEGY)
-            .overrideConfigKey("quarkus.hibernate-orm.\"named-pu-blocking\".datasource", "named-datasource-blocking")
-            .overrideConfigKey("quarkus.hibernate-orm.\"named-pu-blocking\".packages", "io.quarkus.hibernate.reactive.entities")
-
-            .overrideConfigKey("quarkus.log.category.\"io.quarkus.hibernate\".level", "DEBUG");
+                    Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion())))
+            .withConfiguration("""
+                    quarkus.datasource."named-datasource-reactive".jdbc=false
+                    quarkus.datasource."named-datasource-reactive".reactive=true
+                    quarkus.datasource."named-datasource-reactive".db-kind=%s
+                    quarkus.datasource."named-datasource-reactive".username=%s
+                    quarkus.datasource."named-datasource-reactive".password=%s
+                    quarkus.hibernate-orm."named-pu-reactive".schema-management.strategy=%s
+                    quarkus.hibernate-orm."named-pu-reactive".datasource=named-datasource-reactive
+                    quarkus.hibernate-orm."named-pu-reactive".packages=io.quarkus.hibernate.reactive.entities
+                    quarkus.datasource."named-datasource-blocking".jdbc=true
+                    quarkus.datasource."named-datasource-blocking".reactive=false
+                    quarkus.datasource."named-datasource-blocking".db-kind=%s
+                    quarkus.datasource."named-datasource-blocking".username=%s
+                    quarkus.datasource."named-datasource-blocking".password=%s
+                    quarkus.hibernate-orm."named-pu-blocking".schema-management.strategy=%s
+                    quarkus.hibernate-orm."named-pu-blocking".datasource=named-datasource-blocking
+                    quarkus.hibernate-orm."named-pu-blocking".packages=io.quarkus.hibernate.reactive.entities
+                    quarkus.log.category."io.quarkus.hibernate".level=DEBUG
+                    """.formatted(POSTGRES_KIND, USERNAME_PWD, USERNAME_PWD, SCHEMA_MANAGEMENT_STRATEGY,
+                    POSTGRES_KIND, USERNAME_PWD, USERNAME_PWD, SCHEMA_MANAGEMENT_STRATEGY));
 
     @PersistenceUnit("named-pu-reactive")
     Mutiny.SessionFactory namedMutinySessionFactory;

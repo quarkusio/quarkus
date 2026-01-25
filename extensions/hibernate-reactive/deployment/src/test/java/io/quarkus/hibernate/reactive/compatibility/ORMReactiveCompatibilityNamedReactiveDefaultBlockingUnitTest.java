@@ -22,36 +22,32 @@ public class ORMReactiveCompatibilityNamedReactiveDefaultBlockingUnitTest extend
                     .addClasses(Hero.class)
                     .addAsResource("complexMultilineImports.sql", "import.sql"))
             .setForcedDependencies(List.of(
-                    Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion()) // this triggers Agroal
-            ))
-            // If we want the named PU to be reactive only we need to explicitly disable the blocking the JDBC data source
-            .overrideConfigKey("quarkus.datasource.\"named-datasource\".jdbc", "false")
-            .overrideConfigKey("quarkus.datasource.\"named-datasource\".reactive", "true")
-            .overrideConfigKey("quarkus.hibernate-orm.\"named-pu\".schema-management.strategy", SCHEMA_MANAGEMENT_STRATEGY)
-            .overrideConfigKey("quarkus.hibernate-orm.\"named-pu\".datasource", "named-datasource")
-            .overrideConfigKey("quarkus.hibernate-orm.\"named-pu\".packages", "io.quarkus.hibernate.reactive.entities")
-            .overrideConfigKey("quarkus.datasource.\"named-datasource\".db-kind", POSTGRES_KIND)
-            .overrideConfigKey("quarkus.datasource.\"named-datasource\".username", USERNAME_PWD)
-            .overrideConfigKey("quarkus.datasource.\"named-datasource\".password", USERNAME_PWD)
-
-            // In this test we want the default PU as blocking only, so we need to disable reactive on the datasource.
-            // JDBC is enabled by default.
-            .overrideConfigKey("quarkus.datasource.reactive", "false")
-            // In this case packages for the default PU should be explicit as well
-            .overrideConfigKey("quarkus.hibernate-orm.packages", "io.quarkus.hibernate.reactive.entities")
-            .overrideConfigKey("quarkus.hibernate-orm.database.generation", SCHEMA_MANAGEMENT_STRATEGY)
-            .overrideConfigKey("quarkus.datasource.username", USERNAME_PWD)
-            .overrideConfigKey("quarkus.datasource.password", USERNAME_PWD)
-            .overrideConfigKey("quarkus.datasource.db-kind", POSTGRES_KIND)
-            .overrideConfigKey("quarkus.log.category.\"io.quarkus.hibernate\".level", "DEBUG");
+                    Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion())))
+            .withConfiguration("""
+                    quarkus.datasource."named-datasource".jdbc=false
+                    quarkus.datasource."named-datasource".reactive=true
+                    quarkus.hibernate-orm."named-pu".schema-management.strategy=%s
+                    quarkus.hibernate-orm."named-pu".datasource=named-datasource
+                    quarkus.hibernate-orm."named-pu".packages=io.quarkus.hibernate.reactive.entities
+                    quarkus.datasource."named-datasource".db-kind=%s
+                    quarkus.datasource."named-datasource".username=%s
+                    quarkus.datasource."named-datasource".password=%s
+                    quarkus.datasource.reactive=false
+                    quarkus.datasource.db-kind=%s
+                    quarkus.datasource.username=%s
+                    quarkus.datasource.password=%s
+                    quarkus.hibernate-orm.schema-management.strategy=%s
+                    quarkus.hibernate-orm.packages=io.quarkus.hibernate.reactive.entities
+                    """.formatted(SCHEMA_MANAGEMENT_STRATEGY, POSTGRES_KIND, USERNAME_PWD, USERNAME_PWD,
+                    POSTGRES_KIND, USERNAME_PWD, USERNAME_PWD, SCHEMA_MANAGEMENT_STRATEGY));
 
     @PersistenceUnit("named-pu")
-    Mutiny.SessionFactory namedMutinySessionFactory;
+    Mutiny.SessionFactory namedReactiveSessionFactory;
 
     @Test
     @RunOnVertxContext
-    public void test(UniAsserter uniAsserter) {
-        testReactiveWorks(namedMutinySessionFactory, uniAsserter);
+    public void testReactive(UniAsserter asserter) {
+        testReactiveWorks(namedReactiveSessionFactory, asserter);
     }
 
     @Test

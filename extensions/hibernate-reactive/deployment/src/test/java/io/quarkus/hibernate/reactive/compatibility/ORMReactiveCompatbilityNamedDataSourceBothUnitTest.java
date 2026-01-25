@@ -20,14 +20,15 @@ public class ORMReactiveCompatbilityNamedDataSourceBothUnitTest extends Compatib
                     .addClasses(Hero.class)
                     .addAsResource("complexMultilineImports.sql", "import.sql"))
             .setForcedDependencies(List.of(
-                    Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion()) // this triggers Agroal
-            ))
-            .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", SCHEMA_MANAGEMENT_STRATEGY)
-            .overrideConfigKey("quarkus.hibernate-orm.datasource", "named-datasource")
-            .overrideConfigKey("quarkus.datasource.\"named-datasource\".reactive", "true")
-            .overrideConfigKey("quarkus.datasource.\"named-datasource\".db-kind", POSTGRES_KIND)
-            .overrideConfigKey("quarkus.datasource.\"named-datasource\".username", USERNAME_PWD)
-            .overrideConfigKey("quarkus.datasource.\"named-datasource\".password", USERNAME_PWD);
+                    Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion())))
+            .withConfiguration("""
+                    quarkus.hibernate-orm.schema-management.strategy=%s
+                    quarkus.hibernate-orm.datasource=named-datasource
+                    quarkus.datasource."named-datasource".reactive=true
+                    quarkus.datasource."named-datasource".db-kind=%s
+                    quarkus.datasource."named-datasource".username=%s
+                    quarkus.datasource."named-datasource".password=%s
+                    """.formatted(SCHEMA_MANAGEMENT_STRATEGY, POSTGRES_KIND, USERNAME_PWD));
 
     @Test
     @RunOnVertxContext

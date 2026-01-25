@@ -1,26 +1,34 @@
 package io.quarkus.hibernate.reactive.compatibility;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.builder.Version;
 import io.quarkus.hibernate.reactive.entities.Hero;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 
 public class ORMReactiveCompatbilityDefaultOnlyReactiveUnitTest extends CompatibilityUnitTestBase {
 
-    // To disable the blocking datasource, it's enough not to include the jdbc driver in the dependencies
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Hero.class)
                     .addAsResource("complexMultilineImports.sql", "import.sql"))
-            .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", SCHEMA_MANAGEMENT_STRATEGY)
-            .overrideConfigKey("quarkus.datasource.reactive", "true")
-            .overrideConfigKey("quarkus.datasource.db-kind", POSTGRES_KIND)
-            .overrideConfigKey("quarkus.datasource.username", USERNAME_PWD)
-            .overrideConfigKey("quarkus.datasource.password", USERNAME_PWD);
+            .setForcedDependencies(List.of(
+                    Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion())))
+            .withConfiguration("""
+                    quarkus.hibernate-orm.schema-management.strategy=%s
+                    quarkus.datasource.jdbc=false
+                    quarkus.datasource.reactive=true
+                    quarkus.datasource.db-kind=%s
+                    quarkus.datasource.username=%s
+                    quarkus.datasource.password=%s
+                    """.formatted(SCHEMA_MANAGEMENT_STRATEGY, POSTGRES_KIND, USERNAME_PWD));
 
     @Test
     @RunOnVertxContext
@@ -29,7 +37,7 @@ public class ORMReactiveCompatbilityDefaultOnlyReactiveUnitTest extends Compatib
     }
 
     @Test
-    public void testBlocking() {
+    public void testBlockingDisabled() {
         testBlockingDisabled();
     }
 }

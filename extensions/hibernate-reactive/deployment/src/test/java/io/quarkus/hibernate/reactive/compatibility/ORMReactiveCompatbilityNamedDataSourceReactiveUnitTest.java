@@ -21,12 +21,14 @@ public class ORMReactiveCompatbilityNamedDataSourceReactiveUnitTest extends Comp
             .withApplicationRoot((jar) -> jar
                     .addClasses(Hero.class)
                     .addAsResource("complexMultilineImports.sql", "import.sql"))
-            .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", SCHEMA_MANAGEMENT_STRATEGY)
-            .overrideConfigKey("quarkus.hibernate-orm.datasource", "named-datasource")
-            .overrideConfigKey("quarkus.datasource.\"named-datasource\".reactive", "true")
-            .overrideConfigKey("quarkus.datasource.\"named-datasource\".db-kind", POSTGRES_KIND)
-            .overrideConfigKey("quarkus.datasource.\"named-datasource\".username", USERNAME_PWD)
-            .overrideConfigKey("quarkus.datasource.\"named-datasource\".password", USERNAME_PWD);
+            .withConfiguration("""
+                    quarkus.hibernate-orm.schema-management.strategy=%s
+                    quarkus.hibernate-orm.datasource=named-datasource
+                    quarkus.datasource."named-datasource".reactive=true
+                    quarkus.datasource."named-datasource".db-kind=%s
+                    quarkus.datasource."named-datasource".username=%s
+                    quarkus.datasource."named-datasource".password=%s
+                    """.formatted(SCHEMA_MANAGEMENT_STRATEGY, POSTGRES_KIND, USERNAME_PWD));
 
     @Inject
     @ReactiveDataSource("named-datasource")
@@ -38,5 +40,4 @@ public class ORMReactiveCompatbilityNamedDataSourceReactiveUnitTest extends Comp
         testReactiveWorks(uniAsserter);
         assertThat(pool).isNotNull();
     }
-
 }

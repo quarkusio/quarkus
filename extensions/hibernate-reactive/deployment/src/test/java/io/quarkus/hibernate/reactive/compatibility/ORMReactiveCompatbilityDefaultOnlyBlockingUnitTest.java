@@ -9,32 +9,31 @@ import io.quarkus.builder.Version;
 import io.quarkus.hibernate.reactive.entities.Hero;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.vertx.RunOnVertxContext;
 
 public class ORMReactiveCompatbilityDefaultOnlyBlockingUnitTest extends CompatibilityUnitTestBase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar
+            .withApplicationRoot((jar) -> jar
                     .addClasses(Hero.class)
                     .addAsResource("complexMultilineImports.sql", "import.sql"))
             .setForcedDependencies(List.of(
-                    Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion()) // this triggers Agroal
-            ))
-            .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", SCHEMA_MANAGEMENT_STRATEGY)
-            .overrideConfigKey("quarkus.datasource.reactive", "false")
-            .overrideConfigKey("quarkus.datasource.db-kind", POSTGRES_KIND)
-            .overrideConfigKey("quarkus.datasource.username", USERNAME_PWD)
-            .overrideConfigKey("quarkus.datasource.password", USERNAME_PWD);
-
-    @Test
-    @RunOnVertxContext
-    public void testReactive() {
-        testReactiveDisabled();
-    }
+                    Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion())))
+            .withConfiguration("""
+                    quarkus.hibernate-orm.schema-management.strategy=%s
+                    quarkus.datasource.reactive=false
+                    quarkus.datasource.db-kind=%s
+                    quarkus.datasource.username=%s
+                    quarkus.datasource.password=%s
+                    """.formatted(SCHEMA_MANAGEMENT_STRATEGY, POSTGRES_KIND, USERNAME_PWD));
 
     @Test
     public void testBlocking() {
         testBlockingWorks();
+    }
+
+    @Test
+    public void testReactiveDisabled() {
+        testReactiveDisabled();
     }
 }

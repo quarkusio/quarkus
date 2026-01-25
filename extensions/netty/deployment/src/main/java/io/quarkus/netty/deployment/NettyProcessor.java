@@ -31,6 +31,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.GeneratedRuntimeSystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
 import io.quarkus.deployment.builditem.ModuleOpenBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
@@ -810,5 +811,15 @@ class NettyProcessor {
                             }
                         })
                 .build());
+    }
+
+    @BuildStep
+    void nativeTransportsEnableNativeAccess(BuildProducer<ModuleEnableNativeAccessBuildItem> nativeAccess) {
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.epoll.EpollMode")) {
+            nativeAccess.produce(new ModuleEnableNativeAccessBuildItem("io.netty.transport.classes.epoll"));
+        }
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.kqueue.AcceptFilter")) {
+            nativeAccess.produce(new ModuleEnableNativeAccessBuildItem("io.netty.transport.classes.kqueue"));
+        }
     }
 }

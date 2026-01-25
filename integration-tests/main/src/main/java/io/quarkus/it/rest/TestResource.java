@@ -268,10 +268,10 @@ public class TestResource {
     @GET
     @Path("/openapi/responses/{version}")
     @Produces("application/json")
-    @APIResponses({
-            @APIResponse(content = @Content(mediaType = "application/json", schema = @Schema(type = SchemaType.OBJECT, implementation = MyOpenApiEntityV1.class))),
-            @APIResponse(content = @Content(mediaType = "application/json", schema = @Schema(type = SchemaType.OBJECT, implementation = MyOpenApiEntityV2.class)))
-    })
+    @APIResponse(content = @Content(mediaType = "application/json", schema = @Schema(type = SchemaType.OBJECT, anyOf = {
+            MyOpenApiEntityV1.class,
+            MyOpenApiEntityV2.class
+    })))
     public Response openApiResponses(@PathParam("version") String version) {
         if ("v1".equals(version)) {
             MyOpenApiEntityV1 entityV1 = new MyOpenApiEntityV1();

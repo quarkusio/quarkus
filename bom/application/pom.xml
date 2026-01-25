@@ -48,7 +48,7 @@
         <smallrye-common.version>2.15.0</smallrye-common.version>
         <smallrye-config.version>3.15.1</smallrye-config.version>
         <smallrye-health.version>4.3.0</smallrye-health.version>
-        <smallrye-open-api.version>4.2.3</smallrye-open-api.version>
+        <smallrye-open-api.version>4.2.4</smallrye-open-api.version>
         <smallrye-graphql.version>2.17.0</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.10.0</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.3</smallrye-jwt.version>
@@ -152,6 +152,7 @@
         <kotlin.version>2.3.0</kotlin.version>
         <kotlin.coroutine.version>1.10.2</kotlin.coroutine.version>
         <kotlin-serialization.version>1.10.0</kotlin-serialization.version>
+        <kotlin-metadata.version>0.9.0</kotlin-metadata.version>
         <azure.toolkit-lib.version>0.53.0</azure.toolkit-lib.version>
         <dekorate.version>4.1.5</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
@@ -534,6 +535,12 @@
                 <version>${kotlin.coroutine.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <!-- Kotlin metadata processing used by OpenAPI for Kotlin classes -->
+            <dependency>
+                <groupId>org.jetbrains.kotlinx</groupId>
+                <artifactId>kotlinx-metadata-jvm</artifactId>
+                <version>${kotlin-metadata.version}</version>
             </dependency>
 
             <!-- Mockito BOM -->

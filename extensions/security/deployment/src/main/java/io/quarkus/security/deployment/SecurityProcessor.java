@@ -144,6 +144,7 @@ import io.quarkus.security.spi.ClassSecurityCheckStorageBuildItem;
 import io.quarkus.security.spi.ClassSecurityCheckStorageBuildItem.ClassStorageBuilder;
 import io.quarkus.security.spi.CurrentIdentityAssociationClassBuildItem;
 import io.quarkus.security.spi.DefaultSecurityCheckBuildItem;
+import io.quarkus.security.spi.IdentityProviderManagerBuilderBuildItem;
 import io.quarkus.security.spi.PermissionsAllowedMetaAnnotationBuildItem;
 import io.quarkus.security.spi.RegisterClassSecurityCheckBuildItem;
 import io.quarkus.security.spi.RolesAllowedConfigExpResolverBuildItem;
@@ -1355,6 +1356,12 @@ public class SecurityProcessor {
                     new ValidationErrorBuildItem(new RuntimeException("Annotation '%s' cannot be used on following methods: %s"
                             .formatted(RunAsUser.class.getName(), notAllowedTargets))));
         }
+    }
+
+    @Record(ExecutionTime.STATIC_INIT)
+    @BuildStep
+    IdentityProviderManagerBuilderBuildItem createIdentityProviderManagerBuilder(SecurityCheckRecorder recorder) {
+        return new IdentityProviderManagerBuilderBuildItem(recorder.createIdentityProviderManagerBuilder());
     }
 
     private static String toString(MethodInfo mi) {

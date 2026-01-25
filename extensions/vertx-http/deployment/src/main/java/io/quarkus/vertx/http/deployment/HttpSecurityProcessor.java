@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -74,11 +75,14 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.Authenticated;
+import io.quarkus.security.identity.IdentityProvider;
+import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
 import io.quarkus.security.spi.AdditionalSecurityAnnotationBuildItem;
 import io.quarkus.security.spi.AdditionalSecurityConstrainerEventPropsBuildItem;
 import io.quarkus.security.spi.ClassSecurityAnnotationBuildItem;
 import io.quarkus.security.spi.CurrentIdentityAssociationClassBuildItem;
+import io.quarkus.security.spi.IdentityProviderManagerBuilderBuildItem;
 import io.quarkus.security.spi.RegisterClassSecurityCheckBuildItem;
 import io.quarkus.security.spi.SecurityTransformer;
 import io.quarkus.security.spi.SecurityTransformerBuildItem;
@@ -330,16 +334,19 @@ public class HttpSecurityProcessor {
     }
 
     @Consume(TlsRegistryBuildItem.class) // we may need to register a TLS configuration for the mTLS
-    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @Produce(PreRouterFinalizationBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     HttpSecurityConfigSetupCompleteBuildItem initializeHttpSecurity(
             Optional<HttpAuthenticationHandlerBuildItem> authenticationHandler,
             HttpSecurityRecorder recorder, BeanContainerBuildItem beanContainerBuildItem,
-            ShutdownContextBuildItem shutdown) {
+            ShutdownContextBuildItem shutdown,
+            Optional<IdentityProviderManagerBuilderBuildItem> identityProviderManagerBuilderBuildItem) {
         if (authenticationHandler.isPresent()) {
-            RuntimeValue<CORSConfig> programmaticCorsConfig = recorder.prepareHttpSecurityConfiguration(shutdown);
+            Function<Collection<IdentityProvider<?>>, IdentityProviderManager> identityProviderManagerBuilder = identityProviderManagerBuilderBuildItem
+                    .map(IdentityProviderManagerBuilderBuildItem::getBuilder).orElse(null);
+            RuntimeValue<CORSConfig> programmaticCorsConfig = recorder.prepareHttpSecurityConfiguration(shutdown,
+                    identityProviderManagerBuilder);
             recorder.initializeHttpAuthenticatorHandler(authenticationHandler.get().handler, beanContainerBuildItem.getValue());
             return new HttpSecurityConfigSetupCompleteBuildItem(programmaticCorsConfig);
         }

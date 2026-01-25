@@ -12,6 +12,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -39,6 +40,8 @@ import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
+import io.quarkus.security.identity.IdentityProvider;
+import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
 import io.quarkus.security.spi.runtime.MethodDescription;
@@ -186,10 +189,13 @@ public class HttpSecurityRecorder {
         };
     }
 
-    public RuntimeValue<CORSConfig> prepareHttpSecurityConfiguration(ShutdownContext shutdownContext) {
+    public RuntimeValue<CORSConfig> prepareHttpSecurityConfiguration(ShutdownContext shutdownContext,
+            Function<Collection<IdentityProvider<?>>, IdentityProviderManager> identityProviderManagerBuilder) {
+        HttpSecurityImpl.setIdentityProviderManagerBuilder(identityProviderManagerBuilder);
         // this is done so that we prepare and validate HTTP Security config before the first incoming request
         var config = HttpSecurityConfiguration.get(httpConfig.getValue(), httpBuildTimeConfig);
         shutdownContext.addShutdownTask(HttpSecurityConfiguration::clear);
+        shutdownContext.addShutdownTask(HttpSecurityImpl::clearIdentityProviderManagerBuilder);
         return new RuntimeValue<>(config.getCorsConfig());
     }
 

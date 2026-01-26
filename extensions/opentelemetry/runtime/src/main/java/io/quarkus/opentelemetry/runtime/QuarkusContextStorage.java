@@ -7,7 +7,6 @@ import java.util.Map;
 
 import org.jboss.logging.Logger;
 
-import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.context.Scope;
@@ -100,18 +99,11 @@ public enum QuarkusContextStorage implements ContextStorage {
                 }
 
                 if (otelBeforeAttach == null) {
-                    OpenTelemetryUtil.clearMDCData(vertxContext);
                     vertxContext.removeLocal(OTEL_CONTEXT);
+                    OpenTelemetryUtil.clearMDCData(vertxContext);
                 } else {
-                    Span span = Span.fromContextOrNull(otelBeforeAttach);
-                    if (span != null && span.isRecording()) {
-                        // Only restore if Span has not ended
-                        OpenTelemetryUtil.setMDCData(otelBeforeAttach, vertxContext);
-                        vertxContext.putLocal(OTEL_CONTEXT, otelBeforeAttach);
-                    } else {
-                        OpenTelemetryUtil.clearMDCData(vertxContext);
-                        vertxContext.removeLocal(OTEL_CONTEXT);
-                    }
+                    vertxContext.putLocal(OTEL_CONTEXT, otelBeforeAttach);
+                    OpenTelemetryUtil.setMDCData(otelBeforeAttach, vertxContext);
                 }
             }
 

@@ -32,6 +32,17 @@ public class TestSpanExporter implements SpanExporter {
         return filteredSpans.get(0);
     }
 
+    /**
+     * Partial finishedSpanItems. Use with caution.
+     * Don't get illusions with this method. We might not have received all the spans if you call it right away.
+     * You must pool for the right amount of spans you are expecting. See methods below for details.
+     *
+     * @return
+     */
+    public List<SpanData> getPartialFinishedSpanItems() {
+        return finishedSpanItems;
+    }
+
     public static List<SpanData> getSpansByKindAndParentId(List<SpanData> spans,
             SpanKind kind,
             Object parentSpanId) {

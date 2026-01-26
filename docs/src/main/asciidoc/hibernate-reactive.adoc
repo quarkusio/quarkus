@@ -187,28 +187,7 @@ This is useful to have a data set ready for your tests or demos.
 
 You can use the standard `jakarta.transaction.Transactional` annotation with Hibernate Reactive as well.
 This provides a more familiar programming model for developers coming from Hibernate ORM.
-
-[NOTE]
-====
-The `quarkus-reactive-transactions` extension is currently in preview status. The API and behavior may change in future versions.
-====
-
-To use `@Transactional` with Hibernate Reactive, you need to add the `quarkus-reactive-transactions` extension:
-
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-reactive-transactions</artifactId>
-</dependency>
-----
-
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-implementation("io.quarkus:quarkus-reactive-transactions")
-----
+Support for `@Transactional` in Hibernate Reactive is provided by the `quarkus-reactive-transactions` module, implcitly imported by Hibernate Reactive.
 
 While defining transaction handling using the annotation, you should inject `Mutiny.Session` or `Mutiny.StatelessSession` directly and use them in methods annotated with `@Transactional`.
 

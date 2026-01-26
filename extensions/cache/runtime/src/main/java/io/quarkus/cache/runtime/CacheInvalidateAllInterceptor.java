@@ -46,34 +46,65 @@ public class CacheInvalidateAllInterceptor extends CacheInterceptor {
             CacheInterceptionContext<CacheInvalidateAll> interceptionContext,
             ReturnType returnType) {
         LOGGER.trace("Invalidating all cache entries in a non-blocking way");
-        var uni = Multi.createFrom().iterable(interceptionContext.getInterceptorBindings())
-                .onItem().transformToUniAndMerge(new Function<CacheInvalidateAll, Uni<? extends Void>>() {
-                    @Override
-                    public Uni<Void> apply(CacheInvalidateAll binding) {
-                        return invalidateAll(binding);
-                    }
-                })
-                .onItem().ignoreAsUni()
+        var uni = Uni.createFrom().deferred(new java.util.function.Supplier<Uni<?>>() {
+            @Override
+            public Uni<?> get() {
+                try {
+                    return asyncInvocationResultToUni(invocationContext.proceed(), returnType);
+                } catch (Exception e) {
+                    return Uni.createFrom().failure(new CacheException(e));
+                }
+            }
+        })
                 .onItem().transformToUni(new Function<Object, Uni<?>>() {
                     @Override
-                    public Uni<?> apply(Object ignored) {
-                        try {
-                            return asyncInvocationResultToUni(invocationContext.proceed(), returnType);
-                        } catch (Exception e) {
-                            throw new CacheException(e);
-                        }
+                    public Uni<?> apply(Object result) {
+                        return Multi.createFrom().iterable(interceptionContext.getInterceptorBindings())
+                                .onItem().transformToUniAndMerge(new Function<CacheInvalidateAll, Uni<? extends Void>>() {
+                                    @Override
+                                    public Uni<Void> apply(CacheInvalidateAll binding) {
+                                        return invalidateAll(binding);
+                                    }
+                                })
+                                .onItem().ignoreAsUni()
+                                .onItem().transformToUni(new Function<Object, Uni<?>>() {
+                                    @Override
+                                    public Uni<?> apply(Object ignored) {
+                                        return Uni.createFrom().item(result);
+                                    }
+                                });
+                    }
+                })
+                .onFailure().recoverWithUni(new Function<Throwable, Uni<?>>() {
+                    @Override
+                    public Uni<?> apply(Throwable throwable) {
+                        return Multi.createFrom().iterable(interceptionContext.getInterceptorBindings())
+                                .onItem().transformToUniAndMerge(new Function<CacheInvalidateAll, Uni<? extends Void>>() {
+                                    @Override
+                                    public Uni<Void> apply(CacheInvalidateAll binding) {
+                                        return invalidateAll(binding);
+                                    }
+                                })
+                                .onItem().ignoreAsUni()
+                                .onItem().transformToUni(new Function<Object, Uni<?>>() {
+                                    @Override
+                                    public Uni<?> apply(Object ignored) {
+                                        return Uni.createFrom().failure(throwable);
+                                    }
+                                });
                     }
                 });
-        return createAsyncResult(uni, returnType);
+        return createAsyncResult((Uni<Object>) uni, returnType);
     }
 
     private Object invalidateAllBlocking(InvocationContext invocationContext,
             CacheInterceptionContext<CacheInvalidateAll> interceptionContext) throws Exception {
         LOGGER.trace("Invalidating all cache entries in a blocking way");
+        Object result = invocationContext.proceed();
         for (CacheInvalidateAll binding : interceptionContext.getInterceptorBindings()) {
             invalidateAll(binding).await().indefinitely();
         }
-        return invocationContext.proceed();
+        return result;
     }
 
     private Uni<Void> invalidateAll(CacheInvalidateAll binding) {

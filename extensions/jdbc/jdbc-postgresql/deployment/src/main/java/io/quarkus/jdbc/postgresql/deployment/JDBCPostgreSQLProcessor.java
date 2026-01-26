@@ -40,6 +40,11 @@ public class JDBCPostgreSQLProcessor {
     }
 
     @BuildStep
+    RuntimeInitializedClassBuildItem avoidCleanerInitialization() {
+        return new RuntimeInitializedClassBuildItem("org.postgresql.util.LazyCleanerImpl");
+    }
+
+    @BuildStep
     void registerDriver(BuildProducer<JdbcDriverBuildItem> jdbcDriver,
             BuildProducer<NativeImageResourceBuildItem> resources,
             SslNativeConfigBuildItem sslNativeConfigBuildItem) {

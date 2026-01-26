@@ -52,6 +52,9 @@ final class LocationUtil {
                 if (!forwardedPrefix.startsWith("/")) {
                     forwardedPrefix = "/" + forwardedPrefix;
                 }
+                if (forwardedPrefix.endsWith("/")) {
+                    forwardedPrefix = forwardedPrefix.substring(0, forwardedPrefix.length() - 1);
+                }
                 prefix = forwardedPrefix + prefix;
             }
         }

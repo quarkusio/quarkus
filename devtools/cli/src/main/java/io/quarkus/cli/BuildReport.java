@@ -10,6 +10,7 @@ import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.NullNode;
 
 import io.quarkus.cli.common.build.BuildSystemRunner;
 import io.quarkus.qute.CheckedTemplate;
@@ -47,8 +48,16 @@ public class BuildReport {
         for (JsonNode record : root.get("records")) {
             String thread = record.get("thread").asText();
             threads.add(thread);
+            List<BuildItem> producedItems = List.of();
+            JsonNode produced = record.get("producedItems");
+            if (produced != null && !(produced instanceof NullNode)) {
+                producedItems = new ArrayList<>();
+                for (JsonNode item : produced) {
+                    producedItems.add(new BuildItem(item.get("item").asText(), item.get("count").asInt()));
+                }
+            }
             records.add(new BuildStepRecord(record.get("stepId").asText(), record.get("started").asText(),
-                    record.get("duration").asLong(), thread));
+                    record.get("duration").asLong(), thread, producedItems));
         }
 
         for (JsonNode item : root.get("items")) {
@@ -75,12 +84,21 @@ public class BuildReport {
         public final String started;
         public final long duration;
         public final String thread;
+        public final List<BuildItem> producedItems;
 
-        public BuildStepRecord(String stepId, String started, long duration, String thread) {
+        public BuildStepRecord(String stepId, String started, long duration, String thread, List<BuildItem> producedItems) {
             this.stepId = stepId;
             this.started = started;
             this.duration = duration;
             this.thread = thread;
+            this.producedItems = producedItems;
+        }
+
+        public String shortStepId() {
+            if (stepId.length() <= 70) {
+                return stepId;
+            }
+            return stepId.substring(0, 69) + "...";
         }
 
     }

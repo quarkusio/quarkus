@@ -18,6 +18,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -651,16 +652,14 @@ public class VertxCoreRecorder {
                     ContextInternal vertxContext = (ContextInternal) context;
                     // The CDI contexts must not be propagated
                     // First test if VertxCurrentContextFactory is actually used
-                    if (ignoredKeys != null) {
-                        ConcurrentMap<Object, Object> local = vertxContext.localContextData();
-                        if (containsIgnoredKey(ignoredKeys, local)) {
-                            // Duplicate the context, copy the data, remove the request context
-                            vertxContext = vertxContext.duplicate();
-                            vertxContext.localContextData().putAll(local);
-                            ignoredKeys.forEach(vertxContext.localContextData()::remove);
-                            VertxContextSafetyToggle.setContextSafe(vertxContext, true);
-                        }
+                    ConcurrentMap<Object, Object> local = vertxContext.localContextData();
+                    // Duplicate the context, copy the data, remove the request context
+                    vertxContext = vertxContext.duplicate();
+                    vertxContext.localContextData().putAll(deepCopy(local));
+                    if (ignoredKeys != null && containsIgnoredKey(ignoredKeys, local)) {
+                        ignoredKeys.forEach(vertxContext.localContextData()::remove);
                     }
+                    VertxContextSafetyToggle.setContextSafe(vertxContext, true);
                     vertxContext.beginDispatch();
                     try {
                         task.run();
@@ -670,6 +669,17 @@ public class VertxCoreRecorder {
                 } else {
                     task.run();
                 }
+            }
+
+            private ConcurrentMap<Object, Object> deepCopy(Map<Object, Object> input) {
+                ConcurrentMap<Object, Object> output = new ConcurrentHashMap<>();
+                input.forEach((key, value) -> {
+                    // FIXME support other objects
+                    var newKey = key instanceof String ? new String((String) key) : key;
+                    var newValue = value instanceof String ? new String((String) value) : value;
+                    output.put(newKey, newValue);
+                });
+                return output;
             }
 
             private boolean containsIgnoredKey(List<String> keys, Map<Object, Object> localContextData) {

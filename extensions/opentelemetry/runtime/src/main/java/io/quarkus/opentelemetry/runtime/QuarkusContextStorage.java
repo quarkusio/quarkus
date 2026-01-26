@@ -7,7 +7,6 @@ import java.util.Map;
 
 import org.jboss.logging.Logger;
 
-import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.context.Scope;
@@ -74,16 +73,12 @@ public enum QuarkusContextStorage implements ContextStorage {
         vertxContext.putLocal(OTEL_CONTEXT, otelToAttach);
         OpenTelemetryUtil.setMDCData(otelToAttach, vertxContext);
 
-        return new Scope() {
+        Scope scope = new Scope() {
 
             @Override
             public void close() {
                 // compare otel contexts when closing scope
                 final Context otelBefore = getOtelContext(vertxContext);
-
-                if (log.isDebugEnabled()) {
-                    log.debugv("Closing Otel context: {0}", OpenTelemetryUtil.getSpanData(otelToAttach));
-                }
 
                 if (otelBefore != otelToAttach && log.isDebugEnabled()) {
                     // Different references can contain the same span data.
@@ -91,27 +86,29 @@ public enum QuarkusContextStorage implements ContextStorage {
                     Map<String, String> spanDataBefore = OpenTelemetryUtil.getSpanData(otelBefore);
                     if (spanDataBefore != null && !spanDataBefore.isEmpty()) {
                         log.debug(
-                                "Context in storage not the expected context, Scope.close was not called correctly. Details:" +
-                                        " OTel context otelBefore: ref: " + System.identityHashCode(otelBefore) +
-                                        " Content: " + spanDataBefore +
-                                        ". OTel context otelToAttach: ref: " + System.identityHashCode(otelToAttach) +
-                                        " Content: " + OpenTelemetryUtil.getSpanData(otelToAttach));
+                                "Context in storage not the expected context, Scope.close " +
+                                        System.identityHashCode(this) + " was not called correctly. Details:" +
+                                        " Content otelBefore: " + spanDataBefore +
+                                        " Content otelToAttach: " + OpenTelemetryUtil.getSpanData(otelToAttach));
                     }
                 }
 
                 if (otelBeforeAttach == null) {
-                    OpenTelemetryUtil.clearMDCData(vertxContext);
-                    vertxContext.removeLocal(OTEL_CONTEXT);
-                } else {
-                    Span span = Span.fromContextOrNull(otelBeforeAttach);
-                    if (span != null && span.isRecording()) {
-                        // Only restore if Span has not ended
-                        OpenTelemetryUtil.setMDCData(otelBeforeAttach, vertxContext);
-                        vertxContext.putLocal(OTEL_CONTEXT, otelBeforeAttach);
-                    } else {
-                        OpenTelemetryUtil.clearMDCData(vertxContext);
-                        vertxContext.removeLocal(OTEL_CONTEXT);
+                    if (log.isDebugEnabled()) {
+                        log.debugv("Closing scope {1} for Otel context: {0}", OpenTelemetryUtil.getSpanData(otelToAttach),
+                                "" + System.identityHashCode(this));
                     }
+                    vertxContext.removeLocal(OTEL_CONTEXT);
+                    OpenTelemetryUtil.clearMDCData(vertxContext);
+                } else {
+                    if (log.isDebugEnabled()) {
+                        log.debugv("Closing scope {2} for Otel context: {0} and activating: {1}",
+                                OpenTelemetryUtil.getSpanData(otelToAttach),
+                                OpenTelemetryUtil.getSpanData(otelBeforeAttach),
+                                "" + System.identityHashCode(this));
+                    }
+                    vertxContext.putLocal(OTEL_CONTEXT, otelBeforeAttach);
+                    OpenTelemetryUtil.setMDCData(otelBeforeAttach, vertxContext);
                 }
             }
 
@@ -122,6 +119,11 @@ public enum QuarkusContextStorage implements ContextStorage {
                         ". vertxContext: " + OpenTelemetryUtil.getSpanData(otelInVertxContext);
             }
         };
+        if (log.isDebugEnabled()) {
+            log.debugv("Setting scope {1} for Otel context: {0}",
+                    OpenTelemetryUtil.getSpanData(otelToAttach), "" + System.identityHashCode(scope));
+        }
+        return scope;
     }
 
     /**

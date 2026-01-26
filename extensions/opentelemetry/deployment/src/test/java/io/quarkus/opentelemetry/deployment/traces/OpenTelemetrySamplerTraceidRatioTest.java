@@ -18,7 +18,7 @@ import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class OpenTelemetrySamplerConfigTest {
+public class OpenTelemetrySamplerTraceidRatioTest {
     @RegisterExtension
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar.addClass(TestUtil.class)

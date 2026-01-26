@@ -86,11 +86,13 @@ public class OpenTelemetryUtilTest {
         Context contextChild = Context.current().with(child);
 
         Map<String, String> actual = OpenTelemetryUtil.getSpanData(contextChild);
-        assertEquals(4, actual.size());
+        assertEquals(5, actual.size());
         assertEquals(child.getSpanContext().getSpanId(), actual.get("spanId"));
         assertEquals(child.getSpanContext().getTraceId(), actual.get("traceId"));
         assertEquals("true", actual.get("sampled"));
         assertEquals(parent.getSpanContext().getSpanId(), actual.get("parentId"));
+        assertEquals(System.identityHashCode(contextChild), Integer.parseInt(actual.get("contextObjRef")));
+
     }
 
     @Test
@@ -107,10 +109,11 @@ public class OpenTelemetryUtilTest {
         Context contextChild = Context.current().with(child);
 
         Map<String, String> actual = OpenTelemetryUtil.getSpanData(contextChild);
-        assertEquals(3, actual.size());
+        assertEquals(4, actual.size());
         assertEquals(child.getSpanContext().getSpanId(), actual.get("spanId"));
         assertEquals(child.getSpanContext().getTraceId(), actual.get("traceId"));
         assertEquals("true", actual.get("sampled"));
+        assertEquals(System.identityHashCode(contextChild), Integer.parseInt(actual.get("contextObjRef")));
     }
 
     @Test

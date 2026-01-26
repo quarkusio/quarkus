@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jboss.logging.Logger;
-import org.slf4j.MDC;
 
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
@@ -113,6 +112,7 @@ public final class OpenTelemetryUtil {
                     spanData.put(PARENT_ID, parentSpanContext.getSpanId());
                 }
             }
+            spanData.put("contextObjRef", "" + System.identityHashCode(context));
         }
         return spanData;
     }

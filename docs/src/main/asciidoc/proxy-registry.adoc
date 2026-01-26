@@ -1,0 +1,164 @@
+////
+This guide is maintained in the main Quarkus repository.
+Pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Using Proxy Registry
+:extension-status: preview
+include::_attributes.adoc[]
+:categories: miscellaneous
+:summary: This guide explains how to use the Proxy Registry in your Quarkus application.
+:topics: security,proxy,http
+:extensions: io.quarkus:quarkus-proxy-registry
+
+This guide covers:
+
+* How to configure a global proxy
+* How to configure named proxies
+* How to integrate with a Credentials Provider
+
+== Introduction
+
+A proxy acts as an intermediary between an application and external services.
+Instead of connecting directly to a remote host, the application sends requests through a proxy server.
+The proxy server then forwards the requests to the destination.
+
+In Java applications, proxies are commonly required in environments where direct outbound network access is restricted.
+This is typical in corporate networks.
+This is also common in cloud environments with strict security rules.
+This is often required in production systems that require traffic inspection and auditing.
+
+Proxies are commonly used to:
+
+* Control and restrict outbound network access
+* Enforce security and network policies
+* Provide authentication for external connections
+* Monitor and log outgoing traffic
+
+== Proxy configuration
+
+Many Java applications rely on JVM system properties or client-specific configuration to enable proxy support.
+This approach can lead to duplicated configuration.
+This approach can also lead to inconsistent behavior across clients.
+
+Quarkus provides a centralized way to configure proxies using the Proxy Registry.
+All proxy configuration is defined under the `quarkus.proxy` configuration root.
+
+You can configure:
+
+* A default (global) proxy
+* One or more named proxies that extensions can reference
+
+Some Quarkus extensions already integrate with the Proxy Registry, including:
+
+* https://quarkus.io/guides/rest-client[quarkus-rest-client]
+* https://quarkus.io/guides/redis[quarkus-redis-client]
+* https://pt.quarkus.io/guides/smallrye-graphql-client[quarkus-smallrye-graphql-client]
+* https://docs.quarkiverse.io/quarkus-cxf/dev/reference/extensions/quarkus-cxf.html#quarkus-cxf_quarkus-cxf-client-client-name-proxy-configuration-name[quarkus-cxf] (since version 3.31.0)
+
+== Configuring a default proxy
+
+To configure a default (global) proxy, add the following properties to `application.properties`:
+
+[source,properties]
+----
+quarkus.proxy.host=localhost <1>
+quarkus.proxy.port=8443 <2>
+quarkus.proxy.type=HTTP <3>
+----
+
+1. The proxy host
+2. The proxy port
+3. The proxy type.
+Possible values are `HTTP` (default), `SOCKS4`, and `SOCKS5`.
+
+Extensions that are aware of the Proxy Registry use the default proxy.
+This happens unless a named proxy is explicitly referenced in the configuration of the extension.
+
+== Configuring named proxies
+
+Named proxies allow different clients or extensions to use different proxy configurations.
+
+The following example defines two named proxies:
+
+[source,properties]
+----
+quarkus.proxy.local.host=localhost
+quarkus.proxy.local.port=3333
+quarkus.proxy.local.type=SOCKS5
+
+quarkus.proxy.my-proxy.host=localhost
+quarkus.proxy.my-proxy.port=8443
+quarkus.proxy.my-proxy.type=HTTP
+quarkus.proxy.my-proxy.non-proxy-hosts=proxy.mycompany.com,proxy.org.acme <1>
+----
+
+1. Hostnames or IP addresses that should bypass the proxy
+
+In this example, two named proxies are configured.
+The proxies are named `local` and `my-proxy`.
+Extensions can reference these proxies by name when required.
+
+== Using credentials
+
+Proxy authentication can be configured directly using the `username` and `password` properties.
+
+[source,properties]
+----
+quarkus.proxy.my-proxy.host=localhost
+quarkus.proxy.my-proxy.port=8443
+quarkus.proxy.my-proxy.type=HTTP
+quarkus.proxy.my-proxy.non-proxy-hosts=proxy.mycompany.com,proxy.org.acme
+
+quarkus.proxy.my-proxy.username=${PROXY_USERNAME}
+quarkus.proxy.my-proxy.password=${PROXY_PASSWORD}
+----
+
+Credentials can be externalized using environment variables.
+Credentials can also be externalized using any other supported Quarkus configuration source.
+
+=== Providing credentials via a Credentials Provider
+
+Instead of defining credentials directly in configuration, you can integrate with a Quarkus Credentials Provider.
+This allows credentials to be retrieved securely from external systems.
+Examples include vaults or secret managers.
+
+This feature relies on the xref:credentials-provider.adoc[Credentials Provider] capability.
+
+To configure a credentials provider for proxy authentication, use the following properties:
+
+[source,properties]
+----
+quarkus.proxy.host=localhost
+quarkus.proxy.port=3838
+
+quarkus.proxy.credentials-provider.name=credential
+quarkus.proxy.credentials-provider.bean-name=credentialBean
+quarkus.proxy.credentials-provider.username-key=userKey
+quarkus.proxy.credentials-provider.password-key=passwordKey
+----
+
+The Proxy Registry automatically retrieves the credentials.
+The credentials are applied to the proxy configuration.
+
+=== How credentials are applied
+
+When a proxy is configured with a Credentials Provider, the Proxy Registry automatically retrieves the credentials at startup.
+The retrieved credentials are applied to the proxy configuration.
+
+The behavior is as follows:
+
+* If `username` and `password` are explicitly configured, they are used.
+* Otherwise, if a Credentials Provider is configured, the credentials are retrieved from the provider.
+* If no credentials are configured, the proxy is used without authentication.
+
+If only one of `username` or `password` is defined, the application fails at startup.
+The application also fails if the credentials cannot be retrieved from the provider.
+In both cases, a configuration error is reported.
+
+This ensures that proxy configuration is validated early.
+This validation is consistent across all clients and extensions.
+
+=== Configuration Reference
+
+include::{generated-dir}/config/quarkus-proxy-registry.adoc[]

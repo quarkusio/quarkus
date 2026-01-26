@@ -2,38 +2,32 @@ package io.quarkus.smallrye.graphql.runtime;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
+import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.StaticInitSafe;
+import io.smallrye.config.ConfigSourceInterceptor;
 import io.smallrye.config.ConfigSourceInterceptorContext;
+import io.smallrye.config.ConfigSourceInterceptorFactory;
+import io.smallrye.config.Priorities;
 import io.smallrye.config.RelocateConfigSourceInterceptor;
 import io.smallrye.graphql.config.ConfigKey;
 
 /**
  * Maps config from MicroProfile and SmallRye to Quarkus
  */
-public class SmallRyeGraphQLConfigMapping extends RelocateConfigSourceInterceptor {
+@StaticInitSafe
+public class SmallRyeGraphQLConfigMapping implements ConfigSourceInterceptorFactory {
     private static final Map<String, String> RELOCATIONS = relocations();
 
-    public SmallRyeGraphQLConfigMapping() {
-        super(RELOCATIONS);
+    @Override
+    public ConfigSourceInterceptor getInterceptor(ConfigSourceInterceptorContext context) {
+        return new RelocateConfigSourceInterceptor(RELOCATIONS);
     }
 
     @Override
-    public Iterator<String> iterateNames(final ConfigSourceInterceptorContext context) {
-        final Set<String> names = new HashSet<>();
-        final Iterator<String> namesIterator = context.iterateNames();
-        while (namesIterator.hasNext()) {
-            final String name = namesIterator.next();
-            names.add(name);
-            final String mappedName = RELOCATIONS.get(name);
-            if (mappedName != null) {
-                names.add(mappedName);
-            }
-        }
-        return names.iterator();
+    public OptionalInt getPriority() {
+        return OptionalInt.of(Priorities.LIBRARY + 300);
     }
 
     private static Map<String, String> relocations() {

@@ -1,4 +1,4 @@
-package io.quarkus.bootstrap.json;
+package io.quarkus.bootstrap.json.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -8,6 +8,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.bootstrap.json.JsonArray;
+import io.quarkus.bootstrap.json.JsonBoolean;
+import io.quarkus.bootstrap.json.JsonDouble;
+import io.quarkus.bootstrap.json.JsonInteger;
+import io.quarkus.bootstrap.json.JsonNull;
+import io.quarkus.bootstrap.json.JsonObject;
+import io.quarkus.bootstrap.json.JsonReader;
+import io.quarkus.bootstrap.json.JsonString;
 
 class JsonDeserializerTest {
 

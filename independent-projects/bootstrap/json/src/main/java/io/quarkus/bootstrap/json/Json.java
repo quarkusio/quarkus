@@ -129,7 +129,7 @@ public final class Json {
          */
         abstract boolean isEmpty();
 
-        abstract void appendTo(Appendable appendable) throws IOException;
+        public abstract void appendTo(Appendable appendable) throws IOException;
 
         /**
          * @param value value to check
@@ -201,22 +201,22 @@ public final class Json {
             return this;
         }
 
-        JsonArrayBuilder add(boolean value) {
+        public JsonArrayBuilder add(boolean value) {
             addInternal(value);
             return this;
         }
 
-        JsonArrayBuilder add(int value) {
+        public JsonArrayBuilder add(int value) {
             addInternal(value);
             return this;
         }
 
-        JsonArrayBuilder add(long value) {
+        public JsonArrayBuilder add(long value) {
             addInternal(value);
             return this;
         }
 
-        JsonArrayBuilder addAll(List<JsonObjectBuilder> value) {
+        public JsonArrayBuilder addAll(List<JsonObjectBuilder> value) {
             if (value != null && !value.isEmpty()) {
                 values.addAll(value);
             }
@@ -385,17 +385,17 @@ public final class Json {
             return this;
         }
 
-        JsonObjectBuilder put(String name, int value) {
+        public JsonObjectBuilder put(String name, int value) {
             putInternal(name, value);
             return this;
         }
 
-        JsonObjectBuilder put(String name, long value) {
+        public JsonObjectBuilder put(String name, long value) {
             putInternal(name, value);
             return this;
         }
 
-        boolean has(String name) {
+        public boolean has(String name) {
             return properties.containsKey(name);
         }
 

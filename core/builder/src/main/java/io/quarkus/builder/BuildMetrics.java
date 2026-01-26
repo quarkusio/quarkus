@@ -146,9 +146,9 @@ public class BuildMetrics {
                 }
                 recObject.put("dependents", dependentsArray);
                 if (buildItemsExtended != null) {
-                    JsonArrayBuilder producedItems = Json.array();
                     List<String> items = buildItemsExtended.get(rec.stepInfo.getBuildStep().getId());
                     if (items != null) {
+                        JsonArrayBuilder producedItems = Json.array();
                         // build item class -> count
                         Map<String, Long> counts = items
                                 .stream()
@@ -158,7 +158,7 @@ public class BuildMetrics {
                         for (Entry<String, Long> e : sortedItems) {
                             producedItems.add(Json.object()
                                     .put("item", e.getKey())
-                                    .put("count", e.getValue()));
+                                    .put("count", e.getValue().longValue()));
                         }
                         recObject.put("producedItems", producedItems);
                     }

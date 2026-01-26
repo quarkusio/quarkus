@@ -5,7 +5,7 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.random.RandomGenerator;
+import java.util.stream.Collectors;
 
 import jakarta.annotation.Priority;
 import jakarta.inject.Singleton;
@@ -20,11 +20,13 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.security.spi.runtime.MethodDescription;
 
 public final class AccessTokenRequestFilterGenerator {
 
     private static final int AUTHENTICATION = 1000;
+    private static final String SEPARATOR = "_";
 
     private record RequestFilterKey(String clientName, boolean exchangeTokenActivated, MethodDescription methodDescription) {
     }
@@ -116,9 +118,10 @@ public final class AccessTokenRequestFilterGenerator {
         String uniqueClassName = "%s_%sClient_%sTokenExchange".formatted(requestFilterClass.getName(),
                 clientName(i.clientName()), exchangeTokenName(i.exchangeTokenActivated()));
         if (i.methodDescription != null) {
-            // we need the random so that we avoid conflicts between methods with the same name and different parameters
-            uniqueClassName += "_" + instance.getTargetMethodInfo().declaringClass().simpleName() + "_"
-                    + i.methodDescription.getMethodName() + "_" + RandomGenerator.getDefault().nextInt();
+            var paramTypesAsString = Arrays.stream(i.methodDescription.getParameterTypes()).sorted()
+                    .collect(Collectors.joining(SEPARATOR));
+            uniqueClassName += HashUtil.sha1(i.methodDescription.getClassName() + SEPARATOR
+                    + i.methodDescription.getMethodName() + SEPARATOR + paramTypesAsString);
         }
         return uniqueClassName;
     }

@@ -310,8 +310,8 @@ class VertxProcessor {
     @BuildStep
     void simplifyVertxImplGetVirtualThreadFactoryOnJava21(CompiledJavaVersionBuildItem compiledJavaVersion,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformers) {
-        // if we haven't been able to determine the compilation target, we don't do anything
-        if (compiledJavaVersion.getJavaVersion().isJava21OrHigher() == Status.UNKNOWN) {
+        // we only transform the code when we know that the JDK that will be running it is JDK 21 or higher
+        if (compiledJavaVersion.getJavaVersion().isJava21OrHigher() != Status.TRUE) {
             return;
         }
 
@@ -333,38 +333,32 @@ class VertxProcessor {
                                 MethodCreator method = transformer.addMethod(virtualThreadFactoryDescriptor)
                                         .setModifiers(Modifier.STATIC | Modifier.PRIVATE);
 
-                                if (compiledJavaVersion.getJavaVersion()
-                                        .isJava21OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
-                                    // 1. Invoke Thread.ofVirtual() -> returns Thread.Builder.OfVirtual
-                                    ResultHandle builderOfVirtual = method.invokeStaticMethod(
-                                            MethodDescriptor.ofMethod(Thread.class, "ofVirtual",
-                                                    "java.lang.Thread$Builder$OfVirtual"));
+                                // 1. Invoke Thread.ofVirtual() -> returns Thread.Builder.OfVirtual
+                                ResultHandle builderOfVirtual = method.invokeStaticMethod(
+                                        MethodDescriptor.ofMethod(Thread.class, "ofVirtual",
+                                                "java.lang.Thread$Builder$OfVirtual"));
 
-                                    // 2. Invoke builder.name(String, long) -> returns Thread.Builder.OfVirtual
-                                    // Note: long requires a ResultHandle; 0L is loaded as a constant
-                                    ResultHandle namePrefix = method.load("vert.x-virtual-thread-");
-                                    ResultHandle startValue = method.load(0L);
+                                // 2. Invoke builder.name(String, long) -> returns Thread.Builder.OfVirtual
+                                // Note: long requires a ResultHandle; 0L is loaded as a constant
+                                ResultHandle namePrefix = method.load("vert.x-virtual-thread-");
+                                ResultHandle startValue = method.load(0L);
 
-                                    ResultHandle namedBuilder = method.invokeInterfaceMethod(
-                                            MethodDescriptor.ofMethod("java.lang.Thread$Builder$OfVirtual", "name",
-                                                    "java.lang.Thread$Builder$OfVirtual", String.class, long.class),
-                                            builderOfVirtual,
-                                            namePrefix,
-                                            startValue);
+                                ResultHandle namedBuilder = method.invokeInterfaceMethod(
+                                        MethodDescriptor.ofMethod("java.lang.Thread$Builder$OfVirtual", "name",
+                                                "java.lang.Thread$Builder$OfVirtual", String.class, long.class),
+                                        builderOfVirtual,
+                                        namePrefix,
+                                        startValue);
 
-                                    // 3. Invoke builder.factory() -> returns ThreadFactory
-                                    // This method is defined on the parent interface Thread.Builder
-                                    ResultHandle factory = method.invokeInterfaceMethod(
-                                            MethodDescriptor.ofMethod("java.lang.Thread$Builder", "factory",
-                                                    ThreadFactory.class),
-                                            namedBuilder);
+                                // 3. Invoke builder.factory() -> returns ThreadFactory
+                                // This method is defined on the parent interface Thread.Builder
+                                ResultHandle factory = method.invokeInterfaceMethod(
+                                        MethodDescriptor.ofMethod("java.lang.Thread$Builder", "factory",
+                                                ThreadFactory.class),
+                                        namedBuilder);
 
-                                    // 4. Return the factory
-                                    method.returnValue(factory);
-                                } else {
-                                    // return null if JDK < 21
-                                    method.returnValue(method.loadNull());
-                                }
+                                // 4. Return the factory
+                                method.returnValue(factory);
 
                                 return transformer.applyTo(classVisitor);
                             }

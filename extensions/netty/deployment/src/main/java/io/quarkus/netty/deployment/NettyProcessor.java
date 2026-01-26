@@ -12,11 +12,14 @@ import java.util.function.Supplier;
 
 import jakarta.inject.Singleton;
 
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.Level;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
 
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.EventLoopGroup;
 import io.netty.resolver.dns.DnsServerAddressStreamProviders;
 import io.netty.util.internal.PlatformDependent;
@@ -30,7 +33,9 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.GeneratedRuntimeSystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
 import io.quarkus.deployment.builditem.ModuleOpenBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
@@ -59,6 +64,7 @@ import io.quarkus.netty.MainEventLoopGroup;
 import io.quarkus.netty.runtime.EmptyByteBufStub;
 import io.quarkus.netty.runtime.MachineIdGenerator;
 import io.quarkus.netty.runtime.NettyRecorder;
+import io.quarkus.netty.runtime.NettySharable;
 import io.quarkus.runtime.util.JavaVersionGreaterOrEqual25;
 
 class NettyProcessor {
@@ -820,6 +826,94 @@ class NettyProcessor {
         }
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.kqueue.AcceptFilter")) {
             nativeAccess.produce(new ModuleEnableNativeAccessBuildItem("io.netty.transport.classes.kqueue"));
+        }
+    }
+
+    @BuildStep
+    void indexTransports(BuildProducer<IndexDependencyBuildItem> producer) {
+        producer.produce(new IndexDependencyBuildItem("io.netty", "netty-transport"));
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void transformIsSharable(CombinedIndexBuildItem indexBuildItem,
+            NettyRecorder recorder,
+            BuildProducer<BytecodeTransformerBuildItem> producer) {
+        IndexView index = indexBuildItem.getIndex();
+
+        // add the NettySharable marker to each class that is annotated with @Sharable
+        index.getAnnotations(ChannelHandler.Sharable.class).forEach(ai -> {
+            if (ai.target().kind() != AnnotationTarget.Kind.CLASS) {
+                return;
+            }
+
+            String className = ai.target().asClass().name().toString();
+            producer.produce(new BytecodeTransformerBuildItem.Builder().setClassToTransform(className)
+                    .setCacheable(true).setVisitorFunction(new AddSharableVisitorFunction(className)).build());
+        });
+
+        /*
+         * Transform ChannelHandlerAdapter to:
+         *
+         * public boolean isSharable() {
+         * if (this instanceof NettySharable) {
+         * return true;
+         * }
+         * return this.isSharable0();
+         * }
+         *
+         * where `isSharable0` is the old `isSharable` method of ChannelHandlerAdapter
+         */
+        String classAdapterClassName = "io.netty.channel.ChannelHandlerAdapter";
+        producer.produce(new BytecodeTransformerBuildItem.Builder().setClassToTransform(classAdapterClassName)
+                .setCacheable(true).setVisitorFunction(new BiFunction<>() {
+                    @Override
+                    public ClassVisitor apply(String s, ClassVisitor classVisitor) {
+                        ClassTransformer transformer = new ClassTransformer(classAdapterClassName);
+
+                        MethodDescriptor isSharableMethod = MethodDescriptor.ofMethod(classAdapterClassName, "isSharable",
+                                boolean.class);
+
+                        // old isSharable becomes isSharable0
+                        transformer.modifyMethod(isSharableMethod).rename("isSharable0");
+
+                        // new isSharable method
+                        {
+                            MethodDescriptor isSharable0Method = MethodDescriptor.ofMethod(classAdapterClassName, "isSharable0",
+                                    boolean.class);
+
+                            MethodCreator mc = transformer.addMethod(isSharableMethod);
+
+                            // clazz instanceof NettySharable
+                            ResultHandle isInstanceOf = mc.instanceOf(mc.getThis(), NettySharable.class);
+
+                            // if (instanceof) return true; else call isSharable0
+                            BytecodeCreator trueBranch = mc.ifNonZero(isInstanceOf).trueBranch();
+                            trueBranch.returnValue(trueBranch.load(true));
+                            ResultHandle result = mc.invokeVirtualMethod(isSharable0Method, mc.getThis());
+
+                            mc.returnValue(result);
+                        }
+
+                        return transformer.applyTo(classVisitor);
+                    }
+                }).build());
+
+    }
+
+    private static class AddSharableVisitorFunction implements BiFunction<String, ClassVisitor, ClassVisitor> {
+
+        private final String className;
+
+        private AddSharableVisitorFunction(String className) {
+            this.className = className;
+        }
+
+        @Override
+        public ClassVisitor apply(String s, ClassVisitor classVisitor) {
+            ClassTransformer transformer = new ClassTransformer(className);
+            transformer.addInterface(NettySharable.class);
+            return transformer.applyTo(classVisitor);
         }
     }
 }

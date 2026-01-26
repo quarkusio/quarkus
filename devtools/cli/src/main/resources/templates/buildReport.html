@@ -98,6 +98,7 @@
                     <th scope="col">Started</th>
                     <th scope="col">Duration</th>
                     <th scope="col">Thread</th>
+                    <th scope="col">Produced items</th>
                 </tr>
             </thead>
             <tbody>
@@ -105,7 +106,7 @@
                 <tr>
                     <td>{record_count}</td>
                     <td>
-                        {record.stepId}
+                        <code title="{record.stepId}">{record.shortStepId}</code>
                     </td>
                     <td>
                         {record.started}
@@ -114,6 +115,20 @@
                         {#if record.duration < 1} &lt; 1ms {#else} {record.duration} ms {/if} </td>
                     <td>
                         {record.thread}
+                    </td>
+                    <td>
+                        <table style="width:100%;">
+                        {#for produced in record.producedItems??}
+                        <tr>
+                            <td>
+                            {produced.clazz}
+                            </td>
+                            <td style="text-align: right;">
+                            {produced.count}
+                            </td>
+                        </tr>
+                        {/for}
+                        </table>
                     </td>
                     {/for}
             </tbody>

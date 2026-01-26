@@ -19,7 +19,11 @@ public class BuildOptions {
 
     @CommandLine.Option(order = 7, names = {
             "--report" }, description = "Generate build report.", negatable = true, defaultValue = "false")
-    public boolean generateReport = false;
+    public boolean generateBuildReport = false;
+
+    @CommandLine.Option(order = 8, names = {
+            "--ext-capture" }, description = "Enable extended capture for build metrics.", negatable = true, defaultValue = "false")
+    public boolean buildExtendedCapture = false;
 
     public boolean skipTests() {
         return skipTests;
@@ -28,6 +32,7 @@ public class BuildOptions {
     @Override
     public String toString() {
         return "BuildOptions [buildNative=" + buildNative + ", clean=" + clean + ", offline=" + offline + ", skipTests="
-                + skipTests + ", generateReport=" + generateReport + "]";
+                + skipTests + ", generateBuildReport=" + generateBuildReport + ", buildExtendedCapture="
+                + buildExtendedCapture + "]";
     }
 }

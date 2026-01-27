@@ -37,7 +37,7 @@ public class RunnerClassLoaderTest {
                 createProjectJarResource("trivial-project-1.0.jar") });
 
         RunnerClassLoader runnerClassLoader = new RunnerClassLoader(ClassLoader.getSystemClassLoader(), resourceDirectoryMap,
-                Collections.emptySet(), Collections.emptySet(),
+                Collections.emptySet(),
                 Collections.emptyList(), Collections.emptyMap(),
                 null, Collections.emptySet(),
                 null, Collections.emptySet());
@@ -111,7 +111,7 @@ public class RunnerClassLoaderTest {
                 "org/simple", classLoadingResources);
 
         RunnerClassLoader runnerClassLoader = new RunnerClassLoader(ClassLoader.getSystemClassLoader(), resourceDirectoryMap,
-                Collections.emptySet(), Collections.emptySet(),
+                Collections.emptySet(),
                 Collections.emptyList(), Collections.emptyMap(),
                 null, Collections.emptySet(),
                 null, Collections.emptySet());

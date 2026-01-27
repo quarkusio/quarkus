@@ -39,7 +39,6 @@ public final class RunnerClassLoader extends ClassLoader {
     private final Map<String, ClassLoadingResource[]> resourceDirectoryMap;
 
     private final Set<String> parentFirstPackages;
-    private final Set<String> nonExistentResources;
     // the following two fields go hand in hand - they need to both be populated from the same data
     // in order for the resource loading to work properly
     // normally this field would be a set, but it only contains 2 elements, so making it a list is actually better
@@ -57,14 +56,13 @@ public final class RunnerClassLoader extends ClassLoader {
     private boolean postBootPhase = false;
 
     RunnerClassLoader(ClassLoader parent, Map<String, ClassLoadingResource[]> resourceDirectoryMap,
-            Set<String> parentFirstPackages, Set<String> nonExistentResources,
+            Set<String> parentFirstPackages,
             List<String> fullyIndexedDirectories, Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap,
             ClassLoadingResource generatedBytecodeClassLoadingResource, Set<String> generatedBytecode,
             ClassLoadingResource transformedBytecodeClassLoadingResource, Set<String> transformedBytecode) {
         super(parent);
         this.resourceDirectoryMap = resourceDirectoryMap;
         this.parentFirstPackages = parentFirstPackages;
-        this.nonExistentResources = nonExistentResources;
         this.fullyIndexedDirectories = fullyIndexedDirectories;
         this.directlyIndexedResourcesIndexMap = directlyIndexedResourcesIndexMap;
         this.generatedBytecodeClassLoadingResource = generatedBytecodeClassLoadingResource;
@@ -223,12 +221,10 @@ public final class RunnerClassLoader extends ClassLoader {
     @Override
     protected URL findResource(String name) {
         name = sanitizeName(name);
-        if (nonExistentResources.contains(name)) {
+        ClassLoadingResource[] resources = getClassLoadingResources(name);
+        if (resources == null) {
             return null;
         }
-        ClassLoadingResource[] resources = getClassLoadingResources(name);
-        if (resources == null)
-            return null;
         for (ClassLoadingResource resource : resources) {
             accessingResource(resource);
             URL data = resource.getResourceURL(name);
@@ -268,9 +264,6 @@ public final class RunnerClassLoader extends ClassLoader {
     @Override
     protected Enumeration<URL> findResources(String name) {
         name = sanitizeName(name);
-        if (nonExistentResources.contains(name)) {
-            return Collections.emptyEnumeration();
-        }
         ClassLoadingResource[] resources = getClassLoadingResources(name);
         if (resources == null)
             return Collections.emptyEnumeration();

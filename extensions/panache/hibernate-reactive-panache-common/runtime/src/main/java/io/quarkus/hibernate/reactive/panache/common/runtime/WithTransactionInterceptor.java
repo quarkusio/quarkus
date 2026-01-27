@@ -39,12 +39,18 @@ public class WithTransactionInterceptor {
             WithTransaction withTransaction = getAnnotation(context);
             String persistenceUnitName = withTransaction.value();
             if (withTransaction.stateless()) {
-                return SessionOperations.withStatelessTransaction(persistenceUnitName, () -> proceedUni(context));
+                return SessionOperations.withStatelessTransaction(persistenceUnitName, () -> proceedUni(context))
+                        .eventually(() -> clearWithTransactionMethod(vertxContext));
             } else {
-                return SessionOperations.withTransaction(persistenceUnitName, () -> proceedUni(context));
+                return SessionOperations.withTransaction(persistenceUnitName, () -> proceedUni(context))
+                        .eventually(() -> clearWithTransactionMethod(vertxContext));
             }
         }
         return context.proceed();
+    }
+
+    private static boolean clearWithTransactionMethod(Context vertxContext) {
+        return vertxContext.removeLocal(WITH_TRANSACTION_METHOD_KEY);
     }
 
     private WithTransaction getAnnotation(InvocationContext context) {

@@ -373,7 +373,7 @@ public class SerializedApplication {
                 Enumeration<? extends ZipEntry> entries = zip.entries();
                 while (entries.hasMoreElements()) {
                     ZipEntry entry = entries.nextElement();
-                    if (!entry.isDirectory()) {
+                    if (!entry.isDirectory() && !entry.getName().startsWith("META-INF/")) {
                         //some jars don't have correct  directory entries
                         //so we look at the file paths instead
                         //looking at you h2

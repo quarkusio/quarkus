@@ -38,7 +38,7 @@ public class SerializedApplication {
     private static final List<String> FULLY_INDEXED_PATHS = List.of("", "META-INF", "META-INF/services");
 
     private static final int MAGIC = 0XF0315432;
-    private static final int VERSION = 2;
+    private static final int VERSION = 3;
 
     private static final ClassLoadingResource[] EMPTY_ARRAY = new ClassLoadingResource[0];
     private static final JarResource SENTINEL = new JarResource(null, Path.of("wqxehxivam"));
@@ -60,8 +60,7 @@ public class SerializedApplication {
     }
 
     public static void write(OutputStream outputStream, String mainClass, Path applicationRoot, List<Path> classPath,
-            List<Path> parentFirst, List<String> nonExistentResources)
-            throws IOException {
+            List<Path> parentFirst) throws IOException {
         try (DataOutputStream data = new DataOutputStream(outputStream)) {
             data.writeInt(MAGIC);
             data.writeInt(VERSION);
@@ -85,10 +84,6 @@ public class SerializedApplication {
             data.writeShort(parentFirstPackages.size());
             for (String p : parentFirstPackages) {
                 data.writeUTF(p.replace('/', '.').replace('\\', '.'));
-            }
-            data.writeShort(nonExistentResources.size());
-            for (String nonExistentResource : nonExistentResources) {
-                data.writeUTF(nonExistentResource);
             }
             data.writeShort(directlyIndexedResourcesToCPJarIndex.size());
             for (Map.Entry<String, List<Integer>> entry : directlyIndexedResourcesToCPJarIndex.entrySet()) {
@@ -164,11 +159,6 @@ public class SerializedApplication {
             for (int i = 0; i < packages; ++i) {
                 parentFirstPackages.add(in.readUTF());
             }
-            int nonExistentResourcesSize = in.readUnsignedShort();
-            Set<String> nonExistentResources = new HashSet<>((int) Math.ceil(nonExistentResourcesSize / 0.75f));
-            for (int i = 0; i < nonExistentResourcesSize; i++) {
-                nonExistentResources.add(in.readUTF());
-            }
             // this map is populated correctly because the JarResource entries are added to allClassLoadingResources
             // in the same order as the classpath was written during the writing of the index
             int directlyIndexedSize = in.readUnsignedShort();
@@ -185,7 +175,7 @@ public class SerializedApplication {
             }
             RunnerClassLoader runnerClassLoader = new RunnerClassLoader(ClassLoader.getSystemClassLoader(),
                     resourceDirectoryTracker.getResult(), parentFirstPackages,
-                    nonExistentResources, FULLY_INDEXED_PATHS, directlyIndexedResourcesIndexMap,
+                    FULLY_INDEXED_PATHS, directlyIndexedResourcesIndexMap,
                     generatedBytecodeClassLoadingResource, generatedBytecode,
                     transformedBytecodeClassLoadingResource, transformedBytecode);
             for (ClassLoadingResource classLoadingResource : allClassLoadingResources) {

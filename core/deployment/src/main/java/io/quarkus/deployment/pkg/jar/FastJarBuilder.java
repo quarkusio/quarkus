@@ -7,7 +7,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
@@ -22,7 +21,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -65,8 +63,6 @@ import io.quarkus.sbom.ApplicationManifestConfig;
 public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
     private static final Logger LOG = Logger.getLogger(FastJarBuilder.class);
-
-    private static final String MP_CONFIG_FILE = "META-INF/microprofile-config.properties";
 
     private final List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchives;
     private final Set<ArtifactKey> parentFirstArtifactKeys;
@@ -250,22 +246,6 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             }
         }
 
-        /*
-         * There are some files like META-INF/microprofile-config.properties that usually don't exist in application
-         * and yet are always looked up (spec compliance...) and due to the location in the jar,
-         * the RunnerClassLoader needs to look into every jar to determine whether they exist or not.
-         * In keeping true to the original design of the RunnerClassLoader which indexes the directory structure,
-         * we just add a fail-fast path for files we know don't exist.
-         *
-         * TODO: if this gets more complex, we'll probably want a build item to carry this information instead of hard
-         * coding it here
-         */
-        List<String> nonExistentResources = new ArrayList<>(1);
-        Enumeration<URL> mpConfigURLs = Thread.currentThread().getContextClassLoader().getResources(MP_CONFIG_FILE);
-        if (!mpConfigURLs.hasMoreElements()) {
-            nonExistentResources.add(MP_CONFIG_FILE);
-        }
-
         Path appInfo = buildDir.resolve(QuarkusEntryPoint.QUARKUS_APPLICATION_DAT);
         try (OutputStream out = Files.newOutputStream(appInfo)) {
             FastJarJars fastJarJars = fastJarJarsBuilder.build();
@@ -280,10 +260,7 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             allJars.addAll(sortedDeps);
             List<Path> sortedParentFirst = new ArrayList<>(parentFirst);
             Collections.sort(sortedParentFirst);
-            List<String> sortedNonExistentResources = new ArrayList<>(nonExistentResources);
-            Collections.sort(sortedNonExistentResources);
-            SerializedApplication.write(out, mainClass.getClassName(), buildDir, allJars, sortedParentFirst,
-                    sortedNonExistentResources);
+            SerializedApplication.write(out, mainClass.getClassName(), buildDir, allJars, sortedParentFirst);
         }
 
         runnerJar.toFile().setReadable(true, false);

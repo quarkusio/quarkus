@@ -15,24 +15,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import jakarta.enterprise.inject.Vetoed;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.Declaration;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.EquivalenceKey;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.arc.VetoedProducer;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.arc.processor.Transformation;
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.quarkus.arc.properties.IfBuildProperty;
@@ -60,16 +63,13 @@ public class BuildTimeEnabledProcessor {
 
     @BuildStep
     BuildTimeEnabledStereotypesBuildItem findEnablementStereotypes(CombinedIndexBuildItem combinedIndex) {
-        IndexView index = combinedIndex.getIndex();
+        IndexView index = combinedIndex.getComputingIndex();
 
         // find all stereotypes
         Set<DotName> stereotypeNames = new HashSet<>();
         for (AnnotationInstance annotation : index.getAnnotations(DotNames.STEREOTYPE)) {
-            if (annotation.target() != null
-                    && annotation.target().kind() == Kind.CLASS
-                    && annotation.target().asClass().isAnnotation()) {
-                stereotypeNames.add(annotation.target().asClass().name());
-            }
+            // `Stereotype` is `@Target(ANNOTATION_TYPE)`
+            stereotypeNames.add(annotation.target().asClass().name());
         }
         // ideally, we would also consider all `StereotypeRegistrarBuildItem`s here,
         // but there is a build step cycle involving Spring DI and RESTEasy Reactive
@@ -85,10 +85,9 @@ public class BuildTimeEnabledProcessor {
             worklist.add(stereotypeToScan);
             while (!worklist.isEmpty()) {
                 DotName stereotype = worklist.poll();
-                if (alreadySeen.contains(stereotype)) {
+                if (!alreadySeen.add(stereotype)) {
                     continue;
                 }
-                alreadySeen.add(stereotype);
 
                 ClassInfo stereotypeClass = index.getClassByName(stereotype);
                 if (stereotypeClass == null) {
@@ -97,21 +96,9 @@ public class BuildTimeEnabledProcessor {
 
                 for (DotName enablementAnnotation : List.of(IF_BUILD_PROFILE, UNLESS_BUILD_PROFILE, IF_BUILD_PROPERTY,
                         UNLESS_BUILD_PROPERTY)) {
-                    AnnotationInstance ann = stereotypeClass.declaredAnnotation(enablementAnnotation);
-                    if (ann != null) {
+                    for (AnnotationInstance ann : stereotypeClass.declaredAnnotationsWithRepeatable(
+                            enablementAnnotation, index)) {
                         result.computeIfAbsent(enablementAnnotation, ignored -> new ArrayList<>()).add(ann);
-                    }
-                }
-                for (Map.Entry<DotName, DotName> entry : Map.of(IF_BUILD_PROPERTY_CONTAINER, IF_BUILD_PROPERTY,
-                        UNLESS_BUILD_PROPERTY_CONTAINER, UNLESS_BUILD_PROPERTY).entrySet()) {
-                    DotName enablementContainerAnnotation = entry.getKey();
-                    DotName enablementAnnotation = entry.getValue();
-
-                    AnnotationInstance containerAnn = stereotypeClass.declaredAnnotation(enablementContainerAnnotation);
-                    if (containerAnn != null) {
-                        for (AnnotationInstance ann : containerAnn.value().asNestedArray()) {
-                            result.computeIfAbsent(enablementAnnotation, ignored -> new ArrayList<>()).add(ann);
-                        }
                     }
                 }
 
@@ -136,10 +123,10 @@ public class BuildTimeEnabledProcessor {
     @BuildStep
     void ifBuildProfile(CombinedIndexBuildItem index, BuildTimeEnabledStereotypesBuildItem stereotypes,
             BuildProducer<BuildTimeConditionBuildItem> producer) {
-        enablementAnnotations(IF_BUILD_PROFILE, null, index.getIndex(), stereotypes, producer,
-                new Function<AnnotationInstance, Boolean>() {
+        enablementAnnotations(IF_BUILD_PROFILE, index.getComputingIndex(), stereotypes, producer,
+                new Predicate<AnnotationInstance>() {
                     @Override
-                    public Boolean apply(AnnotationInstance annotation) {
+                    public boolean test(AnnotationInstance annotation) {
                         return BuildProfile.from(annotation).enabled();
                     }
                 });
@@ -148,10 +135,10 @@ public class BuildTimeEnabledProcessor {
     @BuildStep
     void unlessBuildProfile(CombinedIndexBuildItem index, BuildTimeEnabledStereotypesBuildItem stereotypes,
             BuildProducer<BuildTimeConditionBuildItem> producer) {
-        enablementAnnotations(UNLESS_BUILD_PROFILE, null, index.getIndex(), stereotypes, producer,
-                new Function<AnnotationInstance, Boolean>() {
+        enablementAnnotations(UNLESS_BUILD_PROFILE, index.getComputingIndex(), stereotypes, producer,
+                new Predicate<AnnotationInstance>() {
                     @Override
-                    public Boolean apply(AnnotationInstance annotation) {
+                    public boolean test(AnnotationInstance annotation) {
                         return BuildProfile.from(annotation).disabled();
                     }
                 });
@@ -161,10 +148,10 @@ public class BuildTimeEnabledProcessor {
     void ifBuildProperty(CombinedIndexBuildItem index, BuildTimeEnabledStereotypesBuildItem stereotypes,
             BuildProducer<BuildTimeConditionBuildItem> conditions) {
         Config config = ConfigProviderResolver.instance().getConfig();
-        enablementAnnotations(IF_BUILD_PROPERTY, IF_BUILD_PROPERTY_CONTAINER, index.getIndex(), stereotypes, conditions,
-                new Function<AnnotationInstance, Boolean>() {
+        enablementAnnotations(IF_BUILD_PROPERTY, index.getComputingIndex(), stereotypes, conditions,
+                new Predicate<AnnotationInstance>() {
                     @Override
-                    public Boolean apply(AnnotationInstance annotation) {
+                    public boolean test(AnnotationInstance annotation) {
                         return BuildProperty.from(annotation).enabled(config);
                     }
                 });
@@ -174,24 +161,24 @@ public class BuildTimeEnabledProcessor {
     void unlessBuildProperty(CombinedIndexBuildItem index, BuildTimeEnabledStereotypesBuildItem stereotypes,
             BuildProducer<BuildTimeConditionBuildItem> conditions) {
         Config config = ConfigProviderResolver.instance().getConfig();
-        enablementAnnotations(UNLESS_BUILD_PROPERTY, UNLESS_BUILD_PROPERTY_CONTAINER, index.getIndex(), stereotypes, conditions,
-                new Function<AnnotationInstance, Boolean>() {
+        enablementAnnotations(UNLESS_BUILD_PROPERTY, index.getComputingIndex(), stereotypes, conditions,
+                new Predicate<AnnotationInstance>() {
                     @Override
-                    public Boolean apply(AnnotationInstance annotation) {
+                    public boolean test(AnnotationInstance annotation) {
                         return BuildProperty.from(annotation).disabled(config);
                     }
                 });
     }
 
-    private void enablementAnnotations(DotName annotationName, DotName containingAnnotationName, IndexView index,
+    private void enablementAnnotations(DotName annotationName, IndexView index,
             BuildTimeEnabledStereotypesBuildItem stereotypes, BuildProducer<BuildTimeConditionBuildItem> producer,
-            Function<AnnotationInstance, Boolean> test) {
+            Predicate<AnnotationInstance> predicate) {
 
         // instances of enablement annotation directly on affected declarations
-        List<AnnotationInstance> annotationInstances = getAnnotations(index, annotationName, containingAnnotationName);
+        List<AnnotationInstance> annotationInstances = getAnnotations(index, annotationName);
         for (AnnotationInstance annotation : annotationInstances) {
             AnnotationTarget target = annotation.target();
-            boolean enabled = test.apply(annotation);
+            boolean enabled = predicate.test(annotation);
             if (enabled) {
                 LOGGER.debugf("Enabling %s due to %s", target, annotation);
             } else {
@@ -207,7 +194,7 @@ public class BuildTimeEnabledProcessor {
             for (AnnotationInstance stereotypeUsage : getAnnotations(index, stereotype.name)) {
                 AnnotationTarget target = stereotypeUsage.target();
                 for (AnnotationInstance annotation : stereotype.getEnablementAnnotations(annotationName)) {
-                    boolean enabled = test.apply(annotation);
+                    boolean enabled = predicate.test(annotation);
                     if (enabled) {
                         LOGGER.debugf("Enabling %s  due to %s on stereotype %s", target, annotation, stereotype.name);
                     } else {
@@ -229,10 +216,9 @@ public class BuildTimeEnabledProcessor {
 
         // instances of stereotypes (with enablement annotation) inherited from a superclass
         for (ClassInfo clazz : classesWithPossiblyInheritedStereotype) {
-            if (processedClasses.contains(clazz.name())) {
+            if (!processedClasses.add(clazz.name())) {
                 continue;
             }
-            processedClasses.add(clazz.name());
 
             ClassInfo superclass = index.getClassByName(clazz.superName());
             Set<DotName> seenStereotypes = new HashSet<>(); // avoid "inheriting" the same annotation multiple times
@@ -249,7 +235,7 @@ public class BuildTimeEnabledProcessor {
                     }
 
                     for (AnnotationInstance annotation : stereotype.getEnablementAnnotations(annotationName)) {
-                        boolean enabled = test.apply(annotation);
+                        boolean enabled = predicate.test(annotation);
                         if (enabled) {
                             LOGGER.debugf("Enabling %s due to %s on stereotype %s inherited from %s",
                                     clazz, annotation, stereotype.name, superclass.name());
@@ -289,20 +275,18 @@ public class BuildTimeEnabledProcessor {
         }
 
         // the transformer just tries to match targets and then enables or disables the bean accordingly
-        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationTransformation() {
             @Override
-            public void transform(TransformationContext ctx) {
-                AnnotationTarget target = ctx.getTarget();
+            public void apply(TransformationContext ctx) {
+                Declaration target = ctx.declaration();
                 if (!enabled.getOrDefault(EquivalenceKey.of(target), Boolean.TRUE)) {
-                    Transformation transform = ctx.transform();
                     if (target.kind() == Kind.CLASS) {
                         // Veto the class
-                        transform.add(DotNames.VETOED);
+                        ctx.add(Vetoed.class);
                     } else {
                         // Veto the producer
-                        transform.add(DotNames.VETOED_PRODUCER);
+                        ctx.add(VetoedProducer.class);
                     }
-                    transform.done();
                 }
             }
         }));
@@ -329,37 +313,13 @@ public class BuildTimeEnabledProcessor {
 
     private static List<AnnotationInstance> getAnnotations(IndexView index, DotName annotationName) {
         List<AnnotationInstance> result = new ArrayList<>();
-        for (AnnotationInstance annotation : index.getAnnotations(annotationName)) {
+        for (AnnotationInstance annotation : index.getAnnotationsWithRepeatable(annotationName, index)) {
             AnnotationTarget target = annotation.target();
             if (target != null && (target.kind() != Kind.CLASS || !target.asClass().isAnnotation())) {
                 result.add(annotation);
             }
         }
         return result;
-    }
-
-    private static List<AnnotationInstance> getAnnotations(IndexView index, DotName annotationName,
-            DotName containingAnnotationName) {
-
-        // Single annotation
-        List<AnnotationInstance> annotationInstances = getAnnotations(index, annotationName);
-        if (containingAnnotationName == null) {
-            return annotationInstances;
-        }
-        // Collect containing annotation instances
-        // Note that we can't just use the IndexView.getAnnotationsWithRepeatable() method because the containing annotation is not part of the index
-        for (AnnotationInstance containingInstance : index.getAnnotations(containingAnnotationName)) {
-            AnnotationTarget target = containingInstance.target();
-            if (target != null && (target.kind() != Kind.CLASS || !target.asClass().isAnnotation())) {
-                for (AnnotationInstance nestedInstance : containingInstance.value().asNestedArray()) {
-                    // We need to set the target of the containing instance
-                    annotationInstances.add(
-                            AnnotationInstance.create(nestedInstance.name(), target, nestedInstance.values()));
-                }
-            }
-        }
-
-        return annotationInstances;
     }
 
     private static class BuildProfile {

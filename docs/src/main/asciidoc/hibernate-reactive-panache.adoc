@@ -783,25 +783,29 @@ For configuration details on setting up multiple persistence units, refer to the
 First of all, most of the methods of a Panache entity must be invoked within the scope of a reactive `Mutiny.Session`.
 In some cases, the session is opened automatically on demand.
 For example, if a Panache entity method is invoked in a Jakarta REST resource method in an application that includes the `quarkus-rest` extension.
-For other cases, there are both a declarative and a programmatic way to ensure the session is opened.
-You can annotate a CDI business method that returns `Uni` with the `@WithSession` annotation.
+For other cases, there are two declarative ways and a programmatic way to ensure the session is opened:
+
+* The first method is to simply inject the `Mutiny.Session` with CDI.
+* Alternatively, you can annotate a CDI business method that returns `Uni` with the `@WithSession` annotation.
 The method will be intercepted and the returned `Uni` will be triggered within a scope of a reactive session.
 If you have multiple persistence units, you can specify which one to use by providing the persistence unit name as the annotation value: `@WithSession("my-persistence-unit")`. If not specified, the default persistence unit is used.
-Alternatively, you can use the `Panache.withSession()` method to achieve the same effect.
+* The programmatic way to achieve the same effect is to use the `Panache.withSession()` method.
 
 NOTE: Note that a Panache entity may not be used from a blocking thread. See also xref:getting-started-reactive.adoc[Getting Started With Reactive] guide that explains the basics of reactive principles in Quarkus.
 
 Also make sure to wrap methods that modify the database or involve multiple queries (e.g. `entity.persist()`) within a transaction.
-You can annotate a CDI business method that returns `Uni` with the `@WithTransaction` annotation.
+
+You can annotate the method with `jakarta.transaction.@Transactional` as you would in Hibernate blocking to specify declarative transaction management. Such feature is provided by the `quarkus-reactive-transactions` extension.
+
+You can also annotate a CDI business method that returns `Uni` with the `@WithTransaction` annotation.
 The method will be intercepted and the returned `Uni` is triggered within a transaction boundary.
 If you have multiple persistence units, you can specify which one to use by providing the persistence unit name as the annotation value: `@WithTransaction("my-persistence-unit")`. If not specified, the default persistence unit is used.
+This method of defining transactions will be superseded by the standard support for `@Transactional`.
 Alternatively, you can use the `Panache.withTransaction()` method for the same effect.
 
 [NOTE]
 ====
-With the introduction of the `quarkus-reactive-transactions` extension (currently in preview status), you can now use `jakarta.transaction.Transactional` for transaction management in Hibernate Reactive applications.
-
-However, you should not mix `@Transactional` with Panache transaction annotations (`@WithTransaction`, `@WithSession`, `@WithSessionOnDemand`) in the same application. Choose one approach and use it consistently throughout your application. Mixing these annotations will result in an `UnsupportedOperationException`.
+You should not mix `@Transactional` with Panache transaction annotations (`@WithTransaction`, `@WithSession`, `@WithSessionOnDemand`) in the same application. Choose one approach and use it consistently throughout your application. Mixing these annotations will result in an `UnsupportedOperationException`.
 
 See the xref:hibernate-reactive.adoc[Hibernate Reactive guide] for more details on using `@Transactional` with Hibernate Reactive.
 ====

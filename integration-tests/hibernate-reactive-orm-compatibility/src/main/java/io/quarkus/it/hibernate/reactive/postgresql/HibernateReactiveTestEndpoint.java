@@ -38,6 +38,7 @@ public class HibernateReactiveTestEndpoint {
 
     @GET
     @Path("/reactiveCowPersistTransactional")
+    @Transactional
     public Uni<FriesianCow> reactiveCowPersistTransactional() {
         final FriesianCow cow = new FriesianCow();
         cow.name = "Carolina Reactive Transactional";
@@ -47,7 +48,6 @@ public class HibernateReactiveTestEndpoint {
         return persistAndGetTransactional(session, cow);
     }
 
-    @Transactional
     public Uni<FriesianCow> persistAndGetTransactional(Mutiny.Session session, FriesianCow cow) {
         return session.persist(cow)
                 .chain(v -> findCowByName(session, cow).getSingleResult());

@@ -45,6 +45,7 @@ public class TestService implements Test {
     }
 
     @Override
+    @Blocking
     @Transactional
     public Uni<TestOuterClass.Empty> clear(TestOuterClass.Empty request) {
         contextChecker.newContextId("TestService#clear");

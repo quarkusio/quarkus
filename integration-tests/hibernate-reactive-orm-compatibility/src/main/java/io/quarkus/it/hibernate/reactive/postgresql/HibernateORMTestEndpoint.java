@@ -10,6 +10,7 @@ import org.hibernate.SessionFactory;
 import org.jboss.logging.Logger;
 
 import io.quarkus.security.Authenticated;
+import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
 
 @Path("/testsORM")
@@ -39,6 +40,7 @@ public class HibernateORMTestEndpoint {
     @GET
     @Path("/blockingCowPersistReturningUni")
     @Transactional
+    @Blocking // This is needed otherwise it's considered Reactive as it returns a Uni<T>
     public Uni<FriesianCow> reactiveCowPersistReturningUni() {
         final FriesianCow cow = new FriesianCow();
         cow.name = "Carolina returning Uni";

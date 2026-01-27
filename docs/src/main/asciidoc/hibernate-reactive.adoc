@@ -538,7 +538,9 @@ With the introduction of the `quarkus-reactive-transactions` extension, you now 
 1. Use `jakarta.transaction.Transactional` for declarative transaction management
 2. Use Panache's transaction annotations (`@WithTransaction`, `@WithSession`, `@WithSessionOnDemand`, or the programmatic `Panache.withTransaction()`)
 
-Both approaches work with Panache entities. However, you must choose one approach and use it consistently throughout your application. Mixing both transaction management styles in the same application is not supported and will result in an `UnsupportedOperationException`.
+Both approaches work with Panache entities. However, you must choose one approach and use it consistently throughout your application.
+Mixing both transaction management styles in the same application is not supported and will result in an `UnsupportedOperationException`.
+In the future, we'll deprecate the previous annotations provided by Panache and and support only `@Transactional`.
 
 == Simplifying Hibernate Reactive with Panache
 

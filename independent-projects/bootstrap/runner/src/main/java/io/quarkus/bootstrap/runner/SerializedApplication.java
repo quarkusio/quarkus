@@ -35,7 +35,7 @@ public class SerializedApplication {
 
     public static final String META_INF_VERSIONS = "META-INF/versions/";
     // the files immediately (i.e. not recursively) under these paths should all be indexed
-    private static final List<String> FULLY_INDEXED_PATHS = List.of("", "META-INF/services");
+    private static final List<String> FULLY_INDEXED_PATHS = List.of("", "META-INF", "META-INF/services");
 
     private static final int MAGIC = 0XF0315432;
     private static final int VERSION = 2;
@@ -242,19 +242,51 @@ public class SerializedApplication {
             }
 
             Set<String> dirs = new LinkedHashSet<>();
-            Map<String, List<String>> fullyIndexedPaths = new LinkedHashMap<>();
+            Map<String, Set<String>> fullyIndexedPaths = new LinkedHashMap<>();
             Set<String> allEntries = new LinkedHashSet<>();
             Enumeration<? extends ZipEntry> entries = zip.entries();
             boolean hasDefaultPackage = false;
             while (entries.hasMoreElements()) {
                 ZipEntry entry = entries.nextElement();
+
+                // collect data for fully indexed directories, we collect both files and directories present there
+                for (String prefix : FULLY_INDEXED_PATHS) {
+                    if (prefix.isEmpty()) {
+                        int firstSlash = entry.getName().indexOf('/');
+                        String topLevel = (firstSlash == -1) ? entry.getName() : entry.getName().substring(0, firstSlash);
+                        fullyIndexedPaths.computeIfAbsent(prefix, SerializedApplication::newFullyIndexedPathsValue)
+                                .add(topLevel);
+                        continue;
+                    }
+
+                    String slashedPrefix = prefix + '/';
+
+                    if (!entry.getName().startsWith(slashedPrefix)) {
+                        continue;
+                    }
+
+                    if (entry.getName().equals(slashedPrefix)) {
+                        fullyIndexedPaths.computeIfAbsent(prefix, SerializedApplication::newFullyIndexedPathsValue).add(prefix);
+                        continue;
+                    }
+
+                    int nextSlash = entry.getName().indexOf('/', slashedPrefix.length());
+                    String result;
+
+                    if (nextSlash != -1) {
+                        // we index the subdirectory part only
+                        result = entry.getName().substring(0, nextSlash);
+                    } else {
+                        // It's a file or directory at the current level
+                        result = entry.getName();
+                    }
+
+                    fullyIndexedPaths.computeIfAbsent(prefix, SerializedApplication::newFullyIndexedPathsValue).add(result);
+                }
+
                 if (!entry.getName().contains("/")) {
                     hasDefaultPackage = true;
                     if (!entry.getName().isEmpty()) {
-                        if (FULLY_INDEXED_PATHS.contains("")) {
-                            fullyIndexedPaths.computeIfAbsent("", SerializedApplication::newFullyIndexedPathsValue)
-                                    .add(entry.getName());
-                        }
                         if (writeAllEntries) {
                             allEntries.add(entry.getName());
                         }
@@ -280,17 +312,6 @@ public class SerializedApplication {
                         }
                     }
 
-                    for (int i = 0; i < FULLY_INDEXED_PATHS.size(); i++) {
-                        String path = FULLY_INDEXED_PATHS.get(i);
-                        if (path.isEmpty()) {
-                            continue;
-                        }
-                        if (entry.getName().startsWith(path)) {
-                            fullyIndexedPaths.computeIfAbsent(path, SerializedApplication::newFullyIndexedPathsValue)
-                                    .add(entry.getName());
-                        }
-                    }
-
                     if (writeAllEntries) {
                         allEntries.add(entry.getName());
                     }
@@ -310,15 +331,15 @@ public class SerializedApplication {
                 }
             }
             List<String> result = new ArrayList<>();
-            for (List<String> values : fullyIndexedPaths.values()) {
+            for (Set<String> values : fullyIndexedPaths.values()) {
                 result.addAll(values);
             }
             return result;
         }
     }
 
-    private static List<String> newFullyIndexedPathsValue(String ignored) {
-        return new ArrayList<>(10);
+    private static Set<String> newFullyIndexedPathsValue(String ignored) {
+        return new HashSet<>();
     }
 
     private static void collectPackages(Path jar, Set<String> dirs) throws IOException {

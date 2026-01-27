@@ -20,6 +20,7 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
 
 import io.netty.channel.ChannelHandler;
+import io.netty.channel.DefaultChannelId;
 import io.netty.channel.EventLoopGroup;
 import io.netty.resolver.dns.DnsServerAddressStreamProviders;
 import io.netty.util.internal.PlatformDependent;
@@ -49,12 +50,14 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
+import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem.JavaVersion.Status;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassTransformer;
 import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.Gizmo;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -817,6 +820,130 @@ class NettyProcessor {
                             }
                         })
                 .build());
+    }
+
+    /**
+     * Rewrites {@code DefaultChannelId#processHandlePid(ClassLoader)} to avoid reflection as we know we are using Java 17+.
+     * <p>
+     * Generates:
+     *
+     * <pre>
+     * public static int processHandlePid(ClassLoader classLoader) {
+     *     int resultVar;
+     *     try {
+     *         ProcessHandle processHandle = ProcessHandle.current();
+     *
+     *         long pid = processHandle.pid();
+     *
+     *         long maxInt = 2147483647L;
+     *         int cmp = Long.compare(pid, maxInt);
+     *
+     *         if (cmp > 0) {
+     *             resultVar = -1;
+     *         } else {
+     *             resultVar = (int) pid;
+     *         }
+     *     } catch (Exception e) {
+     *         logger.debug("Could not invoke ProcessHandle.current().pid();", e);
+     *         resultVar = -1;
+     *     }
+     *
+     *     return resultVar;
+     * }
+     * </pre>
+     */
+    @BuildStep
+    void transformDefaultChannelId(BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformers) {
+        // we know we are using Java 17+ so we can always apply this transformation
+
+        String className = DefaultChannelId.class.getName();
+
+        bytecodeTransformers.produce(
+                new BytecodeTransformerBuildItem.Builder()
+                        .setClassToTransform(className)
+                        .setCacheable(true)
+                        .setVisitorFunction((s, classVisitor) -> {
+                            ClassVisitor updateBytecodeVersion = new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
+                                @Override
+                                public void visit(int version, int access, String name, String signature, String superName,
+                                        String[] interfaces) {
+                                    // bump bytecode version to at least 52 as we need it to be able to call static methods on interfaces with Gizmo
+                                    super.visit(Math.max(version, 52), access, name, signature, superName, interfaces);
+                                }
+                            };
+
+                            ClassTransformer transformer = new ClassTransformer(className);
+
+                            MethodDescriptor methodDescriptor = MethodDescriptor.ofMethod(
+                                    className,
+                                    "processHandlePid",
+                                    int.class,
+                                    ClassLoader.class);
+
+                            transformer.removeMethod(methodDescriptor);
+
+                            MethodCreator method = transformer.addMethod(methodDescriptor)
+                                    .setModifiers(Modifier.STATIC);
+
+                            AssignableResultHandle resultVar = method.createVariable(int.class);
+
+                            TryBlock tryBlock = method.tryBlock();
+
+                            ResultHandle processHandle = tryBlock.invokeStaticInterfaceMethod(
+                                    MethodDescriptor.ofMethod(
+                                            ProcessHandle.class,
+                                            "current",
+                                            ProcessHandle.class));
+
+                            ResultHandle pid = tryBlock.invokeInterfaceMethod(
+                                    MethodDescriptor.ofMethod(
+                                            ProcessHandle.class,
+                                            "pid",
+                                            long.class),
+                                    processHandle);
+
+                            ResultHandle maxInt = tryBlock.load((long) Integer.MAX_VALUE);
+                            ResultHandle cmp = tryBlock.invokeStaticMethod(
+                                    MethodDescriptor.ofMethod(
+                                            Long.class,
+                                            "compare",
+                                            int.class,
+                                            long.class,
+                                            long.class),
+                                    pid,
+                                    maxInt);
+
+                            BranchResult branchResult = tryBlock.ifGreaterThanZero(cmp);
+
+                            // pid > Integer.MAX_VALUE, assign -1
+                            BytecodeCreator outOfRangeBranch = branchResult.trueBranch();
+                            outOfRangeBranch.assign(resultVar, outOfRangeBranch.load(-1));
+
+                            // pid <= Integer.MAX_VALUE, convert long to int
+                            BytecodeCreator inRangeBranch = branchResult.falseBranch();
+                            inRangeBranch.assign(resultVar, inRangeBranch.convertPrimitive(pid, int.class));
+
+                            CatchBlockCreator catchBlock = tryBlock.addCatch(Exception.class);
+                            // logger.debug("Could not invoke ProcessHandle.current().pid();", e);
+                            catchBlock.invokeInterfaceMethod(
+                                    MethodDescriptor.ofMethod(
+                                            io.netty.util.internal.logging.InternalLogger.class,
+                                            "debug",
+                                            void.class,
+                                            String.class,
+                                            Throwable.class),
+                                    catchBlock.readStaticField(
+                                            FieldDescriptor.of(className, "logger",
+                                                    io.netty.util.internal.logging.InternalLogger.class)),
+                                    catchBlock.load("Could not invoke ProcessHandle.current().pid();"),
+                                    catchBlock.getCaughtException());
+                            catchBlock.assign(resultVar, catchBlock.load(-1));
+
+                            method.returnValue(resultVar);
+
+                            return transformer.applyTo(updateBytecodeVersion);
+                        })
+                        .build());
     }
 
     @BuildStep

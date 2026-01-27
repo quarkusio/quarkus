@@ -59,6 +59,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
             return MethodHandles.publicLookup().findStatic(Context.class, "isOnEventLoopThread",
                     MethodType.methodType(boolean.class));
         } catch (NoClassDefFoundError | NoSuchMethodException | IllegalAccessException e) {
+            // This means Vert.x is not on the classpath
             return null;
         }
     }

@@ -16,7 +16,6 @@ import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -32,16 +31,13 @@ public final class AccessTokenRequestFilterGenerator {
     }
 
     private final BuildProducer<UnremovableBeanBuildItem> unremovableBeansProducer;
-    private final BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer;
     private final BuildProducer<GeneratedBeanBuildItem> generatedBeanProducer;
     private final Class<?> requestFilterClass;
     private final Map<RequestFilterKey, String> cache = new HashMap<>();
 
     public AccessTokenRequestFilterGenerator(BuildProducer<UnremovableBeanBuildItem> unremovableBeansProducer,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
             BuildProducer<GeneratedBeanBuildItem> generatedBeanProducer, Class<?> requestFilterClass) {
         this.unremovableBeansProducer = unremovableBeansProducer;
-        this.reflectiveClassProducer = reflectiveClassProducer;
         this.generatedBeanProducer = generatedBeanProducer;
         this.requestFilterClass = requestFilterClass;
     }
@@ -106,10 +102,6 @@ public final class AccessTokenRequestFilterGenerator {
                         }
                     }
                     unremovableBeansProducer.produce(UnremovableBeanBuildItem.beanClassNames(className));
-                    reflectiveClassProducer
-                            .produce(ReflectiveClassBuildItem.builder(className)
-                                    .reason(getClass().getName())
-                                    .methods().fields().constructors().build());
                     return className;
                 });
     }

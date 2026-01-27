@@ -3,6 +3,7 @@ package io.quarkus.oidc.token.propagation.reactive.deployment;
 import static io.quarkus.oidc.token.propagation.common.runtime.TokenPropagationConstants.JWT_PROPAGATE_TOKEN_CREDENTIAL;
 import static io.quarkus.oidc.token.propagation.common.runtime.TokenPropagationConstants.OIDC_PROPAGATE_TOKEN_CREDENTIAL;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 
@@ -41,8 +42,9 @@ public class OidcTokenPropagationReactiveBuildStep {
             BuildProducer<GeneratedBeanBuildItem> generatedBean,
             BuildProducer<RegisterProviderAnnotationInstanceBuildItem> providerProducer) {
         if (!accessTokenInstances.isEmpty()) {
-            var filterGenerator = new AccessTokenRequestFilterGenerator(unremovableBeans, reflectiveClass, generatedBean,
+            var filterGenerator = new AccessTokenRequestFilterGenerator(unremovableBeans, generatedBean,
                     AccessTokenRequestReactiveFilter.class);
+            final var forReflection = new HashSet<String>(accessTokenInstances.size());
             for (AccessTokenInstanceBuildItem instance : accessTokenInstances) {
                 String providerClass = filterGenerator.generateClass(instance);
                 providerProducer
@@ -52,7 +54,11 @@ public class OidcTokenPropagationReactiveBuildStep {
                                                 Type.create(DotName.createSimple(providerClass),
                                                         org.jboss.jandex.Type.Kind.CLASS)),
                                         AnnotationValue.createIntegerValue("priority", Priorities.AUTHENTICATION)))));
+                forReflection.add(providerClass);
             }
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(forReflection)
+                    .reason(getClass().getName())
+                    .methods().fields().constructors().build());
         }
     }
 
@@ -61,7 +67,7 @@ public class OidcTokenPropagationReactiveBuildStep {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClassesBuildItem) {
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(AccessTokenRequestReactiveFilter.class));
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(AccessTokenRequestReactiveFilter.class)
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(AccessTokenRequestReactiveFilter.class.getName())
                 .reason(getClass().getName())
                 .methods().fields().build());
         additionalIndexedClassesBuildItem

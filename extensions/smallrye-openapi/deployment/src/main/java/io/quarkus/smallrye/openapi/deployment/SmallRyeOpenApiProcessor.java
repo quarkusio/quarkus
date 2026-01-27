@@ -65,6 +65,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BuildExclusionsBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -259,6 +260,37 @@ public class SmallRyeOpenApiProcessor {
     }
 
     @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void registerAnnotatedUserDefinedRuntimeFilters(
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
+            OpenApiFilteredIndexViewBuildItem openApiFilteredIndexViewBuildItem,
+            OpenApiRecorder recorder) {
+
+        Config config = ConfigProvider.getConfig();
+        IndexView index = openApiFilteredIndexViewBuildItem.getIndex();
+        Collection<AnnotationInstance> annotations = index.getAnnotations(NAME_OPEN_API_FILTER);
+        Set<String> userDefinedRuntimeFilters = new LinkedHashSet<>();
+
+        for (AnnotationInstance annotation : annotations) {
+            List<String> documentNames = extractDocumentNames(index, annotation);
+
+            for (String documentName : documentNames) {
+                Config wrappedConfig = OpenApiConfigHelper.wrap(config, documentName);
+                userDefinedRuntimeFilters.addAll(getUserDefinedRuntimeFilters(wrappedConfig, index, documentName));
+            }
+        }
+
+        String[] runtimeFilterClassNames = userDefinedRuntimeFilters.toArray(new String[] {});
+
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(runtimeFilterClassNames)
+                .reason(getClass().getName()).build());
+
+        // Make sure the filter beans are kept so they may be loaded programmatically at runtime
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(runtimeFilterClassNames));
+    }
+
+    @BuildStep
     @Produce(ServiceStartBuildItem.class)
     void validateOpenApiFilterDocumentNames(SmallRyeOpenApiConfig config,
             OpenApiFilteredIndexViewBuildItem openApiFilteredIndexViewBuildItem) {
@@ -360,14 +392,16 @@ public class SmallRyeOpenApiProcessor {
             String documentName = entry.getKey();
             OpenApiDocumentConfig documentConfig = entry.getValue();
 
-            Handler<RoutingContext> handler = recorder.handler(documentName);
+            Handler<RoutingContext> handler = recorder.handler(documentName, openApiConfig.documents()
+                    .get(documentName)
+                    .alwaysRunFilter());
 
             String managementEnabledKey = MANAGEMENT_ENABLED;
 
             boolean isDefaultDocument = SmallRyeOpenApiConfig.DEFAULT_DOCUMENT_NAME.equals(documentName);
             String displayName = isDefaultDocument
-                    ? "Open API Schema document"
-                    : "Open API Schema document: " + documentName;
+                    ? "OpenAPI Schema document"
+                    : "OpenAPI Schema document: " + documentName;
 
             routes.produce(RouteBuildItem.newManagementRoute(documentConfig.path(), managementEnabledKey)
                     .withRoutePathConfigKey(

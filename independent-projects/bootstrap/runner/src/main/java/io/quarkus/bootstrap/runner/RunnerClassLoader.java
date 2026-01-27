@@ -252,10 +252,7 @@ public final class RunnerClassLoader extends ClassLoader {
             return resources;
         }
         String dirName = getDirNameFromResourceName(name);
-        if (!dirName.equals(name) && fullyIndexedDirectories.contains(dirName)) {
-            if (dirName.isEmpty()) {
-                return resourceDirectoryMap.get(name);
-            }
+        if (fullyIndexedDirectories.contains(dirName)) {
             // If we arrive here, we know that resource being queried belongs to one of the fully indexed directories
             // Had that resource existed however, it would have been present in directlyIndexedResourcesIndexMap
             return null;

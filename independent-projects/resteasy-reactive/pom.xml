@@ -60,7 +60,7 @@
         <smallrye-common.version>2.15.0</smallrye-common.version>
         <vertx.version>4.5.24</vertx.version>
         <rest-assured.version>5.5.6</rest-assured.version>
-        <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
+        <commons-logging-jboss-logging.version>2.0.0.Final</commons-logging-jboss-logging.version>
         <jackson-bom.version>2.21.0</jackson-bom.version>
         <smallrye-stork.version>2.7.7</smallrye-stork.version>
         <jakarta.validation-api.version>3.1.1</jakarta.validation-api.version>

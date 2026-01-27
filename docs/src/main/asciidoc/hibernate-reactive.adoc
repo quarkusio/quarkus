@@ -205,45 +205,33 @@ public class FruitResource {
     @GET
     @Path("/{id}")
     public Uni<Fruit> getFruit(Long id) {
-        return findFruit(id);
-    }
-
-    @POST
-    public Uni<Fruit> createFruit(Fruit fruit) {
-        return persistFruit(fruit);
-    }
-
-    @PUT
-    @Path("/{id}")
-    public Uni<Fruit> updateFruit(Long id, @QueryParam("name") String newName) {
-        return updateFruitName(id, newName);
-    }
-
-    @Transactional <2>
-    public Uni<Fruit> findFruit(Long id) {
         return session.find(Fruit.class, id);
     }
 
-    @Transactional <3>
-    public Uni<Fruit> persistFruit(Fruit fruit) {
+    @POST
+    @Transactional <2>
+    public Uni<Fruit> createFruit(Fruit fruit) {
         return session.persist(fruit)
                 .chain(() -> session.find(Fruit.class, fruit.getId()));
     }
 
-    @Transactional
-    public Uni<Fruit> updateFruitName(Long id, String newName) {
+    @PUT
+    @Path("/{id}")
+    @Transactional <3>
+    public Uni<Fruit> updateFruit(Long id, @QueryParam("name") String newName) {
         return session.find(Fruit.class, id)
                 .map(fruit -> {
                     fruit.setName(newName);
                     return fruit;
                 });
     }
+
 }
 ----
 
 <1> Inject the reactive session directly
-<2> Use `@Transactional` to define transaction boundaries for read operations
-<3> Use `@Transactional` for write operations - the transaction will be committed automatically
+<2> Use `@Transactional` for persist operations - creates new entities in the database
+<3> Use `@Transactional` for update operations - modifies existing entities
 
 The `@Transactional` interceptor will:
 

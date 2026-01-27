@@ -64,6 +64,7 @@ import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.gradle.tooling.DefaultProjectDescriptor;
+import io.quarkus.gradle.tooling.DependencyInfoCollector;
 import io.quarkus.gradle.tooling.ProjectDescriptor;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -71,6 +72,7 @@ import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.maven.dependency.GAV;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
@@ -145,8 +147,22 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
                 .setPlatformImports(getPlatformInfo().resolvePlatformImports())
                 .addReloadableWorkspaceModule(appArtifact.getKey());
 
-        collectDependencies(getAppClasspath(), modelBuilder, projectDescriptor.getWorkspaceModule(), projectDescriptor);
-        collectExtensionDependencies(getDeploymentClasspath(), modelBuilder);
+        LaunchMode mode = getLaunchMode().get();
+        var pomModelByGav = projectDescriptor.getPomModelByGav();
+        var declaredDepsByProjectPath = projectDescriptor.getDeclaredDepsByProjectPath();
+        DependencyInfoCollector deoInfoCollector = new DependencyInfoCollector(pomModelByGav, declaredDepsByProjectPath,
+                getLogger());
+        deoInfoCollector.collectProjectArtifact(appArtifact.getKey(),
+                declaredDepsByProjectPath.get(projectDescriptor.getProjectPath()), LaunchMode.TEST.equals(mode));
+        collectDependencies(getAppClasspath(), modelBuilder, projectDescriptor.getWorkspaceModule(), projectDescriptor,
+                deoInfoCollector);
+        collectExtensionDependencies(getDeploymentClasspath(), modelBuilder, deoInfoCollector);
+
+        deoInfoCollector.setDirectDeps(appArtifact, modelBuilder);
+        for (ResolvedDependencyBuilder dep : modelBuilder.getDependencies()) {
+            deoInfoCollector.setDirectDeps(dep, modelBuilder);
+        }
+
         DefaultApplicationModel model = modelBuilder.build();
         ToolingUtils.serializeAppModel(model, getApplicationModel().get().getAsFile().toPath());
     }
@@ -188,7 +204,7 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
     }
 
     private void collectDependencies(QuarkusResolvedClasspath classpath, ApplicationModelBuilder modelBuilder,
-            WorkspaceModule.Mutable wsModule, ProjectDescriptor projectDescriptor) {
+            WorkspaceModule.Mutable wsModule, ProjectDescriptor projectDescriptor, DependencyInfoCollector depInfoCollector) {
         final Map<ComponentIdentifier, List<QuarkusResolvedArtifact>> artifacts = classpath
                 .resolvedArtifactsByComponentIdentifier();
 
@@ -202,7 +218,7 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
                     flags |= COLLECT_RELOADABLE_MODULES;
                 }
                 collectDependencies(resolved, modelBuilder, artifacts, wsModule, alreadyCollectedFiles,
-                        processedModules, flags, projectDescriptor);
+                        processedModules, flags, projectDescriptor, depInfoCollector);
             }
         });
         Set<File> fileDependencies = new HashSet<>(classpath.getAllResolvedFiles().getFiles());
@@ -247,7 +263,7 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         }
     }
 
-    private static void collectDependencies(
+    private void collectDependencies(
             ResolvedDependencyResult resolvedDependency,
             ApplicationModelBuilder modelBuilder,
             Map<ComponentIdentifier, List<QuarkusResolvedArtifact>> resolvedArtifacts,
@@ -255,7 +271,8 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
             Set<File> collectedArtifactFiles,
             Set<ModuleVersionIdentifier> processedModules,
             byte flags,
-            ProjectDescriptor projectDescriptor) {
+            ProjectDescriptor projectDescriptor,
+            DependencyInfoCollector depInfoCollector) {
         final ModuleVersionIdentifier moduleId = getModuleVersion(resolvedDependency);
         if (!processedModules.add(moduleId)) {
             return;
@@ -269,9 +286,8 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
             resolvedDependency.getSelected().getDependencies().forEach((Consumer<DependencyResult>) dependencyResult -> {
                 if (dependencyResult instanceof ResolvedDependencyResult result) {
                     collectDependencies(result, modelBuilder, resolvedArtifacts,
-                            projectModule,
-                            collectedArtifactFiles,
-                            processedModules, finalFlags, projectDescriptor);
+                            projectModule, collectedArtifactFiles, processedModules,
+                            finalFlags, projectDescriptor, depInfoCollector);
                 }
             });
             return;
@@ -314,6 +330,8 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
                     newFlags = clearFlag(newFlags, COLLECT_TOP_EXTENSION_RUNTIME_NODES);
                 }
             }
+            depInfoCollector.collect(artifact.getId().getComponentIdentifier(),
+                    new GAV(moduleId.getGroup(), moduleId.getName(), moduleId.getVersion()), depBuilder);
             if (isFlagOn(flags, COLLECT_RELOADABLE_MODULES)) {
                 if (!depBuilder.isRuntimeExtensionArtifact()
                         && (projectModule != null
@@ -337,7 +355,7 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
             if (dependency instanceof ResolvedDependencyResult result) {
                 collectDependencies(result, modelBuilder, resolvedArtifacts, projectModule,
                         collectedArtifactFiles,
-                        processedModules, flags, projectDescriptor);
+                        processedModules, flags, projectDescriptor, depInfoCollector);
             }
         }
     }
@@ -356,22 +374,26 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
                 || a.file.isDirectory();
     }
 
-    private static void collectExtensionDependencies(QuarkusResolvedClasspath classpath, ApplicationModelBuilder modelBuilder) {
+    private void collectExtensionDependencies(
+            QuarkusResolvedClasspath classpath,
+            ApplicationModelBuilder modelBuilder,
+            DependencyInfoCollector deoInfoCollector) {
         Map<ComponentIdentifier, List<QuarkusResolvedArtifact>> artifacts = classpath.resolvedArtifactsByComponentIdentifier();
         final Set<ModuleVersionIdentifier> processedModules = new HashSet<>();
         classpath.getRoot().get().getDependencies().forEach(d -> {
             if (d instanceof ResolvedDependencyResult result) {
-                collectExtensionDependencies(result, modelBuilder, artifacts, processedModules, false);
+                collectExtensionDependencies(result, modelBuilder, artifacts, processedModules, false, deoInfoCollector);
             }
         });
     }
 
-    private static void collectExtensionDependencies(
+    private void collectExtensionDependencies(
             ResolvedDependencyResult resolvedDependency,
             ApplicationModelBuilder modelBuilder,
             Map<ComponentIdentifier, List<QuarkusResolvedArtifact>> resolvedArtifacts,
             Set<ModuleVersionIdentifier> processedModules,
-            boolean clearReloadableFlag) {
+            boolean clearReloadableFlag,
+            DependencyInfoCollector deoInfoCollector) {
         final ModuleVersionIdentifier moduleId = getModuleVersion(resolvedDependency);
         if (!processedModules.add(moduleId)) {
             return;
@@ -400,6 +422,10 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
             if (dep == null) {
                 ArtifactCoords artifactCoords = new GACTV(artifactKey, moduleVersionIdentifier.getVersion());
                 dep = toDependency(artifactCoords, artifact.file);
+                deoInfoCollector.collect(artifact.getId().getComponentIdentifier(),
+                        new GAV(moduleVersionIdentifier.getGroup(), moduleVersionIdentifier.getName(),
+                                moduleVersionIdentifier.getVersion()),
+                        dep);
                 modelBuilder.addDependency(dep);
             }
             dep.setDeploymentCp();
@@ -413,7 +439,7 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         for (DependencyResult d : resolvedDependency.getSelected().getDependencies()) {
             if (d instanceof ResolvedDependencyResult result) {
                 collectExtensionDependencies(result, modelBuilder, resolvedArtifacts, processedModules,
-                        clearReloadableFlagChildren);
+                        clearReloadableFlagChildren, deoInfoCollector);
             }
         }
     }

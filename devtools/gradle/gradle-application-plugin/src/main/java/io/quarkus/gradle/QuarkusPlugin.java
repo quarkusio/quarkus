@@ -198,16 +198,24 @@ public class QuarkusPlugin implements Plugin<Project> {
         ApplicationDeploymentClasspathBuilder devClasspath = new ApplicationDeploymentClasspathBuilder(project,
                 LaunchMode.DEVELOPMENT);
 
-        Provider<DefaultProjectDescriptor> projectDescriptor = ProjectDescriptorBuilder.buildForApp(project);
+        Provider<DefaultProjectDescriptor> testProjectDescriptor = ProjectDescriptorBuilder.buildForApp(project,
+                testClasspath.getRuntimeConfigurationWithoutResolvingDeployment(),
+                testClasspath.getDeploymentConfiguration());
+        Provider<DefaultProjectDescriptor> devProjectDescriptor = ProjectDescriptorBuilder.buildForApp(project,
+                devClasspath.getRuntimeConfigurationWithoutResolvingDeployment(),
+                devClasspath.getDeploymentConfiguration());
+        Provider<DefaultProjectDescriptor> projectDescriptor = ProjectDescriptorBuilder.buildForApp(project,
+                normalClasspath.getRuntimeConfigurationWithoutResolvingDeployment(),
+                normalClasspath.getDeploymentConfiguration());
         TaskProvider<QuarkusApplicationModelTask> quarkusGenerateTestAppModelTask = tasks.register(
                 "quarkusGenerateTestAppModel",
                 QuarkusApplicationModelTask.class, task -> {
-                    configureApplicationModelTask(project, task, projectDescriptor, testClasspath, LaunchMode.TEST,
+                    configureApplicationModelTask(project, task, testProjectDescriptor, testClasspath, LaunchMode.TEST,
                             "quarkus/application-model/quarkus-app-test-model.dat");
                 });
         TaskProvider<QuarkusApplicationModelTask> quarkusGenerateDevAppModelTask = tasks.register("quarkusGenerateDevAppModel",
                 QuarkusApplicationModelTask.class, task -> {
-                    configureApplicationModelTask(project, task, projectDescriptor, devClasspath, LaunchMode.DEVELOPMENT,
+                    configureApplicationModelTask(project, task, devProjectDescriptor, devClasspath, LaunchMode.DEVELOPMENT,
                             "quarkus/application-model/quarkus-app-dev-model.dat");
                 });
         TaskProvider<QuarkusApplicationModelTask> quarkusGenerateAppModelTask = tasks.register("quarkusGenerateAppModel",

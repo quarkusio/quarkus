@@ -1,0 +1,8 @@
+def isWindows() {
+    System.getProperty('os.name').toLowerCase().contains('win')
+}
+
+tasks.register('publishToMavenLocal', Exec) {
+    commandLine = isWindows() ? ['cmd', '/c', 'mvn', '-q', 'clean', 'install']
+                              : ['mvn', '-q', 'clean', 'install']
+}

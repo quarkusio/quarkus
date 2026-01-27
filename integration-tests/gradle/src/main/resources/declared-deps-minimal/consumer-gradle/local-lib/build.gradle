@@ -1,0 +1,19 @@
+plugins {
+    id 'java'
+}
+
+group = 'org.acme.local'
+version = '1.0.0'
+
+repositories {
+    mavenLocal {
+        content {
+            includeGroup 'org.acme.deps'
+        }
+    }
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.acme.deps:lib-c:1.0.0'
+}

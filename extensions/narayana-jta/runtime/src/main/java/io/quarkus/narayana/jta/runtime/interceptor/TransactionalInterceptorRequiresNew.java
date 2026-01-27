@@ -26,7 +26,7 @@ public class TransactionalInterceptorRequiresNew extends TransactionalIntercepto
     @Override
     @AroundInvoke
     public Object intercept(InvocationContext ic) throws Exception {
-        if (willTransactionalInterceptorRun()) {
+        if (willReactiveTransactionalInterceptorRun()) {
             return ic.proceed();
         }
 

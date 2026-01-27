@@ -32,7 +32,7 @@ public class TransactionalInterceptorMandatory extends TransactionalInterceptorB
 
     @Override
     protected Object doIntercept(TransactionManager tm, Transaction tx, InvocationContext ic) throws Exception {
-        if (willTransactionalInterceptorRun()) {
+        if (willReactiveTransactionalInterceptorRun()) {
             return ic.proceed(); // Skip the blocking interceptor
         }
 

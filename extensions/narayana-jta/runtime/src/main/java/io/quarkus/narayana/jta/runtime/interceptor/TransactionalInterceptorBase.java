@@ -450,7 +450,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
         throw (E) e;
     }
 
-    protected boolean willTransactionalInterceptorRun() throws Exception {
+    protected boolean willReactiveTransactionalInterceptorRun() throws Exception {
         try {
             return IS_ON_EVENT_LOOP_THREAD == null ? false : (boolean) IS_ON_EVENT_LOOP_THREAD.invokeExact();
         } catch (Throwable e) {

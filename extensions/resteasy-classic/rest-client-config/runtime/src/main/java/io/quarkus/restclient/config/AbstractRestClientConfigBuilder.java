@@ -163,8 +163,33 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
             public ConfigSourceInterceptor getInterceptor(final ConfigSourceInterceptorContext context) {
                 return new Relocates(relocates);
             }
+
+            @Override
+            public OptionalInt getPriority() {
+                return OptionalInt.of(DEFAULT_PRIORITY);
+            }
         });
-        builder.withInterceptors(new RenameConfigFallbackInterceptor(), new RenameConfigRelocateInterceptor());
+        builder.withInterceptorFactories(new ConfigSourceInterceptorFactory() {
+            @Override
+            public ConfigSourceInterceptor getInterceptor(ConfigSourceInterceptorContext context) {
+                return new RenameConfigFallbackInterceptor();
+            }
+
+            @Override
+            public OptionalInt getPriority() {
+                return OptionalInt.of(Priorities.LIBRARY + 600);
+            }
+        }, new ConfigSourceInterceptorFactory() {
+            @Override
+            public ConfigSourceInterceptor getInterceptor(ConfigSourceInterceptorContext context) {
+                return new RenameConfigRelocateInterceptor();
+            }
+
+            @Override
+            public OptionalInt getPriority() {
+                return OptionalInt.of(Priorities.LIBRARY + 300);
+            }
+        });
         return builder;
     }
 

@@ -22,6 +22,11 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 
+import org.apache.maven.model.Model;
+import org.apache.maven.model.building.DefaultModelBuilder;
+import org.apache.maven.model.building.DefaultModelBuilderFactory;
+import org.apache.maven.model.building.DefaultModelBuildingRequest;
+import org.apache.maven.model.building.ModelBuildingRequest;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
@@ -63,6 +68,7 @@ import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.DependencyBuilder;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.PathCollection;
@@ -125,14 +131,21 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                 .addReloadableWorkspaceModule(appArtifact.getKey())
                 .setPlatformImports(platformImports);
 
+        final Map<ArtifactKey, Model> pomModels = new HashMap<>();
         collectDependencies(classpathConfig.getResolvedConfiguration(), classpathConfig.getIncoming(), workspaceDiscovery,
-                project, modelBuilder, appArtifact.getWorkspaceModule().mutable());
+                project, modelBuilder, appArtifact.getWorkspaceModule().mutable(), pomModels);
         collectExtensionDependencies(project, deploymentConfig, modelBuilder);
         for (var dep : modelBuilder.getDependencies()) {
             if (dep.isRuntimeCp()) {
                 dep.setDeploymentCp();
             }
         }
+
+        // TODO: app artifact?
+        for (var dep : modelBuilder.getDependencies()) {
+            setDirectDeps(dep, pomModels.get(dep.getKey()), modelBuilder);
+        }
+
         addCompileOnly(project, classpathBuilder, modelBuilder);
 
         return modelBuilder.build();
@@ -360,12 +373,16 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
     private void collectDependencies(ResolvedConfiguration configuration, ResolvableDependencies dependencies,
             boolean workspaceDiscovery, Project project, ApplicationModelBuilder modelBuilder,
-            WorkspaceModule.Mutable wsModule) {
+            WorkspaceModule.Mutable wsModule, Map<ArtifactKey, Model> pomModels) {
+
+        // Create a shared model resolver with caching for the entire dependency tree
+        final GradleAssistedMavenModelResolverImpl modelResolver = new GradleAssistedMavenModelResolverImpl(project);
 
         final Set<File> artifactFiles = getArtifactFilesOrNull(configuration, dependencies);
         for (ResolvedDependency d : configuration.getFirstLevelModuleDependencies()) {
             collectDependencies(d, workspaceDiscovery, project, artifactFiles, modelBuilder, wsModule,
-                    (byte) (COLLECT_TOP_EXTENSION_RUNTIME_NODES | COLLECT_DIRECT_DEPS | COLLECT_RELOADABLE_MODULES));
+                    (byte) (COLLECT_TOP_EXTENSION_RUNTIME_NODES | COLLECT_DIRECT_DEPS | COLLECT_RELOADABLE_MODULES),
+                    modelResolver, pomModels);
         }
 
         if (artifactFiles != null) {
@@ -416,8 +433,8 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
     private void collectDependencies(org.gradle.api.artifacts.ResolvedDependency resolvedDep, boolean workspaceDiscovery,
             Project project, Set<File> artifactFiles, ApplicationModelBuilder modelBuilder,
-            WorkspaceModule.Mutable parentModule,
-            byte flags) {
+            WorkspaceModule.Mutable parentModule, byte flags, GradleAssistedMavenModelResolverImpl modelResolver,
+            Map<ArtifactKey, Model> pomModels) {
         WorkspaceModule.Mutable projectModule = null;
         final Set<ResolvedArtifact> resolvedArtifacts = resolvedDep.getModuleArtifacts();
         boolean processChildren = resolvedArtifacts.isEmpty();
@@ -476,6 +493,12 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                 if (artifactFiles != null) {
                     artifactFiles.add(a.getFile());
                 }
+
+                // Resolve POM and store for later processing (after all deps are collected)
+                var model = resolvePomAndBuildModel(a, modelResolver);
+                if (model != null) {
+                    pomModels.put(artifactKey, model);
+                }
             }
             if (projectModule == null && depBuilder.getWorkspaceModule() != null) {
                 projectModule = depBuilder.getWorkspaceModule().mutable();
@@ -502,9 +525,54 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
         if (processChildren) {
             for (org.gradle.api.artifacts.ResolvedDependency child : resolvedDep.getChildren()) {
-                collectDependencies(child, workspaceDiscovery, project, artifactFiles, modelBuilder, projectModule, flags);
+                collectDependencies(child, workspaceDiscovery, project, artifactFiles, modelBuilder, projectModule, flags,
+                        modelResolver, pomModels);
             }
         }
+    }
+
+    private void setDirectDeps(ResolvedDependencyBuilder depBuilder, Model pomModel,
+            ApplicationModelBuilder modelBuilder) {
+        if (pomModel == null) {
+            return;
+        }
+
+        var declaredDeps = pomModel.getDependencies();
+        final List<io.quarkus.maven.dependency.Dependency> directDeps = new ArrayList<>(declaredDeps.size());
+        final List<ArtifactCoords> depCoords = new ArrayList<>(declaredDeps.size());
+
+        for (var declaredDep : declaredDeps) {
+            var builder = DependencyBuilder.newInstance()
+                    .setGroupId(declaredDep.getGroupId())
+                    .setArtifactId(declaredDep.getArtifactId())
+                    .setClassifier(declaredDep.getClassifier())
+                    .setType(declaredDep.getType())
+                    .setVersion(declaredDep.getVersion())
+                    .setScope(declaredDep.getScope())
+                    .setOptional(declaredDep.isOptional());
+
+            var appDep = modelBuilder.getDependency(builder.getKey());
+            if (appDep == null) {
+                builder.setFlags(DependencyFlags.DIRECT | DependencyFlags.MISSING_FROM_APPLICATION);
+            } else {
+                builder.setVersion(appDep.getVersion())
+                        .setFlags(DependencyFlags.DIRECT | appDep.getFlags());
+            }
+
+            var directDep = builder.build();
+            directDeps.add(directDep);
+
+            if (appDep != null) {
+                depCoords.add(toPlainArtifactCoords(directDep));
+            }
+        }
+
+        depBuilder.setDependencies(depCoords)
+                .setDirectDependencies(directDeps);
+    }
+
+    private static ArtifactCoords toPlainArtifactCoords(io.quarkus.maven.dependency.Dependency dep) {
+        return ArtifactCoords.of(dep.getGroupId(), dep.getArtifactId(), dep.getClassifier(), dep.getType(), dep.getVersion());
     }
 
     private void initProjectModuleAndBuildPaths(final Project project,
@@ -585,6 +653,51 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             throw new UncheckedIOException("Failed to load extension description " + path, e);
         }
         return rtProps;
+    }
+
+    private Model resolvePomAndBuildModel(ResolvedArtifact artifact, GradleAssistedMavenModelResolverImpl modelResolver) {
+        // TODO: handle project dependencies later
+        if (artifact.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier) {
+            return null;
+        }
+
+        try {
+            var coords = artifact.getModuleVersion().getId();
+            String groupId = coords.getGroup();
+            String artifactId = coords.getName();
+            String version = coords.getVersion();
+
+            // build the effective model
+            return buildEffectiveModel(groupId, artifactId, version, modelResolver);
+        } catch (Exception e) {
+            // debug log
+            System.err.println("Warning: Failed to resolve POM for " + artifact.getName() + ": " + e.getMessage());
+            return null;
+        }
+    }
+
+    private Model buildEffectiveModel(String groupId, String artifactId, String version,
+            GradleAssistedMavenModelResolverImpl modelResolver) {
+        try {
+            // resolve the POM to get the file
+            var modelSource = modelResolver.resolveModel(groupId, artifactId, version);
+
+            ModelBuildingRequest request = new DefaultModelBuildingRequest();
+            request.setModelSource(modelSource);
+            request.setModelResolver(modelResolver);
+            request.getSystemProperties().putAll(System.getProperties());
+            request.setValidationLevel(ModelBuildingRequest.VALIDATION_LEVEL_MINIMAL);
+
+            DefaultModelBuilderFactory factory = new DefaultModelBuilderFactory();
+            DefaultModelBuilder builder = factory.newInstance();
+
+            return builder.build(request).getEffectiveModel();
+        } catch (Exception e) {
+            // debug log
+            System.err.println("Warning: Failed to build Maven model for "
+                    + groupId + ":" + artifactId + ":" + version + ": " + e.getMessage());
+            return null;
+        }
     }
 
     private static void initProjectModule(Project project, WorkspaceModule.Mutable module, SourceSet sourceSet,

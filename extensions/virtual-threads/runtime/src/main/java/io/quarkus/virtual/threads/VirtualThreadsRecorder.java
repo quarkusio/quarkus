@@ -22,7 +22,7 @@ public class VirtualThreadsRecorder {
     /**
      * Should use the instance variable instead.
      */
-    @Deprecated
+    @Deprecated(since = "3.25", forRemoval = true)
     static volatile VirtualThreadsConfig config;
     private static volatile ExecutorService current;
     private static final Object lock = new Object();

@@ -252,9 +252,6 @@ public final class RunnerClassLoader extends ClassLoader {
             return resources;
         }
         String dirName = getDirNameFromResourceName(name);
-        if (dirName == null) {
-            dirName = "";
-        }
         if (!dirName.equals(name) && fullyIndexedDirectories.contains(dirName)) {
             if (dirName.isEmpty()) {
                 return resourceDirectoryMap.get(name);
@@ -305,10 +302,8 @@ public final class RunnerClassLoader extends ClassLoader {
     private String getDirNameFromResourceName(String resourceName) {
         final int index = resourceName.lastIndexOf('/');
         if (index == -1) {
-            // we return null here since in this case no package is defined
-            // this is same behavior as Package.getPackage(clazz) exhibits
-            // when the class is in the default package
-            return null;
+            // return the root directory as it was fully indexed
+            return "";
         }
         return resourceName.substring(0, index);
     }

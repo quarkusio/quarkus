@@ -35,7 +35,7 @@ public class OidcDevJsonRpcService {
                 props.isIntrospectionIsAvailable(), props.getKeycloakAdminUrl(),
                 props.getKeycloakRealms(), props.isSwaggerIsAvailable(), props.isGraphqlIsAvailable(), props.getSwaggerUiPath(),
                 props.getGraphqlUiPath(),
-                props.isAlwaysLogoutUserInDevUiOnReload(), props.getPropertiesStateId(),
+                props.getDevServiceConfigHashCode(), props.getPropertiesStateId(),
                 props.getLogoutPath(), props.getReadSessionCookiePath());
     }
 

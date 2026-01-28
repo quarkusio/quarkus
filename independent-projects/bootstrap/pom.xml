@@ -49,7 +49,7 @@
         <maven-wagon.version>3.5.3</maven-wagon.version>
         <httpcore.version>4.4.16</httpcore.version><!-- Keep in sync with maven-wagon.version (wagon-http 3.5.3 brings in httpclient 4.5.14 which brings httpcore 4.4.16) -->
         <httpclient.version>4.5.14</httpclient.version>
-        <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
+        <commons-logging-jboss-logging.version>2.0.0.Final</commons-logging-jboss-logging.version>
         <jakarta.annotation-api.version>3.0.0</jakarta.annotation-api.version>
         <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
         <jakarta.inject-api.version>2.0.1</jakarta.inject-api.version>

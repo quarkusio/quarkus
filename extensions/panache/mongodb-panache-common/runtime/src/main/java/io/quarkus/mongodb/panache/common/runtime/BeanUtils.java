@@ -12,6 +12,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.mongodb.MongoClientName;
 import io.quarkus.mongodb.panache.common.MongoDatabaseResolver;
 import io.quarkus.mongodb.panache.common.MongoEntity;
 import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
@@ -34,26 +35,19 @@ public final class BeanUtils {
 
     public static <T> T clientFromArc(MongoEntity entity,
             Class<T> clientClass, boolean isReactive) {
-        T mongoClient = Arc.container()
-                .instance(clientClass, MongoClientBeanUtil.clientLiteral(beanName(entity), isReactive))
-                .get();
+        // we must consider multiple instances if @MongoClientName is used in client code
+        T mongoClient = firstInstanceWithoutQualifier(
+                Arc.container().select(clientClass, MongoClientBeanUtil.clientLiteral(beanName(entity), isReactive)).handles(),
+                MongoClientName.class);
         if (mongoClient != null) {
             return mongoClient;
         }
 
         if ((entity == null || entity.clientName().isEmpty())) {
             // this case happens when there are multiple instances because they are all annotated with @Named
-            for (InstanceHandle<T> handle : Arc.container().select(clientClass).handles()) {
-                InjectableBean<T> bean = handle.getBean();
-                boolean hasNamed = false;
-                for (Annotation qualifier : bean.getQualifiers()) {
-                    if (qualifier.annotationType().equals(Named.class)) {
-                        hasNamed = true;
-                    }
-                }
-                if (!hasNamed) {
-                    return handle.get();
-                }
+            mongoClient = firstInstanceWithoutQualifier(Arc.container().select(clientClass).handles(), Named.class);
+            if (mongoClient != null) {
+                return mongoClient;
             }
             throw new IllegalStateException(String.format("Unable to find default %s bean", clientClass.getSimpleName()));
         } else {
@@ -93,5 +87,22 @@ public final class BeanUtils {
                 .map(InjectableInstance::get)
                 .map(MongoDatabaseResolver::resolve)
                 .filter(Predicate.not(String::isBlank));
+    }
+
+    private static <T> T firstInstanceWithoutQualifier(Iterable<InstanceHandle<T>> handles,
+            Class<? extends Annotation> qualifier) {
+        for (InstanceHandle<T> handle : handles) {
+            InjectableBean<T> bean = handle.getBean();
+            boolean match = false;
+            for (Annotation q : bean.getQualifiers()) {
+                if (q.annotationType().equals(qualifier)) {
+                    match = true;
+                }
+            }
+            if (!match) {
+                return handle.get();
+            }
+        }
+        return null;
     }
 }

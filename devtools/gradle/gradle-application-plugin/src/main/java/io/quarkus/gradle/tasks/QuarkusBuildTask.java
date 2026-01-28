@@ -259,7 +259,7 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
                 delete.delete(fastJar());
             } else if (jarEnabled()) {
                 switch (jarType()) {
-                    case FAST_JAR -> {
+                    case FAST_JAR, AOT_JAR -> {
                         delete.delete(buildDir.resolve(nativeImageSourceJarDirName()));
                         delete.delete(fastJar());
                     }
@@ -324,7 +324,7 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
                 }
             } else if (jarEnabled()) {
                 switch (jarType()) {
-                    case FAST_JAR -> {
+                    case FAST_JAR, AOT_JAR -> {
                         copy.include(outputDirectory() + "/**");
                         copy.include(QUARKUS_ARTIFACT_PROPERTIES);
                     }

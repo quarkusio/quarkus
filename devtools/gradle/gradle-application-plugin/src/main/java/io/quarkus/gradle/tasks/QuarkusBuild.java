@@ -117,7 +117,7 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
                     outputs.put("fast-jar", fastJar());
                     outputs.put("legacy-lib", gradleBuildDir().resolve("lib").toFile());
                 }
-                case FAST_JAR -> outputs.put("fast-jar", fastJar());
+                case FAST_JAR, AOT_JAR -> outputs.put("fast-jar", fastJar());
                 case MUTABLE_JAR, UBER_JAR -> {
                     outputs.put("fast-jar", fastJar());
                     outputs.put("generated", genBuildDir().toFile());
@@ -148,7 +148,7 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
                     outputs.put("runner-jar", runnerJar());
                     outputs.put("artifact-properties", artifactProperties());
                 }
-                case FAST_JAR, MUTABLE_JAR -> outputs.put("artifact-properties", artifactProperties());
+                case FAST_JAR, MUTABLE_JAR, AOT_JAR -> outputs.put("artifact-properties", artifactProperties());
             }
         }
         return outputs;
@@ -174,7 +174,7 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
         } else if (jarEnabled()) {
             PackageConfig.JarConfig.JarType packageType = jarType();
             switch (packageType) {
-                case FAST_JAR -> {
+                case FAST_JAR, AOT_JAR -> {
                     Path appBuildBaseDir = appBuildDir();
                     inputs.add(genBuildDir().toFile());
                     inputs.add(appBuildBaseDir.resolve(outputDirectory()).toFile());
@@ -224,7 +224,7 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
             }
         } else if (jarEnabled()) {
             switch (jarType()) {
-                case FAST_JAR -> assembleFastJar();
+                case FAST_JAR, AOT_JAR -> assembleFastJar();
                 case LEGACY_JAR -> assembleLegacyJar();
                 case MUTABLE_JAR, UBER_JAR -> {
                     generateBuild();

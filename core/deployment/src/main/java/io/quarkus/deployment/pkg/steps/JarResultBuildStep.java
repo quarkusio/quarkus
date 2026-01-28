@@ -1,8 +1,5 @@
 package io.quarkus.deployment.pkg.steps;
 
-import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.MUTABLE_JAR;
-import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.UBER_JAR;
-
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -40,6 +37,7 @@ import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarIgnoredResourceBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarMergedResourceBuildItem;
+import io.quarkus.deployment.pkg.jar.AotFastJarBuilder;
 import io.quarkus.deployment.pkg.jar.FastJarBuilder;
 import io.quarkus.deployment.pkg.jar.LegacyThinJarBuilder;
 import io.quarkus.deployment.pkg.jar.NativeImageSourceJarBuilder;
@@ -146,6 +144,20 @@ public class JarResultBuildStep {
                     buildExecutor,
                     jvmRequirements).build();
             case FAST_JAR, MUTABLE_JAR -> new FastJarBuilder(curateOutcomeBuildItem,
+                    outputTargetBuildItem,
+                    applicationInfo,
+                    packageConfig,
+                    mainClassBuildItem,
+                    applicationArchivesBuildItem,
+                    additionalApplicationArchiveBuildItems,
+                    transformedClasses,
+                    generatedClasses,
+                    generatedResources,
+                    parentFirstArtifactKeys,
+                    removedArtifactKeys,
+                    buildExecutor,
+                    jvmRequirements).build();
+            case AOT_JAR -> new AotFastJarBuilder(curateOutcomeBuildItem,
                     outputTargetBuildItem,
                     applicationInfo,
                     packageConfig,

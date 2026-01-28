@@ -122,6 +122,7 @@ public class Channels {
         // handle client port
         int port = config.port();
         if (LaunchMode.current() == LaunchMode.TEST) {
+            LOGGER.info("LaunchMode {} detected. Overriding existing port configuration for gRPC client/server .", LaunchMode.TEST);
             port = config.testPort().orElse(testPort(configProvider.getServerConfiguration()));
         }
 

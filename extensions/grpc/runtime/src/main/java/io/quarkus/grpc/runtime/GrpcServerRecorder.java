@@ -1,7 +1,7 @@
 package io.quarkus.grpc.runtime;
 
+import static io.quarkus.grpc.runtime.GrpcServer.*;
 import static io.quarkus.grpc.runtime.GrpcSslUtils.applySslOptions;
-import static io.quarkus.grpc.runtime.GrpcTestPortUtils.testPort;
 
 import java.io.File;
 import java.io.IOException;
@@ -58,12 +58,12 @@ import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
 import io.quarkus.grpc.runtime.supports.CompressionInterceptor;
 import io.quarkus.grpc.runtime.supports.blocking.BlockingServerInterceptor;
 import io.quarkus.grpc.spi.GrpcBuilderProvider;
+import io.quarkus.registry.ValueRegistry;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.QuarkusBindException;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.vertx.http.runtime.PortSystemProperties;
 import io.quarkus.vertx.http.runtime.QuarkusErrorHandler;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
@@ -96,9 +96,13 @@ public class GrpcServerRecorder {
     private static final Pattern GRPC_CONTENT_TYPE = Pattern.compile("^application/grpc.*");
 
     private final RuntimeValue<GrpcConfiguration> runtimeConfig;
+    private final RuntimeValue<ValueRegistry> valueRegistry;
 
-    public GrpcServerRecorder(final RuntimeValue<GrpcConfiguration> runtimeConfig) {
+    public GrpcServerRecorder(
+            final RuntimeValue<GrpcConfiguration> runtimeConfig,
+            final RuntimeValue<ValueRegistry> valueRegistry) {
         this.runtimeConfig = runtimeConfig;
+        this.valueRegistry = valueRegistry;
     }
 
     public static List<GrpcServiceDefinition> getServices() {
@@ -342,8 +346,7 @@ public class GrpcServerRecorder {
                     if (result.failed()) {
                         startResult.completeExceptionally(result.cause());
                     } else {
-                        GrpcServerRecorder.this.postStartup(configuration, provider, launchMode == LaunchMode.TEST);
-
+                        GrpcServerRecorder.this.postStartup(configuration, provider);
                         startResult.complete(null);
                     }
                 });
@@ -360,9 +363,9 @@ public class GrpcServerRecorder {
         }
     }
 
-    private void postStartup(GrpcServerConfiguration configuration, GrpcBuilderProvider<?> provider, boolean test) {
+    private void postStartup(GrpcServerConfiguration configuration, GrpcBuilderProvider<?> provider) {
         initHealthStorage();
-        int port = test ? testPort(configuration) : configuration.port();
+        int port = valueRegistry.getValue().get(GRPC_SERVER).getPort();
         String msg = "Started ";
         if (provider != null)
             msg += provider.serverInfo(configuration.host(), port, configuration);
@@ -394,6 +397,8 @@ public class GrpcServerRecorder {
         Map.Entry<Integer, Server> portToServer = buildServer(vertx, configuration, provider,
                 blockingMethodsPerService, virtualMethodsPerService, grpcContainer, launchMode);
 
+        valueRegistry.getValue().register(GRPC_PORT, portToServer.getKey());
+
         Server server = portToServer.getValue();
         if (provider == null) {
             CompletableFuture<Boolean> future = new CompletableFuture<>();
@@ -411,7 +416,7 @@ public class GrpcServerRecorder {
                     }
                     future.completeExceptionally(effectiveCause);
                 } else {
-                    postStartup(configuration, provider, false);
+                    postStartup(configuration, provider);
                     future.complete(true);
                     grpcVerticleCount.incrementAndGet();
                 }
@@ -437,7 +442,7 @@ public class GrpcServerRecorder {
                 LOGGER.error("Unable to start the gRPC server", e);
                 throw new IllegalStateException(e);
             }
-            postStartup(configuration, provider, false);
+            postStartup(configuration, provider);
             provider.postStartup(server, shutdown);
         }
     }
@@ -480,6 +485,7 @@ public class GrpcServerRecorder {
     private static List<GrpcServiceDefinition> collectServiceDefinitions(Instance<BindableService> services) {
         List<GrpcServiceDefinition> definitions = new ArrayList<>();
         for (BindableService service : services) {
+            // TODO - This may force a query to port before port being assigned
             ServerServiceDefinition definition = service.bindService();
             definitions.add(new GrpcServiceDefinition(service, definition));
         }
@@ -723,7 +729,6 @@ public class GrpcServerRecorder {
         private final LaunchMode launchMode;
         private final Map<String, List<String>> blockingMethodsPerService;
         private final Map<String, List<String>> virtualMethodsPerService;
-        private volatile PortSystemProperties portSystemProperties;
 
         private Server grpcServer;
 
@@ -764,12 +769,12 @@ public class GrpcServerRecorder {
                     } else {
                         try {
                             int actualPort = grpcServer.getPort();
-                            if (actualPort != portToServer.getKey()) {
-                                portSystemProperties = new PortSystemProperties();
-                                portSystemProperties.set("grpc.server", actualPort, launchMode);
+                            valueRegistry.getValue().register(GRPC_PORT, actualPort);
+                            if (launchMode.isDevOrTest()) {
+                                valueRegistry.getValue().register(GRPC_TEST_PORT, actualPort);
                             }
-                        } catch (Exception e) {
-                            // Ignore, port reused.
+                        } catch (IllegalStateException e) {
+                            // Ignore, port reused. Check io.grpc.Server#getPort, called multiple times if instances > 1
                         }
                         startPromise.complete();
                         grpcVerticleCount.incrementAndGet();
@@ -781,9 +786,9 @@ public class GrpcServerRecorder {
                     try {
                         grpcServer.start();
                         int actualPort = grpcServer.getPort();
-                        if (actualPort != portToServer.getKey()) {
-                            portSystemProperties = new PortSystemProperties();
-                            portSystemProperties.set("grpc.server", actualPort, launchMode);
+                        valueRegistry.getValue().register(GRPC_PORT, actualPort);
+                        if (launchMode.isDevOrTest()) {
+                            valueRegistry.getValue().register(GRPC_TEST_PORT, actualPort);
                         }
                         startPromise.complete();
                     } catch (Exception e) {
@@ -797,8 +802,7 @@ public class GrpcServerRecorder {
 
         @Override
         public void stop(Promise<Void> stopPromise) {
-            if (grpcServer instanceof VertxServer) {
-                VertxServer server = (VertxServer) grpcServer;
+            if (grpcServer instanceof VertxServer server) {
                 server.shutdown(ar -> {
                     if (ar.failed()) {
                         Throwable cause = ar.cause();
@@ -808,9 +812,6 @@ public class GrpcServerRecorder {
                         LOGGER.debug("gRPC Server stopped");
                         stopPromise.complete();
                         grpcVerticleCount.decrementAndGet();
-                    }
-                    if (portSystemProperties != null) {
-                        portSystemProperties.restore();
                     }
                 });
             } else {
@@ -824,10 +825,6 @@ public class GrpcServerRecorder {
                 } catch (Exception e) {
                     LOGGER.errorf(e, "Unable to stop the gRPC server gracefully");
                     stopPromise.fail(e);
-                } finally {
-                    if (portSystemProperties != null) {
-                        portSystemProperties.restore();
-                    }
                 }
             }
         }

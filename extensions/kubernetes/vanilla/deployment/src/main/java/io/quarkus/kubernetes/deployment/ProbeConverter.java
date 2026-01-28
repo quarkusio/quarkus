@@ -32,6 +32,7 @@ public class ProbeConverter {
     }
 
     private static int getQuarkusGrpcPort() {
+        // TODO - Querying a runtime configuration during deployment
         return ConfigProvider.getConfig().getOptionalValue("quarkus.grpc.server.port", Integer.class)
                 .orElse(9000);
     }

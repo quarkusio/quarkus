@@ -554,6 +554,7 @@ public class GrpcServerProcessor {
                     .orElse(true);
             if (useSeparateServer) {
                 // Only expose the named port "grpc" if the gRPC server is exposed using a separate server.
+                // TODO - Querying a runtime configuration during deployment
                 return KubernetesPortBuildItem.fromRuntimeConfiguration("grpc", "quarkus.grpc.server.port", 9000, true);
             }
         }

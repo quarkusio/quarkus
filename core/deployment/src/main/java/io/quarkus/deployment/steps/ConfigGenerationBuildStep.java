@@ -913,9 +913,9 @@ public class ConfigGenerationBuildStep {
             // The discovery includes deployment modules, so we only include services available at runtime
             if (QuarkusClassLoader.isClassPresentAtRuntime(service)) {
                 services.add(service);
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(service).build());
             }
         }
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(services).build());
         return services;
     }
 

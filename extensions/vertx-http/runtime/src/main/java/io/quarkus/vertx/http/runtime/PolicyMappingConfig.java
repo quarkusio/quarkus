@@ -2,7 +2,11 @@ package io.quarkus.vertx.http.runtime;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
+import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 
 public interface PolicyMappingConfig {
@@ -48,11 +52,14 @@ public interface PolicyMappingConfig {
     Optional<List<String>> paths();
 
     /**
-     * Path specific authentication mechanism which must be used to authenticate a user.
+     * Set of path specific authentication mechanisms.
      * It needs to match {@link io.quarkus.vertx.http.runtime.security.HttpCredentialTransport} authentication scheme
      * such as 'basic', 'bearer', 'form', etc.
+     * When the inclusive authentication (see 'quarkus.http.auth.inclusive') is enabled,
+     * only {@link HttpAuthenticationMechanism} with given schemes are considered for the HTTP permission paths,
+     * and the expected behavior changes according to the inclusive mode (see 'quarkus.http.auth.inclusive-mode').
      */
-    Optional<String> authMechanism();
+    Optional<Set<@WithConverter(TrimmedStringConverter.class) String>> authMechanism();
 
     /**
      * Indicates that this policy always applies to the matched paths in addition to the policy with a winning path.

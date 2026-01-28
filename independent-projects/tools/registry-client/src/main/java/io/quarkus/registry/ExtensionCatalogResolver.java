@@ -669,7 +669,7 @@ public class ExtensionCatalogResolver {
                 buf.append(
                         "The following registries were configured as exclusive providers of the ");
                 buf.append(PlatformArtifacts.ensureBomArtifact(bom).toCompactCoords());
-                buf.append("platform: ").append(e.conflictingRegistries.get(0).getId());
+                buf.append(" platform: ").append(e.conflictingRegistries.get(0).getId());
                 for (int i = 1; i < e.conflictingRegistries.size(); ++i) {
                     buf.append(", ").append(e.conflictingRegistries.get(i).getId());
                 }

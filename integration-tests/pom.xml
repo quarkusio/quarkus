@@ -395,6 +395,7 @@
                 <module>mailer</module>
                 <module>native-config-profile</module>
                 <module>native-image-annotations</module>
+                <module>native-image-metadata-parser</module>
                 <module>logging-min-level-unset</module>
                 <module>logging-min-level-set</module>
                 <module>logging-panache</module>

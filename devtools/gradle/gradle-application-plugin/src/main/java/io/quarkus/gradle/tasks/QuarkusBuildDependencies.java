@@ -63,7 +63,7 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
         } else {
             PackageConfig.JarConfig.JarType packageType = jarType();
             switch (packageType) {
-                case FAST_JAR, LEGACY_JAR -> outputs.put("dependencies-dir", depBuildDir().toFile());
+                case FAST_JAR, LEGACY_JAR, AOT_JAR -> outputs.put("dependencies-dir", depBuildDir().toFile());
                 case MUTABLE_JAR, UBER_JAR -> {
                 }
             }
@@ -90,7 +90,7 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
         } else {
             PackageConfig.JarConfig.JarType packageType = jarType();
             switch (packageType) {
-                case FAST_JAR -> fastJarDependencies();
+                case FAST_JAR, AOT_JAR -> fastJarDependencies();
                 case LEGACY_JAR -> legacyJarDependencies();
                 case MUTABLE_JAR, UBER_JAR -> getLogger().info(
                         "Falling back to 'full quarkus application build' for JAR type {}, this task's output is empty for this build type",

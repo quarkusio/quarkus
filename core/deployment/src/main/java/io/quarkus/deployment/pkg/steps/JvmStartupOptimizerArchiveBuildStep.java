@@ -1,6 +1,5 @@
 package io.quarkus.deployment.pkg.steps;
 
-import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.FAST_JAR;
 import static io.quarkus.deployment.pkg.steps.LinuxIDUtil.getLinuxID;
 import static io.quarkus.deployment.util.ContainerRuntimeUtil.detectContainerRuntime;
 
@@ -86,7 +85,7 @@ public class JvmStartupOptimizerArchiveBuildStep {
         Path archivePath;
         JvmStartupOptimizerArchiveType archiveType = requested.get().getType();
         log.infof("Launching %s creation process.", archiveType);
-        boolean isFastJar = packageConfig.jar().type() == FAST_JAR;
+        boolean isFastJar = packageConfig.jar().type().usesFastJarLayout();
         if (archiveType == JvmStartupOptimizerArchiveType.AppCDS) {
             archivePath = createAppCDSFromExit(jarResult, outputTarget, javaBinPath, containerImage,
                     isFastJar);

@@ -14,10 +14,12 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -201,6 +203,9 @@ public class YamlMetadataGenerator {
                                     .findFirst();
 
                             final String summaryString;
+                            Function<String, Status> extensionStatusResolver = extension -> Status
+                                    .fromObject(doc.getAttribute(extension.replaceAll("[:.]", "-") + "-extension-status"),
+                                            path);
                             if (preambleNode.isPresent()) {
                                 Optional<String> content = preambleNode.get().getBlocks().stream()
                                         .filter(b -> "paragraph".equals(b.getContext()))
@@ -212,17 +217,17 @@ public class YamlMetadataGenerator {
 
                                 if (content.isPresent()) {
                                     index.add(new DocMetadata(title, path, summaryString, categories, keywords, topics,
-                                            extensions, type, status, id));
+                                            extensions, type, status, id, extensionStatusResolver));
                                 } else {
                                     messages.record("empty-preamble", path);
                                     index.add(new DocMetadata(title, path, summaryString, categories, keywords, topics,
-                                            extensions, type, status, id));
+                                            extensions, type, status, id, extensionStatusResolver));
                                 }
                             } else {
                                 messages.record("missing-preamble", path);
                                 summaryString = getSummary(summary, Optional.empty());
                                 index.add(new DocMetadata(title, path, summaryString, categories, keywords, topics, extensions,
-                                        type, status, id));
+                                        type, status, id, extensionStatusResolver));
                             }
 
                             long spaceCount = summaryString.chars().filter(c -> c == (int) ' ').count();
@@ -362,8 +367,8 @@ public class YamlMetadataGenerator {
     private enum Status {
         experimental("experimental", "Experimental"),
         preview("preview", "Preview"),
-        stable("stable", "Stable"),
-        deprecated("deprecated", "Deprecated");
+        deprecated("deprecated", "Deprecated"),
+        stable("stable", "Stable");
 
         final String id;
         final String name;
@@ -576,9 +581,11 @@ public class YamlMetadataGenerator {
         String id;
         Type type;
         Status status;
+        Status derivedStatus;
 
         DocMetadata(String title, Path path, String summary, Object categories, Object keywords,
-                Object topics, Object extensions, Object diataxisType, Object status, String id) {
+                Object topics, Object extensions, Object diataxisType, Object status, String id,
+                Function<String, Status> extensionToStatus) {
             this.id = id;
             this.title = title == null ? "" : title;
             this.filename = path.getFileName().toString();
@@ -614,6 +621,14 @@ public class YamlMetadataGenerator {
             if (this.categories.isEmpty()) {
                 messages.record("missing-categories", path);
             }
+            this.derivedStatus = this.extensions.stream()
+                    .map(extensionToStatus)
+                    .filter(Objects::nonNull)
+                    .sorted()
+                    .findFirst().orElse(null);
+            if (this.derivedStatus == null) {
+                messages.record("derived-status", path, "Cannot derive the status for this guide");
+            }
         }
 
         public String getId() {
@@ -634,6 +649,10 @@ public class YamlMetadataGenerator {
 
         public String getStatus() {
             return status != null ? status.id : null;
+        }
+
+        public String getDerivedStatus() {
+            return derivedStatus != null ? derivedStatus.id : null;
         }
 
         public String getUrl() {

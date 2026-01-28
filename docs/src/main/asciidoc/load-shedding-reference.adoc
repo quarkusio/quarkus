@@ -12,8 +12,6 @@ include::_attributes.adoc[]
 :extensions: io.quarkus:quarkus-load-shedding
 :extension-status: experimental
 
-include::{includes}/extension-status.adoc[]
-
 Load shedding is the practice of detecting service overload and rejecting requests.
 By rejecting requests when overloaded, load shedding keeps the application alive.
 With priority load shedding, the application even keeps working, albeit in a degraded state: only a fraction of requests is handled, others are rejected early.

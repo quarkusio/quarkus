@@ -23,8 +23,6 @@ IMPORTANT: The RabbitMQ connector supports AMQP 0-9-1, which is very different f
 AMQP 1.0 connector. You can use the AMQP 1.0 connector with RabbitMQ as described in the
 xref:amqp-reference.adoc[AMQP 1.0 connector reference], albeit with *reduced functionality*.
 
-include::{includes}/extension-status.adoc[]
-
 == RabbitMQ connector extension
 
 To use the connector, you need to add the `quarkus-messaging-rabbitmq` extension.

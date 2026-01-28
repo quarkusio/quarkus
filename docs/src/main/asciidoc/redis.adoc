@@ -13,8 +13,6 @@ include::_attributes.adoc[]
 
 This guide demonstrates how your Quarkus application can connect to a Redis server using the Redis Client extension.
 
-include::{includes}/extension-status.adoc[]
-
 == Prerequisites
 
 include::{includes}/prerequisites.adoc[]

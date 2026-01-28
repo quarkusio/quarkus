@@ -194,7 +194,7 @@ public class SerializedApplication {
             // this map is populated correctly because the JarResource entries are added to allClassLoadingResources
             // in the same order as the classpath was written during the writing of the index
             int directlyIndexedSize = in.readUnsignedShort();
-            Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap = new HashMap<>(
+            Map<String, ClassLoadingResource[]> fullyIndexedResourcesIndexMap = new HashMap<>(
                     (int) Math.ceil(directlyIndexedSize / 0.75f));
             for (int i = 0; i < directlyIndexedSize; i++) {
                 String resource = in.readUTF();
@@ -203,11 +203,11 @@ public class SerializedApplication {
                 for (int j = 0; j < indexesSize; j++) {
                     matchingResources[j] = allClassLoadingResources[in.readUnsignedShort()];
                 }
-                directlyIndexedResourcesIndexMap.put(resource, matchingResources);
+                fullyIndexedResourcesIndexMap.put(resource, matchingResources);
             }
             RunnerClassLoader runnerClassLoader = new RunnerClassLoader(ClassLoader.getSystemClassLoader(),
                     resourceDirectoryTracker.getResult(), parentFirstPackages,
-                    FULLY_INDEXED_DIRECTORIES, directlyIndexedResourcesIndexMap,
+                    FULLY_INDEXED_DIRECTORIES, fullyIndexedResourcesIndexMap,
                     generatedBytecodeClassLoadingResource, generatedBytecode,
                     transformedBytecodeClassLoadingResource, transformedBytecode);
             for (ClassLoadingResource classLoadingResource : allClassLoadingResources) {

@@ -43,7 +43,7 @@ public final class RunnerClassLoader extends ClassLoader {
     // in order for the resource loading to work properly
     // normally this field would be a set, but it only contains 2 elements, so making it a list is actually better
     private final List<String> fullyIndexedDirectories;
-    private final Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap;
+    private final Map<String, ClassLoadingResource[]> fullyIndexedResourcesIndexMap;
 
     private final ClassLoadingResource generatedBytecodeClassLoadingResource;
     private final Set<String> generatedBytecode;
@@ -57,14 +57,14 @@ public final class RunnerClassLoader extends ClassLoader {
 
     RunnerClassLoader(ClassLoader parent, Map<String, ClassLoadingResource[]> resourceDirectoryMap,
             Set<String> parentFirstPackages,
-            List<String> fullyIndexedDirectories, Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap,
+            List<String> fullyIndexedDirectories, Map<String, ClassLoadingResource[]> fullyIndexedResourcesIndexMap,
             ClassLoadingResource generatedBytecodeClassLoadingResource, Set<String> generatedBytecode,
             ClassLoadingResource transformedBytecodeClassLoadingResource, Set<String> transformedBytecode) {
         super(parent);
         this.resourceDirectoryMap = resourceDirectoryMap;
         this.parentFirstPackages = parentFirstPackages;
         this.fullyIndexedDirectories = fullyIndexedDirectories;
-        this.directlyIndexedResourcesIndexMap = directlyIndexedResourcesIndexMap;
+        this.fullyIndexedResourcesIndexMap = fullyIndexedResourcesIndexMap;
         this.generatedBytecodeClassLoadingResource = generatedBytecodeClassLoadingResource;
         this.generatedBytecode = generatedBytecode;
         this.transformedBytecodeClassLoadingResource = transformedBytecodeClassLoadingResource;
@@ -243,7 +243,7 @@ public final class RunnerClassLoader extends ClassLoader {
     }
 
     private ClassLoadingResource[] getClassLoadingResources(final String name) {
-        ClassLoadingResource[] resources = directlyIndexedResourcesIndexMap.get(name);
+        ClassLoadingResource[] resources = fullyIndexedResourcesIndexMap.get(name);
         if (resources != null) {
             return resources;
         }

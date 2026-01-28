@@ -4,10 +4,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
-import org.fusesource.jansi.AnsiColors;
-import org.fusesource.jansi.AnsiMode;
-import org.fusesource.jansi.AnsiType;
-import org.fusesource.jansi.io.AnsiOutputStream;
+import org.jline.jansi.AnsiColors;
+import org.jline.jansi.AnsiMode;
+import org.jline.jansi.AnsiType;
+import org.jline.jansi.io.AnsiOutputStream;
 
 public class HtmlAnsiOutputStream extends AnsiOutputStream {
 

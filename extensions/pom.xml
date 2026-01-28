@@ -216,6 +216,7 @@
         <module>qute</module>
 
         <!-- Command line -->
+        <module>aesh</module>
         <module>picocli</module>
         <module>google-cloud-functions-http</module>
         <module>google-cloud-functions</module>

@@ -1,7 +1,6 @@
 package io.quarkus.maven;
 
 import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.codestartLoadersBuilder;
-import static org.fusesource.jansi.Ansi.ansi;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,6 +13,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.aesh.terminal.utils.ANSIBuilder;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
@@ -30,7 +30,6 @@ import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.fusesource.jansi.Ansi;
 
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.commands.CreateProject;
@@ -486,16 +485,18 @@ public class CreateProjectMojo extends AbstractMojo {
         getLog().info("");
         getLog().info("========================================================================================");
         getLog().info(
-                ansi().a("Your new application has been created in ").bold().a(root.getAbsolutePath()).boldOff().toString());
-        getLog().info(ansi().a("Navigate into this directory and launch your application with ")
+                ANSIBuilder.builder().append("Your new application has been created in ").bold().append(root.getAbsolutePath())
+                        .boldOff().toString());
+        getLog().info(ANSIBuilder.builder().append("Navigate into this directory and launch your application with ")
                 .bold()
-                .fg(Ansi.Color.CYAN)
-                .a("mvn quarkus:dev")
-                .reset()
+                .cyanText()
+                .append("mvn quarkus:dev")
+                .resetColors()
                 .toString());
         getLog().info(
-                ansi().a("Your application will be accessible on ").bold().fg(Ansi.Color.CYAN).a("http://localhost:8080")
-                        .reset().toString());
+                ANSIBuilder.builder().append("Your application will be accessible on ").bold().cyanText()
+                        .append("http://localhost:8080")
+                        .resetColors().toString());
         getLog().info("========================================================================================");
         getLog().info("");
     }

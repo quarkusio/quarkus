@@ -8,8 +8,8 @@ import java.util.function.Consumer;
 
 import org.aesh.readline.Readline;
 import org.aesh.readline.ReadlineBuilder;
-import org.aesh.readline.tty.terminal.TerminalConnection;
 import org.aesh.terminal.tty.Signal;
+import org.aesh.terminal.tty.TerminalConnection;
 
 /**
  * Prompt implementation.

@@ -126,32 +126,36 @@ public class ConfigMappingUtils {
         String prefix = configClassWithPrefix.getPrefix();
 
         List<ConfigMappingMetadata> configMappingsMetadata = ConfigMappingLoader.getConfigMappingsMetadata(configClass);
-        Set<String> generatedClassesNames = new HashSet<>();
+        Set<String> generatedClassesNames = new HashSet<>(configMappingsMetadata.size());
         // all the config interfaces including nested ones
         Set<Class<?>> configComponentInterfaces = new HashSet<>();
         configMappingsMetadata.forEach(mappingMetadata -> {
-            generatedClassesNames.add(mappingMetadata.getClassName());
+            final var className = mappingMetadata.getClassName();
+            generatedClassesNames.add(className);
             // This is the generated implementation of the mapping by SmallRye Config.
             byte[] classBytes = mappingMetadata.getClassBytes();
-            generatedConfigClasses.put(mappingMetadata.getClassName(),
-                    new GeneratedClassBuildItem(isApplicationClass(configClass.getName()), mappingMetadata.getClassName(),
+            generatedConfigClasses.put(className,
+                    new GeneratedClassBuildItem(isApplicationClass(configClass.getName()), className,
                             classBytes));
-            additionalConstrainedClasses.produce(AdditionalConstrainedClassBuildItem.of(mappingMetadata.getClassName(),
+            additionalConstrainedClasses.produce(AdditionalConstrainedClassBuildItem.of(className,
                     classBytes));
-            ReflectiveClassBuildItem.Builder reflection = ReflectiveClassBuildItem.builder(mappingMetadata.getClassName());
-            reflection.methods();
-            reflectiveClasses.produce(reflection
-                    .reason(ConfigMappingUtils.class.getName())
-                    .build());
             reflectiveMethods.produce(new ReflectiveMethodBuildItem(ConfigMappingUtils.class.getName(),
-                    mappingMetadata.getClassName(), "getProperties", new String[0]));
+                    className, "getProperties", new String[0]));
             reflectiveMethods.produce(new ReflectiveMethodBuildItem(ConfigMappingUtils.class.getName(),
-                    mappingMetadata.getClassName(), "getSecrets", new String[0]));
+                    className, "getSecrets", new String[0]));
 
             configComponentInterfaces.add(mappingMetadata.getInterfaceType());
 
             processProperties(mappingMetadata.getInterfaceType(), reflectiveClasses);
         });
+
+        if (!generatedClassesNames.isEmpty()) {
+            reflectiveClasses.produce(
+                    ReflectiveClassBuildItem.builder(generatedClassesNames)
+                            .methods()
+                            .reason(ConfigMappingUtils.class.getName())
+                            .build());
+        }
 
         configClasses.produce(new ConfigClassBuildItem(configClass, configComponentInterfaces,
                 collectTypes(combinedIndex, configClass),
@@ -162,10 +166,13 @@ public class ConfigMappingUtils {
             Class<?> configClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
 
+        final String reasonPrefix = ConfigMappingUtils.class.getSimpleName() + " Required to process property ";
         ConfigMappingInterface mapping = ConfigMappingLoader.getConfigMapping(configClass);
         for (Property property : mapping.getProperties()) {
-            String reason = ConfigMappingUtils.class.getSimpleName() + " Required to process property "
-                    + property.getPropertyName();
+            // to record names of classes that need to be registered for reflection
+            Set<String> forReflection = new HashSet<>();
+            Set<String> forReflectionWithMethods = new HashSet<>();
+            String reason = reasonPrefix + property.getPropertyName();
 
             if (property.hasConvertWith()) {
                 Class<? extends Converter<?>> convertWith;
@@ -174,44 +181,45 @@ public class ConfigMappingUtils {
                 } else {
                     convertWith = property.asPrimitive().getConvertWith();
                 }
-                reflectiveClasses.produce(ReflectiveClassBuildItem.builder(convertWith).reason(reason).build());
+                forReflection.add(convertWith.getName());
             }
 
-            registerImplicitConverter(property, reason, reflectiveClasses);
+            registerImplicitConverter(property, forReflection, forReflectionWithMethods);
 
             if (property.isMap()) {
                 MapProperty mapProperty = property.asMap();
                 if (mapProperty.hasKeyConvertWith()) {
-                    reflectiveClasses
-                            .produce(ReflectiveClassBuildItem.builder(mapProperty.getKeyConvertWith()).reason(reason).build());
+                    forReflection.add(mapProperty.getKeyConvertWith().getName());
                 } else {
-                    reflectiveClasses
-                            .produce(ReflectiveClassBuildItem.builder(mapProperty.getKeyRawType()).reason(reason).build());
+                    forReflection.add(mapProperty.getKeyRawType().getName());
                 }
 
-                registerImplicitConverter(mapProperty.getValueProperty(), reason, reflectiveClasses);
+                registerImplicitConverter(mapProperty.getValueProperty(), forReflection, forReflectionWithMethods);
             }
+
+            // register for reflection
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(forReflection).reason(reason).build());
+            reflectiveClasses
+                    .produce(ReflectiveClassBuildItem.builder(forReflectionWithMethods).methods().reason(reason).build());
         }
     }
 
     private static void registerImplicitConverter(
             Property property,
-            String reason, BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+            Set<String> forReflection,
+            Set<String> forReflectionWithMethods) {
 
         if (property.isLeaf() && !property.isOptional()) {
             LeafProperty leafProperty = property.asLeaf();
             if (leafProperty.hasConvertWith()) {
-                reflectiveClasses
-                        .produce(ReflectiveClassBuildItem.builder(leafProperty.getConvertWith()).reason(reason).build());
+                forReflection.add(leafProperty.getConvertWith().getName());
             } else {
-                reflectiveClasses
-                        .produce(ReflectiveClassBuildItem.builder(leafProperty.getValueRawType()).reason(reason).methods()
-                                .build());
+                forReflectionWithMethods.add(leafProperty.getValueRawType().getName());
             }
         } else if (property.isOptional()) {
-            registerImplicitConverter(property.asOptional().getNestedProperty(), reason, reflectiveClasses);
+            registerImplicitConverter(property.asOptional().getNestedProperty(), forReflection, forReflectionWithMethods);
         } else if (property.isCollection()) {
-            registerImplicitConverter(property.asCollection().getElement(), reason, reflectiveClasses);
+            registerImplicitConverter(property.asCollection().getElement(), forReflection, forReflectionWithMethods);
         }
     }
 

@@ -1,18 +1,14 @@
 package io.quarkus.bootstrap.runner;
 
+import static io.quarkus.bootstrap.runner.JarVisitor.visitJar;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -33,9 +29,10 @@ import java.util.zip.ZipEntry;
  */
 public class SerializedApplication {
 
+    public static final String META_INF = "META-INF/";
     public static final String META_INF_VERSIONS = "META-INF/versions/";
     // the files immediately (i.e. not recursively) under these paths should all be indexed
-    private static final List<String> FULLY_INDEXED_PATHS = List.of("", "META-INF", "META-INF/services");
+    private static final List<String> FULLY_INDEXED_DIRECTORIES = List.of("", "META-INF", "META-INF/services");
 
     private static final int MAGIC = 0XF0315432;
     private static final int VERSION = 3;
@@ -66,27 +63,62 @@ public class SerializedApplication {
             data.writeInt(VERSION);
             data.writeUTF(mainClass);
             data.writeShort(classPath.size());
-            Map<String, List<Integer>> directlyIndexedResourcesToCPJarIndex = new LinkedHashMap<>();
+
+            Map<String, List<Integer>> fullyIndexedResourcesToCPJarIndex = new LinkedHashMap<>();
             for (int i = 0; i < classPath.size(); i++) {
                 Path jar = classPath.get(i);
+
+                FullyIndexedJarVisitor fullyIndexedVisitor = new FullyIndexedJarVisitor(FULLY_INDEXED_DIRECTORIES);
+                JarInspectorVisitor jarInspectorVisitor = new JarInspectorVisitor();
+
+                visitJar(jar, fullyIndexedVisitor, jarInspectorVisitor);
+
                 String relativePath = applicationRoot.relativize(jar).toString().replace('\\', '/');
                 data.writeUTF(relativePath);
-                Collection<String> resources = writeJar(data, jar);
-                for (String resource : resources) {
-                    directlyIndexedResourcesToCPJarIndex.computeIfAbsent(resource, s -> new ArrayList<>()).add(i);
+
+                Attributes manifestAttributes = jarInspectorVisitor.getManifestAttributes();
+                if (manifestAttributes == null) {
+                    data.writeBoolean(false);
+                } else {
+                    data.writeBoolean(true);
+                    writeNullableString(data, manifestAttributes.getValue(Attributes.Name.SPECIFICATION_TITLE));
+                    writeNullableString(data, manifestAttributes.getValue(Attributes.Name.SPECIFICATION_VERSION));
+                    writeNullableString(data, manifestAttributes.getValue(Attributes.Name.SPECIFICATION_VENDOR));
+                    writeNullableString(data, manifestAttributes.getValue(Attributes.Name.IMPLEMENTATION_TITLE));
+                    writeNullableString(data, manifestAttributes.getValue(Attributes.Name.IMPLEMENTATION_VERSION));
+                    writeNullableString(data, manifestAttributes.getValue(Attributes.Name.IMPLEMENTATION_VENDOR));
+                }
+
+                data.writeBoolean(jarInspectorVisitor.isGeneratedBytecode());
+                data.writeBoolean(jarInspectorVisitor.isTransformedBytecode());
+
+                data.writeShort(jarInspectorVisitor.getDirectories().size());
+                for (String directory : jarInspectorVisitor.getDirectories()) {
+                    data.writeUTF(directory);
+                }
+                if (jarInspectorVisitor.isWriteAllEntries()) {
+                    data.writeInt(jarInspectorVisitor.getAllEntries().size());
+                    for (String entry : jarInspectorVisitor.getAllEntries()) {
+                        data.writeUTF(entry);
+                    }
+                }
+
+                for (String resource : fullyIndexedVisitor.getFullyIndexedResources()) {
+                    fullyIndexedResourcesToCPJarIndex.computeIfAbsent(resource, s -> new ArrayList<>()).add(i);
                 }
             }
-            Set<String> parentFirstPackages = new HashSet<>();
 
+            ParentFirstPackageVisitor parentFirstPackageVisitor = new ParentFirstPackageVisitor();
             for (Path jar : parentFirst) {
-                collectPackages(jar, parentFirstPackages);
+                visitJar(jar, parentFirstPackageVisitor);
             }
-            data.writeShort(parentFirstPackages.size());
-            for (String p : parentFirstPackages) {
+            data.writeShort(parentFirstPackageVisitor.getParentFirstPackages().size());
+            for (String p : parentFirstPackageVisitor.getParentFirstPackages()) {
                 data.writeUTF(p.replace('/', '.').replace('\\', '.'));
             }
-            data.writeShort(directlyIndexedResourcesToCPJarIndex.size());
-            for (Map.Entry<String, List<Integer>> entry : directlyIndexedResourcesToCPJarIndex.entrySet()) {
+
+            data.writeShort(fullyIndexedResourcesToCPJarIndex.size());
+            for (Map.Entry<String, List<Integer>> entry : fullyIndexedResourcesToCPJarIndex.entrySet()) {
                 data.writeUTF(entry.getKey());
                 data.writeShort(entry.getValue().size());
                 for (Integer index : entry.getValue()) {
@@ -175,7 +207,7 @@ public class SerializedApplication {
             }
             RunnerClassLoader runnerClassLoader = new RunnerClassLoader(ClassLoader.getSystemClassLoader(),
                     resourceDirectoryTracker.getResult(), parentFirstPackages,
-                    FULLY_INDEXED_PATHS, directlyIndexedResourcesIndexMap,
+                    FULLY_INDEXED_DIRECTORIES, directlyIndexedResourcesIndexMap,
                     generatedBytecodeClassLoadingResource, generatedBytecode,
                     transformedBytecodeClassLoadingResource, transformedBytecode);
             for (ClassLoadingResource classLoadingResource : allClassLoadingResources) {
@@ -192,188 +224,112 @@ public class SerializedApplication {
         return null;
     }
 
-    /**
-     * @return a List of all resources that exist in the paths that we desire to have fully indexed
-     *         (configured via {@code FULLY_INDEXED_PATHS})
-     */
-    private static List<String> writeJar(DataOutputStream out, Path jar) throws IOException {
-        try (JarFile zip = new JarFile(jar.toFile())) {
-            Manifest manifest = zip.getManifest();
-            if (manifest == null) {
-                out.writeBoolean(false);
-            } else {
-                //write the manifest
-                Attributes ma = manifest.getMainAttributes();
-                if (ma == null) {
-                    out.writeBoolean(false);
-                } else {
-                    out.writeBoolean(true);
-                    writeNullableString(out, ma.getValue(Attributes.Name.SPECIFICATION_TITLE));
-                    writeNullableString(out, ma.getValue(Attributes.Name.SPECIFICATION_VERSION));
-                    writeNullableString(out, ma.getValue(Attributes.Name.SPECIFICATION_VENDOR));
-                    writeNullableString(out, ma.getValue(Attributes.Name.IMPLEMENTATION_TITLE));
-                    writeNullableString(out, ma.getValue(Attributes.Name.IMPLEMENTATION_VERSION));
-                    writeNullableString(out, ma.getValue(Attributes.Name.IMPLEMENTATION_VENDOR));
-                }
+    private static class JarInspectorVisitor implements JarVisitor {
+
+        private Attributes manifestAttributes;
+        private boolean generatedBytecode;
+        private boolean transformedBytecode;
+        private final Set<String> directories = new LinkedHashSet<>();
+        private final Set<String> allEntries = new LinkedHashSet<>();
+
+        public Attributes getManifestAttributes() {
+            return manifestAttributes;
+        }
+
+        public boolean isGeneratedBytecode() {
+            return generatedBytecode;
+        }
+
+        public boolean isTransformedBytecode() {
+            return transformedBytecode;
+        }
+
+        public Set<String> getDirectories() {
+            return directories;
+        }
+
+        public boolean isWriteAllEntries() {
+            return generatedBytecode || transformedBytecode;
+        }
+
+        public Set<String> getAllEntries() {
+            return allEntries;
+        }
+
+        @Override
+        public void preVisit(Path jar) {
+            generatedBytecode = jar.endsWith("generated-bytecode.jar");
+            transformedBytecode = jar.endsWith("transformed-bytecode.jar");
+        }
+
+        @Override
+        public void visitJarManifest(Path jar, Manifest manifest) {
+            manifestAttributes = manifest.getMainAttributes();
+        }
+
+        @Override
+        public void visitJarFileEntry(JarFile jarFile, ZipEntry entry) {
+            if (isWriteAllEntries()) {
+                allEntries.add(entry.getName());
             }
 
-            boolean writeAllEntries = false;
-            if (jar.endsWith("generated-bytecode.jar")) {
-                out.writeBoolean(true);
-                writeAllEntries = true;
+            if (!entry.getName().contains("/")) {
+                // we add the default package
+                directories.add("");
             } else {
-                out.writeBoolean(false);
-            }
-            if (jar.endsWith("transformed-bytecode.jar")) {
-                out.writeBoolean(true);
-                writeAllEntries = true;
-            } else {
-                out.writeBoolean(false);
-            }
+                // some jars don't have correct directory entries
+                // so we look at the file paths instead
+                // looking at you h2
+                final int index = entry.getName().lastIndexOf('/');
+                directories.add(entry.getName().substring(0, index));
 
-            Set<String> dirs = new LinkedHashSet<>();
-            Map<String, Set<String>> fullyIndexedPaths = new LinkedHashMap<>();
-            Set<String> allEntries = new LinkedHashSet<>();
-            Enumeration<? extends ZipEntry> entries = zip.entries();
-            boolean hasDefaultPackage = false;
-            while (entries.hasMoreElements()) {
-                ZipEntry entry = entries.nextElement();
-
-                // collect data for fully indexed directories, we collect both files and directories present there
-                for (String prefix : FULLY_INDEXED_PATHS) {
-                    if (prefix.isEmpty()) {
-                        int firstSlash = entry.getName().indexOf('/');
-                        String topLevel = (firstSlash == -1) ? entry.getName() : entry.getName().substring(0, firstSlash);
-                        fullyIndexedPaths.computeIfAbsent(prefix, SerializedApplication::newFullyIndexedPathsValue)
-                                .add(topLevel);
-                        continue;
-                    }
-
-                    String slashedPrefix = prefix + '/';
-
-                    if (!entry.getName().startsWith(slashedPrefix)) {
-                        continue;
-                    }
-
-                    if (entry.getName().equals(slashedPrefix)) {
-                        fullyIndexedPaths.computeIfAbsent(prefix, SerializedApplication::newFullyIndexedPathsValue).add(prefix);
-                        continue;
-                    }
-
-                    int nextSlash = entry.getName().indexOf('/', slashedPrefix.length());
-                    String result;
-
-                    if (nextSlash != -1) {
-                        // we index the subdirectory part only
-                        result = entry.getName().substring(0, nextSlash);
-                    } else {
-                        // It's a file or directory at the current level
-                        result = entry.getName();
-                    }
-
-                    fullyIndexedPaths.computeIfAbsent(prefix, SerializedApplication::newFullyIndexedPathsValue).add(result);
-                }
-
-                if (!entry.getName().contains("/")) {
-                    hasDefaultPackage = true;
-                    if (!entry.getName().isEmpty()) {
-                        if (writeAllEntries) {
-                            allEntries.add(entry.getName());
+                if (entry.getName().startsWith(META_INF_VERSIONS)) {
+                    // multi release jar
+                    // we add all packages here
+                    // they may not be relevant for some versions, but that is fine
+                    String part = entry.getName().substring(META_INF_VERSIONS.length());
+                    int slash = part.indexOf("/");
+                    if (slash != -1) {
+                        final int subIndex = part.lastIndexOf('/');
+                        if (subIndex != slash) {
+                            directories.add(part.substring(slash + 1, subIndex));
                         }
                     }
-                } else if (!entry.isDirectory()) {
-                    //some jars don't have correct directory entries
-                    //so we look at the file paths instead
-                    //looking at you h2
-                    final int index = entry.getName().lastIndexOf('/');
-                    dirs.add(entry.getName().substring(0, index));
-
-                    if (entry.getName().startsWith(META_INF_VERSIONS)) {
-                        //multi release jar
-                        //we add all packages here
-                        //they may not be relevant for some versions, but that is fine
-                        String part = entry.getName().substring(META_INF_VERSIONS.length());
-                        int slash = part.indexOf("/");
-                        if (slash != -1) {
-                            final int subIndex = part.lastIndexOf('/');
-                            if (subIndex != slash) {
-                                dirs.add(part.substring(slash + 1, subIndex));
-                            }
-                        }
-                    }
-
-                    if (writeAllEntries) {
-                        allEntries.add(entry.getName());
-                    }
                 }
             }
-            if (hasDefaultPackage) {
-                dirs.add("");
-            }
-            out.writeShort(dirs.size());
-            for (String i : dirs) {
-                out.writeUTF(i);
-            }
-            if (writeAllEntries) {
-                out.writeInt(allEntries.size());
-                for (String entry : allEntries) {
-                    out.writeUTF(entry);
-                }
-            }
-            List<String> result = new ArrayList<>();
-            for (Set<String> values : fullyIndexedPaths.values()) {
-                result.addAll(values);
-            }
-            return result;
         }
     }
 
-    private static Set<String> newFullyIndexedPathsValue(String ignored) {
-        return new HashSet<>();
-    }
+    private static class ParentFirstPackageVisitor implements JarVisitor {
 
-    private static void collectPackages(Path jar, Set<String> dirs) throws IOException {
-        if (Files.isDirectory(jar)) {
-            //this can only really happen when testing quarkus itself
-            //but is included for completeness
-            Files.walkFileTree(jar, new FileVisitor<Path>() {
-                @Override
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                    dirs.add(jar.relativize(dir).toString());
-                    return FileVisitResult.CONTINUE;
-                }
+        private final Set<String> parentFirstPackages = new HashSet<>();
 
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-        } else {
-            try (JarFile zip = new JarFile(jar.toFile())) {
-                Enumeration<? extends ZipEntry> entries = zip.entries();
-                while (entries.hasMoreElements()) {
-                    ZipEntry entry = entries.nextElement();
-                    if (!entry.isDirectory() && !entry.getName().startsWith("META-INF/")) {
-                        //some jars don't have correct  directory entries
-                        //so we look at the file paths instead
-                        //looking at you h2
-                        final int index = entry.getName().lastIndexOf('/');
-                        if (index > 0) {
-                            dirs.add(entry.getName().substring(0, index));
-                        }
-                    }
-                }
+        @Override
+        public void visitRegularDirectory(Path jar, Path directory, String relativePath) {
+            if (relativePath.startsWith(META_INF)) {
+                return;
             }
+
+            parentFirstPackages.add(relativePath);
+        }
+
+        @Override
+        public void visitJarFileEntry(JarFile jarFile, ZipEntry fileEntry) {
+            if (fileEntry.getName().startsWith(META_INF)) {
+                return;
+            }
+
+            // some jars don't have correct  directory entries
+            // so we look at the file paths instead of the directories
+            // looking at you h2
+            final int index = fileEntry.getName().lastIndexOf('/');
+            if (index > 0) {
+                parentFirstPackages.add(fileEntry.getName().substring(0, index));
+            }
+        }
+
+        public Set<String> getParentFirstPackages() {
+            return parentFirstPackages;
         }
     }
 
@@ -438,5 +394,4 @@ public class SerializedApplication {
             result.put(dir, jarResources.toArray(EMPTY_ARRAY));
         }
     }
-
 }

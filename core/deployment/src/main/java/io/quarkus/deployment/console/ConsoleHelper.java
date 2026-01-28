@@ -5,8 +5,8 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import org.aesh.readline.tty.terminal.TerminalConnection;
 import org.aesh.terminal.Connection;
+import org.aesh.terminal.tty.TerminalConnection;
 
 import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.dev.console.BasicConsole;

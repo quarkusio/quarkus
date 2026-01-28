@@ -37,6 +37,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.xml.namespace.QName;
@@ -88,6 +89,7 @@ import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -97,10 +99,12 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.BytecodeRecorderConstantDefinitionBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
@@ -116,10 +120,12 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
+import io.quarkus.deployment.pkg.AotClassLoadingEnabled;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.gizmo2.Gizmo;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationStaticConfiguredBuildItem;
@@ -879,6 +885,62 @@ public final class HibernateOrmProcessor {
             securedInterfaceAnnotationProducer.produce(ofClassAnnotation(JAKARTA_DATA_REPOSITORY_ANNOTATION));
             HIBERNATE_REPOSITORY_ANNOTATIONS
                     .forEach(annotation -> securedInterfaceAnnotationProducer.produce(ofMethodAnnotation(annotation)));
+        }
+    }
+
+    /**
+     * Hibernate ORM checks package-info and if we have a negative lookup, it's not cached by AOT class loading.
+     * <p>
+     * So point of this method is to generate an empty package-info in packages where we have a mapped class,
+     * if there isn't a package-info already.
+     */
+    @BuildStep(onlyIf = AotClassLoadingEnabled.class, onlyIfNot = NativeOrNativeSourcesBuild.class)
+    void generateMissingPackageInfos(CombinedIndexBuildItem combinedIndex,
+            JpaModelBuildItem jpaModel,
+            List<ApplicationClassPredicateBuildItem> predicates,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources) {
+
+        IndexView index = combinedIndex.getIndex();
+
+        Set<String> packages = new HashSet<>();
+        for (String entityClass : jpaModel.getManagedClassNames()) {
+            int idx = entityClass.lastIndexOf('.');
+            if (idx > 0) {
+                packages.add(entityClass.substring(0, idx));
+            }
+        }
+
+        if (packages.isEmpty()) {
+            return;
+        }
+
+        Predicate<String> appClassPredicate = new Predicate<String>() {
+            @Override
+            public boolean test(String className) {
+                for (ApplicationClassPredicateBuildItem predicate : predicates) {
+                    if (predicate.test(className)) {
+                        return true;
+                    }
+                }
+                return GeneratedClassGizmo2Adaptor.isApplicationClass(className);
+            }
+        };
+
+        Gizmo gizmo = Gizmo.create(new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources, appClassPredicate))
+                .withDebugInfo(false)
+                .withParameters(false);
+
+        for (String pkg : packages) {
+            String packageInfoClassName = pkg + ".package-info";
+            if (index.getClassByName(DotName.createSimple(packageInfoClassName)) != null) {
+                // we already have a package-info, we don't generate an empty one
+                continue;
+            }
+
+            gizmo.interface_(packageInfoClassName, cc -> {
+                cc.synthetic();
+            });
         }
     }
 

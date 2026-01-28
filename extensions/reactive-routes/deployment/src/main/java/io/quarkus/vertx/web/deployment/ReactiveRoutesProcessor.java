@@ -66,7 +66,6 @@ import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
-import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -303,7 +302,7 @@ class ReactiveRoutesProcessor {
                         return true;
                     }
                 }
-                return GeneratedClassGizmoAdaptor.isApplicationClass(className);
+                return GeneratedClassGizmo2Adaptor.isApplicationClass(className);
             }
         };
         Gizmo gizmo = Gizmo.create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, appClassPredicate))

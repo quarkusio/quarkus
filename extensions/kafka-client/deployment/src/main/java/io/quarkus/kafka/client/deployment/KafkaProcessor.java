@@ -391,14 +391,14 @@ public class KafkaProcessor {
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.apicurio.registry.serde.avro.AvroKafkaDeserializer")
                 && !capabilities.isPresent(Capability.APICURIO_REGISTRY_AVRO)) {
             throw new RuntimeException(
-                    "Apicurio Registry 2.x Avro classes detected, please use the quarkus-apicurio-registry-avro extension");
+                    "Apicurio Registry 3.x Avro classes detected, please use the quarkus-apicurio-registry-avro extension");
         }
 
         // --- Apicurio Registry 2.x Json Schema ---
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.apicurio.registry.serde.avro.JsonKafkaDeserializer")
                 && !capabilities.isPresent(Capability.APICURIO_REGISTRY_JSON_SCHEMA)) {
             throw new RuntimeException(
-                    "Apicurio Registry 2.x Json classes detected, please use the quarkus-apicurio-registry-json extension");
+                    "Apicurio Registry 3.x Json classes detected, please use the quarkus-apicurio-registry-json extension");
         }
     }
 

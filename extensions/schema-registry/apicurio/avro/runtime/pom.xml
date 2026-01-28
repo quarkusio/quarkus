@@ -17,11 +17,11 @@
     <dependencies>
         <dependency>
             <groupId>io.apicurio</groupId>
-            <artifactId>apicurio-registry-serdes-avro-serde</artifactId>
+            <artifactId>apicurio-registry-avro-serde-kafka</artifactId>
             <exclusions>
                 <exclusion>
-                    <groupId>io.apicurio</groupId>
-                    <artifactId>apicurio-common-rest-client-jdk</artifactId>
+                    <groupId>io.kiota</groupId>
+                    <artifactId>kiota-http-jdk</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

@@ -1,9 +1,13 @@
 package io.quarkus.jacoco.runtime;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.deployment.index.IndexDependencyConfig;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -59,13 +63,13 @@ public interface JacocoConfig {
     /**
      * Footer text used in HTML report pages.
      */
-    public Optional<String> footer();
+    Optional<String> footer();
 
     /**
      * Encoding of the source files.
      */
     @WithDefault("UTF-8")
-    public String sourceEncoding();
+    String sourceEncoding();
 
     /**
      * A list of class files to include in the report. May use wildcard
@@ -79,7 +83,7 @@ public interface JacocoConfig {
      * </ul>
      */
     @WithDefault("**")
-    public List<String> includes();
+    List<String> includes();
 
     /**
      * A list of class files to exclude from the report. May use wildcard
@@ -92,12 +96,29 @@ public interface JacocoConfig {
      * <li><code>&#42;&#42;/&#42;BAR&#42;.class</code> targets classes that contain BAR in their name regardless of path</li>
      * </ul>
      */
-    public Optional<List<String>> excludes();
+    Optional<List<String>> excludes();
 
     /**
      * The location of the report files.
      * The path can be relative (to the module) or absolute.
      */
     @ConfigDocDefault(TARGET_JACOCO_REPORT)
-    public Optional<String> reportLocation();
+    Optional<String> reportLocation();
+
+    /**
+     * Artifacts that should be instrumented.
+     * <p>
+     * By default, all application archives are instrumented. This property allows for fine-grained configuration. It
+     * is also necessary for extension authors, because runtime modules are usually not application archives.
+     */
+    @ConfigDocSection
+    @ConfigDocMapKey("dependency-name")
+    Map<String, IndexDependencyConfig> instrumentArtifacts();
+
+    /**
+     * If set to {@code true} then the report data (source directories and class files) are aggregated so that a single report
+     * can be generated.
+     */
+    @WithDefault("false")
+    boolean aggregateReportData();
 }

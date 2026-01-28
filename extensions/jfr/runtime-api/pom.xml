@@ -11,6 +11,12 @@
     <artifactId>quarkus-jfr-api</artifactId>
     <name>Quarkus - JFR - Runtime API</name>
     <description>API for Monitoring your applications with JDK Flight Recorder</description>
+    <dependencies>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core</artifactId>
+        </dependency>
+    </dependencies>
     <build>
         <plugins>
             <plugin>

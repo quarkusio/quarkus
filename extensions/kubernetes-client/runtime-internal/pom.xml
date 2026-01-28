@@ -24,6 +24,10 @@
             <artifactId>quarkus-tls-registry</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-proxy-registry</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.fabric8</groupId>
             <artifactId>kubernetes-client</artifactId>
             <scope>provided</scope> <!-- we don't want this ending up on the runtime classpath -->

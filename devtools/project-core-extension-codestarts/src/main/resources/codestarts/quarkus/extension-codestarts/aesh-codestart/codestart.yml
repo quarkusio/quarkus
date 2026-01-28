@@ -1,0 +1,12 @@
+name: aesh-codestart
+ref: aesh
+type: code
+tags: extension-codestart
+metadata:
+  title: Aesh Example
+  description: Hello and goodbye are civilization fundamentals. Let's not forget it with this example Aesh command line application by changing the <code>command</code> and <code>options</code>.
+  related-guide-section: https://quarkus.io/guides/aesh
+language:
+  base:
+    dependencies:
+      - io.quarkus:quarkus-aesh

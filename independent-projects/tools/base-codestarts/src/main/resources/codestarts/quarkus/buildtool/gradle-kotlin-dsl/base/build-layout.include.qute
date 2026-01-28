@@ -33,7 +33,7 @@ dependencies {
     implementation(enforcedPlatform("{it.groupId}:{it.artifactId}:{it.version}"))
     {/if}
 {/each}
-{#if input.selected-extensions-ga.contains('io.quarkus:quarkus-data-hibernate') || input.selected-extensions-ga.contains('io.quarkus:quarkus-infinispan-client')}
+{#if input.selected-extensions-ga.contains('io.quarkus:quarkus-data-hibernate') || input.selected-extensions-ga.contains('io.quarkus:quarkus-infinispan-client') || input.selected-extensions-ga.contains('io.quarkus:quarkus-aesh')}
     annotationProcessor(enforcedPlatform("$\{quarkusPlatformGroupId}:$\{quarkusPlatformArtifactId}:$\{quarkusPlatformVersion}"))
 {/if}
 {#for dep in dependencies}
@@ -44,6 +44,10 @@ dependencies {
 {/if}
 {#if input.selected-extensions-ga.contains('io.quarkus:quarkus-infinispan-client')}
     annotationProcessor("org.infinispan.protostream:protostream-processor")
+{/if}
+{#if input.selected-extensions-ga.contains('io.quarkus:quarkus-aesh')}
+    annotationProcessor("org.aesh:aesh-processor")
+    annotationProcessor("org.aesh:aesh")
 {/if}
     testImplementation("io.quarkus:quarkus-junit")
 {#for dep in test-dependencies}

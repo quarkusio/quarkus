@@ -163,7 +163,7 @@
                 <configuration>
                     <parameters>true</parameters>
                 </configuration>
-                {#if input.selected-extensions-ga.contains('io.quarkus:quarkus-data-hibernate') || input.selected-extensions-ga.contains('io.quarkus:quarkus-infinispan-client')}
+                {#if input.selected-extensions-ga.contains('io.quarkus:quarkus-data-hibernate') || input.selected-extensions-ga.contains('io.quarkus:quarkus-infinispan-client') || input.selected-extensions-ga.contains('io.quarkus:quarkus-aesh')}
                 <executions>
                     <execution>
                         <id>default-compile</id>
@@ -180,6 +180,16 @@
                                 <annotationProcessorPath>
                                     <groupId>org.infinispan.protostream</groupId>
                                     <artifactId>protostream-processor</artifactId>
+                                </annotationProcessorPath>
+                                {/if}
+                                {#if input.selected-extensions-ga.contains('io.quarkus:quarkus-aesh')}
+                                <annotationProcessorPath>
+                                    <groupId>org.aesh</groupId>
+                                    <artifactId>aesh-processor</artifactId>
+                                </annotationProcessorPath>
+                                <annotationProcessorPath>
+                                    <groupId>org.aesh</groupId>
+                                    <artifactId>aesh</artifactId>
                                 </annotationProcessorPath>
                                 {/if}
                             </annotationProcessorPaths>

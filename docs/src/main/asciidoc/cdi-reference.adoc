@@ -1522,6 +1522,12 @@ Further, if the observer declares a return type of `Uni<>`, the returned `Uni` w
 
 Therefore, it is recommended that observer methods, both synchronous and asynchronous, are always declared `void`.
 
+=== Reactive startup methods
+
+As documented in xref:lifecycle.adoc#startup_annotation[the `@Startup` method documentation], you may define startup
+methods that return a `Uni`, in which case they will be invoked on an event thread instead of a blocking thread, and
+their returned `Uni` will be subscribed to and awaited.
+
 [[build_time_apis]]
 == Build Time Extensions
 

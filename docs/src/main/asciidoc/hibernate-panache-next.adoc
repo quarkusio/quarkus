@@ -1067,25 +1067,18 @@ public class OnStart {
 }
 ----
 
-For reactive operations, it is a little more complex at the moment, because you need a regular `@Startup` method,
-from which you invoke your reactive `@WithTransaction` method from within a call to
-`VertxContextSupport.subscribeAndAwait` (don't worry, we are working on making this easier):
+For reactive operations, it is fairly similar:
 
 [source,java]
 ----
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.runtime.Startup;
-import io.quarkus.vertx.VertxContextSupport;
 import io.smallrye.mutiny.Uni;
 
 public class OnStart {
     @Startup
-    public void start() throws Throwable {
-        VertxContextSupport.subscribeAndAwait(() -> runit());
-    }
-
     @WithTransaction
-    Uni<Void> runit(){
+    Uni<Void> startupMethod(){
         return Cat_.repo().deleteAll().replaceWithVoid();
     }
 }

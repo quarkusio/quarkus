@@ -182,6 +182,11 @@ class OtlpExporterProviderTest {
             }
 
             @Override
+            public boolean defaultExporterEnabled() {
+                return false;
+            }
+
+            @Override
             public OtlpExporterTracesConfig traces() {
                 return new OtlpExporterTracesConfig() {
                     @Override
@@ -232,6 +237,11 @@ class OtlpExporterProviderTest {
                                 return Optional.empty();
                             }
                         };
+                    }
+
+                    @Override
+                    public boolean defaultExporterEnabled() {
+                        return false;
                     }
 
                     @Override
@@ -310,6 +320,11 @@ class OtlpExporterProviderTest {
                     }
 
                     @Override
+                    public boolean defaultExporterEnabled() {
+                        return false;
+                    }
+
+                    @Override
                     public KeyCert keyCert() {
                         return new KeyCert() {
                             @Override
@@ -373,6 +388,11 @@ class OtlpExporterProviderTest {
                     @Override
                     public Optional<String> protocol() {
                         return Optional.empty();
+                    }
+
+                    @Override
+                    public boolean defaultExporterEnabled() {
+                        return false;
                     }
 
                     @Override

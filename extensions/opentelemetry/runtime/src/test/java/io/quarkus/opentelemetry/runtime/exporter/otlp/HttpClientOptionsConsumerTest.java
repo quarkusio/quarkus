@@ -92,6 +92,11 @@ class HttpClientOptionsConsumerTest {
             }
 
             @Override
+            public boolean defaultExporterEnabled() {
+                return false;
+            }
+
+            @Override
             public TrustCert trustCert() {
                 return new TrustCert() {
                     @Override

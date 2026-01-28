@@ -5,6 +5,7 @@ import static io.quarkus.opentelemetry.runtime.config.build.ExporterType.Constan
 
 import java.util.List;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 
 import jakarta.enterprise.inject.Instance;
@@ -20,10 +21,15 @@ import io.opentelemetry.sdk.logs.export.LogRecordExporter;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
-import io.quarkus.deployment.annotations.*;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.annotations.Consume;
+import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
@@ -143,10 +149,9 @@ public class OtlpExporterProcessor {
             CoreVertxBuildItem vertxBuildItem,
             List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
-        if (!externalOtelExporterBuildItem.isEmpty()) {
-            // if there is an external exporter, we don't want to create the default one
-            return;
-        }
+
+        boolean hasExternalExporter = !externalOtelExporterBuildItem.isEmpty();
+
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem
                 .configure(LateBoundSpanProcessor.class)
                 .types(SpanProcessor.class)
@@ -156,7 +161,7 @@ public class OtlpExporterProcessor {
                 .addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
                         new Type[] { ClassType.create(DotName.createSimple(SpanExporter.class.getName())) }, null))
                 .addInjectionPoint(ClassType.create(DotName.createSimple(TlsConfigurationRegistry.class)))
-                .createWith(recorder.spanProcessorForOtlp(vertxBuildItem.getVertx()))
+                .createWith(recorder.spanProcessorForOtlp(vertxBuildItem.getVertx(), hasExternalExporter))
                 .done());
     }
 
@@ -170,16 +175,13 @@ public class OtlpExporterProcessor {
             CoreVertxBuildItem vertxBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
-        if (!externalOtelExporterBuildItem.isEmpty()) {
-            // if there is an external exporter, we don't want to create the default one.
-            // External exporter also use synthetic beans. However, synthetic beans don't show in the BeanDiscoveryFinishedBuildItem
-            return;
-        }
-
         if (!beanDiscovery.beanStream().withBeanType(METRIC_EXPORTER).isEmpty()) {
             // if there is a MetricExporter bean impl around, we don't want to create the default one
             return;
         }
+
+        boolean hasExternalExporter = !externalOtelExporterBuildItem.isEmpty();
+        Supplier<ActiveResult> active = recorder.checkMetricExporterActive(hasExternalExporter);
 
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem
                 .configure(MetricExporter.class)
@@ -191,6 +193,7 @@ public class OtlpExporterProcessor {
                         new Type[] { ClassType.create(DotName.createSimple(MetricExporter.class.getName())) }, null))
                 .addInjectionPoint(ClassType.create(DotName.createSimple(TlsConfigurationRegistry.class)))
                 .createWith(recorder.createMetricExporter(vertxBuildItem.getVertx()))
+                .checkActive(active)
                 .done());
     }
 
@@ -204,16 +207,13 @@ public class OtlpExporterProcessor {
             CoreVertxBuildItem vertxBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
-        if (!externalOtelExporterBuildItem.isEmpty()) {
-            // if there is an external exporter, we don't want to create the default one.
-            // External exporter also use synthetic beans. However, synthetic beans don't show in the BeanDiscoveryFinishedBuildItem
-            return;
-        }
-
         if (!beanDiscovery.beanStream().withBeanType(LOG_RECORD_EXPORTER).isEmpty()) {
             // if there is a MetricExporter bean impl around, we don't want to create the default one
             return;
         }
+
+        boolean hasExternalExporter = !externalOtelExporterBuildItem.isEmpty();
+        Supplier<ActiveResult> active = recorder.checkLogExporterActive(hasExternalExporter);
 
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem
                 .configure(LogRecordExporter.class)
@@ -225,6 +225,7 @@ public class OtlpExporterProcessor {
                         new Type[] { ClassType.create(DotName.createSimple(LogRecordExporter.class.getName())) }, null))
                 .addInjectionPoint(ClassType.create(DotName.createSimple(TlsConfigurationRegistry.class)))
                 .createWith(recorder.createLogRecordExporter(vertxBuildItem.getVertx()))
+                .checkActive(active)
                 .done());
     }
 }

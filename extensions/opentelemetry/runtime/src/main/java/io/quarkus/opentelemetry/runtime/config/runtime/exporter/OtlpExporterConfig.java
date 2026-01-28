@@ -8,6 +8,7 @@ import java.util.OptionalInt;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.configuration.DurationConverter;
 import io.smallrye.config.WithConverter;
+import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 
 public interface OtlpExporterConfig {
@@ -96,6 +97,22 @@ public interface OtlpExporterConfig {
      */
     @WithName("trust-cert")
     TrustCert trustCert();
+
+    /**
+     * Whether to use the default OpenTelemetry exporter in addition to any external exporters that may be present.
+     * <p>
+     * When `true`, the Quarkus default OpenTelemetry exporter will always be instantiated, even when other exporters
+     * are present. This will allow OTel data to be sent simultaneously to multiple destinations, including the default
+     * one. If `false`, the Quarkus default OpenTelemetry exporter will not be instantiated if external exporters are
+     * present.
+     * <p>
+     * There is a generic property, that will apply to all signals and a signal specific one, following the pattern:
+     * `quarkus.otel.exporter.otlp.<signal-type>.default-exporter-enabled` where <signal-type> is one of the
+     * supported signal types, like `traces`, `logs` or `metrics`.
+     */
+    @WithName("default-exporter-enabled")
+    @WithDefault("false")
+    boolean defaultExporterEnabled();
 
     /**
      * The name of the TLS configuration to use.

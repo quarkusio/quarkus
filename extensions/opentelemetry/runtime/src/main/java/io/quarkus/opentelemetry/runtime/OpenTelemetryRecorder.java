@@ -25,7 +25,9 @@ import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.resources.Resource;
 import io.quarkus.arc.SyntheticCreationalContext;
+import io.quarkus.opentelemetry.runtime.config.build.ExporterType;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
+import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.annotations.RuntimeInit;
@@ -40,9 +42,12 @@ public class OpenTelemetryRecorder {
     public static final String OPEN_TELEMETRY_DRIVER = "io.opentelemetry.instrumentation.jdbc.OpenTelemetryDriver";
 
     private final RuntimeValue<OTelRuntimeConfig> runtimeConfig;
+    private final RuntimeValue<OtlpExporterRuntimeConfig> exporterRuntimeConfig;
 
-    public OpenTelemetryRecorder(final RuntimeValue<OTelRuntimeConfig> runtimeConfig) {
+    public OpenTelemetryRecorder(final RuntimeValue<OTelRuntimeConfig> runtimeConfig,
+            final RuntimeValue<OtlpExporterRuntimeConfig> exporterRuntimeConfig) {
         this.runtimeConfig = runtimeConfig;
+        this.exporterRuntimeConfig = exporterRuntimeConfig;
     }
 
     @StaticInit
@@ -110,12 +115,35 @@ public class OpenTelemetryRecorder {
                         .setResultAsGlobal()
                         .disableShutdownHook()
                         .addPropertiesSupplier(propertiesSupplier)
+                        .addPropertiesCustomizer((configProperties) -> {
+                            OtlpExporterRuntimeConfig config = exporterRuntimeConfig.getValue();
+                            Map<String, String> quarkusOtelConfigs = new HashMap<>();
+                            if (config.metrics().defaultExporterEnabled()) {
+                                quarkusOtelConfigs.put("otel.metrics.exporter",
+                                        addDefaultExporter(configProperties.getString("otel.metrics.exporter")));
+                            }
+                            if (config.logs().defaultExporterEnabled()) {
+                                quarkusOtelConfigs.put("otel.logs.exporter",
+                                        addDefaultExporter(configProperties.getString("otel.logs.exporter")));
+                            }
+                            return quarkusOtelConfigs;
+                        })
                         .setServiceClassLoader(Thread.currentThread().getContextClassLoader());
                 for (var customizer : builderCustomizers) {
                     customizer.customize(builder);
                 }
 
                 return builder.build().getOpenTelemetrySdk();
+            }
+
+            private String addDefaultExporter(String conf) {
+                if (conf != null && !conf.isEmpty()) {
+                    if (conf.contains(ExporterType.CDI.getValue())) {
+                        return conf;
+                    }
+                    return conf + "," + ExporterType.CDI.getValue();
+                }
+                return ExporterType.CDI.getValue();
             }
 
             private Map<String, String> getOtelConfigs() {

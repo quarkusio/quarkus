@@ -45,6 +45,8 @@ public class OtlpExporterConfigBuilder implements ConfigBuilder {
         fallbacks.put("quarkus.otel.exporter.otlp.traces.key-cert.keys", "quarkus.otel.exporter.otlp.key-cert.keys");
         fallbacks.put("quarkus.otel.exporter.otlp.traces.key-cert.certs", "quarkus.otel.exporter.otlp.key-cert.certs");
         fallbacks.put("quarkus.otel.exporter.otlp.traces.trust-cert.certs", "quarkus.otel.exporter.otlp.trust-cert.certs");
+        fallbacks.put("quarkus.otel.exporter.otlp.traces.default-exporter-enabled",
+                "quarkus.otel.exporter.otlp.default-exporter-enabled");
         fallbacks.put("quarkus.otel.exporter.otlp.traces.tls-configuration-name",
                 "quarkus.otel.exporter.otlp.tls-configuration-name");
         fallbacks.put("quarkus.otel.exporter.otlp.traces.proxy-options.enabled",
@@ -65,6 +67,8 @@ public class OtlpExporterConfigBuilder implements ConfigBuilder {
         fallbacks.put("quarkus.otel.exporter.otlp.metrics.key-cert.keys", "quarkus.otel.exporter.otlp.key-cert.keys");
         fallbacks.put("quarkus.otel.exporter.otlp.metrics.key-cert.certs", "quarkus.otel.exporter.otlp.key-cert.certs");
         fallbacks.put("quarkus.otel.exporter.otlp.metrics.trust-cert.certs", "quarkus.otel.exporter.otlp.trust-cert.certs");
+        fallbacks.put("quarkus.otel.exporter.otlp.metrics.default-exporter-enabled",
+                "quarkus.otel.exporter.otlp.default-exporter-enabled");
         fallbacks.put("quarkus.otel.exporter.otlp.metrics.tls-configuration-name",
                 "quarkus.otel.exporter.otlp.tls-configuration-name");
         fallbacks.put("quarkus.otel.exporter.otlp.metrics.proxy-options.enabled",
@@ -85,6 +89,8 @@ public class OtlpExporterConfigBuilder implements ConfigBuilder {
         fallbacks.put("quarkus.otel.exporter.otlp.logs.key-cert.keys", "quarkus.otel.exporter.otlp.key-cert.keys");
         fallbacks.put("quarkus.otel.exporter.otlp.logs.key-cert.certs", "quarkus.otel.exporter.otlp.key-cert.certs");
         fallbacks.put("quarkus.otel.exporter.otlp.logs.trust-cert.certs", "quarkus.otel.exporter.otlp.trust-cert.certs");
+        fallbacks.put("quarkus.otel.exporter.otlp.logs.default-exporter-enabled",
+                "quarkus.otel.exporter.otlp.default-exporter-enabled");
         fallbacks.put("quarkus.otel.exporter.otlp.logs.tls-configuration-name",
                 "quarkus.otel.exporter.otlp.tls-configuration-name");
         fallbacks.put("quarkus.otel.exporter.otlp.logs.proxy-options.enabled",

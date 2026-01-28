@@ -42,6 +42,7 @@ import io.opentelemetry.sdk.trace.export.BatchSpanProcessorBuilder;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessorBuilder;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.BatchSpanProcessorConfig;
@@ -93,8 +94,38 @@ public class OTelExporterRecorder {
         this.exporterRuntimeConfig = exporterRuntimeConfig;
     }
 
+    public Supplier<ActiveResult> checkMetricExporterActive(boolean hasExternalExporter) {
+        return new Supplier<>() {
+            @Override
+            public ActiveResult get() {
+                if (!exporterRuntimeConfig.getValue().metrics().defaultExporterEnabled()) {
+                    if (hasExternalExporter) {
+                        return ActiveResult.inactive("Default OTLP metric exporter is inactive because an "
+                                + "external metric exporter was found.");
+                    }
+                }
+                return ActiveResult.active();
+            }
+        };
+    }
+
+    public Supplier<ActiveResult> checkLogExporterActive(boolean hasExternalExporter) {
+        return new Supplier<>() {
+            @Override
+            public ActiveResult get() {
+                if (!exporterRuntimeConfig.getValue().logs().defaultExporterEnabled()) {
+                    if (hasExternalExporter) {
+                        return ActiveResult.inactive("Default OTLP log exporter is inactive because an "
+                                + "external log exporter was found.");
+                    }
+                }
+                return ActiveResult.active();
+            }
+        };
+    }
+
     public Function<SyntheticCreationalContext<LateBoundSpanProcessor>, LateBoundSpanProcessor> spanProcessorForOtlp(
-            Supplier<Vertx> vertx) {
+            Supplier<Vertx> vertx, boolean hasExternalExporter) {
         URI baseUri = getTracesUri(exporterRuntimeConfig.getValue()); // do the creation and validation here in order to preserve backward compatibility
         return new Function<>() {
             @Override
@@ -107,6 +138,13 @@ public class OTelExporterRecorder {
                 Instance<SpanExporter> spanExporters = context.getInjectedReference(new TypeLiteral<>() {
                 });
                 if (!spanExporters.isUnsatisfied()) {
+                    return RemoveableLateBoundSpanProcessor.INSTANCE;
+                }
+                // don't create the default exporter if an external trace exporter is found and the default
+                // exporter is not explicitly enabled
+                boolean createDefault = exporterRuntimeConfig.getValue().traces().defaultExporterEnabled()
+                        || !hasExternalExporter;
+                if (!createDefault) {
                     return RemoveableLateBoundSpanProcessor.INSTANCE;
                 }
 

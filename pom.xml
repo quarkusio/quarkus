@@ -88,7 +88,7 @@
                                             <!-- com.google.auth -->
                                             <!-- perfmark.version https://central.sonatype.com/artifact/io.grpc/grpc-core  -->
         <grpc-jprotoc.version>1.2.2</grpc-jprotoc.version>
-        <protoc.version>4.32.1</protoc.version>
+        <protoc.version>4.33.2</protoc.version>
         <protobuf-java.version>${protoc.version}</protobuf-java.version>
         <protobuf-kotlin.version>${protoc.version}</protobuf-kotlin.version>
         <proto-google-common-protos.version>2.65.0</proto-google-common-protos.version>

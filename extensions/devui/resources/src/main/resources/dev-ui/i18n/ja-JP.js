@@ -56,6 +56,8 @@ export const templates = {
     'devmcp-no-data': 'データが見つかりませんでした。',
     'assistant-warning-explanation': 'Quarkusアシスタントは間違いを犯すことがあります。応答を確認してください。',
     'assistant-warning': '警告',
+    'assistant-chat-title' : '会話を続けるにはアシスタントのチャットへ移動',
+    'assistant-chat-button' : 'チャット',
     'footer-server': 'サーバー',
     'footer-testing': 'テスト中',
     'footer-dev_ui': '開発者 UI',

@@ -37,9 +37,9 @@
         <jmh.version>1.37</jmh.version>
 
         <!-- Dependency versions -->
-        <assertj.version>3.27.6</assertj.version>
+        <assertj.version>3.27.7</assertj.version>
         <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
-        <jboss-logging.version>3.6.1.Final</jboss-logging.version>
+        <jboss-logging.version>3.6.2.Final</jboss-logging.version>
         <junit.version>6.0.2</junit.version>
         <maven-core.version>3.9.12</maven-core.version><!-- Keep in sync with sisu.version -->
         <sisu.version>0.9.0.M4</sisu.version><!-- Keep in sync with maven-core.version -->

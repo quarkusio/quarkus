@@ -69,6 +69,7 @@ import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devui.deployment.extension.Codestart;
 import io.quarkus.devui.deployment.extension.Extension;
 import io.quarkus.devui.deployment.jsonrpc.DevUIDatabindCodec;
+import io.quarkus.devui.runtime.AssistantJsonRPCService;
 import io.quarkus.devui.runtime.DevUIBuildTimeStaticService;
 import io.quarkus.devui.runtime.DevUIRecorder;
 import io.quarkus.devui.runtime.VertxRouteInfoService;
@@ -452,6 +453,11 @@ public class DevUIProcessor {
         String countryCode = locale.getCountry();
 
         locales.add(new LanguageCountry(code, displayLanguage + " (" + countryCode + ")"));
+    }
+
+    @BuildStep
+    JsonRPCProvidersBuildItem createAssistantJsonRPCService() {
+        return new JsonRPCProvidersBuildItem("devui-assistant", AssistantJsonRPCService.class);
     }
 
     /**

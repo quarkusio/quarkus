@@ -47,7 +47,7 @@ public class StreamingOutputMessageBodyWriter implements ServerMessageBodyWriter
 
     @Override
     public void writeResponse(StreamingOutput o, Type genericType, ServerRequestContext context)
-            throws WebApplicationException {
+            throws WebApplicationException, IOException {
         ResteasyReactiveRequestContext rrContext = (ResteasyReactiveRequestContext) context;
         try {
             o.write(context.getOrCreateOutputStream());
@@ -56,15 +56,7 @@ public class StreamingOutputMessageBodyWriter implements ServerMessageBodyWriter
                 context.serverResponse().reset();
                 rrContext.resume(t);
             } else {
-                if (t instanceof WebApplicationException) {
-                    throw (WebApplicationException) t;
-                } else if (t instanceof IOException) {
-                    throw new WebApplicationException(t);
-                } else if (t instanceof RuntimeException) {
-                    throw new WebApplicationException(t);
-                } else {
-                    throw new WebApplicationException(t);
-                }
+                throw t;
             }
         }
     }

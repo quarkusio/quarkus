@@ -55,7 +55,7 @@ export class QwcFooter extends observeState(LitElement) {
         }
     
         .resizeIcon {
-            display: none;
+            width: 0px;
         }
     
         @media screen and (max-width: 1600px) {
@@ -76,7 +76,8 @@ export class QwcFooter extends observeState(LitElement) {
                 border-radius: 0px 0px 0px 0px;
             }
             .resizeIcon {
-                display: inline;
+                width: var(--lumo-icon-size-s);
+                cursor: row-resize;
             }
         }
     
@@ -122,10 +123,12 @@ export class QwcFooter extends observeState(LitElement) {
         }
         .tabsheetOpen {
             height: 100%;
+            font-size: var(--lumo-font-size-s);
         }
         .tabsheetClose {
             max-height: 38px;
             justify-content: flex-start;
+            font-size: var(--lumo-font-size-s);
         }
         
         vaadin-tabs {
@@ -294,7 +297,7 @@ export class QwcFooter extends observeState(LitElement) {
     
     _renderControls(){
         return html`<vaadin-menu-bar
-                            theme="small"
+                            theme="icon tertiary-inline small"
                             .items="${this._controlButtons}" 
                             @item-selected="${this._controlButtonClicked}">
                         </vaadin-menu-bar>`;
@@ -333,7 +336,9 @@ export class QwcFooter extends observeState(LitElement) {
     }
 
     _renderResizeIcon(){
-        return html`<vaadin-icon slot="suffix" class="resizeIcon" icon="font-awesome-solid:up-down" @mousedown=${this._mousedown}></vaadin-icon>`;
+        if(this._isOpen){
+            return html`<vaadin-icon slot="suffix" class="resizeIcon" icon="font-awesome-solid:up-down" @mousedown=${this._mousedown}></vaadin-icon>`;
+        }
     }
 
     _mousedown(e){

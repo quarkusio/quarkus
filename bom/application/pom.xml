@@ -48,7 +48,7 @@
         <smallrye-common.version>2.15.0</smallrye-common.version>
         <smallrye-config.version>3.15.1</smallrye-config.version>
         <smallrye-health.version>4.3.0</smallrye-health.version>
-        <smallrye-open-api.version>4.2.3</smallrye-open-api.version>
+        <smallrye-open-api.version>4.2.4</smallrye-open-api.version>
         <smallrye-graphql.version>2.17.0</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.10.0</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.3</smallrye-jwt.version>
@@ -118,7 +118,7 @@
         <quartz.version>2.5.2</quartz.version>
         <h2.version>2.4.240</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions
                                               and the dependency jts-core needs to be updated in extensions/jdbc/jdbc-h2/runtime/pom.xml -->
-        <postgresql-jdbc.version>42.7.8</postgresql-jdbc.version>
+        <postgresql-jdbc.version>42.7.9</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.5.7</mariadb-jdbc.version>
         <mysql-jdbc.version>9.5.0</mysql-jdbc.version>
         <mssql-jdbc.version>13.2.1.jre11</mssql-jdbc.version>
@@ -134,7 +134,7 @@
         <netty.version>4.1.130.Final</netty.version>
         <brotli4j.version>1.16.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
-        <jboss-logging.version>3.6.1.Final</jboss-logging.version>
+        <jboss-logging.version>3.6.2.Final</jboss-logging.version>
         <mutiny.version>3.1.0</mutiny.version>
         <jctools-core.version>4.0.5</jctools-core.version>
         <kafka.version>4.1.1</kafka.version>
@@ -147,17 +147,18 @@
         <aws-lambda-java-events.version>3.16.1</aws-lambda-java-events.version>
         <aws-xray.version>2.18.3</aws-xray.version>
         <cloudevents-api.version>3.0.0</cloudevents-api.version>
-        <azure-functions-java-library.version>3.2.2</azure-functions-java-library.version>
+        <azure-functions-java-library.version>3.2.3</azure-functions-java-library.version>
         <azure-functions-java-spi.version>1.1.0</azure-functions-java-spi.version>
         <kotlin.version>2.3.0</kotlin.version>
         <kotlin.coroutine.version>1.10.2</kotlin.coroutine.version>
-        <kotlin-serialization.version>1.9.0</kotlin-serialization.version>
+        <kotlin-serialization.version>1.10.0</kotlin-serialization.version>
+        <kotlin-metadata.version>0.9.0</kotlin-metadata.version>
         <azure.toolkit-lib.version>0.53.0</azure.toolkit-lib.version>
         <dekorate.version>4.1.5</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.3.0</awaitility.version>
         <jboss-logmanager.version>3.2.0.Final</jboss-logmanager.version>
-        <flyway.version>11.20.2</flyway.version>
+        <flyway.version>11.20.3</flyway.version>
         <yasson.version>3.0.4</yasson.version>
         <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->
         <liquibase.version>4.33.0</liquibase.version>
@@ -534,6 +535,12 @@
                 <version>${kotlin.coroutine.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <!-- Kotlin metadata processing used by OpenAPI for Kotlin classes -->
+            <dependency>
+                <groupId>org.jetbrains.kotlinx</groupId>
+                <artifactId>kotlinx-metadata-jvm</artifactId>
+                <version>${kotlin-metadata.version}</version>
             </dependency>
 
             <!-- Mockito BOM -->

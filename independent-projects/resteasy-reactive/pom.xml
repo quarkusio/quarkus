@@ -48,8 +48,8 @@
         <bytebuddy.version>1.17.6</bytebuddy.version>
         <junit.version>6.0.2</junit.version>
         <maven.version>3.9.12</maven.version>
-        <assertj.version>3.27.6</assertj.version>
-        <jboss-logging.version>3.6.1.Final</jboss-logging.version>
+        <assertj.version>3.27.7</assertj.version>
+        <jboss-logging.version>3.6.2.Final</jboss-logging.version>
         <jboss-logmanager.version>3.2.0.Final</jboss-logmanager.version>
         <jakarta.annotation-api.version>3.0.0</jakarta.annotation-api.version>
         <gizmo.version>1.10.1</gizmo.version>

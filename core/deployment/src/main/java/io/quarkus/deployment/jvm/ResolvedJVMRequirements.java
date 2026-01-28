@@ -9,6 +9,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.builder.BuildException;
 import io.quarkus.builder.item.SimpleBuildItem;
+import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
 import io.quarkus.deployment.builditem.ModuleOpenBuildItem;
 
 /**
@@ -22,11 +23,15 @@ import io.quarkus.deployment.builditem.ModuleOpenBuildItem;
 public final class ResolvedJVMRequirements extends SimpleBuildItem {
 
     private static final Attributes.Name ADD_OPENS_JARATTRIBUTENAME = new Attributes.Name("Add-Opens");
+    private static final Attributes.Name ENABLE_NATIVE_JARATTRIBUTENAME = new Attributes.Name("Enable-Native-Access");
 
     private final List<ModuleOpenBuildItem> addOpens;
+    private final List<ModuleEnableNativeAccessBuildItem> enableNativeAccesses;
 
-    public ResolvedJVMRequirements(final List<ModuleOpenBuildItem> addOpens) throws BuildException {
+    public ResolvedJVMRequirements(final List<ModuleOpenBuildItem> addOpens,
+            List<ModuleEnableNativeAccessBuildItem> enableNativeAccesses) throws BuildException {
         this.addOpens = addOpens;
+        this.enableNativeAccesses = enableNativeAccesses;
     }
 
     public void renderAddOpensElementToJarManifest(final Attributes attributes) {
@@ -34,6 +39,7 @@ public final class ResolvedJVMRequirements extends SimpleBuildItem {
         //get opened to is implicitly the Jar itself, so it will always point to ALL-UNNAMED:
         //we're ignoring the ModuleOpenBuildItem#openingModuleName in this context.
         //N.B.2: if the app is a module, this Manifest attribute will apparently be ignored!
+        // See: https://docs.oracle.com/en/java/javase/25/docs/specs/jar/jar.html#main-attributes
         final Collection<String> modulesToAddOpens = new TreeSet<>(); //Choose a TreeSet as it will sort them, providing a stable order for reproducibility
         for (ModuleOpenBuildItem moduleOpenBuildItem : addOpens) {
             for (String packageName : moduleOpenBuildItem.packageNames()) {
@@ -49,6 +55,9 @@ public final class ResolvedJVMRequirements extends SimpleBuildItem {
                                 "An 'Add-Opens' entry was already defined in your MANIFEST.MF or using the property quarkus.package.jar.manifest.attributes.\"Add-Opens\". Quarkus has overwritten this existing entry.");
             }
             attributes.put(ADD_OPENS_JARATTRIBUTENAME, String.join(" ", modulesToAddOpens));
+        }
+        if (!enableNativeAccesses.isEmpty()) {
+            attributes.put(ENABLE_NATIVE_JARATTRIBUTENAME, "ALL-UNNAMED");//This is the only supported value for now
         }
     }
 

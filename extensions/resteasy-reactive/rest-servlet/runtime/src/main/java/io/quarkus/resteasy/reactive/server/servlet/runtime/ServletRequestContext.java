@@ -55,6 +55,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.net.HostAndPort;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 
@@ -86,10 +87,12 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
         exchange.addResponseCommitListener(this);
     }
 
+    @Override
     protected boolean isRequestScopeManagementRequired() {
         return asyncContext != null;
     }
 
+    @Override
     protected void beginAsyncProcessing() {
         asyncContext = request.startAsync();
     }
@@ -132,6 +135,7 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
         }
     }
 
+    @Override
     protected void handleRequestScopeActivation() {
         super.handleRequestScopeActivation();
         QuarkusHttpUser user = (QuarkusHttpUser) context.user();
@@ -157,6 +161,7 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
         return Arc.container().beanManager().getEvent().select(SecurityIdentity.class);
     }
 
+    @Override
     protected SecurityContext createSecurityContext() {
         return new ResteasyReactiveSecurityContext(context);
     }
@@ -248,8 +253,16 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
     }
 
     @Override
-    public String getRequestHost() {
-        return context.request().authority().toString();
+    public String getRequestHostAndPort() {
+        HostAndPort authority = context.request().authority();
+        if (authority == null) {
+            return null;
+        }
+        if (authority.port() >= 0) {
+            return authority.host() + ':' + authority.port();
+        } else {
+            return authority.host();
+        }
     }
 
     @Override

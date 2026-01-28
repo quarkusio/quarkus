@@ -56,6 +56,8 @@ export const templates = {
     'devmcp-no-data': 'कोई डेटा नहीं मिला',
     'assistant-warning-explanation': 'क्वार्कस सहायक गलतियाँ कर सकता है। उत्तरों की जाँच करें।',
     'assistant-warning': 'चेतावनी',
+    'assistant-chat-title' : 'चर्चा जारी रखने के लिए सहायक चैट पर जाएँ।',
+    'assistant-chat-button' : 'चैट',
     'footer-server': 'सर्वर',
     'footer-testing': 'परीक्षण',
     'footer-dev_ui': 'डेव UI',

@@ -103,7 +103,7 @@
 
         <unboundid-ldap.version>7.0.4</unboundid-ldap.version>
 
-        <assertj.version>3.27.6</assertj.version>
+        <assertj.version>3.27.7</assertj.version>
 
         <wiremock.version>3.13.2</wiremock.version>
         <wiremock-maven-plugin.version>7.3.0</wiremock-maven-plugin.version>

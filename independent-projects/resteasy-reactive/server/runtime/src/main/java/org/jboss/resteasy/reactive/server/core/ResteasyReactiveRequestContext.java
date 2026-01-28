@@ -542,7 +542,7 @@ public abstract class ResteasyReactiveRequestContext
 
     public String getAuthority() {
         if (authority == null) {
-            return serverRequest().getRequestHost();
+            return serverRequest().getRequestHostAndPort();
         }
         return authority;
     }

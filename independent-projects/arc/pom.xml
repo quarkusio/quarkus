@@ -47,12 +47,12 @@
         <version.gizmo>1.10.1</version.gizmo>
         <version.jandex>3.5.3</version.jandex>
         <version.gizmo2>2.0.0</version.gizmo2>
-        <version.jboss-logging>3.6.1.Final</version.jboss-logging>
+        <version.jboss-logging>3.6.2.Final</version.jboss-logging>
         <version.mutiny>3.1.0</version.mutiny>
         <version.bridger>1.6.Final</version.bridger>
         <version.smallrye-common>2.15.0</version.smallrye-common>
         <!-- test versions -->
-        <version.assertj>3.27.6</version.assertj>
+        <version.assertj>3.27.7</version.assertj>
         <version.junit>6.0.2</version.junit>
         <version.kotlin>2.3.0</version.kotlin>
         <version.kotlin-coroutines>1.10.2</version.kotlin-coroutines>

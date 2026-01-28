@@ -57,6 +57,7 @@ import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -517,5 +518,11 @@ public class MongoClientProcessor {
                                 + String.join(", ", entry.getValue()))));
             }
         }
+    }
+
+    @BuildStep
+    ModuleEnableNativeAccessBuildItem mongoCryptEnableNativeAccess() {
+        // mongodb-crypt uses JNI to load libmongocrypt native library for client-side encryption
+        return new ModuleEnableNativeAccessBuildItem("com.mongodb.crypt.capi");
     }
 }

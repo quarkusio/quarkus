@@ -218,7 +218,7 @@ class ForwardedParser {
 
         matcher = FORWARDED_HOST_PATTERN.matcher(forwarded);
         if (matcher.find()) {
-            setHostAndPort(matcher.group(1).trim(), port);
+            setHostAndPort(matcher.group(1).trim(), -1);
             log.debugf("Using Forwarded 'host' to set host to %s and port to %d", host, port);
             forwardedValues.setHost(host);
             forwardedValues.setPort(port);

@@ -1,10 +1,18 @@
-package io.quarkus.bootstrap.json;
+package io.quarkus.bootstrap.json.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.bootstrap.json.Json;
+import io.quarkus.bootstrap.json.JsonArray;
+import io.quarkus.bootstrap.json.JsonBoolean;
+import io.quarkus.bootstrap.json.JsonInteger;
+import io.quarkus.bootstrap.json.JsonObject;
+import io.quarkus.bootstrap.json.JsonReader;
+import io.quarkus.bootstrap.json.JsonString;
 
 class JsonRoundTripTest {
 

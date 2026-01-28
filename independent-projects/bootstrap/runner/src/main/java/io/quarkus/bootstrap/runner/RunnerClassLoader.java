@@ -299,14 +299,14 @@ public final class RunnerClassLoader extends ClassLoader {
     }
 
     /**
-     * This method is needed to make packages work correctly on JDK9+, as it will be called
+     * This method is needed to make packages work correctly, as it will be called
      * to load the package-info class.
      *
      * @param moduleName
      * @param name
      * @return
      */
-    //@Override
+    @Override
     protected Class<?> findClass(String moduleName, String name) {
         try {
             return loadClass(name, false);

@@ -171,7 +171,7 @@ public class JibProcessor {
                 createContainerBuilderFromLegacyJar(determineBaseJvmImage(jibConfig, compiledJavaVersion),
                         jibConfig, containerImageConfig,
                         sourceJar, outputTarget, mainClass, containerImageLabels);
-            case FAST_JAR, MUTABLE_JAR ->
+            case FAST_JAR, MUTABLE_JAR, AOT_JAR ->
                 createContainerBuilderFromFastJar(determineBaseJvmImage(jibConfig, compiledJavaVersion),
                         jibConfig, containerImageConfig, sourceJar, curateOutcome,
                         containerImageLabels,

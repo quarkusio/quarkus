@@ -3,6 +3,8 @@ package io.quarkus.netty.deployment;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -29,12 +31,14 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedRuntimeSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
@@ -55,7 +59,10 @@ import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.ClassTransformer;
+import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.Gizmo;
 import io.quarkus.gizmo.MethodCreator;
@@ -538,9 +545,11 @@ class NettyProcessor {
      * }</pre>
      */
     @BuildStep
-    BytecodeTransformerBuildItem transformCleanerJava9() {
+    void transformCleanerJava9(BuildProducer<BytecodeTransformerBuildItem> transformerProducer,
+            BuildProducer<GeneratedClassBuildItem> generatedProducer) {
         String className = "io.netty.util.internal.CleanerJava9";
-        return new BytecodeTransformerBuildItem.Builder().setClassToTransform(className)
+        String actionClassName = "%s$Action".formatted(className); // helper class for privileged action
+        transformerProducer.produce(new BytecodeTransformerBuildItem.Builder().setClassToTransform(className)
                 .setCacheable(true).setVisitorFunction(
                         new BiFunction<>() {
                             @Override
@@ -729,10 +738,93 @@ class NettyProcessor {
                                     transformer.removeMethod("access$000", Method.class);
                                 }
 
+                                {
+                                    // freeDirectBufferPrivileged
+                                    MethodDescriptor methodDescriptor = MethodDescriptor.ofMethod(className,
+                                            "freeDirectBufferPrivileged",
+                                            void.class, ByteBuffer.class);
+                                    transformer.removeMethod(methodDescriptor);
+                                    MethodCreator method = transformer.addMethod(methodDescriptor);
+                                    method.setModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC);
+
+                                    ResultHandle bufferParam = method.getMethodParam(0);
+
+                                    // 1. Instantiate the Action class: new Action(buffer)
+                                    ResultHandle actionInstance = method.newInstance(
+                                            MethodDescriptor.ofConstructor(actionClassName, ByteBuffer.class),
+                                            bufferParam);
+
+                                    // 2. Call AccessController.doPrivileged(action)
+                                    ResultHandle errorResult = method.invokeStaticMethod(
+                                            MethodDescriptor.ofMethod(AccessController.class, "doPrivileged", Object.class,
+                                                    PrivilegedAction.class),
+                                            actionInstance);
+
+                                    // 3. Check if error != null
+                                    // Since doPrivileged returns Object, we cast it (conceptually) or just check null
+                                    BytecodeCreator ifError = method.ifNotNull(errorResult).trueBranch();
+
+                                    // 4. PlatformDependent0.throwException(error)
+                                    ifError.invokeStaticMethod(
+                                            MethodDescriptor.ofMethod("io.netty.util.internal.PlatformDependent0",
+                                                    "throwException", void.class, Exception.class),
+                                            ifError.checkCast(errorResult, Exception.class));
+
+                                    method.returnValue(null);
+                                }
+
                                 return transformer.applyTo(classVisitor);
                             }
                         })
-                .build();
+                .build());
+
+        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedProducer, false);
+
+        try (ClassCreator action = ClassCreator.builder()
+                .classOutput(classOutput)
+                .className(actionClassName)
+                .setFinal(true)
+                .interfaces(PrivilegedAction.class)
+                .build()) {
+
+            FieldCreator bufferField = action.getFieldCreator("buffer", ByteBuffer.class)
+                    .setModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_FINAL);
+
+            try (MethodCreator ctor = action.getMethodCreator("<init>", void.class, ByteBuffer.class)) {
+                ctor.setModifiers(Opcodes.ACC_PUBLIC);
+                // Call super()
+                ctor.invokeSpecialMethod(MethodDescriptor.ofConstructor(Object.class), ctor.getThis());
+                // this.buffer = b;
+                ctor.writeInstanceField(bufferField.getFieldDescriptor(), ctor.getThis(), ctor.getMethodParam(0));
+                ctor.returnValue(null);
+            }
+
+            try (MethodCreator run = action.getMethodCreator("run", Object.class)) {
+                // We wrap logic in a Try-Catch to match the behavior of returning an Exception object
+                TryBlock tryBlock = run.tryBlock();
+
+                // Load the 'UNSAFE' static field
+                // Note: Update the package for PlatformDependent0/UNSAFE to match your exact dependency
+                ResultHandle unsafe = tryBlock.readStaticField(
+                        FieldDescriptor.of("io.netty.util.internal.PlatformDependent0", "UNSAFE", "sun.misc.Unsafe"));
+
+                // Read the captured 'buffer' field
+                ResultHandle buffer = tryBlock.readInstanceField(bufferField.getFieldDescriptor(), run.getThis());
+
+                // Call invokeCleaner(buffer)
+                tryBlock.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod("sun.misc.Unsafe", "invokeCleaner", void.class, ByteBuffer.class),
+                        unsafe,
+                        buffer);
+
+                // If successful, return null
+                tryBlock.returnValue(tryBlock.loadNull());
+
+                // Catch (Exception e) -> return e;
+                CatchBlockCreator catchBlock = tryBlock.addCatch(Exception.class);
+                catchBlock.returnValue(catchBlock.getCaughtException());
+            }
+        }
     }
 
     /**

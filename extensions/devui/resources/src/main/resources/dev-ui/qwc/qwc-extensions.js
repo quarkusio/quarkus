@@ -85,8 +85,8 @@ export class QwcExtensions extends observeState(LitElement) {
             cursor: grab;
         }
         .addExtensionButton {
-            position: absolute;
-            bottom: 40px;
+            position: fixed;
+            bottom: calc(var(--footer-height, 38px) + 10px);
             right: 40px;
             width: 3em;
             height: 3em;

@@ -962,7 +962,7 @@
                 </dependency>
                 <dependency>
                     <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-hibernate-panache</artifactId>
+                    <artifactId>quarkus-hibernate-panache-next</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
                     <scope>test</scope>

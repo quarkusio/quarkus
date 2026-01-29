@@ -26,7 +26,7 @@ public class ValueRegistryParameterResolver implements ParameterResolver {
         if (parameterContext.getParameter().getType().equals(ValueRegistry.class)) {
             return true;
         }
-        return valueRegistry.containsKey(key(parameterContext.getParameter().getType()));
+        return valueRegistry != null && valueRegistry.containsKey(key(parameterContext.getParameter().getType()));
     }
 
     @Override
@@ -36,6 +36,9 @@ public class ValueRegistryParameterResolver implements ParameterResolver {
         if (parameterContext.getParameter().getType().equals(ValueRegistry.class)) {
             return valueRegistry;
         }
+        if (valueRegistry == null) {
+            throw new ParameterResolutionException("Could not retrieve parameter: " + parameterContext.getParameter());
+        }
         return valueRegistry.get(key(parameterContext.getParameter().getType()));
     }
 
@@ -43,7 +46,7 @@ public class ValueRegistryParameterResolver implements ParameterResolver {
         Store store = extensionContext.getStore(Namespace.GLOBAL);
         QuarkusTestExtensionState state = store.get(QuarkusTestExtensionState.class.getName(), QuarkusTestExtensionState.class);
         if (state == null || state.getValueRegistry() == null) {
-            throw new ParameterResolutionException("Could not retrieve parameter: " + parameterContext.getParameter());
+            return null;
         }
         return state.getValueRegistry();
     }

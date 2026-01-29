@@ -25,6 +25,8 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.staticmethods.InterceptedStaticMethodsTransformersRegisteredBuildItem;
 import io.quarkus.builder.BuildException;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -147,7 +149,8 @@ public final class PanacheHibernateResourceProcessor {
     void recordEntityToPersistenceUnit(Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
             List<EntityToPersistenceUnitBuildItem> items,
             CombinedIndexBuildItem index,
-            PanacheHibernateRecorder recorder) throws ClassNotFoundException {
+            PanacheHibernateRecorder recorder,
+            Capabilities capabilities) throws ClassNotFoundException {
         // PU
         // FIXME: for now, this ignores the reactive PUs, but reactive PUs are not supported yet by Panache Reactive
         Map<String, String> map = new HashMap<>();
@@ -157,7 +160,8 @@ public final class PanacheHibernateResourceProcessor {
         recorder.setEntityToPersistenceUnit(map,
                 jpaModelPersistenceUnitMapping.map(JpaModelPersistenceUnitMappingBuildItem::isIncomplete)
                         // This happens if there is no persistence unit, in which case we definitely know this metadata is complete.
-                        .orElse(false));
+                        .orElse(false),
+                capabilities.isPresent(Capability.HIBERNATE_REACTIVE));
         // Panache 2 repos
         Map<Class<?>, Class<?>> repositoryClassesToEntityClasses = new HashMap<>();
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementations(DOTNAME_PANACHE_REPOSITORY_QUERIES)) {

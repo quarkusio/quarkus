@@ -27,5 +27,13 @@ public class ProxyAddressUtil {
             this.host = host;
             this.port = port;
         }
+
+        public String host() {
+            return host;
+        }
+
+        public int port() {
+            return port;
+        }
     }
 }

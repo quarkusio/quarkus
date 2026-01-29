@@ -19,6 +19,7 @@ public class ProxyAddressUtil {
         return new HostAndPort(host, port);
     }
 
+    @SuppressWarnings("ClassCanBeRecord") // don't convert to record because we have code that accesses the public field
     public static class HostAndPort {
         public final String host;
         public final int port;

@@ -14,8 +14,6 @@ Create an application that uses unique annotations from the experimental acme ex
 a simple HTTP endpoint and an endpoint that emits server-sent events (SSE).
 We will also use Quarkus dev mode for iterative development and testing.
 
-include::{includes}/extension-status.adoc[]
-
 == Prerequisites
 
 :prerequisites-time: 30 minutes

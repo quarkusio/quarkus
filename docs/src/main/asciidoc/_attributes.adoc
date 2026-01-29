@@ -101,3 +101,4 @@
 :name-image-ubi9-open-jdk-21-short: ubi9/openjdk-21
 // .
 include::_attributes-local.adoc[]
+include::{generated-dir}/extensions/extension-statuses.adoc[opts=optional]

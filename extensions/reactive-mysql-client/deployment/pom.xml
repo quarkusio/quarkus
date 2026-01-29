@@ -178,10 +178,8 @@
                                             <timeout>3s</timeout>
                                             <startPeriod>5s</startPeriod>
                                             <retries>5</retries>
-                                            <!--  We could also use /usr/local/bin/healthcheck.sh but it seemed complicated to get the right level.
-                                            Note that mysqladmin ping returns 0 even if the password is wrong so we don't need to pass in a password, but it makes the logs cleaner-->
                                             <cmd>
-                                                <shell>mysqladmin ping -h localhost -u root -psecret|| exit 1</shell>
+                                                <shell>healthcheck.sh --connect --innodb_initialized</shell>
                                             </cmd>
                                         </healthCheck>
                                     </build>

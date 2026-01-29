@@ -11,11 +11,8 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
-import io.quarkus.deployment.builditem.JavaLibraryPathAdditionalPathBuildItem;
-import io.quarkus.deployment.builditem.JniBuildItem;
 import io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
-import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.InlineBeforeAnalysisBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
@@ -37,16 +34,13 @@ class NativeImageConfigBuildStep {
             SslContextConfigurationRecorder sslContextConfigurationRecorder,
             List<NativeImageConfigBuildItem> nativeImageConfigBuildItems,
             SslNativeConfigBuildItem sslNativeConfig,
-            List<JniBuildItem> jniBuildItems,
             List<NativeImageEnableAllCharsetsBuildItem> nativeImageEnableAllCharsetsBuildItems,
             List<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport,
             List<InlineBeforeAnalysisBuildItem> inlineBeforeAnalysisBuildItems,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxy,
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle,
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit,
-            BuildProducer<NativeImageSystemPropertyBuildItem> nativeImage,
-            BuildProducer<SystemPropertyBuildItem> systemProperty,
-            BuildProducer<JavaLibraryPathAdditionalPathBuildItem> javaLibraryPathAdditionalPath) {
+            BuildProducer<NativeImageSystemPropertyBuildItem> nativeImage) {
         for (NativeImageConfigBuildItem nativeImageConfigBuildItem : nativeImageConfigBuildItems) {
             for (String i : nativeImageConfigBuildItem.getRuntimeInitializedClasses()) {
                 runtimeInit.produce(new RuntimeInitializedClassBuildItem(i));
@@ -77,14 +71,6 @@ class NativeImageConfigBuildStep {
             nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.monitoring",
                     nativeConfig.monitoring().get().stream().map(x -> x.toString().toLowerCase())
                             .collect(Collectors.joining(","))));
-        }
-
-        for (JniBuildItem jniBuildItem : jniBuildItems) {
-            if (jniBuildItem.getLibraryPaths() != null && !jniBuildItem.getLibraryPaths().isEmpty()) {
-                for (String path : jniBuildItem.getLibraryPaths()) {
-                    javaLibraryPathAdditionalPath.produce(new JavaLibraryPathAdditionalPathBuildItem(path));
-                }
-            }
         }
 
         if (!nativeImageEnableAllCharsetsBuildItems.isEmpty()) {

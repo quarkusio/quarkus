@@ -46,6 +46,20 @@ public class QuarkusEntryPoint {
 
     private static void doRun(String... args) throws Throwable {
         String path = QuarkusEntryPoint.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+        if (path == null) {
+            // account for https://bugs.openjdk.org/browse/JDK-8376576
+            String className = QuarkusEntryPoint.class.getSimpleName() + ".class";
+            URL resource = QuarkusEntryPoint.class.getResource(className);
+            if (resource != null) {
+                String fullPath = resource.toString();
+                if (fullPath.startsWith("jar:")) {
+                    path = fullPath.substring(9, fullPath.indexOf("!"));
+                }
+            }
+        }
+        if (path == null) {
+            throw new IllegalStateException("Unable to determine launch jar path");
+        }
         String decodedPath = URLDecoder.decode(path, StandardCharsets.UTF_8);
         Path appRoot = new File(decodedPath).toPath().getParent().getParent().getParent();
 

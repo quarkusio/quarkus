@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import io.quarkus.builder.item.MultiBuildItem;
@@ -20,9 +21,12 @@ public final class DevServicesDatasourceConfigurationHandlerBuildItem extends Mu
      */
     private final String dbKind;
     /**
-     * The function that provides the runtime config given a running DevServices database
+     * The function that provides the runtime config given a running DevServices database, for old model services
      */
+    @Deprecated(since = "3.32", forRemoval = true)
     private final BiFunction<String, DevServicesDatasourceProvider.RunningDevServicesDatasource, Map<String, String>> configProviderFunction;
+
+    private final Function<String, Map<String, Function<DatasourceStartable, String>>> deferredConfigProviderFunction;
 
     /**
      * Function that checks if a given datasource has been configured. If it has been configured generally the
@@ -30,11 +34,25 @@ public final class DevServicesDatasourceConfigurationHandlerBuildItem extends Mu
      */
     private final Predicate<String> checkConfiguredFunction;
 
+    /**
+     * Use the deferred constructor and the new dev services model.
+     */
+    @Deprecated(since = "3.32", forRemoval = true)
     public DevServicesDatasourceConfigurationHandlerBuildItem(String dbKind,
             BiFunction<String, DevServicesDatasourceProvider.RunningDevServicesDatasource, Map<String, String>> configProviderFunction,
             Predicate<String> checkConfiguredFunction) {
         this.dbKind = dbKind;
         this.configProviderFunction = configProviderFunction;
+        this.deferredConfigProviderFunction = null;
+        this.checkConfiguredFunction = checkConfiguredFunction;
+    }
+
+    public DevServicesDatasourceConfigurationHandlerBuildItem(String dbKind,
+            Function<String, Map<String, Function<DatasourceStartable, String>>> o,
+            Predicate<String> checkConfiguredFunction) {
+        this.dbKind = dbKind;
+        this.deferredConfigProviderFunction = o;
+        this.configProviderFunction = null;
         this.checkConfiguredFunction = checkConfiguredFunction;
     }
 
@@ -50,9 +68,17 @@ public final class DevServicesDatasourceConfigurationHandlerBuildItem extends Mu
         return checkConfiguredFunction;
     }
 
+    public Function<String, Map<String, Function<DatasourceStartable, String>>> getDeferredConfigProviderFunction() {
+        return deferredConfigProviderFunction;
+    }
+
+    /**
+     * Use {@link #deferredJdbc(String)}
+     */
+    @Deprecated(since = "3.32", forRemoval = true)
     public static DevServicesDatasourceConfigurationHandlerBuildItem jdbc(String dbKind) {
         return new DevServicesDatasourceConfigurationHandlerBuildItem(dbKind,
-                new BiFunction<String, DevServicesDatasourceProvider.RunningDevServicesDatasource, Map<String, String>>() {
+                new BiFunction<>() {
 
                     @Override
                     public Map<String, String> apply(String dsName,
@@ -61,7 +87,21 @@ public final class DevServicesDatasourceConfigurationHandlerBuildItem extends Mu
                         return fromKeys(datasourceURLPropNames(dsName), jdbcUrl);
                     }
 
-                }, new Predicate<String>() {
+                }, new Predicate<>() {
+                    @Override
+                    public boolean test(String dsName) {
+                        return ConfigUtils.isAnyPropertyPresent(datasourceURLPropNames(dsName));
+                    }
+                });
+    }
+
+    public static DevServicesDatasourceConfigurationHandlerBuildItem deferredJdbc(String dbKind) {
+        return new DevServicesDatasourceConfigurationHandlerBuildItem(dbKind, (dsName) -> {
+            Function<DatasourceStartable, String> function = s -> s.runningDevServicesDatasource().jdbcUrl();
+
+            return fromKeys(datasourceURLPropNames(dsName), function);
+        },
+                new Predicate<>() {
                     @Override
                     public boolean test(String dsName) {
                         return ConfigUtils.isAnyPropertyPresent(datasourceURLPropNames(dsName));
@@ -71,21 +111,39 @@ public final class DevServicesDatasourceConfigurationHandlerBuildItem extends Mu
 
     private static List<String> datasourceURLPropNames(String dsName) {
         // we use datasourceURLPropNames to generate quoted and unquoted versions of the property key,
-        // because depending on whether a user configured other JDBC properties
+        // because depending on whether a user configured deferred JDBC properties
         // one of the URLs may be ignored
         // see https://github.com/quarkusio/quarkus/issues/21387
         return DataSourceUtil.dataSourcePropertyKeys(dsName, "jdbc.url");
     }
 
+    /**
+     * Use {@link #deferredReactive(String)}
+     */
+    @Deprecated(since = "3.32", forRemoval = true)
     public static DevServicesDatasourceConfigurationHandlerBuildItem reactive(String dbKind) {
         return new DevServicesDatasourceConfigurationHandlerBuildItem(dbKind,
-                new BiFunction<String, DevServicesDatasourceProvider.RunningDevServicesDatasource, Map<String, String>>() {
+                new BiFunction<>() {
                     @Override
                     public Map<String, String> apply(String dsName,
                             DevServicesDatasourceProvider.RunningDevServicesDatasource runningDevDb) {
                         String reactiveUrl = runningDevDb.reactiveUrl();
                         return fromKeys(datasourceReactiveURLPropNames(dsName), reactiveUrl);
                     }
+                }, new Predicate<String>() {
+                    @Override
+                    public boolean test(String dsName) {
+                        return ConfigUtils.isAnyPropertyPresent(datasourceReactiveURLPropNames(dsName));
+                    }
+                });
+    }
+
+    public static DevServicesDatasourceConfigurationHandlerBuildItem deferredReactive(String dbKind) {
+        return new DevServicesDatasourceConfigurationHandlerBuildItem(dbKind,
+                (dsName) -> {
+                    Function<DatasourceStartable, String> reactiveUrl = s -> s.runningDevServicesDatasource().reactiveUrl();
+
+                    return fromKeys(datasourceReactiveURLPropNames(dsName), reactiveUrl);
                 }, new Predicate<String>() {
                     @Override
                     public boolean test(String dsName) {

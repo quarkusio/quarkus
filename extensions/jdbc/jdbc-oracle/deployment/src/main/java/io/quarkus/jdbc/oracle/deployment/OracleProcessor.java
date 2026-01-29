@@ -39,7 +39,7 @@ public class OracleProcessor {
 
     @BuildStep
     DevServicesDatasourceConfigurationHandlerBuildItem devDbHandler() {
-        return DevServicesDatasourceConfigurationHandlerBuildItem.jdbc(DatabaseKind.ORACLE);
+        return DevServicesDatasourceConfigurationHandlerBuildItem.deferredJdbc(DatabaseKind.ORACLE);
     }
 
     @BuildStep

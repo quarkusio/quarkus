@@ -325,15 +325,22 @@ public interface PackageConfig {
             /**
              * The "fast JAR" packaging type.
              */
-            FAST_JAR("fast-jar", "jar"),
+            FAST_JAR(true, "fast-jar", "jar"),
+            /**
+             * The AOT-optimized packaging type.
+             * <p>
+             * Similar to fast-jar in the approach but taking into account the limitations of AOT class loading (i.e. all class
+             * loading delegated to JDK class loader).
+             */
+            AOT_JAR(true, "aot-jar", "aot-fast-jar"),
             /**
              * The "Uber-JAR" packaging type.
              */
-            UBER_JAR("uber-jar"),
+            UBER_JAR(false, "uber-jar"),
             /**
              * The "mutable JAR" packaging type (for remote development mode).
              */
-            MUTABLE_JAR("mutable-jar"),
+            MUTABLE_JAR(true, "mutable-jar"),
             /**
              * The "legacy JAR" packaging type.
              * This corresponds to the packaging type used in Quarkus before version 1.12.
@@ -341,7 +348,7 @@ public interface PackageConfig {
              * @deprecated This packaging type is no longer recommended for use.
              */
             @Deprecated
-            LEGACY_JAR("legacy-jar", "legacy"),
+            LEGACY_JAR(false, "legacy-jar", "legacy"),
             ;
 
             public static final List<JarType> values = List.of(JarType.values());
@@ -352,16 +359,19 @@ public interface PackageConfig {
 
             private final List<String> names;
 
-            JarType(final List<String> names) {
+            private final boolean fastJarLayout;
+
+            JarType(final boolean fastJarLayout, final List<String> names) {
+                this.fastJarLayout = fastJarLayout;
                 this.names = names;
             }
 
-            JarType(final String... names) {
-                this(List.of(names));
+            JarType(final boolean fastJarLayout, final String... names) {
+                this(fastJarLayout, List.of(names));
             }
 
-            JarType(final String name) {
-                this(List.of(name));
+            JarType(final boolean fastJarLayout, final String name) {
+                this(fastJarLayout, List.of(name));
             }
 
             /**
@@ -370,6 +380,10 @@ public interface PackageConfig {
              */
             public List<String> names() {
                 return names;
+            }
+
+            public boolean usesFastJarLayout() {
+                return fastJarLayout;
             }
 
             /**

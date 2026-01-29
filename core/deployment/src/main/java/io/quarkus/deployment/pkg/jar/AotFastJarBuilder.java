@@ -9,8 +9,8 @@ import java.util.concurrent.ExecutorService;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.bootstrap.runner.QuarkusEntryPoint;
-import io.quarkus.bootstrap.runner.SerializedApplication;
+import io.quarkus.bootstrap.runner.AotQuarkusEntryPoint;
+import io.quarkus.bootstrap.runner.AotSerializedApplication;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
@@ -24,11 +24,11 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 
-public class FastJarBuilder extends AbstractFastJarBuilder {
+public class AotFastJarBuilder extends AbstractFastJarBuilder {
 
-    private static final Logger LOG = Logger.getLogger(FastJarBuilder.class);
+    private static final Logger LOG = Logger.getLogger(AotFastJarBuilder.class);
 
-    public FastJarBuilder(CurateOutcomeBuildItem curateOutcome,
+    public AotFastJarBuilder(CurateOutcomeBuildItem curateOutcome,
             OutputTargetBuildItem outputTarget,
             ApplicationInfoBuildItem applicationInfo,
             PackageConfig packageConfig,
@@ -50,16 +50,16 @@ public class FastJarBuilder extends AbstractFastJarBuilder {
     @Override
     protected void writeSerializedApplication(OutputStream out, Path buildDir, List<Path> allJars, List<Path> sortedParentFirst)
             throws IOException {
-        SerializedApplication.write(out, mainClass.getClassName(), buildDir, allJars, sortedParentFirst);
+        AotSerializedApplication.write(out, mainClass.getClassName(), allJars);
     }
 
     @Override
     protected Class<?> getEntryPoint() {
-        return QuarkusEntryPoint.class;
+        return AotQuarkusEntryPoint.class;
     }
 
     @Override
     protected String getClassPath(FastJarJars fastJarJars) {
-        return fastJarJars.getParentFirstClassPath();
+        return fastJarJars.getFullClassPath();
     }
 }

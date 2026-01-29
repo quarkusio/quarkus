@@ -73,22 +73,16 @@ public final class RunningDevServicesRegistry {
         var iterator = servicesIndexedByConfig.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<ComparableDevServicesConfig, RunningService> entry = iterator.next();
-            System.out.println("HOLLY about to stop " + entry.getKey() + " in launch mode " + launchMode + " service is "
-                    + entry.getValue().feature());
             DevServiceOwner owner = entry.getKey().owner();
             UUID serviceAppUuid = entry.getKey().applicationInstanceId();
             if (owner.launchMode().equals(launchMode) && Objects.equals(serviceAppUuid, uuid)
                     && !ownersToKeep.contains(owner)) {
                 iterator.remove();
-                System.out.println("HOLLY removed from iterator "
-                        + entry.getValue().feature());
                 RunningService service = entry.getValue();
                 services.remove(service);
-                System.out.println("HOLLY removed from services ");
                 try {
                     logClosing(owner.featureName(), launchMode, service.containerId());
                     service.close();
-                    System.out.println("HOLLY finished closing");
                 } catch (Exception e) {
                     // We don't want to fail the shutdown hook if a service fails to close
                     logFailedToClose(e, owner.featureName(), launchMode, service.containerId());

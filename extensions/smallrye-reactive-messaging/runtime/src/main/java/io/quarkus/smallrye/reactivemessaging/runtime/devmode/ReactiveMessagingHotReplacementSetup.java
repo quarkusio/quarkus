@@ -37,10 +37,13 @@ public class ReactiveMessagingHotReplacementSetup implements HotReplacementSetup
                 synchronized (this) {
                     if (nextUpdate < System.currentTimeMillis()) {
                         CompletableFuture<Boolean> result = new CompletableFuture<>();
+                        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
                         executor.execute(new Runnable() {
                             @Override
                             public void run() {
                                 try {
+                                    // Update to the new Reloaded ClassLoader
+                                    Thread.currentThread().setContextClassLoader(contextClassLoader);
                                     boolean restarted = context.doScan(true);
                                     if (context.getDeploymentProblem() != null) {
                                         LOGGER.error("Failed to redeploy application on changes",

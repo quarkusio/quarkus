@@ -19,6 +19,13 @@ public class ProxyAddressUtil {
         return new HostAndPort(host, port);
     }
 
-    public record HostAndPort(String host, int port) {
+    public static class HostAndPort {
+        public final String host;
+        public final int port;
+
+        public HostAndPort(String host, int port) {
+            this.host = host;
+            this.port = port;
+        }
     }
 }

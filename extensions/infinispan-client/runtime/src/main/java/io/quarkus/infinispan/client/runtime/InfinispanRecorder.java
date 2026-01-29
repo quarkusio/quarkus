@@ -1,7 +1,9 @@
 package io.quarkus.infinispan.client.runtime;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -29,8 +31,11 @@ public class InfinispanRecorder {
         };
     }
 
-    public Supplier<RemoteCacheManager> infinispanClientSupplier(String clientName) {
-        return new InfinispanClientSupplier<>(new Function<InfinispanClientProducer, RemoteCacheManager>() {
+    private final Set<String> clientNames = new HashSet<>();
+
+    public Supplier<RemoteCacheManager> infinispanRemoteCacheManagerSupplier(String clientName) {
+        clientNames.add(clientName);
+        return new InfinispanClientSupplier<>(new Function<>() {
             @Override
             public RemoteCacheManager apply(InfinispanClientProducer infinispanClientProducer) {
                 return infinispanClientProducer.getNamedRemoteCacheManager(clientName);
@@ -39,7 +44,8 @@ public class InfinispanRecorder {
     }
 
     public Supplier<CounterManager> infinispanCounterManagerSupplier(String clientName) {
-        return new InfinispanClientSupplier<>(new Function<InfinispanClientProducer, CounterManager>() {
+        clientNames.add(clientName);
+        return new InfinispanClientSupplier<>(new Function<>() {
             @Override
             public CounterManager apply(InfinispanClientProducer infinispanClientProducer) {
                 return infinispanClientProducer.getNamedCounterManager(clientName);
@@ -47,8 +53,9 @@ public class InfinispanRecorder {
         });
     }
 
-    public <K, V> Supplier<RemoteCache<K, V>> infinispanRemoteCacheClientSupplier(String clientName, String cacheName) {
-        return new InfinispanClientSupplier<>(new Function<InfinispanClientProducer, RemoteCache<K, V>>() {
+    public <K, V> Supplier<RemoteCache<K, V>> infinispanRemoteCacheSupplier(String clientName, String cacheName) {
+        clientNames.add(clientName);
+        return new InfinispanClientSupplier<>(new Function<>() {
             @Override
             public RemoteCache<K, V> apply(InfinispanClientProducer infinispanClientProducer) {
                 return infinispanClientProducer.getRemoteCache(clientName, cacheName);
@@ -56,8 +63,12 @@ public class InfinispanRecorder {
         });
     }
 
-    public RuntimeValue<RemoteCacheManager> getClient(String name) {
-        return new RuntimeValue<>(Arc.container().instance(RemoteCacheManager.class, literal(name)).get());
+    public RuntimeValue<RemoteCacheManager> initializeClient(String name) {
+        RemoteCacheManager remoteCacheManager = Arc.container().instance(RemoteCacheManager.class, literal(name)).get();
+        //noinspection ResultOfMethodCallIgnored
+        // used to initialize the bean
+        remoteCacheManager.getConfiguration();
+        return new RuntimeValue<>(remoteCacheManager);
     }
 
     @SuppressWarnings("rawtypes")

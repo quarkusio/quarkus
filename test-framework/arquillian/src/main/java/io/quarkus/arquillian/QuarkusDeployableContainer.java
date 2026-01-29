@@ -49,9 +49,9 @@ import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
-import io.quarkus.registry.ValueRegistry.RuntimeKey;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
 import io.quarkus.test.common.TestInstantiator;
+import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
 
 public class QuarkusDeployableContainer implements DeployableContainer<QuarkusConfiguration> {
 

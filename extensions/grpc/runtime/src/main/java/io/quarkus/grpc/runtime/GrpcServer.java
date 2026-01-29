@@ -1,8 +1,8 @@
 package io.quarkus.grpc.runtime;
 
-import io.quarkus.registry.ValueRegistry;
-import io.quarkus.registry.ValueRegistry.RuntimeInfo;
-import io.quarkus.registry.ValueRegistry.RuntimeKey;
+import io.quarkus.value.registry.ValueRegistry;
+import io.quarkus.value.registry.ValueRegistry.RuntimeInfo;
+import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
 import io.quarkus.vertx.http.HttpServer;
 
 /**

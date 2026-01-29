@@ -9,7 +9,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.registry.ValueRegistry;
+import io.quarkus.value.registry.ValueRegistry;
 
 public class RunningQuarkusApplicationImpl implements RunningQuarkusApplication {
 

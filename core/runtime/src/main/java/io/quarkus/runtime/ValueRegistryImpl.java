@@ -9,10 +9,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
-import io.quarkus.registry.RuntimeInfoProvider;
-import io.quarkus.registry.RuntimeInfoProvider.RuntimeSource;
-import io.quarkus.registry.ValueRegistry;
-import io.quarkus.registry.ValueRegistry.RuntimeInfo.SimpleRuntimeInfo;
+import io.quarkus.value.registry.RuntimeInfoProvider;
+import io.quarkus.value.registry.RuntimeInfoProvider.RuntimeSource;
+import io.quarkus.value.registry.ValueRegistry;
+import io.quarkus.value.registry.ValueRegistry.RuntimeInfo.SimpleRuntimeInfo;
 import io.smallrye.config.SmallRyeConfig;
 
 /**

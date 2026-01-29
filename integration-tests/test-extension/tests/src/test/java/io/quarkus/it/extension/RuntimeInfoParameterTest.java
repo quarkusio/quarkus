@@ -5,8 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.extest.runtime.config.TestRuntimeInfo;
-import io.quarkus.registry.ValueRegistry;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.value.registry.ValueRegistry;
 
 @QuarkusTest
 public class RuntimeInfoParameterTest {

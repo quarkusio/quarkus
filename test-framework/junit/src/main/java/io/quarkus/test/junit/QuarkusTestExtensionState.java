@@ -6,8 +6,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.quarkus.registry.ValueRegistry;
 import io.quarkus.test.common.TestResourceManager;
+import io.quarkus.value.registry.ValueRegistry;
 
 public class QuarkusTestExtensionState implements AutoCloseable {
 

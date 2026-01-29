@@ -65,7 +65,6 @@ import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.registry.ValueRegistry;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
 import io.quarkus.runner.bootstrap.StartupActionImpl;
 import io.quarkus.runtime.LaunchMode;
@@ -76,6 +75,7 @@ import io.quarkus.test.common.RestAssuredStateManager;
 import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.quarkus.value.registry.ValueRegistry;
 
 /**
  * A test extension for testing Quarkus internals, not intended for end user consumption

@@ -10,8 +10,8 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>quarkus-registry</artifactId>
-    <name>Quarkus - Registry</name>
+    <artifactId>quarkus-value-registry</artifactId>
+    <name>Quarkus - Value Registry</name>
     <description>
         The API to store runtime values. It has its own module, so it can be shared between unrelated modules,
         and it is a parent first dependency.

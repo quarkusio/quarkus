@@ -7,9 +7,9 @@ import java.util.Optional;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
-import io.quarkus.registry.ValueRegistry;
 import io.quarkus.test.common.ListeningAddress;
 import io.quarkus.test.common.TestResourceManager;
+import io.quarkus.value.registry.ValueRegistry;
 import io.smallrye.config.SmallRyeConfig;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")

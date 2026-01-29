@@ -1,7 +1,7 @@
 package io.quarkus.extest.runtime.config;
 
-import io.quarkus.registry.RuntimeInfoProvider;
-import io.quarkus.registry.ValueRegistry;
+import io.quarkus.value.registry.RuntimeInfoProvider;
+import io.quarkus.value.registry.ValueRegistry;
 
 public class TestRuntimeInfoProvider implements RuntimeInfoProvider {
     @Override

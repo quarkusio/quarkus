@@ -2,9 +2,9 @@ package io.quarkus.test.common;
 
 import java.net.URI;
 
-import io.quarkus.registry.ValueRegistry;
-import io.quarkus.registry.ValueRegistry.RuntimeKey;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.quarkus.value.registry.ValueRegistry;
+import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
 import io.smallrye.config.SmallRyeConfig;
 
 public record ListeningAddress(Integer port, String protocol) {

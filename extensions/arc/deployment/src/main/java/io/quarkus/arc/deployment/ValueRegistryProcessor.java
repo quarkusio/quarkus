@@ -12,10 +12,10 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.registry.RuntimeInfoProvider;
-import io.quarkus.registry.RuntimeInfoProvider.RuntimeSource;
-import io.quarkus.registry.ValueRegistry;
-import io.quarkus.registry.ValueRegistry.RuntimeKey;
+import io.quarkus.value.registry.RuntimeInfoProvider;
+import io.quarkus.value.registry.RuntimeInfoProvider.RuntimeSource;
+import io.quarkus.value.registry.ValueRegistry;
+import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
 
 class ValueRegistryProcessor {
     @BuildStep

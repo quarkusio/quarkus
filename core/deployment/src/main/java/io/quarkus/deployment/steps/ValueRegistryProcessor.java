@@ -6,7 +6,7 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ValueRegistryRuntimeInfoProviderBuildItem;
-import io.quarkus.registry.RuntimeInfoProvider;
+import io.quarkus.value.registry.RuntimeInfoProvider;
 
 class ValueRegistryProcessor {
     @BuildStep

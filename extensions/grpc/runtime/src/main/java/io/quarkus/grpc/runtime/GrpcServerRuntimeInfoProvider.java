@@ -1,7 +1,7 @@
 package io.quarkus.grpc.runtime;
 
-import io.quarkus.registry.RuntimeInfoProvider;
-import io.quarkus.registry.ValueRegistry;
+import io.quarkus.value.registry.RuntimeInfoProvider;
+import io.quarkus.value.registry.ValueRegistry;
 
 /**
  * Registers the {@link GrpcServer} with {@link ValueRegistry}.

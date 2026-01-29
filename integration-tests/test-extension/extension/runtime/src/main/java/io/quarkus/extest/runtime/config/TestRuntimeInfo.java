@@ -1,8 +1,8 @@
 package io.quarkus.extest.runtime.config;
 
-import io.quarkus.registry.ValueRegistry;
-import io.quarkus.registry.ValueRegistry.RuntimeInfo;
-import io.quarkus.registry.ValueRegistry.RuntimeKey;
+import io.quarkus.value.registry.ValueRegistry;
+import io.quarkus.value.registry.ValueRegistry.RuntimeInfo;
+import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
 
 public interface TestRuntimeInfo {
     RuntimeKey<TestRuntimeInfo> TEST_RUNTIME_INFO = RuntimeKey.key(TestRuntimeInfo.class);

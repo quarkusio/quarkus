@@ -202,15 +202,18 @@ You can also configure the `jvm.args` system property directly inside the `quark
 When trying to debug startup performance, it is convenient to log build steps execution time.
 This can be achieved by adding the following system property: `-Dquarkus.debug.print-startup-times=true` in dev mode or when launching the JAR.
 
-There is also a nice visualization of build steps available in the Dev UI located here: <http://localhost:8080/q/dev/build-steps>.
+There is also a nice visualization of build steps available in the Dev UI located here: <http://localhost:8080/q/dev-ui/build-metrics-build-steps>.
 
 If you want to have a similar visualization of build steps processing when building your application, you can use the `quarkus.builder.metrics.enabled` property.
 For example using `mvn package -Dquarkus.builder.metrics.enabled=true`, will generate a `build-metrics.json` in your `target` repository.
 The generated file can be processed with the `quarkus-build-report` application available here <https://github.com/mkouba/quarkus-build-report>.
 This application will generate a `report.html` that you can open in your browser.
+In Quarkus CLI, you can simply add the `--report` option and the build report will be generated automatically: `quarkus build --report`.  
 
 There is also the `quarkus.builder.metrics.extended-capture` config property.
 If set to `true` then the collection of metrics is enhanced but the size of the generated JSON file may grow significantly.
+That's why it's turned off by default.
+In Quarkus CLI, you will need to add the `--ext-capture` option: `quarkus build --report --ext-capture`.
 
 ## What about Windows?
 

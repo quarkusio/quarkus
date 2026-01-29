@@ -4,7 +4,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
-import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.junit.platform.engine.support.store.Namespace;
 import org.junit.platform.engine.support.store.NamespacedHierarchicalStore;
@@ -12,6 +11,7 @@ import org.junit.platform.engine.support.store.NamespacedHierarchicalStore;
 import io.quarkus.deployment.dev.testing.TestConfigCustomizer;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.smallrye.config.Config;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
@@ -73,6 +73,16 @@ public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
                 + Thread.currentThread().getContextClassLoader());
     }
 
+    @Override
+    public SmallRyeConfig get() {
+        return resolver.get();
+    }
+
+    @Override
+    public SmallRyeConfig get(ClassLoader classLoader) {
+        return resolver.get(classLoader);
+    }
+
     public void restoreConfig() {
         if (classLoader.equals(Thread.currentThread().getContextClassLoader())) {
             resolver.releaseConfig(classLoader);
@@ -99,12 +109,12 @@ public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
     }
 
     @Override
-    public void registerConfig(final Config config, final ClassLoader classLoader) {
+    public void registerConfig(final org.eclipse.microprofile.config.Config config, final ClassLoader classLoader) {
         resolver.registerConfig(config, classLoader);
     }
 
     @Override
-    public void releaseConfig(final Config config) {
+    public void releaseConfig(final org.eclipse.microprofile.config.Config config) {
         resolver.releaseConfig(config);
     }
 

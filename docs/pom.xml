@@ -926,7 +926,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-panache-deployment</artifactId>
+            <artifactId>quarkus-hibernate-panache-next-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

@@ -61,7 +61,8 @@ public class WriterInterceptorContextImpl extends AbstractInterceptorContext
             ServerSerialisers.encodeResponseHeaders(context);
             // this must be done AFTER encoding the headers, otherwise the HTTP response gets all messed up
             effectiveWriter.writeTo(entity, type, genericType,
-                    annotations, mediaType, response.getHeaders(), context.getOrCreateOutputStream());
+                    annotations, mediaType != null ? mediaType : context.getResponseMediaType(), response.getHeaders(),
+                    context.getOrCreateOutputStream());
             context.getOutputStream().close();
             done = true;
         } else {

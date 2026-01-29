@@ -428,6 +428,19 @@ Classes marked with `@ElasticsearchClientConfig` are made application scoped CDI
 You can override the scope at the class level if you prefer a different scope.
 ====
 
+[NOTE]
+====
+When configuring the <<named-clients,named clients>> with `@ElasticsearchClientConfig`
+pass the name of the client to configure through the `value` attribute:
+[source,java]
+----
+@ElasticsearchClientConfig("second-client")
+public class AnotherClientConfigurer implements RestClientBuilder.HttpClientConfigCallback {
+	// ...
+}
+----
+====
+
 == Running an Elasticsearch cluster
 
 As by default, the Elasticsearch client is configured to access a local Elasticsearch cluster on port 9200 (the default Elasticsearch port),
@@ -568,13 +581,82 @@ public class FruitService {
 <3> We directly pass the object to the request as the Java API client has a serialization layer.
 <4> We send the request to Elasticsearch.
 
+[[named-clients]]
+== Named Elasticsearch clients
+
+The Elasticsearch REST client extension allows configuring multiple clients that communicate to different Elasticsearch clusters
+within the same application.
+
+This is achieved through the named Elasticsearch clients:
+
+[source,java]
+----
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import org.elasticsearch.client.RestClient;
+import io.smallrye.common.annotation.Identifier;
+
+@ApplicationScoped
+public class FruitService {
+    @Inject
+    @Identifier("second-elasticsearch-cluster") // <1>
+    RestClient restClient;
+
+	// ...
+}
+----
+<1> We specify the name of the client through the `@Identifier` when injecting a `RestClient` within the service.
+
+Named Elasticsearch REST clients in this case can be configured as follows:
+
+[source,properties]
+----
+# configure the second Elasticsearch client
+quarkus.elasticsearch."second-elasticsearch-cluster".hosts=second-elasticsearch:9200
+----
+
+It is also possible to use the named higher level Elasticsearch clients.
+The name of such client *must* match an existing, configured lower-level REST client.
+
+[source,java]
+----
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import io.smallrye.common.annotation.Identifier;
+
+@ApplicationScoped
+public class FruitService {
+    @Inject
+    @Identifier("second-elasticsearch-cluster") // <1>
+    ElasticsearchClient client;
+
+	// ...
+}
+----
+<1> We specify the name of the client through the `@Identifier` when injecting a `ElasticsearchClient` within the service.
+
+[NOTE]
+====
+Make sure to include at least one static injection point for the named Elasticsearch client for Quarkus
+to find it at the build time and prepare the required resources for it.
+
+Those clients defined at the build time that won't be necessary at runtime can be <<client-active,deactivated>>.
+====
+
 == Hibernate Search Elasticsearch
 
-Quarkus supports Hibernate Search with Elasticsearch via the `quarkus-hibernate-search-orm-elasticsearch` extension.
+Quarkus supports Hibernate Search with Elasticsearch via the `quarkus-hibernate-search-orm-elasticsearch`
+and `quarkus-hibernate-search-standalone-elasticsearch` extensions.
 
 Hibernate Search Elasticsearch allows to synchronize your Jakarta Persistence entities to an Elasticsearch cluster and offers a way to query your Elasticsearch cluster using the Hibernate Search API.
 
-If you are interested in it, please consult the xref:hibernate-search-orm-elasticsearch.adoc[Hibernate Search with Elasticsearch guide].
+If you are interested in it, please consult one of the following guides: xref:hibernate-search-orm-elasticsearch.adoc[Hibernate Search with ORM and Elasticsearch]
+or xref:hibernate-search-standalone-elasticsearch.adoc[Hibernate Search standalone with Elasticsearch].
 
 == Cluster Health Check
 
@@ -597,6 +679,15 @@ include::{includes}/devtools/build-native.adoc[]
 Running it is as simple as executing `./target/elasticsearch-low-level-client-quickstart-1.0.0-SNAPSHOT-runner`.
 
 You can then point your browser to `http://localhost:8080/fruits.html` and use your application.
+
+[[client-active]]
+=== Activate/deactivate clients
+
+In some cases it may be useful to deactivate some of the REST clients detected at build time.
+To deactivate a client at runtime, set the `quarkus.elasticsearch[.optional client name].active` (for the low-level Elasticsearch REST client)
+or `quarkus.elasticsearch-java[.optional client name].active` (for the Java Elasticsearch client) to `false`.
+Deactivating a low-level Elasticsearch REST client automatically deactivate the corresponding Java Elasticsearch client,
+since it is using the low-level one as its transport for communication with the cluster.
 
 == Conclusion
 

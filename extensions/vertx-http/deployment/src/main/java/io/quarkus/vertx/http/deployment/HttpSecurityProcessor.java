@@ -3,7 +3,6 @@ package io.quarkus.vertx.http.deployment;
 import static io.quarkus.arc.processor.DotNames.APPLICATION_SCOPED;
 import static io.quarkus.arc.processor.DotNames.SINGLETON;
 import static io.quarkus.security.spi.ClassSecurityAnnotationBuildItem.useClassLevelSecurity;
-import static io.quarkus.security.spi.SecurityTransformerBuildItem.createSecurityTransformer;
 import static io.quarkus.vertx.http.deployment.HttpAuthMechanismAnnotationBuildItem.isExcludedAnnotationTarget;
 import static io.quarkus.vertx.http.runtime.security.HttpAuthenticator.BASIC_AUTH_ANNOTATION_DETECTED;
 import static io.quarkus.vertx.http.runtime.security.HttpAuthenticator.TEST_IF_BASIC_AUTH_IMPLICITLY_REQUIRED;
@@ -15,6 +14,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -62,7 +62,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
@@ -208,7 +207,6 @@ public class HttpSecurityProcessor {
         }
     }
 
-    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @BuildStep(onlyIf = IsApplicationBasicAuthRequired.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     SyntheticBeanBuildItem initBasicAuth(HttpSecurityRecorder recorder,
@@ -330,7 +328,6 @@ public class HttpSecurityProcessor {
     }
 
     @Consume(TlsRegistryBuildItem.class) // we may need to register a TLS configuration for the mTLS
-    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @Produce(PreRouterFinalizationBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
@@ -541,15 +538,11 @@ public class HttpSecurityProcessor {
         }
     }
 
-    @BuildStep
-    AuthorizationPolicyInstancesBuildItem gatherAuthorizationPolicyInstances(CombinedIndexBuildItem combinedIndex,
-            Capabilities capabilities, Optional<SecurityTransformerBuildItem> securityTransformerBuildItem) {
-        if (!capabilities.isPresent(Capability.SECURITY)) {
-            return null;
-        }
+    private static Map<MethodInfo, String> gatherAuthorizationPolicyInstances(CombinedIndexBuildItem combinedIndex,
+            Optional<SecurityTransformerBuildItem> securityTransformerBuildItem) {
         SecurityTransformer securityTransformer = SecurityTransformerBuildItem.createSecurityTransformer(
                 combinedIndex.getIndex(), securityTransformerBuildItem);
-        var methodToPolicy = combinedIndex.getIndex()
+        var methodToPolicy = securityTransformer
                 // @AuthorizationPolicy(name = "policy-name")
                 .getAnnotations(AUTHORIZATION_POLICY)
                 .stream()
@@ -567,7 +560,7 @@ public class HttpSecurityProcessor {
                             .map(mi -> Map.entry(mi, policyName));
                 })
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        return new AuthorizationPolicyInstancesBuildItem(methodToPolicy);
+        return Collections.unmodifiableMap(methodToPolicy);
     }
 
     @BuildStep
@@ -599,8 +592,8 @@ public class HttpSecurityProcessor {
      */
     @BuildStep
     void generateAuthorizationPolicyStorage(BuildProducer<GeneratedBeanBuildItem> generatedBeanProducer,
-            Capabilities capabilities,
-            AuthorizationPolicyInstancesBuildItem authZPolicyInstancesItem) {
+            Optional<SecurityTransformerBuildItem> securityTransformerBuildItem,
+            Capabilities capabilities, CombinedIndexBuildItem combinedIndexBuildItem) {
         if (!capabilities.isPresent(Capability.SECURITY)) {
             return;
         }
@@ -622,7 +615,9 @@ public class HttpSecurityProcessor {
 
                 var mapDescriptorType = DescriptorUtils.typeToString(
                         ParameterizedType.create(Map.class, Type.create(MethodDescription.class), Type.create(String.class)));
-                if (authZPolicyInstancesItem.methodToPolicyName.isEmpty()) {
+                var methodToPolicyName = gatherAuthorizationPolicyInstances(combinedIndexBuildItem,
+                        securityTransformerBuildItem);
+                if (methodToPolicyName.isEmpty()) {
                     // generate:
                     // protected Map<MethodDescription, String> getMethodToPolicyName() { Map.of(); }
                     try (var mc = cc.getMethodCreator(MethodDescriptor.ofMethod(AuthorizationPolicyStorage.class,
@@ -659,7 +654,7 @@ public class HttpSecurityProcessor {
                             AuthorizationPolicyStorage.MethodsToPolicyBuilder.class, "addMethodToPolicyName",
                             AuthorizationPolicyStorage.MethodsToPolicyBuilder.class, String.class, String.class, String.class,
                             String[].class);
-                    for (var e : authZPolicyInstancesItem.methodToPolicyName.entrySet()) {
+                    for (var e : methodToPolicyName.entrySet()) {
                         MethodInfo securedMethod = e.getKey();
                         String policyNameStr = e.getValue();
 

@@ -308,15 +308,7 @@ public class DevServicesDatasourceProcessor {
                 Map<String, Function<DatasourceStartable, String>> properties = devDbConfigurationHandlerBuildItem
                         .getDeferredConfigProviderFunction().apply(
                                 dbName);
-                for (Map.Entry<String, Function<DatasourceStartable, String>> entry : properties.entrySet()) {
-                    if (entry.getKey().contains(".jdbc.") && entry.getKey().endsWith(".url")) {
-                        if (capabilities.isCapabilityWithPrefixPresent(Capability.AGROAL)) {
-                            devDebProperties.put(entry.getKey(), entry.getValue());
-                        }
-                    } else {
-                        devDebProperties.put(entry.getKey(), entry.getValue());
-                    }
-                }
+                processConfigMap(capabilities, properties, devDebProperties);
             }
 
             setDataSourceProperties(devDebProperties, dbName, "username", d -> d.runningDevServicesDatasource().username());
@@ -324,7 +316,9 @@ public class DevServicesDatasourceProcessor {
 
             DevServicesResultBuildItem buildItem = devDbProvider
                     .getComposeBuilder(launchMode, useSharedNetwork, containerConfig, composeProjectBuildItem)
-                    .map(b -> b.build())
+                    .map(b -> b.builder()
+                            .config(makeConfigMapForRunningDatasource(dbName, capabilities, configHandlers, b.datasource()))
+                            .build())
                     .orElseGet(() -> devDbProvider
                             .createDatabaseBuilder(
                                     ConfigUtils.getFirstOptionalValue(DataSourceUtil.dataSourcePropertyKeys(dbName, "username"),
@@ -332,7 +326,7 @@ public class DevServicesDatasourceProcessor {
                                     ConfigUtils.getFirstOptionalValue(DataSourceUtil.dataSourcePropertyKeys(dbName, "password"),
                                             String.class),
                                     dbName, containerConfig,
-                                    launchMode, devServicesConfig.timeout())
+                                    launchMode, useSharedNetwork, devServicesConfig.timeout())
                             .serviceConfig(configForWhichChangesShouldTriggerARestart)
                             .configProvider(devDebProperties)
                             .postStartHook((s) -> {
@@ -488,26 +482,8 @@ public class DevServicesDatasourceProcessor {
             setDataSourceProperties(propertiesMap, dbName, devServicesPrefix + "reuse",
                     String.valueOf(dataSourceBuildTimeConfig.devservices().reuse()));
 
-            Map<String, String> devDebProperties = new HashMap<>();
-            for (DevServicesDatasourceConfigurationHandlerBuildItem devDbConfigurationHandlerBuildItem : configHandlers) {
-                Map<String, String> properties = devDbConfigurationHandlerBuildItem.getConfigProviderFunction().apply(dbName,
-                        datasource);
-                for (Map.Entry<String, String> entry : properties.entrySet()) {
-                    if (entry.getKey().contains(".jdbc.") && entry.getKey().endsWith(".url")) {
-                        if (capabilities.isCapabilityWithPrefixPresent(Capability.AGROAL)) {
-                            devDebProperties.put(entry.getKey(), entry.getValue());
-                        }
-                    } else {
-                        devDebProperties.put(entry.getKey(), entry.getValue());
-                    }
-                }
-            }
-            if (datasource.username() != null) {
-                setDataSourceProperties(devDebProperties, dbName, "username", datasource.username());
-            }
-            if (datasource.password() != null) {
-                setDataSourceProperties(devDebProperties, dbName, "password", datasource.password());
-            }
+            Map<String, String> devDebProperties = makeConfigMapForRunningDatasource(dbName, capabilities, configHandlers,
+                    datasource);
             compressor.close();
             logStart(datasource.id(), dataSourcePrettyName, defaultDbKind);
 
@@ -523,6 +499,37 @@ public class DevServicesDatasourceProcessor {
         } catch (Throwable t) {
             compressor.closeAndDumpCaptured();
             throw new RuntimeException(t);
+        }
+    }
+
+    private Map<String, String> makeConfigMapForRunningDatasource(String dbName, Capabilities capabilities,
+            List<DevServicesDatasourceConfigurationHandlerBuildItem> configHandlers,
+            DevServicesDatasourceProvider.RunningDevServicesDatasource datasource) {
+        Map<String, String> devDebProperties = new HashMap<>();
+        for (DevServicesDatasourceConfigurationHandlerBuildItem devDbConfigurationHandlerBuildItem : configHandlers) {
+            Map<String, String> properties = devDbConfigurationHandlerBuildItem.getConfigProviderFunction().apply(dbName,
+                    datasource);
+            processConfigMap(capabilities, properties, devDebProperties);
+        }
+        if (datasource.username() != null) {
+            setDataSourceProperties(devDebProperties, dbName, "username", datasource.username());
+        }
+        if (datasource.password() != null) {
+            setDataSourceProperties(devDebProperties, dbName, "password", datasource.password());
+        }
+        return devDebProperties;
+    }
+
+    private static <T> void processConfigMap(Capabilities capabilities, Map<String, T> properties,
+            Map<String, T> devDebProperties) {
+        for (Map.Entry<String, T> entry : properties.entrySet()) {
+            if (entry.getKey().contains(".jdbc.") && entry.getKey().endsWith(".url")) {
+                if (capabilities.isCapabilityWithPrefixPresent(Capability.AGROAL)) {
+                    devDebProperties.put(entry.getKey(), entry.getValue());
+                }
+            } else {
+                devDebProperties.put(entry.getKey(), entry.getValue());
+            }
         }
     }
 

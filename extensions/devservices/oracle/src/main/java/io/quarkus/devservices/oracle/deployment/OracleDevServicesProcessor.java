@@ -25,8 +25,6 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
-import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
-import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
@@ -49,9 +47,7 @@ public class OracleDevServicesProcessor {
 
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupOracle(
-            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-            DevServicesComposeProjectBuildItem composeProjectBuildItem,
-            DevServicesConfig devServicesConfig) {
+            DevServicesComposeProjectBuildItem composeProjectBuildItem) {
 
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.ORACLE, new DeferredDevServicesDatasourceProvider() {
             @Override
@@ -59,10 +55,7 @@ public class OracleDevServicesProcessor {
                     Optional<String> username,
                     Optional<String> password,
                     String datasourceName, DevServicesDatasourceContainerConfig containerConfig,
-                    LaunchMode launchMode, Optional<Duration> startupTimeout) {
-
-                boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
-                        devServicesSharedNetworkBuildItem);
+                    LaunchMode launchMode, boolean useSharedNetwork, Optional<Duration> startupTimeout) {
 
                 String effectiveUsername = containerConfig.getUsername().orElse(username.orElse(DEFAULT_DATABASE_USERNAME));
                 String effectivePassword = containerConfig.getPassword().orElse(password.orElse(DEFAULT_DATABASE_PASSWORD));
@@ -110,7 +103,7 @@ public class OracleDevServicesProcessor {
             }
 
             @Override
-            public Optional<DevServicesResultBuildItem.DiscoveredServiceBuilder> getComposeBuilder(LaunchMode launchMode,
+            public Optional<BuilderAndDatasource> getComposeBuilder(LaunchMode launchMode,
                     boolean useSharedNetwork, DevServicesDatasourceContainerConfig containerConfig,
                     DevServicesComposeProjectBuildItem composeProjectBuildItem) {
                 List<String> images = List.of(
@@ -118,12 +111,12 @@ public class OracleDevServicesProcessor {
                         "oracle");
 
                 return ComposeLocator.locateContainer(composeProjectBuildItem, images, PORT, launchMode, useSharedNetwork)
-                        .map(containerAddress -> {
-                            return DevServicesResultBuildItem.discovered()
-                                    .feature(Feature.JDBC_ORACLE)
-                                    .containerId(containerAddress.getId());
-                        });
+                        .map(containerAddress -> new BuilderAndDatasource(DevServicesResultBuildItem.discovered()
+                                .feature(Feature.JDBC_ORACLE)
+                                .containerId(containerAddress.getId()),
+                                configurator.composeRunningService(containerAddress, containerConfig)));
             }
+
         });
     }
 

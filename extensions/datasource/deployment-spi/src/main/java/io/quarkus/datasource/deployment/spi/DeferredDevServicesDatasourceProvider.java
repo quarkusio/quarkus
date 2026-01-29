@@ -13,10 +13,10 @@ public interface DeferredDevServicesDatasourceProvider extends GenericDevService
             Optional<String> password,
             String datasourceName,
             DevServicesDatasourceContainerConfig devServicesDatasourceContainerConfig,
-            LaunchMode launchMode,
+            LaunchMode launchMode, boolean useSharedNetwork,
             Optional<Duration> startupTimeout);
 
-    Optional<DevServicesResultBuildItem.DiscoveredServiceBuilder> getComposeBuilder(LaunchMode launchMode,
+    Optional<BuilderAndDatasource> getComposeBuilder(LaunchMode launchMode,
             boolean useSharedNetwork, DevServicesDatasourceContainerConfig containerConfig,
             DevServicesComposeProjectBuildItem composeProjectBuildItem);
 
@@ -24,4 +24,7 @@ public interface DeferredDevServicesDatasourceProvider extends GenericDevService
         return true;
     }
 
+    record BuilderAndDatasource(DevServicesResultBuildItem.DiscoveredServiceBuilder builder,
+            DevServicesDatasourceProvider.RunningDevServicesDatasource datasource) {
+    }
 }

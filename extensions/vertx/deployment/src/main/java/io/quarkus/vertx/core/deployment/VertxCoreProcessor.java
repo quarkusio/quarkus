@@ -6,8 +6,6 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.ServerSocket;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -245,11 +243,10 @@ class VertxCoreProcessor {
         // Override the Mutiny infrastructure ScheduledExecutorService to dispatch scheduled operations to a Vert.x timer
         recorder.wrapMainExecutorForMutiny(executorBuildItem.getExecutorProxy());
 
-        Collections.sort(vertxOptionsConsumers);
-        List<Consumer<VertxOptions>> consumers = new ArrayList<>(vertxOptionsConsumers.size());
-        for (VertxOptionsConsumerBuildItem x : vertxOptionsConsumers) {
-            consumers.add(x.getConsumer());
-        }
+        List<Consumer<VertxOptions>> consumers = vertxOptionsConsumers.stream()
+                .sorted()
+                .map(VertxOptionsConsumerBuildItem::getConsumer)
+                .toList();
 
         Supplier<Vertx> vertx = recorder.configureVertx(launchMode.getLaunchMode(), shutdown, consumers,
                 executorBuildItem.getExecutorProxy());

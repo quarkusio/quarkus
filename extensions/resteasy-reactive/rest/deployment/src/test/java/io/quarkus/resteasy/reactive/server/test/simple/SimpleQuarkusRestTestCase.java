@@ -6,6 +6,7 @@ import static io.quarkus.resteasy.reactive.server.test.simple.OptionalQueryParam
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.emptyString;
 
+import java.util.Arrays;
 import java.util.function.Supplier;
 
 import org.apache.http.HttpStatus;
@@ -52,7 +53,8 @@ public class SimpleQuarkusRestTestCase {
                                     ParameterWithFromString.class, BeanParamSubClass.class, FieldInjectedSubClassResource.class,
                                     BeanParamSuperClass.class, IllegalClassExceptionMapper.class,
                                     MyParameterProvider.class, MyParameterConverter.class, MyParameter.class,
-                                    NewParamsRestResource.class, InterfaceResource.class, InterfaceResourceImpl.class);
+                                    NewParamsRestResource.class, InterfaceResource.class, InterfaceResourceImpl.class,
+                                    TriParameterQueryParamResource.class, TriParameterFormParamResource.class);
                 }
             });
 
@@ -479,6 +481,80 @@ public class SimpleQuarkusRestTestCase {
     public void testInterfaceResource() {
         RestAssured.get("/iface")
                 .then().statusCode(200).body(Matchers.equalTo("Hello"));
+    }
+
+    @Test
+    public void testTriParameterQuery() {
+        testTriParameterQuery("/tri-parameter-query/string", "name", "Stef");
+        testTriParameterQuery("/tri-parameter-query/container/string", "string", "Stef");
+        testTriParameterQuery("/tri-parameter-query/integer", "name", "12");
+        testTriParameterQuery("/tri-parameter-query/container/integer", "integer", "12");
+
+        testTriParameterQuery("/tri-parameter-query/string-list", "name", "Stef", "Octave");
+        testTriParameterQuery("/tri-parameter-query/container/string-list", "stringList", "Stef", "Octave");
+        testTriParameterQuery("/tri-parameter-query/integer-list", "name", "1", "2");
+        testTriParameterQuery("/tri-parameter-query/container/integer-list", "integerList", "1", "2");
+
+        testTriParameterQuery("/tri-parameter-query/string-array", "name", "Stef", "Octave");
+        testTriParameterQuery("/tri-parameter-query/container/string-array", "stringArray", "Stef", "Octave");
+        testTriParameterQuery("/tri-parameter-query/integer-array", "name", "1", "2");
+        testTriParameterQuery("/tri-parameter-query/container/integer-array", "integerArray", "1", "2");
+        testTriParameterQuery("/tri-parameter-query/int-array", "name", "1", "2");
+        testTriParameterQuery("/tri-parameter-query/container/int-array", "intArray", "1", "2");
+    }
+
+    private void testTriParameterQuery(String endpoint, String paramName, String... values) {
+        // verify with nothing
+        Assertions.assertEquals("absent: true, cleared: false, set: false, value: null",
+                RestAssured.given()
+                        .get(endpoint)
+                        .asString());
+        // verify with cleared value
+        Assertions.assertEquals("absent: false, cleared: true, set: false, value: null",
+                RestAssured.given().queryParam(paramName, "").get(endpoint).asString());
+        // verify with set value
+        String expectedValues = values.length == 1 ? values[0] : Arrays.toString(values);
+        Assertions.assertEquals("absent: false, cleared: false, set: true, value: " + expectedValues,
+                RestAssured.given().queryParam(paramName, values).get(endpoint)
+                        .asString());
+
+    }
+
+    @Test
+    public void testTriParameterForm() {
+        testTriParameterForm("/tri-parameter-form/string", "name", "Stef");
+        testTriParameterForm("/tri-parameter-form/container/string", "string", "Stef");
+        testTriParameterForm("/tri-parameter-form/integer", "name", "12");
+        testTriParameterForm("/tri-parameter-form/container/integer", "integer", "12");
+
+        testTriParameterForm("/tri-parameter-form/string-list", "name", "Stef", "Octave");
+        testTriParameterForm("/tri-parameter-form/container/string-list", "stringList", "Stef", "Octave");
+        testTriParameterForm("/tri-parameter-form/integer-list", "name", "1", "2");
+        testTriParameterForm("/tri-parameter-form/container/integer-list", "integerList", "1", "2");
+
+        testTriParameterForm("/tri-parameter-form/string-array", "name", "Stef", "Octave");
+        testTriParameterForm("/tri-parameter-form/container/string-array", "stringArray", "Stef", "Octave");
+        testTriParameterForm("/tri-parameter-form/integer-array", "name", "1", "2");
+        testTriParameterForm("/tri-parameter-form/container/integer-array", "integerArray", "1", "2");
+        testTriParameterForm("/tri-parameter-form/int-array", "name", "1", "2");
+        testTriParameterForm("/tri-parameter-form/container/int-array", "intArray", "1", "2");
+    }
+
+    private void testTriParameterForm(String endpoint, String paramName, String... values) {
+        // verify with nothing
+        Assertions.assertEquals("absent: true, cleared: false, set: false, value: null",
+                RestAssured.given()
+                        .post(endpoint)
+                        .asString());
+        // verify with cleared value
+        Assertions.assertEquals("absent: false, cleared: true, set: false, value: null",
+                RestAssured.given().formParam(paramName, "").post(endpoint).asString());
+        // verify with set value
+        String expectedValues = values.length == 1 ? values[0] : Arrays.toString(values);
+        Assertions.assertEquals("absent: false, cleared: false, set: true, value: " + expectedValues,
+                RestAssured.given().formParam(paramName, values).post(endpoint)
+                        .asString());
+
     }
 
     @Test

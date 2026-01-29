@@ -5,7 +5,6 @@ import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReac
 import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.ROUTING_CONTEXT;
 import static io.quarkus.security.spi.SecurityTransformer.AuthorizationType.AUTHORIZATION_POLICY;
 import static io.quarkus.security.spi.SecurityTransformer.AuthorizationType.SECURITY_CHECK;
-import static io.quarkus.security.spi.SecurityTransformerBuildItem.createSecurityTransformer;
 import static io.quarkus.vertx.http.deployment.EagerSecurityInterceptorMethodsBuildItem.collectInterceptedMethods;
 import static java.util.stream.Collectors.toList;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DATE_FORMAT;
@@ -223,7 +222,6 @@ import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.spi.PermissionsAllowedMetaAnnotationBuildItem;
 import io.quarkus.security.spi.SecurityTransformer;
 import io.quarkus.security.spi.SecurityTransformerBuildItem;
-import io.quarkus.vertx.http.deployment.AuthorizationPolicyInstancesBuildItem;
 import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorMethodsBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
@@ -1768,7 +1766,6 @@ public class ResteasyReactiveProcessor {
 
     @BuildStep
     MethodScannerBuildItem integrateEagerSecurity(Capabilities capabilities, CombinedIndexBuildItem indexBuildItem,
-            Optional<AuthorizationPolicyInstancesBuildItem> authorizationPolicyInstancesItemOpt,
             List<EagerSecurityInterceptorMethodsBuildItem> eagerSecurityInterceptors, JaxRsSecurityConfig securityConfig,
             Optional<PermissionsAllowedMetaAnnotationBuildItem> permsAllowedMetaAnnotationItemOptional,
             Optional<SecurityTransformerBuildItem> securityTransformerBuildItem) {
@@ -1777,7 +1774,6 @@ public class ResteasyReactiveProcessor {
         }
         SecurityTransformer securityTransformer = SecurityTransformerBuildItem.createSecurityTransformer(
                 indexBuildItem.getIndex(), securityTransformerBuildItem);
-        var authZPolicyInstancesItem = authorizationPolicyInstancesItemOpt.get();
         var permsAllowedMetaAnnotationItem = permsAllowedMetaAnnotationItemOptional.get();
 
         final boolean applySecurityInterceptors = !eagerSecurityInterceptors.isEmpty();
@@ -1790,7 +1786,7 @@ public class ResteasyReactiveProcessor {
             public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
                     Map<String, Object> methodContext) {
                 var endpointImpl = ServerEndpointIndexer.findEndpointImplementation(method, actualEndpointClass, index);
-                boolean applyAuthorizationPolicy = shouldApplyAuthZPolicy(method, endpointImpl, authZPolicyInstancesItem);
+                boolean applyAuthorizationPolicy = shouldApplyAuthZPolicy(method, endpointImpl, securityTransformer);
                 if (applySecurityInterceptors) {
                     boolean isMethodIntercepted = interceptedMethods.containsKey(endpointImpl);
                     if (isMethodIntercepted) {
@@ -1813,8 +1809,23 @@ public class ResteasyReactiveProcessor {
     }
 
     private static boolean shouldApplyAuthZPolicy(MethodInfo method, MethodInfo endpointImpl,
-            AuthorizationPolicyInstancesBuildItem item) {
-        return item.applyAuthorizationPolicy(method) || item.applyAuthorizationPolicy(endpointImpl);
+            SecurityTransformer securityTransformer) {
+        if (securityTransformer.hasSecurityAnnotation(method, AUTHORIZATION_POLICY)
+                || securityTransformer.hasSecurityAnnotation(endpointImpl, AUTHORIZATION_POLICY)) {
+            return true;
+        }
+        // currently, we do not support combining security checks and authorization policy annotations
+        // so the most specific wins
+        if (securityTransformer.hasSecurityAnnotation(method, SECURITY_CHECK)
+                || securityTransformer.hasSecurityAnnotation(endpointImpl, SECURITY_CHECK)) {
+            return false;
+        }
+
+        // if they inherit class-level annotation
+        if (securityTransformer.hasSecurityAnnotation(method.declaringClass(), AUTHORIZATION_POLICY)) {
+            return true;
+        }
+        return securityTransformer.hasSecurityAnnotation(endpointImpl.declaringClass(), AUTHORIZATION_POLICY);
     }
 
     private static List<HandlerChainCustomizer> createEagerSecCustomizerWithInterceptor(

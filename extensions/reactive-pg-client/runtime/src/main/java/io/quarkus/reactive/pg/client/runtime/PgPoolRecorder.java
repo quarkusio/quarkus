@@ -23,6 +23,7 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.util.TypeLiteral;
 
 import io.quarkus.arc.ActiveResult;
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
@@ -32,6 +33,7 @@ import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.reactive.datasource.runtime.ConnectOptionsSupplier;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
+import io.quarkus.reactive.datasource.runtime.StealingHelper;
 import io.quarkus.reactive.pg.client.PgPoolCreator;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
@@ -97,8 +99,27 @@ public class PgPoolRecorder {
                         reactivePostgreRuntimeConfig.getValue().dataSources().get(dataSourceName).reactive().postgresql(),
                         context);
 
-                shutdown.addShutdownTask(pgPool::close);
-                return pgPool;
+                PgPool effectivePool;
+                if (Boolean.getBoolean("quarkus.reactive-datasource.monitor-stealing")) {
+                    try {
+                        StealingHelper helper = Arc.container().instance(StealingHelper.class).get();
+
+                        Class<?> wrapperClass = Class.forName("io.quarkus.reactive.pg.client.runtime.StealingPgPoolWrapper",
+                                true, Thread.currentThread().getContextClassLoader());
+
+                        effectivePool = (PgPool) wrapperClass.getConstructor(PgPool.class, String.class, StealingHelper.class)
+                                .newInstance(pgPool, dataSourceName, helper);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to initialize connection stealing monitor", e);
+                    }
+                } else {
+                    effectivePool = pgPool;
+                }
+
+                // 3. Setup shutdown (Must happen on the final wrapper, not the inner pool)
+                shutdown.addShutdownTask(effectivePool::close);
+
+                return effectivePool;
             }
         };
     }

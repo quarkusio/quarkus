@@ -2,7 +2,7 @@ import { LitElement, html, css} from 'lit';
 import { observeState } from 'lit-element-state';
 import '@vaadin/icon';
 import '@vaadin/dialog';
-import { dialogHeaderRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
+import { dialogHeaderRenderer, dialogRenderer, dialogFooterRenderer } from '@vaadin/dialog/lit.js';
 import '@qomponent/qui-badge';
 import { JsonRpc } from 'jsonrpc';
 import { notifier } from 'notifier';
@@ -76,6 +76,7 @@ export class QwcExtension extends observeState(LitElement) {
     
         .guide, .more, .config, .fav {
             visibility:hidden;
+            --vaadin-icon-size: var(--lumo-font-size-m);
         }
 
         .icon {
@@ -130,7 +131,8 @@ export class QwcExtension extends observeState(LitElement) {
                   `,
                   []
                 )}
-                ${dialogRenderer(() => this._renderDialog(), this.name)}
+                ${dialogRenderer(() => this._renderDialog(), [])}
+                ${dialogFooterRenderer(() => this._renderUninstallButton(), [this.installed, connectionState.current.isConnected])}
             ></vaadin-dialog>
 
             <div class="card ${this.clazz}">
@@ -275,7 +277,6 @@ export class QwcExtension extends observeState(LitElement) {
                     <td>${this._renderExtensionDependencies()}</td>
                 </tr>
             </table>
-            ${this._renderUninstallButton()}
         `;
     }
 
@@ -296,11 +297,11 @@ export class QwcExtension extends observeState(LitElement) {
 
     _uninstall(){
         this._dialogOpened = false;
-        notifier.showInfoMessage(this.name + " removal in progress");
+        notifier.showInfoMessage(this.name + " " + msg('removal in progress', { id: 'extensions-removing' }));
         this.jsonRpc.removeExtension({extensionArtifactId:this.artifact}).then(jsonRpcResponse => {
             let outcome = jsonRpcResponse.result;
             if(!outcome){
-                notifier.showErrorMessage(name + " " + msg('removal in progress', { id: 'extensions-removing' }));
+                notifier.showErrorMessage(this.name + " " + msg('removal failed', { id: 'extensions-remove-failed' }));
             }
         });
     }

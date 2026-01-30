@@ -166,8 +166,9 @@ public class ArcContainerImpl implements ArcContainer {
         // register built-in beans
         addBuiltInBeans(beans, beansByRawType);
 
-        interceptors.sort(Comparator.comparingInt(InjectableInterceptor::getPriority));
-        decorators.sort(Comparator.comparingInt(InjectableDecorator::getPriority));
+        Comparator<InjectableBean<?>> injectableBeanComparator = new InjectableBeanComparator();
+        interceptors.sort(injectableBeanComparator);
+        decorators.sort(injectableBeanComparator);
 
         resolved = new ComputingCache<>(this::resolve);
         beansByName = new ComputingCache<>(this::resolve);
@@ -1095,5 +1096,12 @@ public class ArcContainerImpl implements ArcContainer {
     }
 
     private record TypeAndQualifiers(Type requiredType, Set<Annotation> qualifiers) {
+    }
+
+    private static class InjectableBeanComparator implements Comparator<InjectableBean<?>> {
+        @Override
+        public int compare(InjectableBean o1, InjectableBean o2) {
+            return Integer.compare(o1.getPriority(), o2.getPriority());
+        }
     }
 }

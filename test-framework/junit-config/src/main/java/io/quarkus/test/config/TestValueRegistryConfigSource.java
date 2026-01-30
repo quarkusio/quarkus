@@ -6,9 +6,9 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.engine.support.store.Namespace;
 import org.junit.platform.engine.support.store.NamespacedHierarchicalStore;
 
-import io.quarkus.registry.ValueRegistry;
-import io.quarkus.registry.ValueRegistry.RuntimeInfo;
 import io.quarkus.runtime.ValueRegistryConfigSource;
+import io.quarkus.value.registry.ValueRegistry;
+import io.quarkus.value.registry.ValueRegistry.RuntimeInfo;
 import io.smallrye.config.common.AbstractConfigSource;
 
 /**

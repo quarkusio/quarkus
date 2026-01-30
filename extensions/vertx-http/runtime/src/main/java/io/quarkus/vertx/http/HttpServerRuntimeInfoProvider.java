@@ -1,7 +1,7 @@
 package io.quarkus.vertx.http;
 
-import io.quarkus.registry.RuntimeInfoProvider;
-import io.quarkus.registry.ValueRegistry;
+import io.quarkus.value.registry.RuntimeInfoProvider;
+import io.quarkus.value.registry.ValueRegistry;
 
 /**
  * Registers the {@link HttpServer} with {@link ValueRegistry}.

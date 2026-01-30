@@ -1,6 +1,6 @@
 package io.quarkus.test.junit;
 
-import static io.quarkus.registry.ValueRegistry.RuntimeKey.key;
+import static io.quarkus.value.registry.ValueRegistry.RuntimeKey.key;
 
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
@@ -9,7 +9,7 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
-import io.quarkus.registry.ValueRegistry;
+import io.quarkus.value.registry.ValueRegistry;
 
 /**
  * A parameter resolver for JUnit to allow the resolution of {@link ValueRegistry} and {@link ValueRegistry.RuntimeInfo}

@@ -1,4 +1,4 @@
-package io.quarkus.registry;
+package io.quarkus.value.registry;
 
 import java.util.Objects;
 

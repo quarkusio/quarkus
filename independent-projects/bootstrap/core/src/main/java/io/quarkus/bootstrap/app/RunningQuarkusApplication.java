@@ -3,7 +3,7 @@ package io.quarkus.bootstrap.app;
 import java.lang.annotation.Annotation;
 import java.util.Optional;
 
-import io.quarkus.registry.ValueRegistry;
+import io.quarkus.value.registry.ValueRegistry;
 
 public interface RunningQuarkusApplication extends AutoCloseable {
     ClassLoader getClassLoader();

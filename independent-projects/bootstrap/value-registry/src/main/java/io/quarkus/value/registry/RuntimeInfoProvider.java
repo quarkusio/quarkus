@@ -1,6 +1,6 @@
-package io.quarkus.registry;
+package io.quarkus.value.registry;
 
-import io.quarkus.registry.ValueRegistry.RuntimeKey;
+import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
 
 /**
  * A way to register {@link ValueRegistry.RuntimeInfo} with {@link ValueRegistry}. Implementations are free to

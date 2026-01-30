@@ -2,8 +2,8 @@ package io.quarkus.runtime;
 
 import java.util.Set;
 
-import io.quarkus.registry.ValueRegistry;
-import io.quarkus.registry.ValueRegistry.RuntimeInfo;
+import io.quarkus.value.registry.ValueRegistry;
+import io.quarkus.value.registry.ValueRegistry.RuntimeInfo;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 import io.smallrye.config.common.AbstractConfigSource;

@@ -12,10 +12,10 @@ import java.util.function.Function;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
-import io.quarkus.registry.ValueRegistry;
-import io.quarkus.registry.ValueRegistry.RuntimeKey;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.ListeningAddress;
+import io.quarkus.value.registry.ValueRegistry;
+import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
 import io.smallrye.config.SmallRyeConfig;
 
 public class TestHTTPResourceManager {

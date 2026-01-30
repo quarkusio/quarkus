@@ -1,7 +1,7 @@
 package io.quarkus.deployment.builditem;
 
 import io.quarkus.builder.item.MultiBuildItem;
-import io.quarkus.registry.RuntimeInfoProvider;
+import io.quarkus.value.registry.RuntimeInfoProvider;
 
 public final class ValueRegistryRuntimeInfoProviderBuildItem extends MultiBuildItem {
     private final Class<? extends RuntimeInfoProvider> runtimeInfoProvider;

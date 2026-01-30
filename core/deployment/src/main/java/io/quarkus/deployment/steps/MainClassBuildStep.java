@@ -77,9 +77,6 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
-import io.quarkus.registry.RuntimeInfoProvider;
-import io.quarkus.registry.RuntimeInfoProvider.RuntimeSource;
-import io.quarkus.registry.ValueRegistry;
 import io.quarkus.runtime.Application;
 import io.quarkus.runtime.ExecutionModeManager;
 import io.quarkus.runtime.LaunchMode;
@@ -93,6 +90,9 @@ import io.quarkus.runtime.ValueRegistryImpl.ConfigRuntimeSource;
 import io.quarkus.runtime.annotations.QuarkusMain;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.util.StepTiming;
+import io.quarkus.value.registry.RuntimeInfoProvider;
+import io.quarkus.value.registry.RuntimeInfoProvider.RuntimeSource;
+import io.quarkus.value.registry.ValueRegistry;
 
 public class MainClassBuildStep {
 

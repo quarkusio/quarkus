@@ -2,10 +2,10 @@ package io.quarkus.arc.runtime;
 
 import java.util.function.Supplier;
 
-import io.quarkus.registry.ValueRegistry;
-import io.quarkus.registry.ValueRegistry.RuntimeKey;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.value.registry.ValueRegistry;
+import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
 
 @Recorder
 public class ValueRegistryRecorder {

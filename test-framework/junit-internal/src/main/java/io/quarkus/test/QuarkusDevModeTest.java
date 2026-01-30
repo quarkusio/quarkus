@@ -57,10 +57,8 @@ import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.dev.testing.TestScanningLock;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.PathList;
-import io.quarkus.registry.ValueRegistry;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ValueRegistryImpl;
-import io.quarkus.runtime.ValueRegistryImpl.Builder;
 import io.quarkus.test.common.GroovyClassValue;
 import io.quarkus.test.common.ListeningAddress;
 import io.quarkus.test.common.PathTestHelper;
@@ -69,6 +67,7 @@ import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 import io.quarkus.test.config.TestConfigProviderResolver;
+import io.quarkus.value.registry.ValueRegistry;
 
 /**
  * A test extension for <strong>black-box</strong> testing of Quarkus development mode in extensions.

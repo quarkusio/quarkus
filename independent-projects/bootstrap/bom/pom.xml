@@ -54,7 +54,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-registry</artifactId>
+                <artifactId>quarkus-value-registry</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

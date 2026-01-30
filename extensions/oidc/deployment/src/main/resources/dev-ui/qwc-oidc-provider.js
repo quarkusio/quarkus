@@ -67,8 +67,11 @@ class OidcPropertiesState extends LitState {
             // when we are confident it won't happen again, however it is simple and it prevents ugly behavior
             const propertiesStateDontMatchesSessionState = sessionStorage.getItem('oidcPropertiesStateId')
                 !== response.result.propertiesStateId;
-            const logout = propertiesStateDontMatchesSessionState && response.result.alwaysLogoutUserInDevUiOnReload;
+            const alwaysLogoutUserInDevUiOnReload = sessionStorage.getItem('oidcDevServiceConfigHashCode')
+                !== response.result.devServiceConfigHashCode;
+            const logout = propertiesStateDontMatchesSessionState && alwaysLogoutUserInDevUiOnReload;
             sessionStorage.setItem('oidcPropertiesStateId', response.result.propertiesStateId);
+            sessionStorage.setItem('oidcDevServiceConfigHashCode', response.result.devServiceConfigHashCode);
 
             this.clearTestServiceResponses();
             propertiesState.clientId = response.result.clientId;

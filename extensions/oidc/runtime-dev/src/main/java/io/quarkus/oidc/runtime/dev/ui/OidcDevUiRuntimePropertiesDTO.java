@@ -35,7 +35,7 @@ public class OidcDevUiRuntimePropertiesDTO {
     private final boolean graphqlIsAvailable;
     private final String swaggerUiPath;
     private final String graphqlUiPath;
-    private final boolean alwaysLogoutUserInDevUiOnReload;
+    private final String devServiceConfigHashCode;
     private final String propertiesStateId;
     private final String logoutPath;
     private final String readSessionCookiePath;
@@ -44,7 +44,7 @@ public class OidcDevUiRuntimePropertiesDTO {
             String oidcProviderName, String oidcApplicationType, String oidcGrantType,
             boolean introspectionIsAvailable, String keycloakAdminUrl, List<String> keycloakRealms,
             boolean swaggerIsAvailable, boolean graphqlIsAvailable, String swaggerUiPath,
-            String graphqlUiPath, boolean alwaysLogoutUserInDevUiOnReload, String propertiesStateId,
+            String graphqlUiPath, String devServiceConfigHashCode, String propertiesStateId,
             String logoutPath, String readSessionCookiePath) {
         this.clientId = new OidcConfigPropertySupplier(CLIENT_ID_CONFIG_KEY).get(config);
         this.clientSecret = new OidcConfigPropertySupplier(CLIENT_SECRET_CONFIG_KEY, "").get(config);
@@ -66,7 +66,7 @@ public class OidcDevUiRuntimePropertiesDTO {
         this.graphqlIsAvailable = graphqlIsAvailable;
         this.swaggerUiPath = swaggerUiPath;
         this.graphqlUiPath = graphqlUiPath;
-        this.alwaysLogoutUserInDevUiOnReload = alwaysLogoutUserInDevUiOnReload;
+        this.devServiceConfigHashCode = devServiceConfigHashCode;
         this.propertiesStateId = propertiesStateId;
         this.logoutPath = logoutPath;
         this.readSessionCookiePath = readSessionCookiePath;
@@ -148,8 +148,8 @@ public class OidcDevUiRuntimePropertiesDTO {
         return graphqlUiPath;
     }
 
-    public boolean isAlwaysLogoutUserInDevUiOnReload() {
-        return alwaysLogoutUserInDevUiOnReload;
+    public String getDevServiceConfigHashCode() {
+        return devServiceConfigHashCode;
     }
 
     public String getPropertiesStateId() {

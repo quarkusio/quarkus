@@ -115,7 +115,12 @@ public class Channels {
         String host = clientConfig.host();
         int port = clientConfig.port();
         if (LaunchMode.current() == LaunchMode.TEST) {
-            port = clientConfig.testPort().orElse(grpcServer.getPort());
+            port = clientConfig.testPort().orElseGet(() -> {
+                LOGGER.info("LaunchMode TEST detected. Overriding existing port configuration for gRPC client/server. "
+                        + "Set quarkus.grpc.clients.\"client-name\".test-port to configure the test port");
+                return grpcServer.getPort();
+            });
+
             if (port == -1) {
                 // In same cases, a Channel may be created without the port being assigned
                 port = serverConfig.testPort();

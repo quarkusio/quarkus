@@ -558,7 +558,7 @@ class EventImpl<T> implements Event<T> {
      * synchronous or transactional observer for
      * a synchronous event, this exception stops the notification chain and the exception is propagated immediately. On the
      * other hand, an exception thrown
-     * during asynchronous event delivery never is never propagated directly. Instead, all the exceptions for a given
+     * during asynchronous event delivery is never propagated directly. Instead, all the exceptions for a given
      * asynchronous event are collected and then
      * made available together using CompletionException.
      *

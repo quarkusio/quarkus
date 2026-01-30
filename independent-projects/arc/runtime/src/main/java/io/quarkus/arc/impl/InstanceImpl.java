@@ -19,6 +19,7 @@ import java.util.function.Supplier;
 import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.AmbiguousResolutionException;
+import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.UnsatisfiedResolutionException;
 import jakarta.enterprise.inject.spi.InjectionPoint;
@@ -264,6 +265,10 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
             public H get() {
                 InjectionPoint prev = null;
                 if (resetCurrentInjectionPoint) {
+                    Set<Annotation> requiredQualifiers = InstanceImpl.this.requiredQualifiers;
+                    if (requiredQualifiers.isEmpty()) {
+                        requiredQualifiers = Set.of(Default.Literal.INSTANCE);
+                    }
                     prev = InjectionPointProvider.setCurrent(context, new InjectionPointImpl(injectionPointType, requiredType,
                             requiredQualifiers, targetBean, annotations, javaMember, position, isTransient));
                 }
@@ -317,6 +322,10 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
         CreationalContextImpl<T> ctx = creationalContext.child(bean);
         InjectionPoint prev = null;
         if (resetCurrentInjectionPoint) {
+            Set<Annotation> requiredQualifiers = this.requiredQualifiers;
+            if (requiredQualifiers.isEmpty()) {
+                requiredQualifiers = Set.of(Default.Literal.INSTANCE);
+            }
             prev = InjectionPointProvider.setCurrent(ctx, new InjectionPointImpl(injectionPointType, requiredType,
                     requiredQualifiers, targetBean, annotations, javaMember, position, isTransient));
         }

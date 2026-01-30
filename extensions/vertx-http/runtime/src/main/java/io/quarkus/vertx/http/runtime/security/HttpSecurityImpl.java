@@ -372,7 +372,7 @@ final class HttpSecurityImpl implements HttpSecurity {
         private boolean shared;
         private boolean applyToJaxRs;
         private String[] methods;
-        private HttpSecurityConfiguration.AuthenticationMechanism authMechanism;
+        private HttpSecurityConfiguration.AuthenticationMechanisms authMechanism;
         private AuthorizationPolicy authorizationPolicy;
 
         private HttpPermissionImpl(String[] paths) {
@@ -453,7 +453,18 @@ final class HttpSecurityImpl implements HttpSecurity {
             if (mechanism == null || mechanism.isBlank()) {
                 throw new IllegalArgumentException("Authentication mechanism must not be null or blank");
             }
-            this.authMechanism = new HttpSecurityConfiguration.AuthenticationMechanism(mechanism, null);
+            this.authMechanism = new HttpSecurityConfiguration.AuthenticationMechanisms(mechanism);
+            return this;
+        }
+
+        @Override
+        public HttpPermission authenticatedWith(Set<String> schemes) {
+            validateAuthenticationNotSetYet();
+            requireAuthenticationByDefault();
+            if (schemes == null || schemes.isEmpty()) {
+                throw new IllegalArgumentException("Authentication mechanism must not be null or emptz");
+            }
+            this.authMechanism = HttpSecurityConfiguration.AuthenticationMechanisms.from(schemes);
             return this;
         }
 
@@ -521,7 +532,7 @@ final class HttpSecurityImpl implements HttpSecurity {
         }
 
         @Override
-        public HttpSecurityConfiguration.AuthenticationMechanism getAuthMechanism() {
+        public HttpSecurityConfiguration.AuthenticationMechanisms getAuthMechanisms() {
             return authMechanism;
         }
 

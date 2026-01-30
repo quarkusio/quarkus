@@ -15,7 +15,6 @@ import jakarta.enterprise.event.Observes;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -45,10 +44,10 @@ import io.vertx.core.http.ClientAuth;
 import io.vertx.ext.web.RoutingContext;
 
 @Certificates(baseDir = "target/certs", certificates = @Certificate(name = "mtls-test", password = "secret", formats = Format.PKCS12, client = true))
-public class FluentApiAuthenticationMechanismSelectionTest {
+class FluentApiInclusiveAuthenticationMechanismSelectionTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+    static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
             .create(JavaArchive.class)
             .addClasses(AuthMechanismConfig.class, TestIdentityController.class, TestIdentityProvider.class,
                     PathHandler.class, TestTrustedIdentityProvider.class, CustomHttpSecurityPolicy.class,
@@ -60,194 +59,90 @@ public class FluentApiAuthenticationMechanismSelectionTest {
                     quarkus.http.ssl.certificate.trust-store-file=server-truststore.p12
                     quarkus.http.ssl.certificate.trust-store-password=secret
                     quarkus.http.auth.form.login-page=
+                    quarkus.http.auth.inclusive=true
                     """), "application.properties")
             .addAsResource(new File("target/certs/mtls-test-keystore.p12"), "server-keystore.p12")
             .addAsResource(new File("target/certs/mtls-test-server-truststore.p12"), "server-truststore.p12"));
 
-    @TestHTTPResource(value = "/mtls", tls = true)
-    URL url;
+    @TestHTTPResource(value = "/mtls-basic-inclusive", tls = true)
+    URL mTlsBasicInclusiveUrl;
 
-    @TestHTTPResource(value = "/mtls-basic", tls = true)
-    URL mTlsBasicUrl;
-
-    @TestHTTPResource(value = "/mtls-basic-form", tls = true)
-    URL mTlsBasicFormUrl;
+    @TestHTTPResource(value = "/mtls-basic-form-inclusive", tls = true)
+    URL mTlsBasicFormInclusiveUrl;
 
     @BeforeAll
-    public static void setup() {
+    static void setup() {
         TestIdentityController.resetRoles()
                 .add("admin", "admin", new StringPermission("openid"), new StringPermission("email"),
-                        new StringPermission("profile"))
-                .add("user", "user", new StringPermission("profile"));
+                        new StringPermission("profile"));
     }
 
     @Test
-    public void testForm() {
-        CookieFilter adminCookies = new CookieFilter();
-        loginUsingFormAuth(adminCookies, "admin");
-
-        // valid request
-        RestAssured
-                .given()
-                .filter(adminCookies)
-                .redirects().follow(false)
-                .when()
-                .get("/form/admin")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .body(equalTo("admin:/form/admin"));
-
-        // the same valid request but policy is applied because we added the header, so expect a failure
-        CookieFilter userCookies = new CookieFilter();
-        loginUsingFormAuth(userCookies, "user");
-        RestAssured
-                .given()
-                .filter(userCookies)
-                .redirects().follow(false)
-                .header("fail", "ignored")
-                .when()
-                .get("/form/admin")
-                .then()
-                .assertThat()
-                .statusCode(403);
-
-        // basic authentication -> authentication must fail
-        RestAssured
-                .given()
-                .auth().preemptive().basic("admin", "admin")
-                .redirects().follow(false)
-                .when()
-                .get("/form/admin")
-                .then()
-                .assertThat()
-                .statusCode(401);
-
-        // basic authentication & POST -> access is going to be denied as there are permissions with POST method
-        RestAssured
-                .given()
-                .auth().preemptive().basic("admin", "admin")
-                .redirects().follow(false)
-                .when()
-                .post("/form/admin")
-                .then()
-                .assertThat()
-                .statusCode(403);
-
-        // basic authentication & PUT -> access is granted because this method is specifically configured for 'basic'
-        RestAssured
-                .given()
-                .auth().preemptive().basic("admin", "admin")
-                .redirects().follow(false)
-                .when()
-                .put("/form/admin")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .body(equalTo("admin:/form/admin"));
-    }
-
-    @Test
-    public void testBasicAuth() {
-        basicAuthTest("/basic/admin", "admin:/basic/admin");
-    }
-
-    @Test
-    public void testCustomAuthenticationMechanismScheme() {
-        basicAuthTest("/custom-scheme/admin", "admin:/custom-scheme/admin");
-    }
-
-    @Test
-    public void testMutualTlsMechanism() {
-        RestAssured.given()
-                .keyStore("target/certs/mtls-test-client-keystore.p12", "secret")
-                .trustStore("target/certs/mtls-test-client-truststore.p12", "secret")
-                .get(url).then().statusCode(200).body(is("CN=localhost:/mtls"));
-        RestAssured.given()
-                .trustStore("target/certs/mtls-test-client-truststore.p12", "secret")
-                .get(url).then().statusCode(401);
-        try {
-            RestAssured
-                    .given()
-                    .auth().preemptive().basic("admin", "admin")
-                    .when()
-                    .get(url)
-                    .then()
-                    .assertThat()
-                    .statusCode(401);
-            Assertions.fail("Request should had fail because mTLS must be required");
-        } catch (Exception exception) {
-            Assertions.assertTrue(exception.getMessage().contains("PKIX path building failed"));
-        }
-    }
-
-    @Test
-    void testCombiningBasicAndMutualTls() {
+    void testCombiningBasicAndMutualTls_inclusiveAuthentication() {
         // anonymous user
-        RestAssured.given().get("/mtls-basic").then().statusCode(401);
+        RestAssured.given().get("/mtls-basic-inclusive").then().statusCode(401);
 
         // other mechanism, that must not be allowed for this path
-        RestAssured.given().header("custom-auth", "ignored").get("/mtls-basic").then().statusCode(401);
+        RestAssured.given().header("custom-auth", "ignored").get("/mtls-basic-inclusive").then().statusCode(401);
 
-        // only basic auth
+        // only basic auth - fail as we require both basic and mTLS
         RestAssured
                 .given()
                 .auth().preemptive().basic("admin", "admin")
                 .when()
-                .get("/mtls-basic")
+                .get("/mtls-basic-inclusive")
                 .then()
-                .statusCode(200)
-                .body(equalTo("admin:/mtls-basic"));
+                .statusCode(401);
 
-        // only mTLS
+        // only mTLS - fail as we require both basic and mTLS
         RestAssured.given()
                 .keyStore("target/certs/mtls-test-client-keystore.p12", "secret")
                 .trustStore("target/certs/mtls-test-client-truststore.p12", "secret")
-                .get(mTlsBasicUrl).then().statusCode(200).body(is("CN=localhost:/mtls-basic"));
+                .get(mTlsBasicInclusiveUrl).then().statusCode(401);
 
         // both basic and mTLS auth
         RestAssured.given()
                 .keyStore("target/certs/mtls-test-client-keystore.p12", "secret")
                 .trustStore("target/certs/mtls-test-client-truststore.p12", "secret")
                 .auth().preemptive().basic("admin", "admin")
-                .get(mTlsBasicUrl).then().statusCode(200).body(is("admin:/mtls-basic"));
+                .get(mTlsBasicInclusiveUrl).then().statusCode(200).body(is("CN=localhost:/mtls-basic-inclusive"));
     }
 
     @Test
-    void testCombiningBasicAndMutualTlsAndForm() {
+    void testCombiningBasicAndMutualTlsAndForm_inclusiveAuthentication() {
         // anonymous user
-        RestAssured.given().redirects().follow(false).get("/mtls-basic-form").then().statusCode(401);
+        RestAssured.given().redirects().follow(false).get("/mtls-basic-form-inclusive").then().statusCode(401);
 
         // other mechanism, that must not be allowed for this path
-        RestAssured.given().redirects().follow(false).header("custom-auth", "ignored").get("/mtls-basic-form").then()
+        RestAssured.given().redirects().follow(false).header("custom-auth", "ignored").get("/mtls-basic-form-inclusive").then()
                 .statusCode(401);
 
-        // only basic auth
+        // only basic auth - fail as we require all three - basic, form and mTLS
         RestAssured
                 .given()
                 .auth().preemptive().basic("admin", "admin")
                 .when()
-                .get("/mtls-basic-form")
+                .get("/mtls-basic-form-inclusive")
                 .then()
-                .statusCode(200)
-                .body(equalTo("admin:/mtls-basic-form"));
+                .statusCode(401);
 
-        // only mTLS
+        // only mTLS - fail as we require all three - basic, form and mTLS
         RestAssured.given()
                 .keyStore("target/certs/mtls-test-client-keystore.p12", "secret")
                 .trustStore("target/certs/mtls-test-client-truststore.p12", "secret")
-                .get(mTlsBasicFormUrl).then().statusCode(200).body(is("CN=localhost:/mtls-basic-form"));
+                .get(mTlsBasicFormInclusiveUrl)
+                .then()
+                .statusCode(401);
 
-        // only form
+        // only form - fail as we require all three - basic, form and mTLS
         CookieFilter adminCookies = new CookieFilter();
         loginUsingFormAuth(adminCookies, "admin");
         RestAssured
                 .given()
                 .filter(adminCookies)
-                .get("/mtls-basic-form")
+                .get("/mtls-basic-form-inclusive")
                 .then()
-                .statusCode(200)
-                .body(equalTo("admin:/mtls-basic-form"));
+                .statusCode(401);
 
         // all three - basic, form and mTLS auth
         RestAssured.given()
@@ -255,33 +150,10 @@ public class FluentApiAuthenticationMechanismSelectionTest {
                 .trustStore("target/certs/mtls-test-client-truststore.p12", "secret")
                 .filter(adminCookies)
                 .auth().preemptive().basic("admin", "admin")
-                .get(mTlsBasicFormUrl).then().statusCode(200).body(is("admin:/mtls-basic-form"));
-    }
-
-    private static void basicAuthTest(String s, String operand) {
-        RestAssured
-                .given()
-                .auth().preemptive().basic("admin", "admin")
-                .when()
-                .get(s)
+                .get(mTlsBasicFormInclusiveUrl)
                 .then()
-                .assertThat()
                 .statusCode(200)
-                .body(equalTo(operand));
-        RestAssured
-                .given()
-                .auth().preemptive().basic("user", "user")
-                .when()
-                .get(s)
-                .then()
-                .assertThat()
-                .statusCode(403);
-        RestAssured
-                .given()
-                .get(s)
-                .then()
-                .assertThat()
-                .statusCode(401);
+                .body(is("CN=localhost:/mtls-basic-form-inclusive"));
     }
 
     private static void loginUsingFormAuth(CookieFilter adminCookies, String user) {
@@ -301,31 +173,20 @@ public class FluentApiAuthenticationMechanismSelectionTest {
                         detailedCookie().value(notNullValue()).path(equalTo("/")));
     }
 
-    public static class AuthMechanismConfig {
+    static class AuthMechanismConfig {
 
         void configure(@Observes HttpSecurity httpSecurity) {
             httpSecurity
                     .mechanism(new CustomSchemeAuthenticationMechanism())
                     .basic()
-                    .mTLS(MTLS.builder().authentication(ClientAuth.REQUEST).rolesMapping("localhost", "admin").priority(1005)
-                            .build())
-                    .get("/form/admin").form().authorization()
-                    .policy(identity -> "admin".equals(identity.getPrincipal().getName()))
-                    .put("/form/admin").basic().authorization()
-                    .policy(identity -> "admin".equals(identity.getPrincipal().getName()))
-                    .path("/basic/admin").methods("GET").basic().authorization().permissions("openid", "email", "profile")
-                    .path("/custom-scheme/admin").authenticatedWith("custom-scheme").policy(new CustomHttpSecurityPolicy())
-                    .path("/custom-instance/admin").authenticatedWith("custom-scheme").authorization()
-                    .policy((identity, event) -> identity.hasRole("admin")
-                            && event.normalizedPath().endsWith("/custom-instance/admin"))
-                    .path("/mtls-basic").authenticatedWith(Set.of("basic", "x509")).roles("admin")
-                    .path("/mtls-basic-form").authenticatedWith(Set.of("form", "basic", "x509")).roles("admin")
-                    .path("/mtls").mTLS();
+                    .mTLS(MTLS.builder().authentication(ClientAuth.REQUEST).rolesMapping("localhost", "admin").build())
+                    .path("/mtls-basic-inclusive").authenticatedWith(Set.of("basic", "x509")).roles("admin")
+                    .path("/mtls-basic-form-inclusive").authenticatedWith(Set.of("form", "basic", "x509")).roles("admin");
         }
 
     }
 
-    public static final class CustomHttpSecurityPolicy implements HttpSecurityPolicy {
+    static final class CustomHttpSecurityPolicy implements HttpSecurityPolicy {
         @Override
         public Uni<CheckResult> checkPermission(RoutingContext request, Uni<SecurityIdentity> identityUni,
                 AuthorizationRequestContext requestContext) {
@@ -338,7 +199,7 @@ public class FluentApiAuthenticationMechanismSelectionTest {
         }
     }
 
-    public static class CustomSchemeAuthenticationMechanism extends AbstractCustomAuthenticationMechanism {
+    static class CustomSchemeAuthenticationMechanism extends AbstractCustomAuthenticationMechanism {
         @Override
         public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
             return Uni.createFrom()
@@ -346,7 +207,7 @@ public class FluentApiAuthenticationMechanismSelectionTest {
         }
     }
 
-    public static abstract class AbstractCustomAuthenticationMechanism implements HttpAuthenticationMechanism {
+    static abstract class AbstractCustomAuthenticationMechanism implements HttpAuthenticationMechanism {
         private final HttpAuthenticationMechanism delegate = new BasicAuthenticationMechanism(null, false);
 
         @Override

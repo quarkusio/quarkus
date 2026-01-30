@@ -8,6 +8,7 @@ import java.util.Map;
 
 import jakarta.enterprise.inject.Instance;
 
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.security.spi.runtime.MethodDescription;
@@ -71,6 +72,18 @@ public class JaxRsPathMatchingHttpSecurityPolicy {
                         """.formatted(classAndMethodName, policyName));
             }
             policyNameToPolicy = Map.copyOf(annotationPoliciesOnly);
+        }
+        for (var httpPermission : HttpSecurityConfiguration.get().httpPermissions()) {
+            if (httpPermission.shouldApplyToJaxRs() && httpPermission.getAuthMechanisms() != null) {
+                // HTTP authentication mechanism is selected by HTTP authenticator that
+                // uses the AbstractPathMatchingHttpSecurityPolicy in the RoutingContext
+                // we cannot support this without bigger refactoring and the whole point of JAX-RS policy was to support
+                // the authentication annotations like @BasicAuthentication, so it doesn't make sense to support it
+                throw new ConfigurationException("""
+                        HttpSecurityPolicy that applies to JAXRS can be effective only after an authentication process
+                        has completed, therefore this policy can not be used to select '%s' authentication mechanism
+                        """.formatted(httpPermission.getAuthMechanisms().names()));
+            }
         }
     }
 

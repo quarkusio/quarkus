@@ -311,29 +311,43 @@ public class DevServicesDatasourceProcessor {
                 processConfigMap(capabilities, properties, devDebProperties);
             }
 
-            setDataSourceProperties(devDebProperties, dbName, "username", d -> d.runningDevServicesDatasource().username());
-            setDataSourceProperties(devDebProperties, dbName, "password", d -> d.runningDevServicesDatasource().password());
+            Optional<String> usernameFromConfig = ConfigUtils.getFirstOptionalValue(
+                    DataSourceUtil.dataSourcePropertyKeys(dbName, "username"),
+                    String.class);
+            Optional<String> passwordFromConfig = ConfigUtils.getFirstOptionalValue(
+                    DataSourceUtil.dataSourcePropertyKeys(dbName, "password"),
+                    String.class);
+
+            String feature = devDbProvider.getFeature();
 
             DevServicesResultBuildItem buildItem = devDbProvider
-                    .getComposeBuilder(launchMode, useSharedNetwork, containerConfig, composeProjectBuildItem)
-                    .map(b -> b.builder()
-                            .config(makeConfigMapForRunningDatasource(dbName, capabilities, configHandlers, b.datasource()))
+                    .findRunningComposeDatasource(launchMode, useSharedNetwork, containerConfig, composeProjectBuildItem)
+                    .map(datasource -> DevServicesResultBuildItem.discovered().feature(feature).containerId(datasource.id())
+                            .config(makeConfigMapForRunningDatasource(dbName, capabilities, configHandlers, datasource))
                             .build())
-                    .orElseGet(() -> devDbProvider
-                            .createDatabaseBuilder(
-                                    ConfigUtils.getFirstOptionalValue(DataSourceUtil.dataSourcePropertyKeys(dbName, "username"),
-                                            String.class),
-                                    ConfigUtils.getFirstOptionalValue(DataSourceUtil.dataSourcePropertyKeys(dbName, "password"),
-                                            String.class),
-                                    dbName, containerConfig,
-                                    launchMode, useSharedNetwork, devServicesConfig.timeout())
-                            .serviceConfig(configForWhichChangesShouldTriggerARestart)
-                            .configProvider(devDebProperties)
-                            .postStartHook((s) -> {
-                                String id = s.runningDevServicesDatasource().id();
-                                logStart(id, dataSourcePrettyName, defaultDbKind);
-                            })
-                            .build());
+                    .orElseGet(() -> {
+                        DatasourceStartable startable = devDbProvider
+                                .createDatasourceStartable(
+                                        usernameFromConfig,
+                                        passwordFromConfig,
+                                        dbName, containerConfig,
+                                        launchMode, useSharedNetwork, devServicesConfig.timeout());
+
+                        Map<String, String> credentials = new HashMap();
+                        setDataSourceProperties(credentials, dbName, "username", startable.getUsername());
+                        setDataSourceProperties(credentials, dbName, "password", startable.getPassword());
+
+                        return DevServicesResultBuildItem.owned().feature(feature).startable(() -> startable)
+                                .serviceName(dbName)
+                                .serviceConfig(configForWhichChangesShouldTriggerARestart)
+                                .config(credentials)
+                                .configProvider(devDebProperties)
+                                .postStartHook((s) -> {
+                                    String id = s.runningDevServicesDatasource().id();
+                                    logStart(id, dataSourcePrettyName, defaultDbKind);
+                                })
+                                .build();
+                    });
 
             compressor.close();
 

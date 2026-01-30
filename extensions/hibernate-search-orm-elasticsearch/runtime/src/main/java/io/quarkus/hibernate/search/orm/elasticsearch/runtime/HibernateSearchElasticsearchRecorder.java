@@ -244,7 +244,7 @@ public class HibernateSearchElasticsearchRecorder {
             // 2. Then we check if any configurers were supplied by a user be it through a property or via an extension:
             Optional<List<BeanReference<HibernateOrmSearchMappingConfigurer>>> beanReferences = HibernateSearchBeanUtil
                     .multiExtensionBeanReferencesFor(
-                            buildTimeConfig.mapping().configurer(),
+                            buildTimeConfig == null ? Optional.empty() : buildTimeConfig.mapping().configurer(),
                             HibernateOrmSearchMappingConfigurer.class,
                             persistenceUnitName, null, null);
             if (beanReferences.isPresent()) {

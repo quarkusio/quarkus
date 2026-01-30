@@ -111,7 +111,7 @@ public final class DevServicesDatasourceConfigurationHandlerBuildItem extends Mu
 
     private static List<String> datasourceURLPropNames(String dsName) {
         // we use datasourceURLPropNames to generate quoted and unquoted versions of the property key,
-        // because depending on whether a user configured deferred JDBC properties
+        // because depending on whether a user configured other JDBC properties
         // one of the URLs may be ignored
         // see https://github.com/quarkusio/quarkus/issues/21387
         return DataSourceUtil.dataSourcePropertyKeys(dsName, "jdbc.url");

@@ -19,7 +19,6 @@ import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DatasourceStartable;
 import io.quarkus.datasource.deployment.spi.DeferredDevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -169,11 +168,6 @@ public class OracleDevServicesProcessor {
         }
 
         @Override
-        public void start() {
-            super.start();
-        }
-
-        @Override
         public void close() {
             super.close();
         }
@@ -183,10 +177,5 @@ public class OracleDevServicesProcessor {
             return getEffectiveJdbcUrl();
         }
 
-        @Override
-        public DevServicesDatasourceProvider.RunningDevServicesDatasource runningDevServicesDatasource() {
-            return new DevServicesDatasourceProvider.RunningDevServicesDatasource(getContainerId(), getEffectiveJdbcUrl(),
-                    getReactiveUrl(), getUsername(), getPassword());
-        }
     }
 }

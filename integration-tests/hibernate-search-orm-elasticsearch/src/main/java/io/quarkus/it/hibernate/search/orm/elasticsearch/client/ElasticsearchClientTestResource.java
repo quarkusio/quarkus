@@ -114,7 +114,7 @@ public class ElasticsearchClientTestResource {
     }
 
     private static RestClient createRestClient() {
-        return RestClient.builder(new HttpHost("localhost", 9200)).build();
+        return RestClient.builder(new HttpHost("localhost", 19201)).build();
     }
 
     private static void checkStatus(Response response, int status) {

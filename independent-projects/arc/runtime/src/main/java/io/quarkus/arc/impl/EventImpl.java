@@ -567,14 +567,17 @@ class EventImpl<T> implements Event<T> {
      */
     protected interface ObserverExceptionHandler {
 
-        ObserverExceptionHandler IMMEDIATE_HANDLER = (t, m, e) -> {
-            if (t instanceof RuntimeException) {
-                throw (RuntimeException) t;
+        ObserverExceptionHandler IMMEDIATE_HANDLER = new ObserverExceptionHandler() {
+            @Override
+            public void handle(Throwable t, ObserverMethod<?> m, EventContext<?> e) {
+                if (t instanceof RuntimeException) {
+                    throw (RuntimeException) t;
+                }
+                if (t instanceof Error) {
+                    throw (Error) t;
+                }
+                throw new ObserverException(t);
             }
-            if (t instanceof Error) {
-                throw (Error) t;
-            }
-            throw new ObserverException(t);
         };
 
         void handle(Throwable throwable, ObserverMethod<?> observerMethod, EventContext<?> eventContext);

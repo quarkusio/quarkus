@@ -83,7 +83,7 @@ class ReactivePgClientProcessor {
 
     @BuildStep
     DevServicesDatasourceConfigurationHandlerBuildItem devDbHandler() {
-        return DevServicesDatasourceConfigurationHandlerBuildItem.reactive(DatabaseKind.POSTGRESQL);
+        return DevServicesDatasourceConfigurationHandlerBuildItem.deferredReactive(DatabaseKind.POSTGRESQL);
     }
 
     @BuildStep

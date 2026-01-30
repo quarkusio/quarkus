@@ -220,6 +220,11 @@
 
                         <!-- Make use of byteman frictionless -->
                         <parentFirstArtifact>org.jboss.byteman:byteman</parentFirstArtifact>
+
+                        <!-- Load Groovy parent first to minimize thread/memory leaking. -->
+                        <parentFirstArtifact>org.apache.groovy:groovy</parentFirstArtifact>
+                        <parentFirstArtifact>org.apache.groovy:groovy-json</parentFirstArtifact>
+                        <parentFirstArtifact>org.apache.groovy:groovy-xml</parentFirstArtifact>
                     </parentFirstArtifacts>
                     <runnerParentFirstArtifacts>
                         <runnerParentFirstArtifact>org.graalvm.sdk:nativeimage</runnerParentFirstArtifact>

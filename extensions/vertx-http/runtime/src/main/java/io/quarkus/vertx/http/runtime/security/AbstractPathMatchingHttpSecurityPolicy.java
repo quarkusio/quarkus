@@ -21,7 +21,7 @@ import io.quarkus.security.StringPermission;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.PolicyConfig;
 import io.quarkus.vertx.http.runtime.PolicyMappingConfig;
-import io.quarkus.vertx.http.runtime.security.HttpSecurityConfiguration.AuthenticationMechanism;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityConfiguration.AuthenticationMechanisms;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy.AuthorizationRequestContext;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy.CheckResult;
 import io.quarkus.vertx.http.runtime.security.ImmutablePathMatcher.PathMatch;
@@ -70,29 +70,16 @@ public class AbstractPathMatchingHttpSecurityPolicy {
         this.pathMatcher = builder.build();
     }
 
-    AuthenticationMechanism getAuthMechanism(RoutingContext routingContext) {
+    AuthenticationMechanisms getAuthMechanisms(RoutingContext routingContext) {
         if (sharedPermissionsPathMatchers != null) {
             for (ImmutablePathMatcher<List<HttpMatcher>> matcher : sharedPermissionsPathMatchers) {
-                AuthenticationMechanism authMechanism = getAuthMechanism(routingContext, matcher);
-                if (authMechanism != null) {
-                    return authMechanism;
+                AuthenticationMechanisms authMechanisms = getAuthMechanisms(routingContext, matcher);
+                if (authMechanisms != null) {
+                    return authMechanisms;
                 }
             }
         }
-        return getAuthMechanism(routingContext, pathMatcher);
-    }
-
-    /**
-     * @deprecated This method is internal by nature, if you have a good use case, please report it
-     *             so that we can document the use case and test it.
-     */
-    @Deprecated(forRemoval = true, since = "3.25")
-    public String getAuthMechanismName(RoutingContext routingContext) {
-        AuthenticationMechanism authenticationMechanism = getAuthMechanism(routingContext);
-        if (authenticationMechanism != null) {
-            return authenticationMechanism.name();
-        }
-        return null;
+        return getAuthMechanisms(routingContext, pathMatcher);
     }
 
     public boolean hasNoPermissions() {
@@ -173,11 +160,11 @@ public class AbstractPathMatchingHttpSecurityPolicy {
                 });
     }
 
-    private static AuthenticationMechanism getAuthMechanism(RoutingContext routingContext,
+    private static AuthenticationMechanisms getAuthMechanisms(RoutingContext routingContext,
             ImmutablePathMatcher<List<HttpMatcher>> pathMatcher) {
         for (HttpMatcher i : findHttpMatchers(routingContext, pathMatcher)) {
-            if (i.authMechanism != null) {
-                return i.authMechanism;
+            if (i.authMechanisms != null) {
+                return i.authMechanisms;
             }
         }
         return null;
@@ -198,7 +185,7 @@ public class AbstractPathMatchingHttpSecurityPolicy {
         }
 
         for (String path : httpPermission.getPaths()) {
-            HttpMatcher m = new HttpMatcher(httpPermission.getAuthMechanism(), httpPermission.getMethods(), policy);
+            HttpMatcher m = new HttpMatcher(httpPermission.getAuthMechanisms(), httpPermission.getMethods(), policy);
             List<HttpMatcher> perms = new ArrayList<>();
             perms.add(m);
             builder.addPath(path, perms);
@@ -429,7 +416,7 @@ public class AbstractPathMatchingHttpSecurityPolicy {
                 + policy1.name() + "' is allowed, but found: " + policyClassName1 + " and " + policyClassName2);
     }
 
-    record HttpMatcher(AuthenticationMechanism authMechanism, Set<String> methods, HttpSecurityPolicy checker) {
+    record HttpMatcher(AuthenticationMechanisms authMechanisms, Set<String> methods, HttpSecurityPolicy checker) {
         private static final HttpMatcher DENY = new HttpMatcher(null, Set.of(), DenySecurityPolicy.INSTANCE);
     }
 }

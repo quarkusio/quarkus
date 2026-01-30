@@ -986,16 +986,51 @@ quarkus.http.auth.permission.bearer.auth-mechanism=bearer
 quarkus.http.auth.permission.custom.paths=/hello/custom <3>
 quarkus.http.auth.permission.custom.policy=authenticated
 quarkus.http.auth.permission.custom.auth-mechanism=custom
+
+quarkus.http.auth.permission.basic-bearer.paths=/hello/basic-bearer <4>
+quarkus.http.auth.permission.basic-bearer.policy=authenticated
+quarkus.http.auth.permission.basic-bearer.auth-mechanism=basic,bearer
 ----
 <1> The REST endpoint `/hello/basic` can only ever be accessed by using the <<basic-auth>>.
 <2> The REST endpoint `/hello/bearer` can only ever be accessed by using the xref:security-oidc-bearer-token-authentication.adoc[OIDC bearer token authentication mechanism].
 <3> The REST endpoint `/hello/custom` can only ever be accessed by using a custom `HttpAuthenticationMechanism` with a `custom` authentication scheme.
+<4> The REST endpoint `/hello/basic-bearer` can be accessed either by using the xref:security-oidc-bearer-token-authentication.adoc[OIDC bearer token authentication mechanism], or by using the <<basic-auth>>.
 
 [IMPORTANT]
 ====
 Ensure that the value of the `auth-mechanism` property matches the authentication scheme supported by `HttpAuthenticationMechanism`, for example, `basic`, `bearer` or `custom`.
 For example, for the `quarkus.http.auth.permission.custom.auth-mechanism=custom` expression to be effective, a custom `HttpAuthenticationMechanism` implementation must set its authentication scheme to `custom` in its `HttpAuthenticationMechanism#getCredentialTransport` method implementation.
 ====
+
+==== Use HTTP Security Policy inclusive path-based authentication
+
+When an <<inclusive-authentication, inclusive authentication>> is enabled in a `strict` mode, every selected authentication mechanism must provide the `SecurityIdentity`.
+For example:
+
+[source,properties]
+----
+quarkus.http.auth.inclusive=true
+
+quarkus.http.auth.permission.basic-bearer.paths=/hello/basic-bearer
+quarkus.http.auth.permission.basic-bearer.policy=authenticated
+quarkus.http.auth.permission.basic-bearer.auth-mechanism=basic,bearer   <1>
+----
+<1> The REST endpoint `/hello/basic-bearer` can be accessed only if both the xref:security-oidc-bearer-token-authentication.adoc[OIDC bearer token authentication mechanism] and the <<basic-auth>> have successfully provided `SecurityIdentity`.
+
+When an <<inclusive-authentication, inclusive authentication>> is enabled in a `lax` mode, every selected authentication mechanism will have a chance to provide its own `SecurityIdentity`, with at least one of the mechanisms expected to produce `SecurityIdentity`.
+Consider the following example:
+
+[source,properties]
+----
+quarkus.http.auth.inclusive=true
+quarkus.http.auth.inclusive-mode=lax
+
+quarkus.http.auth.permission.basic-bearer.paths=/hello/basic-bearer
+quarkus.http.auth.permission.basic-bearer.policy=authenticated
+quarkus.http.auth.permission.basic-bearer.auth-mechanism=basic,bearer   <1>
+----
+<1> The REST endpoint `/hello/basic-bearer` uses both the xref:security-oidc-bearer-token-authentication.adoc[OIDC bearer token authentication mechanism] and the <<basic-auth>>.
+Access is granted if at least one of them successfully provides `SecurityIdentity`.
 
 [[use-annotations-for-path-based-auth]]
 ==== Use annotations to enable path-based authentication for Jakarta REST endpoints
@@ -1095,8 +1130,8 @@ NOTE: For consistency with various Jakarta EE specifications, it is recommended 
 
 ==== Use inclusive authentication to enable path-based authentication
 
-By default, Quarkus only supports <<path-based-authentication>> for one authentication mechanism per path.
-If more than one authentication mechanism must be used for the path-based authentication, you can write a custom `HttpAuthenticationMechanism` as documented in the xref:security-customization.adoc#dealing-with-more-than-one-http-auth-mechanisms[Dealing with more than one HttpAuthenticationMechanism] section of the Security Tips and Tricks guide.
+By default, Quarkus only supports <<use-annotations-for-path-based-auth>> for one authentication mechanism selected with annotation per REST endpoint.
+If more than one authentication mechanism must be used for the <<path-based-authentication>>, you can write a custom `HttpAuthenticationMechanism` as documented in the xref:security-customization.adoc#dealing-with-more-than-one-http-auth-mechanisms[Dealing with more than one HttpAuthenticationMechanism] section of the Security Tips and Tricks guide.
 Another option is to enable <<inclusive-authentication>> in the lax mode and write a custom `HttpSecurityPolicy` or `PermissionChecker` that verifies that all registered HTTP authentication mechanisms created their mechanism-specific `SecurityIdentity`.
 
 .Enable inclusive authentication in the lax mode

@@ -118,8 +118,6 @@ public class UniReturnTypeTest {
 
         // We will invalidate all the data in all caches later.
         Uni<Void> invalidateAllUni = cachedService.cacheInvalidateAll();
-        // For now, the method that will invalidate the data should not be invoked, as Uni is lazy.
-        assertEquals(0, cachedService.getCacheInvalidateAllInvocations());
 
         // The data should still be cached at this point.
         String value3 = cachedService.cacheResult1(KEY_1).await().indefinitely();

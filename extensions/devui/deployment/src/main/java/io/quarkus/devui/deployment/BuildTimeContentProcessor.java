@@ -28,6 +28,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -601,11 +602,9 @@ public class BuildTimeContentProcessor {
             ExtensionsBuildItem extensionsBuildItem) {
         // Menu section
         List<Page> sectionMenu = new ArrayList<>();
-        Collections.sort(internalPages, (t, t1) -> {
-            return ((Integer) t.getPosition()).compareTo(t1.getPosition());
-        });
 
-        for (InternalPageBuildItem internalPageBuildItem : internalPages) {
+        for (InternalPageBuildItem internalPageBuildItem : internalPages.stream()
+                .sorted(Comparator.comparing(InternalPageBuildItem::getPosition)).toList()) {
             List<Page> pages = internalPageBuildItem.getPages();
             for (Page page : pages) {
                 if (internalPageBuildItem.getMenuActionComponent() != null) {

@@ -3,6 +3,7 @@ package io.quarkus.builder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 
@@ -16,17 +17,20 @@ import io.smallrye.common.constraint.Assert;
 public final class BuildChain {
     private final Set<ItemId> initialIds;
     private final Set<ItemId> finalIds;
-    private final List<StepInfo> startSteps;
+    private final Set<StepInfo> startSteps;
     private final List<BuildProvider> providers;
     private final int endStepCount;
     private final ClassLoader classLoader;
+    private final Map<ItemId, int[]> producingOrdinals;
 
-    BuildChain(final Set<StepInfo> startSteps, BuildChainBuilder builder, final int endStepCount) {
+    BuildChain(final Set<StepInfo> startSteps, BuildChainBuilder builder, final int endStepCount,
+            Map<ItemId, int[]> producingOrdinals) {
         providers = builder.getProviders();
         initialIds = builder.getInitialIds();
         finalIds = builder.getFinalIds();
-        this.startSteps = new ArrayList<>(startSteps);
+        this.startSteps = startSteps;
         this.endStepCount = endStepCount;
+        this.producingOrdinals = producingOrdinals;
         this.classLoader = builder.getClassLoader();
     }
 
@@ -89,7 +93,7 @@ public final class BuildChain {
         return initialIds.contains(itemId);
     }
 
-    List<StepInfo> getStartSteps() {
+    Set<StepInfo> getStartSteps() {
         return startSteps;
     }
 
@@ -103,5 +107,15 @@ public final class BuildChain {
 
     int getEndStepCount() {
         return endStepCount;
+    }
+
+    /**
+     * Returns a map from {@link ItemId} to an array of ordinals of the {@link BuildStep}s producing the given
+     * {@link ItemId}. The ordinals array is sorted in the ascending order.
+     *
+     * @return the map
+     */
+    Map<ItemId, int[]> getProducingOrdinals() {
+        return producingOrdinals;
     }
 }

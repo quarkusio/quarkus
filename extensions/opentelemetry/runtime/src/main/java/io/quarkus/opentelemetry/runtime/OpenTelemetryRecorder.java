@@ -45,11 +45,6 @@ public class OpenTelemetryRecorder {
     }
 
     @StaticInit
-    public void resetGlobalOpenTelemetryForDevMode() {
-        GlobalOpenTelemetry.resetForTest();
-    }
-
-    @StaticInit
     public Supplier<DelayedAttributes> delayedAttributes(String quarkusVersion,
             String serviceName,
             String serviceVersion) {
@@ -68,6 +63,11 @@ public class OpenTelemetryRecorder {
                 return result;
             }
         };
+    }
+
+    @RuntimeInit
+    public void resetGlobalOpenTelemetryForDevMode() {
+        GlobalOpenTelemetry.resetForTest();
     }
 
     @RuntimeInit

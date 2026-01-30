@@ -1,7 +1,8 @@
 package io.quarkus.runtime;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 
 public final class JVMUnsafeWarningsControl {
 
@@ -11,16 +12,22 @@ public final class JVMUnsafeWarningsControl {
      * users with it.
      */
     public static void disableUnsafeRelatedWarnings() {
-        //No need for this in JVMs earlier than 24
+        // No need for this in JVMs earlier than 24
         if (Runtime.version().feature() < 24) {
             return;
         }
         try {
             Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
-            Method trySetMemoryAccessWarnedMethod = unsafeClass.getDeclaredMethod("trySetMemoryAccessWarned");
-            trySetMemoryAccessWarnedMethod.setAccessible(true);
-            trySetMemoryAccessWarnedMethod.invoke(null);
-        } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(
+                    unsafeClass,
+                    MethodHandles.lookup());
+            MethodHandle trySetMemoryAccessWarned = lookup.findStatic(
+                    unsafeClass,
+                    "trySetMemoryAccessWarned",
+                    MethodType.methodType(boolean.class));
+            @SuppressWarnings("unused")
+            boolean unused = (boolean) trySetMemoryAccessWarned.invokeExact();
+        } catch (Throwable e) {
             //let's ignore it - if we failed with our horrible hack, worst that could happen is that the ugly warning is printed
         }
     }

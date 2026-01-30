@@ -137,6 +137,8 @@ public class OpenTelemetryProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void openTelemetryBean(OpenTelemetryRecorder recorder,
+            CoreVertxBuildItem vertx,
+            LaunchModeBuildItem launchMode,
             OTelBuildConfig oTelBuildConfig,
             BuildProducer<SyntheticBeanBuildItem> syntheticProducer,
             BuildProducer<OpenTelemetrySdkBuildItem> openTelemetrySdkBuildItemBuildProducer) {
@@ -171,6 +173,13 @@ public class OpenTelemetryProcessor {
 
         openTelemetrySdkBuildItemBuildProducer.produce(new OpenTelemetrySdkBuildItem(
                 tracingEnabled, metricsEnabled, loggingEnabled, recorder.isOtelSdkEnabled()));
+
+        if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT || launchMode.getLaunchMode() == LaunchMode.TEST) {
+            recorder.resetGlobalOpenTelemetryForDevMode();
+        }
+
+        recorder.eagerlyCreateContextStorage();
+        recorder.storeVertxOnContextStorage(vertx.getVertx());
     }
 
     @BuildStep
@@ -302,21 +311,6 @@ public class OpenTelemetryProcessor {
             }
             transform.done();
         }));
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void createOpenTelemetry(
-            OpenTelemetryRecorder recorder,
-            CoreVertxBuildItem vertx,
-            LaunchModeBuildItem launchMode) {
-
-        if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT || launchMode.getLaunchMode() == LaunchMode.TEST) {
-            recorder.resetGlobalOpenTelemetryForDevMode();
-        }
-
-        recorder.eagerlyCreateContextStorage();
-        recorder.storeVertxOnContextStorage(vertx.getVertx());
     }
 
     @BuildStep

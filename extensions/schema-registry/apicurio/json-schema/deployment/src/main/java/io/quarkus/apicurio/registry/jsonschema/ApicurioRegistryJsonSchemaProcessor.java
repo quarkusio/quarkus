@@ -25,8 +25,9 @@ public class ApicurioRegistryJsonSchemaProcessor {
 
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("io.apicurio.registry.serde.Default4ByteIdHandler",
                 "io.apicurio.registry.serde.Legacy8ByteIdHandler",
+                "io.apicurio.registry.serde.OptimisticFallbackIdHandler",
                 "io.apicurio.registry.serde.fallback.DefaultFallbackArtifactProvider",
-                "io.apicurio.registry.serde.headers.DefaultHeadersHandler").methods().fields()
+                "io.apicurio.registry.serde.kafka.headers.DefaultHeadersHandler").methods().fields()
                 .build());
     }
 

@@ -5,7 +5,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,7 +43,6 @@ import io.quarkus.arc.impl.InvocationContexts;
 import io.quarkus.arc.impl.MapValueSupplier;
 import io.quarkus.arc.impl.Reflections;
 import io.quarkus.arc.impl.RemovedBeanImpl;
-import io.quarkus.arc.impl.Sets;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.gizmo2.desc.MethodDesc;
 
@@ -155,13 +153,13 @@ final class MethodDescs {
     static final MethodDesc CREATIONAL_CTX_ADD_DEP_TO_PARENT = MethodDesc.of(CreationalContextImpl.class,
             "addDependencyToParent", void.class, InjectableBean.class, Object.class, CreationalContext.class);
 
-    static final MethodDesc COLLECTIONS_SINGLETON = MethodDesc.of(Collections.class,
-            "singleton", Set.class, Object.class);
+    static final MethodDesc SET_OF_0 = MethodDesc.of(Set.class, "of", Set.class);
 
-    static final MethodDesc COLLECTIONS_SINGLETON_LIST = MethodDesc.of(Collections.class,
-            "singletonList", List.class, Object.class);
+    static final MethodDesc SET_OF_1 = MethodDesc.of(Set.class, "of", Set.class, Object.class);
 
-    static final MethodDesc SETS_OF = MethodDesc.of(Sets.class, "of", Set.class, Object[].class);
+    static final MethodDesc SET_OF_2 = MethodDesc.of(Set.class, "of", Set.class, Object.class, Object.class);
+
+    static final MethodDesc SET_OF_VARARGS = MethodDesc.of(Set.class, "of", Set.class, Object[].class);
 
     static final MethodDesc ARC_REQUIRE_CONTAINER = MethodDesc.of(Arc.class, "requireContainer", ArcContainer.class);
 

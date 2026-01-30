@@ -445,7 +445,7 @@ public class BeanGenerator extends AbstractGenerator {
 
                 // Bean types
                 RuntimeTypeCreator rttc = RuntimeTypeCreator.of(bc).withTCCL(tccl);
-                Expr typesArray = bc.newArray(Object.class, bean.getTypes()
+                List<LocalVar> beanTypes = bean.getTypes()
                         .stream()
                         .map(type -> {
                             try {
@@ -454,12 +454,16 @@ public class BeanGenerator extends AbstractGenerator {
                                 throw new IllegalStateException("Unable to construct type for " + bean + ": " + e.getMessage());
                             }
                         })
-                        .toList());
-                bc.set(cc.this_().field(beanTypesField), bc.invokeStatic(MethodDescs.SETS_OF, typesArray));
+                        .toList();
+                bc.set(cc.this_().field(beanTypesField), createSetOf(bc, beanTypes));
 
                 // Qualifiers
                 if (!bean.getQualifiers().isEmpty() && !bean.hasDefaultQualifiers()) {
-                    Expr qualifiersArray = bc.newArray(Object.class, bean.getQualifiers()
+                    if (bean.getTypes().stream().anyMatch(t -> t.name().toString().endsWith("NamedAnyBean"))) {
+                        System.out.println("Bean - " + bean.getTypes() + ": " + bean.getQualifiers());
+                    }
+
+                    List<Expr> qualifiers = bean.getQualifiers()
                             .stream()
                             .map(qualifier -> {
                                 BuiltinQualifier builtinQualifier = BuiltinQualifier.of(qualifier);
@@ -470,17 +474,17 @@ public class BeanGenerator extends AbstractGenerator {
                                     return annotationLiterals.create(bc, qualifierClass, qualifier);
                                 }
                             })
-                            .toList());
-                    bc.set(cc.this_().field(qualifiersField), bc.invokeStatic(MethodDescs.SETS_OF, qualifiersArray));
+                            .toList();
+                    bc.set(cc.this_().field(qualifiersField), createSetOf(bc, qualifiers));
                 }
 
                 // Stereotypes
                 if (!bean.getStereotypes().isEmpty()) {
-                    Expr stereotypesArray = bc.newArray(Object.class, bean.getStereotypes()
+                    List<Const> stereotypes = bean.getStereotypes()
                             .stream()
                             .map(stereotype -> Const.of(classDescOf(stereotype.getTarget())))
-                            .toList());
-                    bc.set(cc.this_().field(stereotypesField), bc.invokeStatic(MethodDescs.SETS_OF, stereotypesArray));
+                            .toList();
+                    bc.set(cc.this_().field(stereotypesField), createSetOf(bc, stereotypes));
                 }
 
                 int paramIdx = 0;
@@ -714,20 +718,21 @@ public class BeanGenerator extends AbstractGenerator {
                 });
             }));
 
+            // ResultHandle of Object[] holding all constructor args
+            LocalVar ctorArgsArray = bc.localVar("ctorArgs", bc.newArray(Object.class, injectableCtorParams));
+
             // Interceptor bindings
-            LocalVar bindingsArray = bc.localVar("bindings",
-                    bc.newEmptyArray(Object.class, aroundConstructInterception.bindings.size()));
-            int bindingsIndex = 0;
+            List<Expr> bindings = new ArrayList<>();
             for (AnnotationInstance binding : aroundConstructInterception.bindings) {
                 // Create annotation literals first
                 ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.name());
-                bc.set(bindingsArray.elem(bindingsIndex++), annotationLiterals.create(bc, bindingClass, binding));
+                bindings.add(annotationLiterals.create(bc, bindingClass, binding));
             }
-            // ResultHandle of Object[] holding all constructor args
-            LocalVar ctorArgsArray = bc.localVar("ctorArgs", bc.newArray(Object.class, injectableCtorParams));
+            LocalVar bindingSet = bc.localVar("bindingSet", createSetOf(bc, bindings));
+
             LocalVar invocationContext = bc.localVar("invocationContext", bc.invokeStatic(
                     MethodDescs.INVOCATION_CONTEXTS_AROUND_CONSTRUCT, constructor, ctorArgsArray, aroundConstructs,
-                    func, bc.invokeStatic(MethodDescs.SETS_OF, bindingsArray)));
+                    func, bindingSet));
             instance = bc.localVar("instance", Const.ofNull(providerType.classDesc()));
             bc.try_(tc -> {
                 tc.body(b1 -> {
@@ -918,20 +923,17 @@ public class BeanGenerator extends AbstractGenerator {
             }));
 
             // Interceptor bindings
-            LocalVar bindingsArray = bc.localVar("bindings",
-                    bc.newEmptyArray(Object.class, postConstructInterception.bindings.size()));
-            int bindingsIndex = 0;
+            List<Expr> bindings = new ArrayList<>();
             for (AnnotationInstance binding : postConstructInterception.bindings) {
                 // Create annotation literals first
                 ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.name());
-                bc.set(bindingsArray.elem(bindingsIndex++),
-                        annotationLiterals.create(bc, bindingClass, binding));
+                bindings.add(annotationLiterals.create(bc, bindingClass, binding));
             }
 
             // InvocationContextImpl.postConstruct(instance,postConstructs).proceed()
             LocalVar invocationContext = bc.localVar("invocationContext",
                     bc.invokeStatic(MethodDescs.INVOCATION_CONTEXTS_POST_CONSTRUCT, instance, postConstructs,
-                            bc.invokeStatic(MethodDescs.SETS_OF, bindingsArray), runnable));
+                            createSetOf(bc, bindings), runnable));
             bc.try_(tc -> {
                 tc.body(b1 -> {
                     b1.invokeInterface(MethodDesc.of(InvocationContext.class, "proceed", Object.class),

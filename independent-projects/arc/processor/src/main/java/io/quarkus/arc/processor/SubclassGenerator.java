@@ -537,19 +537,11 @@ public class SubclassGenerator extends AbstractGenerator {
 
         return bindings -> {
             String key = "b" + bindingIdx.i++;
-            Expr value;
-            if (bindings.size() == 1) {
-                value = bc.invokeStatic(MethodDescs.COLLECTIONS_SINGLETON,
-                        bindingsLiterals.computeIfAbsent(bindings.iterator().next(), bindingsLiteralFun));
-            } else {
-                LocalVar bindingsArray = bc.localVar("bindings", bc.newEmptyArray(Object.class, bindings.size()));
-                int bindingsIndex = 0;
-                for (AnnotationInstanceEquivalenceProxy binding : bindings) {
-                    bc.set(bindingsArray.elem(bindingsIndex), bindingsLiterals.computeIfAbsent(binding, bindingsLiteralFun));
-                    bindingsIndex++;
-                }
-                value = bc.invokeStatic(MethodDescs.SETS_OF, bindingsArray);
+            List<Expr> bindingsList = new ArrayList<>();
+            for (AnnotationInstanceEquivalenceProxy binding : bindings) {
+                bindingsList.add(bindingsLiterals.computeIfAbsent(binding, bindingsLiteralFun));
             }
+            Expr value = createSetOf(bc, bindingsList);
             bc.withMap(bindingsMap).put(Const.of(key), value);
             return key;
         };

@@ -10,7 +10,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -20,18 +19,18 @@ import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DatasourceStartable;
+import io.quarkus.datasource.deployment.spi.DeferredDevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ConsoleCommandBuildItem;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
-import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
-import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
-import io.quarkus.devservices.common.ContainerShutdownCloseable;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.Volumes;
@@ -53,79 +52,77 @@ public class PostgresqlDevServicesProcessor {
 
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupPostgres(
-            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-            DevServicesComposeProjectBuildItem composeProjectBuildItem,
-            DevServicesConfig devServicesConfig) {
-        return new DevServicesDatasourceProviderBuildItem(DatabaseKind.POSTGRESQL, new DevServicesDatasourceProvider() {
-            @SuppressWarnings("unchecked")
-            @Override
-            public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-                    String datasourceName, DevServicesDatasourceContainerConfig containerConfig,
-                    LaunchMode launchMode, Optional<Duration> startupTimeout) {
+            DevServicesComposeProjectBuildItem composeProjectBuildItem) {
+        return new DevServicesDatasourceProviderBuildItem(DatabaseKind.POSTGRESQL, new DeferredDevServicesDatasourceProvider() {
 
-                boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
-                        devServicesSharedNetworkBuildItem);
+            @Override
+            public String getFeature() {
+                return Feature.JDBC_POSTGRESQL.getName();
+            }
+
+            @Override
+            public DatasourceStartable createDatasourceStartable(
+                    Optional<String> username,
+                    Optional<String> password,
+                    String datasourceName, DevServicesDatasourceContainerConfig containerConfig,
+                    LaunchMode launchMode, boolean useSharedNetwork, Optional<Duration> startupTimeout) {
 
                 String effectiveUsername = containerConfig.getUsername().orElse(username.orElse(DEFAULT_DATABASE_USERNAME));
                 String effectivePassword = containerConfig.getPassword().orElse(password.orElse(DEFAULT_DATABASE_PASSWORD));
                 String effectiveDbName = containerConfig.getDbName().orElse(
                         DataSourceUtil.isDefault(datasourceName) ? DEFAULT_DATABASE_NAME : datasourceName);
 
-                Supplier<RunningDevServicesDatasource> createDevService = () -> {
-                    QuarkusPostgreSQLContainer container = new QuarkusPostgreSQLContainer(containerConfig.getImageName(),
-                            containerConfig.getFixedExposedPort(),
-                            composeProjectBuildItem.getDefaultNetworkId(),
-                            useSharedNetwork);
-                    startupTimeout.ifPresent(container::withStartupTimeout);
+                QuarkusPostgreSQLContainer container = new QuarkusPostgreSQLContainer(containerConfig.getImageName(),
+                        containerConfig.getFixedExposedPort(),
+                        composeProjectBuildItem.getDefaultNetworkId(),
+                        useSharedNetwork);
+                startupTimeout.ifPresent(container::withStartupTimeout);
 
-                    container.withUsername(effectiveUsername)
-                            .withPassword(effectivePassword)
-                            .withDatabaseName(effectiveDbName)
-                            .withReuse(containerConfig.isReuse());
-                    Labels.addDataSourceLabel(container, datasourceName);
-                    Volumes.addVolumes(container, containerConfig.getVolumes());
+                container.withUsername(effectiveUsername)
+                        .withPassword(effectivePassword)
+                        .withDatabaseName(effectiveDbName)
+                        .withReuse(containerConfig.isReuse());
+                Labels.addDataSourceLabel(container, datasourceName);
+                Volumes.addVolumes(container, containerConfig.getVolumes());
 
-                    container.withEnv(containerConfig.getContainerEnv());
+                container.withEnv(containerConfig.getContainerEnv());
 
-                    containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
-                    String augmentedCommand;
-                    if (containerConfig.getCommand().isPresent()) {
-                        String originalCommand = containerConfig.getCommand().get();
-                        augmentedCommand = originalCommand.contains(MAX_PREPARED_TRANSACTIONS) ? originalCommand
-                                : originalCommand + " " + DEFAULT_MAX_PREPARED_TRANSACTIONS;
-                    } else {
-                        augmentedCommand = DEFAULT_MAX_PREPARED_TRANSACTIONS;
-                    }
-                    container.setCommand(augmentedCommand);
+                containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
+                String augmentedCommand;
+                if (containerConfig.getCommand().isPresent()) {
+                    String originalCommand = containerConfig.getCommand().get();
+                    augmentedCommand = originalCommand.contains(MAX_PREPARED_TRANSACTIONS) ? originalCommand
+                            : originalCommand + " " + DEFAULT_MAX_PREPARED_TRANSACTIONS;
+                } else {
+                    augmentedCommand = DEFAULT_MAX_PREPARED_TRANSACTIONS;
+                }
+                container.setCommand(augmentedCommand);
 
-                    containerConfig.getInitScriptPath().ifPresent(container::withInitScripts);
-                    if (containerConfig.isShowLogs()) {
-                        container.withLogConsumer(new JBossLoggingConsumer(LOG));
-                    }
+                containerConfig.getInitScriptPath().ifPresent(container::withInitScripts);
+                if (containerConfig.isShowLogs()) {
+                    container.withLogConsumer(new JBossLoggingConsumer(LOG));
+                }
 
-                    container.start();
+                return container;
+            }
 
-                    LOG.info("Dev Services for PostgreSQL started.");
-
-                    return new RunningDevServicesDatasource(container.getContainerId(),
-                            container.getEffectiveJdbcUrl(),
-                            container.getReactiveUrl(),
-                            container.getUsername(),
-                            container.getPassword(),
-                            new ContainerShutdownCloseable(container, "PostgreSQL"));
-                };
+            @Override
+            public Optional<DevServicesDatasourceProvider.RunningDevServicesDatasource> findRunningComposeDatasource(
+                    LaunchMode launchMode,
+                    boolean useSharedNetwork, DevServicesDatasourceContainerConfig containerConfig,
+                    DevServicesComposeProjectBuildItem composeProjectBuildItem) {
                 List<String> images = List.of(
                         containerConfig.getImageName().orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("postgresql")),
                         "postgres");
                 return ComposeLocator
                         .locateContainer(composeProjectBuildItem, images, POSTGRESQL_PORT, launchMode, useSharedNetwork)
-                        .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig))
-                        .orElseGet(createDevService);
+                        .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig));
             }
+
         });
     }
 
-    private static class QuarkusPostgreSQLContainer extends PostgreSQLContainer {
+    private static class QuarkusPostgreSQLContainer extends PostgreSQLContainer implements DatasourceStartable {
 
         private static final String READY_REGEX = ".*database system is ready to accept connections.*\\s";
         private static final String SKIPPING_INITIALIZATION_REGEX = ".*PostgreSQL Database directory appears to contain a database; Skipping initialization:*\\s";
@@ -134,6 +131,7 @@ public class PostgresqlDevServicesProcessor {
         private final boolean useSharedNetwork;
 
         private final String hostName;
+        private DevServicesDatasourceProvider.RunningDevServicesDatasource runningDevServicesDatasource;
 
         public QuarkusPostgreSQLContainer(Optional<String> imageName, OptionalInt fixedExposedPort,
                 String defaultNetworkId, boolean useSharedNetwork) {
@@ -193,6 +191,25 @@ public class PostgresqlDevServicesProcessor {
 
         public String getReactiveUrl() {
             return getEffectiveJdbcUrl().replaceFirst("jdbc:", "vertx-reactive:");
+        }
+
+        @Override
+        public String getConnectionInfo() {
+            return getEffectiveJdbcUrl();
+        }
+
+        @Override
+        public void close() {
+            super.close();
+        }
+
+        @Override
+        public DevServicesDatasourceProvider.RunningDevServicesDatasource runningDevServicesDatasource() {
+            // Cache, since this is going to be called a lot
+            if (runningDevServicesDatasource == null) {
+                runningDevServicesDatasource = DatasourceStartable.super.runningDevServicesDatasource();
+            }
+            return runningDevServicesDatasource;
         }
     }
 }

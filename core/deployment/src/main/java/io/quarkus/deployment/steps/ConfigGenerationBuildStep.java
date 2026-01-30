@@ -366,6 +366,7 @@ public class ConfigGenerationBuildStep {
 
         RunTimeConfigurationGenerator.GenerateOperation
                 .builder()
+                .setLaunchMode(launchModeBuildItem.getLaunchMode())
                 .setBuildTimeReadResult(configItem.getReadResult())
                 .setClassOutput(new GeneratedClassGizmoAdaptor(generatedClass, false))
                 .setLiveReloadPossible(launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT

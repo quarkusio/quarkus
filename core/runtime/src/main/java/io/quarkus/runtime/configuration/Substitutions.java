@@ -19,10 +19,7 @@ import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
-
 import com.oracle.svm.core.annotate.Alias;
-import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.annotate.TargetElement;
@@ -33,13 +30,6 @@ import io.smallrye.config.ConfigMappingLoader;
 import io.smallrye.config.ConfigMappingMetadata;
 
 final class Substitutions {
-    @TargetClass(ConfigProviderResolver.class)
-    static final class Target_ConfigurationProviderResolver {
-
-        @Alias
-        @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
-        private static volatile ConfigProviderResolver instance;
-    }
 
     @TargetClass(ConfigMappingLoader.class)
     static final class Target_ConfigMappingLoader {

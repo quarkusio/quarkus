@@ -1,13 +1,16 @@
 package io.quarkus.arc.processor;
 
 import java.lang.reflect.Modifier;
+import java.util.List;
 
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.gizmo2.ClassOutput;
+import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.creator.BlockCreator;
 
 abstract class AbstractGenerator {
 
@@ -36,6 +39,26 @@ abstract class AbstractGenerator {
                 .withDebugInfo(false)
                 .withParameters(false)
                 .withLambdasAsAnonymousClasses(true);
+    }
+
+    /**
+     * Creates an optimized Set.of() call based on the number of elements.
+     * Uses Set.of(), Set.of(e1), Set.of(e1, e2), or Set.of(Object[]) depending on element count
+     * to avoid unnecessary array creation for small sets.
+     * <p>
+     * IMPORTANT: we need to make sure the provided elements don't contain duplicates.
+     *
+     * @param bc the block creator
+     * @param elements the list of elements to include in the set
+     * @return an expression representing the Set.of() call
+     */
+    static Expr createSetOf(BlockCreator bc, List<? extends Expr> elements) {
+        return switch (elements.size()) {
+            case 0 -> bc.invokeStatic(MethodDescs.SET_OF_0);
+            case 1 -> bc.invokeStatic(MethodDescs.SET_OF_1, elements.get(0));
+            case 2 -> bc.invokeStatic(MethodDescs.SET_OF_2, elements.get(0), elements.get(1));
+            default -> bc.invokeStatic(MethodDescs.SET_OF_VARARGS, bc.newArray(Object.class, elements));
+        };
     }
 
     /**

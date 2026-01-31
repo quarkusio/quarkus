@@ -4,13 +4,14 @@ import static io.quarkus.arc.processor.ClientProxyGenerator.MOCK_FIELD;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -305,19 +306,17 @@ public class ObserverGenerator extends AbstractGenerator {
 
                 Set<AnnotationInstance> qualifiers = observer.getQualifiers();
                 if (!qualifiers.isEmpty()) {
-                    LocalVar qualifiersArray = bc.localVar("qualifiers", bc.newEmptyArray(Annotation.class, qualifiers.size()));
-                    int i = 0;
+                    List<Expr> qualifiersList = new ArrayList<>();
                     for (AnnotationInstance qualifier : qualifiers) {
                         BuiltinQualifier builtin = BuiltinQualifier.of(qualifier);
                         if (builtin != null) {
-                            bc.set(qualifiersArray.elem(i), builtin.getLiteralInstance());
+                            qualifiersList.add(builtin.getLiteralInstance());
                         } else {
                             ClassInfo qualifierClass = observer.getBeanDeployment().getQualifier(qualifier.name());
-                            bc.set(qualifiersArray.elem(i), annotationLiterals.create(bc, qualifierClass, qualifier));
+                            qualifiersList.add(annotationLiterals.create(bc, qualifierClass, qualifier));
                         }
-                        i++;
                     }
-                    bc.set(cc.this_().field(observedQualifiersField), bc.invokeStatic(MethodDescs.SETS_OF, qualifiersArray));
+                    bc.set(cc.this_().field(observedQualifiersField), createSetOf(bc, qualifiersList));
                 }
 
                 if (mockField != null) {

@@ -19,7 +19,6 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
 
 class SubResourceAmbiguousInjectTest {
@@ -29,7 +28,6 @@ class SubResourceAmbiguousInjectTest {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClass(PortProviderUtil.class);
                     war.addClass(EnglishGreeterResource.class);
                     war.addClass(SpanishGreeterResource.class);
                     war.addClass(GreeterResource.class);

@@ -24,7 +24,7 @@
         <ksp-gradle-plugin.version>2.2.10-2.0.2</ksp-gradle-plugin.version> <!-- Kotlin Symbol Processing plugin used in a test -->
         <dokka.version>2.1.0</dokka.version>
         <scala.version>2.13.12</scala.version>
-        <scala-maven-plugin.version>4.9.8</scala-maven-plugin.version>
+        <scala-maven-plugin.version>4.9.9</scala-maven-plugin.version>
         <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->
         <scala-plugin.version>${scala-maven-plugin.version}</scala-plugin.version>
         <jboss-bridger-plugin.version>1.6.Final</jboss-bridger-plugin.version>
@@ -34,14 +34,14 @@
         <jandex-gradle-plugin.version>2.3.0</jandex-gradle-plugin.version>
 
         <asciidoctorj.version>3.0.0</asciidoctorj.version>
-        <htmlunit.version>4.20.0</htmlunit.version>
-        <javaparser-core.version>3.27.1</javaparser-core.version>
-        <jdeparser.version>2.0.3.Final</jdeparser.version>
+        <htmlunit.version>4.21.0</htmlunit.version>
+        <javaparser-core.version>3.28.0</javaparser-core.version>
+        <jdeparser.version>2.1.0</jdeparser.version>
         <subethasmtp.version>6.0.1</subethasmtp.version>
 
         <!-- Dev tools -->
         <freemarker.version>2.3.34</freemarker.version>
-        <commonmark.version>0.27.0</commonmark.version>
+        <commonmark.version>0.27.1</commonmark.version>
         <jgit.version>7.5.0.202512021534-r</jgit.version>
 
         <!-- Arquillian BOM -->
@@ -52,18 +52,18 @@
 
         <!-- These 2 properties are used in catalog-overrides.json -->
         <minimum-java-version>${maven.compiler.release}</minimum-java-version>
-        <recommended-java-version>21</recommended-java-version>
+        <recommended-java-version>25</recommended-java-version>
 
         <!--
         Supported Maven versions, interpreted as a version range (Also defined in quarkus-enforcer-rules)
          -->
-        <!-- TODO: once we can upgrade the minimum Maven version to use for Quarkus projects, let's use ${maven.min.version} again -->
-        <supported-maven-versions>[3.8.6,)</supported-maven-versions>
+        <!-- This version is more permissive than ${maven.min.version} as we usually have more requirements for the Quarkus build itself than for Quarkus projects -->
+        <supported-maven-versions>[3.9.0,)</supported-maven-versions>
 
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.9.12</proposed-maven-version>
         <maven-wrapper.version>3.3.4</maven-wrapper.version>
-        <gradle-wrapper.version>9.2.1</gradle-wrapper.version>
+        <gradle-wrapper.version>9.3.1</gradle-wrapper.version>
         <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
         <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
         <maven-plugin-plugin.version>3.8.1</maven-plugin-plugin.version>
@@ -85,11 +85,12 @@
         <junit-pioneer.version>2.3.0</junit-pioneer.version>
 
         <!-- Database images for JDBC/Reactive/Hibernate tests and devservices -->
-        <postgres.image>docker.io/library/postgres:17</postgres.image>
-        <mariadb.image>docker.io/library/mariadb:10.11</mariadb.image>
+        <postgres.image>docker.io/library/postgres:18</postgres.image>
+        <postgis.image>docker.io/postgis/postgis:18-3.6</postgis.image>
+        <mariadb.image>docker.io/library/mariadb:12.1</mariadb.image>
         <db2.image>icr.io/db2_community/db2:12.1.0.0</db2.image>
         <mssql.image>mcr.microsoft.com/mssql/server:2022-latest</mssql.image>
-        <mysql.image>docker.io/library/mysql:8.4</mysql.image>
+        <mysql.image>docker.io/library/mysql:9.5</mysql.image>
         <oracle.image>docker.io/gvenzl/oracle-free:23-slim-faststart</oracle.image>
         <mongo.image>docker.io/library/mongo:7.0</mongo.image>
 
@@ -97,12 +98,12 @@
         <junit4.version>4.13.2</junit4.version>
 
         <!-- The image to use for tests that run Keycloak -->
-        <keycloak.server.version>26.4.7</keycloak.server.version>
+        <keycloak.server.version>26.5.0</keycloak.server.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.server.version}</keycloak.docker.image>
 
         <unboundid-ldap.version>7.0.4</unboundid-ldap.version>
 
-        <assertj.version>3.27.6</assertj.version>
+        <assertj.version>3.27.7</assertj.version>
 
         <wiremock.version>3.13.2</wiremock.version>
         <wiremock-maven-plugin.version>7.3.0</wiremock-maven-plugin.version>
@@ -160,7 +161,7 @@
         <jakarta.jms-api.version>3.1.0</jakarta.jms-api.version>
 
         <!-- Quarkus Analytics -->
-        <properties-maven-plugin.version>1.2.1</properties-maven-plugin.version>
+        <properties-maven-plugin.version>1.3.0</properties-maven-plugin.version>
         <quarkus.analytics.disabled>true</quarkus.analytics.disabled>
 
         <!-- If PTS is enabled at the global level  -->

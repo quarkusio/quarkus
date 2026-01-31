@@ -67,7 +67,7 @@ public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
         }
 
         if (result && (catalog != null && catalog.hasMicrometerOtlp())) {
-            log.warnf("Multiple Micrometer registries found - OTLP and %s, no Prometheus scrapping required.", foundRegistry);
+            log.warnf("Multiple Micrometer registries found - OTLP and %s, no Prometheus scraping required.", foundRegistry);
             return false;
         }
 

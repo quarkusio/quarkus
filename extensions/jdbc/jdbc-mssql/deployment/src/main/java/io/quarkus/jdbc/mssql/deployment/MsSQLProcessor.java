@@ -12,6 +12,7 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
 import io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
@@ -25,6 +26,11 @@ public class MsSQLProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.JDBC_MSSQL);
+    }
+
+    @BuildStep
+    ModuleEnableNativeAccessBuildItem enableNativeAccess() {
+        return new ModuleEnableNativeAccessBuildItem("com.microsoft.sqlserver.jdbc");
     }
 
     @BuildStep

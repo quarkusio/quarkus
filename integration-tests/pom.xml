@@ -160,6 +160,7 @@
                 </property>
             </activation>
             <modules>
+                <module>core</module>
                 <module>avro-reload</module>
                 <module>awt</module>
                 <module>awt-packaging</module>
@@ -230,6 +231,7 @@
                 <module>hibernate-orm-data</module>
                 <module>hibernate-orm-panache-data</module>
                 <module>hibernate-orm-envers</module>
+                <module>hibernate-orm-spatial</module>
                 <module>vertx-http</module>
                 <module>vertx-http-compressors</module>
                 <module>vertx-web</module>
@@ -283,6 +285,7 @@
                 <module>reactive-mysql-client</module>
                 <module>reactive-mssql-client</module>
                 <module>reactive-oracle-client</module>
+<!--   disabled because of incremental build problems             <module>devservices</module>-->
                 <module>test-extension</module>
                 <module>amazon-lambda</module>
                 <module>amazon-lambda-s3event</module>
@@ -327,7 +330,9 @@
                 <module>smallrye-graphql</module>
                 <module>smallrye-graphql-client</module>
                 <module>smallrye-graphql-client-keycloak</module>
-                <module>smallrye-stork-registration</module>
+                <module>smallrye-stork-consul-registration-prod-mode</module>
+                <module>smallrye-stork-consul-registration</module>
+                <module>smallrye-stork-consul-registration-health-check</module>
                 <module>jpa-without-entity</module>
                 <module>quartz</module>
                 <module>quartz-deferred-datasource</module>

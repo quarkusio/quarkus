@@ -46,6 +46,8 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
     private static final Predicate<String> UBER_JAR_IGNORED_ENTRIES_PREDICATE = new IsEntryIgnoredForUberJarPredicate();
 
+    private static final Predicate<String> UBER_JAR_IGNORED_DUPLICATE_ENTRIES_PREDICATE = new IsDuplicateEntryIgnoredForUberJarPredicate();
+
     private static final Predicate<String> UBER_JAR_CONCATENATED_ENTRIES_PREDICATE = new Predicate<>() {
         @Override
         public boolean test(String path) {
@@ -186,22 +188,33 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                         mergeResourcePaths);
             }
 
-            Set<Set<Dependency>> explained = new HashSet<>();
+            Map<Set<Dependency>, List<String>> explained = new HashMap<>();
             for (Map.Entry<String, Set<Dependency>> entry : duplicateCatcher.entrySet()) {
                 if (entry.getValue().size() > 1) {
-                    if (explained.add(entry.getValue())) {
-                        LOG.warn("Dependencies with duplicate files detected. The dependencies " + entry.getValue()
-                                + " contain duplicate files, e.g. " + entry.getKey());
-                    }
+                    explained.computeIfAbsent(entry.getValue(), k -> new ArrayList<>()).add(entry.getKey());
                 }
             }
+            if (!explained.isEmpty()) {
+                for (Map.Entry<Set<Dependency>, List<String>> entry : explained.entrySet()) {
+                    var msg = new StringBuilder().append("Dependencies:");
+                    for (var dep : entry.getKey()) {
+                        msg.append(System.lineSeparator()).append("- ").append(dep.toCompactCoords());
+                    }
+                    msg.append(System.lineSeparator()).append("contain duplicate files:");
+                    for (var path : entry.getValue()) {
+                        msg.append(System.lineSeparator()).append("- ").append(path);
+                    }
+                    LOG.warn(msg);
+                }
+            }
+
             copyCommonContent(archiveCreator, concatenatedEntries, allIgnoredEntriesPredicate);
             // now that all entries have been added, check if there's a META-INF/versions/ entry. If present,
             // mark this jar as multi-release jar. Strictly speaking, the jar spec expects META-INF/versions/N
             // directory where N is an integer greater than 8, but we don't do that level of checks here but that
             // should be OK.
             if (archiveCreator.isMultiVersion()) {
-                LOG.debug("uber jar will be marked as multi-release jar");
+                LOG.debug("Uber jar will be marked as multi-release jar");
                 archiveCreator.makeMultiVersion();
             }
         }
@@ -262,8 +275,10 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                             concatenatedEntries.computeIfAbsent(relativePath, (u) -> new ArrayList<>())
                                     .add(Files.readAllBytes(file));
                         } else if (!ignoredEntriesPredicate.test(relativePath)) {
-                            duplicateCatcher.computeIfAbsent(relativePath, (a) -> new HashSet<>())
-                                    .add(appDep);
+                            if (!UBER_JAR_IGNORED_DUPLICATE_ENTRIES_PREDICATE.test(relativePath)) {
+                                duplicateCatcher.computeIfAbsent(relativePath, (a) -> new HashSet<>())
+                                        .add(appDep);
+                            }
                             archiveCreator.addFileIfNotExists(file, relativePath, appDep.toString());
                         }
                     }
@@ -317,12 +332,25 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 "META-INF/panache-archive.marker", // deprecated and unused, but still present in some archives
                 "META-INF/build.metadata", // present in the Red Hat Build of Quarkus
                 "META-INF/quarkus-config-doc/quarkus-config-javadoc.json",
+                "META-INF/quarkus-config-doc/quarkus-config-model-version",
+                "META-INF/quarkus-config-doc/quarkus-config-model.json",
                 "LICENSE");
 
         @Override
         public boolean test(String path) {
             return UBER_JAR_IGNORED_ENTRIES.contains(path)
                     || path.endsWith("module-info.class");
+        }
+    }
+
+    /**
+     * When this predicate is true, the entry will be added to the jar, but we won't log any warning if there is a duplicate.
+     */
+    private static class IsDuplicateEntryIgnoredForUberJarPredicate implements Predicate<String> {
+
+        @Override
+        public boolean test(String path) {
+            return path.startsWith("META-INF/maven/");
         }
     }
 }

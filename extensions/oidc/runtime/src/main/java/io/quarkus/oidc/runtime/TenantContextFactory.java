@@ -29,6 +29,8 @@ import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport;
+import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
+import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
@@ -48,12 +50,15 @@ final class TenantContextFactory {
     private final Vertx vertx;
     private final OidcTlsSupport tlsSupport;
     private final boolean securityEventsEnabled;
+    private final ProxyConfigurationRegistry proxyConfigurationRegistry;
 
-    TenantContextFactory(Vertx vertx, TlsConfigurationRegistry tlsConfigurationRegistry, boolean securityEventsEnabled) {
+    TenantContextFactory(Vertx vertx, TlsConfigurationRegistry tlsConfigurationRegistry, boolean securityEventsEnabled,
+            ProxyConfigurationRegistry proxyConfigurationRegistry) {
         this.vertx = vertx;
         this.tlsSupport = OidcTlsSupport.of(tlsConfigurationRegistry);
         this.securityEventsEnabled = securityEventsEnabled;
         this.tenantsExpectingServerAvailableEvents = ConcurrentHashMap.newKeySet();
+        this.proxyConfigurationRegistry = proxyConfigurationRegistry;
     }
 
     TenantConfigContext createDefaultTenantConfig(Map<String, OidcTenantConfig> staticTenants, OidcTenantConfig defaultTenant) {
@@ -449,7 +454,8 @@ final class TenantContextFactory {
 
         WebClientOptions options = new WebClientOptions();
         options.setFollowRedirects(oidcConfig.followRedirects());
-        OidcCommonUtils.setHttpClientOptions(oidcConfig, options, tlsSupport.forConfig(oidcConfig.tls()));
+        OidcCommonUtils.setHttpClientOptions(oidcConfig, options, tlsSupport.forConfig(oidcConfig.tls()),
+                proxyConfigurationRegistry);
         var mutinyVertx = new io.vertx.mutiny.core.Vertx(vertx);
         WebClient client = WebClient.create(mutinyVertx, options);
 
@@ -509,7 +515,33 @@ final class TenantContextFactory {
                             client.close();
                             return Uni.createFrom().failure(new ConfigurationException(
                                     "UserInfo is required but the OpenID Provider UserInfo endpoint is not configured."
-                                            + " Use 'quarkus.oidc.user-info-path' if the discovery is disabled."));
+                                            + " Use '%s' if the discovery is disabled."
+                                                    .formatted(getConfigPropertyForTenant(tenantId, "user-info-path"))));
+                        }
+                        if (OidcUtils.isParEnabled(oidcConfig.authentication(), metadata)) {
+                            if (metadata.getPushedAuthorizationRequestUri() == null) {
+                                String exceptionMessage = ("OIDC tenant '%s' has enabled the pushed authorization requests, but "
+                                        + "the OpenID Provider PAR endpoint is not configured. Use '%s' if the discovery is disabled.")
+                                        .formatted(tenantId,
+                                                getConfigPropertyForTenant(tenantId, "authentication.par.path"));
+                                return Uni.createFrom().failure(new ConfigurationException(exceptionMessage));
+                            }
+                            if (!LaunchMode.current().isDevOrTest()
+                                    && !"https".startsWith(metadata.getPushedAuthorizationRequestUri().toLowerCase())) {
+                                LOG.debugf("OIDC tenant '%s' has the OpenID Provider PAR endpoint '%s', " +
+                                        "however the HTTPS scheme is required by the specification. Proceeding" +
+                                        " with HTTP assuming a secure internal network or proxy.", tenantId,
+                                        metadata.getPushedAuthorizationRequestUri());
+                            }
+
+                            boolean clientSecretQueryAuthentication = oidcConfig.credentials().clientSecret().method()
+                                    .orElse(null) == OidcClientCommonConfig.Credentials.Secret.Method.QUERY;
+                            if (clientSecretQueryAuthentication) {
+                                String exceptionMessage = ("OIDC tenant '%s' has enabled the pushed authorization requests, "
+                                        + "and uses the client authentication method 'query'. Please set different"
+                                        + " client authentication method").formatted(tenantId);
+                                return Uni.createFrom().failure(new ConfigurationException(exceptionMessage));
+                            }
                         }
                         return OidcProviderClientImpl.of(client, vertx, metadata, oidcConfig, oidcRequestFilters,
                                 oidcResponseFilters);
@@ -529,9 +561,11 @@ final class TenantContextFactory {
         String endSessionUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.endSessionPath());
         String registrationUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.registrationPath());
         String revocationUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.revokePath());
+        String pushedAuthorizationRequestUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString,
+                oidcConfig.authentication().par().path());
         return new OidcConfigurationMetadata(tokenUri,
                 introspectionUri, authorizationUri, jwksUri, userInfoUri, endSessionUri, registrationUri, revocationUri,
-                oidcConfig.token().issuer().orElse(null));
+                oidcConfig.token().issuer().orElse(null), pushedAuthorizationRequestUri);
     }
 
     private void fireOidcServerNotAvailableEvent(String authServerUrl, String tenantId) {

@@ -5,15 +5,12 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Set;
 
-import javax.inject.Inject;
-
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
-import org.gradle.api.internal.tasks.TaskDependencyFactory;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
@@ -42,11 +39,7 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
 
     public static final String QUARKUS_ANNOTATION_PROCESSOR = "io.quarkus:quarkus-extension-processor";
 
-    TaskDependencyFactory taskDepFactory;
-
-    @Inject
-    public QuarkusExtensionPlugin(TaskDependencyFactory taskDepFactory) {
-        this.taskDepFactory = taskDepFactory;
+    public QuarkusExtensionPlugin() {
     }
 
     @Override
@@ -103,8 +96,7 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
                     test.useJUnitPlatform();
                     test.doFirst(task -> {
                         final Map<String, Object> props = test.getSystemProperties();
-                        final ApplicationModel appModel = ToolingUtils.create(deploymentProject, LaunchMode.TEST,
-                                taskDepFactory);
+                        final ApplicationModel appModel = ToolingUtils.create(deploymentProject, LaunchMode.TEST);
                         try {
                             final Path serializedModel = ToolingUtils.serializeAppModel(appModel, task, true);
                             props.put(BootstrapConstants.SERIALIZED_TEST_APP_MODEL, serializedModel.toString());

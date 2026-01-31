@@ -162,8 +162,9 @@ public final class LoggingResourceProcessor {
     }
 
     @BuildStep
-    SystemPropertyBuildItem setProperty() {
-        return new SystemPropertyBuildItem("java.util.logging.manager", "org.jboss.logmanager.LogManager");
+    void setProperties(BuildProducer<SystemPropertyBuildItem> producer) {
+        producer.produce(new SystemPropertyBuildItem("java.util.logging.manager", "org.jboss.logmanager.LogManager"));
+        producer.produce(new SystemPropertyBuildItem("org.jboss.logging.provider", "jboss"));
     }
 
     // ensures that InitialConfigurator uses the build time configured minimum log level

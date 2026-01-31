@@ -28,6 +28,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -269,5 +270,13 @@ class KafkaStreamsProcessor {
     @BuildStep
     NativeImageFeatureBuildItem kafkaStreamsFeature() {
         return new NativeImageFeatureBuildItem(KafkaStreamsFeature.class.getName());
+    }
+
+    @BuildStep
+    ModuleEnableNativeAccessBuildItem rocksDbEnableNativeAccess() {
+        // RocksDB is the default state store for Kafka Streams and uses JNI.
+        // TODO: This could potentially be made conditional if a build-time config option
+        // is added to allow users to disable RocksDB in favor of in-memory stores only.
+        return new ModuleEnableNativeAccessBuildItem("rocksdbjni");
     }
 }

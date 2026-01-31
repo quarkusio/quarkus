@@ -23,6 +23,8 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.ApplicationArchive;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -46,11 +48,13 @@ import io.quarkus.oidc.client.Tokens;
 import io.quarkus.oidc.client.runtime.AbstractTokensProducer;
 import io.quarkus.oidc.client.runtime.OidcClientBuildTimeConfig;
 import io.quarkus.oidc.client.runtime.OidcClientDefaultIdConfigBuilder;
+import io.quarkus.oidc.client.runtime.OidcClientHealthCheck;
 import io.quarkus.oidc.client.runtime.OidcClientRecorder;
 import io.quarkus.oidc.client.runtime.OidcClientsImpl;
 import io.quarkus.oidc.client.runtime.TokenProviderProducer;
 import io.quarkus.oidc.client.runtime.TokensHelper;
 import io.quarkus.oidc.client.runtime.TokensProducer;
+import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 @BuildSteps(onlyIf = OidcClientBuildStep.IsEnabled.class)
 public class OidcClientBuildStep {
@@ -141,6 +145,14 @@ public class OidcClientBuildStep {
     @BuildStep
     RunTimeConfigBuilderBuildItem useOidcClientDefaultIdConfigBuilder() {
         return new RunTimeConfigBuilderBuildItem(OidcClientDefaultIdConfigBuilder.class);
+    }
+
+    @BuildStep
+    void registerHealthCheck(OidcClientBuildTimeConfig config, BuildProducer<HealthBuildItem> healthBuildItems,
+            Capabilities capabilities) {
+        if (config.healthEnabled() && capabilities.isPresent(Capability.SMALLRYE_HEALTH)) {
+            healthBuildItems.produce(new HealthBuildItem(OidcClientHealthCheck.class.getName(), true));
+        }
     }
 
     /**

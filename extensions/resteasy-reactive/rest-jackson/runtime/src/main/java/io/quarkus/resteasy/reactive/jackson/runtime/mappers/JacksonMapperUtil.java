@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.jackson.runtime.mappers;
 
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Type;
 import java.util.Collection;
@@ -7,9 +8,11 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.BeanProperty;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
@@ -20,6 +23,10 @@ import io.quarkus.resteasy.reactive.jackson.runtime.security.RolesAllowedConfigE
 import io.quarkus.security.identity.SecurityIdentity;
 
 public class JacksonMapperUtil {
+
+    public static boolean includeSecureField(SerializerProvider serializerProvider, String[] rolesAllowed) {
+        return serializerProvider.getConfig().getFilterProvider() == null || includeSecureField(rolesAllowed);
+    }
 
     public static boolean includeSecureField(String[] rolesAllowed) {
         SecurityIdentity securityIdentity = RolesAllowedHolder.SECURITY_IDENTITY;
@@ -115,6 +122,20 @@ public class JacksonMapperUtil {
             valueTypes[i] = wrapperType.containedType(0);
         }
         return valueTypes;
+    }
+
+    public static void serializePojo(Object value, JsonGenerator generator, SerializerProvider serializerProvider)
+            throws IOException {
+        if (value == null || value instanceof Map) {
+            generator.writePOJO(value);
+            return;
+        }
+        JsonSerializer<Object> serializer = serializerProvider.findValueSerializer(value.getClass());
+        if (serializer != null) {
+            serializer.serialize(value, generator, serializerProvider);
+        } else {
+            generator.writePOJO(value);
+        }
     }
 
     public enum SerializationInclude {

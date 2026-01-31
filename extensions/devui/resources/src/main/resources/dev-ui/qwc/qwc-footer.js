@@ -55,7 +55,7 @@ export class QwcFooter extends observeState(LitElement) {
         }
     
         .resizeIcon {
-            display: none;
+            width: 0px;
         }
     
         @media screen and (max-width: 1600px) {
@@ -76,7 +76,8 @@ export class QwcFooter extends observeState(LitElement) {
                 border-radius: 0px 0px 0px 0px;
             }
             .resizeIcon {
-                display: inline;
+                width: var(--lumo-icon-size-s);
+                cursor: row-resize;
             }
         }
     
@@ -122,10 +123,12 @@ export class QwcFooter extends observeState(LitElement) {
         }
         .tabsheetOpen {
             height: 100%;
+            font-size: var(--lumo-font-size-s);
         }
         .tabsheetClose {
             max-height: 38px;
             justify-content: flex-start;
+            font-size: var(--lumo-font-size-s);
         }
         
         vaadin-tabs {
@@ -207,8 +210,16 @@ export class QwcFooter extends observeState(LitElement) {
         super.connectedCallback();
         this._controlButtons = [];
         this._originalMouseY = 0;
-        
+
         this._restoreFromLocalStorage();
+    }
+
+    updated(changedProperties) {
+        super.updated(changedProperties);
+        // Expose footer height as CSS custom property for other components
+        // Use actual rendered height: 38px when closed, _height when open
+        const actualHeight = this._isOpen ? this._height : 38;
+        document.documentElement.style.setProperty('--footer-height', `${actualHeight}px`);
     }
 
     _restoreHeight(){
@@ -294,7 +305,7 @@ export class QwcFooter extends observeState(LitElement) {
     
     _renderControls(){
         return html`<vaadin-menu-bar
-                            theme="small"
+                            theme="icon tertiary-inline small"
                             .items="${this._controlButtons}" 
                             @item-selected="${this._controlButtonClicked}">
                         </vaadin-menu-bar>`;
@@ -333,7 +344,9 @@ export class QwcFooter extends observeState(LitElement) {
     }
 
     _renderResizeIcon(){
-        return html`<vaadin-icon slot="suffix" class="resizeIcon" icon="font-awesome-solid:up-down" @mousedown=${this._mousedown}></vaadin-icon>`;
+        if(this._isOpen){
+            return html`<vaadin-icon slot="suffix" class="resizeIcon" icon="font-awesome-solid:up-down" @mousedown=${this._mousedown}></vaadin-icon>`;
+        }
     }
 
     _mousedown(e){

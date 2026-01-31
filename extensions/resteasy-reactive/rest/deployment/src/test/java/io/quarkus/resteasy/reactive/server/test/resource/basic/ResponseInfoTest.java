@@ -1,11 +1,13 @@
 package io.quarkus.resteasy.reactive.server.test.resource.basic;
 
+import java.net.URI;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -17,8 +19,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.ResponseInfoResource;
-import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 
 /**
  * @tpSubChapter Resource
@@ -46,15 +48,17 @@ public class ResponseInfoTest {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class, ResponseInfoTest.class);
-                    // Use of PortProviderUtil in the deployment
+                    war.addClasses(ResponseInfoTest.class);
                     war.addClasses(ResponseInfoResource.class);
                     return war;
                 }
             });
 
+    @TestHTTPResource
+    URI uri;
+
     private void basicTest(String path) {
-        WebTarget base = client.target(PortProviderUtil.generateURL(path, ResponseInfoTest.class.getSimpleName()));
+        WebTarget base = client.target(UriBuilder.fromUri(uri).path(path));
         Response response = base.request().get();
         Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         response.close();
@@ -66,7 +70,7 @@ public class ResponseInfoTest {
      */
     @Test
     @DisplayName("Test Uri Info")
-    public void testUriInfo() throws Exception {
+    public void testUriInfo() {
         basicTest("/simple");
     }
 }

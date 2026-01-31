@@ -1,9 +1,7 @@
 package io.quarkus.maven;
 
 import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -18,6 +16,8 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
 import io.quarkus.bootstrap.json.Json;
+import io.quarkus.bootstrap.json.Json.JsonObjectBuilder;
+import io.quarkus.bootstrap.json.JsonArray;
 import io.quarkus.bootstrap.json.JsonMember;
 import io.quarkus.bootstrap.json.JsonObject;
 import io.quarkus.bootstrap.json.JsonReader;
@@ -59,7 +59,15 @@ public class NativeImageAgentMojo extends QuarkusBootstrapMojo {
                 }
                 getLog().debug("Native image agent config folder exits, copy and transform to " + targetPath);
                 final Path reflectConfigJsonPath = basePath.resolve("reflect-config.json");
-                if (reflectConfigJsonPath.toFile().exists()) {
+                final Path reachabilityMetadataJsonPath = basePath.resolve("reachability-metadata.json");
+                if (Files.exists(reachabilityMetadataJsonPath)) {
+                    // GraalVM/Mandrel 25+
+                    transformReachabilityMetadataJson(basePath, "reachability-metadata.json", targetPath);
+
+                    if (getLog().isInfoEnabled()) {
+                        getLog().info("Discovered native image agent generated files in " + targetPath);
+                    }
+                } else if (Files.exists(reflectConfigJsonPath)) {
                     Files.copy(reflectConfigJsonPath, targetPath.resolve("reflect-config.json"),
                             StandardCopyOption.REPLACE_EXISTING);
                     Files.copy(basePath.resolve("serialization-config.json"), targetPath.resolve("serialization-config.json"),
@@ -69,7 +77,7 @@ public class NativeImageAgentMojo extends QuarkusBootstrapMojo {
                     Files.copy(basePath.resolve("proxy-config.json"), targetPath.resolve("proxy-config.json"),
                             StandardCopyOption.REPLACE_EXISTING);
                     transformJsonObject(basePath, "resource-config.json", targetPath,
-                            JsonTransform.dropping(this::discardResource));
+                            JsonTransform.dropping(v -> discardResource("pattern", v)));
 
                     if (getLog().isInfoEnabled()) {
                         getLog().info("Discovered native image agent generated files in " + targetPath);
@@ -89,6 +97,24 @@ public class NativeImageAgentMojo extends QuarkusBootstrapMojo {
         }
     }
 
+    private void transformReachabilityMetadataJson(Path base, String name, Path target) throws IOException {
+        getLog().debug("Discarding resources from native image configuration that match the following regular expression: "
+                + resourceSkipPattern);
+        final String original = Files.readString(base.resolve(name));
+        final JsonObject jsonRead = JsonReader.of(original).read();
+        JsonArray resources = jsonRead.get("resources");
+        if (resources != null) {
+            final JsonObjectBuilder jsonBuilder = Json.object();
+            jsonBuilder.transform(jsonRead, JsonTransform.dropping(v -> discardResource("glob", v)));
+
+            try (BufferedWriter writer = Files.newBufferedWriter(target.resolve(name))) {
+                jsonBuilder.appendTo(writer);
+            }
+        } else {
+            Files.copy(base.resolve(name), target.resolve(name), StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
     private void transformJsonObject(Path base, String name, Path target, JsonTransform transform) throws IOException {
         getLog().debug("Discarding resources from native image configuration that match the following regular expression: "
                 + resourceSkipPattern);
@@ -97,16 +123,15 @@ public class NativeImageAgentMojo extends QuarkusBootstrapMojo {
         final Json.JsonObjectBuilder jsonBuilder = Json.object();
         jsonBuilder.transform(jsonRead, transform);
 
-        try (BufferedWriter writer = new BufferedWriter(
-                new FileWriter(target.resolve(name).toFile(), StandardCharsets.UTF_8))) {
+        try (BufferedWriter writer = Files.newBufferedWriter(target.resolve(name))) {
             jsonBuilder.appendTo(writer);
         }
     }
 
-    private boolean discardResource(JsonValue value) {
+    private boolean discardResource(String attribute, JsonValue value) {
         if (value instanceof JsonMember) {
             final JsonMember member = (JsonMember) value;
-            if ("pattern".equals(member.attribute().value())) {
+            if (attribute.equals(member.attribute().value())) {
                 final JsonString memberValue = (JsonString) member.value();
                 final boolean discarded = resourceSkipPattern.matcher(memberValue.value()).find();
                 if (discarded) {

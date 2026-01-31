@@ -8,9 +8,9 @@ import io.quarkus.oidc.common.OidcEndpoint.Type;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcResponseFilter;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.buffer.Buffer;
-import io.vertx.mutiny.ext.web.client.HttpRequest;
 
 @ApplicationScoped
 @Unremovable
@@ -18,14 +18,19 @@ import io.vertx.mutiny.ext.web.client.HttpRequest;
 public class OidcRequestResponseCustomizer implements OidcRequestFilter, OidcResponseFilter {
 
     @Override
-    public void filter(HttpRequest<Buffer> request, Buffer buffer, OidcRequestContextProperties contextProps) {
-        String uri = request.uri();
-        if (uri.endsWith("/non-standard-tokens")) {
-            request.putHeader("client-id", contextProps.getString("client-id"));
-            request.putHeader("GrantType", getGrantType(buffer.toString()));
-            contextProps.put(OidcRequestContextProperties.REQUEST_BODY,
-                    Buffer.buffer(buffer.toString() + "&custom_prop=custom_value"));
-        }
+    public Uni<Void> filter(OidcRequestFilterContext requestContext) {
+        return requestContext.runBlocking(() -> {
+            var request = requestContext.request();
+            String uri = request.uri();
+            if (uri.endsWith("/non-standard-tokens")) {
+                var contextProps = requestContext.contextProperties();
+                var buffer = requestContext.requestBody();
+                request.putHeader("client-id", contextProps.getString("client-id"));
+                request.putHeader("GrantType", getGrantType(buffer.toString()));
+                contextProps.put(OidcRequestContextProperties.REQUEST_BODY,
+                        Buffer.buffer(buffer.toString() + "&custom_prop=custom_value"));
+            }
+        });
     }
 
     private String getGrantType(String formString) {

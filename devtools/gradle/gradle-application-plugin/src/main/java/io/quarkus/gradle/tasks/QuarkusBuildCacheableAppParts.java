@@ -31,7 +31,7 @@ public abstract class QuarkusBuildCacheableAppParts extends QuarkusBuildTask {
             return false;
         }
         return switch (jarType()) {
-            case FAST_JAR, LEGACY_JAR -> true;
+            case FAST_JAR, LEGACY_JAR, AOT_JAR -> true;
             default -> false;
         };
     }
@@ -52,7 +52,7 @@ public abstract class QuarkusBuildCacheableAppParts extends QuarkusBuildTask {
             }
         } else {
             switch (jarType()) {
-                case FAST_JAR, LEGACY_JAR -> outputs.put("app-build-dir", appBuildDir().toFile());
+                case FAST_JAR, LEGACY_JAR, AOT_JAR -> outputs.put("app-build-dir", appBuildDir().toFile());
                 case MUTABLE_JAR, UBER_JAR -> {
                 }
             }
@@ -78,7 +78,7 @@ public abstract class QuarkusBuildCacheableAppParts extends QuarkusBuildTask {
             }
         } else {
             switch (jarType()) {
-                case FAST_JAR -> fastJarBuild();
+                case FAST_JAR, AOT_JAR -> fastJarBuild();
                 case LEGACY_JAR -> legacyJarBuild();
                 case MUTABLE_JAR, UBER_JAR -> getLogger().info(
                         "Falling back to 'full quarkus application build' for JAR type {}, this task's output is empty for this package type",
@@ -96,13 +96,13 @@ public abstract class QuarkusBuildCacheableAppParts extends QuarkusBuildTask {
         getLogger().info("Synchronizing Quarkus legacy-jar app for JAR type {} into {}", jarType(),
                 appDir);
 
-        getFileSystemOperations().sync(sync -> {
+        getFileSystemOperations().syncPreservingTimestamps(sync -> {
             sync.into(appDir);
             sync.from(genDir);
             sync.include("**", QUARKUS_ARTIFACT_PROPERTIES);
             sync.exclude("lib/**");
         });
-        getFileSystemOperations().copy(copy -> {
+        getFileSystemOperations().copyPreservingTimestamps(copy -> {
             copy.into(appDir);
             copy.from(genDir);
             copy.include("lib/modified-*");
@@ -129,7 +129,7 @@ public abstract class QuarkusBuildCacheableAppParts extends QuarkusBuildTask {
                     appDir);
         }
 
-        getFileSystemOperations().sync(sync -> {
+        getFileSystemOperations().syncPreservingTimestamps(sync -> {
             sync.into(appDir);
             sync.from(genDir);
             sync.exclude(outputDirectory + "/lib/**");

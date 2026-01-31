@@ -43,7 +43,7 @@ public final class HibernateUserTypeProcessor {
         }
 
         if (!userTypes.isEmpty()) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(userTypes.toArray(new String[] {}))
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(userTypes)
                     .reason(ClassNames.HIBERNATE_USER_TYPE_PROCESSOR.toString())
                     .methods().fields().build());
         }

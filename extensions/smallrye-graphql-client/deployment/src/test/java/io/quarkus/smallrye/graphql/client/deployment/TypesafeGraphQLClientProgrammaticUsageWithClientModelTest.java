@@ -18,7 +18,7 @@ import io.quarkus.smallrye.graphql.client.deployment.model.TestingGraphQLApi;
 import io.quarkus.smallrye.graphql.client.deployment.model.TestingGraphQLClientApi;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
-import io.smallrye.graphql.client.model.ClientModelBuilder;
+import io.smallrye.graphql.client.modelbuilder.ClientModelBuilder;
 import io.smallrye.graphql.client.typesafe.api.GraphQLClientApi;
 import io.smallrye.graphql.client.typesafe.api.TypesafeGraphQLClientBuilder;
 import io.smallrye.graphql.client.vertx.typesafe.VertxTypesafeGraphQLClientBuilder;

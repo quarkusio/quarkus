@@ -104,6 +104,7 @@ class BeanContainerImpl implements BeanContainer {
         @Override
         public BeanContainer.Instance<T> create() {
             try {
+                DefaultInstanceFactory.class.getModule().addReads(type.getModule());
                 T instance = (T) LOOKUP.findConstructor(type, VOID_TYPE).invoke();
                 return new BeanContainer.Instance<>() {
                     @Override

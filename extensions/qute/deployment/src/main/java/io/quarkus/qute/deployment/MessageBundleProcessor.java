@@ -104,6 +104,7 @@ import io.quarkus.qute.i18n.MessageBundle;
 import io.quarkus.qute.i18n.MessageBundles;
 import io.quarkus.qute.i18n.MessageTemplateLocator;
 import io.quarkus.qute.runtime.MessageBundleRecorder;
+import io.quarkus.qute.runtime.MessageBundleRecorder.MessageInfo;
 import io.quarkus.qute.runtime.QuteConfig;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.util.StringUtil;
@@ -348,10 +349,10 @@ public class MessageBundleProcessor {
             bundleInterfaces.put(bundle.getName(), localeToInterface);
         }
 
-        Map<String, String> templateIdToContent = messageBundleMethods.stream()
+        Map<String, MessageInfo> templateIdToContent = messageBundleMethods.stream()
                 .filter(MessageBundleMethodBuildItem::isValidatable).collect(
                         Collectors.toMap(MessageBundleMethodBuildItem::getTemplateId,
-                                MessageBundleMethodBuildItem::getTemplate));
+                                MessageBundleMethodBuildItem::getMessageInfo));
 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(MessageBundleRecorder.BundleContext.class)
                 .scope(BuiltinScope.DEPENDENT.getInfo())

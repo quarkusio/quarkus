@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.server.test.resource.basic;
 
+import java.net.URI;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.GET;
@@ -18,8 +19,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 
 @DisplayName("Multiple Accept Header Test")
 public class MultipleAcceptHeaderTest {
@@ -38,14 +39,10 @@ public class MultipleAcceptHeaderTest {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(TestResourceServer.class, PortProviderUtil.class);
+                    war.addClasses(TestResourceServer.class);
                     return war;
                 }
             });
-
-    private String generateBaseUrl() {
-        return PortProviderUtil.generateBaseUrl();
-    }
 
     @Path("/test")
     @DisplayName("Test Resource Server")
@@ -91,43 +88,46 @@ public class MultipleAcceptHeaderTest {
         String getXmlPlainMultiple();
     }
 
+    @TestHTTPResource
+    URI uri;
+
     @BeforeEach
     public void setUp() throws Exception {
         client = (ClientImpl) ClientBuilder.newClient();
-        WebTargetImpl target = (WebTargetImpl) client.target(generateBaseUrl());
+        WebTargetImpl target = (WebTargetImpl) client.target(uri);
         service = target.proxy(TestInterfaceClient.class);
     }
 
     @AfterEach
-    public void tearDown() throws Exception {
+    public void tearDown() {
         client.close();
         client = null;
     }
 
     @Test
     @DisplayName("Test Single Accept Header")
-    public void testSingleAcceptHeader() throws Exception {
+    public void testSingleAcceptHeader() {
         String result = service.getJson();
         Assertions.assertEquals(APPLICATION_JSON, result);
     }
 
     @Test
     @DisplayName("Test Single Accept Header 2")
-    public void testSingleAcceptHeader2() throws Exception {
+    public void testSingleAcceptHeader2() {
         String result = service.getXml();
         Assertions.assertEquals(APPLICATION_XML, result);
     }
 
     @Test
     @DisplayName("Test Multiple Accept Header")
-    public void testMultipleAcceptHeader() throws Exception {
+    public void testMultipleAcceptHeader() {
         String result = service.getXmlMultiple();
         Assertions.assertEquals(APPLICATION_XML, result);
     }
 
     @Test
     @DisplayName("Test Multiple Accept Header Second Header")
-    public void testMultipleAcceptHeaderSecondHeader() throws Exception {
+    public void testMultipleAcceptHeaderSecondHeader() {
         String result = service.getXmlPlainMultiple();
         Assertions.assertEquals(APPLICATION_XML, result);
     }

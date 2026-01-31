@@ -1,11 +1,11 @@
 package io.quarkus.vertx.core.deployment;
 
+import static io.quarkus.arc.processor.DotNames.APPLICATION_SCOPED;
+
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.ServerSocket;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -31,6 +31,8 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -241,11 +243,10 @@ class VertxCoreProcessor {
         // Override the Mutiny infrastructure ScheduledExecutorService to dispatch scheduled operations to a Vert.x timer
         recorder.wrapMainExecutorForMutiny(executorBuildItem.getExecutorProxy());
 
-        Collections.sort(vertxOptionsConsumers);
-        List<Consumer<VertxOptions>> consumers = new ArrayList<>(vertxOptionsConsumers.size());
-        for (VertxOptionsConsumerBuildItem x : vertxOptionsConsumers) {
-            consumers.add(x.getConsumer());
-        }
+        List<Consumer<VertxOptions>> consumers = vertxOptionsConsumers.stream()
+                .sorted()
+                .map(VertxOptionsConsumerBuildItem::getConsumer)
+                .toList();
 
         Supplier<Vertx> vertx = recorder.configureVertx(launchMode.getLaunchMode(), shutdown, consumers,
                 executorBuildItem.getExecutorProxy());
@@ -436,6 +437,18 @@ class VertxCoreProcessor {
         } catch (Throwable t) {
             log.debug("Failed to filter blocked thread checker", t);
             return null;
+        }
+    }
+
+    @BuildStep
+    void registerBlockingSecurityExecutor(BuildProducer<AdditionalBeanBuildItem> beanProducer,
+            Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.SECURITY) || capabilities.isPresent(Capability.OIDC_CLIENT)
+                || capabilities.isPresent(Capability.OIDC_CLIENT_REGISTRATION)) {
+            beanProducer
+                    .produce(AdditionalBeanBuildItem.builder().setUnremovable()
+                            .addBeanClass(io.quarkus.vertx.core.runtime.security.VertxBlockingSecurityExecutor.class)
+                            .setDefaultScope(APPLICATION_SCOPED).build());
         }
     }
 }

@@ -241,6 +241,27 @@ public interface PackageConfig {
         }
 
         /**
+         * Whether CRaC checkpointing feature is enabled.
+         * <p>
+         * CRaC is a technology enabled in specific builds of Azul's JVM distribution.
+         */
+        CracConfig crac();
+
+        /**
+         * Configuration for CRaC checkpointing.
+         */
+        @ConfigGroup
+        interface CracConfig {
+            /**
+             * Whether to enable CRaC checkpointing feature.
+             * <p>
+             * Note that it is a no-op if not using a JVM distribution supporting CRaC.
+             */
+            @WithDefault("false")
+            boolean enabled();
+        }
+
+        /**
          * This is an advanced option that only takes effect for development mode.
          * <p>
          * If this is specified a directory of this name will be created in the jar distribution. Users can place
@@ -304,15 +325,22 @@ public interface PackageConfig {
             /**
              * The "fast JAR" packaging type.
              */
-            FAST_JAR("fast-jar", "jar"),
+            FAST_JAR(true, "fast-jar", "jar"),
+            /**
+             * The AOT-optimized packaging type.
+             * <p>
+             * Similar to fast-jar in the approach but taking into account the limitations of AOT class loading (i.e. all class
+             * loading delegated to JDK class loader).
+             */
+            AOT_JAR(true, "aot-jar", "aot-fast-jar"),
             /**
              * The "Uber-JAR" packaging type.
              */
-            UBER_JAR("uber-jar"),
+            UBER_JAR(false, "uber-jar"),
             /**
              * The "mutable JAR" packaging type (for remote development mode).
              */
-            MUTABLE_JAR("mutable-jar"),
+            MUTABLE_JAR(true, "mutable-jar"),
             /**
              * The "legacy JAR" packaging type.
              * This corresponds to the packaging type used in Quarkus before version 1.12.
@@ -320,7 +348,7 @@ public interface PackageConfig {
              * @deprecated This packaging type is no longer recommended for use.
              */
             @Deprecated
-            LEGACY_JAR("legacy-jar", "legacy"),
+            LEGACY_JAR(false, "legacy-jar", "legacy"),
             ;
 
             public static final List<JarType> values = List.of(JarType.values());
@@ -331,16 +359,19 @@ public interface PackageConfig {
 
             private final List<String> names;
 
-            JarType(final List<String> names) {
+            private final boolean fastJarLayout;
+
+            JarType(final boolean fastJarLayout, final List<String> names) {
+                this.fastJarLayout = fastJarLayout;
                 this.names = names;
             }
 
-            JarType(final String... names) {
-                this(List.of(names));
+            JarType(final boolean fastJarLayout, final String... names) {
+                this(fastJarLayout, List.of(names));
             }
 
-            JarType(final String name) {
-                this(List.of(name));
+            JarType(final boolean fastJarLayout, final String name) {
+                this(fastJarLayout, List.of(name));
             }
 
             /**
@@ -349,6 +380,10 @@ public interface PackageConfig {
              */
             public List<String> names() {
                 return names;
+            }
+
+            public boolean usesFastJarLayout() {
+                return fastJarLayout;
             }
 
             /**

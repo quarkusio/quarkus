@@ -5,6 +5,9 @@ import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DE
 import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_USERNAME;
 import static org.testcontainers.db2.Db2Container.DB2_PORT;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -39,6 +42,29 @@ public class DB2DevServicesProcessor {
 
     private static final DB2DatasourceServiceConfigurator configurator = new DB2DatasourceServiceConfigurator();
 
+    /**
+     * Generates a short hash (4 hex characters) from the input string using SHA-224.
+     * Used to create unique but short database names for DB2's 8-character limit.
+     */
+    private static String generateShortHash(String originalName) {
+        try {
+            final byte[] nameAsBytes = originalName.getBytes(StandardCharsets.UTF_8);
+            MessageDigest messageDigest224 = MessageDigest.getInstance("SHA-224");
+            byte[] hashedByteArray = messageDigest224.digest(nameAsBytes);
+
+            // Encode first 2 bytes as hex (4 chars) - using hex instead of Base64
+            // because DB2 database names must be alphanumeric only
+            StringBuilder hexResult = new StringBuilder();
+            for (int i = 0; i < 2; i++) {
+                hexResult.append(String.format("%02x", hashedByteArray[i] & 0xFF));
+            }
+            return hexResult.toString();
+        } catch (NoSuchAlgorithmException e) {
+            // SHA-224 is always available in Java
+            throw new RuntimeException(e);
+        }
+    }
+
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupDB2(
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
@@ -54,8 +80,24 @@ public class DB2DevServicesProcessor {
                         devServicesSharedNetworkBuildItem);
                 String effectiveUsername = containerConfig.getUsername().orElse(username.orElse(DEFAULT_DATABASE_USERNAME));
                 String effectivePassword = containerConfig.getPassword().orElse(password.orElse(DEFAULT_DATABASE_PASSWORD));
-                String effectiveDbName = containerConfig.getDbName().orElse(
-                        DataSourceUtil.isDefault(datasourceName) ? DEFAULT_DATABASE_NAME : datasourceName);
+                String effectiveDbName = containerConfig.getDbName().orElseGet(() -> {
+                    if (DataSourceUtil.isDefault(datasourceName)) {
+                        return DEFAULT_DATABASE_NAME;
+                    }
+                    // DB2 has an 8-character limit for database names
+                    // See: https://github.com/quarkusio/quarkus/issues/51225
+                    if (datasourceName.length() > 8) {
+                        // Use prefix (4 chars) + SHA-224 hash (4 chars) to avoid collisions
+                        String prefix = datasourceName.substring(0, 4);
+                        String hash = generateShortHash(datasourceName);
+                        String dbName = prefix + hash;
+                        LOG.warnf("DB2 database name '%s' exceeds 8 character limit. Using '%s' for dev services instead. " +
+                                "Set 'quarkus.datasource.\"%s\".devservices.db-name' to specify a custom database name.",
+                                datasourceName, dbName, datasourceName);
+                        return dbName;
+                    }
+                    return datasourceName;
+                });
 
                 Supplier<RunningDevServicesDatasource> maybe = () -> {
                     // We just use this to enable a workaround, so:

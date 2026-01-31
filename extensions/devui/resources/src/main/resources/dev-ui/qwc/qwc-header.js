@@ -5,6 +5,7 @@ import { themeState } from 'theme-state';
 import { connectionState } from 'connection-state';
 import { devuiState } from 'devui-state';
 import { JsonRpc } from 'jsonrpc';
+import '@vaadin/vaadin-lumo-styles/vaadin-iconset.js';
 import '@vaadin/tabs';
 import '@vaadin/confirm-dialog';
 import '@vaadin/dialog';
@@ -109,6 +110,17 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
         .button {
             --vaadin-button-background: var(--lumo-base-color);
         }
+    
+        @media screen and (max-width: 1280px) {
+            .logo-text, .app-info {
+                display: none;
+            }
+    
+            .title {
+                padding-left: 10px;
+            
+        }
+    
         `;
 
     static properties = {

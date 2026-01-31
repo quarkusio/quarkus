@@ -19,7 +19,7 @@
         <!-- Plugin versions (please keep in alphabetical order) -->
         <version.archetype.plugin>3.4.1</version.archetype.plugin>
         <version.buildhelper.plugin>3.6.1</version.buildhelper.plugin>
-        <version.buildnumber.plugin>3.2.1</version.buildnumber.plugin>
+        <version.buildnumber.plugin>3.3.0</version.buildnumber.plugin>
         <version.clean.plugin>3.5.0</version.clean.plugin>
         <version.compiler.plugin>3.14.1</version.compiler.plugin>
         <version.dependency.plugin>3.8.1</version.dependency.plugin>
@@ -28,7 +28,7 @@
         <version.exec.plugin>3.6.3</version.exec.plugin>
         <version.formatter.plugin>2.27.0</version.formatter.plugin>
         <version.gpg.plugin>3.2.8</version.gpg.plugin>
-        <version.impsort.plugin>1.12.0</version.impsort.plugin>
+        <version.impsort.plugin>1.13.0</version.impsort.plugin>
         <version.install.plugin>3.1.4</version.install.plugin>
         <version.javadoc.plugin>3.12.0</version.javadoc.plugin>
         <version.jar.plugin>3.5.0</version.jar.plugin>
@@ -39,7 +39,7 @@
         <version.source.plugin>3.4.0</version.source.plugin>
         <version.surefire.plugin>3.5.4</version.surefire.plugin>
         <version.failsafe.plugin>${version.surefire.plugin}</version.failsafe.plugin>
-        <version.versions.plugin>2.20.1</version.versions.plugin>
+        <version.versions.plugin>2.21.0</version.versions.plugin>
         <version.yaml-properties.plugin>1.1.3</version.yaml-properties.plugin>
         <!-- Forbidden API checks -->
         <version.forbiddenapis-maven-plugin>3.4</version.forbiddenapis-maven-plugin>

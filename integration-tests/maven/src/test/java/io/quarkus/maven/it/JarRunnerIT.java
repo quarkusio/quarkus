@@ -183,12 +183,22 @@ public class JarRunnerIT extends MojoTestBase {
 
     @Test
     public void testThatFastJarFormatWorks() throws Exception {
-        assertThatFastJarFormatWorks(null);
+        assertThatFastJarFormatWorks(null, "fast-jar");
     }
 
     @Test
     public void testThatFastJarCustomOutputDirFormatWorks() throws Exception {
-        assertThatFastJarFormatWorks("custom");
+        assertThatFastJarFormatWorks("custom", "fast-jar");
+    }
+
+    @Test
+    public void testThatAotJarFormatWorks() throws Exception {
+        assertThatFastJarFormatWorks(null, "aot-jar");
+    }
+
+    @Test
+    public void testThatAotJarCustomOutputDirFormatWorks() throws Exception {
+        assertThatFastJarFormatWorks("custom", "aot-jar");
     }
 
     @Test
@@ -807,14 +817,14 @@ public class JarRunnerIT extends MojoTestBase {
         }
     }
 
-    private void assertThatFastJarFormatWorks(String outputDir) throws Exception {
+    private void assertThatFastJarFormatWorks(String outputDir, String format) throws Exception {
         File testDir = initProject("projects/rr-with-json-logging", "projects/rr-with-json-logging" + outputDir);
         RunningInvoker running = new RunningInvoker(testDir, false);
 
         MavenProcessInvocationResult result = running
                 .execute(Arrays.asList("package",
                         "-DskipTests",
-                        "-Dquarkus.package.jar.type=fast-jar",
+                        "-Dquarkus.package.jar.type=" + format,
                         outputDir == null ? "" : "-Dquarkus.package.output-directory=" + outputDir), Collections.emptyMap());
 
         await().atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)

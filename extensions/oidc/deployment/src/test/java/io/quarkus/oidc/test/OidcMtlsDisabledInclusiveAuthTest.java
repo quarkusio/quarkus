@@ -9,7 +9,10 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.oidc.BearerTokenAuthentication;
@@ -28,6 +31,7 @@ import io.smallrye.certs.junit5.Certificates;
 /**
  * This test ensures OIDC runs before mTLS authentication mechanism when inclusive authentication is not enabled.
  */
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
 @Certificates(baseDir = "target/certs", certificates = @Certificate(name = "mtls-test", password = "secret", formats = {
         Format.PKCS12, Format.PEM }, client = true))
@@ -58,6 +62,7 @@ public class OidcMtlsDisabledInclusiveAuthTest {
                     .addAsResource(new File("target/certs/mtls-test.crt"), "server.crt")
                     .addAsResource(new File("target/certs/mtls-test-server-ca.crt"), "ca.crt"));
 
+    @Order(1)
     @Test
     public void testOidcHasHighestPriority() {
         givenWithCerts().get(BASE_URL + "only-mtls").then().statusCode(200).body(is("CN=localhost"));
@@ -68,6 +73,25 @@ public class OidcMtlsDisabledInclusiveAuthTest {
         givenWithCerts().auth().oauth2("invalid-token").get(BASE_URL + "both").then().statusCode(401);
         // mTLS authentication mechanism still runs when OIDC doesn't produce the identity
         givenWithCerts().get(BASE_URL + "both").then().statusCode(200).body(is("CN=localhost"));
+    }
+
+    @Order(2)
+    @Test
+    public void testMtlsHasHighestPriority() {
+        config.modifyResourceFile("application.properties", props -> props + """
+
+                quarkus.http.auth.mtls.priority=2
+                quarkus.oidc.priority=1
+                """);
+
+        // when the authentication mechanism is selected by the annotations, the priority has no influence
+        givenWithCerts().get(BASE_URL + "only-mtls").then().statusCode(200).body(is("CN=localhost"));
+        givenWithCerts().auth().oauth2(getAccessToken()).get(BASE_URL + "only-bearer").then().statusCode(200).body(is("alice"));
+
+        // this needs to be mTLS, because we configured it with a higher priority than the OIDC
+        givenWithCerts().auth().oauth2(getAccessToken()).get(BASE_URL + "both").then().statusCode(200).body(is("CN=localhost"));
+        // since the mTLS produces the identity, invalid OIDC credentials does not matter
+        givenWithCerts().auth().oauth2("invalid-token").get(BASE_URL + "both").then().statusCode(200).body(is("CN=localhost"));
     }
 
     private static RequestSpecification givenWithCerts() {

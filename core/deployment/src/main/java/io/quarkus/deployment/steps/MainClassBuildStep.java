@@ -58,6 +58,7 @@ import io.quarkus.deployment.builditem.QuarkusApplicationClassBuildItem;
 import io.quarkus.deployment.builditem.RecordableConstructorBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.ValueRegistryRuntimeInfoProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
@@ -85,9 +86,13 @@ import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.StartupContext;
 import io.quarkus.runtime.StartupTask;
+import io.quarkus.runtime.ValueRegistryImpl.ConfigRuntimeSource;
 import io.quarkus.runtime.annotations.QuarkusMain;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.util.StepTiming;
+import io.quarkus.value.registry.RuntimeInfoProvider;
+import io.quarkus.value.registry.RuntimeInfoProvider.RuntimeSource;
+import io.quarkus.value.registry.ValueRegistry;
 
 public class MainClassBuildStep {
 
@@ -123,8 +128,10 @@ public class MainClassBuildStep {
     private static final Type STRING_ARRAY = Type.create(DotName.createSimple(String[].class.getName()), Type.Kind.ARRAY);
 
     @BuildStep
-    void build(List<StaticBytecodeRecorderBuildItem> staticInitTasks,
+    void build(
+            List<StaticBytecodeRecorderBuildItem> staticInitTasks,
             List<ObjectSubstitutionBuildItem> substitutions,
+            List<ValueRegistryRuntimeInfoProviderBuildItem> runtimeInfoProviders,
             List<MainBytecodeRecorderBuildItem> mainMethod,
             List<SystemPropertyBuildItem> properties,
             List<GeneratedRuntimeSystemPropertyBuildItem> generatedRuntimeSystemProperties,
@@ -223,6 +230,15 @@ public class MainClassBuildStep {
         mv = file.getMethodCreator("doStart", void.class, String[].class);
         mv.setModifiers(Modifier.PROTECTED | Modifier.FINAL);
 
+        startupContext = mv.readStaticField(scField.getFieldDescriptor());
+
+        // Register ValueRegistry with StartupContext, so it can be injected into Recorders
+        ResultHandle valueRegistry = mv
+                .invokeVirtualMethod(ofMethod(Application.class, "getValueRegistry", ValueRegistry.class), mv.getThis());
+        MethodDescriptor putValueInStartupContext = ofMethod(StartupContext.class, "putValue", void.class, String.class,
+                Object.class);
+        mv.invokeVirtualMethod(putValueInStartupContext, startupContext, mv.load(ValueRegistry.class.getName()), valueRegistry);
+
         // Make sure we set properties in doStartup as well. This is necessary because setting them in the static-init
         // sets them at build-time, on the host JVM, while SVM has substitutions for System. get/setProperty at
         // run-time which will never see those properties unless we also set them at run-time.
@@ -264,7 +280,6 @@ public class MainClassBuildStep {
         }
 
         mv.invokeStaticMethod(ofMethod(Timing.class, "mainStarted", void.class));
-        startupContext = mv.readStaticField(scField.getFieldDescriptor());
 
         //now set the command line arguments
         mv.invokeVirtualMethod(
@@ -275,6 +290,21 @@ public class MainClassBuildStep {
 
         tryBlock = mv.tryBlock();
         tryBlock.invokeStaticMethod(CONFIGURE_STEP_TIME_START);
+
+        // Create Runtime Config and associate it with the current classloader
+        tryBlock.invokeStaticMethod(RunTimeConfigurationGenerator.C_CREATE_RUN_TIME_CONFIG, valueRegistry);
+
+        // Register RuntimeInfoProviders with ValueRegistry
+        for (ValueRegistryRuntimeInfoProviderBuildItem runtimeInfoProviderClass : runtimeInfoProviders) {
+            ResultHandle runtimeInfoProvider = tryBlock
+                    .newInstance(ofConstructor(runtimeInfoProviderClass.getRuntimeInfoProvider()));
+            tryBlock.invokeInterfaceMethod(
+                    ofMethod(RuntimeInfoProvider.class, "register", void.class, ValueRegistry.class, RuntimeSource.class),
+                    runtimeInfoProvider,
+                    valueRegistry,
+                    tryBlock.invokeStaticMethod(ofMethod(ConfigRuntimeSource.class, "runtimeSource", RuntimeSource.class)));
+        }
+
         for (MainBytecodeRecorderBuildItem holder : mainMethod) {
             writeRecordedBytecode(holder.getBytecodeRecorder(), holder.getGeneratedStartupContextClassName(), substitutions,
                     recordableConstructorBuildItems,

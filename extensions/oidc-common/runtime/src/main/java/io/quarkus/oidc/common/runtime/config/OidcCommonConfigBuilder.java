@@ -20,7 +20,7 @@ public abstract class OidcCommonConfigBuilder<T> {
     }
 
     private record ProxyImpl(Optional<String> host, int port, Optional<String> username,
-            Optional<String> password) implements OidcCommonConfig.Proxy {
+            Optional<String> password, Optional<String> proxyConfigurationName) implements OidcCommonConfig.Proxy {
     }
 
     protected static class OidcCommonConfigImpl implements OidcCommonConfig {
@@ -47,7 +47,8 @@ public abstract class OidcCommonConfigBuilder<T> {
             this.useBlockingDnsLookup = builder.useBlockingDnsLookup;
             this.maxPoolSize = builder.maxPoolSize;
             this.followRedirects = builder.followRedirects;
-            this.proxy = new ProxyImpl(builder.proxyHost, builder.proxyPort, builder.proxyUsername, builder.proxyPassword);
+            this.proxy = new ProxyImpl(builder.proxyHost, builder.proxyPort, builder.proxyUsername, builder.proxyPassword,
+                    builder.proxyConfigurationName);
             this.tls = builder.tls;
         }
 
@@ -120,6 +121,7 @@ public abstract class OidcCommonConfigBuilder<T> {
     private int proxyPort;
     private Optional<String> proxyUsername;
     private Optional<String> proxyPassword;
+    private Optional<String> proxyConfigurationName;
     private OidcCommonConfig.Tls tls;
 
     protected OidcCommonConfigBuilder(OidcCommonConfig oidcCommonConfig) {
@@ -136,6 +138,7 @@ public abstract class OidcCommonConfigBuilder<T> {
         this.proxyPort = oidcCommonConfig.proxy().port();
         this.proxyUsername = oidcCommonConfig.proxy().username();
         this.proxyPassword = oidcCommonConfig.proxy().password();
+        this.proxyConfigurationName = oidcCommonConfig.proxy().proxyConfigurationName();
         this.tls = oidcCommonConfig.tls();
     }
 
@@ -254,6 +257,15 @@ public abstract class OidcCommonConfigBuilder<T> {
      */
     public T tlsConfigurationName(String tlsConfigurationName) {
         this.tls = new TlsImpl(tlsConfigurationName);
+        return getBuilder();
+    }
+
+    /**
+     * @param proxyConfigurationName {@link OidcCommonConfig.Proxy#proxyConfigurationName()}
+     * @return T builder
+     */
+    public T proxyConfigurationName(String proxyConfigurationName) {
+        this.proxyConfigurationName = Optional.ofNullable(proxyConfigurationName);
         return getBuilder();
     }
 }

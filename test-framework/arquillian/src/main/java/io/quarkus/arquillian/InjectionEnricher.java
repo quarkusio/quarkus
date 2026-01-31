@@ -18,6 +18,7 @@ import org.jboss.arquillian.container.spi.context.annotation.DeploymentScoped;
 import org.jboss.arquillian.core.api.Instance;
 import org.jboss.arquillian.core.api.InstanceProducer;
 import org.jboss.arquillian.core.api.annotation.Inject;
+import org.jboss.arquillian.test.api.ArquillianResource;
 import org.jboss.arquillian.test.spi.TestEnricher;
 import org.jboss.arquillian.test.spi.annotation.TestScoped;
 import org.jboss.logging.Logger;
@@ -172,6 +173,9 @@ public class InjectionEnricher implements TestEnricher {
             }
             for (int i = 0; i < parameterTypes.length; i++) {
                 try {
+                    if (getResourceAnnotation(method.getParameterAnnotations()[i]) != null) {
+                        continue;
+                    }
                     values[i] = getInstanceByType(beanManager, i, method, (CreationalContext<?>) creationalContext);
                 } catch (Exception e) {
                     log.warn("InjectionEnricher tried to lookup method parameter of type "
@@ -179,6 +183,15 @@ public class InjectionEnricher implements TestEnricher {
                 }
             }
             return values;
+        }
+
+        private ArquillianResource getResourceAnnotation(Annotation[] annotations) {
+            for (Annotation annotation : annotations) {
+                if (annotation.annotationType() == ArquillianResource.class) {
+                    return (ArquillianResource) annotation;
+                }
+            }
+            return null;
         }
     }
 

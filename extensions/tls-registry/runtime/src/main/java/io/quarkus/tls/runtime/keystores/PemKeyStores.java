@@ -38,7 +38,7 @@ public class PemKeyStores {
 
     public static TrustStoreAndTrustOptions verifyPEMTrustStoreStore(TrustStoreConfig tsc, Vertx vertx, String name) {
         var config = tsc.pem().orElseThrow();
-        if (config.certs().isEmpty() || config.certs().get().isEmpty()) {
+        if (config.hasNoTrustedCertificates()) {
             throw new IllegalStateException("No PEM certificates configured for the trust store of '" + name + "'");
         }
         try {

@@ -16,7 +16,29 @@ public interface ResolvedDependency extends Dependency {
 
     PathCollection getResolvedPaths();
 
+    /**
+     * A collection of all the resolved direct dependencies of the artifact of this dependency.
+     * <p/>
+     * Note that this method will include only direct dependencies that are found among application dependencies.
+     * This is one of the differences between this method and {@link #getDirectDependencies()}.
+     *
+     * @return all the resolved direct dependencies of the artifact of this dependency
+     */
     Collection<ArtifactCoords> getDependencies();
+
+    /**
+     * A collection of the all the configured direct dependencies of the artifact of this dependency
+     * (except test dependencies of transitive dependencies).
+     * <p/>
+     * Note that some of the configured direct dependencies might not be resolved due to scope, optionality
+     * or exclusions. The resulting collection returned from this method will still include such dependencies
+     * with {@link DependencyFlags#MISSING_FROM_APPLICATION} flag.
+     * <p/>
+     * Every dependency returned from this method will {@link DependencyFlags#DIRECT} set.
+     *
+     * @return all the direct dependencies of the artifact of this dependency
+     */
+    Collection<Dependency> getDirectDependencies();
 
     default boolean isResolved() {
         final PathCollection paths = getResolvedPaths();

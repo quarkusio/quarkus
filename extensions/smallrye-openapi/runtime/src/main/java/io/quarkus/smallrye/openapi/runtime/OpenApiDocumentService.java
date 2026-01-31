@@ -4,9 +4,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -16,6 +20,8 @@ import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.jboss.jandex.IndexView;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.smallrye.openapi.runtime.filter.AutoSecurityFilter;
 import io.quarkus.smallrye.openapi.runtime.filter.DisabledRestEndpointsFilter;
 import io.smallrye.openapi.api.SmallRyeOpenAPI;
 import io.smallrye.openapi.runtime.io.Format;
@@ -26,22 +32,28 @@ import io.smallrye.openapi.runtime.io.Format;
 @ApplicationScoped
 public class OpenApiDocumentService {
 
-    private final OpenApiDocumentHolder documentHolder;
+    private static final OpenApiDocumentHolder EMPTY_DOCUMENT = new EmptyDocument();
+
+    private final Map<String, OpenApiDocumentHolder> documentHolders = new HashMap<>();
 
     @Inject
-    public OpenApiDocumentService(OASFilter autoSecurityFilter,
-            OpenApiRecorder.UserDefinedRuntimeFilters runtimeFilters, Config config) {
+    Config config;
 
+    void prepareDocument(AutoSecurityFilter autoSecurityFilter, List<String> runtimeFilters, String documentName) {
         ClassLoader loader = Optional.ofNullable(OpenApiConstants.classLoader)
                 .orElseGet(Thread.currentThread()::getContextClassLoader);
 
-        try (InputStream source = loader.getResourceAsStream(OpenApiConstants.BASE_NAME + "JSON")) {
+        boolean isDefaultDocument = OpenApiConstants.DEFAULT_DOCUMENT_NAME.equals(documentName);
+        String name = OpenApiConstants.BASE_NAME + (isDefaultDocument ? "" : ("-" + documentName));
+
+        try (InputStream source = loader.getResourceAsStream(name + ".JSON")) {
             if (source != null) {
-                Set<String> userFilters = new LinkedHashSet<>(runtimeFilters.filters());
-                boolean dynamic = config.getOptionalValue("quarkus.smallrye-openapi.always-run-filter", Boolean.class)
-                        .orElse(Boolean.FALSE);
+                Config wrappedConfig = OpenApiConfigHelper.wrap(config, documentName);
+                Set<String> userFilters = new LinkedHashSet<>(runtimeFilters);
+                boolean dynamic = wrappedConfig.getOptionalValue("quarkus.smallrye-openapi.always-run-filter", boolean.class)
+                        .orElse(false);
                 SmallRyeOpenAPI.Builder builder = new OpenAPIRuntimeBuilder()
-                        .withConfig(config)
+                        .withConfig(wrappedConfig)
                         .withApplicationClassLoader(loader)
                         .enableModelReader(false)
                         .enableStandardStaticFiles(false)
@@ -54,27 +66,64 @@ public class OpenApiDocumentService {
                         .ifPresent(builder::addFilter);
                 DisabledRestEndpointsFilter.maybeGetInstance()
                         .ifPresent(builder::addFilter);
+                var filterSetup = addFilters(userFilters, loader);
 
                 if (dynamic && !userFilters.isEmpty()) {
                     // Only regenerate the OpenAPI document when configured and there are filters to run
-                    this.documentHolder = new DynamicDocument(builder, loader, userFilters);
+                    this.documentHolders.put(documentName,
+                            new DynamicDocument(builder.build().model(), loader, wrappedConfig, filterSetup));
                 } else {
-                    userFilters.forEach(name -> builder.addFilter(name, loader, (IndexView) null));
-                    this.documentHolder = new StaticDocument(builder.build());
+                    filterSetup.accept(builder);
+                    this.documentHolders.put(documentName, new StaticDocument(builder.build()));
                 }
             } else {
-                this.documentHolder = new EmptyDocument();
+                this.documentHolders.put(documentName, new EmptyDocument());
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
-    public byte[] getDocument(Format format) {
+    public byte[] getDocument(String documentName, Format format) {
+        OpenApiDocumentHolder holder = this.documentHolders.getOrDefault(documentName, EMPTY_DOCUMENT);
+
         if (format.equals(Format.JSON)) {
-            return documentHolder.getJsonDocument();
+            return holder.getJsonDocument();
         }
-        return documentHolder.getYamlDocument();
+
+        return holder.getYamlDocument();
+    }
+
+    private Consumer<SmallRyeOpenAPI.Builder> addFilters(Set<String> userFilters, ClassLoader loader) {
+        return builder -> {
+            for (String filterClassName : userFilters) {
+                OASFilter filter = locateInstance(filterClassName, loader);
+
+                if (filter != null) {
+                    builder.addFilter(filter);
+                } else {
+                    builder.addFilter(filterClassName, loader, (IndexView) null);
+                }
+            }
+        };
+    }
+
+    @SuppressWarnings("unchecked")
+    private OASFilter locateInstance(String className, ClassLoader loader) {
+        if (className == null) {
+            return null;
+        }
+
+        Class<OASFilter> filterClass;
+
+        try {
+            filterClass = (Class<OASFilter>) loader.loadClass(className);
+        } catch (ClassNotFoundException e) {
+            // Ignore it here and allow SmallRyeOpenAPI#Builder to throw OpenApiRuntimeException later
+            return null;
+        }
+
+        return Arc.container().instance(filterClass).get();
     }
 
     static class EmptyDocument implements OpenApiDocumentHolder {
@@ -116,22 +165,39 @@ public class OpenApiDocumentService {
      */
     static class DynamicDocument implements OpenApiDocumentHolder {
 
-        private SmallRyeOpenAPI.Builder builder;
+        private final OpenAPI generatedOnBuild;
+        private final ClassLoader loader;
+        private final Config config;
+        private Consumer<SmallRyeOpenAPI.Builder> filterSetup;
 
-        DynamicDocument(SmallRyeOpenAPI.Builder builder, ClassLoader loader, Set<String> userFilters) {
-            OpenAPI generatedOnBuild = builder.build().model();
-            builder.withCustomStaticFile(() -> null);
-            builder.withInitialModel(generatedOnBuild);
-            userFilters.forEach(name -> builder.addFilter(name, loader, (IndexView) null));
-            this.builder = builder;
+        DynamicDocument(OpenAPI generatedOnBuild, ClassLoader loader, Config config,
+                Consumer<SmallRyeOpenAPI.Builder> filterSetup) {
+            this.generatedOnBuild = generatedOnBuild;
+            this.loader = loader;
+            this.config = config;
+            this.filterSetup = filterSetup;
+        }
+
+        private SmallRyeOpenAPI build() {
+            SmallRyeOpenAPI.Builder builder = new OpenAPIRuntimeBuilder()
+                    .withConfig(config)
+                    .withApplicationClassLoader(loader)
+                    .withInitialModel(generatedOnBuild)
+                    .enableModelReader(false)
+                    .enableStandardStaticFiles(false)
+                    .enableAnnotationScan(false)
+                    .enableStandardFilter(false);
+
+            filterSetup.accept(builder);
+            return builder.build();
         }
 
         public byte[] getJsonDocument() {
-            return builder.build().toJSON().getBytes(StandardCharsets.UTF_8);
+            return build().toJSON().getBytes(StandardCharsets.UTF_8);
         }
 
         public byte[] getYamlDocument() {
-            return builder.build().toYAML().getBytes(StandardCharsets.UTF_8);
+            return build().toYAML().getBytes(StandardCharsets.UTF_8);
         }
     }
 }

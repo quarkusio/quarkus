@@ -1,10 +1,12 @@
 package io.quarkus.resteasy.reactive.server.test.resource.basic;
 
+import java.net.URI;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -17,8 +19,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.WiderMappingDefaultOptions;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.WiderMappingResource;
-import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 
 /**
  * @tpSubChapter Resources
@@ -31,17 +33,13 @@ public class WiderMappingNegativeTest {
 
     static Client client;
 
-    private String generateURL(String path) {
-        return PortProviderUtil.generateURL(path, WiderMappingNegativeTest.class.getSimpleName());
-    }
-
     @RegisterExtension
     static QuarkusUnitTest testExtension = new QuarkusUnitTest()
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class, WiderMappingResource.class, WiderMappingDefaultOptions.class);
+                    war.addClasses(WiderMappingResource.class, WiderMappingDefaultOptions.class);
                     return war;
                 }
             });
@@ -56,6 +54,9 @@ public class WiderMappingNegativeTest {
         client.close();
     }
 
+    @TestHTTPResource
+    URI uri;
+
     /**
      * @tpTestDetails Two resources used, more general resource should not be used
      * @tpSince RESTEasy 3.0.16
@@ -63,9 +64,9 @@ public class WiderMappingNegativeTest {
     @Test
     @DisplayName("Test Options")
     public void testOptions() {
-        Response response = client.target(generateURL("/hello/int")).request().options();
+        Response response = client.target(UriBuilder.fromUri(uri).path("/hello/int")).request().options();
         Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-        Assertions.assertNotEquals(response.readEntity(String.class), "hello");
+        Assertions.assertNotEquals("hello", response.readEntity(String.class));
         response.close();
     }
 }

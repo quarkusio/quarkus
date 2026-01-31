@@ -15,13 +15,13 @@ public class OidcRecorderTest {
     public void testtoProxyOptionsWithHostCheckPresent() {
         Proxy proxy = new Proxy();
         proxy.host = Optional.of("server.example.com");
-        assertTrue(OidcCommonUtils.toProxyOptions(proxy).isPresent());
+        assertTrue(OidcCommonUtils.toProxyOptions(proxy, null).isPresent());
     }
 
     @Test
     public void testtoProxyOptionsWithoutHostCheckNonPresent() {
         Proxy proxy = new Proxy();
-        assertFalse(OidcCommonUtils.toProxyOptions(proxy).isPresent());
+        assertFalse(OidcCommonUtils.toProxyOptions(proxy, null).isPresent());
     }
 
 }

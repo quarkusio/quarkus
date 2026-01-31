@@ -16,7 +16,8 @@ public class DisableLoggingFeature implements Feature {
             "org.hibernate.orm.core",
             "org.hibernate.statistics",
             "org.hibernate.orm.jpa",
-            "org.hibernate.orm.connections.pooling"
+            "org.hibernate.orm.connections.pooling",
+            "org.hibernate.spatial.integration.SpatialService",
     };
 
     private final Map<String, Level> categoryMap = new HashMap<>(CATEGORIES.length);

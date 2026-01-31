@@ -321,17 +321,14 @@ Currently, introspection credentials, if configured, can only be sent as HTTP PO
 |quarkus.oidc.connection-delay ||Connection delay
 |quarkus.oidc.connection-retry-count |3|Connection retry count
 |quarkus.oidc.connection-time-out |10 seconds|Connection time out
-|quarkus.oidc.proxy-host ||Proxy host
-|quarkus.oidc.proxy-port |80|Proxy port
-|quarkus.oidc.proxy-username ||Proxy username
-|quarkus.oidc.proxy-password ||Proxy password
+|quarkus.oidc.proxy.proxy-configuration-name ||Proxy configuration name
 |====
 
 `quarkus.oidc.use-blocking-dns-lookup` should be set to `true` to avoid a Vert'x thread getting blocked when an OIDC provider connection is established on the slow network.
 
 `quarkus.oidc.connection-retry-count` sets a number of connection retries and `quarkus.oidc.connection-time-out` sets a duration after which the current OIDC connection request times out. `quarkus.oidc.connection-delay` establishes a delay for an initial connection request only.
 
-Four properties in the `quarkus.oidc.proxy.*` namespace can be used to control access to HTTP proxies.
+The `quarkus.oidc.proxy.proxy-configuration-name=<name>` property configures the name of proxy configuration registered in the Proxy registry (`quarkus.proxy.<name>.*`). The proxy configuration can be used to control OIDC access to HTTP proxies.
 
 In some cases, OIDC provider, after accepting HTTP GET requests to either discovery or UserInfo endpoints, initiates a redirect exactly to the same endpoint address while also supplying some additional cookies.
 
@@ -913,7 +910,7 @@ Token bindings are tools for sender-constraining access tokens.
 
 Please see the xref:security-oidc-bearer-token-authentication.adoc#mutual-tls-token-binding[Mutual TLS token binding] section for more information.
 
-See also the <<bearer-token-source-properties>> section for details about enabling a Demonstrating Proof of Posession (DPoP) binding.
+See also the <<bearer-token-source-properties>> section for details about enabling a Demonstrating Proof of Possession (DPoP) binding.
 
 [[bearer-token-source-properties]]
 === Bearer token header
@@ -935,7 +932,7 @@ In some cases, both the header and the scheme may have to customized.
 `quarkus.oidc.token.header` and `quarkus.oidc.token.authorization-scheme` can be used to customize which HTTP header contains a bearer access token. You can customize the header and, when the HTTP `Authorization` is used - the scheme.
 
 For example, you can set `quarkus.oidc.token.authorization-scheme=DPoP` to accept the DPoP access tokens sent as `Authorization: DPoP <token>`.
-See the xref:security-oidc-bearer-token-authentication#demonstrating-proof-of-possession-dpop[Demonstrating Proof of Posession] section for more information.
+See the xref:security-oidc-bearer-token-authentication#demonstrating-proof-of-possession-dpop[Demonstrating Proof of Possession] section for more information.
 
 See also the <<token-binding>> section.
 
@@ -1187,7 +1184,7 @@ quarkus.oidc.token.subject-required=true
 
 === Even stricter configuration setup
 
-What constitues a strict bearer access token or authorization code flow support can vary significantly between deployments. For example, one OIDC provider may require MTLS client authentication, another one - DPoP binding or PKCE support. There are too many combinations for us to cover in this document.
+What constitutes a strict bearer access token or authorization code flow support can vary significantly between deployments. For example, one OIDC provider may require MTLS client authentication, another one - DPoP binding or PKCE support. There are too many combinations for us to cover in this document.
 
 We are here to help should you require further guidance with creating stricter, tighter OIDC configurations.
 Do open issues, and reach out to the team on Quarkus Discussions, Zulip users channel.

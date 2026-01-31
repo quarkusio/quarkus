@@ -10,6 +10,7 @@ import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 /**
  *
  */
+@Deprecated(forRemoval = true)
 public class TestHTTPConfigSourceProvider implements ConfigSourceProvider {
 
     static final String TEST_URL_VALUE = "http://${quarkus.http.host:localhost}:${quarkus.http.test-port:8081}${quarkus.http.root-path:${quarkus.servlet.context-path:}}";

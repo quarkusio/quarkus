@@ -35,16 +35,22 @@ public abstract class RemoteSource extends Source {
      */
     private final transient String templateId;
 
+    private final transient int startLine;
+
+    public RemoteSource(URI uri, String templateId) {
+        this(uri, templateId, 0);
+    }
+
     /**
      * Creates a new remote source associated with the given template.
      *
      * @param uri the URI of the template source, or {@code null} if not applicable
      * @param templateId the template ID used by the Qute engine (never {@code null})
      */
-    public RemoteSource(URI uri, String templateId) {
+    public RemoteSource(URI uri, String templateId, int startLine) {
         this.uri = uri;
         this.templateId = templateId;
-
+        this.startLine = startLine;
         // Initialize the DAP "name" field for display purposes in the client.
         // If the URI is known, extract the filename; otherwise, use the templateId.
         super.setName(uri != null ? computeName(uri) : templateId);
@@ -80,6 +86,10 @@ public abstract class RemoteSource extends Source {
      */
     public String getTemplateId() {
         return templateId;
+    }
+
+    public int getStartLine() {
+        return startLine;
     }
 
     /**

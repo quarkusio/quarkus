@@ -58,13 +58,16 @@ import io.quarkus.dev.testing.TestScanningLock;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.ValueRegistryImpl;
 import io.quarkus.test.common.GroovyClassValue;
+import io.quarkus.test.common.ListeningAddress;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 import io.quarkus.test.config.TestConfigProviderResolver;
+import io.quarkus.value.registry.ValueRegistry;
 
 /**
  * A test extension for <strong>black-box</strong> testing of Quarkus development mode in extensions.
@@ -229,7 +232,10 @@ public class QuarkusDevModeTest
             ReflectiveInvocationContext<Constructor<T>> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
         T actualTestInstance = invocation.proceed();
-        TestHTTPResourceManager.inject(actualTestInstance);
+        // TODO - QuarkusDevModeTest does not read the actual port from the logs. We need to implement it
+        ValueRegistry valueRegistry = ValueRegistryImpl.builder().build();
+        valueRegistry.register(ListeningAddress.HTTP_TEST_PORT, 8080);
+        TestHTTPResourceManager.inject(actualTestInstance, valueRegistry);
         return actualTestInstance;
     }
 

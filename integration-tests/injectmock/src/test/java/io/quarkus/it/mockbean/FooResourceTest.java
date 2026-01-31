@@ -1,7 +1,9 @@
 package io.quarkus.it.mockbean;
 
 import static io.restassured.RestAssured.given;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -25,12 +27,12 @@ class FooResourceTest {
         Mockito.when(fooService.newFoo(anyString()).count(anyInt()).bar(any(Foo.Bar.class)))
                 .thenReturn(new Foo.FooBuilder("dummy"));
 
-        String responseStr = given()
+        given()
                 .when().get("/foo/test/100/test2")
                 .then()
                 .statusCode(200)
-                .extract().body().asString();
-
-        assertEquals("{\"name\":\"dummy\",\"count\":0,\"bar\":null}", responseStr);
+                .body("name", equalTo("dummy"))
+                .body("count", equalTo(0))
+                .body("bar", is(nullValue()));
     }
 }

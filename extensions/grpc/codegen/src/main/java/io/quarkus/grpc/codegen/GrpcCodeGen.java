@@ -48,6 +48,7 @@ import io.smallrye.common.process.ProcessBuilder;
  */
 public class GrpcCodeGen implements CodeGenProvider {
     private static final Logger log = Logger.getLogger(GrpcCodeGen.class);
+    private static final Logger grpcProcessOuputLogger = Logger.getLogger("protoc");
 
     private static final String quarkusProtocPluginMain = "io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator";
     private static final String EXE = "exe";
@@ -194,7 +195,14 @@ public class GrpcCodeGen implements CodeGenProvider {
                 }
                 log.debugf("Executing command: %s", String.join(" ", command));
                 try {
-                    ProcessBuilder.exec(command.get(0), command.subList(1, command.size()));
+                    ProcessBuilder<Void> pb = ProcessBuilder.newBuilder(command.get(0),
+                            command.subList(1, command.size()));
+                    // Tune the environment for compatibility with Java >24 without triggering warnings
+                    pb.modifyEnvironment(GrpcCodeGen::invocationEnvironmentTuning);
+                    // Set up a custom output handler to highlight only relevant errors
+                    pb.output().consumeLinesWith(100, this::outputConsumer);
+                    pb.error().consumeLinesWith(100, this::outputConsumer).logOnSuccess(false);
+                    pb.run();
                 } catch (Exception e) {
                     throw new CodeGenException("Failed to generate Java classes from proto files: %s to %s with command %s"
                             .formatted(protoFiles, outDir.toAbsolutePath(), String.join(" ", command)), e);
@@ -210,6 +218,37 @@ public class GrpcCodeGen implements CodeGenProvider {
         }
 
         return false;
+    }
+
+    private static void invocationEnvironmentTuning(final Map<String, String> environment) {
+        //This specific environment variable is being picked up by the JVMs spawned by protoc:
+        final String key = "JDK_JAVA_OPTIONS";
+        String existingValue = environment.get(key);
+        if (existingValue == null || existingValue.isBlank()) {
+            existingValue = "";
+        }
+        StringBuilder sb = new StringBuilder();
+        //Each of these require custom logic to ensure we don't override an explicit user setting
+
+        if (!existingValue.contains("-Dsun.stdout.encoding=")) {
+            //This one is always useful, especially on Java 17:
+            sb.append("-Dsun.stdout.encoding=UTF-8 ");
+        }
+
+        //Do NOT set this property on Java 17, as it will fail with "unrecognized option":
+        if (Runtime.version().feature() > 21 && !existingValue.contains("--sun-misc-unsafe-memory-access=")) {
+            sb.append("--sun-misc-unsafe-memory-access=allow ");
+        }
+        sb.append(existingValue);
+        environment.put(key, sb.toString().trim());
+    }
+
+    private void outputConsumer(final String line) {
+        //Protoc will by default emit a message like "NOTE: Picked up JDK_JAVA_OPTIONS: [...],
+        //which will lead the ProcessBuilder to emit a warning if not consumed.
+        //So let's consume them here and emit as regular "info": if there's errors, they will be caught
+        //as the return code is being checked as well.
+        grpcProcessOuputLogger.info(line);
     }
 
     private static void copySanitizedProtoFile(ResolvedDependency artifact, Path protoPath, Path outProtoPath)

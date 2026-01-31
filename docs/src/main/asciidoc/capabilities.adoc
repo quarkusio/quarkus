@@ -144,7 +144,7 @@ quarkusExtension {
 ----
 <1> condition that must be resolved to `true` by a class implementing `java.util.function.BooleanSupplier`
 
-NOTE: It is possible to specify `onlyIfNot` conditions as well. . Conditions can also be set for required capabilities.
+NOTE: It is possible to specify `onlyIfNot` conditions as well. Conditions can also be set for required capabilities.
 ****
 
 In this case, `io.quarkus.container.image.openshift.deployment.OpenshiftBuild` should be included in one of the extension deployment dependencies and implement `java.util.function.BooleanSupplier`. At build time, the Quarkus bootstrap will create an instance of it and register `io.quarkus.container.image.openshift` capability only if its `getAsBoolean()` method returns true.
@@ -212,4 +212,4 @@ Given that only a single provider of a given capability is allowed in an applica
 * `io.quarkus.resteasy.json.jsonb`
 * `io.quarkus.resteasy.json.jsonb.client`
 
-Including any one of those extensions in an application will enable the RESTEasy JSON serializer. In case a build step needs to check whether the RESTEasy JSON serializer is already enabled in an application, instead of checking whether any of those capabilities is present, it could simply check whether an extension with prefix `io.quarkus.resteasy.json` is present.
+Including any one of those extensions in an application will enable the RESTEasy JSON serializer. In case a build step needs to check whether the RESTEasy JSON serializer is already enabled in an application, instead of checking whether any of those capabilities is present, it could simply check whether an extension with the prefix `io.quarkus.resteasy.json` is present.

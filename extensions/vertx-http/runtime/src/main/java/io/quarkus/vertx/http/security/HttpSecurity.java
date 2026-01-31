@@ -287,9 +287,16 @@ public interface HttpSecurity {
         /**
          * HTTP request must be authenticated using a mechanism
          * with matching {@link HttpCredentialTransport#getAuthenticationScheme()}.
-         * Please note that annotation-based mechanism selection has higher priority during the mechanism selection.
          */
         HttpPermission authenticatedWith(String scheme);
+
+        /**
+         * HTTP request must be authenticated using mechanisms with matching
+         * {@link HttpCredentialTransport#getAuthenticationScheme()}. By default, only one of the matching authentication
+         * mechanisms will produce a {@link SecurityIdentity}, and all matching authentication mechanisms will attempt
+         * to authenticate when an inclusive authentication is enabled.
+         */
+        HttpPermission authenticatedWith(Set<String> schemes);
 
         /**
          * Indicates that this policy always applies to the matched paths in addition to the policy with a winning path.

@@ -78,6 +78,9 @@ We need to customize the `pom.xml` file to use virtual threads.
 
 2) In the maven-surefire-plugin and maven-failsafe-plugin configurations, add the following `argLine` parameter:
 
+IMPORTANT: The `-Djdk.tracePinnedThreads` system property **only works on Java 21-23**.
+It has been removed in Java 24+. For Java 24+, use the JFR events or Quarkus testing extensions instead (see the xref:./virtual-threads.adoc#testing-virtual-thread-applications[Testing virtual thread applications] section).
+
 [source, xml]
 ----
 <plugin>
@@ -88,7 +91,7 @@ We need to customize the `pom.xml` file to use virtual threads.
       <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
       <maven.home>${maven.home}</maven.home>
     </systemPropertyVariables>
-    <argLine>-Djdk.tracePinnedThreads</argLine> <!-- Added line -->
+    <argLine>-Djdk.tracePinnedThreads</argLine> <!-- Added line - only works on Java 21-23 -->
   </configuration>
 </plugin>
 <plugin>
@@ -106,7 +109,7 @@ We need to customize the `pom.xml` file to use virtual threads.
           <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
           <maven.home>${maven.home}</maven.home>
         </systemPropertyVariables>
-        <argLine>-Djdk.tracePinnedThreads</argLine> <!-- Added line -->
+        <argLine>-Djdk.tracePinnedThreads</argLine> <!-- Added line - only works on Java 21-23 -->
       </configuration>
     </execution>
   </executions>
@@ -114,7 +117,7 @@ We need to customize the `pom.xml` file to use virtual threads.
 ----
 
 
-The `-Djdk.tracePinnedThreads` will detect pinned carrier threads while running tests (See xref:./virtual-threads.adoc#pinning[the virtual thread reference guide for details]).
+The `-Djdk.tracePinnedThreads` will detect pinned carrier threads while running tests on Java 21-23 (See xref:./virtual-threads.adoc#pinning[the virtual thread reference guide for details]).
 
 [IMPORTANT]
 .--enable-preview on Java 19 and 20
@@ -247,17 +250,22 @@ In the `pom.xml,` we added an `argLine` argument to the surefire and failsafe pl
 
 [source, xml]
 ----
-<argLine>-Djdk.tracePinnedThreads</argLine>
+<argLine>-Djdk.tracePinnedThreads</argLine> <!-- Only works on Java 21-23 -->
 ----
 
 The `-Djdk.tracePinnedThreads` dumps the stack trace if a virtual thread cannot be _unmounted_ smoothly (meaning that it blocks the carrier thread).
 That's what we call _pinning_ (more info in xref:./virtual-threads.adoc#pinning[the virtual thread reference guide]).
 
-We recommend enabling this flag in tests.
+IMPORTANT: This flag **only works on Java 21-23** and has been removed in Java 24+. For Java 24+, use the Quarkus `junit-virtual-threads` extension described in xref:./virtual-threads.adoc#testing-virtual-thread-applications[the virtual thread reference guide], which uses JFR events to detect pinning across all Java versions.
+
+NOTE: Starting with Java 24, thanks to link:https://openjdk.org/jeps/491[JEP 491], `synchronized` blocks no longer cause pinning.
+This means pinning is much less likely to occur on Java 24+, occurring only when native code calls back to Java code that performs blocking operations.
+
+We recommend enabling pinning detection in tests.
 Thus, you can check that your application behaves correctly when using virtual threads.
 Just check your log after having run the test.
-If you see a stack trace... better check what's wrong.
-If your code (or one of your dependencies) pins, it might be better to use regular worker thread instead.
+If you see a stack trace (on Java 21-23) or pinning events (using the junit-virtual-threads extension), better check what's wrong.
+If your code (or one of your dependencies) pins, it might be better to use regular worker threads instead.
 
 Create the `src/test/java/org/acme/TheBestPlaceToBeResourceTest.java` class with the following content:
 

@@ -1,5 +1,7 @@
 package io.quarkus.deployment.runnerjar;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Fail.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.HashSet;
@@ -13,6 +15,7 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.DependencyFlags;
+import io.quarkus.maven.dependency.ResolvedDependency;
 
 public class ExcludedArtifactsTest extends BootstrapFromOriginalJarTestBase {
 
@@ -78,5 +81,58 @@ public class ExcludedArtifactsTest extends BootstrapFromOriginalJarTestBase {
         expected.add(new ArtifactDependency(ArtifactCoords.jar("io.quarkus.bootstrap.test", "dep-g", "1"),
                 DependencyFlags.RUNTIME_CP, DependencyFlags.DEPLOYMENT_CP));
         assertEquals(expected, getDependenciesWithFlag(model, DependencyFlags.RUNTIME_CP));
+
+        for (ResolvedDependency dep : model.getDependencies()) {
+            switch (dep.getArtifactId()) {
+                case "ext-a":
+                    assertThat(dep.getDirectDependencies()).containsExactlyInAnyOrder(
+                            Dependency.jarWithFlags(TsArtifact.DEFAULT_GROUP_ID, "ext-a-dep", "1",
+                                    DependencyFlags.DIRECT |
+                                            DependencyFlags.MISSING_FROM_APPLICATION));
+                    break;
+                case "ext-a-deployment":
+                    assertThat(dep.getDirectDependencies()).containsExactlyInAnyOrder(
+                            Dependency.jarWithFlags(TsArtifact.DEFAULT_GROUP_ID, "ext-a", "1",
+                                    DependencyFlags.DIRECT |
+                                            DependencyFlags.RUNTIME_CP |
+                                            DependencyFlags.DEPLOYMENT_CP |
+                                            DependencyFlags.RUNTIME_EXTENSION_ARTIFACT |
+                                            DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT),
+                            Dependency.jarWithFlags(TsArtifact.DEFAULT_GROUP_ID, "ext-a-deployment-dep", "1",
+                                    DependencyFlags.DIRECT |
+                                            DependencyFlags.DEPLOYMENT_CP));
+                    break;
+                case "ext-a-dep":
+                    assertThat(dep.getDirectDependencies()).containsExactlyInAnyOrder(
+                            Dependency.jarWithFlags(TsArtifact.DEFAULT_GROUP_ID, "dep-c", "1",
+                                    DependencyFlags.DIRECT |
+                                            DependencyFlags.RUNTIME_CP |
+                                            DependencyFlags.DEPLOYMENT_CP));
+                    break;
+                case "ext-a-deployment-dep":
+                    assertThat(dep.getDirectDependencies()).isEmpty();
+                    break;
+                case "dep-c":
+                    assertThat(dep.getDirectDependencies()).containsExactlyInAnyOrder(
+                            Dependency.jarWithFlags("org.banned", "dep-e", "1",
+                                    DependencyFlags.DIRECT |
+                                            DependencyFlags.MISSING_FROM_APPLICATION));
+                    break;
+                case "dep-g":
+                    assertThat(dep.getDirectDependencies()).isEmpty();
+                    break;
+                case "dep-b":
+                    assertThat(dep.getDirectDependencies()).containsExactlyInAnyOrder(
+                            Dependency.jarWithFlags("org.banned.too", "dep-d", "1",
+                                    DependencyFlags.DIRECT |
+                                            DependencyFlags.MISSING_FROM_APPLICATION),
+                            Dependency.jarWithFlags("org.banned", "dep-f", "1",
+                                    DependencyFlags.DIRECT |
+                                            DependencyFlags.MISSING_FROM_APPLICATION));
+                    break;
+                default:
+                    fail("Unexpected dependency: " + dep.toCompactCoords());
+            }
+        }
     }
 }

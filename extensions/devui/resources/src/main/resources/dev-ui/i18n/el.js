@@ -56,6 +56,8 @@ export const templates = {
     'devmcp-no-data': 'Δεν βρέθηκαν δεδομένα.',
     'assistant-warning-explanation': 'Ο βοηθός Quarkus μπορεί να κάνει λάθη. Ελέγξτε τις απαντήσεις.',
     'assistant-warning': 'Προειδοποίηση',
+    'assistant-chat-title' : 'Μετάβαση στη συνομιλία του βοηθού για να συνεχίσετε τη συζήτηση.',
+    'assistant-chat-button' : 'Συνομιλία',
     'footer-server': 'Διακομιστής',
     'footer-testing': 'Δοκιμή',
     'footer-dev_ui': 'Διεπαφή Προγραμματιστή',

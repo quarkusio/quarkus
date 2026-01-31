@@ -21,7 +21,7 @@ public class PanacheJpaUtil {
         // FIXME: not true?
         // Escape the entity name just in case some keywords are used
         // in package names that will prevent ORM from executing a query
-        return "`%s`".formatted(entityClass.getName());
+        return '`' + entityClass.getName() + '`';
     }
 
     /**

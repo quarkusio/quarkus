@@ -34,6 +34,7 @@ import java.lang.reflect.Modifier;
 import java.nio.file.Path;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -46,6 +47,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -728,8 +730,7 @@ public class JaxrsClientReactiveProcessor {
         if (defaultMediaTypes == null || defaultMediaTypes.isEmpty()) {
             return defaultMediaType;
         }
-        defaultMediaTypes.sort(Comparator.comparingInt(MediaTypeWithPriority::getPriority));
-        return defaultMediaTypes.get(0).getMediaType();
+        return defaultMediaTypes.stream().min(Comparator.comparingInt(MediaTypeWithPriority::getPriority)).get().getMediaType();
     }
 
     @BuildStep
@@ -2652,12 +2653,19 @@ public class JaxrsClientReactiveProcessor {
             if (consumes != null && consumes.length > 0) {
 
                 if (consumes.length > 1) {
-                    throw new IllegalArgumentException(
-                            "Multiple `@Consumes` values used in a MicroProfile Rest Client: " +
-                                    restClientInterface.name().toString()
-                                    + " Unable to determine a single `Content-Type`.");
+                    Set<String> uniqueConsumes = new TreeSet<>(Arrays.asList(consumes));
+                    mediaTypeValue = uniqueConsumes.iterator().next();
+                    if (uniqueConsumes.size() > 1) {
+                        log.debugf("MicroProfile Rest Client `%s`'s method `%s` has multiple `@Consumes` values `%s`,"
+                                + " Content-Type will be set to `%s`."
+                                + " You can change Content-Type in a custom jakarta.ws.rs.ClientRequestFilter implementation.",
+                                restClientInterface.name().toString(), jandexMethod.name(),
+                                uniqueConsumes.stream().collect(Collectors.joining(", ")),
+                                mediaTypeValue);
+                    }
+                } else {
+                    mediaTypeValue = consumes[0];
                 }
-                mediaTypeValue = consumes[0];
             } else if (formParams != null) {
                 mediaTypeValue = multipart ? MediaType.MULTIPART_FORM_DATA : MediaType.APPLICATION_FORM_URLENCODED;
             }

@@ -77,6 +77,8 @@
 # - NO_PROXY: A comma separated lists of hosts, IP addresses or domains that can be
 #   accessed directly. (example: "foo.example.com,bar.example.com")
 #
+# You can find more information about the UBI base runtime images and their configuration here:
+# https://rh-openjdk.github.io/redhat-openjdk-containers/
 ###
 {#if dockerfile.jvm.from-template}
 FROM {#eval dockerfile.jvm.from-template /}

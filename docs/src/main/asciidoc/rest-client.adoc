@@ -1268,6 +1268,47 @@ public interface ExtensionsService {
 org.eclipse.microprofile.rest.client.propagateHeaders=Authorization,Proxy-Authorization
 ----
 
+== Multiple `@Consumes` media types
+
+Some REST Client interface methods may have a `@Consumes` annotation with multiple media type values, for example:
+
+[source, java]
+----
+@Path("/orders")
+@RegisterRestClient
+public interface OrderService {
+
+    record OrderReference(String orderReference) {
+    };
+
+    @POST
+    @Consumes({"application/json", "application/yaml"}) <1>
+    Response addOrderReference(OrderReference orderReference);
+}
+----
+<1> REST server accepts OrderReference representations in either JSON or YAML formats.
+
+REST Client must set a `Content-Type` for the `POST /orders` requests. When it sees `@Consumes` with multiple media type values, it sorts them and chooses the first media type as a `Content-Type` value. It must not impact the client code that makes calls such as `OrderService#addOrderReference` as all the listed `@Consumes` values are expected to be supported by the REST server.
+
+Register a custom `ClientRequestFiler` as explained in the <<customize-rest-client-request>> section if you prefer to set a different `Content-Type` such as `application/yaml` which is also supported according to the `OrderService` interface definition:
+
+[source, java]
+----
+@Provider
+public class RestClientContentTypeRequestFilter implements ClientRequestFilter {
+
+    @Override
+    public void filter(ClientRequestContext rc) throws IOException {
+        String contentType = rc.getHeaderString("Content-Type"));
+        if ("application/json".equals(contentType)) {
+            rc.getHeaders().putSingle("Content-Type", "application/yaml");
+        }
+    }
+
+}
+----
+
+[[customize-rest-client-request]]
 == Customizing the request
 
 The REST Client supports further customization of the final request to be sent to the server via filters. The filters must implement either the interface `ClientRequestFilter` or `ResteasyReactiveClientRequestFilter`.
@@ -1828,37 +1869,65 @@ quarkus.rest-client.my-client.enable-compression=true
 The REST Client falls back onto the Quarkus wide `quarkus.http.enable-compression` configuration property (which defaults to `false`) if no REST Client specific property is set.
 
 == Proxy support
-REST Client supports sending requests through a proxy.
-It honors the JVM settings for it but also allows to specify both:
 
-* global client proxy settings, with `quarkus.rest-client.proxy-address`, `quarkus.rest-client.proxy-user`, `quarkus.rest-client.proxy-password`, `quarkus.rest-client.non-proxy-hosts`
+REST Client supports sending requests through a proxy. You can still rely on JVM proxy settings, but REST Client allows you to define a default proxy and any number of named proxy configurations that clients can reference.
 
-* per-client proxy settings, with `quarkus.rest-client.<my-client>.proxy-address`, etc. These are applied only to clients injected with CDI, that is the ones created with `@RegisterRestClient`
+Proxy configuration is centralized in a Proxy Registry; configure proxies under the `quarkus.proxy` configuration root.
 
-If `proxy-address` is set on the client level, the client uses its specific proxy settings. No proxy settings are propagated from the global configuration or JVM properties.
+=== Global proxy configuration
 
-If `proxy-address` is not set for the client but is set on the global level, the client uses the global settings.
-Otherwise, the client uses the JVM settings.
-
-
-An example configuration for setting proxy:
-
+You can define a default proxy configuration that will be used by all REST Clients that do not explicitly reference a named proxy configuration.
 [source,properties]
 ----
-# global proxy configuration is used for all clients
-quarkus.rest-client.proxy-address=localhost:8182
-quarkus.rest-client.proxy-user=<proxy user name>
-quarkus.rest-client.proxy-password=<proxy password>
-quarkus.rest-client.non-proxy-hosts=example.com
+quarkus.proxy.host=localhost
+quarkus.proxy.port=8182
+quarkus.proxy.username=username
+quarkus.proxy.password=password
+quarkus.proxy.non-proxy-hosts=my.company.com
 
-# per-client configuration overrides the global settings for a specific client
-quarkus.rest-client.my-client.proxy-address=localhost:8183
-quarkus.rest-client.my-client.proxy-user=<proxy user name>
-quarkus.rest-client.my-client.proxy-password=<proxy password>
-quarkus.rest-client.my-client.url=...
+quarkus.rest-client.my-client.url=http://example.com/api
 ----
 
-NOTE: MicroProfile REST Client specification does not allow setting proxy credentials. In order to specify proxy user and proxy password programmatically, you need to cast your `RestClientBuilder` to `RestClientBuilderImpl`.
+This configuration will cause all REST Clients, including `my-client`, to use the proxy at `localhost:8182` with the provided credentials.
+
+=== Named proxy configuration
+
+You can define named proxy configurations and have specific REST Clients use them.
+[source,properties]
+----
+quarkus.proxy.my-proxy.host=localhost
+quarkus.proxy.my-proxy.port=8183
+quarkus.proxy.my-proxy.username=username
+quarkus.proxy.my-proxy.password=password
+
+quarkus.rest-client.client1.proxy-configuration-name=my-proxy <1>
+quarkus.rest-client.client1.url=http://c1.example.com/api
+
+quarkus.rest-client.client2.url=http://c2.example.com/api <2>
+----
+<1> `client1` is configured to use the `my-proxy` proxy configuration.
+<2> `client2` does not specify a proxy configuration name, so it will not use any proxy unless a default proxy configuration is defined.
+
+=== Using Credentials Provider
+
+In addition to the `quarkus.proxy` settings, REST Client can obtain proxy credentials from the Quarkus Credentials Provider.
+See link:https://quarkus.io/guides/credentials-provider[Credentials Provider] for more details.
+[source,properties]
+----
+quarkus.proxy.baby-proxy.host=localhost <1>
+quarkus.proxy.baby-proxy.port=3838
+
+quarkus.proxy.credentials-provider.name=credential <2>
+quarkus.proxy.credentials-provider.bean-name=credentialBean
+quarkus.proxy.credentials-provider.username-key=userKey
+quarkus.proxy.credentials-provider.password-key=passwordKey
+----
+
+<1> Define a named proxy configuration `baby-proxy` without username and password.
+<2> Configure the Credentials Provider to obtain the username and password for the proxy.
+
+[NOTE]
+The Credentials Provider is not used when `quarkus.proxy.password` (for global) or `quarkus.proxy.<named>.password` (for named) is not set.
 
 === Local proxy for dev mode
 
@@ -2202,6 +2271,13 @@ and limitations:
 To change this behavior, set the `quarkus.rest-client.scope` property to the fully qualified scope name.
 - it is not possible to set `SSLContext`
 - a few things that don't make sense for a non-blocking implementations, such as setting the `ExecutorService`, don't work
+
+== Import things to be aware of
+
+=== Concurrent requests
+
+The REST Client uses the Vert.x HTTP connection pool with a default size of `50`  in order to minimize the necessary HTTP connections being used against the target REST services.
+While this is a reasonable default, it might be too limiting for specific scenarios. In such cases, the `quarkus.rest-client."some-client".connection-pool-size` configuration property can be used.
 
 == Further reading
 

@@ -24,7 +24,6 @@ public class ORMReactiveCompatbilityDefaultBothUnitTest extends CompatibilityUni
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion()) // this triggers Agroal
             ))
-            .withConfigurationResource("application-unittest-both.properties")
             .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", SCHEMA_MANAGEMENT_STRATEGY)
             .overrideConfigKey("quarkus.datasource.reactive", "true")
             .overrideConfigKey("quarkus.datasource.db-kind", POSTGRES_KIND)

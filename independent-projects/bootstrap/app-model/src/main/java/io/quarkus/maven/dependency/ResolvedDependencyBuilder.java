@@ -42,6 +42,7 @@ public class ResolvedDependencyBuilder extends AbstractDependencyBuilder<Resolve
     WorkspaceModule workspaceModule;
     private volatile ArtifactCoords coords;
     private Collection<ArtifactCoords> deps = Set.of();
+    private Collection<Dependency> directDeps = Set.of();
 
     @Override
     public ResolvedDependencyBuilder fromMap(Map<String, Object> map) {
@@ -132,6 +133,16 @@ public class ResolvedDependencyBuilder extends AbstractDependencyBuilder<Resolve
     @Override
     public Collection<ArtifactCoords> getDependencies() {
         return deps;
+    }
+
+    public ResolvedDependencyBuilder setDirectDependencies(Collection<Dependency> directDeps) {
+        this.directDeps = directDeps;
+        return this;
+    }
+
+    @Override
+    public Collection<Dependency> getDirectDependencies() {
+        return directDeps;
     }
 
     @Override

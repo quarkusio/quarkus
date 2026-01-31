@@ -1,11 +1,13 @@
 package io.quarkus.resteasy.reactive.server.test.resource.basic;
 
+import java.net.URI;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.Invocation.Builder;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -20,8 +22,8 @@ import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.Inherita
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.InheritanceAbstractParentResource;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.InheritanceParentResource;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.InheritanceParentResourceImpl;
-import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 
 /**
  * @tpSubChapter Resource
@@ -43,14 +45,10 @@ public class InheritanceTest {
                     war.addClass(InheritanceParentResource.class);
                     war.addClass(InheritanceAbstractParentResource.class);
                     war.addClass(InheritanceAbstractParentImplResource.class);
-                    war.addClasses(PortProviderUtil.class, InheritanceParentResourceImpl.class);
+                    war.addClasses(InheritanceParentResourceImpl.class);
                     return war;
                 }
             });
-
-    private String generateURL(String path) {
-        return PortProviderUtil.generateURL(path, InheritanceTest.class.getSimpleName());
-    }
 
     @BeforeAll
     public static void beforeSub() {
@@ -62,22 +60,25 @@ public class InheritanceTest {
         client.close();
     }
 
+    @TestHTTPResource
+    URI uri;
+
     @Test
     @DisplayName("Test 1")
-    public void Test1() throws Exception {
-        Builder builder = client.target(generateURL("/InheritanceTest")).request();
+    public void Test1() {
+        Builder builder = client.target(UriBuilder.fromUri(uri).path("/InheritanceTest")).request();
         builder.header("Accept", "text/plain");
         Response response = builder.get();
         Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-        Assertions.assertEquals(response.readEntity(String.class), "First");
+        Assertions.assertEquals("First", response.readEntity(String.class));
     }
 
     @Test
     public void testAbstractParent() {
-        Builder builder = client.target(generateURL("/inheritance-abstract-parent-test")).request();
+        Builder builder = client.target(UriBuilder.fromUri(uri).path("/inheritance-abstract-parent-test")).request();
         builder.header("Accept", "text/plain");
         Response response = builder.get();
         Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-        Assertions.assertEquals(response.readEntity(String.class), "works");
+        Assertions.assertEquals("works", response.readEntity(String.class));
     }
 }

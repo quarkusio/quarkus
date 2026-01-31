@@ -1,6 +1,7 @@
 package io.quarkus.deployment.runnerjar;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Fail.fail;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -16,6 +17,7 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.DependencyFlags;
+import io.quarkus.maven.dependency.ResolvedDependency;
 
 public class ReloadableFlagsTest extends BootstrapFromOriginalJarTestBase {
 
@@ -67,5 +69,44 @@ public class ReloadableFlagsTest extends BootstrapFromOriginalJarTestBase {
                         DependencyFlags.RELOADABLE, DependencyFlags.WORKSPACE_MODULE));
 
         assertThat(getDependenciesWithFlag(model, DependencyFlags.RELOADABLE)).isEqualTo(expected);
+
+        for (ResolvedDependency dep : model.getDependencies()) {
+            switch (dep.getArtifactId()) {
+                case "acme-transitive":
+                    assertThat(dep.getDirectDependencies()).isEmpty();
+                    break;
+                case "acme-common":
+                    assertThat(dep.getDirectDependencies()).containsExactlyInAnyOrder(
+                            Dependency.jarWithFlags(TsArtifact.DEFAULT_GROUP_ID, "acme-transitive", "1",
+                                    DependencyFlags.DIRECT |
+                                            DependencyFlags.RUNTIME_CP |
+                                            DependencyFlags.DEPLOYMENT_CP |
+                                            DependencyFlags.WORKSPACE_MODULE));
+                    break;
+                case "acme-lib":
+                case "external-lib":
+                    assertThat(dep.getDirectDependencies()).containsExactlyInAnyOrder(
+                            Dependency.jarWithFlags(TsArtifact.DEFAULT_GROUP_ID, "acme-common", "1",
+                                    DependencyFlags.DIRECT |
+                                            DependencyFlags.RUNTIME_CP |
+                                            DependencyFlags.DEPLOYMENT_CP |
+                                            DependencyFlags.WORKSPACE_MODULE));
+                    break;
+                case "my-ext":
+                    assertThat(dep.getDirectDependencies()).isEmpty();
+                    break;
+                case "my-ext-deployment":
+                    assertThat(dep.getDirectDependencies()).containsExactlyInAnyOrder(
+                            Dependency.jarWithFlags(TsArtifact.DEFAULT_GROUP_ID, "my-ext", "1",
+                                    DependencyFlags.DIRECT |
+                                            DependencyFlags.RUNTIME_CP |
+                                            DependencyFlags.DEPLOYMENT_CP |
+                                            DependencyFlags.RUNTIME_EXTENSION_ARTIFACT |
+                                            DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT));
+                    break;
+                default:
+                    fail("Unrecognized dependency " + dep.toCompactCoords());
+            }
+        }
     }
 }

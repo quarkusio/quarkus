@@ -75,6 +75,8 @@ public final class OidcConstants {
     public static final String PKCE_CODE_CHALLENGE_METHOD = "code_challenge_method";
     public static final String PKCE_CODE_CHALLENGE_S256 = "S256";
 
+    public static final String REQUEST_URI = "request_uri";
+
     public static final String BACK_CHANNEL_LOGOUT_TOKEN = "logout_token";
     public static final String BACK_CHANNEL_EVENTS_CLAIM = "events";
     public static final String BACK_CHANNEL_EVENT_NAME = "http://schemas.openid.net/event/backchannel-logout";
@@ -105,6 +107,17 @@ public final class OidcConstants {
     public static final String DPOP_ACCESS_TOKEN_THUMBPRINT = "ath";
     public static final String DPOP_HTTP_METHOD = "htm";
     public static final String DPOP_HTTP_REQUEST_URI = "htu";
+    public static final String DPOP_NONCE = "DPoP-Nonce";
+    /**
+     * <a href="https://www.rfc-editor.org/rfc/rfc9449.html#section-12.2-2.2.2.2">Invalid DPoP proof value of the error
+     * parameter</a>
+     */
+    public static final String INVALID_DPOP_PROOF = "invalid_dpop_proof";
+    /**
+     * <a href="https://www.rfc-editor.org/rfc/rfc9449.html#section-12.2-3.2.2.2">Use DPoP nonce value of the error
+     * parameter</a>
+     */
+    public static final String USE_DPOP_NONCE = "use_dpop_nonce";
 
     public static final String ACR = "acr";
     public static final String ACR_VALUES = "acr_values";

@@ -1,6 +1,8 @@
 package io.quarkus.oidc.runtime;
 
+import static io.netty.handler.codec.http.HttpHeaders.Values.NO_STORE;
 import static io.quarkus.oidc.runtime.OidcUtils.extractBearerToken;
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getAuthenticationFailureFromEvent;
 
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
@@ -15,6 +17,7 @@ import org.jboss.logging.Logger;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.oidc.AccessTokenCredential;
+import io.quarkus.oidc.DPoPNonceProvider;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
@@ -22,12 +25,22 @@ import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
+import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
 public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMechanism {
     private static final Logger LOG = Logger.getLogger(BearerAuthenticationMechanism.class);
+
+    private final DPoPNonceProvider dPoPNonceProvider;
+
+    BearerAuthenticationMechanism(DPoPNonceProvider dPoPNonceProvider, DefaultTenantConfigResolver resolver,
+            HttpAuthenticationMechanism parent) {
+        super(resolver, parent);
+        this.dPoPNonceProvider = dPoPNonceProvider;
+    }
 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager, OidcTenantConfig oidcTenantConfig) {
@@ -51,7 +64,7 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
         if (oidcTenantConfig.token().binding().certificate()) {
             Certificate cert = getCertificate(context, token);
             if (!(cert instanceof X509Certificate)) {
-                LOG.warn("Access token must be bound to X509 client certiifcate");
+                LOG.warn("Access token must be bound to X509 client certificate");
                 throw new AuthenticationFailedException(tokenMap(token));
             }
             context.put(OidcConstants.X509_SHA256_THUMBPRINT,
@@ -59,7 +72,7 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
         }
     }
 
-    private static void setDPopProof(RoutingContext context, OidcTenantConfig oidcTenantConfig, String token) {
+    private void setDPopProof(RoutingContext context, OidcTenantConfig oidcTenantConfig, String token) {
         if (OidcUtils.isDPoPScheme(oidcTenantConfig.token().authorizationScheme())) {
 
             List<String> proofs = context.request().headers().getAll(OidcConstants.DPOP_SCHEME);
@@ -114,6 +127,22 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
                 throw new AuthenticationFailedException(tokenMap(token));
             }
 
+            if (dPoPNonceProvider != null) {
+                String proofNonce = proofJwtClaims.getString(OidcConstants.NONCE);
+                if (proofNonce == null) {
+                    LOG.debug("Required DPOP proof nonce claim is missing");
+                    throw new AuthenticationFailedException(Map.of(
+                            OidcConstants.ACCESS_TOKEN_VALUE, token,
+                            OidcConstants.USE_DPOP_NONCE, Boolean.TRUE));
+                }
+                if (!dPoPNonceProvider.isValid(proofNonce)) {
+                    LOG.tracef("DPOP proof nonce claim '%s' is not valid", proofNonce);
+                    throw new AuthenticationFailedException(Map.of(
+                            OidcConstants.ACCESS_TOKEN_VALUE, token,
+                            OidcConstants.INVALID_DPOP_PROOF, Boolean.TRUE));
+                }
+            }
+
             context.put(OidcUtils.DPOP_PROOF, proof);
             context.put(OidcUtils.DPOP_PROOF_JWT_HEADERS, proofJwtHeaders);
             context.put(OidcUtils.DPOP_PROOF_JWT_CLAIMS, proofJwtClaims);
@@ -144,7 +173,20 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
                             StepUpAuthenticationPolicy.getAuthRequirementChallenge(context);
                 } else {
                     wwwAuthHeaderValue = tenantContext.oidcConfig().token().authorizationScheme();
-                    if (tenantContext.oidcConfig().resourceMetadata().enabled()) {
+                    if (isInvalidOrMissingDpopNonce(context)) {
+                        final String errorAttributeValue;
+                        if (getAuthenticationFailureFromEvent(context).getAttribute(OidcConstants.USE_DPOP_NONCE) != null) {
+                            errorAttributeValue = OidcConstants.USE_DPOP_NONCE;
+                        } else {
+                            errorAttributeValue = OidcConstants.INVALID_DPOP_PROOF;
+                        }
+                        wwwAuthHeaderValue += " error=\"%s\"".formatted(errorAttributeValue);
+                        return Uni.createFrom().item(new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(),
+                                Map.of(
+                                        HttpHeaderNames.WWW_AUTHENTICATE, wwwAuthHeaderValue,
+                                        OidcConstants.DPOP_NONCE, dPoPNonceProvider.getNonce(),
+                                        HttpHeaders.CACHE_CONTROL, NO_STORE)));
+                    } else if (tenantContext.oidcConfig().resourceMetadata().enabled()) {
                         wwwAuthHeaderValue += ResourceMetadataHandler.resourceMetadataAuthenticateParameter(context, resolver,
                                 tenantContext.oidcConfig());
                     }
@@ -154,4 +196,14 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
             }
         });
     }
+
+    private boolean isInvalidOrMissingDpopNonce(RoutingContext context) {
+        if (dPoPNonceProvider != null) {
+            final AuthenticationFailedException authFailure = getAuthenticationFailureFromEvent(context);
+            return authFailure != null && (authFailure.getAttribute(OidcConstants.USE_DPOP_NONCE) != null
+                    || authFailure.getAttribute(OidcConstants.INVALID_DPOP_PROOF) != null);
+        }
+        return false;
+    }
+
 }

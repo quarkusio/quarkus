@@ -194,6 +194,7 @@ public class YamlMetadataGenerator {
                             Object type = doc.getAttribute("diataxis-type");
                             Object topics = doc.getAttribute("topics");
                             Object extensions = doc.getAttribute("extensions");
+                            Object status = doc.getAttribute("extension-status");
 
                             Optional<StructuralNode> preambleNode = doc.getBlocks().stream()
                                     .filter(b -> "preamble".equals(b.getNodeName()))
@@ -211,17 +212,17 @@ public class YamlMetadataGenerator {
 
                                 if (content.isPresent()) {
                                     index.add(new DocMetadata(title, path, summaryString, categories, keywords, topics,
-                                            extensions, type, id));
+                                            extensions, type, status, id));
                                 } else {
                                     messages.record("empty-preamble", path);
                                     index.add(new DocMetadata(title, path, summaryString, categories, keywords, topics,
-                                            extensions, type, id));
+                                            extensions, type, status, id));
                                 }
                             } else {
                                 messages.record("missing-preamble", path);
                                 summaryString = getSummary(summary, Optional.empty());
                                 index.add(new DocMetadata(title, path, summaryString, categories, keywords, topics, extensions,
-                                        type, id));
+                                        type, status, id));
                             }
 
                             long spaceCount = summaryString.chars().filter(c -> c == (int) ' ').count();
@@ -353,6 +354,35 @@ public class YamlMetadataGenerator {
                         return value;
                     }
                 }
+            }
+            return null;
+        }
+    }
+
+    private enum Status {
+        experimental("experimental", "Experimental"),
+        preview("preview", "Preview"),
+        stable("stable", "Stable"),
+        deprecated("deprecated", "Deprecated");
+
+        final String id;
+        final String name;
+
+        Status(String id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+
+        public static Status fromObject(Object object, Path path) {
+            if (object != null) {
+                String value = object.toString().toLowerCase();
+
+                for (Status status : Status.values()) {
+                    if (status.id.equals(value)) {
+                        return status;
+                    }
+                }
+                messages.record("unknown-status", path, "Unknown status: " + value);
             }
             return null;
         }
@@ -545,9 +575,10 @@ public class YamlMetadataGenerator {
         Set<String> extensions = new LinkedHashSet<>();
         String id;
         Type type;
+        Status status;
 
         DocMetadata(String title, Path path, String summary, Object categories, Object keywords,
-                Object topics, Object extensions, Object diataxisType, String id) {
+                Object topics, Object extensions, Object diataxisType, Object status, String id) {
             this.id = id;
             this.title = title == null ? "" : title;
             this.filename = path.getFileName().toString();
@@ -575,6 +606,7 @@ public class YamlMetadataGenerator {
                     messages.record("not-diataxis-type", path);
                 }
             }
+            this.status = Status.fromObject(status, path);
 
             if (id == null) {
                 messages.record("missing-id", path);
@@ -598,6 +630,10 @@ public class YamlMetadataGenerator {
 
         public String getSummary() {
             return summary;
+        }
+
+        public String getStatus() {
+            return status != null ? status.id : null;
         }
 
         public String getUrl() {

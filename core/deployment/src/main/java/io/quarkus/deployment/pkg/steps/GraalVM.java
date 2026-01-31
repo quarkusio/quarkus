@@ -192,37 +192,41 @@ public final class GraalVM {
         // Get access to GRAAL_MAPPING without making it public
         private static final Map<String, String> GRAAL_MAPPING = io.quarkus.runtime.graal.GraalVM.Version.GRAAL_MAPPING;
 
-        public static final Version VERSION_23_1_0 = new Version("GraalVM 23.1.0", "23.1.0", "21", Distribution.GRAALVM);
-        public static final Version VERSION_24_0_0 = new Version("GraalVM 24.0.0", "24.0.0", "22", Distribution.GRAALVM);
-        public static final Version VERSION_24_0_999 = new Version("GraalVM 24.0.999", "24.0.999", "22", Distribution.GRAALVM);
-        public static final Version VERSION_24_1_0 = new Version("GraalVM 24.1.0", "24.1.0", "23", Distribution.GRAALVM);
-        public static final Version VERSION_24_1_999 = new Version("GraalVM 24.1.999", "24.1.999", "23", Distribution.GRAALVM);
-        public static final Version VERSION_24_2_0 = new Version("GraalVM 24.2.0", "24.2.0", "24", Distribution.GRAALVM);
+        /*
+         * @deprecated Use {@link io.quarkus.runtime.graal.GraalVM.Version.VERSION_23_1_0} instead.
+         */
+        @Deprecated(since = "3.32", forRemoval = true)
+        public static final Version VERSION_23_1_0 = new Version(io.quarkus.runtime.graal.GraalVM.Version.VERSION_23_1_0);
+        /*
+         * @deprecated Use {@link io.quarkus.runtime.graal.GraalVM.Version.VERSION_24_0_0} instead.
+         */
+        @Deprecated(since = "3.32", forRemoval = true)
+        public static final Version VERSION_24_0_0 = new Version(io.quarkus.runtime.graal.GraalVM.Version.VERSION_24_0_0);
+        /*
+         * @deprecated Use {@link io.quarkus.runtime.graal.GraalVM.Version.VERSION_24_0_999} instead.
+         */
+        @Deprecated(since = "3.32", forRemoval = true)
+        public static final Version VERSION_24_0_999 = new Version(io.quarkus.runtime.graal.GraalVM.Version.VERSION_24_0_999);
+        /*
+         * @deprecated Use {@link io.quarkus.runtime.graal.GraalVM.Version.VERSION_24_1_0} instead.
+         */
+        @Deprecated(since = "3.32", forRemoval = true)
+        public static final Version VERSION_24_1_0 = new Version(io.quarkus.runtime.graal.GraalVM.Version.VERSION_24_1_0);
+        /*
+         * @deprecated Use {@link io.quarkus.runtime.graal.GraalVM.Version.VERSION_24_1_999} instead.
+         */
+        @Deprecated(since = "3.32", forRemoval = true)
+        public static final Version VERSION_24_1_999 = new Version(io.quarkus.runtime.graal.GraalVM.Version.VERSION_24_1_999);
+        /*
+         * @deprecated Use {@link io.quarkus.runtime.graal.GraalVM.Version.VERSION_24_2_0} instead.
+         */
+        @Deprecated(since = "3.32", forRemoval = true)
+        public static final Version VERSION_24_2_0 = new Version(io.quarkus.runtime.graal.GraalVM.Version.VERSION_24_2_0);
+        private static final Version VERSION_25_0_0 = new Version(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_0_0);
 
-        /**
-         * The minimum version of GraalVM supported by Quarkus.
-         * Versions prior to this are expected to cause major issues.
-         *
-         * @deprecated Use {@link io.quarkus.runtime.graal.GraalVM.Version.MINIMUM} instead.
-         */
-        @Deprecated
-        public static final Version MINIMUM = VERSION_23_1_0;
-        /**
-         * The current version of GraalVM supported by Quarkus.
-         * This version is the one actively being tested and is expected to give the best experience.
-         *
-         * @deprecated Use {@link io.quarkus.runtime.graal.GraalVM.Version.CURRENT} instead.
-         */
-        @Deprecated
-        public static final Version CURRENT = VERSION_23_1_0;
-        /**
-         * The minimum version of GraalVM officially supported by Quarkus.
-         * Versions prior to this are expected to work but are not given the same level of testing or priority.
-         *
-         * @deprecated Use {@link io.quarkus.runtime.graal.GraalVM.Version.MINIMUM_SUPPORTED} instead.
-         */
-        @Deprecated
-        public static final Version MINIMUM_SUPPORTED = CURRENT;
+        Version(io.quarkus.runtime.graal.GraalVM.Version version) {
+            super(version);
+        }
 
         Version(String fullVersion, String version, Distribution distro) {
             this(fullVersion, version, "11", distro);
@@ -234,10 +238,6 @@ public final class GraalVM {
 
         Version(String fullVersion, String version, Runtime.Version javaVersion, Distribution distro) {
             super(fullVersion, version, javaVersion, distro);
-        }
-
-        public int compareTo(GraalVM.Version o) {
-            return compareTo((io.quarkus.runtime.graal.GraalVM.Version) o);
         }
 
         Distribution getDistribution() {
@@ -254,14 +254,6 @@ public final class GraalVM {
 
         boolean isSupported() {
             return this.compareTo(io.quarkus.runtime.graal.GraalVM.Version.MINIMUM_SUPPORTED) >= 0;
-        }
-
-        boolean isNewerThan(Version version) {
-            return this.compareTo(version) > 0;
-        }
-
-        boolean isOlderThan(Version version) {
-            return this.compareTo(version) < 0;
         }
 
         /**

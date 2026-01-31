@@ -62,9 +62,6 @@ public class AppMakerHelper {
 
         Path testClassLocation = getTestClassesLocation(requiredTestClass, curatedApplication);
 
-        // clear the test.url system property as the value leaks into the run when using different profiles
-        System.clearProperty("test.url");
-
         // TODO should we do this here, or when we prepare the curated application?
         // Or is it needed at all?
         Index testClassesIndex = TestClassIndexer.indexTestClasses(testClassLocation);
@@ -139,8 +136,11 @@ public class AppMakerHelper {
             boolean isContinuousTesting) throws IOException, AppModelResolverException, BootstrapException {
         final PathList.Builder rootBuilder = PathList.builder();
         final Consumer<Path> addToBuilderIfConditionMet = path -> {
-            if (path != null && !rootBuilder.contains(path) && Files.exists(path)) {
-                rootBuilder.add(path);
+            if (path != null && Files.exists(path)) {
+                path = path.normalize().toAbsolutePath();
+                if (!rootBuilder.contains(path)) {
+                    rootBuilder.add(path);
+                }
             }
         };
 

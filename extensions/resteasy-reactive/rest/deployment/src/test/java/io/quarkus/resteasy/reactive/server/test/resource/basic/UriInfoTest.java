@@ -1,11 +1,15 @@
 package io.quarkus.resteasy.reactive.server.test.resource.basic;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.net.URI;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.core.UriBuilder;
 
 import org.hamcrest.Matchers;
@@ -13,7 +17,6 @@ import org.jboss.logging.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -27,8 +30,8 @@ import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.UriInfoE
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.UriInfoQueryParamsResource;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.UriInfoSimpleResource;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.UriInfoSimpleSingletonResource;
-import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.restassured.RestAssured;
 
 /**
@@ -50,8 +53,6 @@ public class UriInfoTest {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClass(PortProviderUtil.class);
-                    // Use of PortProviderUtil in the deployment
                     war.addClasses(UriInfoSimpleResource.class, UriInfoEncodedQueryResource.class,
                             UriInfoQueryParamsResource.class, UriInfoSimpleSingletonResource.class,
                             UriInfoEncodedTemplateResource.class, UriInfoEscapedMatrParamResource.class,
@@ -71,15 +72,28 @@ public class UriInfoTest {
         client = null;
     }
 
+    @TestHTTPResource
+    URI uri;
+
     /**
      * @tpTestDetails Check uri from resource on server. Simple resource is used.
      * @tpSince RESTEasy 3.0.16
      */
     @Test
     @DisplayName("Test Uri Info")
-    public void testUriInfo() throws Exception {
-        basicTest("/simple", UriInfoSimpleResource.class.getSimpleName());
-        basicTest("/simple/fromField", UriInfoSimpleResource.class.getSimpleName());
+    public void testUriInfo() {
+        try (Response response1 = client.target(UriBuilder.fromUri(uri)
+                .path(UriInfoSimpleResource.class.getSimpleName())
+                .path("/simple"))
+                .request().get()) {
+            assertEquals(Status.OK.getStatusCode(), response1.getStatus());
+        }
+        try (Response response = client.target(UriBuilder.fromUri(uri)
+                .path(UriInfoSimpleResource.class.getSimpleName())
+                .path("/simple/fromField"))
+                .request().get()) {
+            assertEquals(Status.OK.getStatusCode(), response.getStatus());
+        }
 
         RestAssured.get("/" + UriInfoSimpleResource.class.getSimpleName() + "/uri?foo=bar").then()
                 .body(Matchers.endsWith("/uri?foo=bar"));
@@ -92,8 +106,13 @@ public class UriInfoTest {
     @Test
     @Disabled
     @DisplayName("Test Uri Info With Singleton")
-    public void testUriInfoWithSingleton() throws Exception {
-        basicTest("/simple/fromField", UriInfoSimpleSingletonResource.class.getSimpleName());
+    public void testUriInfoWithSingleton() {
+        try (Response response = client.target(UriBuilder.fromUri(uri)
+                .path(UriInfoSimpleSingletonResource.class.getSimpleName())
+                .path("/simple/fromField"))
+                .request().get()) {
+            assertEquals(Status.OK.getStatusCode(), response.getStatus());
+        }
     }
 
     /**
@@ -103,9 +122,13 @@ public class UriInfoTest {
     @Test
     @Disabled
     @DisplayName("Test Escaped Matr Param")
-    public void testEscapedMatrParam() throws Exception {
-        basicTest("/queryEscapedMatrParam;a=a%3Bb;b=x%2Fy;c=m%5Cn;d=k%3Dl",
-                UriInfoEscapedMatrParamResource.class.getSimpleName());
+    public void testEscapedMatrParam() {
+        try (Response response = client.target(UriBuilder.fromUri(uri)
+                .path(UriInfoEscapedMatrParamResource.class.getSimpleName())
+                .path("/queryEscapedMatrParam;a=a%3Bb;b=x%2Fy;c=m%5Cn;d=k%3Dl"))
+                .request().get()) {
+            assertEquals(Status.OK.getStatusCode(), response.getStatus());
+        }
     }
 
     /**
@@ -115,8 +138,13 @@ public class UriInfoTest {
     @Test
     @Disabled
     @DisplayName("Test Encoded Template Params")
-    public void testEncodedTemplateParams() throws Exception {
-        basicTest("/a%20b/x%20y", UriInfoEncodedTemplateResource.class.getSimpleName());
+    public void testEncodedTemplateParams() {
+        try (Response response = client.target(UriBuilder.fromUri(uri)
+                .path(UriInfoEncodedTemplateResource.class.getSimpleName())
+                .path("/a%20b/x%20y"))
+                .request().get()) {
+            assertEquals(Status.OK.getStatusCode(), response.getStatus());
+        }
     }
 
     /**
@@ -126,8 +154,14 @@ public class UriInfoTest {
     @Test
     @Disabled
     @DisplayName("Test Encoded Query Params")
-    public void testEncodedQueryParams() throws Exception {
-        basicTest("/query?a=a%20b", UriInfoEncodedQueryResource.class.getSimpleName());
+    public void testEncodedQueryParams() {
+        try (Response response = client.target(UriBuilder.fromUri(uri)
+                .path(UriInfoEncodedQueryResource.class.getSimpleName())
+                .path("/query"))
+                .queryParam("a", "a%20b")
+                .request().get()) {
+            assertEquals(Status.OK.getStatusCode(), response.getStatus());
+        }
     }
 
     /**
@@ -137,26 +171,16 @@ public class UriInfoTest {
     @Test
     @Disabled
     @DisplayName("Test Relativize")
-    public void testRelativize() throws Exception {
-        String uri = PortProviderUtil.generateURL("/");
+    public void testRelativize() {
         WebTarget target = client.target(uri);
         String result;
         result = target.path("a/b/c").queryParam("to", "a/d/e").request().get(String.class);
-        Assertions.assertEquals("../../d/e", result);
+        assertEquals("../../d/e", result);
         result = target.path("a/b/c").queryParam("to", UriBuilder.fromUri(uri).path("a/d/e").build().toString()).request()
                 .get(String.class);
-        Assertions.assertEquals(result, "../../d/e");
+        assertEquals("../../d/e", result);
         result = target.path("a/b/c").queryParam("to", "http://foobar/a/d/e").request().get(String.class);
-        Assertions.assertEquals(result, "http://foobar/a/d/e");
-    }
-
-    private static void basicTest(String path, String testName) throws Exception {
-        Response response = client.target(PortProviderUtil.generateURL("/" + testName + path)).request().get();
-        try {
-            Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-        } finally {
-            response.close();
-        }
+        assertEquals("http://foobar/a/d/e", result);
     }
 
     /**
@@ -165,13 +189,19 @@ public class UriInfoTest {
      */
     @Test
     @DisplayName("Test Query Params Mutability")
-    public void testQueryParamsMutability() throws Exception {
-        basicTest("/queryParams?a=a,b", "UriInfoQueryParamsResource");
+    public void testQueryParamsMutability() {
+        try (Response response = client.target(UriBuilder.fromUri(uri)
+                .path("UriInfoQueryParamsResource")
+                .path("/queryParams")
+                .queryParam("a", "a,b"))
+                .request().get()) {
+            assertEquals(Status.OK.getStatusCode(), response.getStatus());
+        }
     }
 
     @Test
     @DisplayName("Test Get Absolute Path")
-    public void testGetAbsolutePath() throws Exception {
+    public void testGetAbsolutePath() {
         doTestGetAbsolutePath("/absolutePath", "unset");
         doTestGetAbsolutePath("/absolutePath?dummy=1234", "1234");
         doTestGetAbsolutePath("/absolutePath?foo=bar&dummy=1234", "1234");

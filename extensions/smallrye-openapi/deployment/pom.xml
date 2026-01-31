@@ -69,6 +69,11 @@
             <groupId>io.smallrye</groupId>
             <artifactId>smallrye-open-api-vertx</artifactId>
         </dependency>
+        <!-- SmallRye OpenAPI processes Kotlin metadata optionally when present -->
+        <dependency>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-metadata-jvm</artifactId>
+        </dependency>
 
         <!-- Test -->
         <dependency>

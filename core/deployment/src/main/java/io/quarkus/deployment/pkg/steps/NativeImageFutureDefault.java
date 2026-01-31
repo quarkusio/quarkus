@@ -14,10 +14,6 @@ public enum NativeImageFutureDefault {
     private static final String FUTURE_DEFAULTS_MARKER = "--future-defaults=";
 
     public boolean isEnabled(NativeConfig nativeConfig) {
-        return isFutureDefault(this, nativeConfig);
-    }
-
-    private static boolean isFutureDefault(NativeImageFutureDefault futureDefault, NativeConfig nativeConfig) {
         final List<String> additionalBuildArgs = NativeConfigUtils.getNativeAdditionalBuildArgs(nativeConfig);
         for (String buildArg : additionalBuildArgs) {
             String trimmedBuildArg = buildArg.trim();
@@ -25,22 +21,20 @@ public enum NativeImageFutureDefault {
                 int index = trimmedBuildArg.indexOf('=');
                 String[] futureDefaultStringArgs = trimmedBuildArg.substring(index + 1).split(",");
                 for (String futureDefaultString : futureDefaultStringArgs) {
-                    if ("all".equals(futureDefaultString)) {
-                        return true;
-                    }
-
-                    if ("run-time-initialize-jdk".equals(futureDefaultString)) {
-                        switch (futureDefault) {
-                            case RUN_TIME_INITIALIZE_SECURITY_PROVIDERS:
-                            case RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS:
+                    switch (futureDefaultString) {
+                        case "all":
+                            return true;
+                        case "run-time-initialize-jdk":
+                            switch (this) {
+                                case RUN_TIME_INITIALIZE_SECURITY_PROVIDERS:
+                                case RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS:
+                                    return true;
+                            }
+                            break;
+                        default:
+                            if (futureDefaultString.toUpperCase(Locale.ROOT).replace('-', '_').equals(this.toString())) {
                                 return true;
-                        }
-                    }
-
-                    final NativeImageFutureDefault futureDefaultArg = NativeImageFutureDefault
-                            .valueOf(futureDefaultString.toUpperCase(Locale.ROOT).replace('-', '_'));
-                    if (futureDefaultArg == futureDefault) {
-                        return true;
+                            }
                     }
                 }
             }
@@ -64,7 +58,7 @@ public enum NativeImageFutureDefault {
 
         @Override
         public boolean getAsBoolean() {
-            return isFutureDefault(NativeImageFutureDefault.RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS, nativeConfig);
+            return RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(nativeConfig);
         }
     }
 
@@ -75,7 +69,7 @@ public enum NativeImageFutureDefault {
 
         @Override
         public boolean getAsBoolean() {
-            return isFutureDefault(NativeImageFutureDefault.RUN_TIME_INITIALIZE_SECURITY_PROVIDERS, nativeConfig);
+            return RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(nativeConfig);
         }
     }
 }

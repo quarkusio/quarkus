@@ -38,6 +38,29 @@ public interface Assistant {
         return new AssistBuilder(this);
     }
 
+    /**
+     * Return the memory Id from the last assistance. Could be null
+     *
+     * @return
+     */
+    public String getMemoryId();
+
+    /**
+     * Return the path to the assistant implementation chat screen
+     *
+     * @return
+     */
+    public String getChatPath();
+
+    /**
+     * Get the link to the chat screen given the current active chat
+     *
+     * @return
+     */
+    default String getLinkToChatScreen() {
+        return getChatPath() + "?memoryId=" + getMemoryId();
+    }
+
     // Builder class
     class AssistBuilder {
         private final Assistant assistant;

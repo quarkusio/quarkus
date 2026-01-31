@@ -12,7 +12,6 @@ import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.attributes.Category;
 import org.gradle.api.initialization.IncludedBuild;
-import org.gradle.api.internal.tasks.TaskDependencyFactory;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.composite.internal.DefaultIncludedBuild;
 import org.gradle.internal.composite.IncludedBuildInternal;
@@ -170,21 +169,13 @@ public class ToolingUtils {
     }
 
     public static ApplicationModel create(Project project, LaunchMode mode) {
-        return create(project, mode, null);
-    }
-
-    public static ApplicationModel create(Project project, LaunchMode mode, TaskDependencyFactory taskDepFactory) {
         final ModelParameter params = new ModelParameterImpl();
         params.setMode(mode.toString());
-        return create(project, params, taskDepFactory);
+        return create(project, params);
     }
 
     public static ApplicationModel create(Project project, ModelParameter params) {
-        return create(project, params, null);
-    }
-
-    public static ApplicationModel create(Project project, ModelParameter params, TaskDependencyFactory taskDepFactory) {
-        return (ApplicationModel) new GradleApplicationModelBuilder(taskDepFactory).buildAll(ApplicationModel.class.getName(),
+        return (ApplicationModel) new GradleApplicationModelBuilder().buildAll(ApplicationModel.class.getName(),
                 params,
                 project);
     }

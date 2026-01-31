@@ -98,7 +98,7 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
  *         if (JacksonMapperUtil.includeSecureField(address_ROLES_ALLOWED)) {
  *             var2.writeFieldName(SerializedStrings$quarkusjacksonserializer.address);
  *             Address var9 = var4.getAddress();
- *             var2.writePOJO(var9);
+ *             JacksonSerializationUtils.serializePojo(var9, var2, var3);
  *         }
  *         var2.writeEndObject();
  *     }
@@ -279,7 +279,7 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
                 if (fieldSpecs.hasUnknownAnnotation()) {
                     return false;
                 }
-                writeField(classInfo, fieldSpecs, writeFieldBranch(classCreator, serialize, fieldSpecs), ctx);
+                writeField(classInfo, fieldSpecs, writeFieldBranch(classCreator, serialize, fieldSpecs, ctx), ctx);
             }
         }
         return true;
@@ -357,9 +357,10 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
                 writeFieldName(fieldSpecs, bytecode, ctx.jsonGenerator, pkgName);
             }
 
-            MethodDescriptor writeMethod = MethodDescriptor.ofMethod(JSON_GEN_CLASS_NAME, "writePOJO",
-                    void.class, Object.class);
-            bytecode.invokeVirtualMethod(writeMethod, ctx.jsonGenerator, arg);
+            MethodDescriptor serializePojoMethod = MethodDescriptor.ofMethod(JacksonMapperUtil.class.getName(),
+                    "serializePojo",
+                    void.class, Object.class, JsonGenerator.class, SerializerProvider.class);
+            bytecode.invokeStaticMethod(serializePojoMethod, arg, ctx.jsonGenerator, ctx.serializerProvider);
         }
     }
 
@@ -392,7 +393,8 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
         };
     }
 
-    private BytecodeCreator writeFieldBranch(ClassCreator classCreator, MethodCreator serialize, FieldSpecs fieldSpecs) {
+    private BytecodeCreator writeFieldBranch(ClassCreator classCreator, MethodCreator serialize, FieldSpecs fieldSpecs,
+            SerializationContext ctx) {
         String[] rolesAllowed = fieldSpecs.rolesAllowed();
         if (rolesAllowed != null) {
             MethodCreator clinit = classCreator.getMethodCreator("<clinit>", void.class).setModifiers(ACC_STATIC);
@@ -412,8 +414,8 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
                             String[].class.getName()));
 
             MethodDescriptor includeSecureField = MethodDescriptor.ofMethod(JacksonMapperUtil.class, "includeSecureField",
-                    boolean.class, String[].class);
-            ResultHandle included = serialize.invokeStaticMethod(includeSecureField, rolesArrayReader);
+                    boolean.class, SerializerProvider.class, String[].class);
+            ResultHandle included = serialize.invokeStaticMethod(includeSecureField, ctx.serializerProvider, rolesArrayReader);
             return serialize.ifTrue(included).trueBranch();
         }
         return serialize;

@@ -469,11 +469,19 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
          */
         public Optional<String> password = Optional.empty();
 
+        private Optional<String> proxyConfigurationName = Optional.empty();
+
         private void addConfigMappingValues(io.quarkus.oidc.common.runtime.config.OidcCommonConfig.Proxy mapping) {
             this.host = mapping.host();
             this.port = mapping.port();
             this.username = mapping.username();
             this.password = mapping.password();
+            this.proxyConfigurationName = mapping.proxyConfigurationName();
+        }
+
+        @Override
+        public Optional<String> proxyConfigurationName() {
+            return proxyConfigurationName;
         }
 
         @Override

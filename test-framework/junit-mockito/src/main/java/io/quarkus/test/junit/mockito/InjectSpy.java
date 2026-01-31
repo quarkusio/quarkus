@@ -7,7 +7,10 @@ import java.lang.annotation.Target;
 
 /**
  * When used on a field of a test class, the field becomes a Mockito spy,
- * that is then used to spy on the normal scoped bean which the field represents
+ * that is then used to spy on the normal scoped bean which the field represents.
+ * <p>
+ * When used on beans that observe CDI events, those observers are not mocked, as opposed to what happens when
+ * {@link io.quarkus.test.InjectMock} does
  */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)

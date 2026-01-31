@@ -48,7 +48,7 @@ public class CreateMockitoSpiesCallback implements QuarkusTestAfterConstructCall
                             InjectSpy.class);
                     Object spy = createSpyAndSetTestField(testInstance, field, beanHandle,
                             injectSpyAnnotation.delegate());
-                    MockitoMocksTracker.track(testInstance, spy, beanHandle.get());
+                    MockitoMocksTracker.trackSpy(testInstance, spy, beanHandle.get());
                 }
             }
             current = current.getSuperclass();

@@ -5,13 +5,13 @@ import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.util.Optional;
 
-import io.vertx.core.Context;
 import org.jboss.logging.Logger;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponse;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
@@ -116,7 +116,17 @@ public class VertxOutputStream extends OutputStream {
             }
             try {
                 waitingForDrain = true;
-                request.connection().wait();
+                // To make sure we don't get stuck waiting, we time out periodically
+                request.connection().wait(1000); // Verify every second
+                // Check for timeout / closed connection
+                if (request.response().ended() || request.response().closed()) {
+                    if (throwable != null) {
+                        // We had an exception, propagate it
+                        throw new IOException(throwable);
+                    } else {
+                        throw new IOException("Connection has been closed");
+                    }
+                }
             } catch (InterruptedException e) {
                 throw new InterruptedIOException(e.getMessage());
             } finally {

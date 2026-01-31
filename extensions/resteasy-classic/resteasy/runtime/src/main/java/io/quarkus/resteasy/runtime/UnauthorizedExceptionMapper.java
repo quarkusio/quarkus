@@ -45,8 +45,8 @@ public class UnauthorizedExceptionMapper implements ExceptionMapper<Unauthorized
                         .await().indefinitely();
                 if (challengeData != null) {
                     Response.ResponseBuilder status = Response.status(challengeData.status);
-                    if (challengeData.headerName != null) {
-                        status.header(challengeData.headerName.toString(), challengeData.headerContent);
+                    for (var e : challengeData.getHeaders().entrySet()) {
+                        status.header(e.getKey().toString(), e.getValue());
                     }
                     log.debugf("Returning an authentication challenge, status code: %d", challengeData.status);
                     return status.build();

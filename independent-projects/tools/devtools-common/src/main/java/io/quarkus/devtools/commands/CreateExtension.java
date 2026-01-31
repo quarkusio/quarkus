@@ -261,6 +261,8 @@ public class CreateExtension {
         String namespaceName = computeDefaultNamespaceName(data.getRequiredStringValue(NAMESPACE_ID));
         String resolvedExtensionId = resolveExtensionId();
         ensureRequiredStringData(EXTENSION_ID, resolvedExtensionId);
+        // For example, quarkus-my-extension
+        String namespacedExtensionId = namespaceId + resolvedExtensionId;
         data.putIfAbsent(EXTENSION_NAME, capitalize(extensionId));
         data.putIfAbsent(NAMESPACE_NAME, namespaceName);
         data.putIfAbsent(CLASS_NAME_BASE, toCapCamelCase(extensionId));
@@ -312,7 +314,7 @@ public class CreateExtension {
                 data.putIfAbsent(QUARKUS_BOM_VERSION, DEFAULT_BOM_VERSION);
                 data.putIfAbsent(MAVEN_COMPILER_PLUGIN_VERSION, DEFAULT_COMPILER_PLUGIN_VERSION);
                 data.putIfAbsent(EXTENSION_GUIDE,
-                        String.format(DEFAULT_QUARKIVERSE_GUIDE_URL, resolvedExtensionId));
+                        String.format(DEFAULT_QUARKIVERSE_GUIDE_URL, namespacedExtensionId));
                 ensureRequiredStringData(QUARKUS_VERSION);
                 data.putIfAbsent(HAS_DOCS_MODULE, true);
                 data.put(EXTENSION_FULL_NAME,

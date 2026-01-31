@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.net.URI;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.GET;
@@ -17,6 +18,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
+import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.ext.MessageBodyWriter;
 import jakarta.ws.rs.ext.Provider;
 
@@ -29,8 +31,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 
 @DisplayName("Media Type Negotiation Client Quality Test")
 public class MediaTypeNegotiationClientQualityTest {
@@ -75,7 +77,7 @@ public class MediaTypeNegotiationClientQualityTest {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class, CustomMessageBodyWriter1.class, Resource.class);
+                    war.addClasses(CustomMessageBodyWriter1.class, Resource.class);
                     return war;
                 }
             });
@@ -90,21 +92,20 @@ public class MediaTypeNegotiationClientQualityTest {
         client.close();
     }
 
-    private String generateURL() {
-        return PortProviderUtil.generateBaseUrl();
-    }
+    @TestHTTPResource
+    URI uri;
 
     @Test
     @DisplayName("Test Client Quality")
-    public void testClientQuality() throws Exception {
-        Invocation.Builder request = client.target(generateURL()).path("echo").request("application/x;q=0.7",
+    public void testClientQuality() {
+        Invocation.Builder request = client.target(UriBuilder.fromUri(uri)).path("echo").request("application/x;q=0.7",
                 "application/y;q=0.9");
         Response response = request.get();
         try {
             Assertions.assertEquals(Status.OK.getStatusCode(), response.getStatus());
             MediaType mediaType = response.getMediaType();
-            Assertions.assertEquals(mediaType.getType(), "application");
-            Assertions.assertEquals(mediaType.getSubtype(), "y");
+            Assertions.assertEquals("application", mediaType.getType());
+            Assertions.assertEquals("y", mediaType.getSubtype());
         } finally {
             response.close();
         }

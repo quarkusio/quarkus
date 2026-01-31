@@ -492,7 +492,7 @@ $ ./mvnw verify -Dnative
 [INFO]  T E S T S
 [INFO] -------------------------------------------------------
 [INFO] Running org.acme.quickstart.GreetingResourceIT
-Executing [/Users/starksm/Dev/JBoss/Quarkus/starksm64-quarkus-quickstarts/getting-started-native/target/quarkus-quickstart-runner, -Dquarkus.http.port=8081, -Dtest.url=http://localhost:8081, -Dquarkus.log.file.path=target/quarkus.log]
+Executing [/Users/starksm/Dev/JBoss/Quarkus/starksm64-quarkus-quickstarts/getting-started-native/target/quarkus-quickstart-runner, -Dquarkus.http.port=8081, -Dquarkus.log.file.path=target/quarkus.log]
 2019-02-28 16:52:42,020 INFO  [io.quarkus] (main) Quarkus started in 0.007s. Listening on: http://localhost:8080
 2019-02-28 16:52:42,021 INFO  [io.quarkus] (main) Installed features: [cdi, rest]
 [INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.081 s - in org.acme.quickstart.GreetingResourceIT

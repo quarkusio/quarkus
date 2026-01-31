@@ -7,7 +7,6 @@ import java.io.IOException;
 
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -15,7 +14,6 @@ import io.quarkus.maven.it.RunAndCheckMojoTestBase;
 import io.quarkus.maven.it.continuoustesting.ContinuousTestingMavenTestUtils;
 
 @DisabledIfSystemProperty(named = "quarkus.test.native", matches = "true")
-@Disabled // Tracked by #22611
 public class CallbackDevModeIT extends RunAndCheckMojoTestBase {
 
     /*

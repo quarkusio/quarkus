@@ -58,7 +58,7 @@ export class LogController {
     }
 
     _createItem(icon, title, color) {
-        var style = `font-size: small;cursor: pointer;color: ${color};background-color: transparent;`;
+        var style = `width: var(--lumo-icon-size-s);height: var(--lumo-icon-size-s);cursor: pointer;color: ${color};background-color: transparent;`;
         const item = document.createElement('vaadin-context-menu-item');
         const vaadinicon = document.createElement('vaadin-icon');
         item.setAttribute('aria-label', `${title}`);

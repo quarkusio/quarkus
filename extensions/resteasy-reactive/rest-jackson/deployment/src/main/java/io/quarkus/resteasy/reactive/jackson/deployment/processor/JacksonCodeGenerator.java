@@ -373,7 +373,7 @@ public abstract class JacksonCodeGenerator {
                         !ann.equals(JsonIgnore.class.getName()) &&
                         !ann.equals(JsonCreator.class.getName());
             }
-            return false;
+            return ann.startsWith("jakarta.persistence.");
         }
 
         ResultHandle toValueWriterHandle(BytecodeCreator bytecode, ResultHandle valueHandle) {

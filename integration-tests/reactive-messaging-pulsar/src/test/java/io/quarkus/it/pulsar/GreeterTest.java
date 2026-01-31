@@ -1,6 +1,5 @@
 package io.quarkus.it.pulsar;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,6 +9,7 @@ import examples.GpReply;
 import examples.GpRequest;
 import examples.GreeterGrpc;
 import io.grpc.Channel;
+import io.quarkus.grpc.runtime.GrpcServer;
 import io.quarkus.grpc.test.utils.GRPCTestUtils;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -21,12 +21,8 @@ public class GreeterTest {
     private Channel channel;
 
     @BeforeEach
-    public void init() {
-        channel = GRPCTestUtils.channel(null, getPort());
-    }
-
-    public int getPort() {
-        return ConfigProvider.getConfig().getValue("quarkus.grpc.server.test-port", Integer.class);
+    public void init(GrpcServer grpcServer) {
+        channel = GRPCTestUtils.channel(null, grpcServer.getPort());
     }
 
     @AfterEach

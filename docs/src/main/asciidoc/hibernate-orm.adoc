@@ -187,7 +187,7 @@ you can set the database version explicitly:
 .`{config-file}` with an explicit `db-version`
 ----
 quarkus.datasource.db-kind = postgresql
-quarkus.datasource.db-version = 14.0 <1>
+quarkus.datasource.db-version = 18.1 <1>
 
 %prod.quarkus.datasource.username = hibernate
 %prod.quarkus.datasource.password = hibernate
@@ -255,7 +255,7 @@ you can configure the DB version explicitly to get the most out of Hibernate ORM
 .`{config-file}` with an explicit `dialect` and `db-version`
 ----
 quarkus.datasource.db-kind = postgresql
-quarkus.datasource.db-version = 22.2 <1>
+quarkus.datasource.db-version = 25.4 <1>
 
 quarkus.hibernate-orm.dialect=Cockroach <2>
 
@@ -1114,6 +1114,25 @@ In Quarkus, Envers has a dedicated Quarkus Extension `io.quarkus:quarkus-hiberna
 At this point the extension does not expose additional configuration properties.
 
 For more information about Hibernate Envers, see link:https://hibernate.org/orm/envers/[hibernate.org/orm/envers/].
+
+[[spatial]]
+== Hibernate Spatial
+The Spatial extension to Hibernate ORM provides a standardized, cross-database interface to geographic data storage and query functions.
+
+To use Hibernate Spatial, you simply need to add the dependency to your project:
+[source,xml]
+.Additional dependency to enable Hibernate Spatial
+----
+    <!-- Add the Hibernate Spatial module -->
+    <dependency>
+        <groupId>org.hibernate.orm</groupId>
+        <artifactId>hibernate-spatial</artifactId>
+    </dependency>
+----
+
+The dependency version is managed by Quarkus, so you don't need to specify it explicitly.
+
+You can find all information about Spatial in the Hibernate user guide: link:{hibernate-orm-docs-url}#spatial[Hibernate ORM Spatial].
 
 [[metrics]]
 == Metrics

@@ -270,7 +270,7 @@ class KubernetesProcessor {
         return switch (jarType) {
             case LEGACY_JAR, UBER_JAR -> outputTarget.getOutputDirectory()
                     .resolve(outputTarget.getBaseName() + packageConfig.computedRunnerSuffix() + ".jar");
-            case FAST_JAR, MUTABLE_JAR -> {
+            case FAST_JAR, MUTABLE_JAR, AOT_JAR -> {
                 //thin JAR
                 Path buildDir;
 

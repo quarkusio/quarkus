@@ -4,12 +4,14 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
-import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import org.junit.platform.engine.support.store.Namespace;
+import org.junit.platform.engine.support.store.NamespacedHierarchicalStore;
 
 import io.quarkus.deployment.dev.testing.TestConfigCustomizer;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.smallrye.config.Config;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
@@ -19,16 +21,17 @@ import io.smallrye.config.SmallRyeConfigProviderResolver;
  * classloader.
  */
 public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
-
     // Note that this class both *extends* and *consumes* SmallRyeConfigProviderResolver. Every method in SmallRyeConfigProviderResolver should be replicated here with a delegation to the instance variable, or there will be subtle and horrible bugs.
     private final SmallRyeConfigProviderResolver resolver;
     private final ClassLoader classLoader;
     private final Map<LaunchMode, SmallRyeConfig> configs;
+    private final NamespacedHierarchicalStore<Namespace> store;
 
-    TestConfigProviderResolver() {
+    TestConfigProviderResolver(NamespacedHierarchicalStore<Namespace> store) {
         this.resolver = (SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver.instance();
         this.classLoader = Thread.currentThread().getContextClassLoader();
         this.configs = new ConcurrentHashMap<>();
+        this.store = store;
     }
 
     @Override
@@ -57,6 +60,7 @@ public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
                     LaunchMode.set(launchMode);
                     SmallRyeConfig config = ConfigUtils.configBuilder()
                             .withCustomizers(new TestConfigCustomizer(mode))
+                            .withSources(new TestValueRegistryConfigSource(store))
                             .build();
                     LaunchMode.set(current);
                     return config;
@@ -67,6 +71,16 @@ public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
         }
         throw new IllegalStateException("Context ClassLoader mismatch. Should be " + classLoader + " but was "
                 + Thread.currentThread().getContextClassLoader());
+    }
+
+    @Override
+    public SmallRyeConfig get() {
+        return resolver.get();
+    }
+
+    @Override
+    public SmallRyeConfig get(ClassLoader classLoader) {
+        return resolver.get(classLoader);
     }
 
     public void restoreConfig() {
@@ -95,12 +109,12 @@ public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
     }
 
     @Override
-    public void registerConfig(final Config config, final ClassLoader classLoader) {
+    public void registerConfig(final org.eclipse.microprofile.config.Config config, final ClassLoader classLoader) {
         resolver.registerConfig(config, classLoader);
     }
 
     @Override
-    public void releaseConfig(final Config config) {
+    public void releaseConfig(final org.eclipse.microprofile.config.Config config) {
         resolver.releaseConfig(config);
     }
 

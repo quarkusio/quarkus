@@ -45,7 +45,6 @@ public abstract class QuarkusTaskWithExtensionView extends QuarkusTask {
                 getExtensionView().getForcedProperties(),
                 getExtensionView().getProjectProperties(),
                 getExtensionView().getQuarkusBuildProperties(),
-                getExtensionView().getQuarkusRelevantProjectProperties(),
                 getManifestAttributes(),
                 getManifestSections(),
                 getExtensionView().getNativeBuild(),

@@ -145,7 +145,7 @@ You can add an assistant function to a workspace item using the same approach as
                     .systemMessage(JOKE_SYSTEM_MESSAGE) // <2>
                     .userMessage(JOKE_USER_MESSAGE) // <3>
                     .variables(params)
-                    .responseType(ExpectedResponse.class) // <4>   
+                    .responseType(ExpectedResponse.class) // <4>
                     .assist();
 
         })
@@ -159,8 +159,8 @@ You can add an assistant function to a workspace item using the same approach as
         final record ExpectedResponse(String result, String markdown) {
         }
 ----
-<1> Use `assistantFunction` to receive the `Assistant` instance and xref:dev-ui.adoc#input[input] parameters.  
-<2> Provide an optional *system message* to guide the assistant's behavior.  
+<1> Use `assistantFunction` to receive the `Assistant` instance and xref:dev-ui.adoc#input[input] parameters.
+<2> Provide an optional *system message* to guide the assistant's behavior.
 <3> Provide a *user message* as the primary prompt.
 <4> Provide a class defining your expected response structure.
 
@@ -176,7 +176,7 @@ cardPageBuildItem.addPage(Page.assistantPageBuilder() // <1>
 ----
 <1> Use the assistant page builder.
 
-=== Communicating to the backend 
+=== Communicating to the backend
 
 You can invoke the assistant from backend code using xref:dev-ui.adoc#communicating-to-the-backend[standard Dev UI JSON-RPC] patterns — both against the *runtime* and *deployment* classpaths.
 
@@ -281,7 +281,7 @@ export class QwcExtensionPage extends observeState(LitElement) {  // <3>
 <2> import the state you are interested in, in this case assistant state.
 <3> Wrap the LitElement in `observerState`
 
-Now you can access the assistant state anywhere in your page, and when that state changes it will act exactly the same as a local state - re-render the relevant parts of the page:
+Now you can access the assistant state anywhere in your page, and when that state changes, it will act exactly the same as a local state - re-render the relevant parts of the page:
 
 [source,javascript]
 ----
@@ -300,12 +300,13 @@ To maintain visual consistency with other Dev Assistant features, use the follow
 
 - `<qui-assistant-button>`: A pre-styled pink button with a robot icon.
 - `<qui-assistant-warning>`: A standard warning message with the text: `"Quarkus assistant can make mistakes. Check responses."`
+- `<qui-assistant-chat>`: A button that deep-link to the chat screen with the current chat.`
 
 You can also use the CSS var `--quarkus-assistant` anywhere you want to apply the assistant's theme color.
 
 === Quarkus Log Participation
 
-Extensions can contribute entries to the interactive *Quarkus log menu* by integrating with the Dev Assistant. 
+Extensions can contribute entries to the interactive *Quarkus log menu* by integrating with the Dev Assistant.
 This allows developers to invoke assistant-powered actions directly from the quarkus log using keyboard shortcuts.
 
 First, add the `quarkus-assistant-deployment-spi` to the *deployment* module of your extension:
@@ -339,7 +340,7 @@ AssistantConsoleBuildItem createCliAssistantEntry() {
 final record JokeResponse(String joke) {}
 
 ----
-<1> This is the description that appears in the Assistant section of the log menu.  
+<1> This is the description that appears in the Assistant section of the log menu.
 <2> This is the keyboard shortcut that triggers the assistant function.
 <3> Provide a class defining your expected response structure.
 

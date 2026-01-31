@@ -13,11 +13,12 @@
 
     <groupId>io.quarkus.vertx.utils</groupId>
     <artifactId>quarkus-vertx-utils</artifactId>
-    <name>Ancillary classes for making third party frameworks to run on top of Vert.x</name>
+    <name>Quarkus - Vert.x Utils</name>
+    <description>Ancillary classes for making third party frameworks to run on top of Vert.x</description>
 
     <properties>
-        <jboss-logging.version>3.6.1.Final</jboss-logging.version>
-        <vertx.version>4.5.23</vertx.version>
+        <jboss-logging.version>3.6.2.Final</jboss-logging.version>
+        <vertx.version>4.5.24</vertx.version>
     </properties>
 
     <dependencies>

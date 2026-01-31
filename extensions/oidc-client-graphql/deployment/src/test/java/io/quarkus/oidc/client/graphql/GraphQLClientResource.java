@@ -30,6 +30,12 @@ public class GraphQLClientResource {
         return defaultTypesafeClient.principalName();
     }
 
+    @GET
+    @Path("/access-token")
+    public String getAccessToken() {
+        return annotationTypesafeClient.accessToken();
+    }
+
     @Inject
     @GraphQLClient("default-dynamic")
     DynamicGraphQLClient dynamicClient;
@@ -38,6 +44,26 @@ public class GraphQLClientResource {
     @Path("/default-dynamic")
     public String dynamicClientDefault() throws ExecutionException, InterruptedException {
         return dynamicClient.executeSync("query { principalName }").getData().getString("principalName");
+    }
+
+    @Inject
+    @GraphQLClient("jdoe-dynamic")
+    DynamicGraphQLClient jDoeDynamicClient;
+
+    @GET
+    @Path("/jdoe-dynamic")
+    public String dynamicClientJDoe() throws ExecutionException, InterruptedException {
+        return jDoeDynamicClient.executeSync("query { principalName }").getData().getString("principalName");
+    }
+
+    @Inject
+    @GraphQLClient("admin-dynamic")
+    DynamicGraphQLClient adminDynamicClient;
+
+    @GET
+    @Path("/admin-dynamic")
+    public String dynamicClientAdmin() throws ExecutionException, InterruptedException {
+        return adminDynamicClient.executeSync("query { principalName }").getData().getString("principalName");
     }
 
 }

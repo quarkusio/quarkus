@@ -32,5 +32,7 @@ public class OverrideBuildTimeConfigTest {
                 .contains("- quarkus.mapping.btrt.optional is set to 'value' but it is build time fixed to 'null'."));
         assertFalse(TEST.getStartupConsoleOutput()
                 .contains("- quarkus.mapping.btrt.unlisted is set to 'value' but it is build time fixed to 'null'."));
+        assertFalse(TEST.getStartupConsoleOutput()
+                .contains("- quarkus.mapping.btrt.expanded is set to 'null'"));
     }
 }

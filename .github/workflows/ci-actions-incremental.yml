@@ -99,6 +99,7 @@ env:
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test
   PULL_REQUEST_NUMBER: ${{ github.event.number }}
+  MVNW_REPOURL: https://maven-central.storage-download.googleapis.com/maven2
 
 defaults:
   run:
@@ -251,7 +252,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Populate the .m2 repository (for cache and for shipping to follow-up builds)
         run: |
-          ./mvnw -T2C $COMMON_MAVEN_ARGS dependency:go-offline -Dgo-offline
+          ./mvnw -T2C $COMMON_MAVEN_ARGS -q dependency:go-offline -Dgo-offline
       - name: Cache Develocity local cache
         uses: actions/cache@v5
         if: github.event_name == 'pull_request' || github.event_name == 'push' && github.repository != 'quarkusio/quarkus'
@@ -1442,7 +1443,7 @@ jobs:
         if: startsWith(matrix.os-name, 'windows')
         with:
           version: 'mandrel-latest'
-          java-version: '21'
+          java-version: '25'
           distribution: 'mandrel'
           github-token: ${{ secrets.GITHUB_TOKEN }}
       # We do this so we can get better analytics for the downloaded version of the build images

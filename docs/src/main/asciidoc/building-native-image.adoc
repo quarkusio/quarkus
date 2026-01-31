@@ -267,7 +267,7 @@ Finished generating 'getting-started-1.0.0-SNAPSHOT-runner' in 22.0s.
 [INFO]  T E S T S
 [INFO] -------------------------------------------------------
 [INFO] Running org.acme.getting.started.GreetingResourceIT
-Executing "/home/zakkak/code/quarkus-quickstarts/getting-started/target/getting-started-1.0.0-SNAPSHOT-runner -Dquarkus.http.port=8081 -Dquarkus.http.ssl-port=8444 -Dtest.url=http://localhost:8081 -Dquarkus.log.file.path=/home/zakkak/code/quarkus-quickstarts/getting-started/target/quarkus.log -Dquarkus.log.file.enable=true -Dquarkus.log.category."io.quarkus".level=INFO"
+Executing "/home/zakkak/code/quarkus-quickstarts/getting-started/target/getting-started-1.0.0-SNAPSHOT-runner -Dquarkus.http.port=8081 -Dquarkus.http.ssl-port=8444 -Dquarkus.log.file.path=/home/zakkak/code/quarkus-quickstarts/getting-started/target/quarkus.log -Dquarkus.log.file.enable=true -Dquarkus.log.category."io.quarkus".level=INFO"
 __  ____  __  _____   ___  __ ____  ______
  --/ __ \/ / / / _ | / _ \/ //_/ / / / __/
  -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \
@@ -423,7 +423,7 @@ These are regular Quarkus config properties, so if you always want to build in a
 it is recommended you add these to your `application.properties` in order to avoid specifying them every time.
 ====
 
-Executable built that way with the container runtime will be a 64-bit Linux executable, so depending on your operating system it may no longer be runnable.
+Executable built that way with the container runtime will be a 64-bit Linux executable, so depending on your operating system, it may no longer be runnable.
 
 [IMPORTANT]
 ====
@@ -433,7 +433,7 @@ So, if you plan to build a container, make sure that the base image in your `Doc
 The native executable will not run on UBI 8 base images.
 
 You can configure the builder image used for the container build by setting the `quarkus.native.builder-image` property.
-For example to switch back to an UBI8 _builder image_ you can use:
+For example, to switch back to an UBI8 _builder image_ you can use:
 
 `quarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor}`
 
@@ -502,7 +502,7 @@ See the xref:container-image.adoc[Container Image guide] for more details.
 === Manually using the micro base image
 
 You can run the application in a container using the JAR produced by the Quarkus Maven Plugin.
-However, in this section we focus on creating a container image using the produced native executable.
+However, in this section, we focus on creating a container image using the produced native executable.
 
 image:containerization-process.png[Containerization Process]
 
@@ -510,7 +510,7 @@ When using a local GraalVM installation, the native executable targets your loca
 However, as a container may not use the same _executable_ format as the one produced by your operating system,
 we will instruct the Maven build to produce an executable by leveraging a container runtime (as described in <<#container-runtime,this section>>):
 
-The produced executable will be a 64-bit Linux executable, so depending on your operating system it may no longer be runnable.
+The produced executable will be a 64-bit Linux executable, so depending on your operating system, it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a container.
 The project generation has provided a `Dockerfile.native-micro` in the `src/main/docker` directory with the following content:
 
@@ -867,7 +867,7 @@ You will find the debug symbols for the native executable in a `.debug` file nex
 [NOTE]
 ====
 The generation of the `.debug` file depends on `objcopy`.
-As a result, when using a local GraalVM installation on common Linux distributions you will need to install the `binutils` package:
+As a result, when using a local GraalVM installation on common Linux distributions, you will need to install the `binutils` package:
 
 [source,bash]
 ----
@@ -877,14 +877,14 @@ sudo dnf install binutils
 sudo apt-get install binutils
 ----
 
-When `objcopy` is not available debug symbols are embedded in the executable.
+When `objcopy` is not available, debug symbols are embedded in the executable.
 ====
 
 Aside from debug symbols,
 setting `-Dquarkus.native.debug.enabled=true` flag generates a cache of source files
-for any JDK runtime classes, GraalVM classes and application classes resolved during native executable generation.
+for any JDK runtime classes, GraalVM classes, and application classes resolved during native executable generation.
 This source cache is useful for native debugging tools,
-to establish the link between the symbols and matching source code.
+to establish the link between the symbols and the matching source code.
 It provides a convenient way of making just the necessary sources available to the debugger/IDE when debugging a native executable.
 
 Sources for third party jar dependencies, including Quarkus source code,
@@ -924,7 +924,7 @@ For a more detailed guide about debugging native images please refer to the xref
 
 == Using Monitoring Options
 
-Monitoring options such as JDK flight recorder, jvmstat, heap dumps, NMT (starting with Mandrel 24.1 for JDK 23), and remote JMX 
+Monitoring options such as JDK flight recorder, jvmstat, heap dumps, NMT (starting with Mandrel 24.1 for JDK 23), and remote JMX
 can be added to the native executable build. Simply supply a comma separated list of the monitoring options you wish to
 include at build time.
 [source,bash]
@@ -934,6 +934,10 @@ include at build time.
 
 |===
 |Monitoring Option |Description |Availability As Of
+
+|jcmd
+|Include JCMD support
+|GraalVM CE for JDK 24 Mandrel 24.2
 
 |jfr
 |Include JDK Flight Recorder support
@@ -959,6 +963,10 @@ include at build time.
 |Adds support for native memory tracking.
 |GraalVM for JDK 23 Mandrel 24.1
 
+|threaddump
+|Adds support for dumping thread stacks on SIGQUIT/SIGBREAK.
+|GraalVM for JDK 22 Mandrel 24.0
+
 |none
 |Disables support for all monitoring options that would be enabled by default in Quarkus
 |Pseudo option used by Quarkus
@@ -971,6 +979,44 @@ include at build time.
 Please see the Quarkus Native Reference Guide for more detailed information on these monitoring options.
 
 [[configuration-reference]]
+
+== Creating a Native Image Bundle
+
+A native image bundle containing everything required to build a native image can be generated.
+This is useful to inspect the build inputs and configuration.
+
+The generation of the bundle can be activated by setting any of the following parameters:
+
+|===
+|Parameter |Description |Default
+
+|quarkus.native.bundle.enabled
+|Enables the native-image bundle generation
+|`false`
+
+|quarkus.native.bundle.dry-run
+|Generates the bundle without building the native executable
+|`false`
+
+|quarkus.native.bundle.name
+|Sets the name of the bundle
+|
+|===
+
+To use this feature, run:
+
+[source,bash]
+----
+./mvnw package -Dnative -Dquarkus.native.bundle.enabled=true
+----
+
+This command will generate all the files and configuration needed for the native image build in `target/{project.name}-{project.version}-runner.nib`.
+
+[NOTE]
+====
+More details on the GraalVM native-image bundle are available in the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/overview/Bundles[GraalVM documentation].
+====
+
 == Configuring the Native Executable
 
 There are a lot of different configuration options that can affect how the native executable is generated.

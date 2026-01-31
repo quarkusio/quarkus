@@ -1,6 +1,5 @@
 package io.quarkus.deployment.pkg.steps;
 
-import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.FAST_JAR;
 import static io.quarkus.deployment.pkg.steps.LinuxIDUtil.getLinuxID;
 import static io.quarkus.deployment.util.ContainerRuntimeUtil.detectContainerRuntime;
 
@@ -40,9 +39,9 @@ public class JvmStartupOptimizerArchiveBuildStep {
 
     private static final Logger log = Logger.getLogger(JvmStartupOptimizerArchiveBuildStep.class);
 
+    @Deprecated(forRemoval = true, since = "3.31")
     public static final String CLASSES_LIST_FILE_NAME = "classes.lst";
     private static final String CONTAINER_IMAGE_BASE_BUILD_DIR = "/tmp/quarkus";
-    private static final String CONTAINER_IMAGE_APPCDS_DIR = CONTAINER_IMAGE_BASE_BUILD_DIR + "/appcds";
 
     @BuildStep(onlyIf = AppCDSRequired.class)
     public void requested(PackageConfig packageConfig, OutputTargetBuildItem outputTarget,
@@ -86,7 +85,7 @@ public class JvmStartupOptimizerArchiveBuildStep {
         Path archivePath;
         JvmStartupOptimizerArchiveType archiveType = requested.get().getType();
         log.infof("Launching %s creation process.", archiveType);
-        boolean isFastJar = packageConfig.jar().type() == FAST_JAR;
+        boolean isFastJar = packageConfig.jar().type().usesFastJarLayout();
         if (archiveType == JvmStartupOptimizerArchiveType.AppCDS) {
             archivePath = createAppCDSFromExit(jarResult, outputTarget, javaBinPath, containerImage,
                     isFastJar);
@@ -282,6 +281,7 @@ public class JvmStartupOptimizerArchiveBuildStep {
             var pb = ProcessBuilder.newBuilder(command.get(0))
                     .arguments(command.subList(1, command.size()))
                     .directory(workingDirectory);
+            pb.error().logOnSuccess(false);
             if (log.isDebugEnabled()) {
                 pb.output().consumeLinesWith(8192, log::debug)
                         .error().consumeLinesWith(8192, log::debug);

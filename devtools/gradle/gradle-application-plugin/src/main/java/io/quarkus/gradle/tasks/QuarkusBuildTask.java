@@ -1,5 +1,6 @@
 package io.quarkus.gradle.tasks;
 
+import static io.quarkus.gradle.util.CustomFileSystemOperations.deleteFileIfExists;
 import static io.smallrye.common.expression.Expression.Flag.DOUBLE_COLON;
 import static io.smallrye.common.expression.Expression.Flag.LENIENT_SYNTAX;
 import static io.smallrye.common.expression.Expression.Flag.NO_SMART_BRACES;
@@ -7,7 +8,6 @@ import static io.smallrye.common.expression.Expression.Flag.NO_TRIM;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -15,12 +15,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.inject.Inject;
-
-import org.gradle.api.Action;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.file.FileCopyDetails;
-import org.gradle.api.file.FileSystemOperations;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.plugins.JavaPlugin;
@@ -43,6 +38,7 @@ import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.gradle.tasks.services.ForcedPropertieBuildService;
 import io.quarkus.gradle.tasks.worker.BuildWorker;
 import io.quarkus.gradle.tooling.ToolingUtils;
+import io.quarkus.gradle.util.CustomFileSystemOperations;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.smallrye.common.expression.Expression;
 
@@ -72,8 +68,13 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
 
     }
 
-    @Inject
-    protected abstract FileSystemOperations getFileSystemOperations();
+    @Internal
+    public abstract Property<CustomFileSystemOperations> getFileSystemOperationsProvider();
+
+    @Internal
+    public CustomFileSystemOperations getFileSystemOperations() {
+        return getFileSystemOperationsProvider().get();
+    }
 
     @Classpath
     public FileCollection getClasspath() {
@@ -258,7 +259,7 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
                 delete.delete(fastJar());
             } else if (jarEnabled()) {
                 switch (jarType()) {
-                    case FAST_JAR -> {
+                    case FAST_JAR, AOT_JAR -> {
                         delete.delete(buildDir.resolve(nativeImageSourceJarDirName()));
                         delete.delete(fastJar());
                     }
@@ -305,10 +306,9 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
         workQueue.await();
 
         // Copy built artifacts from `build/` into `build/quarkus-build/gen/`
-        getFileSystemOperations().copy(copy -> {
+        getFileSystemOperations().copyPreservingTimestamps(copy -> {
             copy.from(buildDir);
             copy.into(genDir);
-            copy.eachFile(new CopyActionDeleteNonWriteableTarget(genDir));
             if (nativeEnabled()) {
                 if (jarEnabled()) {
                     throw QuarkusBuild.nativeAndJar();
@@ -324,7 +324,7 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
                 }
             } else if (jarEnabled()) {
                 switch (jarType()) {
-                    case FAST_JAR -> {
+                    case FAST_JAR, AOT_JAR -> {
                         copy.include(outputDirectory() + "/**");
                         copy.include(QUARKUS_ARTIFACT_PROPERTIES);
                     }
@@ -352,35 +352,15 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
         throw new StopExecutionException();
     }
 
-    public static final class CopyActionDeleteNonWriteableTarget implements Action<FileCopyDetails> {
-        private final Path destDir;
-
-        public CopyActionDeleteNonWriteableTarget(Path destDir) {
-            this.destDir = destDir;
-        }
-
-        @Override
-        public void execute(FileCopyDetails details) {
-            // Delete a pre-existing non-writeable file, otherwise a copy or sync operation would fail.
-            // This situation happens for 'app-cds.jsa' files, which are created as "read only" files,
-            // prefer to keep those files read-only.
-
-            Path destFile = destDir.resolve(details.getPath());
-            if (Files.exists(destFile) && !Files.isWritable(destFile)) {
-                deleteFileIfExists(destFile);
-            }
-        }
-    }
-
-    protected static void deleteFileIfExists(Path file) {
-        try {
-            Files.deleteIfExists(file);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private Map<String, String> buildSystemProperties(ResolvedDependency appArtifact, Map<String, String> quarkusProperties) {
+    /**
+     * Filters resolved Gradle configuration for properties in the Quarkus namespace
+     * (as in start with <code>quarkus.</code>). This avoids exposing configuration that may contain secrets or
+     * passwords not related to Quarkus (for instance environment variables storing sensitive data for other systems).
+     *
+     * @param appArtifact the application dependency to retrive the quarkus application name and version.
+     * @return a filtered view of the configuration only with <code>quarkus.</code> names.
+     */
+    protected Map<String, String> buildSystemProperties(ResolvedDependency appArtifact, Map<String, String> quarkusProperties) {
         Map<String, String> buildSystemProperties = new HashMap<>();
         buildSystemProperties.putIfAbsent("quarkus.application.name", appArtifact.getArtifactId());
         buildSystemProperties.putIfAbsent("quarkus.application.version", appArtifact.getVersion());
@@ -390,11 +370,6 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
             buildSystemProperties.putIfAbsent("quarkus.package.output-timestamp", "1970-01-02T00:00:00Z");
         }
 
-        for (Map.Entry<String, String> entry : getExtensionView().getForcedProperties().get().entrySet()) {
-            if (entry.getKey().startsWith("quarkus.") || entry.getKey().startsWith("platform.quarkus.")) {
-                buildSystemProperties.put(entry.getKey(), entry.getValue());
-            }
-        }
         for (Map.Entry<String, String> entry : getExtensionView().getQuarkusBuildProperties().get().entrySet()) {
             if (entry.getKey().startsWith("quarkus.") || entry.getKey().startsWith("platform.quarkus.")) {
                 buildSystemProperties.put(entry.getKey(), entry.getValue());
@@ -414,23 +389,19 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
         for (String value : quarkusValues) {
             Expression expression = Expression.compile(value, LENIENT_SYNTAX, NO_TRIM, NO_SMART_BRACES, DOUBLE_COLON);
             for (String reference : expression.getReferencedStrings()) {
-                String expanded = getExtensionView().getForcedProperties().get().get(reference);
+                String expanded = getExtensionView().getQuarkusBuildProperties().get().get(reference);
                 if (expanded != null) {
                     buildSystemProperties.put(reference, expanded);
                     continue;
                 }
 
-                expanded = getExtensionView().getQuarkusBuildProperties().get().get(reference);
-                if (expanded != null) {
-                    buildSystemProperties.put(reference, expanded);
-                    continue;
-                }
                 expanded = (String) getExtensionView().getProjectProperties().get().get(reference);
                 if (expanded != null) {
                     buildSystemProperties.put(reference, expanded);
                 }
             }
         }
+
         return buildSystemProperties;
     }
 }

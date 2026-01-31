@@ -15,8 +15,13 @@ export class QwcExtensionsMenuAction extends LitElement {
     storageController = new StorageController(this);
     
     static styles = css`
-            .actionBtn{
+            .actionBtn {
                 color: var(--lumo-contrast-25pct);
+            }
+            @media screen and (max-width: 1280px) {
+                .actionBtn {
+                    display: none;
+                }
             }
        `;
 

@@ -554,7 +554,7 @@ class InfinispanClientProcessor {
         for (String clientName : clientNames) {
             syntheticBeanBuildItemBuildProducer.produce(
                     configureAndCreateSyntheticBean(clientName, RemoteCacheManager.class,
-                            recorder.infinispanClientSupplier(clientName)));
+                            recorder.infinispanRemoteCacheManagerSupplier(clientName)));
             syntheticBeanBuildItemBuildProducer.produce(
                     configureAndCreateSyntheticBean(clientName, CounterManager.class,
                             recorder.infinispanCounterManagerSupplier(clientName)));
@@ -564,7 +564,7 @@ class InfinispanClientProcessor {
         for (RemoteCacheBean remoteCacheBean : remoteCacheBeans) {
             syntheticBeanBuildItemBuildProducer.produce(
                     configureAndCreateSyntheticBean(remoteCacheBean,
-                            recorder.infinispanRemoteCacheClientSupplier(remoteCacheBean.clientName,
+                            recorder.infinispanRemoteCacheSupplier(remoteCacheBean.clientName,
                                     remoteCacheBean.cacheName)));
         }
     }
@@ -607,7 +607,7 @@ class InfinispanClientProcessor {
     }
 
     @BuildStep
-    @Record(value = RUNTIME_INIT, optional = true)
+    @Record(value = RUNTIME_INIT)
     List<InfinispanClientBuildItem> infinispanClients(InfinispanRecorder recorder,
             List<InfinispanClientNameBuildItem> infinispanClientNames,
             // make sure all beans have been initialized
@@ -615,7 +615,7 @@ class InfinispanClientProcessor {
         List<InfinispanClientBuildItem> result = new ArrayList<>(infinispanClientNames.size());
         for (InfinispanClientNameBuildItem ic : infinispanClientNames) {
             String name = ic.getName();
-            result.add(new InfinispanClientBuildItem(recorder.getClient(name), name));
+            result.add(new InfinispanClientBuildItem(recorder.initializeClient(name), name));
         }
         return result;
     }

@@ -47,6 +47,7 @@ import io.quarkus.oidc.AuthorizationCodeFlow;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.BearerTokenAuthentication;
 import io.quarkus.oidc.OIDCException;
+import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.OidcProviderClient;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.RefreshToken;
@@ -1086,5 +1087,13 @@ public final class OidcUtils {
         newTokens.setAccessTokenScope(tokens.getAccessTokenScope());
         newTokens.setAccessTokenExpiresIn(tokens.getAccessTokenExpiresIn());
         return newTokens;
+    }
+
+    static boolean isParEnabled(Authentication authenticationConfig, OidcConfigurationMetadata metadata) {
+        var parConfig = authenticationConfig.par();
+        if (parConfig.enabled().isPresent()) {
+            return parConfig.enabled().get();
+        }
+        return metadata.isRequirePushedAuthorizationRequests();
     }
 }

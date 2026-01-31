@@ -8,7 +8,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static io.quarkus.analytics.common.ContextTestData.createContext;
 import static io.quarkus.analytics.rest.RestClient.IDENTITY_ENDPOINT;
-import static io.quarkus.analytics.util.StringUtils.getObjectMapper;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -28,11 +27,11 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.tomakehurst.wiremock.WireMockServer;
 
 import io.quarkus.analytics.dto.config.AnalyticsRemoteConfig;
 import io.quarkus.analytics.dto.config.Identity;
+import io.quarkus.analytics.util.JsonSerializer;
 
 class RestClientFailTest {
 
@@ -41,7 +40,7 @@ class RestClientFailTest {
     private static final WireMockServer wireMockServer = new WireMockServer(MOCK_SERVER_PORT);
 
     @BeforeAll
-    static void start() throws JsonProcessingException {
+    static void start() {
         System.setProperty("quarkus.analytics.timeout", "200");
         wireMockServer.start();
         wireMockServer.stubFor(post(urlEqualTo("/" + IDENTITY_ENDPOINT))
@@ -67,7 +66,7 @@ class RestClientFailTest {
     }
 
     @Test
-    void postIdentityServerTTLExceeded() throws URISyntaxException, JsonProcessingException {
+    void postIdentityServerTTLExceeded() throws URISyntaxException {
         RestClient restClient = new RestClient();
         Identity identity = createIdentity();
         CompletableFuture<HttpResponse<String>> post = restClient.post(
@@ -87,7 +86,7 @@ class RestClientFailTest {
                 .untilAsserted(() -> wireMockServer.verify(1, postRequestedFor(urlEqualTo("/" + IDENTITY_ENDPOINT))));
 
         wireMockServer.verify(postRequestedFor(urlEqualTo("/" + IDENTITY_ENDPOINT))
-                .withRequestBody(equalToJson(getObjectMapper().writeValueAsString(identity))));
+                .withRequestBody(equalToJson(JsonSerializer.toJson(identity))));
     }
 
     @Test

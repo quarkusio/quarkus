@@ -129,4 +129,21 @@ public class AllowForwardedAndXForwardedHeadersTest {
                 .then()
                 .statusCode(400);
     }
+
+    /**
+     * Reproducer for <a href="https://github.com/quarkusio/quarkus/issues/46078">GitHub issue #46078</a>.
+     * Verifies that the behavior for "Forwarded" host and "X-Forwarded-Host" host without port is same, as the equality
+     * is verified by the 'strict-forwarded-control' policy.
+     * See the linked issue for reasoning behind the expectation that the Host header should not leak internal port.
+     */
+    @Test
+    public void testHostWithoutPortMatches() {
+        RestAssured.given()
+                .header("Forwarded", "host=somehost")
+                .header("X-Forwarded-Host", "somehost")
+                .get("/path")
+                .then()
+                .statusCode(200)
+                .body(Matchers.startsWith("http|somehost|"));
+    }
 }

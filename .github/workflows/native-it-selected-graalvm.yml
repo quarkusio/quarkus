@@ -21,12 +21,12 @@ on:
       NATIVE_COMPILER_VERSION:
         description: 'the native compiler version to use'
         required: true
-        default: '21'
+        default: '25'
         type: choice
         options:
           - '17'
           - '21'
-          - '22'
+          - '25'
 
 env:
   # Workaround testsuite locale issue
@@ -40,6 +40,7 @@ env:
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test
   PULL_REQUEST_NUMBER: ${{ github.event.number }}
+  MVNW_REPOURL: https://maven-central.storage-download.googleapis.com/maven2
 
 defaults:
   run:

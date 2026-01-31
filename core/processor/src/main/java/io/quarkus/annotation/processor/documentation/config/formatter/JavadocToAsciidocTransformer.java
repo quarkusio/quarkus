@@ -96,7 +96,7 @@ public final class JavadocToAsciidocTransformer {
 
         // the parser expects all the lines to start with "* "
         // we add it as it has been previously removed
-        Javadoc parsedJavadoc = StaticJavaParser.parseJavadoc(START_OF_LINE.matcher(javadoc).replaceAll("* "));
+        Javadoc parsedJavadoc = StaticJavaParser.parseJavadoc(START_OF_LINE.matcher(javadoc).replaceAll("* "), false);
 
         StringBuilder htmlJavadoc = new StringBuilder(javadoc.length());
 

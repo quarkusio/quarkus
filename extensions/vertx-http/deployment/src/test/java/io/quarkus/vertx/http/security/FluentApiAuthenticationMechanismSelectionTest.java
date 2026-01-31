@@ -24,6 +24,8 @@ import io.quarkus.security.StringPermission;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
+import io.quarkus.security.runtime.QuarkusPrincipal;
+import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusUnitTest;
@@ -57,12 +59,19 @@ public class FluentApiAuthenticationMechanismSelectionTest {
                     quarkus.http.ssl.certificate.key-store-password=secret
                     quarkus.http.ssl.certificate.trust-store-file=server-truststore.p12
                     quarkus.http.ssl.certificate.trust-store-password=secret
+                    quarkus.http.auth.form.login-page=
                     """), "application.properties")
             .addAsResource(new File("target/certs/mtls-test-keystore.p12"), "server-keystore.p12")
             .addAsResource(new File("target/certs/mtls-test-server-truststore.p12"), "server-truststore.p12"));
 
     @TestHTTPResource(value = "/mtls", tls = true)
     URL url;
+
+    @TestHTTPResource(value = "/mtls-basic", tls = true)
+    URL mTlsBasicUrl;
+
+    @TestHTTPResource(value = "/mtls-basic-form", tls = true)
+    URL mTlsBasicFormUrl;
 
     @BeforeAll
     public static void setup() {
@@ -112,8 +121,7 @@ public class FluentApiAuthenticationMechanismSelectionTest {
                 .get("/form/admin")
                 .then()
                 .assertThat()
-                .statusCode(302)
-                .header("location", containsString("/login.html"));
+                .statusCode(401);
 
         // basic authentication & POST -> access is going to be denied as there are permissions with POST method
         RestAssured
@@ -173,6 +181,83 @@ public class FluentApiAuthenticationMechanismSelectionTest {
         }
     }
 
+    @Test
+    void testCombiningBasicAndMutualTls() {
+        // anonymous user
+        RestAssured.given().get("/mtls-basic").then().statusCode(401);
+
+        // other mechanism, that must not be allowed for this path
+        RestAssured.given().header("custom-auth", "ignored").get("/mtls-basic").then().statusCode(401);
+
+        // only basic auth
+        RestAssured
+                .given()
+                .auth().preemptive().basic("admin", "admin")
+                .when()
+                .get("/mtls-basic")
+                .then()
+                .statusCode(200)
+                .body(equalTo("admin:/mtls-basic"));
+
+        // only mTLS
+        RestAssured.given()
+                .keyStore("target/certs/mtls-test-client-keystore.p12", "secret")
+                .trustStore("target/certs/mtls-test-client-truststore.p12", "secret")
+                .get(mTlsBasicUrl).then().statusCode(200).body(is("CN=localhost:/mtls-basic"));
+
+        // both basic and mTLS auth
+        RestAssured.given()
+                .keyStore("target/certs/mtls-test-client-keystore.p12", "secret")
+                .trustStore("target/certs/mtls-test-client-truststore.p12", "secret")
+                .auth().preemptive().basic("admin", "admin")
+                .get(mTlsBasicUrl).then().statusCode(200).body(is("admin:/mtls-basic"));
+    }
+
+    @Test
+    void testCombiningBasicAndMutualTlsAndForm() {
+        // anonymous user
+        RestAssured.given().redirects().follow(false).get("/mtls-basic-form").then().statusCode(401);
+
+        // other mechanism, that must not be allowed for this path
+        RestAssured.given().redirects().follow(false).header("custom-auth", "ignored").get("/mtls-basic-form").then()
+                .statusCode(401);
+
+        // only basic auth
+        RestAssured
+                .given()
+                .auth().preemptive().basic("admin", "admin")
+                .when()
+                .get("/mtls-basic-form")
+                .then()
+                .statusCode(200)
+                .body(equalTo("admin:/mtls-basic-form"));
+
+        // only mTLS
+        RestAssured.given()
+                .keyStore("target/certs/mtls-test-client-keystore.p12", "secret")
+                .trustStore("target/certs/mtls-test-client-truststore.p12", "secret")
+                .get(mTlsBasicFormUrl).then().statusCode(200).body(is("CN=localhost:/mtls-basic-form"));
+
+        // only form
+        CookieFilter adminCookies = new CookieFilter();
+        loginUsingFormAuth(adminCookies, "admin");
+        RestAssured
+                .given()
+                .filter(adminCookies)
+                .get("/mtls-basic-form")
+                .then()
+                .statusCode(200)
+                .body(equalTo("admin:/mtls-basic-form"));
+
+        // all three - basic, form and mTLS auth
+        RestAssured.given()
+                .keyStore("target/certs/mtls-test-client-keystore.p12", "secret")
+                .trustStore("target/certs/mtls-test-client-truststore.p12", "secret")
+                .filter(adminCookies)
+                .auth().preemptive().basic("admin", "admin")
+                .get(mTlsBasicFormUrl).then().statusCode(200).body(is("admin:/mtls-basic-form"));
+    }
+
     private static void basicAuthTest(String s, String operand) {
         RestAssured
                 .given()
@@ -222,7 +307,8 @@ public class FluentApiAuthenticationMechanismSelectionTest {
             httpSecurity
                     .mechanism(new CustomSchemeAuthenticationMechanism())
                     .basic()
-                    .mTLS(ClientAuth.REQUEST)
+                    .mTLS(MTLS.builder().authentication(ClientAuth.REQUEST).rolesMapping("localhost", "admin").priority(1005)
+                            .build())
                     .get("/form/admin").form().authorization()
                     .policy(identity -> "admin".equals(identity.getPrincipal().getName()))
                     .put("/form/admin").basic().authorization()
@@ -232,6 +318,8 @@ public class FluentApiAuthenticationMechanismSelectionTest {
                     .path("/custom-instance/admin").authenticatedWith("custom-scheme").authorization()
                     .policy((identity, event) -> identity.hasRole("admin")
                             && event.normalizedPath().endsWith("/custom-instance/admin"))
+                    .path("/mtls-basic").authenticatedWith(Set.of("basic", "x509")).roles("admin")
+                    .path("/mtls-basic-form").authenticatedWith(Set.of("form", "basic", "x509")).roles("admin")
                     .path("/mtls").mTLS();
         }
 
@@ -263,6 +351,12 @@ public class FluentApiAuthenticationMechanismSelectionTest {
 
         @Override
         public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {
+            if (context.request().headers().get("custom-auth") != null) {
+                return Uni.createFrom().item(QuarkusSecurityIdentity.builder()
+                        .setPrincipal(new QuarkusPrincipal("Olga"))
+                        .addRole("admin")
+                        .build());
+            }
             return delegate.authenticate(context, identityProviderManager);
         }
 

@@ -28,6 +28,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -96,6 +97,7 @@ public class BuildTimeContentProcessor {
     private static final String BUILD_TIME_PATH = "dev-ui-templates/build-time";
     private static final String ES_MODULE_SHIMS = "es-module-shims";
     private static final String FLAG_ICONS = "flag-icons";
+    private static final String VAADIN_WEBCOMPONENTS = "vaadin-webcomponents";
 
     final Config config = ConfigProvider.getConfig();
 
@@ -133,6 +135,7 @@ public class BuildTimeContentProcessor {
         internalImportMapBuildItem.add("qui-themed-code-block", contextRoot + "qui/qui-themed-code-block.js");
         internalImportMapBuildItem.add("qui-assistant-warning", contextRoot + "qui/qui-assistant-warning.js");
         internalImportMapBuildItem.add("qui-assistant-button", contextRoot + "qui/qui-assistant-button.js");
+        internalImportMapBuildItem.add("qui-assistant-chat", contextRoot + "qui/qui-assistant-chat.js");
 
         // Echarts
         internalImportMapBuildItem.add("echarts/", contextRoot + "echarts/");
@@ -464,7 +467,8 @@ public class BuildTimeContentProcessor {
             }
         }
 
-        Map<String, String> jsVersions = extractJsVersionsFor(mvnpmBuildItem.getMvnpmJars(), ES_MODULE_SHIMS, FLAG_ICONS);
+        Map<String, String> jsVersions = extractJsVersionsFor(mvnpmBuildItem.getMvnpmJars(), ES_MODULE_SHIMS, FLAG_ICONS,
+                VAADIN_WEBCOMPONENTS);
         String importmap = aggregator.aggregateAsJson(imports);
         aggregator.reset();
 
@@ -478,7 +482,8 @@ public class BuildTimeContentProcessor {
                 "importmap", importmap,
                 "themeVars", themeVars,
                 "esModuleShimsVersion", jsVersions.get(ES_MODULE_SHIMS),
-                "flagsVersion", jsVersions.get(FLAG_ICONS));
+                "flagsVersion", jsVersions.get(FLAG_ICONS),
+                "vaadinVersion", jsVersions.get(VAADIN_WEBCOMPONENTS));
 
         quteTemplateBuildItem.add("index.html", data);
 
@@ -597,11 +602,9 @@ public class BuildTimeContentProcessor {
             ExtensionsBuildItem extensionsBuildItem) {
         // Menu section
         List<Page> sectionMenu = new ArrayList<>();
-        Collections.sort(internalPages, (t, t1) -> {
-            return ((Integer) t.getPosition()).compareTo(t1.getPosition());
-        });
 
-        for (InternalPageBuildItem internalPageBuildItem : internalPages) {
+        for (InternalPageBuildItem internalPageBuildItem : internalPages.stream()
+                .sorted(Comparator.comparing(InternalPageBuildItem::getPosition)).toList()) {
             List<Page> pages = internalPageBuildItem.getPages();
             for (Page page : pages) {
                 if (internalPageBuildItem.getMenuActionComponent() != null) {

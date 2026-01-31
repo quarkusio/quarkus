@@ -13,6 +13,7 @@ import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
@@ -459,4 +460,12 @@ public interface WebAuthnRunTimeConfig {
      */
     @WithDefault("false")
     Optional<Boolean> enableLoginEndpoint();
+
+    /**
+     * WebAuthn authentication mechanism priority.
+     *
+     * @see HttpAuthenticationMechanism#getPriority()
+     */
+    @WithDefault(HttpAuthenticationMechanism.DEFAULT_PRIORITY + "")
+    int priority();
 }

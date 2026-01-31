@@ -228,26 +228,49 @@ public interface OidcCommonConfig {
     interface Proxy {
 
         /**
+         * The name of the proxy configuration to use.
+         * <p>
+         * If a name is configured, it uses the configuration from {@code quarkus.proxy.<name>.*}.
+         * Please note that the 'non-proxy-hosts' option is currently not supported.
+         * If a name is configured, but no proxy configuration is found with that name then an error will be thrown.
+         * <p>
+         * The default proxy configuration is <strong>not</strong> used by default.
+         */
+        Optional<String> proxyConfigurationName();
+
+        /**
          * The host name or IP address of the Proxy.<br/>
          * Note: If the OIDC adapter requires a Proxy to talk with the OIDC server (Provider),
          * set this value to enable the usage of a Proxy.
+         *
+         * @deprecated Use the proxy registry instead.
          */
+        @Deprecated(since = "3.31", forRemoval = true)
         Optional<String> host();
 
         /**
          * The port number of the Proxy. The default value is `80`.
+         *
+         * @deprecated Use the proxy registry instead.
          */
+        @Deprecated(since = "3.31", forRemoval = true)
         @WithDefault("80")
         int port();
 
         /**
          * The username, if the Proxy needs authentication.
+         *
+         * @deprecated Use the proxy registry instead.
          */
+        @Deprecated(since = "3.31", forRemoval = true)
         Optional<String> username();
 
         /**
          * The password, if the Proxy needs authentication.
+         *
+         * @deprecated Use the proxy registry instead.
          */
+        @Deprecated(since = "3.31", forRemoval = true)
         Optional<String> password();
 
     }

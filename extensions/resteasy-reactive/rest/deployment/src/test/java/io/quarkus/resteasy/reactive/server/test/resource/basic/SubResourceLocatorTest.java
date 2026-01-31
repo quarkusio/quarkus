@@ -1,11 +1,13 @@
 package io.quarkus.resteasy.reactive.server.test.resource.basic;
 
+import java.net.URI;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -22,8 +24,8 @@ import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.SubResou
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.SubResourceLocatorPlatformServiceImpl;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.SubResourceLocatorPlatformServiceResource;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.SubResourceLocatorUserResource;
-import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 
 /**
  * @tpSubChapter Resources
@@ -40,7 +42,7 @@ public class SubResourceLocatorTest {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class, SubResourceLocatorBaseCrudService.class,
+                    war.addClasses(SubResourceLocatorBaseCrudService.class,
                             SubResourceLocatorBaseService.class,
                             SubResourceLocatorFoo.class, SubResourceLocatorOhaUserModel.class,
                             SubResourceLocatorPlatformServiceResource.class, SubResourceLocatorUserResource.class);
@@ -49,16 +51,18 @@ public class SubResourceLocatorTest {
                 }
             });
 
+    @TestHTTPResource
+    URI uri;
+
     /**
      * @tpTestDetails Sub resource locator should not fail
      * @tpSince RESTEasy 3.0.16
      */
     @Test
     @DisplayName("Test 657")
-    public void test657() throws Exception {
+    public void test657() {
         Client client = ClientBuilder.newClient();
-        WebTarget base = client.target(PortProviderUtil.generateURL("/platform/users/89080/data/ada/jsanchez110",
-                SubResourceLocatorTest.class.getSimpleName()));
+        WebTarget base = client.target(UriBuilder.fromUri(uri).path("/platform/users/89080/data/ada/jsanchez110"));
         Response response = base.request().get();
         String s = response.readEntity(String.class);
         Assertions.assertEquals("bill", s);

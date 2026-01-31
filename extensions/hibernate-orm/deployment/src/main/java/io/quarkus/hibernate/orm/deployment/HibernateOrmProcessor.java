@@ -37,6 +37,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.xml.namespace.QName;
@@ -88,6 +89,7 @@ import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -97,10 +99,12 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.BytecodeRecorderConstantDefinitionBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
@@ -116,16 +120,19 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
+import io.quarkus.deployment.pkg.AotClassLoadingEnabled;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.gizmo2.Gizmo;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationStaticConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.QuarkusClassFileLocator;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.SqlLoadScriptDefaultBuildItem;
 import io.quarkus.hibernate.orm.dev.HibernateOrmDevIntegrator;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmPersistenceUnitProviderHelper;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
@@ -363,6 +370,7 @@ public final class HibernateOrmProcessor {
             List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
             JpaModelBuildItem jpaModel,
             Capabilities capabilities,
+            List<SqlLoadScriptDefaultBuildItem> additionalSqlLoadScriptDefaults,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
@@ -414,6 +422,7 @@ public final class HibernateOrmProcessor {
                     jdbcDataSources, reactiveDataSources, applicationArchivesBuildItem, launchMode.getLaunchMode(),
                     additionalJpaModelBuildItems,
                     jpaModel, capabilities,
+                    additionalSqlLoadScriptDefaults,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
                     reflectiveMethods, unremovableBeans, dbKindMetadataBuildItems);
         }
@@ -557,7 +566,7 @@ public final class HibernateOrmProcessor {
             for (DotName name : ClassNames.HIBERNATE_MAPPING_ANNOTATIONS) {
                 annotationClassNames.add(name.toString());
             }
-            reflective.produce(ReflectiveClassBuildItem.builder(annotationClassNames.toArray(new String[0]))
+            reflective.produce(ReflectiveClassBuildItem.builder(annotationClassNames)
                     .reason(ClassNames.HIBERNATE_ORM_PROCESSOR.toString())
                     .methods().fields().build());
             for (String annotationClassName : annotationClassNames) {
@@ -879,6 +888,62 @@ public final class HibernateOrmProcessor {
         }
     }
 
+    /**
+     * Hibernate ORM checks package-info and if we have a negative lookup, it's not cached by AOT class loading.
+     * <p>
+     * So point of this method is to generate an empty package-info in packages where we have a mapped class,
+     * if there isn't a package-info already.
+     */
+    @BuildStep(onlyIf = AotClassLoadingEnabled.class, onlyIfNot = NativeOrNativeSourcesBuild.class)
+    void generateMissingPackageInfos(CombinedIndexBuildItem combinedIndex,
+            JpaModelBuildItem jpaModel,
+            List<ApplicationClassPredicateBuildItem> predicates,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources) {
+
+        IndexView index = combinedIndex.getIndex();
+
+        Set<String> packages = new HashSet<>();
+        for (String entityClass : jpaModel.getManagedClassNames()) {
+            int idx = entityClass.lastIndexOf('.');
+            if (idx > 0) {
+                packages.add(entityClass.substring(0, idx));
+            }
+        }
+
+        if (packages.isEmpty()) {
+            return;
+        }
+
+        Predicate<String> appClassPredicate = new Predicate<String>() {
+            @Override
+            public boolean test(String className) {
+                for (ApplicationClassPredicateBuildItem predicate : predicates) {
+                    if (predicate.test(className)) {
+                        return true;
+                    }
+                }
+                return GeneratedClassGizmo2Adaptor.isApplicationClass(className);
+            }
+        };
+
+        Gizmo gizmo = Gizmo.create(new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources, appClassPredicate))
+                .withDebugInfo(false)
+                .withParameters(false);
+
+        for (String pkg : packages) {
+            String packageInfoClassName = pkg + ".package-info";
+            if (index.getClassByName(DotName.createSimple(packageInfoClassName)) != null) {
+                // we already have a package-info, we don't generate an empty one
+                continue;
+            }
+
+            gizmo.interface_(packageInfoClassName, cc -> {
+                cc.synthetic();
+            });
+        }
+    }
+
     private void handleHibernateORMWithNoPersistenceXml(
             HibernateOrmConfig hibernateOrmConfig,
             CombinedIndexBuildItem index,
@@ -890,6 +955,7 @@ public final class HibernateOrmProcessor {
             List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
             JpaModelBuildItem jpaModel,
             Capabilities capabilities,
+            List<SqlLoadScriptDefaultBuildItem> additionalSqlLoadScriptDefaults,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
@@ -949,6 +1015,7 @@ public final class HibernateOrmProcessor {
                     modelForDefaultPersistenceUnit.allModelClassAndPackageNames(),
                     jpaModel.getXmlMappings(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME),
                     jdbcDataSources, reactiveDataSources, applicationArchivesBuildItem, launchMode, capabilities,
+                    additionalSqlLoadScriptDefaults,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
                     reflectiveMethods, unremovableBeans, dbKindMetadataBuildItems);
         } else if (!modelForDefaultPersistenceUnit.entityClassNames().isEmpty()
@@ -981,6 +1048,7 @@ public final class HibernateOrmProcessor {
                     model == null ? Collections.emptySet() : model.allModelClassAndPackageNames(),
                     jpaModel.getXmlMappings(persistenceUnitName),
                     jdbcDataSources, reactiveDataSources, applicationArchivesBuildItem, launchMode, capabilities,
+                    additionalSqlLoadScriptDefaults,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
                     reflectiveMethods, unremovableBeans, dbKindMetadataBuildItems);
         }
@@ -997,6 +1065,7 @@ public final class HibernateOrmProcessor {
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchMode launchMode,
             Capabilities capabilities,
+            List<SqlLoadScriptDefaultBuildItem> additionalSqlLoadScriptDefaults,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
@@ -1062,6 +1131,7 @@ public final class HibernateOrmProcessor {
         configureProperties(descriptor, persistenceUnitConfig, hibernateOrmConfig, false);
 
         configureSqlLoadScript(persistenceUnitName, persistenceUnitConfig, applicationArchivesBuildItem, launchMode,
+                additionalSqlLoadScriptDefaults,
                 nativeImageResources, hotDeploymentWatchedFiles, descriptor);
 
         Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());

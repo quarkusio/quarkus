@@ -2,7 +2,14 @@ package io.quarkus.smallrye.openapi.runtime;
 
 import java.util.List;
 
+import jakarta.enterprise.event.Event;
+
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ManagedContext;
+import io.quarkus.security.identity.CurrentIdentityAssociation;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.openapi.runtime.io.Format;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
@@ -20,11 +27,68 @@ public class OpenApiHandler implements Handler<RoutingContext> {
     private static final String ALLOWED_METHODS = "GET, HEAD, OPTIONS";
     private static final String QUERY_PARAM_FORMAT = "format";
 
-    public OpenApiHandler() {
+    private final String documentName;
+    private final boolean alwaysRunFilter;
+    private final Event<SecurityIdentity> securityIdentityEvent;
+    private final CurrentIdentityAssociation currentIdentityAssociation;
+    private final CurrentVertxRequest currentVertxRequest;
+    private final ManagedContext requestContext;
+
+    public OpenApiHandler(String documentName, boolean alwaysRunFilter) {
+        this.documentName = documentName;
+        this.alwaysRunFilter = alwaysRunFilter;
+
+        if (alwaysRunFilter) {
+            this.securityIdentityEvent = Arc.container().beanManager().getEvent().select(SecurityIdentity.class);
+            this.currentVertxRequest = Arc.container().instance(CurrentVertxRequest.class).get();
+            this.requestContext = Arc.container().requestContext();
+            this.currentIdentityAssociation = Arc.container().instance(CurrentIdentityAssociation.class).get();
+        } else {
+            this.securityIdentityEvent = null;
+            this.currentVertxRequest = null;
+            this.requestContext = null;
+            this.currentIdentityAssociation = null;
+        }
     }
 
     @Override
-    public void handle(RoutingContext event) {
+    public void handle(RoutingContext context) {
+        boolean manageRequestContext = alwaysRunFilter && !requestContext.isActive();
+
+        try {
+            if (manageRequestContext) {
+                requestContext.activate();
+                currentVertxRequest.setCurrent(context);
+            }
+            if (alwaysRunFilter) {
+                associateSecurityIdentity(context);
+            }
+            invoke(context);
+        } finally {
+            if (manageRequestContext) {
+                // Deactivate the context, i.e. cleanup the thread locals
+                requestContext.deactivate();
+            }
+        }
+    }
+
+    private void associateSecurityIdentity(RoutingContext context) {
+        QuarkusHttpUser user = (QuarkusHttpUser) context.user();
+
+        if (currentIdentityAssociation != null) {
+            if (user != null) {
+                SecurityIdentity identity = user.getSecurityIdentity();
+                currentIdentityAssociation.setIdentity(identity);
+            } else {
+                currentIdentityAssociation.setIdentity(QuarkusHttpUser.getSecurityIdentity(context, null));
+            }
+        }
+        if (user != null) {
+            securityIdentityEvent.fire(user.getSecurityIdentity());
+        }
+    }
+
+    private void invoke(RoutingContext event) {
         HttpServerRequest req = event.request();
         HttpServerResponse resp = event.response();
 
@@ -57,7 +121,7 @@ public class OpenApiHandler implements Handler<RoutingContext> {
             }
 
             resp.headers().set("Content-Type", format.getMimeType() + ";charset=UTF-8");
-            byte[] schemaDocument = getOpenApiDocumentService().getDocument(format);
+            byte[] schemaDocument = getOpenApiDocumentService().getDocument(documentName, format);
             resp.end(Buffer.buffer(schemaDocument));
         }
     }

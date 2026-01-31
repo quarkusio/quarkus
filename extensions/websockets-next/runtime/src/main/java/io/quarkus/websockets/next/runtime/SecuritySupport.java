@@ -1,6 +1,7 @@
 package io.quarkus.websockets.next.runtime;
 
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.setRoutingContextAttribute;
+import static io.quarkus.vertx.http.runtime.security.QuarkusHttpUser.DEFERRED_IDENTITY_KEY;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -15,6 +16,7 @@ import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.quarkus.websockets.next.CloseReason;
 import io.quarkus.websockets.next.WebSocketServerException;
 import io.quarkus.websockets.next.runtime.spi.security.WebSocketIdentityUpdateRequest;
+import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
 public final class SecuritySupport {
@@ -24,11 +26,13 @@ public final class SecuritySupport {
     static final SecuritySupport NOOP = new SecuritySupport(null, null, null);
 
     private final RoutingContext routingContext;
+    private final WebSocketConnectionImpl connection;
     private volatile SecurityIdentity identity;
     private volatile Runnable onClose;
 
     SecuritySupport(SecurityIdentity identity, WebSocketConnectionImpl connection, RoutingContext routingContext) {
         this.identity = identity;
+        this.connection = connection;
         this.onClose = closeConnectionWhenIdentityExpired(routingContext, connection, this.identity);
         this.routingContext = routingContext;
     }
@@ -41,6 +45,40 @@ public final class SecuritySupport {
 
     SecurityIdentity getIdentity() {
         return identity;
+    }
+
+    /**
+     * Using deferred identity may be necessary as a fallback if and only if the {@link #getIdentity()} is not available.
+     * We should prefer the resolved identity because we detect the identity expiration there.
+     * The reason why we need it is that only deferred identity may be available with disabled proactive authentication
+     * when the identity is not required during the HTTP upgrade. We should not authenticate proactively unless something
+     * requires the authentication.
+     *
+     * @return deferred identity (the `Uni` item can be null) or null
+     */
+    Uni<SecurityIdentity> getDeferredIdentity() {
+        if (routingContext == null) {
+            return null;
+        }
+        Uni<SecurityIdentity> deferredIdentity = routingContext.get(DEFERRED_IDENTITY_KEY);
+        if (deferredIdentity == null) {
+            return null;
+        }
+        return deferredIdentity.map(resolvedIdentity -> {
+            if (resolvedIdentity != null && !resolvedIdentity.isAnonymous()) {
+                if (resolvedIdentity.getAttribute(QUARKUS_IDENTITY_EXPIRE_TIME) instanceof Long expireAt) {
+                    boolean isExpired = (TimeUnit.SECONDS.toMillis(expireAt) - System.currentTimeMillis()) <= 0;
+                    if (isExpired) {
+                        routingContext.remove(DEFERRED_IDENTITY_KEY);
+                        return null;
+                    }
+                }
+
+                this.identity = resolvedIdentity;
+                this.onClose = closeConnectionWhenIdentityExpired(routingContext, connection, resolvedIdentity);
+            }
+            return resolvedIdentity;
+        });
     }
 
     CompletionStage<SecurityIdentity> updateSecurityIdentity(String accessToken, WebSocketConnectionImpl connection,

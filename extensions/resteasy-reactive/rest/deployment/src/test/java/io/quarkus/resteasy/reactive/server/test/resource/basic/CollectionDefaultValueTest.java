@@ -1,10 +1,12 @@
 package io.quarkus.resteasy.reactive.server.test.resource.basic;
 
+import java.net.URI;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -16,8 +18,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.CollectionDefaultValueResource;
-import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 
 /**
  * @tpSubChapter Resteasy-client
@@ -35,7 +37,7 @@ public class CollectionDefaultValueTest {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(CollectionDefaultValueResource.class, PortProviderUtil.class);
+                    war.addClasses(CollectionDefaultValueResource.class);
                     return war;
                 }
             });
@@ -50,9 +52,8 @@ public class CollectionDefaultValueTest {
         client.close();
     }
 
-    private String generateURL(String path) {
-        return PortProviderUtil.generateURL(path, CollectionDefaultValueTest.class.getSimpleName());
-    }
+    @TestHTTPResource
+    URI uri;
 
     /**
      * @tpTestDetails Test that empty QueryParam list is empty
@@ -60,8 +61,8 @@ public class CollectionDefaultValueTest {
      */
     @Test
     @DisplayName("Test Empty")
-    public void testEmpty() throws Exception {
-        Response response = client.target(generateURL("/collection")).request().get();
+    public void testEmpty() {
+        Response response = client.target(UriBuilder.fromUri(uri).path("/collection")).request().get();
         Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         response.close();
     }

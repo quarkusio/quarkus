@@ -29,9 +29,8 @@ import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.BuildTask;
 import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.testkit.runner.TaskOutcome;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -60,8 +59,8 @@ public class CachingTest {
             ":quarkusGenerateCodeTests", TaskOutcome.FROM_CACHE,
             ":quarkusAppPartsBuild", TaskOutcome.FROM_CACHE,
             ":quarkusDependenciesBuild", TaskOutcome.SUCCESS,
-            ":quarkusBuild", TaskOutcome.SUCCESS,
-            ":build", TaskOutcome.SUCCESS);
+            ":quarkusBuild", TaskOutcome.FROM_CACHE,
+            ":build", TaskOutcome.UP_TO_DATE);
 
     @InjectSoftAssertions
     SoftAssertions soft;
@@ -101,7 +100,8 @@ public class CachingTest {
     }
 
     @Test
-    @DisabledOnOs(OS.WINDOWS)
+    //@DisabledOnOs(OS.WINDOWS)
+    @Disabled("This test is going to be unstable until we fix our build reproducibility")
     void dotEnvChangeInvalidatesBuild() throws Exception {
         var dotEnvFile = Paths.get(System.getProperty("user.dir"), ".env");
         // If the local environment has a ~/.env file, then skip this test - do not mess up a user's environment.

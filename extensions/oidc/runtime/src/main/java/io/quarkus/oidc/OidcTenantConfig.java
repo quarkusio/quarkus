@@ -1491,6 +1491,21 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             return stateSecret;
         }
 
+        @Override
+        public PushedAuthorizationRequest par() {
+            return new PushedAuthorizationRequest() {
+                @Override
+                public Optional<Boolean> enabled() {
+                    return parEnabled;
+                }
+
+                @Override
+                public Optional<String> path() {
+                    return parEndpoint;
+                }
+            };
+        }
+
         /**
          * SameSite attribute values for the session cookie.
          */
@@ -1821,6 +1836,10 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
 
         public Optional<Set<CacheControl>> cacheControl = Optional.empty();
 
+        private Optional<Boolean> parEnabled = Optional.empty();
+
+        private Optional<String> parEndpoint = Optional.empty();
+
         public Optional<Duration> getInternalIdTokenLifespan() {
             return internalIdTokenLifespan;
         }
@@ -2102,6 +2121,8 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             pkceSecret = mapping.pkceSecret();
             stateSecret = mapping.stateSecret();
             cacheControl = mapping.cacheControl();
+            parEnabled = mapping.par().enabled();
+            parEndpoint = mapping.par().path();
         }
     }
 

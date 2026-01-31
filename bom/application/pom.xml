@@ -31,8 +31,8 @@
         <resteasy.version>6.2.15.Final</resteasy.version>
         <opentelemetry-instrumentation.version>2.23.0-alpha</opentelemetry-instrumentation.version> <!-- OTel SDk 1.55.0-->
         <opentelemetry-semconv.version>1.37.0-alpha</opentelemetry-semconv.version>
-        <quarkus-http.version>5.3.5</quarkus-http.version>
-        <micrometer.version>1.14.7</micrometer.version><!-- keep in sync with hdrhistogram: https://central.sonatype.com/artifact/io.micrometer/micrometer-core -->
+        <quarkus-http.version>5.4.0</quarkus-http.version>
+        <micrometer.version>1.16.2</micrometer.version><!-- keep in sync with hdrhistogram: https://central.sonatype.com/artifact/io.micrometer/micrometer-core -->
         <hdrhistogram.version>2.2.2</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
         <graphql-java.version>24.3</graphql-java.version> <!-- keep in sync with smallrye-graphql -->
@@ -45,19 +45,19 @@
         <microprofile-jwt.version>2.1</microprofile-jwt.version>
         <microprofile-lra.version>2.0.1</microprofile-lra.version>
         <microprofile-openapi.version>4.1.1</microprofile-openapi.version>
-        <smallrye-common.version>2.14.0</smallrye-common.version>
-        <smallrye-config.version>3.15.0</smallrye-config.version>
+        <smallrye-common.version>2.15.0</smallrye-common.version>
+        <smallrye-config.version>3.16.0</smallrye-config.version>
         <smallrye-health.version>4.3.0</smallrye-health.version>
-        <smallrye-open-api.version>4.2.3</smallrye-open-api.version>
-        <smallrye-graphql.version>2.16.0</smallrye-graphql.version>
+        <smallrye-open-api.version>4.2.4</smallrye-open-api.version>
+        <smallrye-graphql.version>2.17.0</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.10.0</smallrye-fault-tolerance.version>
-        <smallrye-jwt.version>4.6.2</smallrye-jwt.version>
+        <smallrye-jwt.version>4.6.3</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.3.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>3.0.3</smallrye-reactive-types-converter.version>
-        <smallrye-mutiny-vertx-binding.version>3.21.3</smallrye-mutiny-vertx-binding.version>
-        <smallrye-reactive-messaging.version>4.31.0</smallrye-reactive-messaging.version>
-        <smallrye-stork.version>2.7.3</smallrye-stork.version>
+        <smallrye-mutiny-vertx-binding.version>3.21.4</smallrye-mutiny-vertx-binding.version>
+        <smallrye-reactive-messaging.version>4.32.1</smallrye-reactive-messaging.version>
+        <smallrye-stork.version>2.7.7</smallrye-stork.version>
         <jakarta.activation.version>2.1.4</jakarta.activation.version>
         <jakarta.annotation-api.version>3.0.0</jakarta.annotation-api.version>
         <jakarta.authentication-api>3.1.0</jakarta.authentication-api>
@@ -81,17 +81,17 @@
         <jaxb-runtime.version>4.0.6</jaxb-runtime.version>
         <asm.version>9.9.1</asm.version>
         <commons-io.version>2.21.0</commons-io.version>
-        <jboss-metadata-web.version>16.1.0.Final</jboss-metadata-web.version>
+        <jboss-metadata-web.version>17.0.0</jboss-metadata-web.version>
         <maven-toolchain.version>3.0-alpha-2</maven-toolchain.version>
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>
         <!-- GraalVM sdk 23.1.2 has a minimum JDK requirement of 17+ at runtime -->
         <graal-sdk.version>23.1.2</graal-sdk.version>
-        <gizmo.version>1.9.0</gizmo.version>
+        <gizmo.version>1.10.1</gizmo.version>
         <gizmo2.version>2.0.0</gizmo2.version>
-        <jackson-bom.version>2.20.1</jackson-bom.version>
-        <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
+        <jackson-bom.version>2.21.0</jackson-bom.version>
+        <commons-logging-jboss-logging.version>2.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.20.0</commons-lang3.version>
-        <commons-codec.version>1.20.0</commons-codec.version>
+        <commons-codec.version>1.21.0</commons-codec.version>
         <classmate.version>1.7.1</classmate.version>
         <!-- See root POM for hibernate-orm.version, hibernate-reactive.version, hibernate-validator.version,
              hibernate-search.version, antlr.version, bytebuddy.version -->
@@ -108,9 +108,9 @@
         <wildfly-common.version>2.0.1</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
         <wildfly-elytron.version>2.7.1.Final</wildfly-elytron.version>
-        <jboss-marshalling.version>2.2.3.Final</jboss-marshalling.version>
+        <jboss-marshalling.version>2.3.0</jboss-marshalling.version>
         <jboss-threads.version>3.9.2</jboss-threads.version>
-        <vertx.version>4.5.23</vertx.version>
+        <vertx.version>4.5.24</vertx.version>
         <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>
         <httpasync.version>4.1.5</httpasync.version>
@@ -118,27 +118,27 @@
         <quartz.version>2.5.2</quartz.version>
         <h2.version>2.4.240</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions
                                               and the dependency jts-core needs to be updated in extensions/jdbc/jdbc-h2/runtime/pom.xml -->
-        <postgresql-jdbc.version>42.7.8</postgresql-jdbc.version>
+        <postgresql-jdbc.version>42.7.9</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.5.7</mariadb-jdbc.version>
-        <mysql-jdbc.version>9.5.0</mysql-jdbc.version>
+        <mysql-jdbc.version>9.6.0</mysql-jdbc.version>
         <mssql-jdbc.version>13.2.1.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
         <oracle-jdbc.version>23.26.0.0.0</oracle-jdbc.version>
         <db2-jdbc.version>12.1.0.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
-        <junit.jupiter.version>6.0.1</junit.jupiter.version>
+        <junit.jupiter.version>6.0.2</junit.jupiter.version>
         <infinispan.version>16.0.5</infinispan.version>
         <infinispan.protostream.version>6.0.3</infinispan.protostream.version>
         <caffeine.version>3.2.3</caffeine.version>
         <netty.version>4.1.130.Final</netty.version>
         <brotli4j.version>1.16.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
-        <jboss-logging.version>3.6.1.Final</jboss-logging.version>
+        <jboss-logging.version>3.6.2.Final</jboss-logging.version>
         <mutiny.version>3.1.0</mutiny.version>
         <jctools-core.version>4.0.5</jctools-core.version>
         <kafka.version>4.1.1</kafka.version>
-        <lz4.version>1.8.0</lz4.version> <!-- dependency of the kafka-clients that could be overridden by other imported BOMs in the platform -->
+        <lz4.version>1.10.1</lz4.version> <!-- dependency of the kafka-clients that could be overridden by other imported BOMs in the platform -->
         <snappy.version>1.1.10.8</snappy.version>
         <strimzi-test-container.version>0.113.0</strimzi-test-container.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
@@ -147,17 +147,18 @@
         <aws-lambda-java-events.version>3.16.1</aws-lambda-java-events.version>
         <aws-xray.version>2.18.3</aws-xray.version>
         <cloudevents-api.version>3.0.0</cloudevents-api.version>
-        <azure-functions-java-library.version>3.2.2</azure-functions-java-library.version>
+        <azure-functions-java-library.version>3.2.3</azure-functions-java-library.version>
         <azure-functions-java-spi.version>1.1.0</azure-functions-java-spi.version>
         <kotlin.version>2.3.0</kotlin.version>
         <kotlin.coroutine.version>1.10.2</kotlin.coroutine.version>
-        <kotlin-serialization.version>1.9.0</kotlin-serialization.version>
+        <kotlin-serialization.version>1.10.0</kotlin-serialization.version>
+        <kotlin-metadata.version>0.9.0</kotlin-metadata.version>
         <azure.toolkit-lib.version>0.53.0</azure.toolkit-lib.version>
         <dekorate.version>4.1.5</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.3.0</awaitility.version>
-        <jboss-logmanager.version>3.1.2.Final</jboss-logmanager.version>
-        <flyway.version>11.20.0</flyway.version>
+        <jboss-logmanager.version>3.2.0.Final</jboss-logmanager.version>
+        <flyway.version>12.0.0</flyway.version>
         <yasson.version>3.0.4</yasson.version>
         <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->
         <liquibase.version>4.33.0</liquibase.version>
@@ -166,20 +167,20 @@
         <osgi.version>6.0.0</osgi.version>
         <mongo-client.version>5.6.2</mongo-client.version>
         <proton-j.version>0.34.1</proton-j.version>
-        <javaparser.version>3.27.1</javaparser.version>
+        <javaparser.version>3.28.0</javaparser.version>
         <hibernate-quarkus-local-cache.version>0.5.0</hibernate-quarkus-local-cache.version>
-        <flapdoodle.mongo.version>4.22.0</flapdoodle.mongo.version>
-        <quarkus-spring-api.version>6.2.SP1</quarkus-spring-api.version>
+        <flapdoodle.mongo.version>4.24.0</flapdoodle.mongo.version>
+        <quarkus-spring-api.version>6.2.SP3</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>3.5</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>6.4</quarkus-spring-security-api.version>
         <quarkus-spring-boot-api.version>3.4</quarkus-spring-boot-api.version>
         <mockito.version>5.21.0</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <quarkus-security.version>2.3.2</quarkus-security.version>
-        <keycloak-client.version>26.0.7</keycloak-client.version>
+        <keycloak-client.version>26.0.8</keycloak-client.version>
         <logstash-gelf.version>1.15.1</logstash-gelf.version>
-        <checker-qual.version>3.52.1</checker-qual.version>
-        <error-prone-annotations.version>2.45.0</error-prone-annotations.version>
+        <checker-qual.version>3.53.0</checker-qual.version>
+        <error-prone-annotations.version>2.46.0</error-prone-annotations.version>
         <jib-core.version>0.28.1</jib-core.version>
         <google-http-client.version>1.47.1</google-http-client.version>
         <scram-client.version>3.2</scram-client.version>
@@ -204,7 +205,7 @@
         <jansi.version>2.4.0</jansi.version> <!-- Keep in sync with aesh-readline and dekorate -->
         <!-- these two artifacts needs to be compatible together -->
         <strimzi-oauth.version>0.16.1</strimzi-oauth.version>
-        <strimzi-oauth.nimbus.version>10.6</strimzi-oauth.nimbus.version>
+        <strimzi-oauth.nimbus.version>10.7</strimzi-oauth.nimbus.version>
         <jose4j.version>0.9.6</jose4j.version>
         <java-buildpack-client.version>0.0.14</java-buildpack-client.version>
         <crac.version>1.5.0</crac.version>
@@ -534,6 +535,12 @@
                 <version>${kotlin.coroutine.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <!-- Kotlin metadata processing used by OpenAPI for Kotlin classes -->
+            <dependency>
+                <groupId>org.jetbrains.kotlinx</groupId>
+                <artifactId>kotlinx-metadata-jvm</artifactId>
+                <version>${kotlin-metadata.version}</version>
             </dependency>
 
             <!-- Mockito BOM -->
@@ -1409,12 +1416,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-hibernate-panache</artifactId>
+                <artifactId>quarkus-hibernate-panache-next</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-hibernate-panache-deployment</artifactId>
+                <artifactId>quarkus-hibernate-panache-next-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -3657,6 +3664,11 @@
                 <artifactId>byte-buddy-agent</artifactId>
                 <version>${bytebuddy.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.geolatte</groupId>
+                <artifactId>geolatte-geom</artifactId>
+                <version>${geolatte.version}</version>
+            </dependency>
 
             <!-- GRPC dependencies -->
             <dependency>
@@ -4530,9 +4542,16 @@
                 <groupId>org.apache.kafka</groupId>
                 <artifactId>kafka-clients</artifactId>
                 <version>${kafka.version}</version>
+                <!-- TODO: remove the exclusion after upgrading to kafka-clients depending on the new lz4-java groupId (at.yawk.lz4) -->
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.lz4</groupId>
+                        <artifactId>lz4-java</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
-                <groupId>org.lz4</groupId>
+                <groupId>at.yawk.lz4</groupId>
                 <artifactId>lz4-java</artifactId>
                 <version>${lz4.version}</version>
             </dependency>
@@ -5431,6 +5450,11 @@
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-envers</artifactId>
+                <version>${hibernate-orm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate.orm</groupId>
+                <artifactId>hibernate-spatial</artifactId>
                 <version>${hibernate-orm.version}</version>
             </dependency>
             <dependency>

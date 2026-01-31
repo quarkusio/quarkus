@@ -29,8 +29,8 @@ include::{includes}/devtools/extension-add.adoc[]
 
 This command adds the following dependency to your build file:
 
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
+[source,bash,subs=attributes+,role="primary asciidoc-tabs-sync-maven"]
+.Maven
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -39,12 +39,36 @@ This command adds the following dependency to your build file:
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
+.Gradle
 ----
 implementation 'io.quarkus:quarkus-infinispan-client'
 annotationProcessor 'org.infinispan.protostream:protostream-processor:{infinispan-protostream-version}' <1>
 ----
 <1> Mandatory in the Gradle build to enable the generation of the files in the annotation based serialization
+
+[IMPORTANT]
+====
+You must include the Protostream annotations processor in your build file.
+Starting with Java 24, schema generation will not work unless this annotation processor
+is explicitly added.
+
+[source,bash,subs=attributes+,role="primary asciidoc-tabs-sync-maven"]
+.Maven
+----
+<plugin>
+    <artifactId>maven-compiler-plugin</artifactId>
+    <version>${compiler-plugin.version}</version>
+    <configuration>
+        <annotationProcessorPaths>
+            <path>
+                <groupId>org.infinispan.protostream</groupId>
+                <artifactId>protostream-processor</artifactId>
+            </path>
+        </annotationProcessorPaths>
+    </configuration>
+</plugin>
+----
+====
 
 == Connection to Infinispan
 

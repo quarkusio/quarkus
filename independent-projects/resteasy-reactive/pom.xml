@@ -46,23 +46,23 @@
         <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
         <jandex.version>3.5.3</jandex.version>
         <bytebuddy.version>1.17.6</bytebuddy.version>
-        <junit.version>6.0.1</junit.version>
+        <junit.version>6.0.2</junit.version>
         <maven.version>3.9.12</maven.version>
-        <assertj.version>3.27.6</assertj.version>
-        <jboss-logging.version>3.6.1.Final</jboss-logging.version>
-        <jboss-logmanager.version>3.1.2.Final</jboss-logmanager.version>
+        <assertj.version>3.27.7</assertj.version>
+        <jboss-logging.version>3.6.2.Final</jboss-logging.version>
+        <jboss-logmanager.version>3.2.0.Final</jboss-logmanager.version>
         <jakarta.annotation-api.version>3.0.0</jakarta.annotation-api.version>
-        <gizmo.version>1.9.0</gizmo.version>
+        <gizmo.version>1.10.1</gizmo.version>
         <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version>
 
         <mutiny.version>3.1.0</mutiny.version>
-        <smallrye-mutiny-vertx-core.version>3.21.3</smallrye-mutiny-vertx-core.version>
-        <smallrye-common.version>2.14.0</smallrye-common.version>
-        <vertx.version>4.5.23</vertx.version>
+        <smallrye-mutiny-vertx-core.version>3.21.4</smallrye-mutiny-vertx-core.version>
+        <smallrye-common.version>2.15.0</smallrye-common.version>
+        <vertx.version>4.5.24</vertx.version>
         <rest-assured.version>5.5.6</rest-assured.version>
-        <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
-        <jackson-bom.version>2.20.1</jackson-bom.version>
-        <smallrye-stork.version>2.7.3</smallrye-stork.version>
+        <commons-logging-jboss-logging.version>2.0.0.Final</commons-logging-jboss-logging.version>
+        <jackson-bom.version>2.21.0</jackson-bom.version>
+        <smallrye-stork.version>2.7.7</smallrye-stork.version>
         <jakarta.validation-api.version>3.1.1</jakarta.validation-api.version>
         <yasson.version>3.0.4</yasson.version>
         <jakarta.json.bind-api.version>3.0.1</jakarta.json.bind-api.version>

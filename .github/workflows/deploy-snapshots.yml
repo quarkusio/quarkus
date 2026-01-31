@@ -7,13 +7,14 @@ on:
 
 env:
   LANG: en_US.UTF-8
+  MVNW_REPOURL: https://maven-central.storage-download.googleapis.com/maven2
 jobs:
   build-and-deploy:
     name: "Build and deploy"
     runs-on: ubuntu-latest
     if: github.repository == 'quarkusio/quarkus'
     env:
-      MAVEN_OPTS: -Xmx6g -XX:MaxMetaspaceSize=2g
+      MAVEN_OPTS: -Xmx6g -XX:MaxMetaspaceSize=2g -Dorg.slf4j.simpleLogger.log.eu.maveniverse=trace
     steps:
       - uses: actions/checkout@v6
         with:

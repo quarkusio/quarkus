@@ -27,7 +27,9 @@ public final class CompiledJavaVersionBuildItem extends SimpleBuildItem {
         return javaVersion;
     }
 
-    public interface JavaVersion {
+    public sealed interface JavaVersion permits JavaVersion.Known, JavaVersion.Unknown {
+
+        Status isJava25OrHigher();
 
         Status isJava21OrHigher();
 
@@ -45,6 +47,11 @@ public final class CompiledJavaVersionBuildItem extends SimpleBuildItem {
             }
 
             @Override
+            public Status isJava25OrHigher() {
+                return Status.UNKNOWN;
+            }
+
+            @Override
             public Status isJava21OrHigher() {
                 return Status.UNKNOWN;
             }
@@ -59,6 +66,7 @@ public final class CompiledJavaVersionBuildItem extends SimpleBuildItem {
 
             private static final int JAVA_19_MAJOR = 63;
             private static final int JAVA_21_MAJOR = 65;
+            private static final int JAVA_25_MAJOR = 69;
 
             private final int determinedMajor;
 
@@ -76,13 +84,15 @@ public final class CompiledJavaVersionBuildItem extends SimpleBuildItem {
                 return higherOrEqualStatus(JAVA_21_MAJOR);
             }
 
+            @Override
+            public Status isJava25OrHigher() {
+                return higherOrEqualStatus(JAVA_25_MAJOR);
+            }
+
             private Status higherOrEqualStatus(int javaMajor) {
                 return determinedMajor >= javaMajor ? Status.TRUE : Status.FALSE;
             }
 
-            private Status equalStatus(int javaMajor) {
-                return determinedMajor == javaMajor ? Status.TRUE : Status.FALSE;
-            }
         }
     }
 }

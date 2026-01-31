@@ -51,6 +51,7 @@ public abstract class IsContainerRuntimeWorking implements BooleanSupplier {
      * Delegates the check to testcontainers (if the latter is on the classpath)
      */
     protected static class TestContainersStrategy implements Strategy {
+        private static final Object LOCK = new Object();
         private final boolean silent;
 
         protected TestContainersStrategy(boolean silent) {
@@ -59,51 +60,55 @@ public abstract class IsContainerRuntimeWorking implements BooleanSupplier {
 
         @Override
         public Result get() {
-            // Testcontainers uses the Unreliables library to test if docker is started
-            // this runs in threads that start with 'ducttape'
-            StartupLogCompressor compressor = new StartupLogCompressor("Checking Docker Environment", Optional.empty(), null,
-                    (s) -> s.getName().startsWith("ducttape"));
-            try {
-                Class<?> dockerClientFactoryClass = Thread.currentThread().getContextClassLoader()
-                        .loadClass("org.testcontainers.DockerClientFactory");
-                Object dockerClientFactoryInstance = dockerClientFactoryClass.getMethod("instance").invoke(null);
+            synchronized (LOCK) {
+                // Testcontainers uses the Unreliables library to test if docker is started
+                // this runs in threads that start with 'ducttape'
+                StartupLogCompressor compressor = new StartupLogCompressor("Checking Docker Environment",
+                        Optional.empty(), null,
+                        (s) -> s.getName().startsWith("ducttape"));
+                try {
+                    Class<?> dockerClientFactoryClass = Thread.currentThread().getContextClassLoader()
+                            .loadClass("org.testcontainers.DockerClientFactory");
+                    Object dockerClientFactoryInstance = dockerClientFactoryClass.getMethod("instance").invoke(null);
 
-                Class<?> configurationClass = Thread.currentThread().getContextClassLoader()
-                        .loadClass("org.testcontainers.utility.TestcontainersConfiguration");
-                Object configurationInstance = configurationClass.getMethod("getInstance").invoke(null);
-                String oldReusePropertyValue = (String) configurationClass
-                        .getMethod("getEnvVarOrUserProperty", String.class, String.class)
-                        .invoke(configurationInstance, "testcontainers.reuse.enable", "false"); // use the default provided in TestcontainersConfiguration#environmentSupportsReuse
-                Method updateUserConfigMethod = configurationClass.getMethod("updateUserConfig", String.class, String.class);
-                // this will ensure that testcontainers does not start ryuk - see https://github.com/quarkusio/quarkus/issues/25852 for why this is important
-                updateUserConfigMethod.invoke(configurationInstance, "testcontainers.reuse.enable", "true");
+                    Class<?> configurationClass = Thread.currentThread().getContextClassLoader()
+                            .loadClass("org.testcontainers.utility.TestcontainersConfiguration");
+                    Object configurationInstance = configurationClass.getMethod("getInstance").invoke(null);
+                    String oldReusePropertyValue = (String) configurationClass
+                            .getMethod("getEnvVarOrUserProperty", String.class, String.class)
+                            .invoke(configurationInstance, "testcontainers.reuse.enable", "false"); // use the default provided in TestcontainersConfiguration#environmentSupportsReuse
+                    Method updateUserConfigMethod = configurationClass.getMethod("updateUserConfig", String.class,
+                            String.class);
+                    // this will ensure that testcontainers does not start ryuk - see https://github.com/quarkusio/quarkus/issues/25852 for why this is important
+                    updateUserConfigMethod.invoke(configurationInstance, "testcontainers.reuse.enable", "true");
 
-                // ensure that Testcontainers doesn't take previous failures into account
-                Class<?> dockerClientProviderStrategyClass = Thread.currentThread().getContextClassLoader()
-                        .loadClass("org.testcontainers.dockerclient.DockerClientProviderStrategy");
-                Field failFastAlwaysField = dockerClientProviderStrategyClass.getDeclaredField("FAIL_FAST_ALWAYS");
-                failFastAlwaysField.setAccessible(true);
-                AtomicBoolean failFastAlways = (AtomicBoolean) failFastAlwaysField.get(null);
-                failFastAlways.set(false);
+                    // ensure that Testcontainers doesn't take previous failures into account
+                    Class<?> dockerClientProviderStrategyClass = Thread.currentThread().getContextClassLoader()
+                            .loadClass("org.testcontainers.dockerclient.DockerClientProviderStrategy");
+                    Field failFastAlwaysField = dockerClientProviderStrategyClass.getDeclaredField("FAIL_FAST_ALWAYS");
+                    failFastAlwaysField.setAccessible(true);
+                    AtomicBoolean failFastAlways = (AtomicBoolean) failFastAlwaysField.get(null);
+                    failFastAlways.set(false);
 
-                boolean isAvailable = (boolean) dockerClientFactoryClass.getMethod("isDockerAvailable")
-                        .invoke(dockerClientFactoryInstance);
-                if (!isAvailable && !silent) {
-                    compressor.closeAndDumpCaptured();
+                    boolean isAvailable = (boolean) dockerClientFactoryClass.getMethod("isDockerAvailable")
+                            .invoke(dockerClientFactoryInstance);
+                    if (!isAvailable && !silent) {
+                        compressor.closeAndDumpCaptured();
+                    }
+
+                    // restore the previous value
+                    updateUserConfigMethod.invoke(configurationInstance, "testcontainers.reuse.enable", oldReusePropertyValue);
+                    return isAvailable ? Result.AVAILABLE : Result.UNAVAILABLE;
+                } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException
+                        | NoSuchFieldException e) {
+                    if (!silent) {
+                        compressor.closeAndDumpCaptured();
+                        LOGGER.debug("Unable to use Testcontainers to determine if Docker is working", e);
+                    }
+                    return Result.UNKNOWN;
+                } finally {
+                    compressor.close();
                 }
-
-                // restore the previous value
-                updateUserConfigMethod.invoke(configurationInstance, "testcontainers.reuse.enable", oldReusePropertyValue);
-                return isAvailable ? Result.AVAILABLE : Result.UNAVAILABLE;
-            } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException
-                    | NoSuchFieldException e) {
-                if (!silent) {
-                    compressor.closeAndDumpCaptured();
-                    LOGGER.debug("Unable to use Testcontainers to determine if Docker is working", e);
-                }
-                return Result.UNKNOWN;
-            } finally {
-                compressor.close();
             }
         }
     }

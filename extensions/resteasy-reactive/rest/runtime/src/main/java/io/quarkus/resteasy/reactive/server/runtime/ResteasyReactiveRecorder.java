@@ -323,6 +323,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
             public EndpointInvoker get() {
                 try {
                     Class<Object> invokerClass = loadClass(invokerClassName);
+                    ResteasyReactiveRecorder.class.getModule().addReads(invokerClass.getModule());
                     return (EndpointInvoker) LOOKUP.findConstructor(invokerClass, VOID_TYPE).invoke();
                 } catch (RuntimeException | Error e) {
                     throw e;

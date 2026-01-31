@@ -28,7 +28,7 @@ You'll need to https://docs.ansible.com/ansible/latest/installation_guide/intro_
 $ ansible-galaxy collection install middleware_automation.quarkus
 ----
 
-NOTE: The Ansible collection we just installed only supports RHEL, Fedora, and other Linux distribution using RPMs. Ansible defines these as "RedHat family". Using the content on other platforms (Windows, Debian, Ubuntu, ...), while not impossible, will require a few adjustments.
+NOTE: The Ansible collection we just installed only supports RHEL, Fedora, and other Linux distributions using RPMs. Ansible defines these as "RedHat family". Using the content on other platforms (Windows, Debian, Ubuntu, ...), while not impossible, will require a few adjustments.
 
 === Inventory file
 
@@ -212,7 +212,7 @@ last-modified: Thu, 2 Mar 2023 11:03:18 GMT
 date: Thu, 2 Mar 2023 11:03:18 GMT
 ----
 
-We'll see how to automate those validation in the next and last part of this tutorial.
+We'll see how to automate those validations in the next and last part of this tutorial.
 
 === Writing a playbook
 
@@ -248,7 +248,7 @@ To run this playbook, you use again the ansible-playbook command, but providing 
 $ ansible-playbook -i inventory playbook.yml
 ----
 
-You also can automate the validation part we mentioned in the previous section. You can use the https://docs.ansible.com/ansible/latest/collections/ansible/builtin/assert_module.html[ansible.builtin.assert] module and populate the https://docs.ansible.com/ansible/latest/collections/ansible/builtin/service_facts_module.html#examples[service facts] to ensure the systemd service of the Quarkus app is running, along with https://docs.ansible.com/ansible/latest/collections/ansible/builtin/uri_module.html[ansible.builtin.uri] to check that the Quarkus app is accessible.
+You can also automate the validation part we mentioned in the previous section. You can use the https://docs.ansible.com/ansible/latest/collections/ansible/builtin/assert_module.html[ansible.builtin.assert] module and populate the https://docs.ansible.com/ansible/latest/collections/ansible/builtin/service_facts_module.html#examples[service facts] to ensure the systemd service of the Quarkus app is running, along with https://docs.ansible.com/ansible/latest/collections/ansible/builtin/uri_module.html[ansible.builtin.uri] to check that the Quarkus app is accessible.
 
 ```
  post_tasks:

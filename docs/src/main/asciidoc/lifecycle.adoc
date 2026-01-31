@@ -264,9 +264,17 @@ public class EagerAppBean {
    void init() { <1>
      doSomeCoolInit();
    }
+
+   @Startup
+   Uni<Void> initReactive() { <2>
+     return doSomeCoolReactiveInit();
+   }
 }
 ----
 <1> The bean is created and the `init()` method is invoked upon the contextual instance when the application starts.
+<2> The bean is created and the `initReactive()` method is invoked upon the contextual instance when the application
+starts, on a non-blocking thread, which requires the Quarkus Vert.x extension (there will be an error if it is not
+present).
 
 [[shutdown_annotation]]
 === Using `@Shutdown` to execute a business method of a CDI bean during application shutdown

@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
@@ -118,7 +117,7 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
                     outputs.put("fast-jar", fastJar());
                     outputs.put("legacy-lib", gradleBuildDir().resolve("lib").toFile());
                 }
-                case FAST_JAR -> outputs.put("fast-jar", fastJar());
+                case FAST_JAR, AOT_JAR -> outputs.put("fast-jar", fastJar());
                 case MUTABLE_JAR, UBER_JAR -> {
                     outputs.put("fast-jar", fastJar());
                     outputs.put("generated", genBuildDir().toFile());
@@ -149,7 +148,7 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
                     outputs.put("runner-jar", runnerJar());
                     outputs.put("artifact-properties", artifactProperties());
                 }
-                case FAST_JAR, MUTABLE_JAR -> outputs.put("artifact-properties", artifactProperties());
+                case FAST_JAR, MUTABLE_JAR, AOT_JAR -> outputs.put("artifact-properties", artifactProperties());
             }
         }
         return outputs;
@@ -175,7 +174,7 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
         } else if (jarEnabled()) {
             PackageConfig.JarConfig.JarType packageType = jarType();
             switch (packageType) {
-                case FAST_JAR -> {
+                case FAST_JAR, AOT_JAR -> {
                     Path appBuildBaseDir = appBuildDir();
                     inputs.add(genBuildDir().toFile());
                     inputs.add(appBuildBaseDir.resolve(outputDirectory()).toFile());
@@ -225,7 +224,7 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
             }
         } else if (jarEnabled()) {
             switch (jarType()) {
-                case FAST_JAR -> assembleFastJar();
+                case FAST_JAR, AOT_JAR -> assembleFastJar();
                 case LEGACY_JAR -> assembleLegacyJar();
                 case MUTABLE_JAR, UBER_JAR -> {
                     generateBuild();
@@ -247,18 +246,18 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
         getFileSystemOperations().delete(delete -> delete.delete(libDir));
 
         getLogger().info("Copying lib/ directory from {} into {}", depBuildDir, buildDir);
-        getFileSystemOperations().copy(copy -> {
+        getFileSystemOperations().copyPreservingTimestamps(copy -> {
             copy.into(buildDir);
             copy.from(depBuildDir);
             copy.include("lib/**");
         });
 
         getLogger().info("Copying lib/ directory from {} into {}", appBuildDir, buildDir);
-        getFileSystemOperations().copy(copy -> {
+        getFileSystemOperations().copyPreservingTimestamps((copy -> {
             copy.into(buildDir);
             copy.from(appBuildDir);
             copy.include("lib/**");
-        });
+        }));
 
         // Quarkus' 'legacy-jar' package type produces 'lib/modified-*.jar' files for some dependencies.
         // The following code block removes the non-modified jars.
@@ -266,7 +265,7 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
         try (Stream<Path> files = Files.walk(libDir)) {
             files.filter(Files::isRegularFile).filter(f -> f.getFileName().toString().startsWith("modified-"))
                     .map(f -> f.getParent().resolve(f.getFileName().toString().substring("modified-".length())))
-                    .collect(Collectors.toList()) // necessary :(
+                    .toList() // necessary :(
                     .forEach(f -> {
                         try {
                             Files.deleteIfExists(f);
@@ -298,7 +297,7 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
             getLogger().info("Copying Quarkus build for {} JAR type from {} into {}", jarType(),
                     genBuildDir, targetDir);
         }
-        getFileSystemOperations().copy(copy -> {
+        getFileSystemOperations().copyPreservingTimestamps(copy -> {
             copy.into(targetDir);
             copy.from(genBuildDir);
         });
@@ -328,8 +327,7 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
             getLogger().info("Synchronizing Quarkus build for {} JAR type from {} and {} into {}", jarType(),
                     appBuildDir, depBuildDir, appTargetDir);
         }
-        getFileSystemOperations().sync(sync -> {
-            sync.eachFile(new CopyActionDeleteNonWriteableTarget(appTargetDir.toPath()));
+        getFileSystemOperations().syncPreservingTimestamps(sync -> {
             sync.into(appTargetDir);
             sync.from(appBuildDir, depBuildDir);
         });
@@ -350,9 +348,8 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
             getLogger().info("Copying remaining Quarkus application artifacts for {} JAR type from {} into {}",
                     jarType(), sourceDir, buildDir);
         }
-        getFileSystemOperations().copy(
+        getFileSystemOperations().copyPreservingTimestamps(
                 copy -> {
-                    copy.eachFile(new CopyActionDeleteNonWriteableTarget(buildDir.toPath()));
                     copy.into(buildDir).from(sourceDir)
                             .include(QUARKUS_ARTIFACT_PROPERTIES,
                                     nativeRunnerFileName(),

@@ -45,7 +45,7 @@ public class ConfigRecorder {
             // - compare the actual config values, if different there is a mismatch
             if (currentValue.getConfigSourcePosition() > 0
                     && currentValue.getSourceOrdinal() >= buildTimeRuntimeValue.getSourceOrdinal()
-                    && !Objects.equals(buildTimeRuntimeValue.getValue(), currentValue.getValue())) {
+                    && !Objects.equals(buildTimeRuntimeValue.getRawValue(), currentValue.getRawValue())) {
                 mismatches.add(
                         " - " + propertyName + " is set to '" + currentValue.getValue()
                                 + "' but it is build time fixed to '"

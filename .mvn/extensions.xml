@@ -2,7 +2,7 @@
     <extension>
         <groupId>com.gradle</groupId>
         <artifactId>develocity-maven-extension</artifactId>
-        <version>2.3</version>
+        <version>2.3.3</version>
     </extension>
     <extension>
         <groupId>com.gradle</groupId>
@@ -26,7 +26,7 @@
     </extension>
     <extension>
         <groupId>eu.maveniverse.maven.njord</groupId>
-        <artifactId>extension</artifactId>
-        <version>0.7.5</version>
+        <artifactId>extension3</artifactId>
+        <version>0.9.3</version>
     </extension>
 </extensions>

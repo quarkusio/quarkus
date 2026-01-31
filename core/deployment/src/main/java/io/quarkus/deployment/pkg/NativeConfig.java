@@ -31,6 +31,36 @@ public interface NativeConfig {
     boolean enabled();
 
     /**
+     * Native-Image bundle options.
+     */
+    Bundle bundle();
+
+    default boolean isCreateNativeBundle() {
+        return bundle().enabled().orElse(bundle().name().isPresent() || bundle().dryRun());
+    }
+
+    @ConfigGroup
+    interface Bundle {
+        /**
+         * Set to enable native-image bundle generation.
+         */
+        Optional<Boolean> enabled();
+
+        /**
+         * Generates the native-image bundle through a dry-run build, skipping the actual native-image build.
+         */
+        @WithDefault("false")
+        boolean dryRun();
+
+        /**
+         * Set to define the native-image bundle name.
+         * If not set the default name will match the native-executable's name suffixed by `.nib`.
+         * i.e. `{project.name}-{project.version}-runner.nib`
+         */
+        Optional<String> name();
+    }
+
+    /**
      * Set to prevent the native-image process from actually building the native image.
      */
     @WithDefault("false")
@@ -257,11 +287,13 @@ public interface NativeConfig {
      * Enable monitoring various monitoring options. The value should be comma separated.
      * <ul>
      * <li><code>jfr</code> for JDK flight recorder support</li>
+     * <li><code>jcmd</code> for JCMD support</li>
      * <li><code>jvmstat</code> for JVMStat support</li>
-     * <li><code>heapdump</code> for heampdump support</li>
+     * <li><code>heapdump</code> for heapdump support</li>
      * <li><code>jmxclient</code> for JMX client support (experimental)</li>
      * <li><code>jmxserver</code> for JMX server support (experimental)</li>
      * <li><code>nmt</code> for native memory tracking support</li>
+     * <li><code>threaddump</code> for thread dumping on SIGBREAK/SIGQUIT support</li>
      * <li><code>all</code> for all monitoring features</li>
      * <li><code>none</code> for explicitly turning off all monitoring features</li>
      * </ul>
@@ -510,13 +542,45 @@ public interface NativeConfig {
     }
 
     enum MonitoringOption {
+        /**
+         * Heapdump support.
+         */
         HEAPDUMP,
+        /**
+         * JCMD support.
+         */
+        JCMD,
+        /**
+         * JVMStat support.
+         */
         JVMSTAT,
+        /**
+         * JDK flight recorder support.
+         */
         JFR,
+        /**
+         * JMX server support (experimental).
+         */
         JMXSERVER,
+        /**
+         * JMX client support (experimental).
+         */
         JMXCLIENT,
+        /**
+         * Native memory tracking support.
+         */
         NMT,
+        /**
+         * Thread dumping support.
+         */
+        THREADDUMP,
+        /**
+         * All monitoring features.
+         */
         ALL,
+        /**
+         * Explicitly turns off all monitoring features.
+         */
         NONE
     }
 

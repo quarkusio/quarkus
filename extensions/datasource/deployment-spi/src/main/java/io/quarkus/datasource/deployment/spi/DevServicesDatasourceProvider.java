@@ -7,7 +7,7 @@ import java.util.Optional;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.runtime.LaunchMode;
 
-public interface DevServicesDatasourceProvider {
+public interface DevServicesDatasourceProvider extends GenericDevServicesDatasourceProvider {
 
     /**
      * @deprecated implement
@@ -40,8 +40,17 @@ public interface DevServicesDatasourceProvider {
     }
 
     record RunningDevServicesDatasource(String id, String jdbcUrl, String reactiveUrl, String username, String password,
-            Closeable closeTask) {
+            @Deprecated Closeable closeTask) {
 
+        //In the new dev services model, the RunningDevServicesDatasource is used, but its close() method is not
+        public RunningDevServicesDatasource(String id, String jdbcUrl, String reactiveUrl, String username, String password) {
+            this(id, jdbcUrl, reactiveUrl, username, password, new Closeable() {
+                @Override
+                public void close() {
+                    // No-op
+                }
+            });
+        }
     }
 
 }

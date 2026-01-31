@@ -113,7 +113,7 @@ public interface ContainerImageOpenshiftConfig {
     /**
      * The build timeout.
      */
-    @WithDefault("PT5M")
+    @WithDefault("5M")
     Duration buildTimeout();
 
     /**

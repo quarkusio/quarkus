@@ -152,7 +152,7 @@ public interface TestConfig {
      * Used in {@code @QuarkusIntegrationTest} to determine how long the test will wait for the
      * application to launch
      */
-    @WithDefault("PT1M")
+    @WithDefault("1M")
     Duration waitTime();
 
     /**

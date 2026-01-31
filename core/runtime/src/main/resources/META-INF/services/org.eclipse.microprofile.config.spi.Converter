@@ -9,3 +9,4 @@ io.quarkus.runtime.configuration.MemorySizeConverter
 io.quarkus.runtime.configuration.LocaleConverter
 io.quarkus.runtime.configuration.ZoneIdConverter
 io.quarkus.runtime.logging.LevelConverter
+io.quarkus.runtime.logging.InheritableLevelConverter

@@ -1,6 +1,5 @@
 package io.quarkus.bootstrap.runner;
 
-import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
 import static io.quarkus.commons.classloading.ClassLoaderHelper.isInJdkPackage;
 
 import java.io.ByteArrayInputStream;
@@ -63,13 +62,6 @@ public class AotRunnerClassLoader extends ClassLoader {
         // fast path for JDK classes
         if (isInJdkPackage(name)) {
             return getParent().loadClass(name);
-        }
-
-        // this infrastructure is not used for classes at the moment but could be in the future
-        String classResource = fromClassNameToResourceName(name);
-        String dirName = getDirNameFromResourceName(classResource);
-        if (fullyIndexedDirectories.contains(dirName) && !fullyIndexedResources.contains(classResource)) {
-            throw new ClassNotFoundException(name);
         }
 
         return getParent().loadClass(name);

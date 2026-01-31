@@ -83,6 +83,16 @@
             <groupId>org.jboss.narayana.jts</groupId>
             <artifactId>narayana-jts-integration</artifactId>
         </dependency>
+        <!-- This is used when we need to use
+             the blocking interceptor or the reactive interceptor
+             Without the reactive-transactions module in the class path it won't be used
+        -->
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-core</artifactId>
+            <optional>true</optional>
+            <scope>provided</scope>
+        </dependency>
         <!-- Test Dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>

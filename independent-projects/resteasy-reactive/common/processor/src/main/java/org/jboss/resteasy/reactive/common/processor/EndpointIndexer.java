@@ -78,7 +78,6 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SSE_EVENT_SINK;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.STRING;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SUSPENDED;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.TRANSACTIONAL;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.URI_INFO;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.YEAR;
@@ -947,15 +946,13 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         } else if ((nonBlockingAnnotation != null)) {
             return false;
         }
-        Map.Entry<AnnotationTarget, AnnotationInstance> transactional = getInheritableAnnotation(info, TRANSACTIONAL); //we treat this the same as blocking, as JTA is blocking, but it is lower priority
+
         if (defaultValue == BlockingDefault.BLOCKING) {
             return true;
         } else if (defaultValue == BlockingDefault.RUN_ON_VIRTUAL_THREAD) {
             return false;
         } else if (defaultValue == BlockingDefault.NON_BLOCKING) {
             return false;
-        } else if (transactional != null) {
-            return true;
         }
         return doesMethodHaveBlockingSignature(info);
     }

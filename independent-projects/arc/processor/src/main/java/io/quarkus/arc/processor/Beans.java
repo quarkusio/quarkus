@@ -743,7 +743,9 @@ public final class Beans {
                 .allMatch(a -> DotNames.NAMED.equals(a.name()) || DotNames.ANY.equals(a.name())))) {
             qualifiers.add(BuiltinQualifier.DEFAULT.getInstance());
         }
-        qualifiers.add(BuiltinQualifier.ANY.getInstance());
+        if (qualifiers.stream().noneMatch(a -> DotNames.ANY.equals(a.name()))) {
+            qualifiers.add(BuiltinQualifier.ANY.getInstance());
+        }
         return qualifiers;
     }
 

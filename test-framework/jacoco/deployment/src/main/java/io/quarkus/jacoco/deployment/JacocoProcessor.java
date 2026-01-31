@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -68,11 +69,19 @@ public class JacocoProcessor {
             return;
         }
 
+        Path projectRoot = findProjectRoot(outputTargetBuildItem.getOutputDirectory());
+        if (projectRoot == null) {
+            throw new IllegalStateException("Unable to find the project root");
+        }
         Path outputDir = outputTargetBuildItem.getOutputDirectory().toAbsolutePath();
-        Files.createDirectories(outputDir);
 
         // JaCoCo destFile - path to the output file for execution data
-        Path dataFilePath = outputDir.resolve(config.dataFile().orElse(JacocoConfig.JACOCO_QUARKUS_EXEC));
+        Path dataFilePath;
+        if (config.dataFile().isPresent()) {
+            dataFilePath = projectRoot.resolve(config.dataFile().get());
+        } else {
+            dataFilePath = outputDir.resolve(JacocoConfig.JACOCO_QUARKUS_EXEC);
+        }
         String dataFile = dataFilePath.toString();
 
         System.setProperty("jacoco-agent.destfile", dataFile);
@@ -167,9 +176,14 @@ public class JacocoProcessor {
             ReportInfo info = new ReportInfo(config.aggregateReportData());
             info.dataFile = dataFilePath;
 
-            Path targetPath = outputDir.resolve(config.reportLocation().orElse(JacocoConfig.JACOCO_REPORT));
-            info.reportDir = targetPath.toString();
-            info.errorFile = targetPath.resolve("error.txt");
+            Path reportDir;
+            if (config.reportLocation().isPresent()) {
+                reportDir = projectRoot.resolve(config.reportLocation().get());
+            } else {
+                reportDir = outputDir.resolve(JacocoConfig.JACOCO_REPORT);
+            }
+            info.reportDir = reportDir.toString();
+            info.errorFile = reportDir.resolve("error.txt");
             Files.deleteIfExists(info.errorFile);
             Set<String> classes = new HashSet<>();
             info.classFiles = classes;
@@ -186,12 +200,12 @@ public class JacocoProcessor {
             // Add classes and sources for the current build
             if (instrumentArtifacts.isEmpty()) {
                 if (appModel.getApplicationModule() != null) {
-                    addDependency(appModel.getAppArtifact(), config, info, includes, excludes);
+                    addDependency(appModel.getAppArtifact(), config, projectRoot, info, includes, excludes);
                 }
                 for (ResolvedDependency d : appModel.getDependencies()) {
                     // we can't use d.isWorkspaceModule() for now for some Gradle projects, which is why we check whether a workspace module is not null
                     if (d.isRuntimeCp() && d.getWorkspaceModule() != null) {
-                        addDependency(d, config, info, includes, excludes);
+                        addDependency(d, config, projectRoot, info, includes, excludes);
                     }
                 }
             } else {
@@ -199,7 +213,7 @@ public class JacocoProcessor {
                     if (d.isRuntimeCp()
                             && d.getWorkspaceModule() != null
                             && instrumented.contains(new GAC(d.getGroupId(), d.getArtifactId(), d.getClassifier()))) {
-                        addDependency(d, config, info, includes, excludes);
+                        addDependency(d, config, projectRoot, info, includes, excludes);
                     }
                 }
             }
@@ -233,11 +247,12 @@ public class JacocoProcessor {
         }
     }
 
-    private void addDependency(ResolvedDependency module, JacocoConfig config, ReportInfo info, String includes,
+    private void addDependency(ResolvedDependency module, JacocoConfig config, Path projectRoot, ReportInfo info,
+            String includes,
             String excludes) throws Exception {
-        String dataFile = getFilePath(config.dataFile(), module.getWorkspaceModule().getBuildDir().toPath(),
+        Path dataFile = getFilePath(config.dataFile(), projectRoot, module.getWorkspaceModule().getBuildDir().toPath(),
                 JacocoConfig.JACOCO_QUARKUS_EXEC);
-        info.savedData.add(new File(dataFile).getAbsolutePath());
+        info.savedData.add(dataFile.toAbsolutePath().toString());
         if (module.getSources() == null) {
             return;
         }
@@ -256,8 +271,13 @@ public class JacocoProcessor {
         }
     }
 
-    private static String getFilePath(Optional<String> path, Path outputDirectory, String defaultRelativePath) {
-        return path.orElse(outputDirectory.toAbsolutePath() + File.separator + defaultRelativePath);
+    private static Path getFilePath(Optional<String> path, Path projectRoot, Path outputDirectory,
+            String defaultRelativePath) {
+        if (path.isPresent()) {
+            return projectRoot.resolve(path.get());
+        } else {
+            return outputDirectory.resolve(defaultRelativePath);
+        }
     }
 
     private void instrument(Instrumenter instrumenter, Set<String> transformed, IndexView index,
@@ -325,4 +345,24 @@ public class JacocoProcessor {
 
     record GAC(String groupId, String artifactId, String classifier) {
     }
+
+    private static Path findProjectRoot(Path outputDirectory) {
+        // Note that we don't have a better way to find the project root
+        // See https://github.com/quarkusio/quarkus/issues/44013
+        Path currentPath = outputDirectory;
+        do {
+            if (Files.isDirectory(currentPath.resolve(Paths.get("src", "main")))
+                    || Files.exists(currentPath.resolve(Paths.get("config", "application.properties")))
+                    || Files.exists(currentPath.resolve(Paths.get("config", "application.yaml")))
+                    || Files.exists(currentPath.resolve(Paths.get("config", "application.yml")))) {
+                return currentPath.normalize();
+            }
+            if (currentPath.getParent() != null && Files.exists(currentPath.getParent())) {
+                currentPath = currentPath.getParent();
+            } else {
+                return null;
+            }
+        } while (true);
+    }
+
 }

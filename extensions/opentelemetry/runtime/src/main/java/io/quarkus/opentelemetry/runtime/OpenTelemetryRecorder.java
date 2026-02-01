@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.util.TypeLiteral;
@@ -171,14 +172,16 @@ public class OpenTelemetryRecorder {
     private static class OTelDurationConverter implements Converter<String> {
         static OTelDurationConverter INSTANCE = new OTelDurationConverter();
 
+        private static final Pattern DIGITS = Pattern.compile("^[-+]?\\d+$");
+
         @Override
         public String convert(final String value) throws IllegalArgumentException, NullPointerException {
             if (value == null) {
                 throw new NullPointerException();
             }
 
-            if (DurationConverter.DIGITS.asPredicate().test(value)) {
-                // OTel regards values without a unit to me milliseconds instead of seconds
+            if (DIGITS.asPredicate().test(value)) {
+                // OTel regards values without a unit to be milliseconds instead of seconds
                 // that java.time.Duration assumes, so let's just not do any conversion and let OTel handle with it
                 return value;
             }

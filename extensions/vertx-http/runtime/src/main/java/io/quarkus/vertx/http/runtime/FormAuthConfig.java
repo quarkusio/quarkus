@@ -96,7 +96,7 @@ public interface FormAuthConfig {
      * <p>
      * When inactivity timeout is reached, cookie is not renewed and a new login is enforced.
      */
-    @WithDefault("PT30M")
+    @WithDefault("30M")
     Duration timeout();
 
     /**
@@ -114,7 +114,7 @@ public interface FormAuthConfig {
      * That is, no timeout is tracked on the server side; the timestamp is encoded and encrypted in the cookie
      * itself, and it is decrypted and parsed with each request.
      */
-    @WithDefault("PT1M")
+    @WithDefault("1M")
     Duration newCookieInterval();
 
     /**

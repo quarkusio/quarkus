@@ -216,7 +216,7 @@ public interface MailerRuntimeConfig {
      * Sets the connection pool cleaner period.
      * Zero disables expiration checks and connections will remain in the pool until they are closed.
      */
-    @WithDefault("PT1S")
+    @WithDefault("1S")
     Duration poolCleanerPeriod();
 
     /**
@@ -224,7 +224,7 @@ public interface MailerRuntimeConfig {
      * This value determines how long a connection remains unused in the pool before being evicted and closed.
      * A timeout of 0 means there is no timeout.
      */
-    @WithDefault("PT300S")
+    @WithDefault("300S")
     Duration keepAliveTimeout();
 
     /**
@@ -272,6 +272,6 @@ public interface MailerRuntimeConfig {
      * <p>
      * Default is 60 seconds.
      */
-    @WithDefault("PT60S")
+    @WithDefault("60S")
     Duration timeout();
 }

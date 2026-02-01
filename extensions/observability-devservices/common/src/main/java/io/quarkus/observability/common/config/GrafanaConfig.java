@@ -29,6 +29,6 @@ public interface GrafanaConfig extends ContainerConfig {
     /**
      * The timeout.
      */
-    @WithDefault("PT3M")
+    @WithDefault("3M")
     Duration timeout();
 }

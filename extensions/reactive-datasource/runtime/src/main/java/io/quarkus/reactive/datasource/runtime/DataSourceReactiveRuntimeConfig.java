@@ -109,7 +109,7 @@ public interface DataSourceReactiveRuntimeConfig {
     /**
      * The interval between reconnection attempts when a pooled connection cannot be established on first try.
      */
-    @WithDefault("PT1S")
+    @WithDefault("1S")
     Duration reconnectInterval();
 
     /**

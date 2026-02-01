@@ -53,6 +53,9 @@ public class DurationConverterTestCase {
         Duration expectedDuration = Duration.ofDays(3);
         Duration actualDuration = durationConverter.convert("3d");
         assertEquals(expectedDuration, actualDuration);
+
+        actualDuration = durationConverter.convert("3D");
+        assertEquals(expectedDuration, actualDuration);
     }
 
     @Test
@@ -60,12 +63,38 @@ public class DurationConverterTestCase {
         Duration expectedDuration = Duration.ofMillis(25);
         Duration actualDuration = durationConverter.convert("25ms");
         assertEquals(expectedDuration, actualDuration);
+
+        actualDuration = durationConverter.convert("25MS");
+        assertEquals(expectedDuration, actualDuration);
     }
 
     @Test
     public void testValueIsInSec() {
         Duration expectedDuration = Duration.ofSeconds(2);
         Duration actualDuration = durationConverter.convert("2s");
+        assertEquals(expectedDuration, actualDuration);
+
+        actualDuration = durationConverter.convert("2S");
+        assertEquals(expectedDuration, actualDuration);
+    }
+
+    @Test
+    public void testValueIsInMinutes() {
+        Duration expectedDuration = Duration.ofMinutes(2);
+        Duration actualDuration = durationConverter.convert("2m");
+        assertEquals(expectedDuration, actualDuration);
+
+        actualDuration = durationConverter.convert("2M");
+        assertEquals(expectedDuration, actualDuration);
+    }
+
+    @Test
+    public void testValueIsInHours() {
+        Duration expectedDuration = Duration.ofHours(3);
+        Duration actualDuration = durationConverter.convert("3h");
+        assertEquals(expectedDuration, actualDuration);
+
+        actualDuration = durationConverter.convert("3H");
         assertEquals(expectedDuration, actualDuration);
     }
 

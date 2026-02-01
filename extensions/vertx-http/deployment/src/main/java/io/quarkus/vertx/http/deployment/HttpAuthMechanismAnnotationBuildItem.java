@@ -52,6 +52,9 @@ public final class HttpAuthMechanismAnnotationBuildItem extends MultiBuildItem {
     static Predicate<AnnotationTarget> isExcludedAnnotationTarget(List<HttpAuthMechanismAnnotationBuildItem> items) {
         final Set<DotName> excludedInterfaceNames = items.stream().map(i -> i.excludedTargetInterfaces)
                 .flatMap(Collection::stream).collect(Collectors.toSet());
+        // exclude self (the mechanism defining annotation) as we are part of the index and don't want to
+        // be included when collecting annotated instances
+        final Set<DotName> excludedAnnotationNames = items.stream().map(i -> i.annotationName).collect(Collectors.toSet());
         return annotationTarget -> {
             final ClassInfo classInfo;
             if (annotationTarget.kind() == AnnotationTarget.Kind.CLASS) {
@@ -62,7 +65,8 @@ public final class HttpAuthMechanismAnnotationBuildItem extends MultiBuildItem {
             } else {
                 return false;
             }
-            return classInfo.interfaceNames().stream().anyMatch(excludedInterfaceNames::contains);
+            return classInfo.interfaceNames().stream().anyMatch(excludedInterfaceNames::contains)
+                    || (classInfo.isAnnotation() && excludedAnnotationNames.contains(classInfo.name()));
         };
     }
 }

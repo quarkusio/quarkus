@@ -32,6 +32,7 @@ public final class EagerSecurityInterceptorBindingBuildItem extends MultiBuildIt
      */
     private final boolean requiresSecurityCheck;
     private final Function<AnnotationInstance, String> bindingValueExtractor;
+    private final boolean allowToRepeatThisInterceptorBinding;
 
     /**
      *
@@ -51,6 +52,7 @@ public final class EagerSecurityInterceptorBindingBuildItem extends MultiBuildIt
         this.bindingToValue = Map.of();
         this.requiresSecurityCheck = requiresSecurityCheck;
         this.bindingValueExtractor = bindingValueExtractor;
+        this.allowToRepeatThisInterceptorBinding = false;
     }
 
     EagerSecurityInterceptorBindingBuildItem(Function<String, Consumer<RoutingContext>> interceptorCreator,
@@ -60,6 +62,7 @@ public final class EagerSecurityInterceptorBindingBuildItem extends MultiBuildIt
         this.bindingToValue = bindingToValue;
         this.requiresSecurityCheck = true;
         this.bindingValueExtractor = null;
+        this.allowToRepeatThisInterceptorBinding = true;
     }
 
     public DotName[] getAnnotationBindings() {
@@ -95,5 +98,9 @@ public final class EagerSecurityInterceptorBindingBuildItem extends MultiBuildIt
 
     boolean requiresSecurityCheck() {
         return requiresSecurityCheck;
+    }
+
+    boolean allowToRepeatThisInterceptorBinding() {
+        return allowToRepeatThisInterceptorBinding;
     }
 }

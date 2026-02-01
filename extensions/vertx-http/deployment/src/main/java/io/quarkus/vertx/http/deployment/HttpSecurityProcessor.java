@@ -3,6 +3,7 @@ package io.quarkus.vertx.http.deployment;
 import static io.quarkus.arc.processor.DotNames.APPLICATION_SCOPED;
 import static io.quarkus.arc.processor.DotNames.SINGLETON;
 import static io.quarkus.security.spi.ClassSecurityAnnotationBuildItem.useClassLevelSecurity;
+import static io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBindingBuildItem.toTargetName;
 import static io.quarkus.vertx.http.deployment.HttpAuthMechanismAnnotationBuildItem.isExcludedAnnotationTarget;
 import static io.quarkus.vertx.http.runtime.security.HttpAuthenticator.BASIC_AUTH_ANNOTATION_DETECTED;
 import static io.quarkus.vertx.http.runtime.security.HttpAuthenticator.TEST_IF_BASIC_AUTH_IMPLICITLY_REQUIRED;
@@ -22,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -59,6 +61,7 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -355,6 +358,19 @@ public class HttpSecurityProcessor {
     }
 
     @BuildStep
+    void registerAdditionalIndexedClassesBuildItem(Capabilities capabilities,
+            List<HttpAuthMechanismAnnotationBuildItem> additionalHttpAuthMechAnnotations,
+            BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClassesProducer) {
+        // we need the combined index to contain authentication annotations in order to check for repeatable annotations
+        // (we do not hardcode knowledge which annotation is repeatable and which one isn't, so we check all)
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            additionalIndexedClassesProducer.produce(new AdditionalIndexedClassesBuildItem(AUTH_MECHANISM_NAME.toString()));
+            additionalIndexedClassesProducer.produce(new AdditionalIndexedClassesBuildItem(
+                    additionalHttpAuthMechAnnotations.stream().map(i -> i.annotationName.toString()).toArray(String[]::new)));
+        }
+    }
+
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void registerAuthMechanismSelectionInterceptor(Capabilities capabilities, VertxHttpBuildTimeConfig buildTimeConfig,
             BuildProducer<EagerSecurityInterceptorBindingBuildItem> bindingProducer, HttpSecurityRecorder recorder,
@@ -367,24 +383,28 @@ public class HttpSecurityProcessor {
         if (capabilities.isMissing(Capability.SECURITY)) {
             return;
         }
-        SecurityTransformer securityTransformer = SecurityTransformerBuildItem.createSecurityTransformer(
-                combinedIndexBuildItem.getIndex(),
+        var index = combinedIndexBuildItem.getIndex();
+        SecurityTransformer securityTransformer = SecurityTransformerBuildItem.createSecurityTransformer(index,
                 securityTransformerBuildItem);
 
         // methods annotated with @HttpAuthenticationMechanism that we should additionally secure;
         // when there is no other RBAC annotation applied
         // then by default @HttpAuthenticationMechanism("any-value") == @Authenticated
-        Set<AnnotationTarget> allAnnotatedTargets = new HashSet<>();
         Set<MethodInfo> methodsWithoutRbacAnnotations = new HashSet<>();
+        Set<ClassInfo> classLevelSecurityClasses = new HashSet<>();
+
+        AtomicBoolean hasAnnotatedTargets = new AtomicBoolean(false);
         Predicate<AnnotationTarget> isExcludedAnnotationTarget = isExcludedAnnotationTarget(additionalHttpAuthMechAnnotations);
         Predicate<ClassInfo> useClassLevelSecurity = useClassLevelSecurity(classSecurityAnnotations);
         DotName[] mechNames = Stream
                 .concat(Stream.of(AUTH_MECHANISM_NAME), additionalHttpAuthMechAnnotations.stream().map(s -> s.annotationName))
                 .flatMap(mechName -> {
-                    var instances = combinedIndexBuildItem.getIndex().getAnnotations(mechName);
+                    var instances = index.getAnnotationsWithRepeatable(mechName, index);
                     if (!instances.isEmpty()) {
-                        allAnnotatedTargets.addAll(instances.stream().map(AnnotationInstance::target)
-                                .filter(Objects::nonNull).filter(Predicate.not(isExcludedAnnotationTarget)).toList());
+                        if (!hasAnnotatedTargets.get() && instances.stream().map(AnnotationInstance::target)
+                                .filter(Objects::nonNull).anyMatch(Predicate.not(isExcludedAnnotationTarget))) {
+                            hasAnnotatedTargets.set(true);
+                        }
                         // e.g. collect @Basic without @RolesAllowed, @PermissionsAllowed, ..
                         methodsWithoutRbacAnnotations
                                 .addAll(collectMethodsWithoutRbacAnnotation(collectAnnotatedMethods(instances),
@@ -395,9 +415,9 @@ public class HttpSecurityProcessor {
                         // class-level security; this registers @Authenticated if no RBAC is explicitly declared
                         collectAnnotatedClasses(instances, useClassLevelSecurity).stream()
                                 .filter(Predicate.not(securityTransformer::hasSecurityAnnotation))
-                                .forEach(c -> registerClassSecurityCheckProducer.produce(
-                                        new RegisterClassSecurityCheckBuildItem(c.name(), AnnotationInstance
-                                                .builder(Authenticated.class).buildWithTarget(c))));
+                                .filter(Predicate.not(isExcludedAnnotationTarget))
+                                .forEach(classLevelSecurityClasses::add);
+
                         return Stream.of(mechName);
                     } else {
                         return Stream.empty();
@@ -405,13 +425,18 @@ public class HttpSecurityProcessor {
                 }).toArray(DotName[]::new);
 
         if (mechNames.length > 0) {
-            if (!allAnnotatedTargets.isEmpty()) {
+            classLevelSecurityClasses.forEach(c -> registerClassSecurityCheckProducer.produce(
+                    new RegisterClassSecurityCheckBuildItem(c.name(), AnnotationInstance
+                            .builder(Authenticated.class).buildWithTarget(c))));
+
+            if (hasAnnotatedTargets.get()) {
                 validateAuthMechanismAnnotationUsage(capabilities, buildTimeConfig, mechNames);
             }
 
             // register method interceptor that will be run before security checks
             Map<String, String> knownBindingValues = additionalHttpAuthMechAnnotations.stream()
-                    .collect(Collectors.toMap(item -> item.annotationName.toString(), item -> item.authMechanismScheme));
+                    .collect(Collectors.toUnmodifiableMap(item -> item.annotationName.toString(),
+                            item -> item.authMechanismScheme));
             bindingProducer.produce(new EagerSecurityInterceptorBindingBuildItem(
                     recorder.authMechanismSelectionInterceptorCreator(), knownBindingValues, mechNames));
             recorder.selectAuthMechanismViaAnnotation();
@@ -805,21 +830,35 @@ public class HttpSecurityProcessor {
             for (DotName annotationBinding : interceptorBinding.getAnnotationBindings()) {
                 Map<String, List<MethodInfo>> bindingValueToInterceptedMethods = new HashMap<>();
                 Map<String, Set<String>> bindingValueToInterceptedClasses = new HashMap<>();
-                for (AnnotationInstance annotation : index.getAnnotations(annotationBinding)) {
+                final Collection<AnnotationInstance> annotationInstances;
+                if (interceptorBinding.allowToRepeatThisInterceptorBinding()) {
+                    annotationInstances = index.getAnnotationsWithRepeatable(annotationBinding, index);
+                } else {
+                    annotationInstances = index.getAnnotations(annotationBinding);
+                }
+                for (AnnotationInstance annotation : annotationInstances) {
                     if (annotation.target().kind() != appliesTo) {
                         continue;
                     }
                     if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
                         ClassInfo interceptedClass = annotation.target().asClass();
+                        if (interceptedClass.isAnnotation()) {
+                            // currently we don't support meta-annotations
+                            // this is the easiest way to avoid detecting @HttpAuthenticationMechanism on @BasicAuthentication
+                            continue;
+                        }
 
                         if (hasClassLevelSecurity.test(interceptedClass)) {
                             // endpoint can only be annotated with one of @Basic, @Form, ...
                             // however combining @CodeFlow and @Tenant is supported
                             var appliedBindings = cache.computeIfAbsent(interceptedClass, a -> new ArrayList<>());
                             if (appliedBindings.contains(interceptorBinding)) {
-                                throw new RuntimeException(
-                                        "Only one of the '%s' annotations can be applied on the '%s' class".formatted(
-                                                Arrays.toString(interceptorBinding.getAnnotationBindings()), interceptedClass));
+                                if (!interceptorBinding.allowToRepeatThisInterceptorBinding()) {
+                                    throw new RuntimeException(
+                                            "Only one of the '%s' annotations can be applied on the '%s' class".formatted(
+                                                    Arrays.toString(interceptorBinding.getAnnotationBindings()),
+                                                    interceptedClass));
+                                }
                             } else {
                                 appliedBindings.add(interceptorBinding);
                             }
@@ -848,23 +887,26 @@ public class HttpSecurityProcessor {
                     } else {
                         MethodInfo mi = annotation.target().asMethod();
 
-                        // endpoint can only be annotated with one of @Basic, @Form, ...
-                        // however combining @CodeFlow and @Tenant is supported
-                        var appliedBindings = cache.computeIfAbsent(mi, a -> new ArrayList<>());
-                        if (appliedBindings.contains(interceptorBinding)) {
-                            throw new RuntimeException(
-                                    "Only one of the '%s' annotations can be applied on the '%s' method".formatted(
-                                            Arrays.toString(interceptorBinding.getAnnotationBindings()),
-                                            mi.declaringClass().name() + "#" + mi));
-                        } else if (hasClassLevelSecurity.test(mi.declaringClass())) {
+                        if (hasClassLevelSecurity.test(mi.declaringClass())) {
                             throw new RuntimeException(
                                     ("Security annotations '%s' cannot be applied on the '%s' method, "
                                             + "please move the annotations to the class-level instead").formatted(
                                                     Arrays.toString(Arrays.stream(interceptorBinding.getAnnotationBindings())
                                                             .toArray()),
-                                                    mi.declaringClass().name() + "#" + mi));
+                                                    toTargetName(mi)));
                         } else {
-                            appliedBindings.add(interceptorBinding);
+                            // only allow to combine interceptor bindings on endpoints if we explicitly support it
+                            var appliedBindings = cache.computeIfAbsent(mi, a -> new ArrayList<>());
+                            if (appliedBindings.contains(interceptorBinding)) {
+                                if (!interceptorBinding.allowToRepeatThisInterceptorBinding()) {
+                                    throw new RuntimeException(
+                                            "Only one of the '%s' annotations can be applied on the '%s' method".formatted(
+                                                    Arrays.toString(interceptorBinding.getAnnotationBindings()),
+                                                    toTargetName(mi)));
+                                }
+                            } else {
+                                appliedBindings.add(interceptorBinding);
+                            }
                         }
 
                         addInterceptedEndpoint(mi, annotation, annotationBinding, bindingValueToInterceptedMethods,

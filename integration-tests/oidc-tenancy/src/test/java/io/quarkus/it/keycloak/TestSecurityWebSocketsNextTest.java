@@ -19,6 +19,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.oidc.BearerTokenAuthentication;
 import io.quarkus.oidc.Tenant;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.ForbiddenException;
@@ -28,6 +29,8 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
+import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
+import io.quarkus.vertx.http.runtime.security.annotation.HttpAuthenticationMechanism;
 import io.quarkus.websockets.next.OnError;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.OnTextMessage;
@@ -40,6 +43,15 @@ import io.vertx.core.http.WebSocketConnectOptions;
 
 @QuarkusTest
 public class TestSecurityWebSocketsNextTest {
+
+    @TestHTTPResource("/ws/echo/custom-or-bearer-admin-role-http-upgrade")
+    URI customOrBearerAdminRoleHttpUpgradeUri;
+
+    @TestHTTPResource("/ws/echo/basic-or-bearer-http-upgrade")
+    URI basicOrBearerHttpUpgradeUri;
+
+    @TestHTTPResource("/ws/echo/basic-http-upgrade")
+    URI basicHttpUpgradeUri;
 
     @TestHTTPResource("/ws/echo/authenticated-http-upgrade")
     URI authenticatedHttpUpgradeUri;
@@ -55,6 +67,78 @@ public class TestSecurityWebSocketsNextTest {
 
     @Inject
     Vertx vertx;
+
+    @Test
+    @TestSecurity(user = "Martin", authMechanism = "basic")
+    public void testBasicOnlyAllowed() throws ExecutionException, InterruptedException, TimeoutException {
+        callWebSocketEndpoint(false, basicHttpUpgradeUri);
+    }
+
+    @Test
+    @TestSecurity(user = "Martin", authMechanism = "Bearer")
+    public void testBasicOnlyAllowed_failure() {
+        RuntimeException actualFailure = assertThrows(RuntimeException.class,
+                () -> callWebSocketEndpoint(true, basicHttpUpgradeUri));
+        assertInstanceOf(UpgradeRejectedException.class, actualFailure.getCause());
+    }
+
+    @Test
+    @TestSecurity(user = "Martin", authMechanism = "custom", roles = "admin")
+    public void testMechanismCombinationWithRolesAllowed_customAllowed()
+            throws ExecutionException, InterruptedException, TimeoutException {
+        callWebSocketEndpoint(false, customOrBearerAdminRoleHttpUpgradeUri);
+    }
+
+    @Test
+    @TestSecurity(user = "Martin", authMechanism = "custom")
+    public void testMechanismCombinationWithRolesAllowed_custom_adminRoleRequired() {
+        RuntimeException actualFailure = assertThrows(RuntimeException.class,
+                () -> callWebSocketEndpoint(true, customOrBearerAdminRoleHttpUpgradeUri));
+        assertInstanceOf(UpgradeRejectedException.class, actualFailure.getCause());
+    }
+
+    @Test
+    @TestSecurity(user = "Martin", authMechanism = "Bearer", roles = "admin")
+    public void testMechanismCombinationWithRolesAllowed_bearerAllowed()
+            throws ExecutionException, InterruptedException, TimeoutException {
+        callWebSocketEndpoint(false, customOrBearerAdminRoleHttpUpgradeUri);
+    }
+
+    @Test
+    @TestSecurity(user = "Martin", authMechanism = "Bearer")
+    public void testMechanismCombinationWithRolesAllowed_bearer_adminRoleRequired() {
+        RuntimeException actualFailure = assertThrows(RuntimeException.class,
+                () -> callWebSocketEndpoint(true, customOrBearerAdminRoleHttpUpgradeUri));
+        assertInstanceOf(UpgradeRejectedException.class, actualFailure.getCause());
+    }
+
+    @Test
+    @TestSecurity(user = "Martin", authMechanism = "basic", roles = "admin")
+    public void testMechanismCombinationWithRolesAllowed_basicDenied() {
+        RuntimeException actualFailure = assertThrows(RuntimeException.class,
+                () -> callWebSocketEndpoint(true, customOrBearerAdminRoleHttpUpgradeUri));
+        assertInstanceOf(UpgradeRejectedException.class, actualFailure.getCause());
+    }
+
+    @Test
+    @TestSecurity(user = "Martin", authMechanism = "basic")
+    public void testMechanismCombination_basicAllowed() throws ExecutionException, InterruptedException, TimeoutException {
+        callWebSocketEndpoint(false, basicOrBearerHttpUpgradeUri);
+    }
+
+    @Test
+    @TestSecurity(user = "Martin", authMechanism = "Bearer")
+    public void testMechanismCombination_bearerAllowed() throws ExecutionException, InterruptedException, TimeoutException {
+        callWebSocketEndpoint(false, basicOrBearerHttpUpgradeUri);
+    }
+
+    @Test
+    @TestSecurity(user = "Martin", authMechanism = "code")
+    public void testMechanismCombination_codeDenied() {
+        RuntimeException actualFailure = assertThrows(RuntimeException.class,
+                () -> callWebSocketEndpoint(true, basicOrBearerHttpUpgradeUri));
+        assertInstanceOf(UpgradeRejectedException.class, actualFailure.getCause());
+    }
 
     @Test
     @TestSecurity(user = "Martin")
@@ -253,6 +337,57 @@ public class TestSecurityWebSocketsNextTest {
         @OnTextMessage
         String echo(String message) {
             return "message: " + message + " " + securityIdentity.getPrincipal().getName();
+        }
+
+    }
+
+    @BearerTokenAuthentication
+    @BasicAuthentication
+    @WebSocket(path = "/ws/echo/basic-or-bearer-http-upgrade")
+    public static class BasicOrBearerHttpUpgradeEndpoint {
+
+        @OnOpen
+        String open() {
+            return "ready";
+        }
+
+        @OnTextMessage
+        String echo(String message) {
+            return "message: " + message;
+        }
+
+    }
+
+    @BasicAuthentication
+    @WebSocket(path = "/ws/echo/basic-http-upgrade")
+    public static class BasicHttpUpgradeEndpoint {
+
+        @OnOpen
+        String open() {
+            return "ready";
+        }
+
+        @OnTextMessage
+        String echo(String message) {
+            return "message: " + message;
+        }
+
+    }
+
+    @BearerTokenAuthentication
+    @HttpAuthenticationMechanism("custom")
+    @WebSocket(path = "/ws/echo/custom-or-bearer-admin-role-http-upgrade")
+    @RolesAllowed("admin")
+    public static class CustomOrBearerAdminRoleHttpUpgradeEndpoint {
+
+        @OnOpen
+        String open() {
+            return "ready";
+        }
+
+        @OnTextMessage
+        String echo(String message) {
+            return "message: " + message;
         }
 
     }

@@ -1077,6 +1077,14 @@ public class HelloResource {
     public String customAuthMechanism() {
         return "custom";
     }
+
+    @GET
+    @BasicAuthentication
+    @AuthorizationCodeFlow
+    @Path("basic-or-code-flow")
+    public String basicOrCodeFlowAuthMechanism() {  <7>
+        return "basic-or-code-flow";
+    }
 }
 ----
 <1> The REST endpoint `/hello/basic` can only ever be accessed by using the <<basic-auth>>.
@@ -1085,6 +1093,7 @@ public class HelloResource {
 <4> The REST endpoint `/hello/code-flow` can only ever be accessed by using the xref:security-oidc-code-flow-authentication.adoc[OIDC authorization code flow mechanism].
 <5> The REST endpoint `/hello/custom` can only ever be accessed by using a custom `HttpAuthenticationMechanism` with a `custom` authentication scheme.
 <6> The `/hello/custom` endpoint requires authentication, because when no standard security annotation accompanies the `@HttpAuthenticationMechanism` annotation, the `@Authenticated` annotation is added by default.
+<7> The REST endpoint `/hello/basic-or-code-flow` can be accessed either by using the xref:security-oidc-code-flow-authentication.adoc[OIDC authorization code flow mechanism], or by using the <<basic-auth>>.
 
 [IMPORTANT]
 ====
@@ -1127,6 +1136,74 @@ It is also possible to use the `io.quarkus.vertx.http.runtime.security.annotatio
 Annotation-based analogy to the `quarkus.http.auth.permission.basic.auth-mechanism=custom` configuration property is the `@HttpAuthenticationMechanism("custom")` annotation.
 
 NOTE: For consistency with various Jakarta EE specifications, it is recommended to always repeat annotations instead of relying on annotation inheritance.
+
+==== Use annotations to enable inclusive path-based authentication for Jakarta REST endpoints
+
+When an <<inclusive-authentication, inclusive authentication>> is enabled in a `strict` mode, every selected authentication mechanism must provide the `SecurityIdentity`.
+For example:
+
+[source,properties]
+----
+quarkus.http.auth.inclusive=true
+quarkus.http.auth.proactive=false
+----
+
+[source,java]
+----
+package org.acme.http.security;
+
+import io.quarkus.oidc.AuthorizationCodeFlow;
+import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+@BasicAuthentication
+@AuthorizationCodeFlow
+@Path("hello")
+public class HelloResource {
+
+    @GET
+    @Path("basic-and-code-flow")
+    public String basicAndCodeFlowAuthMechanism() {  <1>
+        return "basic-and-code-flow";
+    }
+}
+----
+<1> The REST endpoint `/hello/basic-and-code-flow` can be accessed only if both the xref:security-oidc-code-flow-authentication.adoc[OIDC authorization code flow mechanism] and the <<basic-auth>> have successfully provided `SecurityIdentity`.
+
+When an <<inclusive-authentication, inclusive authentication>> is enabled in a `lax` mode, every selected authentication mechanism will have a chance to provide its own `SecurityIdentity`, with at least one of the mechanisms expected to produce `SecurityIdentity`.
+Consider the following example:
+
+[source,properties]
+----
+quarkus.http.auth.inclusive=true
+quarkus.http.auth.inclusive-mode=lax
+quarkus.http.auth.proactive=false
+----
+
+[source,java]
+----
+package org.acme.http.security;
+
+import io.quarkus.oidc.AuthorizationCodeFlow;
+import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+@BasicAuthentication
+@AuthorizationCodeFlow
+@Path("hello")
+public class HelloResource {
+
+    @GET
+    @Path("basic-and-code-flow")
+    public String basicAndCodeFlowAuthMechanism() {  <1>
+        return "basic-and-code-flow";
+    }
+}
+----
+<1> The REST endpoint `/hello/basic-and-code-flow` uses both the xref:security-oidc-code-flow-authentication.adoc[OIDC authorization code flow mechanism] and the <<basic-auth>>.
+Access is granted if at least one of them successfully provides `SecurityIdentity`.
 
 ==== Use inclusive authentication to enable path-based authentication
 

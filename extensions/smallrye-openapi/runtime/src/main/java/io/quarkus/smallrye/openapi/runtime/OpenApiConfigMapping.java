@@ -20,6 +20,11 @@ import io.smallrye.openapi.api.SmallRyeOASConfig;
 public class OpenApiConfigMapping extends RelocateConfigSourceInterceptor {
     private static final long serialVersionUID = 1L;
 
+    public OpenApiConfigMapping() {
+        super(new Relocator());
+        ((Relocator) getMapping()).setRelocations(Map.of());
+    }
+
     public OpenApiConfigMapping(String documentName) {
         super(new Relocator());
 

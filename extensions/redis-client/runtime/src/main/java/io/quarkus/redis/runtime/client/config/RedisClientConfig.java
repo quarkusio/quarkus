@@ -55,6 +55,20 @@ public interface RedisClientConfig {
     Duration timeout();
 
     /**
+     * Whether to fail when a Redis {@code SET} command is aborted because the condition specified by
+     * {@code NX}/{@code XX} is not satisfied (nil reply).
+     * <p>
+     * When enabled, datasource {@code set(...)} methods that do not return a value will fail with
+     * {@link io.quarkus.redis.datasource.RedisCommandAbortedException} when Redis returns a nil reply for a conditional
+     * {@code SET} (for example, with {@code NX}/{@code XX}).
+     * <p>
+     * This affects both reactive ({@code Uni<Void>}) and blocking ({@code void}) variants. When disabled (default),
+     * nil replies are treated as successful completion (legacy behavior).
+     */
+    @WithDefault("false")
+    boolean failOnAbortedSet();
+
+    /**
      * The Redis client type.
      * Accepted values are: {@code STANDALONE} (default), {@code CLUSTER}, {@code REPLICATION}, {@code SENTINEL}.
      */
@@ -277,6 +291,7 @@ public interface RedisClientConfig {
                 "hosts=" + hosts() +
                 ", hostsProviderName=" + hostsProviderName() +
                 ", timeout=" + timeout() +
+                ", failOnAbortedSet=" + failOnAbortedSet() +
                 ", clientType=" + clientType() +
                 ", masterName=" + masterName() +
                 ", role=" + role() +

@@ -208,4 +208,16 @@ public class SetArgs extends io.quarkus.redis.datasource.value.SetArgs implement
         return args;
     }
 
+    public boolean isNx() {
+        return nx;
+    }
+
+    public boolean isXx() {
+        return xx;
+    }
+
+    public boolean isGet() {
+        return get;
+    }
+
 }

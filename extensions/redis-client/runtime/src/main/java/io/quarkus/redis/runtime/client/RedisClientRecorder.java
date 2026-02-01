@@ -130,7 +130,8 @@ public class RedisClientRecorder {
                     RedisClientAndApi redisClientAndApi = clients.get(name);
                     Redis redis = redisClientAndApi.redis;
                     RedisAPI api = redisClientAndApi.api;
-                    return new ReactiveRedisDataSourceImpl(vertx, redis, api);
+                    boolean failOnAbortedSet = runtimeConfig.getValue().clients().get(name).failOnAbortedSet();
+                    return new ReactiveRedisDataSourceImpl(vertx, redis, api, failOnAbortedSet);
                 });
             }
         };

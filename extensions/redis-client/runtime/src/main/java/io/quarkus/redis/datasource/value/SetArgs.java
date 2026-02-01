@@ -205,4 +205,16 @@ public class SetArgs implements RedisCommandExtraArguments {
         return args;
     }
 
+    public boolean isNx() {
+        return nx;
+    }
+
+    public boolean isXx() {
+        return xx;
+    }
+
+    public boolean isGet() {
+        return get;
+    }
+
 }

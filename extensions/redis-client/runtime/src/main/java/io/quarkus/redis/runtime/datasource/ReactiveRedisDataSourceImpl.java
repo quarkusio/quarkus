@@ -50,23 +50,34 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     final Redis redis;
     final RedisConnection connection;
     private final Vertx vertx;
+    private final boolean failOnAbortedSet;
 
     public ReactiveRedisDataSourceImpl(Vertx vertx, Redis redis, RedisAPI api) {
+        this(vertx, redis, api, false);
+    }
+
+    public ReactiveRedisDataSourceImpl(Vertx vertx, Redis redis, RedisAPI api, boolean failOnAbortedSet) {
         nonNull(redis, "redis");
         nonNull(api, "api");
         nonNull(vertx, "vertx");
         this.vertx = vertx;
         this.redis = redis;
         this.connection = null;
+        this.failOnAbortedSet = failOnAbortedSet;
     }
 
     public ReactiveRedisDataSourceImpl(Vertx vertx, Redis redis, RedisConnection connection) {
+        this(vertx, redis, connection, false);
+    }
+
+    public ReactiveRedisDataSourceImpl(Vertx vertx, Redis redis, RedisConnection connection, boolean failOnAbortedSet) {
         nonNull(redis, "redis");
         nonNull(connection, "connection");
         nonNull(vertx, "vertx");
         this.vertx = vertx;
         this.redis = redis;
         this.connection = connection;
+        this.failOnAbortedSet = failOnAbortedSet;
     }
 
     @Override
@@ -82,7 +93,8 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
         nonNull(tx, "tx");
         return redis.connect()
                 .onItem().transformToUni(connection -> {
-                    ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection);
+                    ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection,
+                            failOnAbortedSet);
                     TransactionHolder th = new TransactionHolder();
                     return connection.send(Request.cmd(Command.MULTI))
                             .chain(x -> tx.apply(new ReactiveTransactionalRedisDataSourceImpl(singleConnectionDS, th)))
@@ -117,7 +129,8 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
         doesNotContainNull(keys, "keys");
         return redis.connect()
                 .onItem().transformToUni(connection -> {
-                    ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection);
+                    ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection,
+                            failOnAbortedSet);
                     TransactionHolder th = new TransactionHolder();
                     return watch(connection, keys) // WATCH keys
                             .chain(() -> connection.send(Request.cmd(Command.MULTI))
@@ -166,10 +179,12 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
 
         return redis.connect()
                 .onItem().transformToUni(connection -> {
-                    ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection);
+                    ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection,
+                            failOnAbortedSet);
                     TransactionHolder th = new TransactionHolder();
                     return watch(connection, watchedKeys) // WATCH keys
-                            .chain(x -> preTx.apply(new ReactiveRedisDataSourceImpl(vertx, redis, connection)))// Execute the pre-tx-block
+                            .chain(x -> preTx
+                                    .apply(new ReactiveRedisDataSourceImpl(vertx, redis, connection, failOnAbortedSet)))// Execute the pre-tx-block
                             .onFailure().recoverWithUni(failure -> {
                                 return connection.send(Request.cmd(Command.UNWATCH))
                                         .onItemOrFailure().transformToUni((response2, failure2) -> {
@@ -256,7 +271,8 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
         }
         return redis.connect()
                 .onItem().transformToUni(connection -> {
-                    ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection);
+                    ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection,
+                            failOnAbortedSet);
                     return function.apply(singleConnectionDS)
                             .onTermination().call(connection::close);
                 });
@@ -477,5 +493,9 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
 
     public Vertx getVertx() {
         return vertx;
+    }
+
+    boolean failOnAbortedSet() {
+        return failOnAbortedSet;
     }
 }

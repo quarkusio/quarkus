@@ -4,6 +4,7 @@ import java.lang.reflect.Type;
 import java.util.Map;
 
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
+import io.quarkus.redis.datasource.RedisCommandAbortedException;
 import io.quarkus.redis.datasource.string.GetExArgs;
 import io.quarkus.redis.datasource.string.ReactiveStringCommands;
 import io.quarkus.redis.datasource.string.SetArgs;
@@ -15,10 +16,12 @@ public class ReactiveStringCommandsImpl<K, V> extends AbstractStringCommands<K, 
         implements ReactiveStringCommands<K, V>, ReactiveValueCommands<K, V> {
 
     private final ReactiveRedisDataSource reactive;
+    private final boolean failOnAbortedSet;
 
     public ReactiveStringCommandsImpl(ReactiveRedisDataSourceImpl redis, Type k, Type v) {
         super(redis, k, v);
         this.reactive = redis;
+        this.failOnAbortedSet = redis.failOnAbortedSet();
     }
 
     @Override
@@ -34,14 +37,12 @@ public class ReactiveStringCommandsImpl<K, V> extends AbstractStringCommands<K, 
 
     @Override
     public Uni<Void> set(K key, V value, SetArgs setArgs) {
-        return super._set(key, value, setArgs)
-                .replaceWithVoid();
+        return setOrFailOnAbortIfConfigured(key, super._set(key, value, setArgs), setArgs);
     }
 
     @Override
     public Uni<Void> set(K key, V value, io.quarkus.redis.datasource.value.SetArgs setArgs) {
-        return super._set(key, value, setArgs)
-                .replaceWithVoid();
+        return setOrFailOnAbortIfConfigured(key, super._set(key, value, setArgs), setArgs);
     }
 
     @Override
@@ -192,5 +193,21 @@ public class ReactiveStringCommandsImpl<K, V> extends AbstractStringCommands<K, 
     public Uni<Long> lcsLength(K key1, K key2) {
         return super._lcsLength(key1, key2)
                 .map(Response::toLong);
+    }
+
+    private Uni<Void> setOrFailOnAbortIfConfigured(K key, Uni<Response> uni,
+            io.quarkus.redis.datasource.value.SetArgs setArgs) {
+        if (!failOnAbortedSet || !isConditionalSetWithoutGet(setArgs)) {
+            return uni.replaceWithVoid();
+        }
+
+        return uni.onItem().ifNull()
+                .failWith(() -> new RedisCommandAbortedException(
+                        "Redis SET returned a nil reply because the NX/XX condition was not met"))
+                .replaceWithVoid();
+    }
+
+    private boolean isConditionalSetWithoutGet(io.quarkus.redis.datasource.value.SetArgs setArgs) {
+        return (setArgs.isNx() || setArgs.isXx()) && !setArgs.isGet();
     }
 }

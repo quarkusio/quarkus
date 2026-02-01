@@ -67,6 +67,7 @@ public class WebAuthnAndBasicAuthnTest {
                 .filter(cookieFilter);
         WebAuthnEndpointHelper.addWebAuthnRegistrationFormParameters(request, registration);
         var config = new SmallRyeConfigBuilder()
+                .addDiscoveredConverters()
                 .withMapping(WebAuthnRunTimeConfig.class)
                 .build()
                 .getConfigMapping(WebAuthnRunTimeConfig.class);

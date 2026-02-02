@@ -269,7 +269,7 @@ public class ReflectiveHierarchyStep {
             }
             final Type fieldType = getFieldType(combinedIndexBuildItem, initialName, info, field);
             visits.addLast(
-                    () -> addReflectiveHierarchyRecursively(nativeConfig, combinedIndexBuildItem, capabilities,
+                    () -> addReflectiveHierarchy(nativeConfig, combinedIndexBuildItem, capabilities,
                             reflectiveHierarchyBuildItem, source,
                             fieldType,
                             processedReflectiveHierarchies,
@@ -283,7 +283,7 @@ public class ReflectiveHierarchyStep {
                     method.returnType().kind() == Kind.VOID) {
                 continue;
             }
-            visits.addLast(() -> addReflectiveHierarchyRecursively(nativeConfig, combinedIndexBuildItem, capabilities,
+            visits.addLast(() -> addReflectiveHierarchy(nativeConfig, combinedIndexBuildItem, capabilities,
                     reflectiveHierarchyBuildItem, source,
                     method.returnType(),
                     processedReflectiveHierarchies,

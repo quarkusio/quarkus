@@ -46,7 +46,7 @@ class ExtensionInvoker {
     }
 
     List<ExtensionMethod> findExtensionMethods(DotName annotation) {
-        return extensionsIndex.getAllKnownImplementors(DotNames.BUILD_COMPATIBLE_EXTENSION)
+        return extensionsIndex.getAllKnownImplementations(DotNames.BUILD_COMPATIBLE_EXTENSION)
                 .stream()
                 .flatMap(it -> it.annotationsMap()
                         .getOrDefault(annotation, Collections.emptyList())

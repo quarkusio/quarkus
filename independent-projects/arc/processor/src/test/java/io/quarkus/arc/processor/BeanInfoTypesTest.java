@@ -1,6 +1,5 @@
 package io.quarkus.arc.processor;
 
-import static io.quarkus.arc.processor.Basics.name;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -12,11 +11,10 @@ import java.util.List;
 import java.util.Set;
 
 import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
-import org.jboss.jandex.Type.Kind;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.arc.processor.types.Bar;
@@ -33,28 +31,31 @@ public class BeanInfoTypesTest {
     public void testResolver() throws IOException {
 
         Index index = Index.of(Foo.class, Bar.class, FooQualifier.class, AbstractList.class, AbstractCollection.class,
-                Collection.class, List.class,
-                Iterable.class, Object.class, String.class);
+                Collection.class, List.class, Iterable.class, Object.class, String.class);
 
         BeanDeployment deployment = BeanProcessor.builder().setImmutableBeanArchiveIndex(index).build().getBeanDeployment();
-        DotName fooName = name(Foo.class);
 
-        ClassInfo fooClass = index.getClassByName(fooName);
+        ClassInfo fooClass = index.getClassByName(Foo.class);
         BeanInfo fooBean = Beans.createClassBean(fooClass, deployment, null);
         Set<Type> types = fooBean.getTypes();
         // Foo, AbstractList<String>, AbstractCollection<String>, List<String>, Collection<String>, Iterable<String>, Object
         assertEquals(7, types.size());
-        assertTrue(types.contains(Type.create(fooName, Kind.CLASS)));
-        assertTrue(types.contains(ParameterizedType.create(name(AbstractList.class),
-                new Type[] { Type.create(name(String.class), Kind.CLASS) }, null)));
-        assertTrue(types.contains(
-                ParameterizedType.create(name(List.class), new Type[] { Type.create(name(String.class), Kind.CLASS) }, null)));
-        assertTrue(types.contains(ParameterizedType.create(name(Collection.class),
-                new Type[] { Type.create(name(String.class), Kind.CLASS) }, null)));
-        assertTrue(types.contains(ParameterizedType.create(name(AbstractCollection.class),
-                new Type[] { Type.create(name(String.class), Kind.CLASS) }, null)));
-        assertTrue(types.contains(ParameterizedType.create(name(Iterable.class),
-                new Type[] { Type.create(name(String.class), Kind.CLASS) }, null)));
+        assertTrue(types.contains(ClassType.create(Foo.class)));
+        assertTrue(types.contains(ParameterizedType.builder(AbstractList.class)
+                .addArgument(ClassType.create(String.class))
+                .build()));
+        assertTrue(types.contains(ParameterizedType.builder(List.class)
+                .addArgument(ClassType.create(String.class))
+                .build()));
+        assertTrue(types.contains(ParameterizedType.builder(Collection.class)
+                .addArgument(ClassType.create(String.class))
+                .build()));
+        assertTrue(types.contains(ParameterizedType.builder(AbstractCollection.class)
+                .addArgument(ClassType.create(String.class))
+                .build()));
+        assertTrue(types.contains(ParameterizedType.builder(Iterable.class)
+                .addArgument(ClassType.create(String.class))
+                .build()));
 
     }
 

@@ -1,6 +1,5 @@
 package io.quarkus.arc.processor;
 
-import static io.quarkus.arc.processor.Basics.name;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -12,6 +11,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
@@ -32,12 +32,10 @@ public class BeanInfoInjectionsTest {
     public void testInjections() throws IOException {
 
         Index index = Index.of(Foo.class, Bar.class, FooQualifier.class, AbstractList.class, AbstractCollection.class,
-                Collection.class, List.class,
-                Iterable.class, Object.class, String.class);
+                Collection.class, List.class, Iterable.class, Object.class, String.class);
         ClassInfo barClass = index.getClassByName(Bar.class);
-        Type fooType = Type.create(name(Foo.class), Kind.CLASS);
-        Type listStringType = ParameterizedType.create(name(List.class),
-                new Type[] { Type.create(name(String.class), Kind.CLASS) }, null);
+        Type fooType = ClassType.create(Foo.class);
+        Type listStringType = ParameterizedType.builder(List.class).addArgument(ClassType.create(String.class)).build();
 
         BeanDeployment deployment = BeanProcessor.builder().setImmutableBeanArchiveIndex(index).build().getBeanDeployment();
         deployment.registerCustomContexts(Collections.emptyList());

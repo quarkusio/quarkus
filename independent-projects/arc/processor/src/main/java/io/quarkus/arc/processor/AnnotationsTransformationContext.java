@@ -82,7 +82,7 @@ abstract class AnnotationsTransformationContext<C extends Collection<AnnotationI
         // Jandex overlay in compatible mode won't allow us to query for METHOD_PARAMETER
         // hence if the "target" is method param, we query whole method and filter it
         if (AnnotationTarget.Kind.METHOD_PARAMETER.equals(target.kind())) {
-            return Annotations.getParameterAnnotations(at -> annotationStore.getAnnotations(at),
+            return Annotations.getParameterAnnotations(annotationStore::getAnnotations,
                     target.asMethodParameter().method(), target.asMethodParameter().position());
         } else {
             return annotationStore.getAnnotations(target);

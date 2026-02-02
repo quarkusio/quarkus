@@ -48,7 +48,9 @@ public class JarResource implements ClassLoadingResource {
             if (!path.startsWith("/")) {
                 path = '/' + path;
             }
-            URI uri = new URI("file", null, path, null);
+            // we use this particular constructor to work around https://bugs.openjdk.org/browse/JDK-8140634
+            // see https://github.com/quarkusio/quarkus/issues/52292
+            URI uri = new URI("file", null, path, null, null);
             url = new URL((URL) null, uri.toString(), new JarUrlStreamHandler(uri));
         } catch (URISyntaxException | MalformedURLException e) {
             throw new RuntimeException("Unable to create protection domain for " + jarPath, e);
@@ -152,7 +154,9 @@ public class JarResource implements ClassLoadingResource {
             ssp.append(jarUri.getPath());
             ssp.append("!/");
             ssp.append(realName);
-            return new URI(jarUri.getScheme(), ssp.toString(), null).toURL();
+            // we use this particular constructor to work around https://bugs.openjdk.org/browse/JDK-8140634
+            // see https://github.com/quarkusio/quarkus/issues/52292
+            return new URI(jarUri.getScheme(), null, ssp.toString(), null, null).toURL();
         }
     }
 

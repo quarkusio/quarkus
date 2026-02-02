@@ -83,6 +83,7 @@ public class JacocoProcessor {
             dataFilePath = outputDir.resolve(JacocoConfig.JACOCO_QUARKUS_EXEC);
         }
         String dataFile = dataFilePath.toString();
+        log.debugf("JaCoCo destFile: %s", dataFilePath);
 
         System.setProperty("jacoco-agent.destfile", dataFile);
         System.setProperty("jacoco-agent.jmx", "true");
@@ -94,6 +95,7 @@ public class JacocoProcessor {
         Set<String> transformed = new HashSet<>();
         Collection<IndexDependencyConfig> instrumentArtifacts = config.instrumentArtifacts().values();
         Set<GAC> instrumented = new HashSet<>();
+
         if (instrumentArtifacts.isEmpty()) {
             // By default, instrument classes from all application archives
             for (ApplicationArchive archive : appArchives) {
@@ -140,11 +142,12 @@ public class JacocoProcessor {
         // for a single test suite execution (all tests executed in a single module).
         // Note that for @QuarkusTest a new build can be triggered e.g. by @TestProfile.
         // And for @QuarkusUnitTest each test class triggers a separate build.
-        // So the system property check below will help.
-        // However, it will not help for multi-module projects:
+        // So the system property check below will help for single module.
+        // However, it will not help for multi-module projects if a shared data file is used:
         //
         // /my-extension-project
         // │
+        // ├── /target/jacoco-quarkus.exec
         // ├── /foo
         // │   ├── runtime
         // │   ├── deployment
@@ -182,14 +185,11 @@ public class JacocoProcessor {
             } else {
                 reportDir = outputDir.resolve(JacocoConfig.JACOCO_REPORT);
             }
+            log.debugf("JaCoCo report dir: %s", reportDir);
+
             info.reportDir = reportDir.toString();
             info.errorFile = reportDir.resolve("error.txt");
             Files.deleteIfExists(info.errorFile);
-            Set<String> classes = new HashSet<>();
-            info.classFiles = classes;
-
-            Set<String> sources = new HashSet<>();
-            info.sourceDirectories = sources;
             info.artifactId = buildSystemTargetBuildItem.getBaseName();
 
             ReportCreator reportCreator = new ReportCreator(info, config);
@@ -200,20 +200,21 @@ public class JacocoProcessor {
             // Add classes and sources for the current build
             if (instrumentArtifacts.isEmpty()) {
                 if (appModel.getApplicationModule() != null) {
-                    addDependency(appModel.getAppArtifact(), config, projectRoot, info, includes, excludes);
+                    addDependency(appModel.getAppArtifact(), config, projectRoot, info, includes, excludes, null);
                 }
                 for (ResolvedDependency d : appModel.getDependencies()) {
                     // we can't use d.isWorkspaceModule() for now for some Gradle projects, which is why we check whether a workspace module is not null
                     if (d.isRuntimeCp() && d.getWorkspaceModule() != null) {
-                        addDependency(d, config, projectRoot, info, includes, excludes);
+                        addDependency(d, config, projectRoot, info, includes, excludes, null);
                     }
                 }
             } else {
+                // For instrumented artifacts we always use the current data file when processing a dependency
                 for (ResolvedDependency d : appModel.getDependencies()) {
                     if (d.isRuntimeCp()
                             && d.getWorkspaceModule() != null
                             && instrumented.contains(new GAC(d.getGroupId(), d.getArtifactId(), d.getClassifier()))) {
-                        addDependency(d, config, projectRoot, info, includes, excludes);
+                        addDependency(d, config, projectRoot, info, includes, excludes, dataFilePath);
                     }
                 }
             }
@@ -248,10 +249,11 @@ public class JacocoProcessor {
     }
 
     private void addDependency(ResolvedDependency module, JacocoConfig config, Path projectRoot, ReportInfo info,
-            String includes,
-            String excludes) throws Exception {
-        Path dataFile = getFilePath(config.dataFile(), projectRoot, module.getWorkspaceModule().getBuildDir().toPath(),
-                JacocoConfig.JACOCO_QUARKUS_EXEC);
+            String includes, String excludes, Path dataFile) throws Exception {
+        if (dataFile == null) {
+            dataFile = getFilePath(config.dataFile(), projectRoot, module.getWorkspaceModule().getBuildDir().toPath(),
+                    JacocoConfig.JACOCO_QUARKUS_EXEC);
+        }
         info.savedData.add(dataFile.toAbsolutePath().toString());
         if (module.getSources() == null) {
             return;
@@ -319,7 +321,7 @@ public class JacocoProcessor {
 
     public static boolean archiveMatches(ArtifactKey key, String groupId, Optional<String> artifactId,
             Optional<String> classifier) {
-        if (Objects.equals(key.getGroupId(), groupId)
+        if (key != null && Objects.equals(key.getGroupId(), groupId)
                 && (artifactId.isEmpty() || Objects.equals(key.getArtifactId(), artifactId.get()))) {
             if (classifier.isPresent() && Objects.equals(key.getClassifier(), classifier.get())) {
                 return true;
@@ -357,7 +359,7 @@ public class JacocoProcessor {
                     || Files.exists(currentPath.resolve(Paths.get("config", "application.yml")))) {
                 return currentPath.normalize();
             }
-            if (currentPath.getParent() != null && Files.exists(currentPath.getParent())) {
+            if (currentPath.getParent() != null) {
                 currentPath = currentPath.getParent();
             } else {
                 return null;

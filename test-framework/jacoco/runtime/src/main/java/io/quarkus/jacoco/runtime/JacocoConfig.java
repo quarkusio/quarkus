@@ -30,7 +30,7 @@ public interface JacocoConfig {
 
     /**
      * The Jacoco data file.
-     * The path can be relative (to the module) or absolute.
+     * The path can be relative (to the project/module root) or absolute.
      */
     @ConfigDocDefault(TARGET_JACOCO_QUARKUS_EXEC)
     Optional<String> dataFile();
@@ -100,7 +100,7 @@ public interface JacocoConfig {
 
     /**
      * The location of the report files.
-     * The path can be relative (to the module) or absolute.
+     * The path can be relative (to the project/module root) or absolute.
      */
     @ConfigDocDefault(TARGET_JACOCO_REPORT)
     Optional<String> reportLocation();

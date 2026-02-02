@@ -9,9 +9,9 @@ import jakarta.persistence.Entity;
  * An ID field of Long type is provided, if you want to define your own ID field extends <code>PanacheEntityBase</code> instead.
  *
  * This uses the active record pattern, you can also use the repository pattern instead:
- * .
+ * {@see https://quarkus.io/guides/hibernate-orm-panache#solution-2-using-the-repository-pattern}.
  *
- * Usage (more example on the documentation)
+ * Usage:
  *
  * {@code
  *     public void doSomething() {

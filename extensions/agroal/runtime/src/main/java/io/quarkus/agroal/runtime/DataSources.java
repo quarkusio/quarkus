@@ -1,8 +1,7 @@
 package io.quarkus.agroal.runtime;
 
-import java.sql.Connection;
 import java.sql.Driver;
-import java.sql.Statement;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
@@ -338,22 +337,8 @@ public class DataSources {
         }
         if (dataSourceJdbcRuntimeConfig.validationQuerySql().isPresent()) {
             String validationQuery = dataSourceJdbcRuntimeConfig.validationQuerySql().get();
-            poolConfiguration.connectionValidator(new ConnectionValidator() {
-
-                @Override
-                public boolean isValid(Connection connection) {
-                    try (Statement stmt = connection.createStatement()) {
-                        if (dataSourceJdbcRuntimeConfig.validationQueryTimeout().isPresent()) {
-                            stmt.setQueryTimeout((int) dataSourceJdbcRuntimeConfig.validationQueryTimeout().get().toSeconds());
-                        }
-                        stmt.execute(validationQuery);
-                        return true;
-                    } catch (Exception e) {
-                        log.warn("Connection validation failed", e);
-                    }
-                    return false;
-                }
-            });
+            int timeout = (int) dataSourceJdbcRuntimeConfig.validationQueryTimeout().orElse(Duration.ZERO).toSeconds();
+            poolConfiguration.connectionValidator(ConnectionValidator.sqlValidator(validationQuery, timeout));
         }
         poolConfiguration.validateOnBorrow(dataSourceJdbcRuntimeConfig.validateOnBorrow());
         poolConfiguration.reapTimeout(dataSourceJdbcRuntimeConfig.idleRemovalInterval());

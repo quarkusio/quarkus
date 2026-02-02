@@ -26,8 +26,12 @@ import org.jacoco.report.MultiSourceFileLocator;
 import org.jacoco.report.csv.CSVFormatter;
 import org.jacoco.report.html.HTMLFormatter;
 import org.jacoco.report.xml.XMLFormatter;
+import org.jboss.logging.Logger;
 
 public class ReportCreator implements Runnable {
+
+    private static final Logger LOG = Logger.getLogger(ReportCreator.class);
+
     private final ReportInfo reportInfo;
     private final JacocoConfig config;
     private final DataFileWatch dataFileWatch;
@@ -67,6 +71,7 @@ public class ReportCreator implements Runnable {
             for (String i : reportInfo.savedData) {
                 File file = new File(i);
                 if (file.exists()) {
+                    LOG.debugf("JaCoCo is loading data for report from: %s", file);
                     loader.load(file);
                 }
             }

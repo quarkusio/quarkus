@@ -7,10 +7,13 @@ import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class PanacheHibernateRecorder {
-    public void setEntityToPersistenceUnit(Map<String, String> entityToPersistenceUnit, boolean incomplete) {
+    public void setEntityToPersistenceUnit(Map<String, String> entityToPersistenceUnit, boolean incomplete,
+            boolean hibernateReactivePresent) {
         AbstractJpaOperations.addEntityTypesToPersistenceUnit(entityToPersistenceUnit, incomplete);
-        io.quarkus.hibernate.reactive.panache.common.runtime.AbstractJpaOperations
-                .addEntityTypesToPersistenceUnit(entityToPersistenceUnit);
+        if (hibernateReactivePresent) {
+            io.quarkus.hibernate.reactive.panache.common.runtime.AbstractJpaOperations
+                    .addEntityTypesToPersistenceUnit(entityToPersistenceUnit);
+        }
     }
 
     public void setRepositoryClassesToEntityClasses(Map<Class<?>, Class<?>> repositoryClassesToEntityClasses) {

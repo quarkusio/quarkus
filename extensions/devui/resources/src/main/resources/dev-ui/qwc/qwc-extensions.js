@@ -85,8 +85,8 @@ export class QwcExtensions extends observeState(LitElement) {
             cursor: grab;
         }
         .addExtensionButton {
-            position: absolute;
-            bottom: 40px;
+            position: fixed;
+            bottom: calc(var(--footer-height, 38px) + 10px);
             right: 40px;
             width: 3em;
             height: 3em;
@@ -252,7 +252,19 @@ export class QwcExtensions extends observeState(LitElement) {
                     builtWith="${extension.builtWith}"
                     providesCapabilities="${extension.providesCapabilities}"
                     extensionDependencies="${extension.extensionDependencies}"
-                    ?installed=${this._installedExtensions.includes(extension.namespace)}
+                    ?installed=${(() => {
+                        // Build full namespace from artifact (e.g., "io.quarkus:quarkus-arc:999-SNAPSHOT" -> "io.quarkus.quarkus-arc")
+                        let fullNamespace = extension.namespace; // fallback
+                        if (extension.artifact) {
+                            const parts = extension.artifact.split(':');
+                            if (parts.length >= 2) {
+                                const groupId = parts[0]; // "io.quarkus"
+                                const artifactId = parts[1]; // "quarkus-arc"
+                                fullNamespace = `${groupId}.${artifactId}`; // "io.quarkus.quarkus-arc"
+                            }
+                        }
+                        return this._installedExtensions.includes(fullNamespace);
+                    })()}
                     ?favourite=${fav} 
                     @favourite=${this._favourite}
                     logoUrl="${logoUrl}">

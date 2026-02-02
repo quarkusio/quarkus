@@ -210,8 +210,16 @@ export class QwcFooter extends observeState(LitElement) {
         super.connectedCallback();
         this._controlButtons = [];
         this._originalMouseY = 0;
-        
+
         this._restoreFromLocalStorage();
+    }
+
+    updated(changedProperties) {
+        super.updated(changedProperties);
+        // Expose footer height as CSS custom property for other components
+        // Use actual rendered height: 38px when closed, _height when open
+        const actualHeight = this._isOpen ? this._height : 38;
+        document.documentElement.style.setProperty('--footer-height', `${actualHeight}px`);
     }
 
     _restoreHeight(){

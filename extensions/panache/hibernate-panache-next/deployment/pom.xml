@@ -9,8 +9,8 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-hibernate-panache-deployment</artifactId>
-    <name>Quarkus - Hibernate with Panache - Deployment</name>
+    <artifactId>quarkus-hibernate-panache-next-deployment</artifactId>
+    <name>Quarkus - Hibernate with Panache Next - Deployment</name>
 
     <properties>
         <postgres.reactive.url>vertx-reactive:postgresql://localhost:5431/hibernate_orm_test</postgres.reactive.url>
@@ -37,7 +37,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-panache</artifactId>
+            <artifactId>quarkus-hibernate-panache-next</artifactId>
         </dependency>
         <dependency>
             <groupId>org.ow2.asm</groupId>

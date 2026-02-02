@@ -2229,6 +2229,55 @@ public class PersistenceAndQuarkusConfigTest {
 <1> This tells JUnit that the Quarkus deployment should fail with a specific exception
 
 
+[TIP]
+Test coverage and `QuarkusUnitTest`
+====
+If you want to measure the test coverage of the runtime submodule, then a specific JaCoCo configuration is needed in the deployment module:
+
+[source,xml]
+----
+<profiles>
+    <profile>
+        <id>test-coverage</id>
+        <activation>
+            <property>
+                <name>jacoco</name> <1>
+            </property>
+        </activation>
+        <dependencies>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jacoco-deployment</artifactId> <2>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+        <build>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <configuration>
+                        <systemPropertyVariables>
+                            <quarkus.jacoco.instrument-artifacts.runtime.group-id>io.quarkus</quarkus.jacoco.instrument-artifacts.runtime.group-id> <3>
+                            <quarkus.jacoco.instrument-artifacts.runtime.artifact-id>quarkus-runtime-module-name</quarkus.jacoco.instrument-artifacts.runtime.artifact-id>
+                        </systemPropertyVariables>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </build>
+    </profile>
+</profiles>
+----
+<1> This profile is activated with the `jacoco` property.
+<2> Add the `quarkus-jacoco-deployment` dependency with the `test` scope.
+<3> Instruct the JaCoCo plugin to instrument the `io.quarkus:quarkus-runtime-module-name` artifact.
+
+By default, JaCoCo will save the collected data in `target/jacoco-quarkus.exec` and the generated report is located in `target/jacoco-report`.
+For multi-module projects, more config properties will be needed. 
+Typically, `quarkus.jacoco.data-file=/path/to/shared/data-file`, `quarkus.jacoco.reuse-data-file=true` and `quarkus.jacoco.aggregate-report-data=true`.
+See xref:tests-with-coverage.adoc[Measuring the coverage of your tests] for more information. 
+====
+
+
 === Testing hot reload
 
 It is also possible to write tests that verify an extension works correctly in development mode and can correctly

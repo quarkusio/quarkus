@@ -1416,12 +1416,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-hibernate-panache</artifactId>
+                <artifactId>quarkus-hibernate-panache-next</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-hibernate-panache-deployment</artifactId>
+                <artifactId>quarkus-hibernate-panache-next-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

@@ -166,9 +166,9 @@ quarkus.security.ldap.dir-context.password=secret
 quarkus.security.ldap.identity-mapping.rdn-identifier=uid
 quarkus.security.ldap.identity-mapping.search-base-dn=ou=Users,dc=quarkus,dc=io
 
-quarkus.security.ldap.identity-mapping.attribute-mappings."0".from=cn
-quarkus.security.ldap.identity-mapping.attribute-mappings."0".filter=(member=uid={0},ou=Users,dc=quarkus,dc=io) <3>
-quarkus.security.ldap.identity-mapping.attribute-mappings."0".filter-base-dn=ou=Roles,dc=quarkus,dc=io
+quarkus.security.ldap.identity-mapping.attribute-mappings."cn".from=cn
+quarkus.security.ldap.identity-mapping.attribute-mappings."cn".filter=(member=uid={0},ou=Users,dc=quarkus,dc=io) <3>
+quarkus.security.ldap.identity-mapping.attribute-mappings."cn".filter-base-dn=ou=Roles,dc=quarkus,dc=io
 ----
 <1> You need to provide the URL to an LDAP server. This example requires the LDAP server to have imported link:{quarkus-blob-url}/test-framework/ldap/src/main/resources/quarkus-io.ldif[this LDIF file].
 <2> The URL used by our test resource. Tests may leverage `LdapServerTestResource` provided by Quarkus as link:{quickstarts-blob-url}/security-ldap-quickstart/src/test/java/org/acme/elytron/security/ldap/ElytronLdapExtensionTestResources.java[we do] in the test coverage of the example application.

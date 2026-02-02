@@ -1,11 +1,8 @@
 package io.quarkus.analytics.rest;
 
 import static io.quarkus.analytics.util.PropertyUtils.getProperty;
-import static io.quarkus.analytics.util.StringUtils.getObjectMapper;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-import java.io.IOException;
-import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -21,8 +18,8 @@ import java.util.concurrent.TimeoutException;
 
 import io.quarkus.analytics.dto.config.AnalyticsRemoteConfig;
 import io.quarkus.analytics.dto.config.Identity;
-import io.quarkus.analytics.dto.config.RemoteConfig;
 import io.quarkus.analytics.dto.segment.Track;
+import io.quarkus.analytics.util.JsonSerializer;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 
 /**
@@ -109,10 +106,10 @@ public class RestClient implements ConfigClient, SegmentClient {
 
             if (statusCode == SEGMENT_POST_RESPONSE_CODE) {
                 final String body = response.body();
-                return Optional.of(getObjectMapper().readValue(body, RemoteConfig.class));
+                return Optional.of(JsonSerializer.parseRemoteConfig(body));
             }
             return Optional.empty();
-        } catch (IOException | InterruptedException | ExecutionException | TimeoutException e) {
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
             if (log.isDebugEnabled()) {
                 log.debug("[Quarkus build analytics] Analytics remote config not received. " +
                         e.getClass().getName() + ": " +
@@ -122,11 +119,19 @@ public class RestClient implements ConfigClient, SegmentClient {
         return Optional.empty();
     }
 
-    CompletableFuture<HttpResponse<String>> post(final Serializable payload, final URI url) {
+    CompletableFuture<HttpResponse<String>> post(final Object payload, final URI url) {
         try {
             final HttpClient httpClient = createHttpClient();
 
-            final String toSend = getObjectMapper().writeValueAsString(payload);
+            final String toSend;
+            if (payload instanceof Identity identity) {
+                toSend = JsonSerializer.toJson(identity);
+            } else if (payload instanceof Track track) {
+                toSend = JsonSerializer.toJson(track);
+            } else {
+                throw new IllegalArgumentException("Unsupported payload type: " + payload.getClass().getName());
+            }
+
             if (log.isDebugEnabled()) {
                 log.debug("[Quarkus build analytics] Analytics to send: " + toSend);
             }
@@ -135,7 +140,7 @@ public class RestClient implements ConfigClient, SegmentClient {
                     .build();
 
             return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString());
-        } catch (IOException e) {
+        } catch (IllegalArgumentException e) {
             log.warn("[Quarkus build analytics] Analytics not sent. " + e.getMessage());
             return CompletableFuture.failedFuture(e);
         }

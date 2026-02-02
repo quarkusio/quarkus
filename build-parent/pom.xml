@@ -52,7 +52,7 @@
 
         <!-- These 2 properties are used in catalog-overrides.json -->
         <minimum-java-version>${maven.compiler.release}</minimum-java-version>
-        <recommended-java-version>21</recommended-java-version>
+        <recommended-java-version>25</recommended-java-version>
 
         <!--
         Supported Maven versions, interpreted as a version range (Also defined in quarkus-enforcer-rules)
@@ -63,7 +63,7 @@
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.9.12</proposed-maven-version>
         <maven-wrapper.version>3.3.4</maven-wrapper.version>
-        <gradle-wrapper.version>9.3.0</gradle-wrapper.version>
+        <gradle-wrapper.version>9.3.1</gradle-wrapper.version>
         <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
         <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
         <maven-plugin-plugin.version>3.8.1</maven-plugin-plugin.version>

@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.objectweb.asm.Opcodes;
 
 import io.quarkus.deployment.configuration.matching.ConfigPatternMap;
@@ -22,6 +23,7 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ValueRegistryConfigSource;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.configuration.AbstractConfigBuilder;
@@ -37,6 +39,7 @@ import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
+import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 /**
  *
@@ -115,6 +118,7 @@ public final class RunTimeConfigurationGenerator {
 
     public static final class GenerateOperation implements AutoCloseable {
         final boolean liveReloadPossible;
+        final LaunchMode launchMode;
         final BuildTimeConfigurationReader.ReadResult buildTimeConfigResult;
         final ClassOutput classOutput;
         final ClassCreator cc;
@@ -125,6 +129,7 @@ public final class RunTimeConfigurationGenerator {
 
         GenerateOperation(Builder builder) {
             liveReloadPossible = builder.liveReloadPossible;
+            launchMode = builder.getLaunchMode();
             buildTimeConfigResult = Assert.checkNotNullParam("buildTimeReadResult", builder.getBuildTimeReadResult());
             classOutput = Assert.checkNotNullParam("classOutput", builder.getClassOutput());
             cc = ClassCreator.builder().classOutput(classOutput).className(CONFIG_CLASS_NAME).setFinal(true).build();
@@ -166,6 +171,14 @@ public final class RunTimeConfigurationGenerator {
         }
 
         public void run() {
+            if (!launchMode.isDevOrTest()) {
+                // Directly set the config resolver to avoid service loader. Test and Dev must set the resolver, so we cannot override it
+                clinit.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(ConfigProviderResolver.class, "setInstance", void.class,
+                                ConfigProviderResolver.class),
+                        clinit.newInstance(MethodDescriptor.ofConstructor(SmallRyeConfigProviderResolver.class)));
+            }
+
             // in clinit, load the build-time config
             // make the build time config global until we read the run time config -
             // at run time (when we're ready) we update the factory and then release the build time config
@@ -415,10 +428,29 @@ public final class RunTimeConfigurationGenerator {
 
         public static final class Builder {
             public boolean liveReloadPossible;
+            private LaunchMode launchMode;
             private ClassOutput classOutput;
             private BuildTimeConfigurationReader.ReadResult buildTimeReadResult;
 
             Builder() {
+            }
+
+            public boolean isLiveReloadPossible() {
+                return liveReloadPossible;
+            }
+
+            public Builder setLiveReloadPossible(boolean liveReloadPossible) {
+                this.liveReloadPossible = liveReloadPossible;
+                return this;
+            }
+
+            public LaunchMode getLaunchMode() {
+                return launchMode;
+            }
+
+            public Builder setLaunchMode(LaunchMode launchMode) {
+                this.launchMode = launchMode;
+                return this;
             }
 
             ClassOutput getClassOutput() {
@@ -427,11 +459,6 @@ public final class RunTimeConfigurationGenerator {
 
             public Builder setClassOutput(final ClassOutput classOutput) {
                 this.classOutput = classOutput;
-                return this;
-            }
-
-            public Builder setLiveReloadPossible(boolean liveReloadPossible) {
-                this.liveReloadPossible = liveReloadPossible;
                 return this;
             }
 

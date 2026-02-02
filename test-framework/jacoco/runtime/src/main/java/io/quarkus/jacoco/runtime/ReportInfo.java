@@ -21,8 +21,8 @@ public class ReportInfo {
     public String reportDir;
     public Path dataFile;
     public final List<String> savedData = new ArrayList<>();
-    public Set<String> sourceDirectories;
-    public Set<String> classFiles;
+    public Set<String> sourceDirectories = new HashSet<>();
+    public Set<String> classFiles = new HashSet<>();
     public String artifactId;
     public Path errorFile;
 

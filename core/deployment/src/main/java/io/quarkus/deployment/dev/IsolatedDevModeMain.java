@@ -49,6 +49,7 @@ import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
 import io.quarkus.runtime.ApplicationLifecycleManager;
+import io.quarkus.runtime.JVMUnsafeWarningsControl;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
 
@@ -378,6 +379,9 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
     //the main entry point, but loaded inside the augmentation class loader
     @Override
     public void accept(CuratedApplication o, Map<String, Object> params) {
+        // Ensure JVM warnings are suppressed for all dev mode entry points (idempotent)
+        JVMUnsafeWarningsControl.disableUnsafeRelatedWarnings();
+
         //setup the dev mode thread pool for NIO
         System.setProperty("java.nio.channels.DefaultThreadPool.threadFactory",
                 "io.quarkus.dev.io.NioThreadPoolThreadFactory");

@@ -73,8 +73,9 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
         }
 
         // make sure we create the parent directory before creating the archive
-        if (archivePath.getParent() != null) {
-            Files.createDirectories(archivePath.getParent());
+        Path archivePathParent = archivePath.getParent();
+        if ((archivePathParent != null) && !Files.exists(archivePathParent)) {
+            Files.createDirectories(archivePathParent);
         }
 
         this.archivePath = archivePath;

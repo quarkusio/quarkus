@@ -19,13 +19,21 @@ public interface JvmModulesReconfigurer {
     void openJavaModules(List<ModuleOpenBuildItem> addOpens, ModulesClassloaderContext referenceClassloader);
 
     /**
-     * Creates a new instance of {@link JvmModulesReconfigurer}.
-     * Initialization of such services is fairly costly: try
-     * to avoid it, and aim to reuse the produced instance.
-     *
-     * @return a new {@link JvmModulesReconfigurer} instance
+     * Thread-safe lazy holder for the singleton instance: this is expensive to create and tied to the JVM,
+     * so we like it to be lazy and shared.
      */
-    static JvmModulesReconfigurer create() {
+    final class Holder {
+        static final JvmModulesReconfigurer INSTANCE = JvmModulesReconfigurer.create();
+    }
+
+    /**
+     * @return the shared {@link JvmModulesReconfigurer} instance
+     */
+    static JvmModulesReconfigurer getInstance() {
+        return Holder.INSTANCE;
+    }
+
+    private static JvmModulesReconfigurer create() {
         final Logger logger = JVMDeploymentLogger.logger;
 
         //First thing to check, is if we have our agent connected; that would make things really simple and avoid any need

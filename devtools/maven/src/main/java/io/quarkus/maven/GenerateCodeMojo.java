@@ -24,6 +24,7 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
+import io.smallrye.common.os.OS;
 
 // in the PROCESS_RESOURCES phase because we want the config to be available
 // by the time code gen providers are triggered (the resources plugin copies the config files
@@ -122,8 +123,8 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
                             Properties properties = mavenProject().getProperties();
                             String argLine = properties.getProperty("argLine", "");
                             properties.setProperty("argLine", argLine +
-                                    " -D" + BootstrapConstants.SERIALIZED_TEST_APP_MODEL + "=\"" + serializedTestAppModelPath
-                                    + "\"");
+                                    getSerializedTestAppModelArg(serializedTestAppModelPath,
+                                            isQuoteTestAppModelPath(appModel)));
                         } catch (IOException e) {
                             getLog().warn("Failed to serialize application model", e);
                         }
@@ -131,6 +132,30 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
                 }
             }
         }
+    }
+
+    private String getSerializedTestAppModelArg(Path serializedTestAppModelPath, boolean quote) throws IOException {
+        var sb = new StringBuilder()
+                .append(" -D").append(BootstrapConstants.SERIALIZED_TEST_APP_MODEL).append("=");
+        if (quote) {
+            sb.append("\"");
+        }
+        sb.append(serializedTestAppModelPath);
+        if (quote) {
+            sb.append("\"");
+        }
+        return sb.toString();
+    }
+
+    private boolean isQuoteTestAppModelPath(ApplicationModel appModel) {
+        if (OS.WINDOWS.isCurrent()) {
+            for (var d : appModel.getRuntimeDependencies()) {
+                if (d.getArtifactId().equals("quarkus-jacoco") && d.getGroupId().equals("io.quarkus")) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     protected boolean isSerializeTestModel() {

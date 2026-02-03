@@ -246,6 +246,13 @@ public class TestResource {
     }
 
     @GET
+    @Path("/record")
+    @Produces("application/json")
+    public MyRecord instance() {
+        return new MyRecord(MyInterfaceWithRecord.INSTANCE);
+    }
+
+    @GET
     @Path("/response")
     @Produces("application/json")
     public Response response() {
@@ -540,6 +547,28 @@ public class TestResource {
         String getValue();
 
         String getName();
+    }
+
+    public record MyRecord(MyInterfaceWithRecord nestedInterface) {
+
+    }
+
+    public interface MyInterfaceWithRecord {
+
+        MyInterfaceWithRecord INSTANCE = new MyInterfaceWithRecord() {
+            @Override
+            public NestedRecord getRecord() {
+                return new NestedRecord();
+            }
+        };
+
+        Object getRecord();
+    }
+
+    public record NestedRecord(String recordProperty) {
+        public NestedRecord() {
+            this("record-property-value");
+        }
     }
 
     public static class MyEntity {

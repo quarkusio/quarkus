@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationInstanceEquivalenceProxy;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.DotName;
@@ -197,6 +198,22 @@ public final class Annotations {
             if (annotation.runtimeVisible()) {
                 result.add(annotation);
             }
+        }
+        return result;
+    }
+
+    /**
+     * Returns a list of annotations created out of the given set such that the result does not have
+     * annotations that are identical except of the {@linkplain AnnotationInstance#target() annotation target}.
+     */
+    public static List<AnnotationInstance> uniqueAnnotations(Set<AnnotationInstance> annotations) {
+        Set<AnnotationInstanceEquivalenceProxy> proxies = new HashSet<>();
+        for (AnnotationInstance annotation : annotations) {
+            proxies.add(annotation.createEquivalenceProxy());
+        }
+        List<AnnotationInstance> result = new ArrayList<>(proxies.size());
+        for (AnnotationInstanceEquivalenceProxy proxy : proxies) {
+            result.add(proxy.get());
         }
         return result;
     }

@@ -44,7 +44,6 @@ import io.quarkus.arc.impl.InvocationContexts;
 import io.quarkus.arc.impl.MapValueSupplier;
 import io.quarkus.arc.impl.Reflections;
 import io.quarkus.arc.impl.RemovedBeanImpl;
-import io.quarkus.arc.impl.Sets;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.gizmo2.desc.MethodDesc;
 
@@ -160,8 +159,6 @@ final class MethodDescs {
 
     static final MethodDesc COLLECTIONS_SINGLETON_LIST = MethodDesc.of(Collections.class,
             "singletonList", List.class, Object.class);
-
-    static final MethodDesc SETS_OF = MethodDesc.of(Sets.class, "of", Set.class, Object[].class);
 
     static final MethodDesc ARC_REQUIRE_CONTAINER = MethodDesc.of(Arc.class, "requireContainer", ArcContainer.class);
 

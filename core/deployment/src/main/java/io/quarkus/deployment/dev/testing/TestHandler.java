@@ -20,7 +20,7 @@ import io.smallrye.config.SmallRyeConfig;
 
 public class TestHandler implements BiConsumer<Object, BuildResult> {
 
-    private static final JvmModulesReconfigurer jvmModulesReconfigurer = JvmModulesReconfigurer.create();
+    private static final JvmModulesReconfigurer jvmModulesReconfigurer = JvmModulesReconfigurer.getInstance();
 
     @Override
     public void accept(Object o, BuildResult buildResult) {

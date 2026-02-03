@@ -61,7 +61,7 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
     private Manifest manifest;
     private final Map<String, String> addedFiles = new HashMap<>();
 
-    ParallelCommonsCompressArchiveCreator(Path archivePath, boolean compressed, Instant entryTimestamp, Path outputTarget,
+    ParallelCommonsCompressArchiveCreator(Path archivePath, boolean compressed, Instant entryTimestamp,
             ExecutorService executorService) throws IOException {
         int compressionLevel;
         if (compressed) {
@@ -81,14 +81,14 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
         this.entryTimestamp = entryTimestamp != null ? FileTime.from(entryTimestamp) : null;
         this.archive = new ZipArchiveOutputStream(archivePath);
         this.archive.setMethod(compressionMethod);
-        this.tempDirectory = Files.createTempDirectory(outputTarget, "zip-builder-files");
+        this.tempDirectory = Files.createTempDirectory("zip-builder-files");
 
         scatterZipCreator = new ParallelScatterZipCreator(
                 // we need to make sure our own executor won't be shut down by Commons Compress...
                 new DoNotShutdownDelegatingExecutorService(executorService),
                 new DefaultBackingStoreSupplier(this.tempDirectory),
                 compressionLevel);
-        directories = ScatterZipOutputStream.pathBased(Files.createTempFile(outputTarget, "zip-builder-dirs", ""),
+        directories = ScatterZipOutputStream.pathBased(Files.createTempFile("zip-builder-dirs", ""),
                 compressionLevel);
     }
 

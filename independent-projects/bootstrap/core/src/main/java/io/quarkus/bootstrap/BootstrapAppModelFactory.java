@@ -1,10 +1,11 @@
 package io.quarkus.bootstrap;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -287,7 +288,10 @@ public class BootstrapAppModelFactory {
         final String serializedModel = test ? System.getProperty(BootstrapConstants.SERIALIZED_TEST_APP_MODEL)
                 : System.getProperty(BootstrapConstants.SERIALIZED_APP_MODEL);
         if (serializedModel != null) {
-            final Path p = Paths.get(serializedModel);
+            // The path may be Base64 encoded (Maven) to avoid issues with spaces and special characters on Windows,
+            // or a plain path (Gradle). Decode if it looks like Base64.
+            final String decodedPath = decodeBase64IfNeeded(serializedModel);
+            final Path p = Path.of(decodedPath);
             if (Files.exists(p)) {
                 try {
                     return new CurationResult(ApplicationModelSerializer.deserialize(p));
@@ -296,7 +300,7 @@ public class BootstrapAppModelFactory {
                 }
                 IoUtils.recursiveDelete(p);
             } else {
-                log.error("Failed to locate serialized application model at " + serializedModel);
+                log.error("Failed to locate serialized application model at " + decodedPath);
             }
         }
         return null;
@@ -305,6 +309,22 @@ public class BootstrapAppModelFactory {
     private boolean isWorkspaceDiscoveryEnabled() {
         return localProjectsDiscovery == null ? projectRoot != null && (test || devMode)
                 : localProjectsDiscovery;
+    }
+
+    /**
+     * Decodes the value if it is Base64 encoded, otherwise returns the original value.
+     * A value is assumed to be Base64 encoded if it doesn't contain path separators or colons,
+     * but if decoding fails, the original value is returned as well.
+     */
+    private static String decodeBase64IfNeeded(String value) {
+        if (value.contains("/") || value.contains("\\") || value.contains(":")) {
+            return value;
+        }
+        try {
+            return new String(Base64.getDecoder().decode(value), StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            return value;
+        }
     }
 
     private LocalProject loadWorkspace() throws AppModelResolverException {

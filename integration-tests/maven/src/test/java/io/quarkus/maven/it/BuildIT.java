@@ -267,6 +267,23 @@ class BuildIT extends MojoTestBase {
         assertThat(result.getProcess().waitFor()).isZero();
     }
 
+    /**
+     * Tests that running tests works correctly when the project path contains spaces.
+     * This is a regression test for Windows where paths with spaces in the serialized
+     * test app model path could cause double-quoting issues in argLine.
+     *
+     * @see io.quarkus.maven.GenerateCodeMojo
+     */
+    @Test
+    void testProjectPathWithSpaces() throws MavenInvocationException, InterruptedException, IOException {
+        // Use a destination path with spaces to simulate Windows-style paths like "Program Files"
+        testDir = initProject("projects/classic", "projects/path with spaces/classic build");
+        running = new RunningInvoker(testDir, false);
+        MavenProcessInvocationResult result = running.execute(List.of("clean", "test", "-Dquarkus.analytics.disabled=true"),
+                Map.of());
+        assertThat(result.getProcess().waitFor()).isZero();
+    }
+
     private void launch() throws IOException {
         launch(TestContext.FAST_NO_PREFIX, "", "hello, from foo");
     }

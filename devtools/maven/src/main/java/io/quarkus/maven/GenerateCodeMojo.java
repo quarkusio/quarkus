@@ -2,7 +2,9 @@ package io.quarkus.maven;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.Base64;
 import java.util.List;
 import java.util.Properties;
 import java.util.function.Consumer;
@@ -121,9 +123,11 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
                             //so it doesn't have to do a workspace search to find it. Same as we do for Gradle.
                             Properties properties = mavenProject().getProperties();
                             String argLine = properties.getProperty("argLine", "");
+                            // Base64 encode the path to avoid issues with spaces and special characters on Windows
+                            String encodedPath = Base64.getEncoder().encodeToString(
+                                    serializedTestAppModelPath.toString().getBytes(StandardCharsets.UTF_8));
                             properties.setProperty("argLine", argLine +
-                                    " -D" + BootstrapConstants.SERIALIZED_TEST_APP_MODEL + "=\"" + serializedTestAppModelPath
-                                    + "\"");
+                                    " -D" + BootstrapConstants.SERIALIZED_TEST_APP_MODEL + "=" + encodedPath);
                         } catch (IOException e) {
                             getLog().warn("Failed to serialize application model", e);
                         }

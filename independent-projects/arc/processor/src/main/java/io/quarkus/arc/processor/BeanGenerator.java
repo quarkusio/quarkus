@@ -1,5 +1,6 @@
 package io.quarkus.arc.processor;
 
+import static io.quarkus.arc.processor.Annotations.uniqueAnnotations;
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.fieldDescOf;
@@ -445,42 +446,34 @@ public class BeanGenerator extends AbstractGenerator {
 
                 // Bean types
                 RuntimeTypeCreator rttc = RuntimeTypeCreator.of(bc).withTCCL(tccl);
-                Expr typesArray = bc.newArray(Object.class, bean.getTypes()
-                        .stream()
-                        .map(type -> {
-                            try {
-                                return rttc.create(type);
-                            } catch (IllegalArgumentException e) {
-                                throw new IllegalStateException("Unable to construct type for " + bean + ": " + e.getMessage());
-                            }
-                        })
-                        .toList());
-                bc.set(cc.this_().field(beanTypesField), bc.invokeStatic(MethodDescs.SETS_OF, typesArray));
+                Expr typesSet = bc.setOf(bean.getTypes().stream().toList(), type -> {
+                    try {
+                        return rttc.create(type);
+                    } catch (IllegalArgumentException e) {
+                        throw new IllegalStateException("Unable to construct type for " + bean + ": " + e.getMessage());
+                    }
+                });
+                bc.set(cc.this_().field(beanTypesField), typesSet);
 
                 // Qualifiers
                 if (!bean.getQualifiers().isEmpty() && !bean.hasDefaultQualifiers()) {
-                    Expr qualifiersArray = bc.newArray(Object.class, bean.getQualifiers()
-                            .stream()
-                            .map(qualifier -> {
-                                BuiltinQualifier builtinQualifier = BuiltinQualifier.of(qualifier);
-                                if (builtinQualifier != null) {
-                                    return builtinQualifier.getLiteralInstance();
-                                } else {
-                                    ClassInfo qualifierClass = bean.getDeployment().getQualifier(qualifier.name());
-                                    return annotationLiterals.create(bc, qualifierClass, qualifier);
-                                }
-                            })
-                            .toList());
-                    bc.set(cc.this_().field(qualifiersField), bc.invokeStatic(MethodDescs.SETS_OF, qualifiersArray));
+                    Expr qualifiersSet = bc.setOf(uniqueAnnotations(bean.getQualifiers()), qualifier -> {
+                        BuiltinQualifier builtinQualifier = BuiltinQualifier.of(qualifier);
+                        if (builtinQualifier != null) {
+                            return builtinQualifier.getLiteralInstance();
+                        } else {
+                            ClassInfo qualifierClass = bean.getDeployment().getQualifier(qualifier.name());
+                            return annotationLiterals.create(bc, qualifierClass, qualifier);
+                        }
+                    });
+                    bc.set(cc.this_().field(qualifiersField), qualifiersSet);
                 }
 
                 // Stereotypes
                 if (!bean.getStereotypes().isEmpty()) {
-                    Expr stereotypesArray = bc.newArray(Object.class, bean.getStereotypes()
-                            .stream()
-                            .map(stereotype -> Const.of(classDescOf(stereotype.getTarget())))
-                            .toList());
-                    bc.set(cc.this_().field(stereotypesField), bc.invokeStatic(MethodDescs.SETS_OF, stereotypesArray));
+                    Expr stereotypesSet = bc.setOf(bean.getStereotypes(),
+                            stereotype -> Const.of(classDescOf(stereotype.getTarget())));
+                    bc.set(cc.this_().field(stereotypesField), stereotypesSet);
                 }
 
                 int paramIdx = 0;
@@ -715,19 +708,16 @@ public class BeanGenerator extends AbstractGenerator {
             }));
 
             // Interceptor bindings
-            LocalVar bindingsArray = bc.localVar("bindings",
-                    bc.newEmptyArray(Object.class, aroundConstructInterception.bindings.size()));
-            int bindingsIndex = 0;
-            for (AnnotationInstance binding : aroundConstructInterception.bindings) {
-                // Create annotation literals first
+            List<AnnotationInstance> bindings = uniqueAnnotations(aroundConstructInterception.bindings);
+            LocalVar bindingsSet = bc.localVar("bindings", bc.setOf(bindings, binding -> {
                 ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.name());
-                bc.set(bindingsArray.elem(bindingsIndex++), annotationLiterals.create(bc, bindingClass, binding));
-            }
+                return annotationLiterals.create(bc, bindingClass, binding);
+            }));
             // ResultHandle of Object[] holding all constructor args
             LocalVar ctorArgsArray = bc.localVar("ctorArgs", bc.newArray(Object.class, injectableCtorParams));
             LocalVar invocationContext = bc.localVar("invocationContext", bc.invokeStatic(
                     MethodDescs.INVOCATION_CONTEXTS_AROUND_CONSTRUCT, constructor, ctorArgsArray, aroundConstructs,
-                    func, bc.invokeStatic(MethodDescs.SETS_OF, bindingsArray)));
+                    func, bindingsSet));
             instance = bc.localVar("instance", Const.ofNull(providerType.classDesc()));
             bc.try_(tc -> {
                 tc.body(b1 -> {
@@ -918,20 +908,14 @@ public class BeanGenerator extends AbstractGenerator {
             }));
 
             // Interceptor bindings
-            LocalVar bindingsArray = bc.localVar("bindings",
-                    bc.newEmptyArray(Object.class, postConstructInterception.bindings.size()));
-            int bindingsIndex = 0;
-            for (AnnotationInstance binding : postConstructInterception.bindings) {
-                // Create annotation literals first
+            List<AnnotationInstance> bindings = uniqueAnnotations(postConstructInterception.bindings);
+            LocalVar bindingsSet = bc.localVar("bindings", bc.setOf(bindings, binding -> {
                 ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.name());
-                bc.set(bindingsArray.elem(bindingsIndex++),
-                        annotationLiterals.create(bc, bindingClass, binding));
-            }
-
+                return annotationLiterals.create(bc, bindingClass, binding);
+            }));
             // InvocationContextImpl.postConstruct(instance,postConstructs).proceed()
-            LocalVar invocationContext = bc.localVar("invocationContext",
-                    bc.invokeStatic(MethodDescs.INVOCATION_CONTEXTS_POST_CONSTRUCT, instance, postConstructs,
-                            bc.invokeStatic(MethodDescs.SETS_OF, bindingsArray), runnable));
+            LocalVar invocationContext = bc.localVar("invocationContext", bc.invokeStatic(
+                    MethodDescs.INVOCATION_CONTEXTS_POST_CONSTRUCT, instance, postConstructs, bindingsSet, runnable));
             bc.try_(tc -> {
                 tc.body(b1 -> {
                     b1.invokeInterface(MethodDesc.of(InvocationContext.class, "proceed", Object.class),

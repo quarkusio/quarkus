@@ -1,10 +1,10 @@
 package io.quarkus.arc.processor;
 
+import static io.quarkus.arc.processor.Annotations.uniqueAnnotations;
 import static io.quarkus.arc.processor.ClientProxyGenerator.MOCK_FIELD;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.Collection;
@@ -25,7 +25,6 @@ import jakarta.enterprise.event.TransactionPhase;
 import jakarta.enterprise.inject.spi.EventContext;
 import jakarta.enterprise.inject.spi.ObserverMethod;
 
-import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
@@ -303,21 +302,17 @@ public class ObserverGenerator extends AbstractGenerator {
 
                 bc.set(cc.this_().field(observedTypeField), RuntimeTypeCreator.of(bc).create(observer.getObservedType()));
 
-                Set<AnnotationInstance> qualifiers = observer.getQualifiers();
-                if (!qualifiers.isEmpty()) {
-                    LocalVar qualifiersArray = bc.localVar("qualifiers", bc.newEmptyArray(Annotation.class, qualifiers.size()));
-                    int i = 0;
-                    for (AnnotationInstance qualifier : qualifiers) {
+                if (observedQualifiersField != null) {
+                    Expr set = bc.setOf(uniqueAnnotations(observer.getQualifiers()), qualifier -> {
                         BuiltinQualifier builtin = BuiltinQualifier.of(qualifier);
                         if (builtin != null) {
-                            bc.set(qualifiersArray.elem(i), builtin.getLiteralInstance());
+                            return builtin.getLiteralInstance();
                         } else {
                             ClassInfo qualifierClass = observer.getBeanDeployment().getQualifier(qualifier.name());
-                            bc.set(qualifiersArray.elem(i), annotationLiterals.create(bc, qualifierClass, qualifier));
+                            return annotationLiterals.create(bc, qualifierClass, qualifier);
                         }
-                        i++;
-                    }
-                    bc.set(cc.this_().field(observedQualifiersField), bc.invokeStatic(MethodDescs.SETS_OF, qualifiersArray));
+                    });
+                    bc.set(cc.this_().field(observedQualifiersField), set);
                 }
 
                 if (mockField != null) {

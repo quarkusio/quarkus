@@ -116,7 +116,7 @@ class ExtensionPhaseEnhancement extends ExtensionPhaseBase {
 
             if (withSubtypes) {
                 Collection<org.jboss.jandex.ClassInfo> subtypes = Modifier.isInterface(clazz.flags())
-                        ? index.getAllKnownImplementors(jandexType.name())
+                        ? index.getAllKnownImplementations(jandexType.name())
                         : index.getAllKnownSubclasses(jandexType.name());
                 result.addAll(subtypes);
             }

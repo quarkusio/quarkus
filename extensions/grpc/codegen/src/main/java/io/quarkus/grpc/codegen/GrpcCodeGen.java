@@ -235,8 +235,8 @@ public class GrpcCodeGen implements CodeGenProvider {
             sb.append("-Dsun.stdout.encoding=UTF-8 ");
         }
 
-        //Do NOT set this property on Java 17, as it will fail with "unrecognized option":
-        if (Runtime.version().feature() > 21 && !existingValue.contains("--sun-misc-unsafe-memory-access=")) {
+        //Do NOT set this property on Java versions before 24, as it will fail with "unrecognized option":
+        if (Runtime.version().feature() >= 24 && !existingValue.contains("--sun-misc-unsafe-memory-access=")) {
             sb.append("--sun-misc-unsafe-memory-access=allow ");
         }
         sb.append(existingValue);

@@ -26,6 +26,10 @@ public class TransactionalInterceptorRequired extends TransactionalInterceptorBa
     @Override
     @AroundInvoke
     public Object intercept(InvocationContext ic) throws Exception {
+        if (willReactiveTransactionalInterceptorRun()) {
+            return ic.proceed();
+        }
+
         if (!BlockingOperationControl.isBlockingAllowed()) {
             throw new BlockingOperationNotAllowedException("Cannot start a JTA transaction from the IO thread.");
         }

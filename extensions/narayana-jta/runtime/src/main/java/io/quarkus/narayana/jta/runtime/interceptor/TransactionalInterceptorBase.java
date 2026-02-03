@@ -2,6 +2,9 @@ package io.quarkus.narayana.jta.runtime.interceptor;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Optional;
@@ -34,19 +37,32 @@ import io.quarkus.transaction.annotations.Rollback;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.reactive.converters.ReactiveTypeConverter;
 import io.smallrye.reactive.converters.Registry;
+import io.vertx.core.Context;
 import mutiny.zero.flow.adapters.AdaptersToFlow;
 import mutiny.zero.flow.adapters.AdaptersToReactiveStreams;
 
 public abstract class TransactionalInterceptorBase implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    private static final Logger log = Logger.getLogger(TransactionalInterceptorBase.class);
+    protected static final Logger log = Logger.getLogger(TransactionalInterceptorBase.class);
     private final Map<Method, Integer> methodTransactionTimeoutDefinedByPropertyCache = new ConcurrentHashMap<>();
 
     @Inject
     TransactionManager transactionManager;
 
     private final boolean userTransactionAvailable;
+
+    private static final MethodHandle IS_ON_EVENT_LOOP_THREAD = isOnEventLoopThread();
+
+    private static MethodHandle isOnEventLoopThread() {
+        try {
+            return MethodHandles.publicLookup().findStatic(Context.class, "isOnEventLoopThread",
+                    MethodType.methodType(boolean.class));
+        } catch (NoClassDefFoundError | NoSuchMethodException | IllegalAccessException e) {
+            // This means Vert.x is not on the classpath
+            return null;
+        }
+    }
 
     protected TransactionalInterceptorBase(boolean userTransactionAvailable) {
         this.userTransactionAvailable = userTransactionAvailable;
@@ -432,5 +448,13 @@ public abstract class TransactionalInterceptorBase implements Serializable {
     @SuppressWarnings("unchecked")
     private static <E extends Throwable> void sneakyThrow(Throwable e) throws E {
         throw (E) e;
+    }
+
+    protected boolean willReactiveTransactionalInterceptorRun() throws Exception {
+        try {
+            return IS_ON_EVENT_LOOP_THREAD == null ? false : (boolean) IS_ON_EVENT_LOOP_THREAD.invokeExact();
+        } catch (Throwable e) {
+            return false;
+        }
     }
 }

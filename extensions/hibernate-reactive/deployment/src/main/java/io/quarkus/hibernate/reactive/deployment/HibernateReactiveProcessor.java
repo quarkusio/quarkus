@@ -27,6 +27,7 @@ import org.hibernate.reactive.provider.impl.ReactiveIntegrator;
 import org.jboss.logging.Logger;
 
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.RecorderBeanInitializedBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
@@ -68,6 +69,7 @@ import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig;
 import io.quarkus.hibernate.reactive.runtime.FastBootHibernateReactivePersistenceProvider;
 import io.quarkus.hibernate.reactive.runtime.HibernateReactivePersistenceUnitProviderHelper;
 import io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder;
+import io.quarkus.hibernate.reactive.runtime.transaction.AfterWorkTransactionStrategy;
 import io.quarkus.reactive.datasource.deployment.ReactiveDataSourceBuildItem;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig;
@@ -92,6 +94,11 @@ public final class HibernateReactiveProcessor {
         services.produce(new ServiceProviderBuildItem(
                 "io.vertx.core.spi.VertxServiceProvider",
                 "org.hibernate.reactive.context.impl.ContextualDataStorage"));
+    }
+
+    @BuildStep
+    AdditionalBeanBuildItem produceAfterWorkTransactionStrategy() {
+        return AdditionalBeanBuildItem.unremovableOf(AfterWorkTransactionStrategy.class);
     }
 
     @BuildStep

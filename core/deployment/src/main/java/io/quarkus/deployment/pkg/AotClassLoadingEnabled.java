@@ -13,7 +13,6 @@ public class AotClassLoadingEnabled implements BooleanSupplier {
     @Override
     public boolean getAsBoolean() {
         return packageConfig.jar().enabled() &&
-                packageConfig.jar().appcds().enabled() &&
                 packageConfig.jar().appcds().useAot();
     }
 }

@@ -113,10 +113,6 @@ public class ConfigRecorder {
         // it actually does not because it operates on a different instance
         // of QuarkusConfigFactory from a different classloader.
 
-        if (shutdownContext == null) {
-            throw new RuntimeException(
-                    "Internal error: shutdownContext is null. This probably happened because Quarkus failed to start properly in an earlier step, or because tests were run on a Quarkus instance that had already been shut down.");
-        }
         shutdownContext.addLastShutdownTask(QuarkusConfigFactory::releaseTCCLConfig);
     }
 }

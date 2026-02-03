@@ -4,8 +4,6 @@ import java.time.Duration;
 import java.util.Map;
 
 import io.quarkus.redis.datasource.RedisDataSource;
-import io.quarkus.redis.datasource.string.GetExArgs;
-import io.quarkus.redis.datasource.string.SetArgs;
 import io.quarkus.redis.datasource.string.StringCommands;
 import io.quarkus.redis.datasource.value.ReactiveValueCommands;
 import io.quarkus.redis.datasource.value.ValueCommands;
@@ -47,7 +45,7 @@ public class BlockingStringCommandsImpl<K, V> extends AbstractRedisCommandGroup
     }
 
     @Override
-    public V getex(K key, GetExArgs args) {
+    public V getex(K key, io.quarkus.redis.datasource.string.GetExArgs args) {
         return reactive.getex(key, args)
                 .await().atMost(timeout);
     }
@@ -122,7 +120,7 @@ public class BlockingStringCommandsImpl<K, V> extends AbstractRedisCommandGroup
     }
 
     @Override
-    public void set(K key, V value, SetArgs setArgs) {
+    public void set(K key, V value, io.quarkus.redis.datasource.string.SetArgs setArgs) {
         reactive.set(key, value, setArgs)
                 .await().atMost(timeout);
     }
@@ -134,13 +132,25 @@ public class BlockingStringCommandsImpl<K, V> extends AbstractRedisCommandGroup
     }
 
     @Override
+    public boolean setAndChanged(K key, V value) {
+        return reactive.setAndChanged(key, value)
+                .await().atMost(timeout);
+    }
+
+    @Override
+    public boolean setAndChanged(K key, V value, io.quarkus.redis.datasource.value.SetArgs setArgs) {
+        return reactive.setAndChanged(key, value, setArgs)
+                .await().atMost(timeout);
+    }
+
+    @Override
     public V setGet(K key, V value) {
         return reactive.setGet(key, value)
                 .await().atMost(timeout);
     }
 
     @Override
-    public V setGet(K key, V value, SetArgs setArgs) {
+    public V setGet(K key, V value, io.quarkus.redis.datasource.string.SetArgs setArgs) {
         return reactive.setGet(key, value, setArgs)
                 .await().atMost(timeout);
     }

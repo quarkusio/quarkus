@@ -3,8 +3,6 @@ package io.quarkus.redis.runtime.datasource;
 import java.time.Duration;
 import java.util.Map;
 
-import io.quarkus.redis.datasource.string.GetExArgs;
-import io.quarkus.redis.datasource.string.SetArgs;
 import io.quarkus.redis.datasource.string.TransactionalStringCommands;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
 import io.quarkus.redis.datasource.value.ReactiveTransactionalValueCommands;
@@ -47,7 +45,7 @@ public class BlockingTransactionalStringCommandsImpl<K, V> extends AbstractTrans
     }
 
     @Override
-    public void getex(K key, GetExArgs args) {
+    public void getex(K key, io.quarkus.redis.datasource.string.GetExArgs args) {
         this.reactive.getex(key, args).await().atMost(this.timeout);
     }
 
@@ -117,7 +115,7 @@ public class BlockingTransactionalStringCommandsImpl<K, V> extends AbstractTrans
     }
 
     @Override
-    public void set(K key, V value, SetArgs setArgs) {
+    public void set(K key, V value, io.quarkus.redis.datasource.string.SetArgs setArgs) {
         this.reactive.set(key, value, setArgs).await().atMost(this.timeout);
     }
 
@@ -127,12 +125,22 @@ public class BlockingTransactionalStringCommandsImpl<K, V> extends AbstractTrans
     }
 
     @Override
+    public void setAndChanged(K key, V value) {
+        this.reactive.setAndChanged(key, value).await().atMost(this.timeout);
+    }
+
+    @Override
+    public void setAndChanged(K key, V value, io.quarkus.redis.datasource.value.SetArgs setArgs) {
+        this.reactive.setAndChanged(key, value, setArgs).await().atMost(this.timeout);
+    }
+
+    @Override
     public void setGet(K key, V value) {
         this.reactive.setGet(key, value).await().atMost(this.timeout);
     }
 
     @Override
-    public void setGet(K key, V value, SetArgs setArgs) {
+    public void setGet(K key, V value, io.quarkus.redis.datasource.string.SetArgs setArgs) {
         this.reactive.setGet(key, value, setArgs).await().atMost(this.timeout);
     }
 

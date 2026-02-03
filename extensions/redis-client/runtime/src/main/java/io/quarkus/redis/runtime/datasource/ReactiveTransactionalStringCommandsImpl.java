@@ -1,10 +1,9 @@
 package io.quarkus.redis.runtime.datasource;
 
 import java.util.Map;
+import java.util.Objects;
 
-import io.quarkus.redis.datasource.string.GetExArgs;
 import io.quarkus.redis.datasource.string.ReactiveTransactionalStringCommands;
-import io.quarkus.redis.datasource.string.SetArgs;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.quarkus.redis.datasource.value.ReactiveTransactionalValueCommands;
 import io.smallrye.mutiny.Uni;
@@ -52,7 +51,7 @@ public class ReactiveTransactionalStringCommandsImpl<K, V> extends AbstractTrans
     }
 
     @Override
-    public Uni<Void> getex(K key, GetExArgs args) {
+    public Uni<Void> getex(K key, io.quarkus.redis.datasource.string.GetExArgs args) {
         this.tx.enqueue(this.reactive::decodeV);
         return this.reactive._getex(key, args).invoke(this::queuedOrDiscard).replaceWithVoid();
     }
@@ -136,7 +135,7 @@ public class ReactiveTransactionalStringCommandsImpl<K, V> extends AbstractTrans
     }
 
     @Override
-    public Uni<Void> set(K key, V value, SetArgs setArgs) {
+    public Uni<Void> set(K key, V value, io.quarkus.redis.datasource.string.SetArgs setArgs) {
         this.tx.enqueue(resp -> null);
         return this.reactive._set(key, value, setArgs).invoke(this::queuedOrDiscard).replaceWithVoid();
     }
@@ -148,13 +147,25 @@ public class ReactiveTransactionalStringCommandsImpl<K, V> extends AbstractTrans
     }
 
     @Override
+    public Uni<Void> setAndChanged(K key, V value) {
+        this.tx.enqueue(Objects::nonNull);
+        return this.reactive._set(key, value).invoke(this::queuedOrDiscard).replaceWithVoid();
+    }
+
+    @Override
+    public Uni<Void> setAndChanged(K key, V value, io.quarkus.redis.datasource.value.SetArgs setArgs) {
+        this.tx.enqueue(Objects::nonNull);
+        return this.reactive._set(key, value, setArgs).invoke(this::queuedOrDiscard).replaceWithVoid();
+    }
+
+    @Override
     public Uni<Void> setGet(K key, V value) {
         this.tx.enqueue(this.reactive::decodeV);
         return this.reactive._setGet(key, value).invoke(this::queuedOrDiscard).replaceWithVoid();
     }
 
     @Override
-    public Uni<Void> setGet(K key, V value, SetArgs setArgs) {
+    public Uni<Void> setGet(K key, V value, io.quarkus.redis.datasource.string.SetArgs setArgs) {
         this.tx.enqueue(this.reactive::decodeV);
         return this.reactive._setGet(key, value, setArgs).invoke(this::queuedOrDiscard).replaceWithVoid();
     }

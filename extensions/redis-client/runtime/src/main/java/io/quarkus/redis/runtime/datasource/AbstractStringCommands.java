@@ -9,8 +9,6 @@ import static io.smallrye.mutiny.helpers.ParameterValidation.positiveOrZero;
 import java.lang.reflect.Type;
 import java.util.Map;
 
-import io.quarkus.redis.datasource.string.GetExArgs;
-import io.quarkus.redis.datasource.string.SetArgs;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Response;
@@ -33,7 +31,7 @@ class AbstractStringCommands<K, V> extends AbstractRedisCommands {
         return execute(cmd);
     }
 
-    Uni<Response> _set(K key, V value, SetArgs setArgs) {
+    Uni<Response> _set(K key, V value, io.quarkus.redis.datasource.string.SetArgs setArgs) {
         nonNull(key, "key");
         nonNull(value, "value");
         nonNull(setArgs, "setArgs");
@@ -61,7 +59,7 @@ class AbstractStringCommands<K, V> extends AbstractRedisCommands {
         RedisCommand cmd = RedisCommand.of(Command.SET);
         cmd.put(marshaller.encode(key));
         cmd.put(marshaller.encode(value));
-        cmd.putArgs(new SetArgs().get());
+        cmd.putArgs(new io.quarkus.redis.datasource.string.SetArgs().get());
         return execute(cmd);
     }
 
@@ -69,7 +67,7 @@ class AbstractStringCommands<K, V> extends AbstractRedisCommands {
         return marshaller.decode(typeOfValue, r);
     }
 
-    Uni<Response> _setGet(K key, V value, SetArgs setArgs) {
+    Uni<Response> _setGet(K key, V value, io.quarkus.redis.datasource.string.SetArgs setArgs) {
         nonNull(key, "key");
         nonNull(value, "value");
         nonNull(setArgs, "setArgs");
@@ -160,7 +158,7 @@ class AbstractStringCommands<K, V> extends AbstractRedisCommands {
                 .put(marshaller.encode(key)));
     }
 
-    Uni<Response> _getex(K key, GetExArgs args) {
+    Uni<Response> _getex(K key, io.quarkus.redis.datasource.string.GetExArgs args) {
         nonNull(key, "key");
         nonNull(args, "args");
         RedisCommand cmd = RedisCommand.of(Command.GETEX);

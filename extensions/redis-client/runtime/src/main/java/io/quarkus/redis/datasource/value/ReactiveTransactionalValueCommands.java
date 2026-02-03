@@ -253,6 +253,36 @@ public interface ReactiveTransactionalValueCommands<K, V> extends ReactiveTransa
 
     /**
      * Execute the command <a href="https://redis.io/commands/set">SET</a>.
+     * Returns whether the key was set. If you need to know the previous value
+     * of the key, use {@link #setGet(Object, Object) setGet()}.
+     * Summary: Set the string value of a key
+     * Group: string
+     * Requires Redis 1.0.0
+     *
+     * @param key the key
+     * @param value the value
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
+     **/
+    Uni<Void> setAndChanged(K key, V value);
+
+    /**
+     * Execute the command <a href="https://redis.io/commands/set">SET</a>.
+     * Returns whether the key was set. If you need to know the previous value
+     * of the key, use {@link #setGet(Object, Object, SetArgs) setGet()}.
+     * Summary: Set the string value of a key
+     * Group: string
+     * Requires Redis 1.0.0
+     *
+     * @param key the key
+     * @param value the value
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
+     **/
+    Uni<Void> setAndChanged(K key, V value, SetArgs setArgs);
+
+    /**
+     * Execute the command <a href="https://redis.io/commands/set">SET</a>.
      * Summary: Set the string value of a key, and return the previous value
      * Group: string
      * Requires Redis 1.0.0

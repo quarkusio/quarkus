@@ -11,7 +11,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -282,23 +281,41 @@ public class AugmentActionImpl implements AugmentAction {
     }
 
     private ArtifactResultBuildItem effectiveArtifact(List<ArtifactResultBuildItem> artifactResultBuildItems) {
-        // the native artifact should be considered first in case we build both a jar and a native image
-        Optional<ArtifactResultBuildItem> nativeArtifact = artifactResultBuildItems.stream()
-                .filter(a -> NativeImageBuildStep.ARTIFACT_RESULT_TYPE.equals(a.getType()))
-                .findFirst();
-        if (nativeArtifact.isPresent()) {
-            return nativeArtifact.get();
+
+        Optional<PrioritizedArtifactResultBuildItem> first = artifactResultBuildItems.stream()
+                .map(PrioritizedArtifactResultBuildItem::new)
+                .sorted(((o1, o2) -> Integer.compare(o2.getPriority(), o1.getPriority())))
+                .filter(bi -> bi.getPriority() > 0).findFirst();
+
+        if (first.isEmpty()) {
+            throw new IllegalStateException("Unable to locate effective artifact");
         }
 
-        ListIterator<ArtifactResultBuildItem> li = artifactResultBuildItems.listIterator(artifactResultBuildItems.size());
-        while (li.hasPrevious()) {
-            ArtifactResultBuildItem result = li.previous();
-            if ("appCDS".equals(result.getType())) {
-                continue;
+        return first.get().bi();
+    }
+
+    private record PrioritizedArtifactResultBuildItem(ArtifactResultBuildItem bi) {
+
+        public int getPriority() {
+            String type = bi.getType();
+            // max priority
+            if (type.endsWith("container")) {
+                return 1000;
             }
-            return result;
+
+            // native takes priority over jars
+            if (type.equals(NativeImageBuildStep.ARTIFACT_RESULT_TYPE)) {
+                return 100;
+            }
+
+            // least priority
+            if (type.equals("appCDS")) {
+                return 0;
+            }
+
+            // default
+            return 10;
         }
-        throw new IllegalStateException("Unable to locate effective artifact");
     }
 
     private static String artifactPathForResultMetadata(BuildSystemTargetBuildItem outputTargetBuildItem,

@@ -54,7 +54,7 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
 
     protected void doBuild(Path runnerJar, Path libDir) throws IOException {
         try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(runnerJar,
-                packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null), outputTarget.getOutputDirectory(),
+                packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null),
                 executorService)) {
             final Map<String, String> seen = new HashMap<>();
             final StringBuilder classPath = new StringBuilder();

@@ -625,9 +625,10 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             ClearCache.clearCaches();
         }
 
-        // TODO if classes are misordered, say because someone overrode the ordering, and there are profiles or resources,
-        // we could try to start and application which has already been started, and fail with a mysterious error about
-        // null shutdown contexts; we should try and detect that case, and give a friendlier error message
+        if (cl.isClosed()) {
+            throw new IllegalStateException(
+                    "Internal error. Attempting to run tests using an application which has already been closed. Is a non-default test order being used?");
+        }
 
         // We want to start if the profile changed (or there are new test resources),
         // or if we don't have an app and that's not because the previous attempt to start it failed

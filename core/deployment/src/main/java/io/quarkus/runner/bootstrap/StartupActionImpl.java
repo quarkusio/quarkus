@@ -324,6 +324,13 @@ public class StartupActionImpl implements StartupAction {
      * Runs the application, and returns a handle that can be used to shut it down.
      */
     public RunningQuarkusApplication run(String... args) throws Exception {
+
+        if (runtimeClassLoader.isClosed()) {
+            throw new RuntimeException(
+                    "Internal error: An attempt was made to start an application which had already been started and closed. The affected ClassLoader is "
+                            + runtimeClassLoader);
+
+        }
         // Start dev services that weren't started in the augmentation phase
         ensureDevServicesStarted();
         InitialConfigurator.DELAYED_HANDLER.buildTimeComplete();

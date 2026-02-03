@@ -29,9 +29,15 @@ dependencies {
     implementation enforcedPlatform('{it.groupId}:{it.artifactId}:{it.version}')
     {/if}
 {/each}
+{#if input.selected-extensions-ga.contains('io.quarkus:quarkus-hibernate-panache-next')}
+    annotationProcessor enforcedPlatform("$\{quarkusPlatformGroupId}:$\{quarkusPlatformArtifactId}:$\{quarkusPlatformVersion}")
+{/if}
 {#for dep in dependencies}
     implementation '{dep}'
 {/for}
+{#if input.selected-extensions-ga.contains('io.quarkus:quarkus-hibernate-panache-next')}
+    annotationProcessor 'org.hibernate.orm:hibernate-processor'
+{/if}
     testImplementation 'io.quarkus:quarkus-junit'
 {#for dep in test-dependencies}
     testImplementation '{dep}'

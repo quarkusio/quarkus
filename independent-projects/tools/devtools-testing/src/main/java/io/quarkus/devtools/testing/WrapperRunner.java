@@ -79,6 +79,8 @@ public final class WrapperRunner {
         var holder = new Object() {
             int exitCode;
         };
+        var out = new ArrayList<String>();
+        var err = new ArrayList<String>();
         System.out.printf("Running command: %s %s%n", command, args);
         ProcessBuilder.newBuilder(command)
                 .arguments(args)
@@ -87,9 +89,19 @@ public final class WrapperRunner {
                     holder.exitCode = ec;
                     return true;
                 })
-                .output().inherited()
-                .error().inherited()
+                .output().consumeLinesWith(Integer.MAX_VALUE, line -> out.add(line))
+                .error().consumeLinesWith(Integer.MAX_VALUE, line -> err.add(line))
                 .run();
+        if (holder.exitCode != 0) {
+            for (String line : out) {
+                System.out.print("[Codestart stdout] ");
+                System.out.println(line);
+            }
+            for (String line : err) {
+                System.out.print("[Codestart stderr] ");
+                System.out.println(line);
+            }
+        }
         return holder.exitCode;
     }
 

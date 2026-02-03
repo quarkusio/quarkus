@@ -290,11 +290,15 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
     }
 
     private AbstractPathAssert<?> checkGeneratedSource(String sourceDir, Language language, String className) throws Throwable {
-        final String modifiedClassName = className.replace(DEFAULT_PACKAGE_DIR, packageName).replace('.', '/');
+        final String modifiedClassName = repackagedClassName(className).replace('.', '/');
         final String fileRelativePath = "src/" + sourceDir + "/" + language.key() + "/" + modifiedClassName
                 + getSourceFileExtension(language);
         return assertThatGeneratedFileMatchSnapshot(language, fileRelativePath)
                 .satisfies(checkContains("package " + packageName));
+    }
+
+    public String repackagedClassName(String className) {
+        return className.replace(DEFAULT_PACKAGE_DIR, packageName);
     }
 
     private String getTestId() {
@@ -335,7 +339,7 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
         getQuarkusCodestartCatalog().createProject(input).generate(projectDir);
     }
 
-    private Path getProjectWithRealDataDir(Language language) throws IOException {
+    public Path getProjectWithRealDataDir(Language language) throws IOException {
         final Path dir = targetDir.resolve("real-data").resolve(language.key());
         generateRealDataProjectIfNeeded(dir, language);
         return dir;

@@ -163,6 +163,22 @@
                 <configuration>
                     <parameters>true</parameters>
                 </configuration>
+                {#if input.selected-extensions-ga.contains('io.quarkus:quarkus-hibernate-panache-next')}
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPathsUseDepMgmt>true</annotationProcessorPathsUseDepMgmt>
+                            <annotationProcessorPaths>
+                                <annotationProcessorPath>
+                                    <groupId>org.hibernate.orm</groupId>
+                                    <artifactId>hibernate-processor</artifactId>
+                                </annotationProcessorPath>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
+                {/if}
             </plugin>
             <!-- Run the tests in JVM mode -->
             <plugin>

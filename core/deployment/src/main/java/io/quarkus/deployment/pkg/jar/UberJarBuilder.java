@@ -144,7 +144,7 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
     private void buildUberJar0(Path runnerJar) throws IOException {
 
         try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(runnerJar,
-                packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null), outputTarget.getOutputDirectory(),
+                packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null),
                 executorService)) {
             LOG.info("Building uber jar: " + runnerJar);
 

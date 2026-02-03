@@ -3,21 +3,29 @@ package io.quarkus.opentelemetry.deployment.traces;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicLong;
 
+import io.opentelemetry.api.baggage.Baggage;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+import org.jboss.logging.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.api.common.AttributeKey;
@@ -46,7 +54,7 @@ public class OpenTelemetryScopeTest {
                                     "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
             .withConfigurationResource("resource-config/application-no-metrics.properties")
             .overrideConfigKey("quarkus.log.console.format", "%d{HH:mm:ss} %-5p spanId=%X{spanId} [%c{2.}] (%t) %s%e%n")
-            .overrideConfigKey("quarkus.log.category.\"io.quarkus.opentelemetry\".level", "DEBUG");
+            .overrideConfigKey("quarkus.log.category.\"io.quarkus.opentelemetry\".level", "INFO"); // activate DEBUG for help
 
     @Inject
     TestSpanExporter spanExporter;
@@ -56,9 +64,9 @@ public class OpenTelemetryScopeTest {
         spanExporter.reset();
     }
 
-    @Test
-    void telemetry() {
-        final int requests = 1;
+    @RepeatedTest(10)
+    void executorScopeSwitching() {
+        final int requests = 1000; // make it 1 for debugging
 
         RestAssured.given()
                 .pathParam("reqs", requests)
@@ -78,15 +86,33 @@ public class OpenTelemetryScopeTest {
                 .filter(spanData -> spanData.getName().equals("HelloBean.manyScopes"))
                 .collect(toList());
         assertEquals(requests, incomingSpans.size());
-        //        incomingSpans.stream()
-        //                .map(spanData -> spanData.getAttributes())
-        //                .map(attributes -> attributes.asMap())
+        incomingSpans.forEach(spanData -> {
+            assertEquals(5, spanData.getEvents().size());
+            spanData.getEvents().stream()
+                    .forEach(eventData -> {
+                        Map<AttributeKey<?>, Object> attributeKeyObjectMap = eventData.getAttributes().asMap();
+                        assertEquals("HelloBean.manyScopes", attributeKeyObjectMap
+                                .get(AttributeKey.stringKey("expectedSpanName")));
+                        Long scopeId = (Long) attributeKeyObjectMap.get(AttributeKey.longKey("scope"));
+                        assertNotEquals(0, scopeId % 2 ); //odd
+                    });
+        });
 
         List<SpanData> childSpans = spans.stream()
                 .filter(spanData -> spanData.getName().equals("child-span-pair-scopes"))
                 .collect(toList());
-        assertEquals(requests, childSpans
-                .size());
+        assertEquals(requests, childSpans.size());
+        childSpans.forEach(spanData -> {
+            assertEquals(4, spanData.getEvents().size());
+            spanData.getEvents().stream()
+                    .forEach(eventData -> {
+                        Map<AttributeKey<?>, Object> attributeKeyObjectMap = eventData.getAttributes().asMap();
+                        assertEquals("child-span-pair-scopes", attributeKeyObjectMap
+                                .get(AttributeKey.stringKey("expectedSpanName")));
+                        Long scopeId = (Long) attributeKeyObjectMap.get(AttributeKey.longKey("scope"));
+                        assertEquals(0, scopeId % 2 ); //even
+                    });
+        });
     }
 
     @Path("/hello")
@@ -96,18 +122,6 @@ public class OpenTelemetryScopeTest {
 
         @Inject
         Executor executor;
-
-        @GET
-        public String hello() {
-            return helloBean.helloWithSpan();
-        }
-
-        @GET
-        @Path("/withSpan")
-        @WithSpan("withSpan")
-        public String withSpan() {
-            return helloBean.helloWithSpan();
-        }
 
         @GET
         @Path("/many-scopes/{reqs}")
@@ -120,16 +134,36 @@ public class OpenTelemetryScopeTest {
         }
     }
 
+//    @Path("reproducer")
+//    public static class Reproducer {
+//
+//        private static final AtomicLong MISSING_COUNTER = new AtomicLong();
+//
+//        @Inject
+//        Baggage baggage;
+//
+//        @WithSpan
+//        @GET
+//        @Produces(MediaType.TEXT_PLAIN)
+//        public List<String> get() {
+//
+//            try (Scope scope = Baggage.current().toBuilder().put("key", "value").build().makeCurrent()) {
+//                String value = Baggage.current().getEntryValue("key");
+//                if (!"value".equals(value)) {
+//                   MISSING_COUNTER.incrementAndGet();
+//                }
+//            }
+//
+//            return "Hello, world!=";
+//        }
+//    }
+
+
     @ApplicationScoped
     public static class HelloBean {
 
         @Inject
         Tracer tracer;
-
-        @WithSpan
-        public String helloWithSpan() {
-            return "hello";
-        }
 
         @WithSpan
         public String manyScopes() {

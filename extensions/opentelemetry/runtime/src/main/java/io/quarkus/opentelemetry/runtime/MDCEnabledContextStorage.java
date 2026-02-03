@@ -33,18 +33,18 @@ enum MDCEnabledContextStorage implements ContextStorage {
                 if (log.isDebugEnabled()) {
                     log.debugv("Closing Otel context: {0}", OpenTelemetryUtil.getSpanData(toAttach));
                 }
-                if (beforeAttach != null && log.isDebugEnabled()) {
-                    log.debug(
-                            "Context in storage not the expected context, Scope.close was not called correctly. Details:" +
-                                    " OTel context otelBefore: ref: " + System.identityHashCode(beforeAttach) +
-                                    " Content: " + beforeAttach.get(ContextKey.named("opentelemetry-trace-span-key")) +
-                                    ". OTel context otelToAttach: ref: " + System.identityHashCode(toAttach) +
-                                    " Content: " + toAttach.get(ContextKey.named("opentelemetry-trace-span-key")));
-                }
 
                 if (beforeAttach == null) {
                     OpenTelemetryUtil.clearMDCData(null);
                 } else {
+                    if (log.isDebugEnabled()) {
+                        log.debug(
+                                "Context in storage not the expected context, Scope.close was not called correctly. Details:" +
+                                        " OTel context otelBefore: ref: " + System.identityHashCode(beforeAttach) +
+                                        " Content: " + beforeAttach.get(ContextKey.named("opentelemetry-trace-span-key")) +
+                                        ". OTel context otelToAttach: ref: " + System.identityHashCode(toAttach) +
+                                        " Content: " + toAttach.get(ContextKey.named("opentelemetry-trace-span-key")));
+                    }
                     OpenTelemetryUtil.setMDCData(beforeAttach, null);
                 }
                 scope.close();

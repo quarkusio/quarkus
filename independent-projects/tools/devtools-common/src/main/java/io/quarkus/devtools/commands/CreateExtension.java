@@ -92,7 +92,7 @@ public class CreateExtension {
     public static final String DEFAULT_QUARKIVERSE_GUIDE_URL = "https://docs.quarkiverse.io/%s/dev/";
 
     private static final String DEFAULT_SUREFIRE_PLUGIN_VERSION = "3.5.4";
-    private static final String DEFAULT_COMPILER_PLUGIN_VERSION = "3.14.1";
+    private static final String DEFAULT_COMPILER_PLUGIN_VERSION = "3.15.0";
 
     private final QuarkusExtensionCodestartProjectInputBuilder builder = QuarkusExtensionCodestartProjectInput.builder();
     private final Path baseDir;

@@ -20,6 +20,12 @@ public interface DockerContainerArtifactLauncher extends ArtifactLauncher<Docker
 
         Optional<String> entryPoint();
 
+        Optional<String> containerWorkingDirectory();
+
         List<String> programArgs();
+
+        boolean generateAotFile();
+
+        String outputTargetDirectory();
     }
 }

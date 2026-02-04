@@ -58,7 +58,7 @@
         <jboss-logging.version>3.6.2.Final</jboss-logging.version>
         <mockito.version>5.21.0</mockito.version>
         <quarkus.version>${project.version}</quarkus.version>
-        <maven-model-helper.version>37</maven-model-helper.version>
+        <maven-model-helper.version>40</maven-model-helper.version>
         <jandex.version>3.5.3</jandex.version>
         <system-stubs-jupiter.version>2.0.2</system-stubs-jupiter.version>
         <awaitility.version>4.3.0</awaitility.version>

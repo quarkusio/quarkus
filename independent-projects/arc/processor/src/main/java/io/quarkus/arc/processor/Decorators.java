@@ -117,19 +117,36 @@ final class Decorators {
         }
 
         if (Modifier.isAbstract(decoratorClass.flags())) {
-            // TODO this check is not precise: we check that decorators do not declare _any_ abstract methods,
-            //  but the spec says that decorators may not declare abstract methods that do not belong
-            //  to a decorated type
-            //  also, we only check methods declared on the decorator class itself, not inherited methods
-            List<MethodInfo> abstractMethods = new ArrayList<>();
-            for (MethodInfo method : decoratorClass.methods()) {
-                if (Modifier.isAbstract(method.flags())) {
-                    abstractMethods.add(method);
+            JandexTypeSystem ts = JandexTypeSystem.of(beanDeployment.getBeanArchiveIndex());
+
+            // 1. collect all abstract methods from decorated types
+            Set<JandexTypeSystem.MethodKey> abstractMethodsOnDecoratedTypes = new HashSet<>();
+            for (Type decoratedType : decoratedTypes) {
+                abstractMethodsOnDecoratedTypes.addAll(ts.methods(decoratedType, MethodInfo::isAbstract));
+            }
+
+            Set<JandexTypeSystem.MethodKey> badAbstractMethods = new HashSet<>();
+
+            // 2. for each abstract method from classes (not interfaces, those are decorated types)
+            for (Type superclassType : ts.typeWithSuperTypes(Types.getProviderType(decoratorClass), true)) {
+                // 3. verify that it is also present on at least one decorated type
+                for (JandexTypeSystem.MethodKey method : ts.methods(superclassType, MethodInfo::isAbstract)) {
+                    if (!abstractMethodsOnDecoratedTypes.contains(method)) {
+                        badAbstractMethods.add(method);
+                    }
                 }
             }
-            if (!abstractMethods.isEmpty()) {
-                throw new DefinitionException("An abstract decorator " + decoratorClass
-                        + " declares abstract methods: " + abstractMethods);
+
+            if (!badAbstractMethods.isEmpty()) {
+                StringBuilder message = new StringBuilder("Abstract decorator ")
+                        .append(decoratorClass.name())
+                        .append(" declares abstract method(s) not present on decorated interface(s):\n");
+                for (JandexTypeSystem.MethodKey method : badAbstractMethods) {
+                    message.append("\t- ");
+                    method.appendTo(message);
+                    message.append("\n");
+                }
+                throw new DefinitionException(message.toString());
             }
         }
 

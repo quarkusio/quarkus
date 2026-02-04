@@ -105,7 +105,11 @@ public class StartupActionImpl implements StartupAction {
         runtimeClassLoader.setStartupAction(this);
         // Adjust JVM module requirements for this app
         jvmRequirements = buildResult.consume(ResolvedJVMRequirements.class);
-        applyModuleConfigurationToClassloader(runtimeClassLoader);
+        // Apply to both base and runtime classloaders, as classes may be loaded from either
+        applyModuleConfigurationToClassloader(baseClassLoader);
+        if (runtimeClassLoader != baseClassLoader) {
+            applyModuleConfigurationToClassloader(runtimeClassLoader);
+        }
     }
 
     @Override

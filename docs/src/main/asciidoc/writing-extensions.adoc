@@ -2230,7 +2230,7 @@ public class PersistenceAndQuarkusConfigTest {
 
 
 [TIP]
-Test coverage and `QuarkusUnitTest`
+.Test coverage and `QuarkusUnitTest`
 ====
 If you want to measure the test coverage of the runtime submodule, then a specific JaCoCo configuration is needed in the deployment module:
 

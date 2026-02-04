@@ -21,6 +21,7 @@ import io.quarkus.deployment.builditem.ConsoleFormatterBannerBuildItem;
 import io.quarkus.deployment.dev.testing.TestHandler;
 import io.quarkus.deployment.dev.testing.TestSetupBuildItem;
 import io.quarkus.deployment.dev.testing.TestSupport;
+import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.steps.ClassTransformingBuildStep;
 import io.quarkus.dev.spi.DevModeType;
@@ -133,7 +134,8 @@ public class IsolatedTestModeMain extends IsolatedDevModeMain {
             }
             try {
                 augmentAction.performCustomBuild(TestHandler.class.getName(), null, TestSetupBuildItem.class.getName(),
-                        LoggingSetupBuildItem.class.getName(), ConsoleFormatterBannerBuildItem.class.getName());
+                        LoggingSetupBuildItem.class.getName(), ConsoleFormatterBannerBuildItem.class.getName(),
+                        ResolvedJVMRequirements.class.getName());
             } catch (Throwable t) {
                 //logging may not have been started, this is more reliable
                 System.err.println("Failed to start quarkus test mode");

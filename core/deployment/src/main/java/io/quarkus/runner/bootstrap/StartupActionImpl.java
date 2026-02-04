@@ -69,7 +69,7 @@ public class StartupActionImpl implements StartupAction {
     private final List<Closeable> runtimeCloseTasks = new ArrayList<>();
     private final DevServicesRegistryBuildItem devServicesRegistry;
 
-    private static final JvmModulesReconfigurer jvmModulesReconfigurer = JvmModulesReconfigurer.create();
+    private static final JvmModulesReconfigurer jvmModulesReconfigurer = JvmModulesReconfigurer.getInstance();
 
     public StartupActionImpl(CuratedApplication curatedApplication, BuildResult buildResult) {
         this.curatedApplication = curatedApplication;

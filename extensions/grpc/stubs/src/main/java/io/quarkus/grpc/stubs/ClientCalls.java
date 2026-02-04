@@ -6,6 +6,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -41,54 +42,59 @@ public class ClientCalls {
             @Override
             public void accept(UniEmitter<? super O> emitter) {
                 AtomicReference<Flow.Subscription> cancellable = new AtomicReference<>();
-                UniStreamObserver<O> observer = new UniStreamObserver<>(emitter.onTermination(() -> {
+                UniStreamObserver<I, O> observer = new UniStreamObserver<>(emitter.onTermination(() -> {
                     var subscription = cancellable.getAndSet(Subscriptions.CANCELLED);
                     if (subscription != null) {
                         subscription.cancel();
                     }
                 }));
                 StreamObserver<I> request = delegate.apply(observer);
-                subscribeToUpstreamAndForwardToStreamObserver(items, cancellable, request);
+                subscribeToUpstreamAndForwardToStreamObserver(items, cancellable, observer, request);
             }
 
         }));
     }
 
-    private static <I> void subscribeToUpstreamAndForwardToStreamObserver(Multi<I> items,
+    private static <I, O> void subscribeToUpstreamAndForwardToStreamObserver(Multi<I> items,
             AtomicReference<Flow.Subscription> cancellable,
+            MutinyClientStreamObserver<I, O> original,
             StreamObserver<I> request) {
-        items.subscribe().with(
-                new Consumer<Flow.Subscription>() {
-                    @Override
-                    public void accept(Flow.Subscription subscription) {
-                        if (!cancellable.compareAndSet(null, subscription)) {
-                            subscription.cancel();
-                        } else {
-                            subscription.request(Long.MAX_VALUE);
+        if (request instanceof ClientCallStreamObserver<I>) {
+            items.subscribe().withSubscriber(original.subscriber);
+        } else {
+            items.subscribe().with(
+                    new Consumer<Flow.Subscription>() {
+                        @Override
+                        public void accept(Flow.Subscription subscription) {
+                            if (!cancellable.compareAndSet(null, subscription)) {
+                                subscription.cancel();
+                            } else {
+                                subscription.request(Long.MAX_VALUE);
+                            }
                         }
-                    }
-                },
+                    },
 
-                new Consumer<I>() {
-                    @Override
-                    public void accept(I v) {
-                        if (cancellable.get() != null && cancellable.get() != Subscriptions.CANCELLED) {
-                            request.onNext(v);
+                    new Consumer<I>() {
+                        @Override
+                        public void accept(I v) {
+                            if (cancellable.get() != null && cancellable.get() != Subscriptions.CANCELLED) {
+                                request.onNext(v);
+                            }
                         }
-                    }
-                },
-                new Consumer<Throwable>() {
-                    @Override
-                    public void accept(Throwable throwable) {
-                        request.onError(throwable);
-                    }
-                },
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        request.onCompleted();
-                    }
-                });
+                    },
+                    new Consumer<Throwable>() {
+                        @Override
+                        public void accept(Throwable throwable) {
+                            request.onError(throwable);
+                        }
+                    },
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            request.onCompleted();
+                        }
+                    });
+        }
     }
 
     public static <I, O> Multi<O> manyToMany(Multi<I> items, Function<StreamObserver<O>, StreamObserver<I>> delegate) {
@@ -96,13 +102,14 @@ public class ClientCalls {
             @Override
             public void accept(MultiEmitter<? super O> emitter) {
                 AtomicReference<Flow.Subscription> cancellable = new AtomicReference<>();
-                StreamObserver<I> request = delegate.apply(new MultiStreamObserver<>(emitter.onTermination(() -> {
+                MultiStreamObserver<I, O> observer = new MultiStreamObserver<>(emitter.onTermination(() -> {
                     var subscription = cancellable.getAndSet(Subscriptions.CANCELLED);
                     if (subscription != null) {
                         subscription.cancel();
                     }
-                })));
-                subscribeToUpstreamAndForwardToStreamObserver(items, cancellable, request);
+                }));
+                StreamObserver<I> request = delegate.apply(observer);
+                subscribeToUpstreamAndForwardToStreamObserver(items, cancellable, observer, request);
             }
         }));
 

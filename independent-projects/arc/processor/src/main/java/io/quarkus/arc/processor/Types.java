@@ -31,6 +31,9 @@ import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
+import org.jboss.jandex.TypeVariableReference;
+import org.jboss.jandex.UnresolvedTypeVariable;
+import org.jboss.jandex.VoidType;
 import org.jboss.jandex.WildcardType;
 import org.jboss.logging.Logger;
 
@@ -831,17 +834,46 @@ public final class Types {
         return PRIMITIVE_CLASS_NAMES.contains(className);
     }
 
-    static boolean containsTypeVariable(Type type) {
-        if (type.kind() == Kind.TYPE_VARIABLE) {
-            return true;
-        } else if (type.kind() == Kind.PARAMETERIZED_TYPE) {
-            for (Type arg : type.asParameterizedType().arguments()) {
-                if (containsTypeVariable(arg)) {
-                    return true;
+    /**
+     * Returns whether the given {@code type} contains type variables. That is, recursively:
+     * <ul>
+     * <li>{@link VoidType void}, {@linkplain PrimitiveType primitive types}, {@linkplain ClassType class types}:
+     * always {@code false}</li>
+     * <li>{@linkplain ArrayType array types}: whether the {@linkplain ArrayType#constituent() constituent type}
+     * contains type variables</li>
+     * <li>{@linkplain ParameterizedType parameterized types}: whether at least one
+     * {@linkplain ParameterizedType#arguments() type argument} or the {@linkplain ParameterizedType#owner() owner type}
+     * contains type variables</li>
+     * <li>{@linkplain TypeVariable type variables}, {@linkplain TypeVariableReference type variable references},
+     * {@linkplain UnresolvedTypeVariable unresolved type variables}: always {@code true}</li>
+     * <li>{@linkplain WildcardType wildcard types}: whether the {@linkplain WildcardType#extendsBound() upper bound}
+     * or {@linkplain WildcardType#superBound() lower bound} contains type variables</li>
+     * </ul>
+     *
+     * @return whether the given type contains type variables
+     */
+    public static boolean containsTypeVariable(Type type) {
+        return switch (type.kind()) {
+            case VOID, PRIMITIVE, CLASS -> false;
+            case ARRAY -> containsTypeVariable(type.asArrayType().constituent());
+            case PARAMETERIZED_TYPE -> {
+                ParameterizedType parameterizedType = type.asParameterizedType();
+                for (Type typeArg : parameterizedType.arguments()) {
+                    if (containsTypeVariable(typeArg)) {
+                        yield true;
+                    }
                 }
+                if (parameterizedType.owner() != null) {
+                    yield containsTypeVariable(parameterizedType.owner());
+                }
+                yield false;
             }
-        }
-        return false;
+            case TYPE_VARIABLE, TYPE_VARIABLE_REFERENCE, UNRESOLVED_TYPE_VARIABLE -> true;
+            case WILDCARD_TYPE -> {
+                WildcardType wildcardType = type.asWildcardType();
+                Type bound = wildcardType.superBound() != null ? wildcardType.superBound() : wildcardType.extendsBound();
+                yield containsTypeVariable(bound);
+            }
+        };
     }
-
 }

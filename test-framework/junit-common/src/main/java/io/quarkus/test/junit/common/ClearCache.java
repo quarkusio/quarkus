@@ -1,4 +1,4 @@
-package io.quarkus.test;
+package io.quarkus.test.junit.common;
 
 import java.beans.Introspector;
 import java.lang.reflect.Field;

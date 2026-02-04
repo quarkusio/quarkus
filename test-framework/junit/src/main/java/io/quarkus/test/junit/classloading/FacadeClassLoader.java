@@ -623,6 +623,18 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
 
         configProviderResolverClass.getDeclaredMethod("setInstance", configProviderResolverClass)
                 .invoke(null, testConfigProviderResolver);
+
+        if (loader instanceof QuarkusClassLoader quarkusClassLoader) {
+            quarkusClassLoader.addCloseTask(() -> {
+                try {
+                    Method releaseMethod = testConfigProviderResolverClass.getMethod("releaseConfig",
+                            ClassLoader.class);
+                    releaseMethod.invoke(testConfigProviderResolver, quarkusClassLoader);
+                } catch (Exception e) {
+                    throw new IllegalStateException("Unable to release config of QuarkusTestConfigProviderResolver", e);
+                }
+            });
+        }
     }
 
     public boolean isServiceLoaderMechanism() {

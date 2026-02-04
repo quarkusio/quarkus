@@ -93,6 +93,14 @@ public class NativeImageFeatureStep {
                 mc.body(b0 -> b0.return_(Const.of("Auto-generated class by Quarkus from the existing extensions")));
             });
 
+            cc.method("duringSetup", mc -> {
+                mc.parameter("access", Feature.DuringSetupAccess.class);
+                mc.body(b0 -> {
+                    b0.invokeStatic(BUILD_TIME_INITIALIZATION, b0.newArray(String.class, Const.of("")));
+                    b0.return_();
+                });
+            });
+
             cc.method("beforeAnalysis", mc -> {
                 ParamVar access = mc.parameter("access", Feature.BeforeAnalysisAccess.class);
                 MethodDesc classForName3 = MethodDesc.of(Class.class, "forName", Class.class, String.class, boolean.class,
@@ -100,7 +108,6 @@ public class NativeImageFeatureStep {
                 mc.body(b0 -> {
                     b0.try_(t1 -> {
                         t1.body(b2 -> {
-                            b2.invokeStatic(BUILD_TIME_INITIALIZATION, b2.newArray(String.class, Const.of("")));
                             LocalVar cl = b2.localVar("cl", b2.invokeVirtual(MD_Class.getClassLoader, Const.of(cc.type())));
                             if (localesBuildTimeConfig.defaultLocale().isPresent()) {
                                 Locale defaultLocale = localesBuildTimeConfig.defaultLocale().get();

@@ -46,19 +46,22 @@ public interface ContainerImageOpenshiftConfig {
 
     /**
      * The base image to be used when a container image is being produced for the jar build.
-     * The value of this property is used to create an ImageStream for the builder image used in the Openshift build.
-     * When it references images already available in the internal Openshift registry, the corresponding streams are used
+     * The value of this property is used to create an ImageStream for the builder image used in the OpenShift build.
+     * When it references images already available in the internal OpenShift registry, the corresponding streams are used
      * instead.
-     * When the application is built against Java 21 or higher, {@code registry.access.redhat.com/ubi9/openjdk-21:1.23}
+     * When the application is built against Java 25 or higher, {@code registry.access.redhat.com/ubi9/openjdk-25:1.24}
      * is used as the default.
-     * Otherwise {@code registry.access.redhat.com/ubi9/openjdk-17:1.23} is used as the default.
+     * Otherwise, when the application is built against Java 21 to Java 24,
+     * {@code registry.access.redhat.com/ubi9/openjdk-21:1.24}
+     * is used as the default.
+     * Otherwise {@code registry.access.redhat.com/ubi9/openjdk-17:1.24} is used as the default.
      */
     Optional<String> baseJvmImage();
 
     /**
      * The base image to be used when a container image is being produced for the native binary build.
-     * The value of this property is used to create an ImageStream for the builder image used in the Openshift build.
-     * When it references images already available in the internal Openshift registry, the corresponding streams are used
+     * The value of this property is used to create an ImageStream for the builder image used in the OpenShift build.
+     * When it references images already available in the internal OpenShift registry, the corresponding streams are used
      * instead.
      */
     @WithDefault(ContainerImages.QUARKUS_BINARY_S2I)

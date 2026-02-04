@@ -38,7 +38,6 @@ import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AllowJNDIBuildItem;
-import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.BytecodeRecorderConstantDefinitionBuildItem;
@@ -196,11 +195,9 @@ public class MainClassBuildStep {
         mv.invokeStaticMethod(ofMethod(Timing.class, "staticInitStarted", void.class, boolean.class),
                 mv.load(launchMode.isAuxiliaryApplication()));
 
-        // ensure that the config class is initialized
-        mv.invokeStaticMethod(RunTimeConfigurationGenerator.C_ENSURE_INITIALIZED);
-        if (liveReloadBuildItem.isLiveReload()) {
-            mv.invokeStaticMethod(RunTimeConfigurationGenerator.REINIT);
-        }
+        // Create Static Init Config and associate it with the current classloader
+        mv.invokeStaticMethod(RunTimeConfigurationGenerator.C_STATIC_INIT_CONFIG);
+
         // Init the LOG instance
         mv.writeStaticField(logField.getFieldDescriptor(), mv.invokeStaticMethod(
                 ofMethod(Logger.class, "getLogger", Logger.class, String.class), mv.load("io.quarkus.application")));
@@ -292,7 +289,7 @@ public class MainClassBuildStep {
         tryBlock.invokeStaticMethod(CONFIGURE_STEP_TIME_START);
 
         // Create Runtime Config and associate it with the current classloader
-        tryBlock.invokeStaticMethod(RunTimeConfigurationGenerator.C_CREATE_RUN_TIME_CONFIG, valueRegistry);
+        tryBlock.invokeStaticMethod(RunTimeConfigurationGenerator.C_RUN_TIME_CONFIG, valueRegistry);
 
         // Register RuntimeInfoProviders with ValueRegistry
         for (ValueRegistryRuntimeInfoProviderBuildItem runtimeInfoProviderClass : runtimeInfoProviders) {
@@ -385,7 +382,6 @@ public class MainClassBuildStep {
     @BuildStep
     public MainClassBuildItem mainClassBuildStep(BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<BytecodeTransformerBuildItem> transformedClass,
-            ApplicationArchivesBuildItem applicationArchivesBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
             Optional<QuarkusApplicationClassBuildItem> quarkusApplicationClass,
             PackageConfig packageConfig) {

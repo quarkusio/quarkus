@@ -19,6 +19,7 @@
         <module>h2</module>
         <module>grpc</module>
         <module>kubernetes-client</module>
+        <module>junit-common</module>
         <module>junit-config</module>
         <module>junit-internal</module>
         <module>junit</module>

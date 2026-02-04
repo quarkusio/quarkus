@@ -75,6 +75,7 @@ import io.quarkus.test.common.RestAssuredStateManager;
 import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.quarkus.test.junit.common.ClearCache;
 import io.quarkus.value.registry.ValueRegistry;
 
 /**

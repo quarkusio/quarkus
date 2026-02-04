@@ -76,6 +76,7 @@ import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 import io.quarkus.test.junit.callback.QuarkusTestContext;
 import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
+import io.quarkus.test.junit.common.ClearCache;
 import io.quarkus.value.registry.ValueRegistry;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
@@ -618,6 +619,11 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                     "Internal error: ClassLoader " + cl + " does not have a linked curated application.");
         }
         cl.getCuratedApplication().setEligibleForReuse(isSameCuratedApplication);
+
+        // Let's clear the class-based caches of JDK/libraries when we switch to another application
+        if (!isSameCuratedApplication) {
+            ClearCache.clearCaches();
+        }
 
         // TODO if classes are misordered, say because someone overrode the ordering, and there are profiles or resources,
         // we could try to start and application which has already been started, and fail with a mysterious error about

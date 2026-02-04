@@ -70,6 +70,8 @@ import io.vertx.core.spi.resolver.ResolverProvider;
 public class VertxCoreRecorder {
 
     private static final String LOGGER_FACTORY_NAME_SYS_PROP = "vertx.logger-delegate-factory-class-name";
+    private static final String OTEL_CONTEXT_KEY = "io.quarkus.opentelemetry.runtime.QuarkusContextStorage.otelContext";
+    private static final List<String> cloneKeys = List.of(VertxMDC.class.getName(), OTEL_CONTEXT_KEY);
 
     static {
         System.setProperty("vertx.disableTCCL", "true");
@@ -656,7 +658,7 @@ public class VertxCoreRecorder {
                     // Duplicate the context, copy the data, remove the request context
                     vertxContext = vertxContext.duplicate();
                     vertxContext.localContextData().putAll(deepCopy(local));
-                    if (ignoredKeys != null && containsIgnoredKey(ignoredKeys, local)) {
+                    if (ignoredKeys != null && containsKey(ignoredKeys, local)) {
                         ignoredKeys.forEach(vertxContext.localContextData()::remove);
                     }
                     VertxContextSafetyToggle.setContextSafe(vertxContext, true);
@@ -671,18 +673,30 @@ public class VertxCoreRecorder {
                 }
             }
 
-            private ConcurrentMap<Object, Object> deepCopy(Map<Object, Object> input) {
-                ConcurrentMap<Object, Object> output = new ConcurrentHashMap<>();
-                input.forEach((key, value) -> {
-                    // FIXME support other objects
-                    var newKey = key instanceof String ? new String((String) key) : key;
-                    var newValue = value instanceof String ? new String((String) value) : value;
-                    output.put(newKey, newValue);
-                });
-                return output;
+            private ConcurrentMap<Object, Object> deepCopy(ConcurrentMap<Object, Object> input) {
+                if (containsKey(cloneKeys, input)) {
+                    // Deep copy 
+                    final ConcurrentMap<Object, Object> result = new ConcurrentHashMap<>(input.size());
+                    input.entrySet().forEach(entry -> {
+                        if (entry.getKey().equals(VertxMDC.class.getName()) &&
+                                entry.getValue() instanceof ConcurrentMap) {
+                            ConcurrentMap<String, Object> value = (ConcurrentMap<String, Object>) entry.getValue();
+                            result.put(entry.getKey(), new ConcurrentHashMap<>(value));
+                        } else if (entry.getKey().equals(OTEL_CONTEXT_KEY) &&
+                                entry.getValue() instanceof ArrayBasedContext) {
+                                // FIXME class not found
+                        } else {
+                            result.put(entry.getKey(), entry.getValue());
+                        }
+                    });
+                    return result;
+                } else {
+                    // nothing to do
+                    return input;
+                }
             }
 
-            private boolean containsIgnoredKey(List<String> keys, Map<Object, Object> localContextData) {
+            private boolean containsKey(List<String> keys, Map<Object, Object> localContextData) {
                 if (keys.isEmpty()) {
                     return false;
                 }

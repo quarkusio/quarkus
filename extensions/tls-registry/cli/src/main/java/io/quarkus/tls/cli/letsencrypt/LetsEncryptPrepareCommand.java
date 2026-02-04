@@ -14,6 +14,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import org.jboss.logging.Logger;
+
 import io.smallrye.certs.CertificateGenerator;
 import io.smallrye.certs.CertificateRequest;
 import io.smallrye.certs.Format;
@@ -23,7 +25,7 @@ import picocli.CommandLine;
         + " Make sure to restart the application after having run this command.")
 public class LetsEncryptPrepareCommand implements Callable<Integer> {
 
-    static System.Logger LOGGER = System.getLogger("lets-encrypt-prepare");
+    static Logger LOGGER = Logger.getLogger(LetsEncryptPrepareCommand.class);
 
     @CommandLine.Option(names = { "-d",
             "--domain" }, description = "The domain for which the certificate will be generated", required = true)
@@ -38,7 +40,7 @@ public class LetsEncryptPrepareCommand implements Callable<Integer> {
         // Step 1 - Create .letsencrypt directory
         if (!LETS_ENCRYPT_DIR.exists()) {
             if (LETS_ENCRYPT_DIR.mkdir()) {
-                LOGGER.log(System.Logger.Level.INFO, "✅ Created .letsencrypt directory: {0}",
+                LOGGER.infof("✅ Created .letsencrypt directory: %s",
                         LETS_ENCRYPT_DIR.getAbsolutePath());
             }
         }
@@ -53,7 +55,7 @@ public class LetsEncryptPrepareCommand implements Callable<Integer> {
                 existing.checkValidity();
                 certExistingAndStillValid = true;
             } catch (Exception e) {
-                LOGGER.log(System.Logger.Level.INFO, "⚠\uFE0F The existing certificate is expired, regenerating it...");
+                LOGGER.info("⚠\uFE0F The existing certificate is expired, regenerating it...");
             }
         }
 
@@ -68,7 +70,7 @@ public class LetsEncryptPrepareCommand implements Callable<Integer> {
                     .withName("lets-encrypt");
             generator.generate(request);
         } else {
-            LOGGER.log(System.Logger.Level.INFO, "✅ Certificate already exists and is still valid: {0}",
+            LOGGER.infof("✅ Certificate already exists and is still valid: %s",
                     CERT_FILE.getAbsolutePath());
         }
 
@@ -88,9 +90,9 @@ public class LetsEncryptPrepareCommand implements Callable<Integer> {
         addOrReplaceProperty(dotEnvContent, prefix + ".key-store.pem.acme.key", KEY_FILE.getAbsolutePath());
 
         Files.write(DOT_ENV_FILE.toPath(), dotEnvContent);
-        LOGGER.log(System.Logger.Level.INFO, "✅ .env file configured for Let's Encrypt: {0}", DOT_ENV_FILE.getAbsolutePath());
-        LOGGER.log(System.Logger.Level.INFO,
-                "➡\uFE0F Start the application and run `quarkus tls lets-encrypt issue-certificate --domain={0}{1}` to complete the challenge",
+        LOGGER.infof("✅ .env file configured for Let's Encrypt: %s", DOT_ENV_FILE.getAbsolutePath());
+        LOGGER.infof(
+                "➡\uFE0F Start the application and run `quarkus tls lets-encrypt issue-certificate --domain=%s%s` to complete the challenge",
                 domain,
                 tlsConfigurationName != null ? " -tls-configuration-name=" + tlsConfigurationName : "");
         return 0;

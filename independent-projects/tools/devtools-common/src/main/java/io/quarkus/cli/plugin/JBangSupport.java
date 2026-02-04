@@ -107,6 +107,7 @@ public class JBangSupport {
                 .arguments(args)
                 .output()
                 .processWith(br -> br.lines().limit(100000).map(s -> s.replaceAll("\u001B\\[[;\\d]*m", "")).toList())
+                .error().logOnSuccess(false)
                 .run();
     }
 

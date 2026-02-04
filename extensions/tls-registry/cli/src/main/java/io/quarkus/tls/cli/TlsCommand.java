@@ -21,6 +21,19 @@ public class TlsCommand implements Callable<Integer> {
     }
 
     public static void main(String[] args) {
+        // Configure JBoss LogManager
+        System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
+
+        // Load logging configuration from classpath
+        try {
+            var configUrl = TlsCommand.class.getClassLoader().getResource("logging.properties");
+            if (configUrl != null) {
+                System.setProperty("logging.configuration", configUrl.toString());
+            }
+        } catch (Exception e) {
+            // Ignore if configuration cannot be loaded
+        }
+
         int exitCode = new CommandLine(new TlsCommand()).execute(args);
         System.exit(exitCode);
     }

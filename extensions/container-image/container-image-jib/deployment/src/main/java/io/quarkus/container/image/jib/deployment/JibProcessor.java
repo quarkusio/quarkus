@@ -1,5 +1,7 @@
 package io.quarkus.container.image.jib.deployment;
 
+import static com.google.cloud.tools.jib.api.DescriptorDigest.fromDigest;
+import static com.google.cloud.tools.jib.api.DescriptorDigest.fromHash;
 import static com.google.cloud.tools.jib.api.buildplan.FileEntriesLayer.DEFAULT_FILE_PERMISSIONS_PROVIDER;
 import static com.google.cloud.tools.jib.api.buildplan.FileEntriesLayer.DEFAULT_OWNERSHIP_PROVIDER;
 import static com.google.cloud.tools.jib.api.buildplan.FilePermissions.DEFAULT_FILE_PERMISSIONS;
@@ -10,10 +12,13 @@ import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.MUTABLE_
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.DigestException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,6 +40,7 @@ import org.jboss.logging.Logger;
 
 import com.google.cloud.tools.jib.api.CacheDirectoryCreationException;
 import com.google.cloud.tools.jib.api.Containerizer;
+import com.google.cloud.tools.jib.api.DescriptorDigest;
 import com.google.cloud.tools.jib.api.DockerDaemonImage;
 import com.google.cloud.tools.jib.api.ImageReference;
 import com.google.cloud.tools.jib.api.InvalidImageReferenceException;
@@ -52,6 +58,9 @@ import com.google.cloud.tools.jib.api.buildplan.FilePermissions;
 import com.google.cloud.tools.jib.api.buildplan.FilePermissionsProvider;
 import com.google.cloud.tools.jib.api.buildplan.OwnershipProvider;
 import com.google.cloud.tools.jib.api.buildplan.Port;
+import com.google.cloud.tools.jib.configuration.BuildContext;
+import com.google.cloud.tools.jib.configuration.ImageConfiguration;
+import com.google.cloud.tools.jib.docker.CliDockerClient;
 import com.google.cloud.tools.jib.frontend.CredentialRetrieverFactory;
 
 import io.quarkus.builder.Version;
@@ -304,19 +313,23 @@ public class JibProcessor {
     }
 
     private DockerDaemonImage applyDockerExecutable(ContainerImageJibConfig jibConfig, DockerDaemonImage dockerDaemonImage) {
+        dockerDaemonImage.setDockerExecutable(determineDockerExecutable(jibConfig));
+        return dockerDaemonImage;
+    }
+
+    private Path determineDockerExecutable(ContainerImageJibConfig jibConfig) {
+        Optional<String> jibConfigExecutableName = jibConfig.dockerExecutableName();
         Optional<String> dockerConfigExecutableName = ConfigProvider.getConfig()
                 .getOptionalValue("quarkus.docker.executable-name", String.class);
-        Optional<String> jibConfigExecutableName = jibConfig.dockerExecutableName();
         if (jibConfigExecutableName.isPresent()) {
-            dockerDaemonImage.setDockerExecutable(Paths.get(jibConfigExecutableName.get()));
+            return Paths.get(jibConfigExecutableName.get());
         } else if (dockerConfigExecutableName.isPresent()) {
-            dockerDaemonImage.setDockerExecutable(Paths.get(dockerConfigExecutableName.get()));
+            return Paths.get(dockerConfigExecutableName.get());
         } else {
             // detect the container runtime instead of falling back to 'docker' as the default
             ContainerRuntimeUtil.ContainerRuntime detectedContainerRuntime = ContainerRuntimeUtil.detectContainerRuntime();
-            dockerDaemonImage.setDockerExecutable(Paths.get(detectedContainerRuntime.getExecutableName()));
+            return Paths.get(detectedContainerRuntime.getExecutableName());
         }
-        return dockerDaemonImage;
     }
 
     /**
@@ -939,8 +952,7 @@ public class JibProcessor {
         String enhancedImage = requestBuildItem.getOriginalContainerImage() + "-aot";
 
         try {
-            DockerDaemonImage named = applyDockerExecutable(jibConfig, DockerDaemonImage.named(baseImage));
-            Jib.from(named)
+            createPatchedInstance(jibConfig, baseImage)
                     .addLayer(
                             // Add the app.aot file to the working directory
                             List.of(requestBuildItem.getAotFile()),
@@ -954,6 +966,88 @@ public class JibProcessor {
         } catch (Exception e) {
             log.error("Unable to build AOT enhanced container image for original " + baseImage, e);
             throw new RuntimeException(e);
+        }
+    }
+
+    // we need this horrible back because of https://github.com/GoogleContainerTools/jib/issues/4134
+    public JibContainerBuilder createPatchedInstance(ContainerImageJibConfig jibConfig, String baseImage) {
+        try {
+            Constructor<JibContainerBuilder> constructor = JibContainerBuilder.class.getDeclaredConstructor(
+                    ImageConfiguration.class,
+                    BuildContext.Builder.class);
+            constructor.setAccessible(true);
+            ImageConfiguration imageConfiguration = ImageConfiguration.builder(ImageReference.parse(baseImage))
+                    .setDockerClient(new PatchedDockerCliClient(determineDockerExecutable(jibConfig), Collections.emptyMap()))
+                    .build();
+            return constructor.newInstance(imageConfiguration, BuildContext.builder());
+        } catch (Exception e) {
+            throw new RuntimeException("Could not reflectively call JibContainerBuilder constructor", e);
+        }
+    }
+
+    private static class PatchedDockerCliClient extends CliDockerClient {
+
+        public PatchedDockerCliClient(Path dockerExecutable, Map<String, String> dockerEnvironment) {
+            super(dockerExecutable, dockerEnvironment);
+        }
+
+        @Override
+        public DockerImageDetails inspect(ImageReference imageReference) throws IOException, InterruptedException {
+            return new PatchedDockerImageDetails(super.inspect(imageReference));
+        }
+
+        private static class PatchedDockerImageDetails extends DockerImageDetails {
+
+            /** Pattern matches a SHA-256 hash - 32 bytes in lowercase hexadecimal. */
+            private static final String HASH_REGEX = String.format("[a-f0-9]{%d}", 64);
+
+            /** The algorithm prefix for the digest string. */
+            private static final String DIGEST_PREFIX = "sha256:";
+
+            /** Pattern matches a SHA-256 digest - a SHA-256 hash prefixed with "sha256:". */
+            private static final String DIGEST_REGEX = DIGEST_PREFIX + HASH_REGEX;
+
+            private static DescriptorDigest fromDigestOrHash(String digestOrHash) throws DigestException {
+                if (digestOrHash.matches(DIGEST_REGEX)) {
+                    return fromDigest(digestOrHash);
+                } else if (digestOrHash.matches(HASH_REGEX)) {
+                    return fromHash(digestOrHash);
+                }
+                throw new DigestException("Invalid digest or hash: " + digestOrHash);
+            }
+
+            private final DockerImageDetails delegate;
+
+            public PatchedDockerImageDetails(DockerImageDetails delegate) {
+                this.delegate = delegate;
+            }
+
+            @Override
+            public long getSize() {
+                return delegate.getSize();
+            }
+
+            // this is method we actually need to override
+            @Override
+            public DescriptorDigest getImageId() throws DigestException {
+                return fromDigestOrHash(getPrivateImageId());
+            }
+
+            private String getPrivateImageId() {
+                try {
+                    Field field = DockerImageDetails.class.getDeclaredField("imageId");
+                    field.setAccessible(true);
+                    return (String) field.get(delegate);
+
+                } catch (NoSuchFieldException | IllegalAccessException e) {
+                    throw new RuntimeException("Failed to read imageId", e);
+                }
+            }
+
+            @Override
+            public List<DescriptorDigest> getDiffIds() throws DigestException {
+                return delegate.getDiffIds();
+            }
         }
     }
 }

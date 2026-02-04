@@ -69,10 +69,7 @@ public final class LauncherUtil {
      * as can be seen in <a href="https://github.com/quarkusio/quarkus/issues/33229">here</a>
      */
     static Process launchProcessAndDrainIO(List<String> args, Map<String, String> env) throws IOException {
-        ProcessBuilder pb = new ProcessBuilder(args)
-                .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-                .redirectError(ProcessBuilder.Redirect.DISCARD)
-                .redirectInput(ProcessBuilder.Redirect.INHERIT);
+        ProcessBuilder pb = new ProcessBuilder(args).redirectInput(ProcessBuilder.Redirect.INHERIT);
         pb.environment().putAll(env);
         var process = pb.start();
         new Thread(new ProcessReader(process)).start();
@@ -367,8 +364,10 @@ public final class LauncherUtil {
      * <p>
      * The {@link #run()} method runs as long as the given {@link #process} is alive.
      *
+     *
+     *
      */
-    static final class ProcessReader implements Runnable {
+    static class ProcessReader implements Runnable {
         private final Process process;
 
         private final ByteArrayOutputStream stdoutBuffer = new ByteArrayOutputStream();
@@ -395,13 +394,7 @@ public final class LauncherUtil {
             try (var stdout = process.getInputStream(); var stderr = process.getErrorStream()) {
                 var exited = -1;
                 while (true) {
-                    if (exited == -1) {
-                        try {
-                            exited = process.exitValue();
-                        } catch (IllegalThreadStateException e) {
-                            // still running
-                        }
-                    }
+                    exited = checkExited(exited);
 
                     var anyData = flush(stderr, stderrBuffer, errTo);
                     anyData |= flush(stdout, stdoutBuffer, outTo);
@@ -422,11 +415,27 @@ public final class LauncherUtil {
             }
         }
 
+        @VisibleForTesting
+        int checkExited(int exited) {
+            if (exited == -1) {
+                try {
+                    exited = process.exitValue();
+                } catch (IllegalThreadStateException e) {
+                    // still running
+                }
+            }
+            return exited;
+        }
+
         private boolean flush(InputStream processStream, ByteArrayOutputStream buffer, OutputStream to)
                 throws IOException {
+            var any = false;
             var available = processStream.available();
-            if (available > 0) {
-                var read = processStream.read(readBuffer, 0, available);
+            while (available > 0) {
+                var read = processStream.read(readBuffer, 0, Math.min(available, readBuffer.length));
+                if (read < 0) {
+                    break;
+                }
                 for (int i = 0; i < read; i++) {
                     var b = readBuffer[i];
                     buffer.write(b);
@@ -436,9 +445,10 @@ public final class LauncherUtil {
                         buffer.reset();
                     }
                 }
-                return available > read;
+                available -= read;
+                any = true;
             }
-            return false;
+            return any;
         }
     }
 

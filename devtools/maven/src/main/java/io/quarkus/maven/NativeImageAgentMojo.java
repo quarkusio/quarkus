@@ -93,7 +93,7 @@ public class NativeImageAgentMojo extends QuarkusBootstrapMojo {
                 throw new MojoExecutionException("Failed to transform native image agent configuration", e);
             }
         } else {
-            getLog().info("Missing " + dirName + " directory with native image agent configuration to transform");
+            getLog().debug("Missing " + dirName + " directory with native image agent configuration to transform");
         }
     }
 

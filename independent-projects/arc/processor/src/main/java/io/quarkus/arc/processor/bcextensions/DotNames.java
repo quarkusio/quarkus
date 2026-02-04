@@ -24,6 +24,7 @@ import jakarta.enterprise.inject.build.compatible.spi.Validation;
 import jakarta.enterprise.lang.model.declarations.ClassInfo;
 import jakarta.enterprise.lang.model.declarations.FieldInfo;
 import jakarta.enterprise.lang.model.declarations.MethodInfo;
+import jakarta.enterprise.util.TypeLiteral;
 
 import org.jboss.jandex.DotName;
 
@@ -65,4 +66,8 @@ class DotNames {
     static final DotName SCANNED_CLASSES = DotName.createSimple(ScannedClasses.class);
     static final DotName SYNTHETIC_COMPONENTS = DotName.createSimple(SyntheticComponents.class);
     static final DotName TYPES = DotName.createSimple(Types.class);
+
+    // type literal
+
+    static final DotName TYPE_LITERAL = DotName.createSimple(TypeLiteral.class);
 }

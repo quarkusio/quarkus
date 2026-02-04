@@ -31,11 +31,13 @@ public interface HibernateOrmRuntimeConfig {
      *
      * When enabled, the corresponding sessions will be read-only.
      *
-     * Defaults to enabled for backwards compatibility, but disabling this is recommended,
-     * to avoid inconsistent resulsts caused by queries running outside of transactions.
+     * Defaults to `false`,
+     * which is recommended to avoid inconsistent results caused by queries running out of transaction.
+     *
+     * @asciidoclet
      */
     @WithName("request-scoped.enabled")
-    @WithDefault("true")
+    @WithDefault("false")
     boolean requestScopedSessionEnabled();
 
     static String extensionPropertyKey(String radical) {

@@ -9,4 +9,4 @@ metadata:
   config:
   - "quarkus.tls."
   cli-plugins:
-  - "tls: ${project.groupId}:quarkus-tls-registry-cli:${project.version}"
+  - "tls: ${project.groupId}:quarkus-tls-registry-cli:${project.version}@jbang"

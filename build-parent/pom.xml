@@ -114,7 +114,7 @@
         <!-- Dev Services Images -->
         <!-- TODO switch to apache/activemq-artemis to match the artemis version-->
         <amqp.image>quay.io/artemiscloud/activemq-artemis-broker:1.0.25</amqp.image>
-        <apicurio-registry.image>quay.io/apicurio/apicurio-registry-mem:2.6.13.Final</apicurio-registry.image>
+        <apicurio-registry.image>quay.io/apicurio/apicurio-registry:3.1.7</apicurio-registry.image>
         <narayana-lra.image>quay.io/jbosstm/lra-coordinator:latest</narayana-lra.image>
         <rabbitmq.image>docker.io/library/rabbitmq:3.12-management</rabbitmq.image>
         <pulsar.image>docker.io/apachepulsar/pulsar:3.2.4</pulsar.image>

@@ -1,44 +1,14 @@
 package io.quarkus.apicurio.registry.common;
 
-import java.io.IOException;
+import java.util.logging.Level;
 
-import io.apicurio.rest.client.spi.ApicurioHttpClientProvider;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
-import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.builditem.LogCategoryBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.smallrye.openapi.deployment.spi.IgnoreStaticDocumentBuildItem;
-import io.quarkus.vertx.deployment.VertxBuildItem;
 
 public class ApicurioRegistryClientProcessor {
-
-    @BuildStep
-    public void apicurioRegistryClient(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) {
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder("io.apicurio.rest.client.auth.exception.NotAuthorizedException",
-                        "io.apicurio.rest.client.auth.exception.ForbiddenException",
-                        "io.apicurio.rest.client.auth.exception.AuthException",
-                        "io.apicurio.rest.client.auth.exception.AuthErrorHandler",
-                        "io.apicurio.rest.client.auth.request.TokenRequestsProvider",
-                        "io.apicurio.rest.client.request.Request",
-                        "io.apicurio.rest.client.auth.AccessTokenResponse",
-                        "io.apicurio.rest.client.auth.Auth",
-                        "io.apicurio.rest.client.auth.BasicAuth",
-                        "io.apicurio.rest.client.auth.OidcAuth").methods().fields().build());
-    }
-
-    @BuildStep
-    void registerSPIClient(BuildProducer<ServiceProviderBuildItem> services) throws IOException {
-
-        services.produce(
-                new ServiceProviderBuildItem(ApicurioHttpClientProvider.class.getName(),
-                        "io.apicurio.rest.client.VertxHttpClientProvider"));
-    }
 
     @BuildStep
     void ignoreIncludedOpenAPIDocument(BuildProducer<IgnoreStaticDocumentBuildItem> ignoreStaticDocumentProducer) {
@@ -48,12 +18,21 @@ public class ApicurioRegistryClientProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    public void apicurioRegistryClient(VertxBuildItem vertx, ApicurioRegistryClient client, LaunchModeBuildItem launchMode) {
-        if (launchMode.getLaunchMode().isDevOrTest()) {
-            client.clearHttpClient();
-        }
-        client.setup(vertx.getVertx());
+    void logging(BuildProducer<LogCategoryBuildItem> log) {
+        // Reduce the log level of Apicurio Registry client to avoid verbose INFO messages
+        // See https://github.com/quarkusio/quarkus/issues/51008
+        log.produce(new LogCategoryBuildItem("io.apicurio.registry.client", Level.WARNING));
+    }
+
+    @BuildStep
+    void runtimeInitializedClasses(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClass) {
+        // Initialize RegistryClientRequestAdapterFactory at runtime because it contains inner classes
+        // (JdkAuthenticatedRequestAdapter, JdkOAuth2RequestAdapter) that extend JDKRequestAdapter
+        // from kiota-http-jdk, which is excluded from the classpath. Runtime initialization prevents
+        // GraalVM from trying to analyze these classes at build time.
+        runtimeInitializedClass
+                .produce(new RuntimeInitializedClassBuildItem(
+                        "io.apicurio.registry.client.common.RegistryClientRequestAdapterFactory"));
     }
 
 }

@@ -22,8 +22,8 @@ public abstract class KafkaAvroTestBase {
 
     @Test
     public void testUrls() {
-        Assertions.assertTrue(creator().getApicurioRegistryUrl().endsWith("/apis/registry/v2"));
-        Assertions.assertTrue(creator().getConfluentRegistryUrl().endsWith("/apis/ccompat/v6"));
+        Assertions.assertTrue(creator().getApicurioRegistryUrl().endsWith("/apis/registry/v3"));
+        Assertions.assertTrue(creator().getConfluentRegistryUrl().endsWith("/apis/ccompat/v7"));
     }
 
     @Test

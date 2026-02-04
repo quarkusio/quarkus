@@ -388,7 +388,7 @@ And run it in JVM mode with:
 
 [source, bash]
 ----
-java -Dmp.messaging.connector.smallrye-kafka.apicurio.registry.url=http://localhost:8081/apis/registry/v2 -jar target/quarkus-app/quarkus-run.jar
+java -Dmp.messaging.connector.smallrye-kafka.apicurio.registry.url=http://localhost:8081/apis/registry/v3 -jar target/quarkus-app/quarkus-run.jar
 ----
 
 NOTE: By default, the application tries to connect to a Kafka broker listening at `localhost:9092`.
@@ -398,7 +398,7 @@ Specifying the registry URL on the command line is not very convenient, so you c
 
 [source,properties]
 ----
-%prod.mp.messaging.connector.smallrye-kafka.apicurio.registry.url=http://localhost:8081/apis/registry/v2
+%prod.mp.messaging.connector.smallrye-kafka.apicurio.registry.url=http://localhost:8081/apis/registry/v3
 ----
 
 You can build a native executable with:
@@ -595,13 +595,13 @@ public class KafkaAndSchemaRegistryTestResource implements QuarkusTestResourceLi
     @Override
     public Map<String, String> start() {
         kafka.start();
-        registry = new GenericContainer<>("apicurio/apicurio-registry-mem:2.4.2.Final")
+        registry = new GenericContainer<>("apicurio/apicurio-registry:3.0.7")
                 .withExposedPorts(8080)
                 .withEnv("QUARKUS_PROFILE", "prod");
         registry.start();
         Map<String, String> properties = new HashMap<>();
         properties.put("mp.messaging.connector.smallrye-kafka.apicurio.registry.url",
-                "http://" + registry.getHost() + ":" + registry.getMappedPort(8080) + "/apis/registry/v2");
+                "http://" + registry.getHost() + ":" + registry.getMappedPort(8080) + "/apis/registry/v3");
         properties.put("kafka.bootstrap.servers", kafka.getBootstrapServers());
         return properties;
     }
@@ -623,115 +623,7 @@ public class MovieResourceTest {
 }
 ----
 
-[[apicurio-versions-compatibility]]
-== Using compatible versions of the Apicurio Registry
-
-The `quarkus-apicurio-registry-json-schema` extension depends on recent versions of Apicurio Registry client,
-and most versions of Apicurio Registry server and client are backwards compatible.
-For some you need to make sure that the client used by Serdes is compatible with the server.
-
-For example, with Apicurio Dev Service if you set the image name to use version `2.1.5.Final`:
-
-[source,properties]
-----
-quarkus.apicurio-registry.devservices.image-name=quay.io/apicurio/apicurio-registry-mem:2.1.5.Final
-----
-
-You need to make sure that `apicurio-registry-serdes-json-schema-serde` dependency
-and the REST client `apicurio-common-rest-client-vertx` dependency are set to compatible versions:
-
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-apicurio-registry-json-schema</artifactId>
-    <exclusions>
-        <exclusion>
-            <groupId>io.apicurio</groupId>
-            <artifactId>apicurio-common-rest-client-vertx</artifactId>
-        </exclusion>
-        <exclusion>
-            <groupId>io.apicurio</groupId>
-            <artifactId>apicurio-registry-serdes-json-schema-serde</artifactId>
-        </exclusion>
-    </exclusions>
-</dependency>
-<dependency>
-    <groupId>io.apicurio</groupId>
-    <artifactId>apicurio-registry-client</artifactId>
-    <version>2.1.5.Final</version>
-</dependency>
-<dependency>
-    <groupId>io.apicurio</groupId>
-    <artifactId>apicurio-registry-common</artifactId>
-    <version>2.1.5.Final</version>
-</dependency>
-<dependency>
-    <groupId>io.apicurio</groupId>
-    <artifactId>apicurio-registry-serdes-json-schema-serde</artifactId>
-    <version>2.1.5.Final</version>
-    <exclusions>
-        <exclusion>
-            <groupId>io.apicurio</groupId>
-            <artifactId>apicurio-common-rest-client-jdk</artifactId>
-        </exclusion>
-        <exclusion>
-            <groupId>io.apicurio</groupId>
-            <artifactId>apicurio-registry-client</artifactId>
-        </exclusion>
-        <exclusion>
-            <groupId>io.apicurio</groupId>
-            <artifactId>apicurio-registry-common</artifactId>
-        </exclusion>
-    </exclusions>
-</dependency>
-<dependency>
-    <groupId>io.apicurio</groupId>
-    <artifactId>apicurio-common-rest-client-vertx</artifactId>
-    <version>0.1.5.Final</version>
-</dependency>
-----
-
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle",subs=attributes+]
-.build.gradle
-----
-dependencies {
-    implementation(platform("{quarkus-platform-groupid}:quarkus-bom:2.12.3.Final"))
-
-    ...
-
-    implementation("io.quarkus:quarkus-apicurio-registry-json-schema")
-    implementation("io.apicurio:apicurio-registry-serdes-json-schema-serde") {
-        exclude group: "io.apicurio", module: "apicurio-common-rest-client-jdk"
-        exclude group: "io.apicurio", module: "apicurio-registry-client"
-        exclude group: "io.apicurio", module: "apicurio-registry-common"
-        version {
-            strictly "2.1.5.Final"
-        }
-    }
-    implementation("io.apicurio:apicurio-registry-client") {
-        version {
-            strictly "2.1.5.Final"
-        }
-    }
-    implementation("io.apicurio:apicurio-registry-common") {
-        version {
-            strictly "2.1.5.Final"
-        }
-    }
-    implementation("io.apicurio:apicurio-common-rest-client-vertx") {
-        version {
-            strictly "0.1.5.Final"
-        }
-    }
-}
-----
-
-Known previous compatible versions for `apicurio-registry-client` and `apicurio-common-rest-client-vertx` are the following
-
-- `apicurio-registry-client` 2.1.5.Final with `apicurio-common-rest-client-vertx` 0.1.5.Final
-- `apicurio-registry-client` 2.3.1.Final with `apicurio-common-rest-client-vertx` 0.1.13.Final
+include::_includes/apicurio-registry-v3-migration.adoc[]
 
 [[confluent]]
 == Using the Confluent Schema Registry

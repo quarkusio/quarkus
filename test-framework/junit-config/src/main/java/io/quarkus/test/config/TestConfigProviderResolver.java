@@ -28,7 +28,7 @@ public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
     private final NamespacedHierarchicalStore<Namespace> store;
 
     TestConfigProviderResolver(NamespacedHierarchicalStore<Namespace> store) {
-        this.resolver = (SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver.instance();
+        this.resolver = new SmallRyeConfigProviderResolver();
         this.classLoader = Thread.currentThread().getContextClassLoader();
         this.configs = new ConcurrentHashMap<>();
         this.store = store;
@@ -50,6 +50,7 @@ public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
      * @param mode the {@link LaunchMode}
      * @return the registed {@link Config} instance
      */
+    @Deprecated(forRemoval = true)
     public Config getConfig(final LaunchMode mode) {
         if (classLoader.equals(Thread.currentThread().getContextClassLoader())) {
             resolver.releaseConfig(classLoader);
@@ -83,16 +84,15 @@ public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
         return resolver.get(classLoader);
     }
 
+    @Deprecated(forRemoval = true)
     public void restoreConfig() {
         if (classLoader.equals(Thread.currentThread().getContextClassLoader())) {
             resolver.releaseConfig(classLoader);
             resolver.registerConfig(configs.get(LaunchMode.TEST), classLoader);
-        } else {
-            throw new IllegalStateException("Context ClassLoader mismatch. Should be " + classLoader + " but was "
-                    + Thread.currentThread().getContextClassLoader());
         }
     }
 
+    @Deprecated(forRemoval = true)
     public void restore() {
         this.configs.clear();
         ConfigProviderResolver.setInstance(resolver);

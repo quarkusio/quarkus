@@ -26,7 +26,6 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
 
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
@@ -248,20 +247,6 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
             this.profiles = null;
         }
 
-        // In the case where a QuarkusMainTest is present, but not a QuarkusTest, tests will be loaded and run using
-        // the parent classloader. In continuous testing mode, that will be a Quarkus classloader and it will not have
-        // the test config on it, so get that classloader test-ready.
-
-        // It would be nice to do this without the guard, but doing this on the normal path causes us to write something we don't want
-        if (isContinuousTesting) {
-            try {
-                initialiseTestConfig(parent);
-            } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException | InstantiationException
-                    | IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
         facadeClassLoaderProviders = new ArrayList<>();
         ServiceLoader<FacadeClassLoaderProvider> loader = ServiceLoader.load(FacadeClassLoaderProvider.class,
                 FacadeClassLoader.class.getClassLoader());
@@ -377,7 +362,8 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
             }
 
             if (isQuarkusTest && !isIntegrationTest) {
-                return getQuarkusClassLoader(inspectionClass, profile).loadClass(name);
+                QuarkusClassLoader runtimeClassLoader = getQuarkusClassLoader(inspectionClass, profile);
+                return runtimeClassLoader.loadClass(name);
             } else {
                 for (FacadeClassLoaderProvider p : facadeClassLoaderProviders) {
                     ClassLoader cl = p.getClassLoader(name, getParent());
@@ -594,38 +580,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
 
         CuratedApplication curatedApplication = getOrCreateCuratedApplication(key, requiredTestClass, additionalPaths);
         StartupAction startupAction = AppMakerHelper.getStartupAction(requiredTestClass, curatedApplication, profile);
-
-        QuarkusClassLoader loader = startupAction.getClassLoader();
-
-        initialiseTestConfig(loader);
-
-        return loader;
-
-    }
-
-    private static void initialiseTestConfig(ClassLoader loader) throws ClassNotFoundException, InstantiationException,
-            IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-        // Make sure that our new classloader has config on it; this is a bit of a scattergun approach to setting config, but it helps cover most paths
-        Class<?> configProviderResolverClass = loader.loadClass(ConfigProviderResolver.class.getName());
-
-        Class<?> testConfigProviderResolverClass = loader.loadClass(QuarkusTestConfigProviderResolver.class.getName());
-        Object testConfigProviderResolver = testConfigProviderResolverClass.getDeclaredConstructor()
-                .newInstance();
-
-        configProviderResolverClass.getDeclaredMethod("setInstance", configProviderResolverClass)
-                .invoke(null, testConfigProviderResolver);
-
-        if (loader instanceof QuarkusClassLoader quarkusClassLoader) {
-            quarkusClassLoader.addCloseTask(() -> {
-                try {
-                    Method releaseMethod = testConfigProviderResolverClass.getMethod("releaseConfig",
-                            ClassLoader.class);
-                    releaseMethod.invoke(testConfigProviderResolver, quarkusClassLoader);
-                } catch (Exception e) {
-                    throw new IllegalStateException("Unable to release config of QuarkusTestConfigProviderResolver", e);
-                }
-            });
-        }
+        return startupAction.getClassLoader();
     }
 
     public boolean isServiceLoaderMechanism() {

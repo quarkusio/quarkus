@@ -16,7 +16,7 @@ public final class QuarkusConfigFactory extends SmallRyeConfigFactory {
             final ClassLoader classLoader) {
         if (config == null) {
             // Remember the config so that we can uninstall it when "setConfig" is next called
-            config = ConfigUtils.configBuilder().build();
+            config = ConfigUtils.configBuilder().forClassLoader(classLoader).build();
         }
         return config;
     }

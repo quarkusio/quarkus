@@ -4,7 +4,10 @@ import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.junit.platform.launcher.LauncherSession;
 import org.junit.platform.launcher.LauncherSessionListener;
 
+import io.quarkus.deployment.dev.testing.TestConfigCustomizer;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.configuration.ConfigUtils;
+import io.smallrye.config.SmallRyeConfig;
 
 /**
  * A JUnit {@link LauncherSessionListener}, used to register the initial test config. Test set up code can safely call
@@ -25,22 +28,30 @@ public class ConfigLauncherSession implements LauncherSessionListener {
         try {
             TestConfigProviderResolver resolver = new TestConfigProviderResolver(session.getStore());
             ConfigProviderResolver.setInstance(resolver);
-            resolver.getConfig(LaunchMode.TEST);
+            LaunchMode current = LaunchMode.current();
+            LaunchMode.set(LaunchMode.TEST);
+            SmallRyeConfig config = ConfigUtils.configBuilder()
+                    .forClassLoader(Thread.currentThread().getContextClassLoader())
+                    .withCustomizers(new TestConfigCustomizer(LaunchMode.TEST))
+                    .withSources(new TestValueRegistryConfigSource(session.getStore()))
+                    .build();
+            LaunchMode.set(current);
+            resolver.registerConfig(config, ClassLoader.getSystemClassLoader());
+            if (ClassLoader.getSystemClassLoader() != Thread.currentThread().getContextClassLoader()) {
+                resolver.registerConfig(config, Thread.currentThread().getContextClassLoader());
+            }
+            // Component Test registers a ClassLoader before this runs. This allows to also provide the Config in
+            // that case as early as possible
+            if (old != Thread.currentThread().getContextClassLoader()) {
+                resolver.registerConfig(config, old);
+            }
         } finally {
             Thread.currentThread().setContextClassLoader(old);
         }
-
     }
 
     @Override
     public void launcherSessionClosed(final LauncherSession session) {
-        try {
-            ((TestConfigProviderResolver) ConfigProviderResolver.instance()).restore();
-        } catch (ClassCastException e) {
-            e.printStackTrace();
-            throw new IllegalStateException(
-                    "Internal error: Attempted to close a launcher session which had already been closed.");
-
-        }
+        ConfigProviderResolver.setInstance(null);
     }
 }

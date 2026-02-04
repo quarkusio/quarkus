@@ -44,6 +44,7 @@ import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.util.JsonSerialization;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -129,6 +130,7 @@ public class KeycloakDevServicesProcessor {
     private static final String DEV_SERVICE_LABEL = "quarkus-dev-service-keycloak";
     private static final ContainerLocator KEYCLOAK_DEV_MODE_CONTAINER_LOCATOR = locateContainerWithLabels(KEYCLOAK_PORT,
             DEV_SERVICE_LABEL);
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(KeycloakDevServicesProcessor.class);
 
     private static volatile RunningDevService devService;
     private static volatile KeycloakDevServicesConfig capturedDevServicesConfiguration;
@@ -317,9 +319,13 @@ public class KeycloakDevServicesProcessor {
     }
 
     private static Map<String, String> prepareConfiguration(
-            BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer, String internalURL,
-            String hostURL, List<RealmRepresentation> realmReps, List<String> errors,
-            KeycloakDevServicesConfigurator devServicesConfigurator, String internalBaseUrl) {
+            BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer,
+            String internalURL,
+            String hostURL,
+            List<RealmRepresentation> realmReps,
+            List<String> errors,
+            KeycloakDevServicesConfigurator devServicesConfigurator,
+            String internalBaseUrl) {
         final String realmName = !realmReps.isEmpty() ? realmReps.iterator().next().getRealm()
                 : getDefaultRealmName();
         final String authServerInternalUrl = realmsURL(internalURL, realmName);
@@ -332,6 +338,7 @@ public class KeycloakDevServicesProcessor {
 
         String oidcClientId = getOidcClientId();
         String oidcClientSecret = getOidcClientSecret();
+        Optional<Set<String>> oidcClientRoles = capturedDevServicesConfiguration.clientRoles();
 
         Map<String, String> users = getUsers(capturedDevServicesConfiguration.users(), createDefaultRealm);
 
@@ -349,7 +356,14 @@ public class KeycloakDevServicesProcessor {
             try {
                 String adminToken = getAdminToken(client, clientAuthServerBaseUrl);
                 if (createDefaultRealm) {
-                    createDefaultRealm(client, adminToken, clientAuthServerBaseUrl, users, oidcClientId, oidcClientSecret,
+                    createDefaultRealm(
+                            client,
+                            adminToken,
+                            clientAuthServerBaseUrl,
+                            users,
+                            oidcClientId,
+                            oidcClientSecret,
+                            oidcClientRoles,
                             errors,
                             devServicesConfigurator);
                     realmNames.add(realmName);
@@ -734,13 +748,75 @@ public class KeycloakDevServicesProcessor {
         return null;
     }
 
-    private static void createDefaultRealm(WebClient client, String token, String keycloakUrl, Map<String, String> users,
-            String oidcClientId, String oidcClientSecret, List<String> errors,
+    private static void createDefaultRealm(
+            WebClient client,
+            String token,
+            String keycloakUrl,
+            Map<String, String> users,
+            String oidcClientId,
+            String oidcClientSecret,
+            Optional<Set<String>> clientRoles,
+            List<String> errors,
             KeycloakDevServicesConfigurator devServicesConfigurator) {
         RealmRepresentation realm = createDefaultRealmRep();
 
         if (capturedDevServicesConfiguration.createClient()) {
-            realm.getClients().add(createClient(oidcClientId, oidcClientSecret));
+            ClientRepresentation clientRep = createClient(oidcClientId, oidcClientSecret);
+            realm.getClients().add(clientRep);
+
+            if (clientRoles.isPresent()) {
+                String clientId = clientRep.getClientId();//to ensure we have the accurate id
+                log.info("Client id: {}", clientId);
+
+                //TODO:: I think this is the closest so far (but still not working)? I don't think credentials are needed.
+                //                UserRepresentation serviceAccount = new UserRepresentation();
+                //                serviceAccount.setServiceAccountClientId(clientId);
+                //                serviceAccount.setUsername("service-account-" + clientId);
+                //                serviceAccount.setRealmRoles(clientRoles.get().stream().toList());
+
+                //Role mapping: default-roles-oqm
+
+                //                CredentialRepresentation saCreds = new CredentialRepresentation();
+                //                //                saCreds.setCredentialData(oidcClientSecret);
+                //                saCreds.setType(CredentialRepresentation.SECRET);
+                //                saCreds.setSecretData(oidcClientSecret);
+                //                serviceAccount.setCredentials(List.of(saCreds));
+
+                //                realm.getUsers().add(serviceAccount);
+
+                log.info("Users: {}", realm.getUsers());
+
+                //TODO:: I think this is the closest yet- need to add the "roles" scope to the client, but no scopes exist yet. what should it be?
+                //                ClientScopeRepresentation scope = realm.getClientScopes().stream().filter(cs -> cs.getName().equals("roles"))
+                //                        .findFirst().orElse(null);
+                // not correct: clientRep.getDefaultClientScopes().add("roles");
+                
+                clientRep.setDefaultClientScopes(List.of("roles", "role_list"));
+
+                //TODO:: cleanup. Didn't work, still no roles in client jwt. Don't think we need these; assign to service account, not client?
+                realm.getRoles().setClient(
+                        Map.of(
+                                clientRep.getClientId(),
+                                clientRoles.get().stream()
+                                        .map((String roleStr) -> {
+                                            RoleRepresentation role = new RoleRepresentation();
+                                            role.setName(roleStr);
+                                            role.setDescription("Client role" + roleStr);
+                                            return role;
+                                        })
+                                        .toList()));
+
+                //TODO:: cleanup, didn't work (getClient() returns null)
+                //                List<RoleRepresentation> clientRolesReps = realm.getRoles().getClient().get(clientRep.getClientId());
+                //                clientRolesReps.addAll(
+                //                        clientRoles.get().stream()
+                //                                .map((String roleStr) -> {
+                //                                    RoleRepresentation role = new RoleRepresentation();
+                //                                    role.setName(roleStr);
+                //                                    return role;
+                //                                })
+                //                                .toList());
+            }
         }
         for (Map.Entry<String, String> entry : users.entrySet()) {
             realm.getUsers().add(createUser(entry.getKey(), entry.getValue(), getUserRoles(entry.getKey())));

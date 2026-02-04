@@ -215,6 +215,28 @@ public class ValueCommandsTest extends DatasourceTestBase {
 
     @Test
     @RequiresRedis7OrHigher
+    void setAndChanged() {
+        assertThat(values.setAndChanged(key, value)).isTrue();
+        assertThat(values.setAndChanged(key, "value2")).isTrue();
+        assertThat(values.get(key)).isEqualTo("value2");
+    }
+
+    @Test
+    @RequiresRedis7OrHigher
+    void setAndChangedWithArgs() {
+        KeyCommands<String> keys = ds.key(String.class);
+
+        assertThat(values.setAndChanged(key, value)).isTrue();
+        assertThat(values.setAndChanged(key, "value2", new SetArgs().nx())).isFalse();
+        assertThat(values.get(key)).isEqualTo(value);
+        assertThat(keys.del(key)).isEqualTo(1);
+
+        assertThat(values.setAndChanged(key, value, new SetArgs().xx())).isFalse();
+        assertThat(values.get(key)).isNull();
+    }
+
+    @Test
+    @RequiresRedis7OrHigher
     void setGet() {
         assertThat(values.setGet(key, value)).isNull();
         assertThat(values.setGet(key, "value2")).isEqualTo(value);

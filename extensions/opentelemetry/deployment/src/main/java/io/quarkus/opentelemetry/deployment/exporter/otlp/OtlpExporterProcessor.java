@@ -143,10 +143,8 @@ public class OtlpExporterProcessor {
             CoreVertxBuildItem vertxBuildItem,
             List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
-        if (!externalOtelExporterBuildItem.isEmpty()) {
-            // if there is an external exporter, we don't want to create the default one
-            return;
-        }
+
+        boolean hasExternalExporter = !externalOtelExporterBuildItem.isEmpty();
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem
                 .configure(LateBoundSpanProcessor.class)
                 .types(SpanProcessor.class)
@@ -156,7 +154,7 @@ public class OtlpExporterProcessor {
                 .addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
                         new Type[] { ClassType.create(DotName.createSimple(SpanExporter.class.getName())) }, null))
                 .addInjectionPoint(ClassType.create(DotName.createSimple(TlsConfigurationRegistry.class)))
-                .createWith(recorder.spanProcessorForOtlp(vertxBuildItem.getVertx()))
+                .createWith(recorder.spanProcessorForOtlp(vertxBuildItem.getVertx(), hasExternalExporter))
                 .done());
     }
 

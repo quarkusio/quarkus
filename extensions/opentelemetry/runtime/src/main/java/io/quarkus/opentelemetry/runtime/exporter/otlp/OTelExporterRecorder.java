@@ -94,7 +94,7 @@ public class OTelExporterRecorder {
     }
 
     public Function<SyntheticCreationalContext<LateBoundSpanProcessor>, LateBoundSpanProcessor> spanProcessorForOtlp(
-            Supplier<Vertx> vertx) {
+            Supplier<Vertx> vertx, boolean hasExternalExporter) {
         URI baseUri = getTracesUri(exporterRuntimeConfig.getValue()); // do the creation and validation here in order to preserve backward compatibility
         return new Function<>() {
             @Override
@@ -107,6 +107,14 @@ public class OTelExporterRecorder {
                 Instance<SpanExporter> spanExporters = context.getInjectedReference(new TypeLiteral<>() {
                 });
                 if (!spanExporters.isUnsatisfied()) {
+                    return RemoveableLateBoundSpanProcessor.INSTANCE;
+                }
+
+                // don't create the default exporter if an external trace exporter is found and the default
+                // exporter is not explicitly enabled
+                boolean createDefault = exporterRuntimeConfig.getValue().traces().activateDefaultExporter()
+                        || !hasExternalExporter;
+                if (!createDefault) {
                     return RemoveableLateBoundSpanProcessor.INSTANCE;
                 }
 

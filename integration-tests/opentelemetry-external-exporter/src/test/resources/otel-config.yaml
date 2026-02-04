@@ -1,0 +1,30 @@
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+exporters:
+  debug:
+    verbosity: ${env:LOGGING_EXPORTER_VERBOSITY_LEVEL}
+  otlp:
+    endpoint: ${env:OTLP_EXPORTER_ENDPOINT}
+    tls:
+      insecure: true
+    compression: none
+service:
+  extensions: [health_check]
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      exporters: [debug, otlp]
+    traces:
+      receivers: [otlp]
+      exporters: [debug, otlp]
+    logs:
+      receivers: [otlp]
+      exporters: [debug, otlp]

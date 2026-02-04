@@ -52,6 +52,11 @@ class HttpClientOptionsConsumerTest {
     private OtlpExporterTracesConfig createExporterConfig(final boolean isEnabled) {
         return new OtlpExporterTracesConfig() {
             @Override
+            public boolean activateDefaultExporter() {
+                return false;
+            }
+
+            @Override
             public Optional<String> endpoint() {
                 return Optional.of("http://localhost:4317");
             }

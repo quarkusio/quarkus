@@ -185,6 +185,11 @@ class OtlpExporterProviderTest {
             public OtlpExporterTracesConfig traces() {
                 return new OtlpExporterTracesConfig() {
                     @Override
+                    public boolean activateDefaultExporter() {
+                        return false;
+                    }
+
+                    @Override
                     public Optional<String> endpoint() {
                         return Optional.ofNullable(newTrace);
                     }

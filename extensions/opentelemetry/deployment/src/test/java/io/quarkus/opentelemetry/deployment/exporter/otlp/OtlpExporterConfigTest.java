@@ -19,6 +19,7 @@ public class OtlpExporterConfigTest {
             .overrideConfigKey("quarkus.otel.exporter.otlp.protocol", "wrong")
             .overrideConfigKey("quarkus.otel.exporter.otlp.traces.protocol", "http/protobuf")
             .overrideConfigKey("quarkus.otel.exporter.otlp.traces.endpoint", "http://localhost ")
+            .overrideConfigKey("quarkus.otel.exporter.otlp.traces.experimental.dependent.default.enable", "true")
             .overrideConfigKey("quarkus.otel.metrics.exporter", "none")
             .overrideConfigKey("quarkus.otel.bsp.schedule.delay", "50")
             .overrideConfigKey("quarkus.otel.bsp.export.timeout", "PT1S");
@@ -32,5 +33,6 @@ public class OtlpExporterConfigTest {
         assertEquals("http/protobuf", config.traces().protocol().get().trim());
         assertTrue(config.traces().endpoint().isPresent());
         assertEquals("http://localhost", config.traces().endpoint().get().trim());
+        assertTrue(config.traces().activateDefaultExporter());
     }
 }

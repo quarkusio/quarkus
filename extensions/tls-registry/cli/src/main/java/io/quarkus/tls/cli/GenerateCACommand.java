@@ -3,7 +3,6 @@ package io.quarkus.tls.cli;
 import static io.quarkus.tls.cli.Constants.CA_FILE;
 import static io.quarkus.tls.cli.Constants.KEYSTORE_FILE;
 import static io.quarkus.tls.cli.Constants.PK_FILE;
-import static java.lang.System.Logger.Level.INFO;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,6 +14,8 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.concurrent.Callable;
+
+import org.jboss.logging.Logger;
 
 import io.smallrye.certs.ca.CaGenerator;
 import picocli.CommandLine;
@@ -34,19 +35,18 @@ public class GenerateCACommand implements Callable<Integer> {
             "--renew" }, description = "Update certificate if already created.", defaultValue = "false")
     boolean renew;
 
-    static System.Logger LOGGER = System.getLogger("generate-quarkus-ca");
+    static Logger LOGGER = Logger.getLogger(GenerateCACommand.class);
 
     @Override
     public Integer call() throws Exception {
-        LOGGER.log(INFO, "🔥 Generating Quarkus Dev CA certificate...");
+        LOGGER.info("🔥 Generating Quarkus Dev CA certificate...");
         if (!Constants.BASE_DIR.exists()) {
             Constants.BASE_DIR.mkdirs();
         }
 
         if (CA_FILE.exists() && !renew) {
             if (!hasExpired()) {
-                LOGGER.log(INFO,
-                        "✅ Quarkus Dev CA certificate already exists and has not yet expired. Use --renew to update.");
+                LOGGER.info("✅ Quarkus Dev CA certificate already exists and has not yet expired. Use --renew to update.");
                 return 0;
             }
         }
@@ -57,18 +57,18 @@ public class GenerateCACommand implements Callable<Integer> {
                 .generate("quarkus-dev-root-ca", "Quarkus Development (" + username + ")", "Quarkus Development",
                         "home", "world", "universe");
         if (install) {
-            LOGGER.log(INFO, "🔥 Installing the CA certificate in the system truststore...");
+            LOGGER.info("🔥 Installing the CA certificate in the system truststore...");
             generator.installToSystem();
         }
 
         if (truststore) {
-            LOGGER.log(INFO, "🔥 Generating p12 truststore...");
+            LOGGER.info("🔥 Generating p12 truststore...");
             File ts = new File("quarkus-ca-truststore.p12");
             generator.generateTrustStore(ts);
-            LOGGER.log(INFO, "✅ Truststore generated successfully.");
+            LOGGER.info("✅ Truststore generated successfully.");
         }
 
-        LOGGER.log(INFO, "✅ Quarkus Dev CA certificate generated and installed");
+        LOGGER.info("✅ Quarkus Dev CA certificate generated and installed");
 
         return 0;
     }
@@ -78,7 +78,7 @@ public class GenerateCACommand implements Callable<Integer> {
         try {
             cert.checkValidity();
         } catch (Exception e) {
-            LOGGER.log(INFO, "🔥 Certificate has expired. Renewing...");
+            LOGGER.info("🔥 Certificate has expired. Renewing...");
             return true;
         }
         return false;

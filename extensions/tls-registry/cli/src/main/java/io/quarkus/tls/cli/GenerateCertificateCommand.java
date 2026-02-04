@@ -5,8 +5,6 @@ import static io.quarkus.tls.cli.Constants.PK_FILE;
 import static io.quarkus.tls.cli.DotEnvHelper.addOrReplaceProperty;
 import static io.quarkus.tls.cli.DotEnvHelper.readDotEnvFile;
 import static io.quarkus.tls.cli.letsencrypt.LetsEncryptConstants.DOT_ENV_FILE;
-import static java.lang.System.Logger.Level.ERROR;
-import static java.lang.System.Logger.Level.INFO;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -27,6 +25,7 @@ import java.util.concurrent.Callable;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.jboss.logging.Logger;
 
 import io.smallrye.certs.CertificateGenerator;
 import io.smallrye.certs.CertificateRequest;
@@ -65,25 +64,25 @@ public class GenerateCertificateCommand implements Callable<Integer> {
         Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
     }
 
-    static System.Logger LOGGER = System.getLogger("generate-certificate");
+    static Logger LOGGER = Logger.getLogger(GenerateCertificateCommand.class);
 
     @Override
     public Integer call() throws Exception {
-        LOGGER.log(INFO, "\uD83D\uDD0E Looking for the Quarkus Dev CA certificate...");
+        LOGGER.info("\uD83D\uDD0E Looking for the Quarkus Dev CA certificate...");
 
         if (!CA_FILE.exists() || !PK_FILE.exists() || selfSigned) {
-            LOGGER.log(INFO, "\uD83C\uDFB2 Quarkus Dev CA certificate not found. Generating a self-signed certificate...");
+            LOGGER.info("\uD83C\uDFB2 Quarkus Dev CA certificate not found. Generating a self-signed certificate...");
             generateSelfSignedCertificate();
             return 0;
         }
 
-        LOGGER.log(INFO, "\uD83D\uDCDC Quarkus Dev CA certificate found at {0}", CA_FILE.getAbsolutePath());
+        LOGGER.infof("\uD83D\uDCDC Quarkus Dev CA certificate found at %s", CA_FILE.getAbsolutePath());
         X509Certificate caCert = loadRootCertificate(CA_FILE);
         PrivateKey caPrivateKey = loadPrivateKey();
 
         createSignedCertificate(caCert, caPrivateKey);
 
-        LOGGER.log(INFO, "✅ Signed Certificate generated successfully and exported into `{0}-keystore.p12`", name);
+        LOGGER.infof("✅ Signed Certificate generated successfully and exported into `%s-keystore.p12`", name);
         printConfig(directory.resolve(name + "-keystore.p12"), password);
 
         return 0;
@@ -99,7 +98,7 @@ public class GenerateCertificateCommand implements Callable<Integer> {
                 .withPassword(password)
                 .withDuration(Duration.ofDays(365))
                 .withFormat(Format.PKCS12));
-        LOGGER.log(INFO, "✅ Self-signed certificate generated successfully and exported into `{0}-keystore.p12`", name);
+        LOGGER.infof("✅ Self-signed certificate generated successfully and exported into `%s-keystore.p12`", name);
         printConfig(directory.resolve(name + "-keystore.p12"), password);
 
     }
@@ -116,13 +115,13 @@ public class GenerateCertificateCommand implements Callable<Integer> {
             addOrReplaceProperty(dotEnvContent, "%dev.quarkus.tls.key-store.p12.password", password);
             Files.write(DOT_ENV_FILE.toPath(), dotEnvContent);
         } catch (IOException e) {
-            LOGGER.log(ERROR, "Failed to read .env file", e);
+            LOGGER.error("Failed to read .env file", e);
         }
 
-        LOGGER.log(INFO, """
+        LOGGER.infof("""
                 ✅ Required configuration added to the `.env` file:
-                %dev.quarkus.tls.key-store.p12.path={0}
-                %dev.quarkus.tls.key-store.p12.password={1}
+                %%dev.quarkus.tls.key-store.p12.path=%s
+                %%dev.quarkus.tls.key-store.p12.password=%s
                 """, certificatePathProperty, password);
     }
 

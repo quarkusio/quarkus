@@ -22,9 +22,6 @@ import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.exporter.internal.ExporterBuilderUtil;
 import io.opentelemetry.exporter.internal.grpc.GrpcExporter;
 import io.opentelemetry.exporter.internal.http.HttpExporter;
-import io.opentelemetry.exporter.internal.otlp.logs.LogsRequestMarshaler;
-import io.opentelemetry.exporter.internal.otlp.metrics.MetricsRequestMarshaler;
-import io.opentelemetry.exporter.internal.otlp.traces.TraceRequestMarshaler;
 import io.opentelemetry.exporter.otlp.internal.OtlpUserAgent;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigurationException;
 import io.opentelemetry.sdk.common.InternalTelemetryVersion;
@@ -166,7 +163,7 @@ public class OTelExporterRecorder {
 
                 OtlpExporterTracesConfig tracesConfig = exporterRuntimeConfig.traces();
 
-                return new VertxGrpcSpanExporter(new GrpcExporter<TraceRequestMarshaler>(
+                return new VertxGrpcSpanExporter(new GrpcExporter(
                         new VertxGrpcSender(
                                 baseUri,
                                 VertxGrpcSender.GRPC_TRACE_SERVICE_NAME,
@@ -178,7 +175,7 @@ public class OTelExporterRecorder {
                         InternalTelemetryVersion.LATEST,
                         ComponentId.generateLazy(StandardComponentId.ExporterType.OTLP_GRPC_SPAN_EXPORTER), // use the same as OTel does
                         MeterProvider::noop,
-                        baseUri.toASCIIString()));
+                        baseUri));
             }
 
             private SpanExporter createHttpSpanExporter(OtlpExporterRuntimeConfig exporterRuntimeConfig, Vertx vertx,
@@ -189,7 +186,7 @@ public class OTelExporterRecorder {
 
                 boolean exportAsJson = false; //TODO: this will be enhanced in the future
 
-                return new VertxHttpSpanExporter(new HttpExporter<TraceRequestMarshaler>(
+                return new VertxHttpSpanExporter(new HttpExporter(
                         ComponentId.generateLazy(StandardComponentId.ExporterType.OTLP_HTTP_SPAN_EXPORTER),
                         new VertxHttpSender(
                                 baseUri,
@@ -202,7 +199,8 @@ public class OTelExporterRecorder {
                                 vertx),
                         MeterProvider::noop,
                         InternalTelemetryVersion.LATEST,
-                        baseUri.toASCIIString()));
+                        baseUri,
+                        false));
             }
         };
     }
@@ -233,7 +231,7 @@ public class OTelExporterRecorder {
                     String protocol = metricsConfig.protocol().get();
                     if (GRPC.equals(protocol)) {
                         metricExporter = new VertxGrpcMetricExporter(
-                                new GrpcExporter<MetricsRequestMarshaler>(
+                                new GrpcExporter(
                                         new VertxGrpcSender(
                                                 baseUri,
                                                 VertxGrpcSender.GRPC_METRIC_SERVICE_NAME,
@@ -245,13 +243,13 @@ public class OTelExporterRecorder {
                                         InternalTelemetryVersion.LATEST,
                                         ComponentId.generateLazy(OTLP_GRPC_METRIC_EXPORTER), // use the same as OTel does
                                         MeterProvider::noop,
-                                        baseUri.toASCIIString()),
+                                        baseUri),
                                 aggregationTemporalityResolver(metricsConfig),
                                 aggregationResolver(metricsConfig));
                     } else if (HTTP_PROTOBUF.equals(protocol)) {
                         boolean exportAsJson = false; //TODO: this will be enhanced in the future
                         metricExporter = new VertxHttpMetricsExporter(
-                                new HttpExporter<MetricsRequestMarshaler>(
+                                new HttpExporter(
                                         ComponentId.generateLazy(
                                                 StandardComponentId.ExporterType.OTLP_HTTP_METRIC_EXPORTER),
                                         new VertxHttpSender(
@@ -265,7 +263,8 @@ public class OTelExporterRecorder {
                                                 vertx.get()),
                                         MeterProvider::noop,
                                         InternalTelemetryVersion.LATEST,
-                                        baseUri.toASCIIString()),
+                                        baseUri,
+                                        false),
                                 aggregationTemporalityResolver(metricsConfig),
                                 aggregationResolver(metricsConfig));
                     } else {
@@ -307,7 +306,7 @@ public class OTelExporterRecorder {
                     String protocol = logsConfig.protocol().get();
                     if (GRPC.equals(protocol)) {
                         logRecordExporter = new VertxGrpcLogRecordExporter(
-                                new GrpcExporter<LogsRequestMarshaler>(
+                                new GrpcExporter(
                                         new VertxGrpcSender(
                                                 baseUri,
                                                 VertxGrpcSender.GRPC_LOG_SERVICE_NAME,
@@ -320,11 +319,11 @@ public class OTelExporterRecorder {
                                         ComponentId.generateLazy(
                                                 StandardComponentId.ExporterType.OTLP_GRPC_LOG_EXPORTER), // use the same as OTel does
                                         MeterProvider::noop,
-                                        baseUri.toASCIIString()));
+                                        baseUri));
                     } else if (HTTP_PROTOBUF.equals(protocol)) {
                         boolean exportAsJson = false; //TODO: this will be enhanced in the future
                         logRecordExporter = new VertxHttpLogRecordExporter(
-                                new HttpExporter<LogsRequestMarshaler>(
+                                new HttpExporter(
                                         ComponentId.generateLazy(
                                                 StandardComponentId.ExporterType.OTLP_HTTP_LOG_EXPORTER),
                                         new VertxHttpSender(
@@ -338,7 +337,8 @@ public class OTelExporterRecorder {
                                                 vertx.get()),
                                         MeterProvider::noop,
                                         InternalTelemetryVersion.LATEST,
-                                        baseUri.toASCIIString()));
+                                        baseUri,
+                                        false));
                     } else {
                         throw new IllegalArgumentException(String.format("Unsupported OTLP protocol %s specified. " +
                                 "Please check `quarkus.otel.exporter.otlp.logs.protocol` property", protocol));

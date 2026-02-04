@@ -3,6 +3,7 @@ package io.quarkus.bootstrap.workspace;
 import java.io.IOException;
 import java.io.Serial;
 import java.io.Serializable;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
@@ -11,6 +12,7 @@ import java.util.Objects;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.MappableCollectionFactory;
 import io.quarkus.paths.DirectoryPathTree;
+import io.quarkus.paths.EmptyPathTree;
 import io.quarkus.paths.PathFilter;
 import io.quarkus.paths.PathTree;
 
@@ -80,7 +82,7 @@ public class LazySourceDir implements SourceDir, Serializable {
 
     @Override
     public PathTree getSourceTree() {
-        return new DirectoryPathTree(srcDir, srcFilter);
+        return Files.exists(srcDir) ? new DirectoryPathTree(srcDir, srcFilter) : EmptyPathTree.getInstance();
     }
 
     @Override
@@ -95,7 +97,7 @@ public class LazySourceDir implements SourceDir, Serializable {
 
     @Override
     public PathTree getOutputTree() {
-        return new DirectoryPathTree(destDir, destFilter);
+        return Files.exists(destDir) ? new DirectoryPathTree(destDir, destFilter) : EmptyPathTree.getInstance();
     }
 
     public <T> T getValue(Object key, Class<T> type) {

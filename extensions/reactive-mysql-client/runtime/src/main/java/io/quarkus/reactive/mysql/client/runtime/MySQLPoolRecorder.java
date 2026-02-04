@@ -10,6 +10,7 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemKeyCertO
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemTrustOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxKeyCertOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOptions;
+import static io.quarkus.vertx.core.runtime.SSLConfigHelper.setJdkHeapBufferPooling;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -259,6 +260,8 @@ public class MySQLPoolRecorder {
             configurePemKeyCertOptions(mysqlConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePem());
             configureJksKeyCertOptions(mysqlConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificateJks());
             configurePfxKeyCertOptions(mysqlConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePfx());
+
+            setJdkHeapBufferPooling(mysqlConnectOptions);
 
             mysqlConnectOptions.setReconnectAttempts(dataSourceReactiveRuntimeConfig.reconnectAttempts());
 

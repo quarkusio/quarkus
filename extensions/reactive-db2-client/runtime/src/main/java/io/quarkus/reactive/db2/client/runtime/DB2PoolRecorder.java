@@ -10,6 +10,7 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemKeyCertO
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemTrustOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxKeyCertOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOptions;
+import static io.quarkus.vertx.core.runtime.SSLConfigHelper.setJdkHeapBufferPooling;
 
 import java.util.List;
 import java.util.Map;
@@ -237,6 +238,8 @@ public class DB2PoolRecorder {
         configurePemKeyCertOptions(connectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePem());
         configureJksKeyCertOptions(connectOptions, dataSourceReactiveRuntimeConfig.keyCertificateJks());
         configurePfxKeyCertOptions(connectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePfx());
+
+        setJdkHeapBufferPooling(connectOptions);
 
         connectOptions.setReconnectAttempts(dataSourceReactiveRuntimeConfig.reconnectAttempts());
 

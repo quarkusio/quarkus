@@ -4,6 +4,7 @@ import io.quarkus.vertx.core.runtime.config.JksConfiguration;
 import io.quarkus.vertx.core.runtime.config.PemKeyCertConfiguration;
 import io.quarkus.vertx.core.runtime.config.PemTrustCertConfiguration;
 import io.quarkus.vertx.core.runtime.config.PfxConfiguration;
+import io.vertx.core.net.JdkSSLEngineOptions;
 import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.PemKeyCertOptions;
@@ -111,6 +112,22 @@ public class SSLConfigHelper {
     private static void ensureKeyCertOptionsNotSet(TCPSSLOptions options) {
         if (options.getKeyCertOptions() != null) {
             throw new IllegalArgumentException("Key cert options have already been set");
+        }
+    }
+
+    private static final boolean JDK_SSL_BUFFER_POOLING = Boolean.getBoolean("quarkus.http.server.ssl.jdk.bufferPooling");
+
+    public static void setJdkHeapBufferPooling(TCPSSLOptions tcpSslOptions) {
+        if (!JDK_SSL_BUFFER_POOLING) {
+            return;
+        }
+        var engineOption = tcpSslOptions.getSslEngineOptions();
+        if (engineOption == null) {
+            var jdkEngineOptions = new JdkSSLEngineOptions();
+            jdkEngineOptions.setPooledHeapBuffers(true);
+            tcpSslOptions.setSslEngineOptions(jdkEngineOptions);
+        } else if (engineOption instanceof JdkSSLEngineOptions jdkEngineOptions) {
+            jdkEngineOptions.setPooledHeapBuffers(true);
         }
     }
 

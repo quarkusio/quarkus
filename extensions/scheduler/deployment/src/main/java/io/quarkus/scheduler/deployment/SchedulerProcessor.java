@@ -415,6 +415,9 @@ public class SchedulerProcessor {
             for (AnnotationInstance scheduled : scheduledMethod.getSchedules()) {
                 schedules.add(annotationProxy.builder(scheduled, Scheduled.class).build(classOutput));
             }
+            if (!schedules.isEmpty()) {
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(Scheduled.Never.class).constructors(false).build());
+            }
             metadata.setSchedules(schedules);
             metadata.setDeclaringClassName(scheduledMethod.getMethod().declaringClass().toString());
             metadata.setMethodName(scheduledMethod.getMethod().name());

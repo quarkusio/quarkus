@@ -60,6 +60,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo2.Const;
@@ -383,6 +384,7 @@ public class GrpcClientProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     SyntheticBeanBuildItem clientInterceptorStorage(GrpcClientRecorder recorder, RecorderContext recorderContext,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             BeanArchiveIndexBuildItem beanArchiveIndex) {
 
         IndexView index = beanArchiveIndex.getIndex();
@@ -411,10 +413,14 @@ public class GrpcClientProcessor {
 
         Set<Class<?>> perClientInterceptors = new HashSet<>();
         for (String perClientInterceptor : interceptors.nonGlobalInterceptors) {
+            reflectiveClassBuildItemBuildProducer
+                    .produce(ReflectiveClassBuildItem.builder(perClientInterceptor).constructors(false).build());
             perClientInterceptors.add(recorderContext.classProxy(perClientInterceptor));
         }
         Set<Class<?>> globalInterceptors = new HashSet<>();
         for (String globalInterceptor : interceptors.globalInterceptors) {
+            reflectiveClassBuildItemBuildProducer
+                    .produce(ReflectiveClassBuildItem.builder(globalInterceptor).constructors(false).build());
             globalInterceptors.add(recorderContext.classProxy(globalInterceptor));
         }
 

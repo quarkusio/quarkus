@@ -21,9 +21,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.BooleanSupplier;
 
 import javax.crypto.NoSuchPaddingException;
@@ -395,15 +393,6 @@ final class Target_io_netty_bootstrap_AbstractBootstrap {
 
         return regFuture;
 
-    }
-}
-
-@TargetClass(className = "io.netty.channel.nio.NioEventLoop")
-final class Target_io_netty_channel_nio_NioEventLoop {
-
-    @Substitute
-    private static Queue<Runnable> newTaskQueue0(int maxPendingTasks) {
-        return new LinkedBlockingDeque<>();
     }
 }
 

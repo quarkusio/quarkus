@@ -1,13 +1,9 @@
 package io.quarkus.tls.cli.letsencrypt;
 
-import static java.lang.System.Logger.Level.DEBUG;
-import static java.lang.System.Logger.Level.ERROR;
-import static java.lang.System.Logger.Level.INFO;
-import static java.lang.System.Logger.Level.WARNING;
-
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.jboss.logging.Logger;
 import org.wildfly.security.x500.cert.acme.AcmeAccount;
 import org.wildfly.security.x500.cert.acme.AcmeChallenge;
 import org.wildfly.security.x500.cert.acme.AcmeClientSpi;
@@ -24,7 +20,7 @@ import io.vertx.ext.web.client.WebClientOptions;
 
 public class AcmeClient extends AcmeClientSpi {
 
-    static System.Logger LOGGER = System.getLogger("lets-encrypt-acme-client");
+    static Logger LOGGER = Logger.getLogger(AcmeClient.class);
 
     private static final String TOKEN_REGEX = "[A-Za-z0-9_-]+";
 
@@ -44,7 +40,7 @@ public class AcmeClient extends AcmeClientSpi {
             String managementPassword,
             String managementKey) {
         this.vertx = Vertx.vertx();
-        LOGGER.log(INFO, "\uD83D\uDD35 Creating AcmeClient with {0}", managementUrl);
+        LOGGER.infof("\uD83D\uDD35 Creating AcmeClient with %s", managementUrl);
 
         // It will need to become configurable to support mTLS, etc
         options = new WebClientOptions();
@@ -67,7 +63,7 @@ public class AcmeClient extends AcmeClientSpi {
     public boolean checkReadiness() {
 
         // Check status
-        LOGGER.log(INFO, "\uD83D\uDD35 Checking management challenge endpoint status using {0}", challengeUrl);
+        LOGGER.infof("\uD83D\uDD35 Checking management challenge endpoint status using %s", challengeUrl);
         HttpRequest<Buffer> request = managementClient.getAbs(challengeUrl);
         addKeyAndUser(request);
         try {
@@ -78,19 +74,18 @@ public class AcmeClient extends AcmeClientSpi {
                     return true;
                 }
                 case 404 -> {
-                    LOGGER.log(ERROR,
+                    LOGGER.error(
                             "⚠\uFE0F Let's Encrypt challenge endpoint is not found, make sure that the build-time property `quarkus.tls.lets-encrypt.enabled` is set to `true`");
                     return false;
                 }
                 default -> {
-                    LOGGER.log(WARNING, "⚠\uFE0F Unexpected status code from the management challenge endpoint: " + status);
+                    LOGGER.warn("⚠\uFE0F Unexpected status code from the management challenge endpoint: " + status);
                     return false;
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(DEBUG, "Failed to check the management challenge endpoint status", e);
-            LOGGER.log(ERROR,
-                    "⚠\uFE0F Quarkus management endpoint is not ready, make sure the Quarkus application is running.");
+            LOGGER.debug("Failed to check the management challenge endpoint status", e);
+            LOGGER.error("⚠\uFE0F Quarkus management endpoint is not ready, make sure the Quarkus application is running.");
             return false;
         }
 
@@ -104,7 +99,7 @@ public class AcmeClient extends AcmeClientSpi {
         AcmeChallenge selectedChallenge = null;
         for (AcmeChallenge challenge : challenges) {
             if (challenge.getType() == AcmeChallenge.Type.HTTP_01) {
-                LOGGER.log(DEBUG, "HTTP 01 challenge is selected");
+                LOGGER.debug("HTTP 01 challenge is selected");
                 selectedChallenge = challenge;
                 break;
             }
@@ -119,7 +114,7 @@ public class AcmeClient extends AcmeClientSpi {
             throw new RuntimeException("Invalid certificate authority challenge");
         }
 
-        LOGGER.log(DEBUG, "Preparing a selected challenge content for token {0}", token);
+        LOGGER.debugf("Preparing a selected challenge content for token %s", token);
         String selectedChallengeString = selectedChallenge.getKeyAuthorization(account);
 
         // respond to the http challenge
@@ -130,18 +125,17 @@ public class AcmeClient extends AcmeClientSpi {
             HttpRequest<Buffer> request = managementClient.getAbs(challengeUrl);
             request.addQueryParam("challenge-resource", token).addQueryParam("challenge-content", selectedChallengeString);
             addKeyAndUser(request);
-            LOGGER.log(DEBUG, "Sending token {0} and challenge content to the management challenge endpoint", token,
+            LOGGER.debugf("Sending token %s and challenge content to the management challenge endpoint", token,
                     selectedChallengeString);
 
             HttpResponse<Buffer> response = await(request.send());
 
             if (response.statusCode() != 204) {
-                LOGGER.log(ERROR,
-                        "⚠\uFE0F Failed to upload challenge content to the management challenge endpoint, status code: "
-                                + response.statusCode());
+                LOGGER.error("⚠\uFE0F Failed to upload challenge content to the management challenge endpoint, status code: "
+                        + response.statusCode());
                 throw new RuntimeException("Failed to respond to certificate authority challenge");
             } else {
-                LOGGER.log(INFO, "\uD83D\uDD35 Challenge ready for token {0}, waiting for Let's Encrypt to validate...", token);
+                LOGGER.infof("\uD83D\uDD35 Challenge ready for token %s, waiting for Let's Encrypt to validate...", token);
             }
         }
         return selectedChallenge;
@@ -149,7 +143,7 @@ public class AcmeClient extends AcmeClientSpi {
 
     @Override
     public void cleanupAfterChallenge(AcmeAccount account, AcmeChallenge challenge) throws AcmeException {
-        LOGGER.log(INFO, "\uD83D\uDD35 Performing cleanup after the challenge");
+        LOGGER.info("\uD83D\uDD35 Performing cleanup after the challenge");
 
         Assert.checkNotNullParam("account", account);
         Assert.checkNotNullParam("challenge", challenge);
@@ -159,7 +153,7 @@ public class AcmeClient extends AcmeClientSpi {
             throw new RuntimeException("Invalid certificate authority challenge");
         }
 
-        LOGGER.log(DEBUG, "Requesting the management challenge endpoint to delete a challenge resource {0}", token);
+        LOGGER.debugf("Requesting the management challenge endpoint to delete a challenge resource %s", token);
 
         HttpRequest<Buffer> request = managementClient.deleteAbs(challengeUrl);
         addKeyAndUser(request);
@@ -170,7 +164,7 @@ public class AcmeClient extends AcmeClientSpi {
     }
 
     public void certificateChainAndKeyAreReady() {
-        LOGGER.log(INFO,
+        LOGGER.info(
                 "\uD83D\uDD35 Notifying management challenge endpoint that a new certificate chain and private key are ready");
         HttpRequest<Buffer> request = managementClient.postAbs(certsUrl);
         addKeyAndUser(request);

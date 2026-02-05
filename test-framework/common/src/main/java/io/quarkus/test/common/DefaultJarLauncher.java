@@ -180,6 +180,12 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
     public void close() {
         LauncherUtil.toStdOut(logFile);
         LauncherUtil.destroyProcess(quarkusProcess);
+        if (generateAotFile) {
+            Path aotFile = jarPath.resolveSibling("app.aot");
+            if (Files.exists(aotFile)) {
+                log.infof("AOT file '%s' created.", aotFile.toAbsolutePath());
+            }
+        }
     }
 
 }

@@ -8,7 +8,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.OracleContainer;
@@ -17,16 +16,16 @@ import org.testcontainers.utility.MountableFile;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DatasourceStartable;
+import io.quarkus.datasource.deployment.spi.DeferredDevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
-import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
-import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
-import io.quarkus.devservices.common.ContainerShutdownCloseable;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.Volumes;
@@ -47,82 +46,81 @@ public class OracleDevServicesProcessor {
 
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupOracle(
-            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-            DevServicesComposeProjectBuildItem composeProjectBuildItem,
-            DevServicesConfig devServicesConfig) {
-        return new DevServicesDatasourceProviderBuildItem(DatabaseKind.ORACLE, new DevServicesDatasourceProvider() {
-            @Override
-            public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-                    String datasourceName, DevServicesDatasourceContainerConfig containerConfig,
-                    LaunchMode launchMode, Optional<Duration> startupTimeout) {
+            DevServicesComposeProjectBuildItem composeProjectBuildItem) {
 
-                boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
-                        devServicesSharedNetworkBuildItem);
+        return new DevServicesDatasourceProviderBuildItem(DatabaseKind.ORACLE, new DeferredDevServicesDatasourceProvider() {
+            @Override
+            public String getFeature() {
+                return Feature.JDBC_ORACLE.getName();
+            }
+
+            @Override
+            public DatasourceStartable createDatasourceStartable(
+                    Optional<String> username,
+                    Optional<String> password,
+                    String datasourceName, DevServicesDatasourceContainerConfig containerConfig,
+                    LaunchMode launchMode, boolean useSharedNetwork, Optional<Duration> startupTimeout) {
 
                 String effectiveUsername = containerConfig.getUsername().orElse(username.orElse(DEFAULT_DATABASE_USERNAME));
                 String effectivePassword = containerConfig.getPassword().orElse(password.orElse(DEFAULT_DATABASE_PASSWORD));
                 String effectiveDbName = containerConfig.getDbName().orElse(
                         DataSourceUtil.isDefault(datasourceName) ? DEFAULT_DATABASE_NAME : datasourceName);
 
-                Supplier<RunningDevServicesDatasource> startService = () -> {
+                QuarkusOracleServerContainer container = new QuarkusOracleServerContainer(containerConfig.getImageName(),
+                        containerConfig.getFixedExposedPort(),
+                        composeProjectBuildItem.getDefaultNetworkId(),
+                        useSharedNetwork);
+                startupTimeout.ifPresent(container::withStartupTimeout);
 
-                    QuarkusOracleServerContainer container = new QuarkusOracleServerContainer(containerConfig.getImageName(),
-                            containerConfig.getFixedExposedPort(),
-                            composeProjectBuildItem.getDefaultNetworkId(),
-                            useSharedNetwork);
-                    startupTimeout.ifPresent(container::withStartupTimeout);
+                container.withUsername(effectiveUsername)
+                        .withPassword(effectivePassword)
+                        .withDatabaseName(effectiveDbName)
+                        .withReuse(containerConfig.isReuse());
+                Labels.addDataSourceLabel(container, datasourceName);
+                Volumes.addVolumes(container, containerConfig.getVolumes());
 
-                    container.withUsername(effectiveUsername)
-                            .withPassword(effectivePassword)
-                            .withDatabaseName(effectiveDbName)
-                            .withReuse(containerConfig.isReuse());
-                    Labels.addDataSourceLabel(container, datasourceName);
-                    Volumes.addVolumes(container, containerConfig.getVolumes());
+                container.withEnv(containerConfig.getContainerEnv());
 
-                    container.withEnv(containerConfig.getContainerEnv());
+                // We need to limit the maximum amount of CPUs being used by the container;
+                // otherwise the hardcoded memory configuration of the DB might not be enough to successfully boot it.
+                // See https://github.com/gvenzl/oci-oracle-xe/issues/64
+                // I choose to limit it to "2 cpus": should be more than enough for any local testing needs,
+                // and keeps things simple.
+                container.withCreateContainerCmdModifier(cmd -> cmd.getHostConfig().withNanoCPUs(2_000_000_000l));
 
-                    // We need to limit the maximum amount of CPUs being used by the container;
-                    // otherwise the hardcoded memory configuration of the DB might not be enough to successfully boot it.
-                    // See https://github.com/gvenzl/oci-oracle-xe/issues/64
-                    // I choose to limit it to "2 cpus": should be more than enough for any local testing needs,
-                    // and keeps things simple.
-                    container.withCreateContainerCmdModifier(cmd -> cmd.getHostConfig().withNanoCPUs(2_000_000_000l));
-
-                    containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
-                    containerConfig.getCommand().ifPresent(container::setCommand);
-                    containerConfig.getInitScriptPath().ifPresent(container::withInitScripts);
-                    if (containerConfig.getInitPrivilegedScriptPath().isPresent()) {
-                        for (String initScript : containerConfig.getInitPrivilegedScriptPath().get()) {
-                            container.withCopyFileToContainer(MountableFile.forClasspathResource(initScript),
-                                    "/container-entrypoint-startdb.d/" + initScript);
-                        }
+                containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
+                containerConfig.getCommand().ifPresent(container::setCommand);
+                containerConfig.getInitScriptPath().ifPresent(container::withInitScripts);
+                if (containerConfig.getInitPrivilegedScriptPath().isPresent()) {
+                    for (String initScript : containerConfig.getInitPrivilegedScriptPath().get()) {
+                        container.withCopyFileToContainer(MountableFile.forClasspathResource(initScript),
+                                "/container-entrypoint-startdb.d/" + initScript);
                     }
-                    if (containerConfig.isShowLogs()) {
-                        container.withLogConsumer(new JBossLoggingConsumer(LOG));
-                    }
+                }
+                if (containerConfig.isShowLogs()) {
+                    container.withLogConsumer(new JBossLoggingConsumer(LOG));
+                }
 
-                    container.start();
+                return container;
+            }
 
-                    LOG.info("Dev Services for Oracle started.");
-
-                    return new RunningDevServicesDatasource(container.getContainerId(),
-                            container.getEffectiveJdbcUrl(),
-                            container.getReactiveUrl(),
-                            container.getUsername(),
-                            container.getPassword(),
-                            new ContainerShutdownCloseable(container, "Oracle"));
-                };
+            @Override
+            public Optional<DevServicesDatasourceProvider.RunningDevServicesDatasource> findRunningComposeDatasource(
+                    LaunchMode launchMode,
+                    boolean useSharedNetwork, DevServicesDatasourceContainerConfig containerConfig,
+                    DevServicesComposeProjectBuildItem composeProjectBuildItem) {
                 List<String> images = List.of(
                         containerConfig.getImageName().orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("oracle")),
                         "oracle");
+
                 return ComposeLocator.locateContainer(composeProjectBuildItem, images, PORT, launchMode, useSharedNetwork)
-                        .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig))
-                        .orElseGet(startService);
+                        .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig));
             }
+
         });
     }
 
-    private static class QuarkusOracleServerContainer extends OracleContainer {
+    private static class QuarkusOracleServerContainer extends OracleContainer implements DatasourceStartable {
         private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
 
@@ -169,5 +167,16 @@ public class OracleDevServicesProcessor {
         public String getReactiveUrl() {
             return getEffectiveJdbcUrl().replaceFirst("jdbc:", "vertx-reactive:");
         }
+
+        @Override
+        public void close() {
+            super.close();
+        }
+
+        @Override
+        public String getConnectionInfo() {
+            return getEffectiveJdbcUrl();
+        }
+
     }
 }

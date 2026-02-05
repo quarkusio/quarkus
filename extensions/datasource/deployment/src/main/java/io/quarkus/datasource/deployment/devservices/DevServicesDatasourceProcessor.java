@@ -9,18 +9,22 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.datasource.deployment.spi.DatasourceStartable;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
+import io.quarkus.datasource.deployment.spi.DeferredDevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceResultBuildItem;
+import io.quarkus.datasource.deployment.spi.GenericDevServicesDatasourceProvider;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.deployment.Capabilities;
@@ -51,10 +55,13 @@ public class DevServicesDatasourceProcessor {
     private static final Logger log = Logger.getLogger(DevServicesDatasourceProcessor.class);
     private static final int DOCKER_PS_ID_LENGTH = 12;
 
+    @Deprecated(since = "3.32", forRemoval = true) // Use the new model from https://github.com/orgs/quarkusio/projects/49, avoid statics in processors
     static volatile List<RunningDevService> databases;
 
+    @Deprecated(since = "3.32", forRemoval = true) // Use the new model from https://github.com/orgs/quarkusio/projects/49, avoid statics in processors
     static volatile Map<String, Object> cachedProperties;
 
+    @Deprecated(since = "3.32", forRemoval = true) // Use the new model from https://github.com/orgs/quarkusio/projects/49, avoid statics in processors
     static volatile boolean first = true;
 
     @BuildStep
@@ -78,7 +85,7 @@ public class DevServicesDatasourceProcessor {
         boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                 devServicesSharedNetworkBuildItem);
 
-        boolean shouldStartServices = !checkRunningDatabasesAreSuitableAndCloseIfNot(composeProjectBuildItem,
+        boolean shouldStartOldStyleServices = !checkRunningDatabasesAreSuitableAndCloseIfNot(composeProjectBuildItem,
                 dataSourcesBuildTimeConfig,
                 devServicesResultBuildItemBuildProducer);
 
@@ -90,7 +97,6 @@ public class DevServicesDatasourceProcessor {
         //to keep things simpler for now we are only going to support this for the default datasource
         //support for named datasources will come later
 
-        Map<String, String> propertiesMap = new HashMap<>();
         List<RunningDevService> runningDevServices = new ArrayList<>();
         Map<String, List<DevServicesDatasourceConfigurationHandlerBuildItem>> configHandlersByDbType = configurationHandlerBuildItems
                 .stream()
@@ -103,14 +109,19 @@ public class DevServicesDatasourceProcessor {
                             return ret;
                         }));
         Map<String, DevServicesDatasourceProvider> devDBProviderMap = devDBProviders.stream()
+                .filter(d -> d.getDevServicesProvider() != null)
                 .collect(Collectors.toMap(DevServicesDatasourceProviderBuildItem::getDatabase,
                         DevServicesDatasourceProviderBuildItem::getDevServicesProvider));
+        Map<String, DeferredDevServicesDatasourceProvider> deferredDevDBProviderMap = devDBProviders.stream()
+                .filter(d -> d.getDeferredDevServicesProvider() != null)
+                .collect(Collectors.toMap(DevServicesDatasourceProviderBuildItem::getDatabase,
+                        DevServicesDatasourceProviderBuildItem::getDeferredDevServicesProvider));
 
-        if (shouldStartServices) {
+        if (shouldStartOldStyleServices) {
             for (Map.Entry<String, DataSourceBuildTimeConfig> entry : dataSourcesBuildTimeConfig.dataSources().entrySet()) {
                 RunningDevService devService = startDevDb(entry.getKey(), capabilities, curateOutcomeBuildItem,
                         installedDrivers, dataSourcesBuildTimeConfig.hasNamedDataSources(),
-                        devDBProviderMap, entry.getValue(), configHandlersByDbType, propertiesMap,
+                        devDBProviderMap, deferredDevDBProviderMap, entry.getValue(), configHandlersByDbType,
                         dockerStatusBuildItem,
                         launchMode.getLaunchMode(), consoleInstalledBuildItem, loggingSetupBuildItem,
                         devServicesConfig, useSharedNetwork);
@@ -147,6 +158,21 @@ public class DevServicesDatasourceProcessor {
                 devServicesResultBuildItemBuildProducer.produce(database.toBuildItem());
             }
         }
+
+        Map<String, Object> newDatasourceConfigs = buildMapFromBuildConfig(dataSourcesBuildTimeConfig);
+
+        for (Map.Entry<String, DataSourceBuildTimeConfig> entry : dataSourcesBuildTimeConfig.dataSources().entrySet()) {
+            DevServicesResultBuildItem devService = deferredStartDevDb(entry.getKey(), capabilities, curateOutcomeBuildItem,
+                    installedDrivers, dataSourcesBuildTimeConfig.hasNamedDataSources(),
+                    devDBProviderMap, deferredDevDBProviderMap, entry.getValue(), configHandlersByDbType,
+                    dockerStatusBuildItem, composeProjectBuildItem,
+                    launchMode.getLaunchMode(), consoleInstalledBuildItem, loggingSetupBuildItem,
+                    devServicesConfig, useSharedNetwork, newDatasourceConfigs);
+            if (devService != null) {
+                devServicesResultBuildItemBuildProducer.produce(devService);
+            }
+        }
+
         return new DevServicesDatasourceResultBuildItem(results);
     }
 
@@ -226,6 +252,112 @@ public class DevServicesDatasourceProcessor {
         return res;
     }
 
+    private DevServicesResultBuildItem deferredStartDevDb(
+            String dbName,
+            Capabilities capabilities,
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
+            List<DefaultDataSourceDbKindBuildItem> installedDrivers,
+            boolean hasNamedDatasources,
+            Map<String, DevServicesDatasourceProvider> devDBProviderMap,
+            Map<String, DeferredDevServicesDatasourceProvider> devDBProviders,
+            DataSourceBuildTimeConfig dataSourceBuildTimeConfig,
+            Map<String, List<DevServicesDatasourceConfigurationHandlerBuildItem>> configurationHandlerBuildItems,
+            DockerStatusBuildItem dockerStatusBuildItem,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem, LaunchMode launchMode,
+            Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
+            LoggingSetupBuildItem loggingSetupBuildItem, DevServicesConfig devServicesConfig, boolean useSharedNetwork,
+            Map<String, Object> configForWhichChangesShouldTriggerARestart) {
+
+        String dataSourcePrettyName = getDataSourcePrettyName(dbName);
+
+        if (!shouldStart(dbName, dataSourceBuildTimeConfig, useSharedNetwork, dataSourcePrettyName)) {
+            return null;
+        }
+
+        Optional<String> maybeDefaultDbKind = getDefaultDbKind(dbName, curateOutcomeBuildItem, installedDrivers,
+                hasNamedDatasources,
+                dataSourceBuildTimeConfig);
+
+        if (maybeDefaultDbKind.isEmpty()) {
+            //nothing we can do
+            log.warn("Unable to determine a database type for " + dataSourcePrettyName);
+            return null;
+        }
+
+        String defaultDbKind = maybeDefaultDbKind.get();
+
+        DeferredDevServicesDatasourceProvider devDbProvider = devDBProviders.get(defaultDbKind);
+        List<DevServicesDatasourceConfigurationHandlerBuildItem> configHandlers = configurationHandlerBuildItems
+                .get(defaultDbKind);
+
+        if (!shouldStartBasedOnConfigHandler(dbName, devDBProviderMap, devDBProviders, dataSourceBuildTimeConfig,
+                configurationHandlerBuildItems, dockerStatusBuildItem, launchMode, devDbProvider, configHandlers, defaultDbKind,
+                dataSourcePrettyName)) {
+            return null;
+        }
+
+        //ok, so we know we need to start one
+        StartupLogCompressor compressor = getCompressor(launchMode, consoleInstalledBuildItem, loggingSetupBuildItem,
+                dataSourcePrettyName, defaultDbKind);
+
+        try {
+            DevServicesDatasourceContainerConfig containerConfig = getContainerConfig(dataSourceBuildTimeConfig);
+
+            Map<String, Function<DatasourceStartable, String>> devDebProperties = new HashMap<>();
+            for (DevServicesDatasourceConfigurationHandlerBuildItem devDbConfigurationHandlerBuildItem : configHandlers) {
+                Map<String, Function<DatasourceStartable, String>> properties = devDbConfigurationHandlerBuildItem
+                        .getDeferredConfigProviderFunction().apply(
+                                dbName);
+                processConfigMap(capabilities, properties, devDebProperties);
+            }
+
+            Optional<String> usernameFromConfig = ConfigUtils.getFirstOptionalValue(
+                    DataSourceUtil.dataSourcePropertyKeys(dbName, "username"),
+                    String.class);
+            Optional<String> passwordFromConfig = ConfigUtils.getFirstOptionalValue(
+                    DataSourceUtil.dataSourcePropertyKeys(dbName, "password"),
+                    String.class);
+
+            String feature = devDbProvider.getFeature();
+
+            DevServicesResultBuildItem buildItem = devDbProvider
+                    .findRunningComposeDatasource(launchMode, useSharedNetwork, containerConfig, composeProjectBuildItem)
+                    .map(datasource -> DevServicesResultBuildItem.discovered().feature(feature).containerId(datasource.id())
+                            .config(makeConfigMapForRunningDatasource(dbName, capabilities, configHandlers, datasource))
+                            .build())
+                    .orElseGet(() -> {
+                        DatasourceStartable startable = devDbProvider
+                                .createDatasourceStartable(
+                                        usernameFromConfig,
+                                        passwordFromConfig,
+                                        dbName, containerConfig,
+                                        launchMode, useSharedNetwork, devServicesConfig.timeout());
+
+                        Map<String, String> credentials = new HashMap();
+                        setDataSourceProperties(credentials, dbName, "username", startable.getUsername());
+                        setDataSourceProperties(credentials, dbName, "password", startable.getPassword());
+
+                        return DevServicesResultBuildItem.owned().feature(feature).startable(() -> startable)
+                                .serviceName(dbName)
+                                .serviceConfig(configForWhichChangesShouldTriggerARestart)
+                                .config(credentials)
+                                .configProvider(devDebProperties)
+                                .postStartHook((s) -> {
+                                    String id = s.runningDevServicesDatasource().id();
+                                    logStart(id, dataSourcePrettyName, defaultDbKind);
+                                })
+                                .build();
+                    });
+
+            compressor.close();
+
+            return buildItem;
+        } catch (Throwable t) {
+            compressor.closeAndDumpCaptured();
+            throw new RuntimeException(t);
+        }
+    }
+
     private static void logStart(String id, String dataSourcePrettyName, String defaultDbKind) {
         if (id == null) {
             log.infof("Dev Services for %s (%s) started", dataSourcePrettyName, defaultDbKind);
@@ -268,9 +400,11 @@ public class DevServicesDatasourceProcessor {
 
     private static void maybeWarnAboutMissingProvider(Map<String, DevServicesDatasourceProvider> devDBProviderMap,
             Map<String, List<DevServicesDatasourceConfigurationHandlerBuildItem>> configurationHandlerBuildItems,
+            Map<String, DeferredDevServicesDatasourceProvider> deferredDevDBProviderMap,
             String defaultDbKind, String dataSourcePrettyName) {
-        // Before warning, check if there are providers and handlers on the other API path
-        boolean hasProvider = devDBProviderMap.containsKey(defaultDbKind);
+        // Before warning, check if there are providers and handlers on the deferred API path
+        boolean hasProvider = devDBProviderMap.containsKey(defaultDbKind)
+                || deferredDevDBProviderMap.containsKey(defaultDbKind);
         boolean hasConfigHandler = configurationHandlerBuildItems
                 .containsKey(defaultDbKind);
         if (!hasProvider || !hasConfigHandler) {
@@ -286,10 +420,9 @@ public class DevServicesDatasourceProcessor {
             List<DefaultDataSourceDbKindBuildItem> installedDrivers,
             boolean hasNamedDatasources,
             Map<String, DevServicesDatasourceProvider> devDBProviders,
+            Map<String, DeferredDevServicesDatasourceProvider> deferredDevDBProviderMap,
             DataSourceBuildTimeConfig dataSourceBuildTimeConfig,
             Map<String, List<DevServicesDatasourceConfigurationHandlerBuildItem>> configurationHandlerBuildItems,
-            Map<String, String> propertiesMap,
-
             DockerStatusBuildItem dockerStatusBuildItem,
             LaunchMode launchMode, Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem, DevServicesConfig devServicesConfig, boolean useSharedNetwork) {
@@ -315,13 +448,14 @@ public class DevServicesDatasourceProcessor {
         DevServicesDatasourceProvider devDbProvider = devDBProviders.get(defaultDbKind);
         List<DevServicesDatasourceConfigurationHandlerBuildItem> configHandlers = configurationHandlerBuildItems
                 .get(defaultDbKind);
-        if (!shouldStartBasedOnConfigHandler(dbName, devDBProviders, dataSourceBuildTimeConfig,
+        if (!shouldStartBasedOnConfigHandler(dbName, devDBProviders, deferredDevDBProviderMap, dataSourceBuildTimeConfig,
                 configurationHandlerBuildItems, dockerStatusBuildItem, launchMode, devDbProvider, configHandlers, defaultDbKind,
                 dataSourcePrettyName)) {
             return null;
         }
 
         //ok, so we know we need to start one
+        Map<String, String> propertiesMap = new HashMap<>();
         StartupLogCompressor compressor = getCompressor(launchMode, consoleInstalledBuildItem, loggingSetupBuildItem,
                 dataSourcePrettyName, defaultDbKind);
 
@@ -362,26 +496,8 @@ public class DevServicesDatasourceProcessor {
             setDataSourceProperties(propertiesMap, dbName, devServicesPrefix + "reuse",
                     String.valueOf(dataSourceBuildTimeConfig.devservices().reuse()));
 
-            Map<String, String> devDebProperties = new HashMap<>();
-            for (DevServicesDatasourceConfigurationHandlerBuildItem devDbConfigurationHandlerBuildItem : configHandlers) {
-                Map<String, String> properties = devDbConfigurationHandlerBuildItem.getConfigProviderFunction().apply(dbName,
-                        datasource);
-                for (Map.Entry<String, String> entry : properties.entrySet()) {
-                    if (entry.getKey().contains(".jdbc.") && entry.getKey().endsWith(".url")) {
-                        if (capabilities.isCapabilityWithPrefixPresent(Capability.AGROAL)) {
-                            devDebProperties.put(entry.getKey(), entry.getValue());
-                        }
-                    } else {
-                        devDebProperties.put(entry.getKey(), entry.getValue());
-                    }
-                }
-            }
-            if (datasource.username() != null) {
-                setDataSourceProperties(devDebProperties, dbName, "username", datasource.username());
-            }
-            if (datasource.password() != null) {
-                setDataSourceProperties(devDebProperties, dbName, "password", datasource.password());
-            }
+            Map<String, String> devDebProperties = makeConfigMapForRunningDatasource(dbName, capabilities, configHandlers,
+                    datasource);
             compressor.close();
             logStart(datasource.id(), dataSourcePrettyName, defaultDbKind);
 
@@ -400,16 +516,49 @@ public class DevServicesDatasourceProcessor {
         }
     }
 
+    private Map<String, String> makeConfigMapForRunningDatasource(String dbName, Capabilities capabilities,
+            List<DevServicesDatasourceConfigurationHandlerBuildItem> configHandlers,
+            DevServicesDatasourceProvider.RunningDevServicesDatasource datasource) {
+        Map<String, String> devDebProperties = new HashMap<>();
+        for (DevServicesDatasourceConfigurationHandlerBuildItem devDbConfigurationHandlerBuildItem : configHandlers) {
+            Map<String, String> properties = devDbConfigurationHandlerBuildItem.getConfigProviderFunction().apply(dbName,
+                    datasource);
+            processConfigMap(capabilities, properties, devDebProperties);
+        }
+        if (datasource.username() != null) {
+            setDataSourceProperties(devDebProperties, dbName, "username", datasource.username());
+        }
+        if (datasource.password() != null) {
+            setDataSourceProperties(devDebProperties, dbName, "password", datasource.password());
+        }
+        return devDebProperties;
+    }
+
+    private static <T> void processConfigMap(Capabilities capabilities, Map<String, T> properties,
+            Map<String, T> devDebProperties) {
+        for (Map.Entry<String, T> entry : properties.entrySet()) {
+            if (entry.getKey().contains(".jdbc.") && entry.getKey().endsWith(".url")) {
+                if (capabilities.isCapabilityWithPrefixPresent(Capability.AGROAL)) {
+                    devDebProperties.put(entry.getKey(), entry.getValue());
+                }
+            } else {
+                devDebProperties.put(entry.getKey(), entry.getValue());
+            }
+        }
+    }
+
     private static boolean shouldStartBasedOnConfigHandler(String dbName,
             Map<String, DevServicesDatasourceProvider> devDBProviders,
+            Map<String, DeferredDevServicesDatasourceProvider> deferredDevDBProviderMap,
             DataSourceBuildTimeConfig dataSourceBuildTimeConfig,
             Map<String, List<DevServicesDatasourceConfigurationHandlerBuildItem>> configurationHandlerBuildItems,
             DockerStatusBuildItem dockerStatusBuildItem, LaunchMode launchMode,
-            DevServicesDatasourceProvider devDbProvider,
+            GenericDevServicesDatasourceProvider devDbProvider,
             List<DevServicesDatasourceConfigurationHandlerBuildItem> configHandlers, String defaultDbKind,
             String dataSourcePrettyName) {
         if (devDbProvider == null || configHandlers == null) {
-            maybeWarnAboutMissingProvider(devDBProviders, configurationHandlerBuildItems, defaultDbKind,
+            maybeWarnAboutMissingProvider(devDBProviders, configurationHandlerBuildItems, deferredDevDBProviderMap,
+                    defaultDbKind,
                     dataSourcePrettyName);
             return false;
         }
@@ -487,6 +636,14 @@ public class DevServicesDatasourceProcessor {
 
     private void setDataSourceProperties(Map<String, String> propertiesMap, String dbName, String propertyKeyRadical,
             String value) {
+        for (String key : DataSourceUtil.dataSourcePropertyKeys(dbName, propertyKeyRadical)) {
+            propertiesMap.put(key, value);
+        }
+    }
+
+    private void setDataSourceProperties(Map<String, Function<DatasourceStartable, String>> propertiesMap, String dbName,
+            String propertyKeyRadical,
+            Function<DatasourceStartable, String> value) {
         for (String key : DataSourceUtil.dataSourcePropertyKeys(dbName, propertyKeyRadical)) {
             propertiesMap.put(key, value);
         }

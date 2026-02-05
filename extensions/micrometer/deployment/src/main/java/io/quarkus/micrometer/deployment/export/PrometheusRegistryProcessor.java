@@ -12,6 +12,7 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.micrometer.deployment.MicrometerRegistryProviderBuildItem;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
@@ -55,6 +56,7 @@ public class PrometheusRegistryProcessor {
 
     @BuildStep
     MicrometerRegistryProviderBuildItem createPrometheusRegistry(MicrometerConfig config,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
         // Add the Prometheus Registry beans
@@ -65,6 +67,9 @@ public class PrometheusRegistryProcessor {
             builder.addBeanClass("io.quarkus.micrometer.runtime.export.PrometheusMeterRegistryProducer");
         }
         additionalBeans.produce(builder.build());
+
+        reflectiveClassBuildItemBuildProducer
+                .produce(ReflectiveClassBuildItem.builder(REGISTRY_CLASS).constructors(false).build());
 
         // Include the PrometheusMeterRegistry in a possible CompositeMeterRegistry
         return new MicrometerRegistryProviderBuildItem(REGISTRY_CLASS);

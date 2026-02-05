@@ -34,11 +34,23 @@ public class QuarkusOrmPanache2Test {
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
         Assertions.assertEquals(Panache2Book.Queries.class, method.getReturnType());
 
+        // Nested repo accessor
+        method = entityClass.getDeclaredMethod("JDQueries");
+        Assertions.assertNotNull(method);
+        Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
+        Assertions.assertEquals(Panache2Book.JDQueries.class, method.getReturnType());
+
+        // Nested repo accessor
+        method = entityClass.getDeclaredMethod("myRepo");
+        Assertions.assertNotNull(method);
+        Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
+        Assertions.assertEquals(Panache2Book.MyRepo.class, method.getReturnType());
+
         // Predefined repo accessors
         method = entityClass.getDeclaredMethod("managedBlocking");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
-        Assertions.assertEquals(entityClass.getName() + "$PanacheManagedBlockingRepository", method.getReturnType().getName());
+        Assertions.assertEquals(Panache2Book.class.getName() + "$MyRepo", method.getReturnType().getName());
 
         method = entityClass.getDeclaredMethod("statelessBlocking");
         Assertions.assertNotNull(method);

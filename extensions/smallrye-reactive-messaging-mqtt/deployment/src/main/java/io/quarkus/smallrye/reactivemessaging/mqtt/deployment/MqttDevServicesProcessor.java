@@ -3,15 +3,9 @@ package io.quarkus.smallrye.reactivemessaging.mqtt.deployment;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
 
-import java.io.Closeable;
-import java.time.Duration;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -21,21 +15,17 @@ import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
-import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
-import io.quarkus.deployment.console.StartupLogCompressor;
+import io.quarkus.deployment.builditem.Startable;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
-import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
@@ -60,166 +50,92 @@ public class MqttDevServicesProcessor {
     private static final int MQTT_TLS_PORT = 8883;
 
     private static final ContainerLocator mqttContainerLocator = locateContainerWithLabels(MQTT_PORT, DEV_SERVICE_LABEL);
-    static volatile RunningDevService devService;
-    static volatile MqttDevServiceCfg cfg;
-    static volatile boolean first = true;
+    public static final String SMALLRYE_MQTT_HOST = "mp.messaging.connector.smallrye-mqtt.host";
+    public static final String SMALLRYE_MQTT_PORT = "mp.messaging.connector.smallrye-mqtt.port";
 
     @BuildStep
     public DevServicesResultBuildItem startMqttDevService(
             DockerStatusBuildItem dockerStatusBuildItem,
-            DevServicesComposeProjectBuildItem composeProjectBuildItem,
+            DevServicesComposeProjectBuildItem compose,
             LaunchModeBuildItem launchMode,
-            MqttBuildTimeConfig mqttClientBuildTimeConfig,
-            Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
-            LoggingSetupBuildItem loggingSetupBuildItem,
-            DevServicesConfig devServicesConfig,
-            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
+            MqttBuildTimeConfig mqttBuildTimeConfig,
+            List<DevServicesSharedNetworkBuildItem> sharedNetwork,
+            DevServicesConfig devServicesConfig) {
 
-        MqttDevServiceCfg configuration = getConfiguration(mqttClientBuildTimeConfig);
-
-        boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
-                devServicesSharedNetworkBuildItem);
-
-        if (devService != null) {
-            boolean shouldShutdownTheBroker = !configuration.equals(cfg);
-            if (!shouldShutdownTheBroker) {
-                return devService.toBuildItem();
-            }
-            shutdownBroker();
-            cfg = null;
-        }
-
-        StartupLogCompressor compressor = new StartupLogCompressor(
-                (launchMode.isTest() ? "(test) " : "") + "MQTT Dev Services Starting:", consoleInstalledBuildItem,
-                loggingSetupBuildItem);
-        try {
-            RunningDevService newDevService = startMqttBroker(dockerStatusBuildItem, composeProjectBuildItem,
-                    configuration, launchMode, devServicesConfig.timeout(), useSharedNetwork);
-            if (newDevService != null) {
-                devService = newDevService;
-
-                Map<String, String> config = devService.getConfig();
-                if (devService.isOwner()) {
-                    log.info("Dev Services for MQTT started.");
-                }
-            }
-            if (devService == null) {
-                compressor.closeAndDumpCaptured();
-            } else {
-                compressor.close();
-            }
-        } catch (Throwable t) {
-            compressor.closeAndDumpCaptured();
-            throw new RuntimeException(t);
-        }
-
-        if (devService == null) {
+        MqttDevServicesBuildTimeConfig config = mqttBuildTimeConfig.devservices();
+        if (devServiceDisabled(dockerStatusBuildItem, config.enabled().orElse(true))) {
             return null;
         }
 
-        // Configure the watch dog
-        if (first) {
-            first = false;
-            Runnable closeTask = () -> {
-                if (devService != null) {
-                    shutdownBroker();
+        boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig, sharedNetwork);
 
-                    log.info("Dev Services for MQTT shut down.");
-                }
-                first = true;
-                devService = null;
-                cfg = null;
-            };
-            QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
-            ((QuarkusClassLoader) cl.parent()).addCloseTask(closeTask);
-        }
-        cfg = configuration;
-        return devService.toBuildItem();
+        // Handle ComposeLocator differently - MQTT has custom port detection logic
+
+        return mqttContainerLocator.locateContainer(config.serviceName(), config.shared(), launchMode.getLaunchMode())
+                .map(containerAddress -> DevServicesResultBuildItem.discovered()
+                        .feature(Feature.MESSAGING_MQTT)
+                        .containerId(containerAddress.getId())
+                        .config(Map.of(
+                                "mp.messaging.connector.smallrye-mqtt.host", containerAddress.getHost(),
+                                "mp.messaging.connector.smallrye-mqtt.port", String.valueOf(containerAddress.getPort())))
+                        .build())
+                .or(() -> ComposeLocator.locateContainer(compose,
+                        List.of(config.imageName(), "hivemq", "eclipse-mosquitto"),
+                        launchMode.getLaunchMode()).stream()
+                        .filter(r -> Arrays.stream(r.containerInfo().exposedPorts())
+                                .anyMatch(c -> c.privatePort() == MQTT_PORT || c.privatePort() == MQTT_TLS_PORT))
+                        .findFirst()
+                        .map(r -> {
+                            String host = useSharedNetwork ? ComposeLocator.getServiceName(r)
+                                    : DockerClientFactory.instance().dockerHostIpAddress();
+                            int port = useSharedNetwork ? MQTT_PORT
+                                    : r.getPortMapping(MQTT_PORT).or(() -> r.getPortMapping(MQTT_TLS_PORT)).orElse(0);
+                            return DevServicesResultBuildItem.discovered()
+                                    .feature(Feature.MESSAGING_MQTT)
+                                    .containerId(r.containerInfo().id())
+                                    .config(Map.of(
+                                            SMALLRYE_MQTT_HOST, host,
+                                            SMALLRYE_MQTT_PORT, String.valueOf(port)))
+                                    .build();
+                        }))
+                .orElseGet(() -> DevServicesResultBuildItem.owned()
+                        .feature(Feature.MESSAGING_MQTT)
+                        .serviceConfig(config)
+                        .startable(() -> new ConfiguredMqttContainer(
+                                DockerImageName.parse(config.imageName()).asCompatibleSubstituteFor("mqtt"),
+                                config.port().orElse(0),
+                                launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName() : null,
+                                compose.getDefaultNetworkId(),
+                                useSharedNetwork)
+                                .withEnv(config.containerEnv()))
+                        .postStartHook(this::logStarted)
+                        .configProvider(Map.of(
+                                SMALLRYE_MQTT_HOST, ConfiguredMqttContainer::getEffectiveHost,
+                                SMALLRYE_MQTT_PORT, s -> String.valueOf(s.getPort())))
+                        .build());
     }
 
-    private void shutdownBroker() {
-        if (devService != null) {
-            try {
-                devService.close();
-            } catch (Throwable e) {
-                log.error("Failed to stop the MQTT broker", e);
-            } finally {
-                devService = null;
-            }
-        }
-    }
-
-    private RunningDevService startMqttBroker(DockerStatusBuildItem dockerStatusBuildItem,
-            DevServicesComposeProjectBuildItem composeProjectBuildItem,
-            MqttDevServiceCfg config, LaunchModeBuildItem launchMode,
-            Optional<Duration> timeout, boolean useSharedNetwork) {
-        if (!config.devServicesEnabled) {
-            // explicitly disabled
+    private boolean devServiceDisabled(DockerStatusBuildItem dockerStatusBuildItem, boolean devServicesEnabled) {
+        if (!devServicesEnabled) {
             log.debug("Not starting Dev Services for MQTT, as it has been disabled in the config.");
-            return null;
+            return true;
         }
 
-        // Verify that we have MQTT channels without host and port
         if (!hasMqttChannelWithoutHostAndPort()) {
             log.debug("Not starting Dev Services for MQTT, all the channels are configured.");
-            return null;
+            return true;
         }
 
         if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             log.warn("Docker isn't working, please configure the MQTT broker location.");
-            return null;
+            return true;
         }
 
-        final Supplier<RunningDevService> defaultMqttBrokerSupplier = () -> {
-
-            ConfiguredMqttContainer container = new ConfiguredMqttContainer(
-                    DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("mqtt"),
-                    config.fixedExposedPort,
-                    launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
-                    composeProjectBuildItem.getDefaultNetworkId(),
-                    useSharedNetwork);
-
-            // Starting the broker
-            timeout.ifPresent(container::withStartupTimeout);
-            container.withEnv(config.containerEnv);
-            container.start();
-            return getRunningDevService(
-                    container.getContainerId(),
-                    container::close,
-                    container.getEffectiveHost(),
-                    container.getPort());
-        };
-
-        return mqttContainerLocator.locateContainer(config.serviceName, config.shared, launchMode.getLaunchMode())
-                .map(containerAddress -> getRunningDevService(
-                        containerAddress.getId(),
-                        null,
-                        containerAddress.getHost(),
-                        containerAddress.getPort()))
-                .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
-                        List.of(config.imageName, "hivemq", "eclipse-mosquitto"),
-                        launchMode.getLaunchMode()).stream()
-                        .filter(r -> Arrays.stream(r.containerInfo().exposedPorts())
-                                .anyMatch(c -> c.privatePort() == MQTT_PORT || c.privatePort() == MQTT_TLS_PORT))
-                        .findFirst().map(r -> getRunningDevService(
-                                r.containerInfo().id(),
-                                null,
-                                useSharedNetwork ? ComposeLocator.getServiceName(r)
-                                        : DockerClientFactory.instance().dockerHostIpAddress(),
-                                useSharedNetwork ? MQTT_PORT
-                                        : r.getPortMapping(MQTT_PORT).or(() -> r.getPortMapping(MQTT_TLS_PORT)).orElse(0))))
-                .orElseGet(defaultMqttBrokerSupplier);
+        return false;
     }
 
-    private RunningDevService getRunningDevService(
-            String containerId,
-            Closeable closeable,
-            String host,
-            int port) {
-        Map<String, String> configMap = new HashMap<>();
-        configMap.put("mp.messaging.connector.smallrye-mqtt.host", host);
-        configMap.put("mp.messaging.connector.smallrye-mqtt.port", String.valueOf(port));
-        return new RunningDevService(Feature.MESSAGING_MQTT.getName(), containerId, closeable, configMap);
+    private void logStarted(ConfiguredMqttContainer container) {
+        log.info("Dev Services for MQTT started.");
     }
 
     private boolean hasMqttChannelWithoutHostAndPort() {
@@ -242,53 +158,10 @@ public class MqttDevServicesProcessor {
         return false;
     }
 
-    private MqttDevServiceCfg getConfiguration(MqttBuildTimeConfig cfg) {
-        MqttDevServicesBuildTimeConfig devServicesConfig = cfg.devservices();
-        return new MqttDevServiceCfg(devServicesConfig);
-    }
-
-    private static final class MqttDevServiceCfg {
-
-        private final boolean devServicesEnabled;
-        private final String imageName;
-        private final Integer fixedExposedPort;
-        private final boolean shared;
-        private final String serviceName;
-        private final Map<String, String> containerEnv;
-
-        public MqttDevServiceCfg(MqttDevServicesBuildTimeConfig devServicesConfig) {
-            this.devServicesEnabled = devServicesConfig.enabled().orElse(true);
-            this.imageName = devServicesConfig.imageName();
-            this.fixedExposedPort = devServicesConfig.port().orElse(0);
-            this.shared = devServicesConfig.shared();
-            this.serviceName = devServicesConfig.serviceName();
-            this.containerEnv = devServicesConfig.containerEnv();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            MqttDevServiceCfg that = (MqttDevServiceCfg) o;
-            return devServicesEnabled == that.devServicesEnabled && Objects.equals(imageName, that.imageName)
-                    && Objects.equals(fixedExposedPort, that.fixedExposedPort)
-                    && Objects.equals(containerEnv, that.containerEnv);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(devServicesEnabled, imageName, fixedExposedPort, containerEnv);
-        }
-    }
-
     /**
      * Container configuring and starting the Mosquitto broker.
      */
-    private static final class ConfiguredMqttContainer extends GenericContainer<ConfiguredMqttContainer> {
+    private static final class ConfiguredMqttContainer extends GenericContainer<ConfiguredMqttContainer> implements Startable {
 
         private final int port;
         private final boolean useSharedNetwork;
@@ -325,15 +198,22 @@ public class MqttDevServicesProcessor {
             }
         }
 
+        @Override
+        public String getConnectionInfo() {
+            return String.format("mqtt://%s:%d", getEffectiveHost(), getPort());
+        }
+
+        @Override
+        public void close() {
+            super.close();
+        }
+
         public String getEffectiveHost() {
-            return hostName;
+            return useSharedNetwork ? hostName : getHost();
         }
 
         public int getPort() {
-            if (useSharedNetwork) {
-                return MQTT_PORT;
-            }
-            return getMappedPort(MQTT_PORT);
+            return useSharedNetwork ? MQTT_PORT : getMappedPort(MQTT_PORT);
         }
     }
 }

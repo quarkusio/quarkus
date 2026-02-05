@@ -179,8 +179,8 @@ public interface QuarkusTransaction {
      * Examples of use:
      *
      * <pre>{@code
-     * QuarkusTransaction.requiringNew().run(() -> ...);
-     * int value = QuarkusTransaction.requiringNew().call(() -> { ...; return 42; });
+     * QuarkusTransaction.disallowingExisting().run(() -> ...);
+     * int value = QuarkusTransaction.disallowingExisting().call(() -> { ...; return 42; });
      * }</pre>
      *
      * @return An interface that allow various options of a transaction runner to be customized,
@@ -207,8 +207,8 @@ public interface QuarkusTransaction {
      * Examples of use:
      *
      * <pre>{@code
-     * QuarkusTransaction.requiringNew().run(() -> ...);
-     * int value = QuarkusTransaction.requiringNew().call(() -> { ...; return 42; });
+     * QuarkusTransaction.suspendingExisting().run(() -> ...);
+     * int value = QuarkusTransaction.suspendingExisting().call(() -> { ...; return 42; });
      * }</pre>
      *
      * @return An interface that allow various options of a transaction runner to be customized,

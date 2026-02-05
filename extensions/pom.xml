@@ -24,6 +24,7 @@
         <module>quartz</module>
         <module>jaxp</module>
         <module>smallrye-stork</module>
+        <module>packaging</module>
 
         <!-- Configuration -->
         <module>config-yaml</module>

@@ -306,6 +306,9 @@ public class JaxrsClientReactiveProcessor {
             List<ParameterContainersBuildItem> parameterContainersBuildItems,
             List<EndpointValidationPredicatesBuildItem> validationPredicatesBuildItems) {
 
+        reflectiveClassBuildItemBuildProducer
+                .produce(ReflectiveClassBuildItem.builder(UniInvoker.class, MultiInvoker.class).constructors(false).build());
+
         String defaultConsumesType = defaultMediaType(defaultConsumes, MediaType.APPLICATION_OCTET_STREAM);
         String defaultProducesType = defaultMediaType(defaultProduces, MediaType.TEXT_PLAIN);
 

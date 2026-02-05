@@ -31,7 +31,7 @@ public class CommonAndTestProfilesTest {
                 .then()
                 .statusCode(OK.getStatusCode())
                 .body("value", equalTo("from foo development"))
-                .body("sourceName", equalTo("https://github.com/spring-cloud-samples/config-repo/testapp-prod.yml"));
+                .body("sourceName", equalTo("app-test-prod.yml"));
 
         given()
                 .get("/config/{name}", "info.description")
@@ -47,6 +47,6 @@ public class CommonAndTestProfilesTest {
                 .then()
                 .statusCode(OK.getStatusCode())
                 .body("value", equalTo("common"))
-                .body("sourceName", equalTo("common"));
+                .body("sourceName", equalTo("app-common.yml"));
     }
 }

@@ -1,0 +1,30 @@
+{
+  "name": "app",
+  "profiles": [
+    "common,prod"
+  ],
+  "propertySources": [
+    {
+      "name": "app-test-prod.yml",
+      "source": {
+        "bar": "spam",
+        "foo": "from foo development",
+        "greeting.message": "hello from spring cloud config server"
+      }
+    },
+    {
+      "name": "app-common.yml",
+      "source": {
+        "foo": "common",
+        "common": "common"
+      }
+    },
+    {
+      "name": "app.yml",
+      "source": {
+        "info.description": "Sample",
+        "foo": "baz"
+      }
+    }
+  ]
+}

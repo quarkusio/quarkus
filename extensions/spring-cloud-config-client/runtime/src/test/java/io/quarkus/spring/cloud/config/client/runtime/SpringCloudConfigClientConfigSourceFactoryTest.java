@@ -3,6 +3,8 @@ package io.quarkus.spring.cloud.config.client.runtime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
@@ -12,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.StreamSupport;
 
 import org.apache.commons.io.IOUtils;
 import org.eclipse.microprofile.config.spi.ConfigSource;
@@ -25,6 +28,8 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 
 import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.smallrye.config.ConfigSourceContext;
+import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
 
 class SpringCloudConfigClientConfigSourceFactoryTest {
 
@@ -153,30 +158,30 @@ class SpringCloudConfigClientConfigSourceFactoryTest {
         assertThat(configSourceList.get(0)).satisfies(cs -> {
             assertThat(cs.getName()).isEqualTo("https://github.com/spring-cloud-samples/config-repo/application.yml");
             assertThat(cs.getOrdinal()).isEqualTo(450);
-            assertThat(cs.getProperties()).contains(entry("%dev.info.description", "Spring Cloud Samples"),
-                    entry("%dev.foo", "baz"), entry("%dev.info.url", "https://github.com/spring-cloud-samples"),
-                    entry("%dev.eureka.client.serviceUrl.defaultZone", "http://localhost:8761/eureka/"));
+            assertThat(cs.getProperties()).contains(entry("info.description", "Spring Cloud Samples"),
+                    entry("foo", "baz"), entry("info.url", "https://github.com/spring-cloud-samples"),
+                    entry("eureka.client.serviceUrl.defaultZone", "http://localhost:8761/eureka/"));
         });
 
         assertThat(configSourceList.get(1)).satisfies(cs -> {
             assertThat(cs.getName()).isEqualTo("https://github.com/spring-cloud-samples/config-repo/foo.properties");
             assertThat(cs.getOrdinal()).isEqualTo(451);
-            assertThat(cs.getProperties()).contains(entry("%dev.foo", "from foo props"),
-                    entry("%dev.democonfigclient.message", "hello spring io"));
+            assertThat(cs.getProperties()).contains(entry("foo", "from foo props"),
+                    entry("democonfigclient.message", "hello spring io"));
         });
 
         assertThat(configSourceList.get(2)).satisfies(cs -> {
             assertThat(cs.getName())
                     .isEqualTo("https://github.com/spring-cloud-samples/config-repo/application-dev.yml");
             assertThat(cs.getOrdinal()).isEqualTo(452);
-            assertThat(cs.getProperties()).contains(entry("%dev.my.prop", "from application-dev.yml"));
+            assertThat(cs.getProperties()).contains(entry("my.prop", "from application-dev.yml"));
         });
 
         assertThat(configSourceList.get(3)).satisfies(cs -> {
             assertThat(cs.getName()).isEqualTo("https://github.com/spring-cloud-samples/config-repo/foo-dev.yml");
             assertThat(cs.getOrdinal()).isEqualTo(453);
-            assertThat(cs.getProperties()).contains(entry("%dev.foo", "from foo development"),
-                    entry("%dev.democonfigclient.message", "hello from dev profile"), entry("%dev.bar", "spam"));
+            assertThat(cs.getProperties()).contains(entry("foo", "from foo development"),
+                    entry("democonfigclient.message", "hello from dev profile"), entry("bar", "spam"));
         });
     }
 
@@ -238,34 +243,63 @@ class SpringCloudConfigClientConfigSourceFactoryTest {
         assertThat(configSourceList.get(0)).satisfies(cs -> {
             assertThat(cs.getName()).isEqualTo("https://github.com/spring-cloud-samples/config-repo/application.yml");
             assertThat(cs.getOrdinal()).isEqualTo(450);
-            assertThat(cs.getProperties()).contains(entry("%dev.info.description", "Spring Cloud Samples"),
-                    entry("%dev.foo", "baz"), entry("%dev.info.url", "https://github.com/spring-cloud-samples"));
+            assertThat(cs.getProperties()).contains(entry("info.description", "Spring Cloud Samples"),
+                    entry("foo", "baz"), entry("info.url", "https://github.com/spring-cloud-samples"));
         });
 
         assertThat(configSourceList.get(1)).satisfies(cs -> {
             assertThat(cs.getName()).isEqualTo("https://github.com/spring-cloud-samples/config-repo/foo.properties");
             assertThat(cs.getOrdinal()).isEqualTo(451);
-            assertThat(cs.getProperties()).contains(entry("%dev.foo", "from foo props"),
-                    entry("%dev.democonfigclient.message", "hello spring io"));
+            assertThat(cs.getProperties()).contains(entry("foo", "from foo props"),
+                    entry("democonfigclient.message", "hello spring io"));
         });
 
         assertThat(configSourceList.get(2)).satisfies(cs -> {
             assertThat(cs.getName())
                     .isEqualTo("https://github.com/spring-cloud-samples/config-repo/application-dev.yml");
             assertThat(cs.getOrdinal()).isEqualTo(452);
-            assertThat(cs.getProperties()).contains(entry("%dev.my.prop", "from application-dev.yml"));
+            assertThat(cs.getProperties()).contains(entry("my.prop", "from application-dev.yml"));
         });
 
         assertThat(configSourceList.get(3)).satisfies(cs -> {
             assertThat(cs.getName()).isEqualTo("https://github.com/spring-cloud-samples/config-repo/foo-dev.yml");
             assertThat(cs.getOrdinal()).isEqualTo(453);
-            assertThat(cs.getProperties()).contains(entry("%dev.foo", "from foo development"),
-                    entry("%dev.democonfigclient.message", "hello from dev profile"), entry("%dev.bar", "spam"));
+            assertThat(cs.getProperties()).contains(entry("foo", "from foo development"),
+                    entry("democonfigclient.message", "hello from dev profile"), entry("bar", "spam"));
         });
     }
 
-    private SpringCloudConfigClientConfig configForTesting(final boolean isEnabled, final String appName,
-            final int serverPort, final boolean isFailFastEnabled, final int ordinal, final boolean isDiscoveryEnabled) {
+    @Test
+    void multipleProfiles() throws Exception {
+        String profile = "one,two,three";
+        ConfigSourceContext context = Mockito.mock(ConfigSourceContext.class);
+        SpringCloudConfigClientConfig clientConfig = configForTesting(true, "app", MOCK_SERVER_PORT, true, 450, false);
+        SpringCloudConfigClientConfigSourceFactory factory = new SpringCloudConfigClientConfigSourceFactory();
+
+        Mockito.when(context.getProfiles()).thenReturn(List.of("three", "two", "one"));
+        wireMockServer
+                .stubFor(WireMock.get(String.format("/%s/%s/%s", clientConfig.name(), profile, clientConfig.label().get()))
+                        .willReturn(WireMock.okJson(getJsonStringForApplicationAndProfile(clientConfig.name(), "multiple"))));
+
+        SmallRyeConfig config = new SmallRyeConfigBuilder()
+                .withSources(provider -> factory.getConfigSources(context, clientConfig))
+                .build();
+
+        assertEquals("one", config.getConfigValue("one").getValue());
+        assertEquals("two", config.getConfigValue("two").getValue());
+        assertEquals("three", config.getConfigValue("three").getValue());
+        assertEquals("none", config.getConfigValue("none").getValue());
+
+        List<String> expectedSources = List.of("app-three.yml", "app-two.yml", "app-one.yml", "app.yml",
+                "DefaultValuesConfigSource");
+        List<String> actualSources = StreamSupport.stream(config.getConfigSources().spliterator(), false)
+                .map(ConfigSource::getName)
+                .toList();
+        assertIterableEquals(expectedSources, actualSources);
+    }
+
+    private SpringCloudConfigClientConfig configForTesting(final boolean isEnabled, final String appName, final int serverPort,
+            final boolean isFailFastEnabled, final int ordinal, final boolean isDiscoveryEnabled) {
 
         final SpringCloudConfigClientConfig config = Mockito.mock(SpringCloudConfigClientConfig.class);
         when(config.enabled()).thenReturn(isEnabled);

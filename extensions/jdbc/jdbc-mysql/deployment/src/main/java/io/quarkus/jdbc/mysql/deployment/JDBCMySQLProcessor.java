@@ -62,7 +62,7 @@ public class JDBCMySQLProcessor {
 
     @BuildStep
     DevServicesDatasourceConfigurationHandlerBuildItem devDbHandler() {
-        return DevServicesDatasourceConfigurationHandlerBuildItem.jdbc(DatabaseKind.MYSQL);
+        return DevServicesDatasourceConfigurationHandlerBuildItem.deferredJdbc(DatabaseKind.MYSQL);
     }
 
     @BuildStep

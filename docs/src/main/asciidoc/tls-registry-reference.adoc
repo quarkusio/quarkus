@@ -575,16 +575,23 @@ quarkus.tls.cipher-suites=TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384
 The TLS protocol versions are the list of protocols that can be used during the TLS handshake.
 Enabled TLS protocol versions are specified as an ordered list separated by commas.
 The relevant configuration property is `quarkus.tls.protocols` or `quarkus.tls.<name>.protocols` for named TLS configurations.
-It defaults to `TLSv1.3, TLSv1.2` if not configured.
+For improved security, it defaults to `TLSv1.3` only if not configured.
 
 The available options are `TLSv1`, `TLSv1.1`, `TLSv1.2`, and `TLSv1.3`.
 
-For example, to only enable `TLSv1.3`:
+For example, to enable both `TLSv1.3` and `TLSv1.2`:
 
 [source,properties]
 ----
-quarkus.tls.protocols=TLSv1.3
+quarkus.tls."services-requiring-v1.2".protocols=TLSv1.3,TLSv1.2
 ----
+
+[TIP]
+====
+If only certain services require `TLSv1.2`,
+it is recommended to configure a dedicated, named TLS configuration for those services
+and keep the default configuration for services that support `TLSv1.3`.
+====
 
 ==== Handshake timeout
 

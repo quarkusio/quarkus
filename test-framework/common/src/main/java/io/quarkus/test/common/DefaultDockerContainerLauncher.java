@@ -319,8 +319,8 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
 
     private void handleAotFileArgs(List<String> args, ContainerRuntime containerRuntime) throws IOException {
         if (generateAotFile) {
-            args.addAll(toEnvVar("JAVA_TOOL_OPTIONS", "-XX:AOTCacheOutput=%s/%s".formatted(AOT_DIR, AOT_FILE_NAME)));
             if (containerWorkingDirectory.isPresent()) {
+                args.addAll(toEnvVar("JAVA_TOOL_OPTIONS", "-XX:AOTCacheOutput=%s/%s".formatted(AOT_DIR, AOT_FILE_NAME)));
                 Path containerAotDir = Path.of(outputTargetDirectory).resolve(AOT_DIR);
                 Files.createDirectories(containerAotDir);
                 containerAotDir.toFile().setReadable(true, false);

@@ -1,5 +1,8 @@
 package io.quarkus.container.image.podman.deployment;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -19,6 +22,8 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.PodmanStatusBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.BuildAotOptimizedContainerImageRequestBuildItem;
+import io.quarkus.deployment.pkg.builditem.BuildAotOptimizedContainerImageResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveResultBuildItem;
@@ -175,5 +180,63 @@ public class PodmanProcessor extends CommonProcessor<PodmanConfig> {
         return podmanConfig.platform()
                 .map(List::size)
                 .orElse(0) >= 2;
+    }
+
+    @BuildStep
+    public BuildAotOptimizedContainerImageResultBuildItem buildAotOptimizedContainerImageBuildItem(
+            OutputTargetBuildItem outputTargetBuildItem,
+            PodmanConfig podmanConfig,
+            ContainerImageConfig containerImageConfig,
+            BuildAotOptimizedContainerImageRequestBuildItem requestBuildItem) {
+        // TODO: this needs a lot of hardening as for the time being it assumes the image is in the docker daemon and only writes the new one there
+
+        String baseImage = requestBuildItem.getOriginalContainerImage();
+        String enhancedImage = requestBuildItem.getOriginalContainerImage() + "-aot";
+
+        Path outputDirectory = outputTargetBuildItem.getOutputDirectory();
+
+        Path aotFile = requestBuildItem.getAotFile();
+        String aotEnhancedDockerfileContent = """
+                FROM %s
+
+                # Add the app.aot file to the working directory
+                COPY %s %s
+
+                # Set the JAVA_TOOL_OPTIONS environment variable
+                ENV JAVA_TOOL_OPTIONS="-XX:AOTCache=%s"
+                """.formatted(baseImage, outputDirectory.relativize(aotFile),
+                requestBuildItem.getContainerWorkingDirectory(), aotFile.getFileName());
+
+        Path aotEnhancedDockerfile = outputDirectory.resolve("Dockerfile.aot");
+        try {
+            Files.write(aotEnhancedDockerfile, aotEnhancedDockerfileContent.getBytes());
+        } catch (IOException e) {
+            throw new UnsupportedOperationException("Unable to save enhanced Dockerfile contents to disk", e);
+        }
+
+        String executableName = getExecutableName(podmanConfig, ContainerRuntime.DOCKER, ContainerRuntime.PODMAN);
+        var dockerBuildArgs = getPodmanBuildArgs(enhancedImage, new DockerfilePaths() {
+            @Override
+            public Path dockerfilePath() {
+                return aotEnhancedDockerfile;
+            }
+
+            @Override
+            public Path dockerExecutionPath() {
+                return outputDirectory;
+            }
+        }, containerImageConfig,
+                podmanConfig, false);
+
+        LOG.infof("Executing the following command to build image: '%s %s'", executableName,
+                String.join(" ", dockerBuildArgs));
+        ProcessBuilder.newBuilder(executableName)
+                .directory(outputDirectory)
+                .arguments(dockerBuildArgs)
+                .error().logOnSuccess(false).inherited()
+                .run();
+
+        LOG.infof("Created AOT enhanced container image %s", enhancedImage);
+        return new BuildAotOptimizedContainerImageResultBuildItem(enhancedImage);
     }
 }

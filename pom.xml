@@ -63,7 +63,7 @@
         <maven-enforcer-plugin.phase>validate</maven-enforcer-plugin.phase>
         <forbiddenapis-maven-plugin.phase>verify</forbiddenapis-maven-plugin.phase>
 
-        <owasp-dependency-check-plugin.version>11.1.0</owasp-dependency-check-plugin.version>
+        <owasp-dependency-check-plugin.version>12.2.0</owasp-dependency-check-plugin.version>
 
         <!-- Dependency versions -->
         <!-- Properties below are set in this file because they are used

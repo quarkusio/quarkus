@@ -7,23 +7,23 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 import org.testcontainers.mssqlserver.MSSQLServerContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DatasourceStartable;
+import io.quarkus.datasource.deployment.spi.DeferredDevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
-import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
-import io.quarkus.devservices.common.ContainerShutdownCloseable;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.Volumes;
@@ -43,66 +43,61 @@ public class MSSQLDevServicesProcessor {
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupMSSQL(
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-            DevServicesComposeProjectBuildItem composeProjectBuildItem,
-            DevServicesConfig devServicesConfig) {
-        return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MSSQL, new DevServicesDatasourceProvider() {
-            @SuppressWarnings("unchecked")
+            DevServicesComposeProjectBuildItem composeProjectBuildItem) {
+
+        return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MSSQL, new DeferredDevServicesDatasourceProvider() {
             @Override
-            public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
+            public String getFeature() {
+                return Feature.JDBC_MSSQL.getName();
+            }
+
+            @Override
+            public DatasourceStartable createDatasourceStartable(Optional<String> username, Optional<String> password,
                     String datasourceName, DevServicesDatasourceContainerConfig containerConfig,
-                    LaunchMode launchMode, Optional<Duration> startupTimeout) {
+                    LaunchMode launchMode, boolean useSharedNetwork, Optional<Duration> startupTimeout) {
 
-                boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
-                        devServicesSharedNetworkBuildItem);
+                QuarkusMSSQLServerContainer container = new QuarkusMSSQLServerContainer(containerConfig.getImageName(),
+                        containerConfig.getFixedExposedPort(),
+                        composeProjectBuildItem.getDefaultNetworkId(),
+                        !devServicesSharedNetworkBuildItem.isEmpty());
+                startupTimeout.ifPresent(container::withStartupTimeout);
 
-                Supplier<RunningDevServicesDatasource> startService = () -> {
-                    QuarkusMSSQLServerContainer container = new QuarkusMSSQLServerContainer(containerConfig.getImageName(),
-                            containerConfig.getFixedExposedPort(),
-                            composeProjectBuildItem.getDefaultNetworkId(),
-                            !devServicesSharedNetworkBuildItem.isEmpty());
-                    startupTimeout.ifPresent(container::withStartupTimeout);
+                String effectivePassword = containerConfig.getPassword()
+                        .orElse(password.orElse(DEFAULT_DATABASE_STRONG_PASSWORD));
 
-                    String effectivePassword = containerConfig.getPassword()
-                            .orElse(password.orElse(DEFAULT_DATABASE_STRONG_PASSWORD));
+                // Defining the database name and the username is not supported by this container yet
+                container.withPassword(effectivePassword)
+                        .withReuse(containerConfig.isReuse());
+                Labels.addDataSourceLabel(container, datasourceName);
+                Volumes.addVolumes(container, containerConfig.getVolumes());
 
-                    // Defining the database name and the username is not supported by this container yet
-                    container.withPassword(effectivePassword)
-                            .withReuse(containerConfig.isReuse());
-                    Labels.addDataSourceLabel(container, datasourceName);
-                    Volumes.addVolumes(container, containerConfig.getVolumes());
+                container.withEnv(containerConfig.getContainerEnv());
 
-                    container.withEnv(containerConfig.getContainerEnv());
+                containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
+                containerConfig.getCommand().ifPresent(container::setCommand);
+                containerConfig.getInitScriptPath().ifPresent(container::withInitScripts);
+                if (containerConfig.isShowLogs()) {
+                    container.withLogConsumer(new JBossLoggingConsumer(LOG));
+                }
 
-                    containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
-                    containerConfig.getCommand().ifPresent(container::setCommand);
-                    containerConfig.getInitScriptPath().ifPresent(container::withInitScripts);
-                    if (containerConfig.isShowLogs()) {
-                        container.withLogConsumer(new JBossLoggingConsumer(LOG));
-                    }
+                return container;
+            }
 
-                    container.start();
-
-                    LOG.info("Dev Services for Microsoft SQL Server started.");
-
-                    return new RunningDevServicesDatasource(container.getContainerId(),
-                            container.getEffectiveJdbcUrl(),
-                            container.getReactiveUrl(),
-                            DEFAULT_USERNAME,
-                            container.getPassword(),
-                            new ContainerShutdownCloseable(container, "Microsoft SQL Server"));
-                };
+            @Override
+            public Optional<DevServicesDatasourceProvider.RunningDevServicesDatasource> findRunningComposeDatasource(
+                    LaunchMode launchMode, boolean useSharedNetwork, DevServicesDatasourceContainerConfig containerConfig,
+                    DevServicesComposeProjectBuildItem composeProjectBuildItem) {
                 List<String> images = List.of(
                         containerConfig.getImageName().orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mssql")),
                         "mssql");
                 return ComposeLocator
                         .locateContainer(composeProjectBuildItem, images, MS_SQL_SERVER_PORT, launchMode, useSharedNetwork)
-                        .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig))
-                        .orElseGet(startService);
+                        .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig));
             }
         });
     }
 
-    private static class QuarkusMSSQLServerContainer extends MSSQLServerContainer {
+    private static class QuarkusMSSQLServerContainer extends MSSQLServerContainer implements DatasourceStartable {
         private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
 
@@ -155,6 +150,22 @@ public class MSSQLDevServicesProcessor {
                 url.append(this.getHost()).append(":").append(this.getMappedPort(MS_SQL_SERVER_PORT));
             }
             return url.toString();
+        }
+
+        @Override
+        public String getUsername() {
+            // Defining the database name and the username is not supported by this container yet, so always return the default, with our case adjustments
+            return DEFAULT_USERNAME;
+        }
+
+        @Override
+        public String getConnectionInfo() {
+            return getEffectiveJdbcUrl();
+        }
+
+        @Override
+        public void close() {
+            super.close();
         }
     }
 }

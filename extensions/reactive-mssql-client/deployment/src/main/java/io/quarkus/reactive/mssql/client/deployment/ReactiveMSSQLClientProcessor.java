@@ -124,7 +124,7 @@ class ReactiveMSSQLClientProcessor {
 
     @BuildStep
     DevServicesDatasourceConfigurationHandlerBuildItem devDbHandler() {
-        return DevServicesDatasourceConfigurationHandlerBuildItem.reactive(DatabaseKind.MSSQL);
+        return DevServicesDatasourceConfigurationHandlerBuildItem.deferredReactive(DatabaseKind.MSSQL);
     }
 
     @BuildStep
@@ -253,16 +253,12 @@ class ReactiveMSSQLClientProcessor {
                 !DataSourceUtil.isDefault(dataSourceName) || dataSourceBuildTimeConfig.devservices().enabled()
                         .orElse(!dataSourcesBuildTimeConfig.hasNamedDataSources()),
                 curateOutcomeBuildItem);
-        if (!dbKind.isPresent()) {
+        if (dbKind.isEmpty()) {
             return false;
         }
 
-        if (!DatabaseKind.isMsSQL(dbKind.get())
-                || !dataSourceReactiveBuildTimeConfig.enabled()) {
-            return false;
-        }
-
-        return true;
+        return DatabaseKind.isMsSQL(dbKind.get())
+                && dataSourceReactiveBuildTimeConfig.enabled();
     }
 
     private boolean hasPools(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,

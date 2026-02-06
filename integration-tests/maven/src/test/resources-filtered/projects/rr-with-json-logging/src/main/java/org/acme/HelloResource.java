@@ -14,6 +14,9 @@ public class HelloResource {
     @ConfigProperty(name = "greeting")
     String greeting;
 
+    @ConfigProperty(name = "greeting-prod")
+    String greetingProd;
+
     @ConfigProperty(name = "quarkus.application.version")
     String applicationVersion;
 
@@ -37,6 +40,13 @@ public class HelloResource {
     @Produces(MediaType.TEXT_PLAIN)
     public String greeting() {
         return greeting;
+    }
+
+    @GET
+    @Path("/greeting-prod")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String greetingProd() {
+        return greetingProd;
     }
 
     @GET

@@ -56,8 +56,9 @@
                 <exclude>org.eclipse.parsson:jakarta.json</exclude>
                 <!-- Ensure none of the deps use netty-all. This forces deps to use more fine grained netty artifacts -->
                 <exclude>io.netty:netty-all</exclude>
-                <!-- Ban Log4J (use org.jboss.logmanager:log4j-jboss-logmanager instead) -->
+                <!-- Ban Log4J 1.x -->
                 <exclude>log4j:log4j</exclude>
+                <!-- Ban Log4J2 (use org.jboss.logmanager:log4j2-jboss-logmanager instead) -->
                 <exclude>org.apache.logging.log4j:log4j-core</exclude>
                 <exclude>org.apache.logging.log4j:log4j-slf4j-impl</exclude>
                 <!-- Ban commons-logging (use org.jboss.logging:commons-logging-jboss-logging instead) -->

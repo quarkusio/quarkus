@@ -22,10 +22,11 @@ public class SpringCloudConfigServerResource implements QuarkusTestResourceLifec
         int port = 8089;
         try {
             httpServer = HttpServer.create(new InetSocketAddress(port), 0);
-            httpServer.createContext("/base/a-bootiful-client/test", new SpringCloudConfigServerHandler("config.json"));
-            httpServer.createContext("/base/a-bootiful-client/prod", new SpringCloudConfigServerHandler("config.json"));
-            httpServer.createContext("/base/a-bootiful-client/common",
-                    new SpringCloudConfigServerHandler("config-common.json"));
+            httpServer.createContext("/base/a-bootiful-client/test", new SpringCloudConfigServerHandler("config-test.json"));
+            httpServer.createContext("/base/a-bootiful-client/common,prod",
+                    new SpringCloudConfigServerHandler("config-common-prod.json"));
+            httpServer.createContext("/base/a-bootiful-client/common,test",
+                    new SpringCloudConfigServerHandler("config-common-test.json"));
             httpServer.start();
         } catch (Exception e) {
             throw new RuntimeException(e);

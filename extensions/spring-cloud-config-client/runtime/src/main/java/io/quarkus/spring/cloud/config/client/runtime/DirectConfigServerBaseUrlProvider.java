@@ -3,13 +3,9 @@ package io.quarkus.spring.cloud.config.client.runtime;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import org.jboss.logging.Logger;
-
 import io.quarkus.spring.cloud.config.client.runtime.util.UrlUtility;
 
 public class DirectConfigServerBaseUrlProvider implements ConfigServerBaseUrlProvider {
-
-    private static final Logger log = Logger.getLogger(DirectConfigServerBaseUrlProvider.class);
     private final SpringCloudConfigClientConfig config;
 
     public DirectConfigServerBaseUrlProvider(SpringCloudConfigClientConfig config) {
@@ -18,7 +14,6 @@ public class DirectConfigServerBaseUrlProvider implements ConfigServerBaseUrlPro
 
     @Override
     public URI get() {
-        log.info("Getting config server URL with Direct ConfigServer BaseUrl");
         String url = config.url();
         validate(url);
         try {

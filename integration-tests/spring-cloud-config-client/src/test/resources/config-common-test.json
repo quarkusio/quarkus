@@ -1,14 +1,11 @@
 {
-  "name": "a-bootiful-client",
+  "name": "app",
   "profiles": [
-    "prod","test"
+    "common,test"
   ],
-  "label": "master",
-  "version": "bb51f4173258ae3481c61b95b503c13862ccfba7",
-  "state": null,
   "propertySources": [
     {
-      "name": "https://github.com/spring-cloud-samples/config-repo/testapp-prod.yml",
+      "name": "app-test-prod.yml",
       "source": {
         "bar": "spam",
         "foo": "from foo development",
@@ -16,7 +13,14 @@
       }
     },
     {
-      "name": "https://github.com/spring-cloud-samples/config-repo/application.yml",
+      "name": "app-common.yml",
+      "source": {
+        "foo": "common",
+        "common": "common"
+      }
+    },
+    {
+      "name": "app.yml",
       "source": {
         "info.description": "Sample",
         "foo": "baz"

@@ -143,23 +143,17 @@ public abstract class CommonProcessor<C extends CommonConfig> {
             String workingDir = ((JsonString) config.get("WorkingDir")).value();
 
             Optional<String> baseImage = Optional.empty();
-            JsonValue parentObj = imageData.get("Parent");
-            if (parentObj instanceof JsonString s) {
-                baseImage = Optional.of(s.value());
-            }
 
-            if (baseImage.isEmpty()) {
-                JsonObject labels = config.get("Labels");
-                if (labels != null) {
-                    JsonValue baseNameLabelObj = labels.get("org.opencontainers.image.base.name");
-                    if (baseNameLabelObj instanceof JsonString s) {
-                        baseImage = Optional.of(s.value());
-                    } else {
-                        JsonValue nameObj = labels.get("name");
-                        JsonValue versionObj = labels.get("version");
-                        if ((nameObj instanceof JsonString n) && (versionObj instanceof JsonString v)) {
-                            baseImage = Optional.of(n.value() + ":" + v.value());
-                        }
+            JsonObject labels = config.get("Labels");
+            if (labels != null) {
+                JsonValue baseNameLabelObj = labels.get("org.opencontainers.image.base.name");
+                if (baseNameLabelObj instanceof JsonString s) {
+                    baseImage = Optional.of(s.value());
+                } else {
+                    JsonValue nameObj = labels.get("name");
+                    JsonValue versionObj = labels.get("version");
+                    if ((nameObj instanceof JsonString n) && (versionObj instanceof JsonString v)) {
+                        baseImage = Optional.of(n.value() + ":" + v.value());
                     }
                 }
             }

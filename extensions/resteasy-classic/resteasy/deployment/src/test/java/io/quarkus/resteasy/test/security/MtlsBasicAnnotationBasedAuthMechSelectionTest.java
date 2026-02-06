@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.reactive.server.test.security;
+package io.quarkus.resteasy.test.security;
 
 import static org.hamcrest.Matchers.is;
 
@@ -10,6 +10,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -24,7 +25,13 @@ import io.quarkus.vertx.http.runtime.security.annotation.HttpAuthenticationMecha
 import io.quarkus.vertx.http.runtime.security.annotation.MTLSAuthentication;
 import io.quarkus.vertx.http.security.AuthorizationPolicy;
 import io.restassured.RestAssured;
+import io.smallrye.certs.Format;
+import io.smallrye.certs.junit5.Certificate;
+import io.smallrye.certs.junit5.Certificates;
 
+@Certificates(baseDir = "target/certs", certificates = {
+        @Certificate(name = "mtls-test", password = "password", formats = { Format.PKCS12 }, client = true)
+})
 public class MtlsBasicAnnotationBasedAuthMechSelectionTest {
 
     @TestHTTPResource(value = "/mtls", tls = true)
@@ -70,9 +77,15 @@ public class MtlsBasicAnnotationBasedAuthMechSelectionTest {
                             ClassLevelSecurityResource.class, CustomHttpSecurityPolicy.class,
                             ClassLevelPolicyResource.class)
                     .addClasses(TestIdentityProvider.class, TestTrustedIdentityProvider.class, TestIdentityController.class)
-                    .addAsResource("mtls/mtls-basic-jks.conf", "application.properties")
-                    .addAsResource("mtls/server-keystore.jks", "server-keystore.jks")
-                    .addAsResource("mtls/server-truststore.jks", "server-truststore.jks"));
+                    .addAsResource(new StringAsset("""
+                            quarkus.http.ssl.certificate.key-store-file=target/certs/mtls-test-keystore.p12
+                            quarkus.http.ssl.certificate.key-store-password=password
+                            quarkus.http.ssl.certificate.trust-store-file=target/certs/mtls-test-server-truststore.p12
+                            quarkus.http.ssl.certificate.trust-store-password=password
+                            quarkus.http.ssl.client-auth=REQUEST
+                            quarkus.http.auth.basic=true
+                            quarkus.http.auth.proactive=false
+                            """), "application.properties"));
 
     @BeforeAll
     public static void setup() {
@@ -84,28 +97,28 @@ public class MtlsBasicAnnotationBasedAuthMechSelectionTest {
     public void testOtherMechanismNotAllowed() {
         // MTLS select, don't allow anything else
         RestAssured.given()
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .header("custom-auth", "ignored")
                 .get(mtlsUrl).then().statusCode(401);
         // Basic selected, don't allow anything else
         RestAssured.given()
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .header("custom-auth", "ignored")
                 .get(basicUrl).then().statusCode(401);
         // Basic or Mutual TLS selected, don't allow anything else
         RestAssured.given()
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .header("custom-auth", "ignored")
                 .get(basicOrMtlsUrl).then().statusCode(401);
         RestAssured.given()
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .header("custom-auth", "ignored")
                 .get(classLevelBasicOrMtlsOrCustom5Url).then().statusCode(401);
         // only custom auth with postfix 5 must be allowed
         RestAssured.given()
                 .header("custom-auth", "ignored")
                 .header("custom-auth-postfix", "4")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(classLevelBasicOrMtlsOrCustom5Url).then().statusCode(401);
     }
 
@@ -113,19 +126,19 @@ public class MtlsBasicAnnotationBasedAuthMechSelectionTest {
     public void testMethodLevelMutualTlsOrBasicAuthenticationEnforced() {
         // anonymous user must not be allowed as we used an annotation selecting authentication mechanism
         RestAssured.given()
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(basicOrMtlsUrl).then().statusCode(401);
         // endpoint is annotated with @MTLSAuthentication, therefore mTLS must pass
         RestAssured.given()
-                .keyStore(new File("src/test/resources/mtls/client-keystore.jks"), "password")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
-                .get(basicOrMtlsUrl).then().statusCode(200).body(is("CN=client,OU=cert,O=quarkus,L=city,ST=state,C=AU"));
+                .keyStore(new File("target/certs/mtls-test-client-keystore.p12"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
+                .get(basicOrMtlsUrl).then().statusCode(200).body(is("CN=localhost"));
         // endpoint is annotated with @BasicAuthentication, therefore basic must pass
         RestAssured.given()
                 .auth()
                 .preemptive()
                 .basic("admin", "admin")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(basicOrMtlsUrl).then().statusCode(200).body(is("admin"));
     }
 
@@ -133,26 +146,26 @@ public class MtlsBasicAnnotationBasedAuthMechSelectionTest {
     public void testClassLevelMutualTlsOrBasicAuthenticationEnforced() {
         // anonymous user must not be allowed as we used an annotation selecting authentication mechanism
         RestAssured.given()
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(classLevelBasicOrMtlsOrCustom5Url).then().statusCode(401);
         // resource is annotated with @MTLSAuthentication, therefore mTLS must pass
         RestAssured.given()
-                .keyStore(new File("src/test/resources/mtls/client-keystore.jks"), "password")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .keyStore(new File("target/certs/mtls-test-client-keystore.p12"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(classLevelBasicOrMtlsOrCustom5Url).then().statusCode(200)
-                .body(is("CN=client,OU=cert,O=quarkus,L=city,ST=state,C=AU"));
+                .body(is("CN=localhost"));
         // resource is annotated with @BasicAuthentication, therefore basic must pass
         RestAssured.given()
                 .auth()
                 .preemptive()
                 .basic("admin", "admin")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(classLevelBasicOrMtlsOrCustom5Url).then().statusCode(200).body(is("admin"));
         // resource is annotated with @HttpAuthenticationMechanism("custom-head-mech-5"), therefore it must pass
         RestAssured.given()
                 .header("custom-auth", "ignored")
                 .header("custom-auth-postfix", "5")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(classLevelBasicOrMtlsOrCustom5Url).then().statusCode(200).body(is("donald"));
     }
 
@@ -160,32 +173,32 @@ public class MtlsBasicAnnotationBasedAuthMechSelectionTest {
     public void testMutualTLSAuthenticationEnforced() {
         // endpoint is annotated with @MTLS, therefore mTLS must pass while anything less fail
         RestAssured.given()
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(mtlsUrl).then().statusCode(401);
         RestAssured.given()
-                .keyStore(new File("src/test/resources/mtls/client-keystore.jks"), "password")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
-                .get(mtlsUrl).then().statusCode(200).body(is("CN=client,OU=cert,O=quarkus,L=city,ST=state,C=AU"));
+                .keyStore(new File("target/certs/mtls-test-client-keystore.p12"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
+                .get(mtlsUrl).then().statusCode(200).body(is("CN=localhost"));
         RestAssured.given()
                 .auth()
                 .preemptive()
                 .basic("admin", "admin")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(mtlsUrl).then().statusCode(401);
         // same expectations for the method-level annotation overriding the class-level annotation
         RestAssured.given()
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(overrideClassLevelMtlsUrl).then().statusCode(401);
         RestAssured.given()
-                .keyStore(new File("src/test/resources/mtls/client-keystore.jks"), "password")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .keyStore(new File("target/certs/mtls-test-client-keystore.p12"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(overrideClassLevelMtlsUrl).then().statusCode(200)
-                .body(is("CN=client,OU=cert,O=quarkus,L=city,ST=state,C=AU"));
+                .body(is("CN=localhost"));
         RestAssured.given()
                 .auth()
                 .preemptive()
                 .basic("admin", "admin")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(overrideClassLevelMtlsUrl).then().statusCode(401);
     }
 
@@ -193,31 +206,31 @@ public class MtlsBasicAnnotationBasedAuthMechSelectionTest {
     public void testBasicAuthenticationEnforced() {
         // endpoint is annotated with @Basic, therefore basic auth must pass while anything less fail
         RestAssured.given()
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(basicUrl).then().statusCode(401);
         RestAssured.given()
                 .auth()
                 .preemptive()
                 .basic("admin", "admin")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(basicUrl).then().statusCode(200).body(is("admin"));
         RestAssured.given()
-                .keyStore(new File("src/test/resources/mtls/client-keystore.jks"), "password")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .keyStore(new File("target/certs/mtls-test-client-keystore.p12"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(basicUrl).then().statusCode(401);
         // same expectations for the method-level annotation overriding the class-level annotation
         RestAssured.given()
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(overrideClassLevelBasicUrl).then().statusCode(401);
         RestAssured.given()
                 .auth()
                 .preemptive()
                 .basic("admin", "admin")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(overrideClassLevelBasicUrl).then().statusCode(200).body(is("admin"));
         RestAssured.given()
-                .keyStore(new File("src/test/resources/mtls/client-keystore.jks"), "password")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .keyStore(new File("target/certs/mtls-test-client-keystore.p12"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(overrideClassLevelBasicUrl).then().statusCode(401);
     }
 
@@ -225,24 +238,24 @@ public class MtlsBasicAnnotationBasedAuthMechSelectionTest {
     public void testCustomAuthenticationMechanismEnforced() {
         // anonymous not allowed
         RestAssured.given()
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(overrideClassLevelCustomUrl).then().statusCode(401);
         // basic not allowed
         RestAssured.given()
                 .auth()
                 .preemptive()
                 .basic("admin", "admin")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(overrideClassLevelCustomUrl).then().statusCode(401);
         // mTLS not allowed
         RestAssured.given()
-                .keyStore(new File("src/test/resources/mtls/client-keystore.jks"), "password")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .keyStore(new File("target/certs/mtls-test-client-keystore.p12"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(overrideClassLevelCustomUrl).then().statusCode(401);
         // custom allowed
         RestAssured.given()
                 .header("custom-auth", "ignored")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(overrideClassLevelCustomUrl).then().statusCode(200).body(is("donald"));
     }
 
@@ -252,48 +265,48 @@ public class MtlsBasicAnnotationBasedAuthMechSelectionTest {
         for (URL url : urls) {
             // anonymous not allowed
             RestAssured.given()
-                    .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                    .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                     .get(url).then().statusCode(401);
             // basic not allowed
             RestAssured.given()
                     .auth()
                     .preemptive()
                     .basic("admin", "admin")
-                    .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                    .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                     .get(url).then().statusCode(401);
             // mTLS not allowed
             RestAssured.given()
-                    .keyStore(new File("src/test/resources/mtls/client-keystore.jks"), "password")
-                    .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                    .keyStore(new File("target/certs/mtls-test-client-keystore.p12"), "password")
+                    .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                     .get(url).then().statusCode(401);
             // 'custom-head-mech' not allowed
             RestAssured.given()
                     .header("custom-auth", "ignored")
-                    .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                    .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                     .get(url).then().statusCode(401);
             // 'custom-head-mech-1' allowed
             RestAssured.given()
                     .header("custom-auth", "ignored")
                     .header("custom-auth-postfix", "1")
-                    .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                    .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                     .get(url).then().statusCode(200).body(is("donald"));
             // 'custom-head-mech-2' allowed
             RestAssured.given()
                     .header("custom-auth", "ignored")
                     .header("custom-auth-postfix", "2")
-                    .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                    .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                     .get(url).then().statusCode(200).body(is("donald"));
             // 'custom-head-mech-3' not allowed
             RestAssured.given()
                     .header("custom-auth", "ignored")
                     .header("custom-auth-postfix", "3")
-                    .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                    .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                     .get(url).then().statusCode(401);
             // 'custom-head-mech-4' allowed
             RestAssured.given()
                     .header("custom-auth", "ignored")
                     .header("custom-auth-postfix", "4")
-                    .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                    .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                     .get(url).then().statusCode(200).body(is("donald"));
         }
     }
@@ -309,7 +322,7 @@ public class MtlsBasicAnnotationBasedAuthMechSelectionTest {
         RestAssured.given()
                 .header("custom-auth", "ignored")
                 .header("custom-auth-postfix", "2")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(customRepeatedDenyAllUrl).then().statusCode(403);
     }
 
@@ -318,19 +331,19 @@ public class MtlsBasicAnnotationBasedAuthMechSelectionTest {
         RestAssured.given()
                 .header("custom-auth", "ignored")
                 .header("auth-required", "ignored")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(customAuthorizationPolicyUrl).then().statusCode(200).body(is("donald"));
         RestAssured.given()
                 .header("custom-auth", "ignored")
                 .header("deny-access", "ignored")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(customAuthorizationPolicyUrl).then().statusCode(403);
         RestAssured.given()
                 .auth()
                 .preemptive()
                 .basic("admin", "admin")
                 .header("auth-required", "ignored")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(customAuthorizationPolicyUrl).then().statusCode(401);
     }
 
@@ -345,25 +358,25 @@ public class MtlsBasicAnnotationBasedAuthMechSelectionTest {
         RestAssured.given()
                 .header("custom-auth", "ignored")
                 .header("auth-required", "ignored")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(classLevelCustomAuthorizationPolicyUrl).then().statusCode(200).body(is("donald"));
         RestAssured.given()
-                .keyStore(new File("src/test/resources/mtls/client-keystore.jks"), "password")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .keyStore(new File("target/certs/mtls-test-client-keystore.p12"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .header("auth-required", "ignored")
                 .get(classLevelCustomAuthorizationPolicyUrl).then().statusCode(200)
-                .body(is("CN=client,OU=cert,O=quarkus,L=city,ST=state,C=AU"));
+                .body(is("CN=localhost"));
         RestAssured.given()
                 .header("custom-auth", "ignored")
                 .header("deny-access", "ignored")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(classLevelCustomAuthorizationPolicyUrl).then().statusCode(403);
         RestAssured.given()
                 .auth()
                 .preemptive()
                 .basic("admin", "admin")
                 .header("auth-required", "ignored")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+                .trustStore(new File("target/certs/mtls-test-client-truststore.p12"), "password")
                 .get(classLevelCustomAuthorizationPolicyUrl).then().statusCode(401);
     }
 

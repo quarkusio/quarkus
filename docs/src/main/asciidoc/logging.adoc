@@ -866,22 +866,7 @@ Do not include any Log4j dependencies, as the `log4j2-jboss-logmanager` library 
 [[logging-adapters-log4j]]
 ==== Log4j
 
-The Log4j adapter is provided by the following dependency:
-
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<dependency>
-    <groupId>org.jboss.logmanager</groupId>
-    <artifactId>log4j-jboss-logmanager</artifactId>
-</dependency>
-----
-
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-implementation("org.jboss.logmanager:log4j-jboss-logmanager")
-----
+Log4j 1.x is no longer supported by Quarkus.
 
 === Use MDC to add contextual log information
 

@@ -682,6 +682,23 @@
         "offline_access",
         "microprofile-jwt"
       ]
+    },
+    {
+      "clientId": "oid4vc-rest-api",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "secret",
+      "redirectUris": ["*"],
+      "directAccessGrantsEnabled": true,
+      "defaultClientScopes": ["profile"],
+      "optionalClientScopes": ["vc-scope-mapping"],
+      "attributes": {
+        "oid4vci.enabled": "true",
+        "oid4vc.client.enabled": "true"
+      }
     }
   ],
   "clientScopes": [
@@ -1167,6 +1184,29 @@
           "config": {}
         }
       ]
+    },
+    {
+      "id": "12345-vc-scope-mapping",
+      "name": "vc-scope-mapping",
+      "protocol": "oid4vc",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "vc.issuer_did": "did:web:vc.example.com",
+        "vc.credential_configuration_id": "vc-scope-mapping",
+        "vc.credential_identifier": "my-credential-identifier",
+        "vc.format": "jwt_vc",
+        "vc.expiry_in_seconds": 31536000,
+        "vc.verifiable_credential_type": "my-vct",
+        "vc.supported_credential_types": "credential-type-1,credential-type-2",
+        "vc.credential_contexts": "context-1,context-2",
+        "vc.credential_signing_alg": "ES256",
+        "vc.cryptographic_binding_methods_supported": "jwk",
+        "vc.sd_jwt.number_of_decoys": "2",
+        "vc.credential_build_config.sd_jwt.visible_claims": "iat,jti,nbf,exp,given_name",
+        "vc.credential_build_config.hash_algorithm": "SHA-256",
+        "vc.credential_build_config.token_jws_type": "JWS",
+        "vc.include_in_metadata": "true"
+      }
     }
   ],
   "defaultDefaultClientScopes": [
@@ -1317,6 +1357,20 @@
           "secret" : [ "qBFGKdUGf6xDgKphnRfoFzIzaFHJW4bYnZ9MinPFzN38X5_ctq-2u1q5RdZzeJukXvk2biHB8_s3DxWmmLZFsA" ],
           "priority": [ "100" ],
           "algorithm": [ "HS256" ]
+        }
+      },
+      {
+        "id": "generated-ecdsa-key-provider",
+        "name": "es256-generated",
+        "providerId": "ecdsa-generated",
+        "subComponents": {},
+        "config": {
+          "priority": [
+            "100"
+          ],
+          "algorithm": [
+            "ES256"
+          ]
         }
       }
     ]

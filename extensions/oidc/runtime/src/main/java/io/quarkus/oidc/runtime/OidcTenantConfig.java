@@ -1015,6 +1015,13 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
          */
         @ConfigDocSection
         PushedAuthorizationRequest par();
+
+        /**
+         * Configuration for the rich authorization requests (RAR)
+         * as defined by the <a href="https://datatracker.ietf.org/doc/html/rfc9396">RFC 9396</a>.
+         */
+        @ConfigDocSection
+        Optional<RichAuthorizationRequests> rar();
     }
 
     /**
@@ -1362,5 +1369,55 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
          * using the `pushed_authorization_request_endpoint` parameter.
          */
         Optional<String> path();
+    }
+
+    /**
+     * Rich Authorization Requests (RAR) configuration.
+     */
+    interface RichAuthorizationRequests {
+
+        /**
+         * Configures the `authorization_details` request parameter string fields of the authorization request.
+         * Please note that the `type` field is required. If the `type` is not configured, validation will fail.
+         * For example, if you configure the `quarkus.oidc.authentication.rar.simple.type=openid_credential`
+         * property, following `authorization_details` request parameter will be added to the authorization request:
+         *
+         * <pre>
+         * {@code
+         * [
+         *    {
+         *       "type": "openid_credential"
+         *    }
+         * ]
+         * }
+         * </pre>
+         */
+        @ConfigDocMapKey("field")
+        Map<String, String> simple();
+
+        /**
+         * Configures the `authorization_details` request parameter array fields of the authorization request.
+         * For example, if you configure the `quarkus.oidc.authentication.rar.array.locations=https://...`
+         * property, following `authorization_details` request parameter will be added to the authorization request:
+         *
+         * <pre>
+         * {@code
+         * [
+         *    {
+         *       "locations": [ "https://..." ]
+         *    }
+         * ]
+         * }
+         * </pre>
+         */
+        @ConfigDocMapKey("field")
+        Map<String, List<@WithConverter(TrimmedStringConverter.class) String>> array();
+
+        /**
+         * The `authorization_details` type field. Please see the RFC 9396
+         * <a href="https://datatracker.ietf.org/doc/html/rfc9396#name-request-parameter-authoriza">Request Parameter
+         * `authorization_details`</a> for more information.
+         */
+        String type();
     }
 }

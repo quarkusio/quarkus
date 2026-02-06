@@ -942,6 +942,80 @@ quarkus.oidc.authentication.par.enabled=true
 quarkus.oidc.authentication.par.path=/as/par
 ----
 
+=== Rich Authorization Requests
+
+The link:https://datatracker.ietf.org/doc/html/rfc9396[OAuth 2.0 Rich Authorization Requests] (RAR) specification allows OAuth2 client applications to specify fine-grained authorization requirements in the authorization code flow request.
+Instead of relying solely on traditional OAuth 2.0 scopes, RAR allows to represent required permissions as JSON that must be URL-encoded and passed as an `authorization_details` query parameter.
+
+You can configure authorization details using the properties in the `quarkus.oidc.authentication.rar` configuration namespace:
+
+[source, properties]
+----
+quarkus.oidc.authentication.rar.type=openid_credential  <1>
+quarkus.oidc.authentication.rar.simple.credential_configuration_id=vc-scope-mapping <2>
+quarkus.oidc.authentication.rar.array.locations=${quarkus.oidc.auth-server-url} <3>
+----
+<1> The `type` field is required.
+<2> The `credential_configuration_id` field value `vc-scope-mapping` is added to the `authorization_details` as a string.
+<3> The link:https://datatracker.ietf.org/doc/html/rfc9396#name-common-data-fields[common data field] `locations` is added as an array of strings.
+
+With this configuration, the following JSON is created:
+
+[source, json]
+----
+[
+    {
+        "type": "openid_credential",
+        "credential_configuration_id": "vc-scope-mapping",
+        "locations": [ "http://localhost:34187/realms/quarkus" ]
+    }
+]
+----
+
+Next, this JSON is URL-encoded and added as an `authorization_details` query parameter to the authorization code flow redirect URL.
+
+==== Add an `authorization_details` query parameter with `OidcRedirectFilter`
+
+A complex JSON structure that cannot be expressed with configuration properties in the `quarkus.oidc.authentication.rar` configuration namespace can be added with the `OidcRedirectFilter`.
+For example:
+
+[source, java]
+----
+package io.quarkus.it.keycloak;
+
+import static io.quarkus.oidc.Redirect.Location.OIDC_AUTHORIZATION;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.OidcRedirectFilter;
+import io.quarkus.oidc.Redirect;
+
+@Redirect(OIDC_AUTHORIZATION)
+@ApplicationScoped
+@Unremovable
+class AuthorizationDetailsOidcRedirectFilter implements OidcRedirectFilter {
+
+    @Override
+    public void filter(OidcRedirectContext redirectContext) {
+        redirectContext.additionalQueryParams().add("authorization_details", """
+                [
+                    {
+                        "type": "openid_credential",
+                        "credential_configuration_id": "vc-scope-mapping-1",
+                        "locations": [ "http://localhost:34187/realms/quarkus" ]
+                    },
+                    {
+                        "type": "openid_credential",
+                        "credential_configuration_id": "vc-scope-mapping-2",
+                        "locations": [ "http://localhost:34187/realms/quarkus" ]
+                    }
+                ]
+                """);
+    }
+}
+----
+
 === Handling and controlling the lifetime of authentication
 
 Another important requirement for authentication is to ensure that the data the session is based on is up-to-date without requiring the user to authenticate for every single request.

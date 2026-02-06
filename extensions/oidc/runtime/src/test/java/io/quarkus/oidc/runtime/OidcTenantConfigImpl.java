@@ -216,6 +216,10 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         JWT_BEARER_TOKEN_PATH,
         PAR,
         PAR_ENABLED,
+        RAR,
+        RAR_SIMPLE,
+        RAR_ARRAY,
+        RAR_TYPE,
         PAR_PATH
     }
 
@@ -866,6 +870,30 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
                         return Optional.empty();
                     }
                 };
+            }
+
+            @Override
+            public Optional<RichAuthorizationRequests> rar() {
+                invocationsRecorder.put(ConfigMappingMethods.RAR, true);
+                return Optional.of(new RichAuthorizationRequests() {
+                    @Override
+                    public Map<String, String> simple() {
+                        invocationsRecorder.put(ConfigMappingMethods.RAR_SIMPLE, true);
+                        return Map.of();
+                    }
+
+                    @Override
+                    public Map<String, List<String>> array() {
+                        invocationsRecorder.put(ConfigMappingMethods.RAR_ARRAY, true);
+                        return Map.of();
+                    }
+
+                    @Override
+                    public String type() {
+                        invocationsRecorder.put(ConfigMappingMethods.RAR_TYPE, true);
+                        return "";
+                    }
+                });
             }
         };
     }

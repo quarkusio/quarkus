@@ -1506,6 +1506,29 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             };
         }
 
+        @Override
+        public Optional<RichAuthorizationRequests> rar() {
+            if (rarTypeField == null) {
+                return Optional.empty();
+            }
+            return Optional.of(new RichAuthorizationRequests() {
+                @Override
+                public Map<String, String> simple() {
+                    return rarStringTypeFields;
+                }
+
+                @Override
+                public Map<String, List<String>> array() {
+                    return rarArrayTypeFields;
+                }
+
+                @Override
+                public String type() {
+                    return rarTypeField;
+                }
+            });
+        }
+
         /**
          * SameSite attribute values for the session cookie.
          */
@@ -1840,6 +1863,12 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
 
         private Optional<String> parEndpoint = Optional.empty();
 
+        private Map<String, String> rarStringTypeFields = Map.of();
+
+        private Map<String, List<String>> rarArrayTypeFields = Map.of();
+
+        private String rarTypeField = null;
+
         public Optional<Duration> getInternalIdTokenLifespan() {
             return internalIdTokenLifespan;
         }
@@ -2123,6 +2152,12 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             cacheControl = mapping.cacheControl();
             parEnabled = mapping.par().enabled();
             parEndpoint = mapping.par().path();
+            var rar = mapping.rar().orElse(null);
+            if (rar != null) {
+                rarStringTypeFields = rar.simple();
+                rarArrayTypeFields = rar.array();
+                rarTypeField = rar.type();
+            }
         }
     }
 

@@ -1,9 +1,7 @@
 package io.quarkus.infinispan.client.runtime;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -31,10 +29,7 @@ public class InfinispanRecorder {
         };
     }
 
-    private final Set<String> clientNames = new HashSet<>();
-
     public Supplier<RemoteCacheManager> infinispanRemoteCacheManagerSupplier(String clientName) {
-        clientNames.add(clientName);
         return new InfinispanClientSupplier<>(new Function<>() {
             @Override
             public RemoteCacheManager apply(InfinispanClientProducer infinispanClientProducer) {
@@ -44,7 +39,6 @@ public class InfinispanRecorder {
     }
 
     public Supplier<CounterManager> infinispanCounterManagerSupplier(String clientName) {
-        clientNames.add(clientName);
         return new InfinispanClientSupplier<>(new Function<>() {
             @Override
             public CounterManager apply(InfinispanClientProducer infinispanClientProducer) {
@@ -54,7 +48,6 @@ public class InfinispanRecorder {
     }
 
     public <K, V> Supplier<RemoteCache<K, V>> infinispanRemoteCacheSupplier(String clientName, String cacheName) {
-        clientNames.add(clientName);
         return new InfinispanClientSupplier<>(new Function<>() {
             @Override
             public RemoteCache<K, V> apply(InfinispanClientProducer infinispanClientProducer) {

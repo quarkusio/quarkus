@@ -50,7 +50,7 @@
         <version.jboss-logging>3.6.2.Final</version.jboss-logging>
         <version.mutiny>3.1.0</version.mutiny>
         <version.bridger>1.6.Final</version.bridger>
-        <version.smallrye-common>2.15.0</version.smallrye-common>
+        <version.smallrye-common>2.16.0</version.smallrye-common>
         <!-- test versions -->
         <version.assertj>3.27.7</version.assertj>
         <version.junit>6.0.2</version.junit>

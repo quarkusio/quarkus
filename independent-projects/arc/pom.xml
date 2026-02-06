@@ -46,7 +46,7 @@
         <!-- main versions -->
         <version.gizmo>1.10.1</version.gizmo>
         <version.jandex>3.5.3</version.jandex>
-        <version.gizmo2>2.1.0</version.gizmo2>
+        <version.gizmo2>2.1.1</version.gizmo2>
         <version.jboss-logging>3.6.2.Final</version.jboss-logging>
         <version.mutiny>3.1.0</version.mutiny>
         <version.bridger>1.6.Final</version.bridger>
@@ -210,13 +210,6 @@
                 <groupId>io.quarkus.gizmo</groupId>
                 <artifactId>gizmo</artifactId>
                 <version>${version.gizmo}</version>
-                <type>test-jar</type>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus.gizmo</groupId>
-                <artifactId>gizmo2</artifactId>
-                <version>${version.gizmo2}</version>
                 <type>test-jar</type>
                 <scope>test</scope>
             </dependency>

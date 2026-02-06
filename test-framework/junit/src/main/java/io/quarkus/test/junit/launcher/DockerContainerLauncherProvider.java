@@ -106,7 +106,9 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
                 labels(config),
                 volumeMounts,
                 config.getOptionalValue("quarkus.package.jar.appcds.use-aot", Boolean.class)
-                        .orElse(Boolean.FALSE),
+                        .orElse(Boolean.FALSE)
+                        // only record AOT file for the default profile
+                        && (context.profile() == null),
                 entryPoint,
                 containerWorkingDirectory,
                 programArgs,

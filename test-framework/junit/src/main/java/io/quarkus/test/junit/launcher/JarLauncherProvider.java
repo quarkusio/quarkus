@@ -52,8 +52,9 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
                     testConfig.env(),
                     context.devServicesLaunchResult(),
                     context.buildOutputDirectory().resolve(pathStr),
-                    config.getOptionalValue("quarkus.package.jar.appcds.use-aot", Boolean.class)
-                            .orElse(Boolean.FALSE)));
+                    config.getOptionalValue("quarkus.package.jar.appcds.use-aot", Boolean.class).orElse(Boolean.FALSE)
+                            // only record AOT file for the default profile
+                            && (context.profile() == null)));
             return launcher;
         } else {
             throw new IllegalStateException("The path of the native binary could not be determined");

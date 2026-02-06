@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.Properties;
 
 import io.quarkus.test.common.ArtifactLauncher;
+import io.quarkus.test.junit.QuarkusTestProfile;
 
 public interface ArtifactLauncherProvider {
 
@@ -25,6 +26,8 @@ public interface ArtifactLauncherProvider {
         Path buildOutputDirectory();
 
         Class<?> testClass();
+
+        Class<? extends QuarkusTestProfile> profile();
 
         ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult();
     }

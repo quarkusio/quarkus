@@ -61,6 +61,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
@@ -757,6 +758,29 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                         if (nonce != null) {
                             codeFlowParams.append(AMP).append(OidcConstants.NONCE).append(EQ).append(nonce);
+                        }
+
+                        // authorization_details
+                        var rar = authenticationConfig.rar().orElse(null);
+                        if (rar != null) {
+                            // prepare JSON
+                            var authorizationDetailsArray = new JsonArray();
+                            var authorizationDetailsObject = new JsonObject();
+                            authorizationDetailsObject.put("type", rar.type());
+                            for (var e : rar.simple().entrySet()) {
+                                authorizationDetailsObject.put(e.getKey(), e.getValue());
+                            }
+                            for (var e : rar.array().entrySet()) {
+                                var arrayField = new JsonArray();
+                                for (String listItem : e.getValue()) {
+                                    arrayField.add(listItem);
+                                }
+                                authorizationDetailsObject.put(e.getKey(), arrayField);
+                            }
+                            authorizationDetailsArray.add(authorizationDetailsObject);
+
+                            codeFlowParams.append(AMP).append("authorization_details").append(EQ)
+                                    .append(OidcCommonUtils.urlEncode(authorizationDetailsArray.encode()));
                         }
 
                         // extra redirect parameters, see https://openid.net/specs/openid-connect-core-1_0.html#AuthRequests

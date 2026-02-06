@@ -406,6 +406,31 @@ By setting `quarkus.oidc.authentication.force-redirect-https-scheme=true`, you t
 
 `quarkus.oidc.authentication.allow-multiple-code-flows` allows multi-tab authentication by default. For example, a user starts an authorization code flow in one tab, is about to enter the requested credentials, does not complete it because of some interruption, later opens another tab and starts and completes another authorization code flow, with the original one still pending in the first tab. Now, the already authenticated user returns to the first tab and completes it as well. If this kind of authentication flow flexibility is considered too much for the stricter authentication policies you may have, set `quarkus.oidc.authentication.allow-multiple-code-flows=false`. See also the `quarkus.oidc.authentication.fail-on-missing-kid` property description below.
 
+[[rich-authorization-requests]]
+=== Rich Authorization Requests
+
+The link:https://datatracker.ietf.org/doc/html/rfc9396[OAuth 2.0 Rich Authorization Requests] (RAR) specification enables OAuth2 client applications to specify fine-grained authorization requirements during the authorization code flow.
+Instead of relying solely on traditional OAuth 2.0 scopes, RAR represents required permissions as JSON that is URL-encoded and passed as an `authorization_details` query parameter.
+
+.Rich Authorization Requests
+[options="header"]
+|====
+|Property | Default |Description
+
+|quarkus.oidc.authentication.rar.type || Authorization details type (required)
+|quarkus.oidc.authentication.rar.simple || Simple string field values
+|quarkus.oidc.authentication.rar.array || Array field values
+|====
+
+`quarkus.oidc.authentication.rar.type` is a required property that specifies the authorization details type.
+This type identifies the kind of authorization being requested, such as `openid_credential` for verifiable credentials.
+
+`quarkus.oidc.authentication.rar.simple` property can be used to add simple string fields to the authorization details JSON.
+
+`quarkus.oidc.authentication.rar.array` property can be used to add array fields to the authorization details JSON.
+
+For more complex JSON structures that cannot be expressed with configuration properties, use the xref:security-oidc-code-flow-authentication.adoc#oidc-redirect-filters[io.quarkus.oidc.OidcRedirectFilter].
+
 [[authorization-code-flow-completion]]
 === Authorization code flow completion
 

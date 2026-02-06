@@ -414,6 +414,7 @@ public class OidcTenantConfigBuilderTest {
                 .pkceRequired()
                 .stateSecret("state-secret-auth-whatever")
                 .par("/as/par")
+                .rar("openid_credential", Map.of("credentials", "mine"), Map.of("locations", List.of("something")))
                 .end()
                 // OidcCommonConfig methods
                 .authServerUrl("we")
@@ -567,6 +568,15 @@ public class OidcTenantConfigBuilderTest {
         var par = authentication.par();
         assertTrue(par.enabled().orElse(false));
         assertEquals("/as/par", par.path().orElse(null));
+        var rar = authentication.rar().orElse(null);
+        assertNotNull(rar);
+        assertEquals("openid_credential", rar.type());
+        assertNotNull(rar.array());
+        assertEquals(1, rar.array().size());
+        assertEquals(List.of("something"), rar.array().get("locations"));
+        assertNotNull(rar.simple());
+        assertEquals(1, rar.simple().size());
+        assertEquals("mine", rar.simple().get("credentials"));
 
         var codeGrant = config.codeGrant();
         assertNotNull(codeGrant);

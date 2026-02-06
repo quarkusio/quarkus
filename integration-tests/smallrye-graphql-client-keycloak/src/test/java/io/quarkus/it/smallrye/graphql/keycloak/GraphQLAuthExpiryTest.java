@@ -12,6 +12,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.smallrye.graphql.client.websocket.WebsocketSubprotocol;
 
 /**
@@ -24,6 +25,8 @@ public class GraphQLAuthExpiryTest {
     @TestHTTPResource
     URL url;
 
+    final KeycloakTestClient client = new KeycloakTestClient();
+
     private static Stream<Arguments> clientOptions() {
         Boolean[] clientInitValues = new Boolean[] { true, false };
         WebsocketSubprotocol[] subprotocolsValues = WebsocketSubprotocol.values();
@@ -35,7 +38,7 @@ public class GraphQLAuthExpiryTest {
     @ParameterizedTest
     @MethodSource("clientOptions")
     public void testDynamicClientWebSocketAuthenticationExpiry(boolean clientInit, String subprotocol) {
-        String token = KeycloakRealmResourceManager.getAccessToken();
+        String token = client.getAccessToken("alice");
         when()
                 .get("/dynamic-subscription-auth-expiry/" + clientInit + "/" + subprotocol + "/" + token + "/" + url.toString())
                 .then()

@@ -13,7 +13,7 @@
     <description>Dependency management for dev-ui. Importable by third party extension developers.</description>
 
     <properties>
-        <vaadin.version>25.0.3</vaadin.version>
+        <vaadin.version>25.0.4</vaadin.version>
         <lit.version>3.3.2</lit.version>
         <lit-element.version>4.2.2</lit-element.version>
         <lit-html.version>3.3.2</lit-html.version>

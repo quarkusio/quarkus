@@ -37,7 +37,15 @@ public class InfinispanRecorder {
         return new InfinispanClientSupplier<>(new Function<>() {
             @Override
             public RemoteCacheManager apply(InfinispanClientProducer infinispanClientProducer) {
-                return infinispanClientProducer.getNamedRemoteCacheManager(clientName);
+                RemoteCacheManager result = infinispanClientProducer.getNamedRemoteCacheManager(clientName);
+                if (result == null) {
+                    if (clientName.startsWith(InfinispanClientUtil.DEFAULT_INFINISPAN_CLIENT_NAME)) {
+                        throw new IllegalStateException("No configuration found for the default Infinispan client");
+                    } else {
+                        throw new IllegalStateException("No configuration found for Infinispan client '" + clientName + "'");
+                    }
+                }
+                return result;
             }
         });
     }

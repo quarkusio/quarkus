@@ -21,6 +21,7 @@ public final class GeneratedClassBuildItem extends MultiBuildItem {
     final String name;
     String binaryName;
     String internalName;
+    String packageName;
     final byte[] classData;
     final String source;
 
@@ -73,6 +74,23 @@ public final class GeneratedClassBuildItem extends MultiBuildItem {
             internalName = this.internalName = name.replace('.', '/');
         }
         return internalName;
+    }
+
+    /**
+     * {@return the package name of this class}
+     */
+    public String packageName() {
+        String packageName = this.packageName;
+        if (packageName == null) {
+            String bn = binaryName();
+            int idx = bn.lastIndexOf('.');
+            if (idx == -1) {
+                packageName = this.packageName = "";
+            } else {
+                packageName = this.packageName = bn.substring(0, idx);
+            }
+        }
+        return packageName;
     }
 
     public byte[] getClassData() {

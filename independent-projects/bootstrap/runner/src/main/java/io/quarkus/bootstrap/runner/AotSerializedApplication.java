@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,6 +23,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
+
+import io.quarkus.bootstrap.runner.AotRunnerClassLoader.ApplicationConfigEntry;
 
 /**
  * Serialization and deserialization of cached resources for AOT-optimized jar packaging.
@@ -35,7 +38,7 @@ import java.util.zip.ZipEntry;
 public class AotSerializedApplication {
 
     private static final int MAGIC = 0xA07CA3E; // AOT CACHE
-    private static final int VERSION = 1;
+    private static final int VERSION = 2;
     // the files immediately (i.e. not recursively) under these paths should all be indexed
     private static final List<String> FULLY_INDEXED_DIRECTORIES = List.of("", "META-INF", "META-INF/services");
 
@@ -73,6 +76,14 @@ public class AotSerializedApplication {
      * . Resource path (UTF string)
      * . Data length (int)
      * . Data bytes
+     * - Application config file name count (int) [version >= 2]
+     * - For each application config file name:
+     * . Config file name (UTF string, e.g., "application.properties")
+     * . Jar entry count for this file (int)
+     * . For each jar entry:
+     * .. "URL" = jar!/file (UTF string)
+     * .. Data length (int)
+     * .. Data bytes
      *
      * @param out the output stream to write to
      * @param mainClass the main class name
@@ -93,8 +104,9 @@ public class AotSerializedApplication {
 
             FullyIndexedJarVisitor fullyIndexedVisitor = new FullyIndexedJarVisitor(FULLY_INDEXED_DIRECTORIES);
             ServiceLoaderFileJarVisitor serviceLoaderFileJarVisitor = new ServiceLoaderFileJarVisitor();
+            ApplicationConfigFileJarVisitor applicationConfigFileJarVisitor = new ApplicationConfigFileJarVisitor();
             for (Path classPathElement : classPath) {
-                visitJar(classPathElement, fullyIndexedVisitor, serviceLoaderFileJarVisitor);
+                visitJar(classPathElement, fullyIndexedVisitor, serviceLoaderFileJarVisitor, applicationConfigFileJarVisitor);
             }
 
             // Write directory contents
@@ -112,6 +124,21 @@ public class AotSerializedApplication {
                 byte[] content = entry.getValue();
                 data.writeInt(content.length);
                 data.write(content);
+            }
+
+            // Write application config files
+            Map<String, List<ApplicationConfigEntry>> applicationConfigFiles = applicationConfigFileJarVisitor
+                    .getApplicationConfigFiles();
+            data.writeInt(applicationConfigFiles.size());
+            for (Map.Entry<String, List<ApplicationConfigEntry>> entry : applicationConfigFiles.entrySet()) {
+                data.writeUTF(entry.getKey());
+                List<ApplicationConfigEntry> entries = entry.getValue();
+                data.writeInt(entries.size());
+                for (ApplicationConfigEntry configEntry : entries) {
+                    data.writeUTF(configEntry.url());
+                    data.writeInt(configEntry.content().length);
+                    data.write(configEntry.content());
+                }
             }
             data.flush();
         }
@@ -160,22 +187,32 @@ public class AotSerializedApplication {
             for (int i = 0; i < serviceFileCount; i++) {
                 String resourcePath = data.readUTF();
                 int dataLength = data.readInt();
-                byte[] content = new byte[dataLength];
-
-                int totalRead = 0;
-                while (totalRead < dataLength) {
-                    int read = data.read(content, totalRead, dataLength - totalRead);
-                    if (read == -1) {
-                        throw new IOException("Unexpected end of stream while reading resource: " + resourcePath);
-                    }
-                    totalRead += read;
-                }
-
+                byte[] content = readBytes(data, dataLength, resourcePath);
                 serviceFiles.put(resourcePath, content);
             }
 
+            Map<String, List<ApplicationConfigEntry>> applicationConfigFiles;
+            int configFileNameCount = data.readInt();
+
+            if (configFileNameCount == 0) {
+                applicationConfigFiles = Map.of();
+            } else if (configFileNameCount == 1) {
+                String configFileName = data.readUTF();
+                int jarEntryCount = data.readInt();
+                List<ApplicationConfigEntry> entries = readConfigEntries(data, jarEntryCount, configFileName);
+                applicationConfigFiles = Map.of(configFileName, entries);
+            } else {
+                applicationConfigFiles = new HashMap<>((int) Math.ceil(configFileNameCount / 0.75f));
+                for (int i = 0; i < configFileNameCount; i++) {
+                    String configFileName = data.readUTF();
+                    int jarEntryCount = data.readInt();
+                    List<ApplicationConfigEntry> entries = readConfigEntries(data, jarEntryCount, configFileName);
+                    applicationConfigFiles.put(configFileName, entries);
+                }
+            }
+
             AotRunnerClassLoader runnerClassLoader = new AotRunnerClassLoader(AotSerializedApplication.class.getClassLoader(),
-                    fullyIndexedDirectories, fullyIndexedResources, serviceFiles);
+                    fullyIndexedDirectories, fullyIndexedResources, serviceFiles, applicationConfigFiles);
 
             return new AotSerializedApplication(runnerClassLoader, mainClass);
         }
@@ -222,6 +259,47 @@ public class AotSerializedApplication {
         }
     }
 
+    private static class ApplicationConfigFileJarVisitor implements JarVisitor {
+
+        private final Map<String, List<ApplicationConfigEntry>> applicationConfigFiles = new LinkedHashMap<>();
+
+        public Map<String, List<ApplicationConfigEntry>> getApplicationConfigFiles() {
+            return applicationConfigFiles;
+        }
+
+        @Override
+        public void visitJarFileEntry(JarFile jarFile, ZipEntry fileEntry) {
+            if (!AotRunnerClassLoader.isApplicationConfigFile(fileEntry.getName())) {
+                return;
+            }
+
+            String configFileName = fileEntry.getName();
+
+            try (var is = jarFile.getInputStream(fileEntry)) {
+                String jarName = Paths.get(jarFile.getName()).getFileName().toString();
+                applicationConfigFiles.computeIfAbsent(configFileName, k -> new ArrayList<>())
+                        .add(new ApplicationConfigEntry(jarName + "!/" + configFileName, is.readAllBytes()));
+            } catch (IOException e) {
+                throw new UncheckedIOException("Unable to read entry: " + configFileName + " from jar: " + jarFile, e);
+            }
+        }
+
+        @Override
+        public void visitRegularFile(Path jar, Path file, String relativePath) {
+            if (!AotRunnerClassLoader.isApplicationConfigFile(relativePath)) {
+                return;
+            }
+
+            try {
+                String jarName = jar.getFileName().toString();
+                applicationConfigFiles.computeIfAbsent(relativePath, k -> new ArrayList<>())
+                        .add(new ApplicationConfigEntry(jarName + "!/" + relativePath, Files.readAllBytes(file)));
+            } catch (IOException e) {
+                throw new UncheckedIOException("Unable to read file: " + relativePath, e);
+            }
+        }
+    }
+
     private static Map<String, byte[]> concatenateServiceFiles(Map<String, List<byte[]>> files) throws IOException {
         Map<String, byte[]> concatenatedServiceFiles = new TreeMap<>();
 
@@ -243,5 +321,50 @@ public class AotSerializedApplication {
         }
 
         return concatenatedServiceFiles;
+    }
+
+    private static List<ApplicationConfigEntry> readConfigEntries(DataInputStream data, int jarEntryCount,
+            String configFileName) throws IOException {
+        if (jarEntryCount == 1) {
+            String url = data.readUTF();
+            int dataLength = data.readInt();
+            byte[] content = readBytes(data, dataLength, configFileName);
+            return List.of(new ApplicationConfigEntry(url, content));
+        } else if (jarEntryCount == 2) {
+            String url1 = data.readUTF();
+            int dataLength1 = data.readInt();
+            byte[] content1 = readBytes(data, dataLength1, configFileName);
+
+            String url2 = data.readUTF();
+            int dataLength2 = data.readInt();
+            byte[] content2 = readBytes(data, dataLength2, configFileName);
+
+            return List.of(
+                    new ApplicationConfigEntry(url1, content1),
+                    new ApplicationConfigEntry(url2, content2));
+        } else {
+            List<ApplicationConfigEntry> entries = new ArrayList<>(jarEntryCount);
+            for (int j = 0; j < jarEntryCount; j++) {
+                String url = data.readUTF();
+                int dataLength = data.readInt();
+                byte[] content = readBytes(data, dataLength, configFileName);
+                entries.add(new ApplicationConfigEntry(url, content));
+            }
+            return entries;
+        }
+    }
+
+    private static byte[] readBytes(DataInputStream data, int length, String resourceName) throws IOException {
+        byte[] content = new byte[length];
+        int totalRead = 0;
+        while (totalRead < length) {
+            int read = data.read(content, totalRead, length - totalRead);
+            if (read == -1) {
+                throw new IOException(
+                        "Unexpected end of stream while reading application config file: " + resourceName);
+            }
+            totalRead += read;
+        }
+        return content;
     }
 }

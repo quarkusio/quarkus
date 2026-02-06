@@ -9,8 +9,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -43,13 +45,15 @@ public class AotRunnerClassLoader extends ClassLoader {
     private final Set<String> fullyIndexedResources;
 
     private final Map<String, byte[]> serviceFiles;
+    private final Map<String, List<ApplicationConfigEntry>> applicationConfigFiles;
 
     AotRunnerClassLoader(ClassLoader parent, Set<String> fullyIndexedDirectories, Set<String> fullyIndexedResources,
-            Map<String, byte[]> serviceFiles) {
+            Map<String, byte[]> serviceFiles, Map<String, List<ApplicationConfigEntry>> applicationConfigFiles) {
         super(parent);
         this.fullyIndexedDirectories = fullyIndexedDirectories;
         this.fullyIndexedResources = fullyIndexedResources;
         this.serviceFiles = serviceFiles;
+        this.applicationConfigFiles = applicationConfigFiles;
     }
 
     @Override
@@ -146,6 +150,33 @@ public class AotRunnerClassLoader extends ClassLoader {
             return Collections.emptyEnumeration();
         }
 
+        // Check application config files - return all matches in order
+        // Optimization only implemented for getResources() because that's what SmallRye Config uses
+        if (isApplicationConfigFile(name)) {
+            List<ApplicationConfigEntry> entries = applicationConfigFiles.get(name);
+            if (entries != null && !entries.isEmpty()) {
+                int size = entries.size();
+                if (size == 1) {
+                    ApplicationConfigEntry entry = entries.get(0);
+                    return Collections.enumeration(List.of(
+                            createCachedResourceURL(entry.url, entry.content)));
+                } else if (size == 2) {
+                    ApplicationConfigEntry entry1 = entries.get(0);
+                    ApplicationConfigEntry entry2 = entries.get(1);
+                    return Collections.enumeration(List.of(
+                            createCachedResourceURL(entry1.url, entry1.content),
+                            createCachedResourceURL(entry2.url, entry2.content)));
+                } else {
+                    List<URL> urls = new ArrayList<>(size);
+                    for (ApplicationConfigEntry entry : entries) {
+                        urls.add(createCachedResourceURL(entry.url, entry.content));
+                    }
+                    return Collections.enumeration(urls);
+                }
+            }
+            return Collections.emptyEnumeration();
+        }
+
         String dirName = getDirNameFromResourceName(name);
         if (fullyIndexedDirectories.contains(dirName) && !fullyIndexedResources.contains(name)) {
             return Collections.emptyEnumeration();
@@ -187,7 +218,7 @@ public class AotRunnerClassLoader extends ClassLoader {
 
     private URL createCachedResourceURL(String name, byte[] data) {
         try {
-            return new URL(null, "cached:" + name, new CachedResourceURLStreamHandler(data));
+            return new URL(null, "cached:".concat(name), new CachedResourceURLStreamHandler(data));
         } catch (MalformedURLException e) {
             throw new RuntimeException("Failed to create URL for cached resource: " + name, e);
         }
@@ -252,6 +283,27 @@ public class AotRunnerClassLoader extends ClassLoader {
         return resourceName.substring(0, index);
     }
 
+    /**
+     * Only use lightweight string operations (no regex!).
+     */
+    static boolean isApplicationConfigFile(String name) {
+        if (name.indexOf('/') != -1) {
+            return false;
+        }
+
+        if (name.equals("application.properties") ||
+                name.equals("application.yaml") ||
+                name.equals("application.yml")) {
+            return true;
+        }
+
+        if (!name.startsWith("application-")) {
+            return false;
+        }
+
+        return name.endsWith(".properties") || name.endsWith(".yaml") || name.endsWith(".yml");
+    }
+
     @Override
     public boolean equals(Object o) {
         //see comment in hashCode
@@ -268,5 +320,8 @@ public class AotRunnerClassLoader extends ClassLoader {
         //as the equals implementation still does honour the identity contract .
         //See also discussion on https://github.com/smallrye/smallrye-context-propagation/pull/443
         return 1;
+    }
+
+    record ApplicationConfigEntry(String url, byte[] content) {
     }
 }

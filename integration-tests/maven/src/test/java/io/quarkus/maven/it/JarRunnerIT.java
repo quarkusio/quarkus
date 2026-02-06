@@ -762,6 +762,38 @@ public class JarRunnerIT extends MojoTestBase {
         }
     }
 
+    static void assertConfigFileWorksCorrectly(String path) {
+        try {
+            URL url = new URL("http://localhost:8080" + path + "/app/hello/greeting");
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            // the default Accept header used by HttpURLConnection is not compatible with RESTEasy negotiation as it uses q=.2
+            connection.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");
+            if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                failConfigFilesFromTheClasspath();
+            }
+            try (BufferedReader br = new BufferedReader(
+                    new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+                String output = br.readLine();
+                assertThat(output).isEqualTo("bonjour");
+            }
+
+            url = new URL("http://localhost:8080" + path + "/app/hello/greeting-prod");
+            connection = (HttpURLConnection) url.openConnection();
+            // the default Accept header used by HttpURLConnection is not compatible with RESTEasy negotiation as it uses q=.2
+            connection.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");
+            if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                failConfigFilesFromTheClasspath();
+            }
+            try (BufferedReader br = new BufferedReader(
+                    new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+                String output = br.readLine();
+                assertThat(output).isEqualTo("bonjour prod");
+            }
+        } catch (IOException e) {
+            failConfigFilesFromTheClasspath();
+        }
+    }
+
     static String performRequest(String path, int expectedCode) {
         try {
             URL url = new URL("http://localhost:8080" + path);
@@ -788,6 +820,10 @@ public class JarRunnerIT extends MojoTestBase {
 
     private static void failProtectionDomain() {
         fail("Failed to assert that the use of ProtectionDomain works correctly");
+    }
+
+    private static void failConfigFilesFromTheClasspath() {
+        fail("Failed to assert that the application properly reads config files from the classpath");
     }
 
     /**
@@ -818,7 +854,7 @@ public class JarRunnerIT extends MojoTestBase {
     }
 
     private void assertThatFastJarFormatWorks(String outputDir, String format) throws Exception {
-        File testDir = initProject("projects/rr-with-json-logging", "projects/rr-with-json-logging" + outputDir);
+        File testDir = initProject("projects/rr-with-json-logging", "projects/rr-with-json-logging" + outputDir + "-" + format);
         RunningInvoker running = new RunningInvoker(testDir, false);
 
         MavenProcessInvocationResult result = running
@@ -870,6 +906,7 @@ public class JarRunnerIT extends MojoTestBase {
             assertApplicationPropertiesSetCorrectly();
             assertResourceReadingFromClassPathWorksCorrectly("");
             assertUsingProtectionDomainWorksCorrectly("");
+            assertConfigFileWorksCorrectly("");
         } finally {
             process.destroy();
         }

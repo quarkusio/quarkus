@@ -246,7 +246,7 @@ public class DockerProcessor extends CommonProcessor<DockerConfig> {
 
                 # Set the JAVA_TOOL_OPTIONS environment variable
                 ENV JAVA_TOOL_OPTIONS="-XX:AOTCache=%s"
-                """.formatted(baseImage, outputDirectory.relativize(aotFile),
+                """.formatted(baseImage, outputDirectory.relativize(aotFile).toString().replace('\\', '/'),
                 requestBuildItem.getContainerWorkingDirectory(), aotFile.getFileName());
 
         Path aotEnhancedDockerfile = outputDirectory.resolve("Dockerfile.aot");

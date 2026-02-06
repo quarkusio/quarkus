@@ -36,6 +36,7 @@ import io.quarkus.bootstrap.classloading.ClassLoaderEventListener;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.builder.BuildChainBuilder;
+import io.quarkus.builder.BuildExecutionBuilder;
 import io.quarkus.builder.BuildResult;
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.QuarkusAugmentor;
@@ -74,6 +75,7 @@ public class AugmentActionImpl implements AugmentAction {
     private final LaunchMode launchMode;
     private final DevModeType devModeType;
     private final List<Consumer<BuildChainBuilder>> chainCustomizers;
+    private final List<Consumer<BuildExecutionBuilder>> executionCustomizers;
     private final List<ClassLoaderEventListener> classLoadListeners;
 
     /**
@@ -99,9 +101,17 @@ public class AugmentActionImpl implements AugmentAction {
 
     public AugmentActionImpl(CuratedApplication curatedApplication, List<Consumer<BuildChainBuilder>> chainCustomizers,
             List<ClassLoaderEventListener> classLoadListeners) {
+        this(curatedApplication, chainCustomizers, Collections.emptyList(), classLoadListeners);
+    }
+
+    public AugmentActionImpl(CuratedApplication curatedApplication,
+            List<Consumer<BuildChainBuilder>> chainCustomizers,
+            List<Consumer<BuildExecutionBuilder>> executionCustomizers,
+            List<ClassLoaderEventListener> classLoadListeners) {
         this.quarkusBootstrap = curatedApplication.getQuarkusBootstrap();
         this.curatedApplication = curatedApplication;
         this.chainCustomizers = chainCustomizers;
+        this.executionCustomizers = executionCustomizers;
         this.classLoadListeners = classLoadListeners;
         LaunchMode launchMode;
         DevModeType devModeType;
@@ -403,6 +413,9 @@ public class AugmentActionImpl implements AugmentAction {
             builder.excludeFromIndexing(quarkusBootstrap.getExcludeFromClassPath());
             for (Consumer<BuildChainBuilder> i : chainCustomizers) {
                 builder.addBuildChainCustomizer(i);
+            }
+            for (Consumer<BuildExecutionBuilder> i : executionCustomizers) {
+                builder.addBuildExecutionCustomizer(i);
             }
             for (Class<? extends BuildItem> i : finalOutputs) {
                 builder.addFinal(i);

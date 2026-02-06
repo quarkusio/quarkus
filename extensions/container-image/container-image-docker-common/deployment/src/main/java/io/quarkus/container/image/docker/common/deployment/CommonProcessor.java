@@ -16,6 +16,11 @@ import java.util.Optional;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.bootstrap.json.JsonArray;
+import io.quarkus.bootstrap.json.JsonObject;
+import io.quarkus.bootstrap.json.JsonReader;
+import io.quarkus.bootstrap.json.JsonString;
+import io.quarkus.bootstrap.json.JsonValue;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.image.deployment.util.NativeBinaryUtil;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
@@ -31,6 +36,7 @@ import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
 import io.smallrye.common.process.ProcessBuilder;
+import io.smallrye.common.process.ProcessExecutionException;
 
 public abstract class CommonProcessor<C extends CommonConfig> {
     private static final Logger LOGGER = Logger.getLogger(CommonProcessor.class);
@@ -87,6 +93,13 @@ public abstract class CommonProcessor<C extends CommonConfig> {
             var builtContainerImage = createContainerImage(containerImageConfig, config, containerImageInfo, out,
                     dockerfilePaths, buildContainerImage, pushContainerImage, packageConfig, executableName);
 
+            Optional<BuiltContainerInfo> maybeBuiltContainerInfo = determineBuiltContainerInfo(executableName,
+                    builtContainerImage);
+            String workingDirectory = null;
+            if (maybeBuiltContainerInfo.isPresent()) {
+                workingDirectory = maybeBuiltContainerInfo.get().effectiveWorkingDirectory();
+            }
+
             // a pull is not required when using this image locally because the strategy always builds the container image
             // locally before pushing it to the registry
             artifactResultProducer.produce(
@@ -95,9 +108,82 @@ public abstract class CommonProcessor<C extends CommonConfig> {
                             "jar-container",
                             Map.of(
                                     "container-image", builtContainerImage,
-                                    "pull-required", "false")));
+                                    "pull-required", "false",
+                                    "working-directory", workingDirectory,
+                                    "output-directory", out.getOutputDirectory().toAbsolutePath().toString())));
 
             containerImageBuilder.produce(new ContainerImageBuilderBuildItem(getProcessorImplementation()));
+        }
+    }
+
+    private Optional<BuiltContainerInfo> determineBuiltContainerInfo(String executableName, String builtContainerImage) {
+        try {
+            StringBuffer sb = new StringBuffer();
+            ProcessBuilder.newBuilder(executableName)
+                    .arguments(List.of("inspect", builtContainerImage))
+                    .error().logOnSuccess(false).inherited()
+                    .output().consumeLinesWith(8092, sb::append)
+                    .run();
+
+            JsonArray results = JsonReader.of(sb.toString()).read();
+            JsonObject imageData = (JsonObject) results.value().get(0);
+
+            JsonObject config = imageData.get("Config");
+
+            JsonArray entrypointArray = config.get("Entrypoint");
+            List<String> entrypoints = new ArrayList<>();
+            if (entrypointArray != null) {
+                entrypointArray.value().forEach(entrypoint -> {
+                    if (entrypoint instanceof JsonString s) {
+                        entrypoints.add(s.value());
+                    }
+                });
+            }
+
+            String workingDir = ((JsonString) config.get("WorkingDir")).value();
+
+            Optional<String> baseImage = Optional.empty();
+
+            JsonObject labels = config.get("Labels");
+            if (labels != null) {
+                JsonValue baseNameLabelObj = labels.get("org.opencontainers.image.base.name");
+                if (baseNameLabelObj instanceof JsonString s) {
+                    baseImage = Optional.of(s.value());
+                } else {
+                    JsonValue nameObj = labels.get("name");
+                    JsonValue versionObj = labels.get("version");
+                    if ((nameObj instanceof JsonString n) && (versionObj instanceof JsonString v)) {
+                        baseImage = Optional.of(n.value() + ":" + v.value());
+                    }
+                }
+            }
+
+            return Optional.of(new BuiltContainerInfo(baseImage, entrypoints, workingDir));
+        } catch (ProcessExecutionException e) {
+            LOGGER.warnf("Error while inspecting built container image %s", executableName);
+            return Optional.empty();
+        }
+    }
+
+    private record BuiltContainerInfo(Optional<String> baseImage, List<String> entrypoint, String workingDirectory) {
+
+        private boolean isUbiOpenJdkImage() {
+            if (baseImage.isPresent()) {
+                String baseImageVal = baseImage().get();
+                if (baseImageVal.contains("ubi") && baseImageVal.contains("openjdk")) {
+                    if (!entrypoint.isEmpty()) {
+                        return entrypoint.get(0).endsWith("run-java.sh");
+                    }
+                }
+            }
+            return false;
+        }
+
+        private String effectiveWorkingDirectory() {
+            if (isUbiOpenJdkImage()) {
+                return "/deployments";
+            }
+            return workingDirectory;
         }
     }
 

@@ -176,6 +176,7 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
                     if (launcherProvider.supportsArtifactType(artifactType, testConfig.integrationTestProfile())) {
                         launcher = launcherProvider.create(
                                 new DefaultArtifactLauncherCreateContext(quarkusArtifactProperties, context, requiredTestClass,
+                                        profile,
                                         devServicesLaunchResult));
                         break;
                     }
@@ -245,13 +246,17 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
         private final Properties quarkusArtifactProperties;
         private final ExtensionContext context;
         private final Class<?> requiredTestClass;
+        private final Class<? extends QuarkusTestProfile> profile;
         private final ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult;
 
         DefaultArtifactLauncherCreateContext(Properties quarkusArtifactProperties, ExtensionContext context,
-                Class<?> requiredTestClass, ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult) {
+                Class<?> requiredTestClass,
+                Class<? extends QuarkusTestProfile> profile,
+                ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult) {
             this.quarkusArtifactProperties = quarkusArtifactProperties;
             this.context = context;
             this.requiredTestClass = requiredTestClass;
+            this.profile = profile;
             this.devServicesLaunchResult = devServicesLaunchResult;
         }
 
@@ -268,6 +273,11 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
         @Override
         public Class<?> testClass() {
             return requiredTestClass;
+        }
+
+        @Override
+        public Class<? extends QuarkusTestProfile> profile() {
+            return null;
         }
 
         @Override

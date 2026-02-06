@@ -307,6 +307,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                             launcher = launcherProvider.create(
                                     new DefaultArtifactLauncherCreateContext(quarkusArtifactProperties, context,
                                             requiredTestClass,
+                                            profile,
                                             devServicesLaunchResult));
                             break;
                         }
@@ -406,13 +407,17 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         private final Properties quarkusArtifactProperties;
         private final ExtensionContext context;
         private final Class<?> requiredTestClass;
+        private final Class<? extends QuarkusTestProfile> profile;
         private final ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult;
 
         DefaultArtifactLauncherCreateContext(Properties quarkusArtifactProperties, ExtensionContext context,
-                Class<?> requiredTestClass, ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult) {
+                Class<?> requiredTestClass,
+                Class<? extends QuarkusTestProfile> profile,
+                ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult) {
             this.quarkusArtifactProperties = quarkusArtifactProperties;
             this.context = context;
             this.requiredTestClass = requiredTestClass;
+            this.profile = profile;
             this.devServicesLaunchResult = devServicesLaunchResult;
         }
 
@@ -432,9 +437,15 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         }
 
         @Override
+        public Class<? extends QuarkusTestProfile> profile() {
+            return profile;
+        }
+
+        @Override
         public ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult() {
             return devServicesLaunchResult;
         }
+
     }
 
     private static final class IntegrationTestExtensionStateResource implements Closeable {

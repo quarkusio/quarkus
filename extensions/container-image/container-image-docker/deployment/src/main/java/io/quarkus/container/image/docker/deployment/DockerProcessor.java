@@ -1,6 +1,10 @@
 
 package io.quarkus.container.image.docker.deployment;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,6 +23,8 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.BuildAotOptimizedContainerImageRequestBuildItem;
+import io.quarkus.deployment.pkg.builditem.BuildAotOptimizedContainerImageResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveResultBuildItem;
@@ -27,6 +33,7 @@ import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.UpxCompressedBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
+import io.smallrye.common.process.ProcessBuilder;
 
 public class DockerProcessor extends CommonProcessor<DockerConfig> {
     private static final Logger LOG = Logger.getLogger(DockerProcessor.class);
@@ -120,16 +127,11 @@ public class DockerProcessor extends CommonProcessor<DockerConfig> {
 
         if (buildContainerImage) {
             var dockerBuildArgs = getDockerBuildArgs(containerImageInfo.getImage(), dockerfilePaths, containerImageConfig,
-                    dockerConfig, containerImageInfo, pushContainerImage, executableName);
+                    dockerConfig, pushContainerImage, executableName, containerImageInfo.getAdditionalImageTags());
 
             buildImage(containerImageInfo, out, executableName, dockerBuildArgs, false);
 
-            dockerConfig.buildx().platform()
-                    .filter(platform -> !platform.isEmpty())
-                    .ifPresentOrElse(
-                            platform -> LOG.infof("Built container image %s (%s platform(s))\n", containerImageInfo.getImage(),
-                                    String.join(",", platform)),
-                            () -> LOG.infof("Built container image %s\n", containerImageInfo.getImage()));
+            printBuiltImage(dockerConfig, containerImageInfo.getImage());
 
             // If we didn't use buildx, now we need to process any tags
             if (!useBuildx && !containerImageInfo.getAdditionalImageTags().isEmpty()) {
@@ -145,6 +147,15 @@ public class DockerProcessor extends CommonProcessor<DockerConfig> {
         }
 
         return containerImageInfo.getImage();
+    }
+
+    private void printBuiltImage(DockerConfig dockerConfig, String image) {
+        dockerConfig.buildx().platform()
+                .filter(platform -> !platform.isEmpty())
+                .ifPresentOrElse(
+                        platform -> LOG.infof("Built container image %s (%s platform(s))\n", image,
+                                String.join(",", platform)),
+                        () -> LOG.infof("Built container image %s\n", image));
     }
 
     @Override
@@ -164,9 +175,9 @@ public class DockerProcessor extends CommonProcessor<DockerConfig> {
             DockerfilePaths dockerfilePaths,
             ContainerImageConfig containerImageConfig,
             DockerConfig dockerConfig,
-            ContainerImageInfoBuildItem containerImageInfo,
             boolean pushImages,
-            String executableName) {
+            String executableName,
+            List<String> additionalImageTags) {
 
         var dockerBuildArgs = getContainerCommonBuildArgs(image, dockerfilePaths, containerImageConfig, dockerConfig, true);
         var buildx = dockerConfig.buildx();
@@ -200,7 +211,7 @@ public class DockerProcessor extends CommonProcessor<DockerConfig> {
         if (useBuildx) {
             // When using buildx for multi-arch images, it wants to push in a single step
             // 1) Create all the additional tags
-            containerImageInfo.getAdditionalImageTags()
+            additionalImageTags
                     .forEach(additionalImageTag -> dockerBuildArgs.addAll(List.of("-t", additionalImageTag)));
 
             if (pushImages) {
@@ -211,5 +222,63 @@ public class DockerProcessor extends CommonProcessor<DockerConfig> {
 
         dockerBuildArgs.add(dockerfilePaths.dockerExecutionPath().toAbsolutePath().toString());
         return dockerBuildArgs.toArray(String[]::new);
+    }
+
+    @BuildStep
+    public BuildAotOptimizedContainerImageResultBuildItem buildAotOptimizedContainerImageBuildItem(
+            OutputTargetBuildItem outputTargetBuildItem,
+            DockerConfig dockerConfig,
+            ContainerImageConfig containerImageConfig,
+            BuildAotOptimizedContainerImageRequestBuildItem requestBuildItem) {
+        // TODO: this needs a lot of hardening as for the time being it assumes the image is in the docker daemon and only writes the new one there
+
+        String baseImage = requestBuildItem.getOriginalContainerImage();
+        String enhancedImage = requestBuildItem.getOriginalContainerImage() + "-aot";
+
+        Path outputDirectory = outputTargetBuildItem.getOutputDirectory();
+
+        Path aotFile = requestBuildItem.getAotFile();
+        String aotEnhancedDockerfileContent = """
+                FROM %s
+
+                # Add the app.aot file to the working directory
+                COPY %s %s
+
+                # Set the JAVA_TOOL_OPTIONS environment variable
+                ENV JAVA_TOOL_OPTIONS="-XX:AOTCache=%s"
+                """.formatted(baseImage, outputDirectory.relativize(aotFile).toString().replace('\\', '/'),
+                requestBuildItem.getContainerWorkingDirectory(), aotFile.getFileName());
+
+        Path aotEnhancedDockerfile = outputDirectory.resolve("Dockerfile.aot");
+        try {
+            Files.write(aotEnhancedDockerfile, aotEnhancedDockerfileContent.getBytes());
+        } catch (IOException e) {
+            throw new UnsupportedOperationException("Unable to save enhanced Dockerfile contents to disk", e);
+        }
+
+        String executableName = getExecutableName(dockerConfig, ContainerRuntime.DOCKER, ContainerRuntime.PODMAN);
+        var dockerBuildArgs = getDockerBuildArgs(enhancedImage, new DockerfilePaths() {
+            @Override
+            public Path dockerfilePath() {
+                return aotEnhancedDockerfile;
+            }
+
+            @Override
+            public Path dockerExecutionPath() {
+                return outputDirectory;
+            }
+        }, containerImageConfig,
+                dockerConfig, false, executableName, Collections.emptyList());
+
+        LOG.infof("Executing the following command to build image: '%s %s'", executableName,
+                String.join(" ", dockerBuildArgs));
+        ProcessBuilder.newBuilder(executableName)
+                .directory(outputDirectory)
+                .arguments(dockerBuildArgs)
+                .error().logOnSuccess(false).inherited()
+                .run();
+
+        LOG.infof("Created AOT enhanced container image %s", enhancedImage);
+        return new BuildAotOptimizedContainerImageResultBuildItem(enhancedImage);
     }
 }

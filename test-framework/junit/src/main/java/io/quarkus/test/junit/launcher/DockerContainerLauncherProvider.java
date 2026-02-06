@@ -22,7 +22,6 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.deployment.images.ContainerImages;
 import io.quarkus.deployment.util.FileUtil;
-import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.DefaultDockerContainerLauncher;
 import io.quarkus.test.common.DockerContainerArtifactLauncher;
 import io.quarkus.test.common.TestConfigUtil;
@@ -38,6 +37,8 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
     @Override
     public DockerContainerArtifactLauncher create(CreateContext context) {
         String containerImage = context.quarkusArtifactProperties().getProperty("metadata.container-image");
+        String containerWorkingDirectory = context.quarkusArtifactProperties().getProperty("metadata.working-directory");
+        String outputTargetDirectory = context.quarkusArtifactProperties().getProperty("metadata.output-directory");
         boolean pullRequired = Boolean
                 .parseBoolean(context.quarkusArtifactProperties().getProperty("metadata.pull-required", "false"));
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
@@ -50,8 +51,9 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
             } else {
                 launcher = new DefaultDockerContainerLauncher();
             }
-            launcherInit(context, launcher, config, containerImage, pullRequired, Optional.empty(), volumeMounts(config),
-                    Collections.emptyList());
+            launcherInit(context, launcher, config, containerImage, pullRequired, Optional.empty(),
+                    Optional.ofNullable(containerWorkingDirectory), volumeMounts(config),
+                    Collections.emptyList(), outputTargetDirectory);
             return launcher;
         } else {
             // Running quarkus integration tests with a native image agent,
@@ -72,7 +74,8 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
                 List<String> programArgs = new ArrayList<>();
                 addNativeAgentProgramArgs(programArgs, context);
 
-                launcherInit(context, launcher, config, containerImage, pullRequired, entryPoint, volumeMounts, programArgs);
+                launcherInit(context, launcher, config, containerImage, pullRequired, entryPoint,
+                        Optional.ofNullable(containerWorkingDirectory), volumeMounts, programArgs, outputTargetDirectory);
                 return launcher;
             } else {
                 throw new IllegalStateException("The container image to be launched could not be determined");
@@ -81,8 +84,13 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
     }
 
     private void launcherInit(CreateContext context, DockerContainerArtifactLauncher launcher, SmallRyeConfig config,
-            String containerImage, boolean pullRequired, Optional<String> entryPoint, Map<String, String> volumeMounts,
-            List<String> programArgs) {
+            String containerImage,
+            boolean pullRequired,
+            Optional<String> entryPoint,
+            Optional<String> containerWorkingDirectory,
+            Map<String, String> volumeMounts,
+            List<String> programArgs,
+            String outputTargetDirectory) {
         TestConfig testConfig = config.getConfigMapping(TestConfig.class);
         launcher.init(new DefaultDockerInitContext(
                 config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
@@ -97,8 +105,14 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
                 additionalExposedPorts(config),
                 labels(config),
                 volumeMounts,
+                config.getOptionalValue("quarkus.package.jar.appcds.use-aot", Boolean.class)
+                        .orElse(Boolean.FALSE)
+                        // only record AOT file for the default profile
+                        && (context.profile() == null),
                 entryPoint,
-                programArgs));
+                containerWorkingDirectory,
+                programArgs,
+                outputTargetDirectory));
     }
 
     private void addNativeAgentProgramArgs(List<String> programArgs, CreateContext context) {
@@ -153,26 +167,36 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
         private final String containerImage;
         private final boolean pullRequired;
         private final Map<Integer, Integer> additionalExposedPorts;
+        private final Boolean generateAotFile;
         private final Optional<String> entryPoint;
+        private final Optional<String> containerWorkingDirectory;
         private final List<String> programArgs;
         private final Map<String, String> labels;
         private final Map<String, String> volumeMounts;
+        private final String outputTargetDirectory;
 
         public DefaultDockerInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile,
                 List<String> argLine, Map<String, String> env,
-                ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult,
+                DevServicesLaunchResult devServicesLaunchResult,
                 String containerImage, boolean pullRequired,
                 Map<Integer, Integer> additionalExposedPorts,
                 Map<String, String> labels,
-                Map<String, String> volumeMounts, Optional<String> entryPoint, List<String> programArgs) {
+                Map<String, String> volumeMounts,
+                Boolean generateAotFile,
+                Optional<String> entryPoint,
+                Optional<String> containerWorkingDirectory,
+                List<String> programArgs, String outputTargetDirectory) {
             super(httpPort, httpsPort, waitTime, testProfile, argLine, env, devServicesLaunchResult);
             this.containerImage = containerImage;
             this.pullRequired = pullRequired;
             this.additionalExposedPorts = additionalExposedPorts;
+            this.containerWorkingDirectory = containerWorkingDirectory;
             this.labels = labels;
             this.volumeMounts = volumeMounts;
+            this.generateAotFile = generateAotFile;
             this.entryPoint = entryPoint;
             this.programArgs = programArgs;
+            this.outputTargetDirectory = outputTargetDirectory;
         }
 
         @Override
@@ -206,8 +230,23 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
         }
 
         @Override
+        public Optional<String> containerWorkingDirectory() {
+            return containerWorkingDirectory;
+        }
+
+        @Override
         public List<String> programArgs() {
             return programArgs;
+        }
+
+        @Override
+        public boolean generateAotFile() {
+            return generateAotFile;
+        }
+
+        @Override
+        public String outputTargetDirectory() {
+            return outputTargetDirectory;
         }
     }
 }

@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -26,6 +27,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
+import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.deployment.pkg.steps.NativeImageBuildLocalContainerRunner;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
@@ -36,6 +38,9 @@ import io.smallrye.config.common.utils.StringUtil;
 public class DefaultDockerContainerLauncher implements DockerContainerArtifactLauncher {
     private static final Logger log = Logger.getLogger(DefaultDockerContainerLauncher.class);
 
+    private static final String AOT_DIR = "aot";
+    private static final String AOT_FILE_NAME = "app.aot";
+
     private int httpPort;
     private int httpsPort;
     private long waitTimeSeconds;
@@ -45,6 +50,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     private ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult;
     private String containerImage;
     private boolean pullRequired;
+    private boolean generateAotFile;
     private Map<Integer, Integer> additionalExposedPorts;
 
     private Map<String, String> volumeMounts;
@@ -55,6 +61,9 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private Optional<String> entryPoint;
     private List<String> programArgs;
+    private Optional<String> containerWorkingDirectory;
+    private String outputTargetDirectory;
+    private Process containerProcess;
 
     @Override
     public void init(DockerContainerArtifactLauncher.DockerInitContext initContext) {
@@ -71,7 +80,10 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         this.volumeMounts = initContext.volumeMounts();
         this.labels = initContext.labels();
         this.entryPoint = initContext.entryPoint();
+        this.containerWorkingDirectory = initContext.containerWorkingDirectory();
         this.programArgs = initContext.programArgs();
+        this.generateAotFile = initContext.generateAotFile();
+        this.outputTargetDirectory = initContext.outputTargetDirectory();
     }
 
     @Override
@@ -151,6 +163,8 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
             for (var e : env.entrySet()) {
                 args.addAll(envAsLaunchArg(e.getKey(), e.getValue()));
             }
+
+            handleAotFileArgs(args, containerRuntime);
 
             for (var e : labels.entrySet()) {
                 args.add("--label");
@@ -263,6 +277,8 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
             args.addAll(envAsLaunchArg(e.getKey(), e.getValue()));
         }
 
+        handleAotFileArgs(args, containerRuntime);
+
         for (var e : labels.entrySet()) {
             args.add("--label");
             args.add(e.getKey() + "=" + e.getValue());
@@ -286,7 +302,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
 
         // We rely on the container writing log to stdout. If it just writes to a logfile inside itself, we would have
         // to mount /work/ directory to get quarkus.log.
-        final Process containerProcess = new ProcessBuilder(args)
+        containerProcess = new ProcessBuilder(args)
                 .redirectErrorStream(true)
                 .redirectOutput(ProcessBuilder.Redirect.appendTo(logPath.toFile()))
                 .start();
@@ -299,6 +315,26 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
             Optional<ListeningAddress> result = waitForCapturedListeningData(containerProcess, logPath, waitTimeSeconds);
             result.ifPresent(listeningAddress -> log.infof("Server started on port %s", listeningAddress.port()));
             return result;
+        }
+    }
+
+    private void handleAotFileArgs(List<String> args, ContainerRuntime containerRuntime) throws IOException {
+        if (generateAotFile) {
+            if (containerWorkingDirectory.isPresent()) {
+                args.addAll(toEnvVar("JAVA_TOOL_OPTIONS", "-XX:AOTCacheOutput=%s/%s".formatted(AOT_DIR, AOT_FILE_NAME)));
+                Path containerAotDir = Path.of(outputTargetDirectory).resolve(AOT_DIR);
+                Files.createDirectories(containerAotDir);
+                containerAotDir.toFile().setReadable(true, false);
+                containerAotDir.toFile().setWritable(true, false);
+                containerAotDir.toFile().setExecutable(true, false);
+                Files.deleteIfExists(containerAotDir.resolve(AOT_FILE_NAME));
+                NativeImageBuildLocalContainerRunner.addVolumeParameter(containerAotDir.toAbsolutePath().toString(),
+                        containerWorkingDirectory.get() + "/%s".formatted(AOT_DIR), args, containerRuntime);
+            } else {
+                // TODO: figure it out
+                log.warn("AOT file cannot be generated because the working directory could not be determined.");
+            }
+
         }
     }
 
@@ -331,15 +367,48 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     public void close() {
         log.info("Close the container");
         try {
-            final Process dockerStopProcess = new ProcessBuilder(containerRuntimeBinaryName, "stop", containerName)
+            final Process dockerStopProcess = new ProcessBuilder(containerRuntimeBinaryName, "kill", "--signal=SIGINT",
+                    containerName)
                     .redirectError(DISCARD)
                     .redirectOutput(DISCARD).start();
             log.debug("Wait for container to stop");
-            dockerStopProcess.waitFor(10, TimeUnit.SECONDS);
-        } catch (IOException | InterruptedException e) {
+            dockerStopProcess.waitFor(5, TimeUnit.SECONDS);
+
+            if (containerProcess != null) {
+                try {
+                    containerProcess.waitFor(20, TimeUnit.SECONDS);
+                } catch (InterruptedException ignored) {
+
+                }
+                if (containerProcess.isAlive()) {
+                    containerProcess.destroyForcibly();
+                }
+            }
+            log.debug("Container stopped");
+        } catch (Exception e) {
             log.errorf("Unable to stop container '%s'", containerName);
         }
-        log.debug("Container stopped");
+
         executorService.shutdown();
+
+        recordMetadata();
+    }
+
+    private void recordMetadata() {
+        Path quarkusArtifactMetadataPath = Path.of(outputTargetDirectory).resolve("quarkus-container-it.properties");
+        Properties properties = new Properties();
+        properties.put("original-container-image", containerImage);
+        if (containerWorkingDirectory.isPresent()) {
+            properties.put("container-working-directory", containerWorkingDirectory.get());
+        }
+        Path aotFile = Path.of(outputTargetDirectory).resolve(AOT_DIR).resolve(AOT_FILE_NAME);
+        if (Files.exists(aotFile)) {
+            properties.setProperty("aot-file", aotFile.toAbsolutePath().toString());
+        }
+        try {
+            PropertyUtils.store(properties, quarkusArtifactMetadataPath, "Generated by Quarkus - Do not edit manually");
+        } catch (IOException e) {
+            log.warn("Unable to write `quarkus-container-it.properties` metadata file", e);
+        }
     }
 }

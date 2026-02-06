@@ -118,15 +118,29 @@ public class CuratedApplication implements Serializable, AutoCloseable {
      * {@code Function<Map<String, Object>, List<Consumer<BuildChainBuilder>>>}
      * which is used to generate a list of build chain customisers to control the build.
      */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public AugmentAction createAugmentor(String functionName, Map<String, Object> props) {
         try {
             Class<?> augmentor = getOrCreateAugmentClassLoader().loadClass(AUGMENTOR);
-            Function<Object, List<?>> function = (Function<Object, List<?>>) getOrCreateAugmentClassLoader()
+            Function<Object, Object> function = (Function<Object, Object>) getOrCreateAugmentClassLoader()
                     .loadClass(functionName)
                     .getDeclaredConstructor()
                     .newInstance();
-            List<?> res = function.apply(props);
-            return (AugmentAction) augmentor.getConstructor(CuratedApplication.class, List.class).newInstance(this, res);
+            var res = function.apply(props);
+            if (res instanceof List l) {
+                return (AugmentAction) augmentor.getConstructor(CuratedApplication.class, List.class, List.class)
+                        .newInstance(this, l, Collections.emptyList());
+            } else if (res instanceof Map.Entry e) {
+                var key = e.getKey();
+                var value = e.getValue();
+                if ((key instanceof List l1) && (value instanceof List l2)) {
+                    return (AugmentAction) augmentor
+                            .getConstructor(CuratedApplication.class, List.class, List.class, List.class)
+                            .newInstance(this, l1, l2, Collections.emptyList());
+                }
+            }
+            throw new IllegalArgumentException(
+                    "`functionName` must be either `Function<Map<String, Object>, List<Consumer<BuildChainBuilder>>>` or `Function<Map<String, Object>, Map.Entry<List<Consumer<BuildChainBuilder>>, List<Consumer<BuildExecutionBuilder>>>>`");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

@@ -51,6 +51,7 @@ public class QuarkusAugmentor {
     private final PathCollection root;
     private final Set<Class<? extends BuildItem>> finalResults;
     private final List<Consumer<BuildChainBuilder>> buildChainCustomizers;
+    private final List<Consumer<BuildExecutionBuilder>> buildExecutionCustomizers;
     private final LaunchMode launchMode;
     private final DevModeType devModeType;
     private final List<PathCollection> additionalApplicationArchives;
@@ -73,6 +74,7 @@ public class QuarkusAugmentor {
         this.root = builder.root;
         this.finalResults = new LinkedHashSet<>(builder.finalResults);
         this.buildChainCustomizers = new ArrayList<>(builder.buildChainCustomizers);
+        this.buildExecutionCustomizers = new ArrayList<>(builder.buildExecutionCustomizers);
         this.launchMode = builder.launchMode;
         this.additionalApplicationArchives = new ArrayList<>(builder.additionalApplicationArchives);
         this.excludedFromIndexing = builder.excludedFromIndexing;
@@ -171,6 +173,10 @@ public class QuarkusAugmentor {
             for (PathCollection i : additionalApplicationArchives) {
                 execBuilder.produce(new AdditionalApplicationArchiveBuildItem(i));
             }
+            for (Consumer<BuildExecutionBuilder> customizer : buildExecutionCustomizers) {
+                customizer.accept(execBuilder);
+            }
+
             BuildResult buildResult = execBuilder.execute();
             String message = "Quarkus augmentation completed in " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start)
                     + "ms";
@@ -224,6 +230,7 @@ public class QuarkusAugmentor {
         Path targetDir;
         Set<Class<? extends BuildItem>> finalResults = new LinkedHashSet<>();
         private final List<Consumer<BuildChainBuilder>> buildChainCustomizers = new ArrayList<>();
+        private final List<Consumer<BuildExecutionBuilder>> buildExecutionCustomizers = new ArrayList<>();
         LaunchMode launchMode = LaunchMode.NORMAL;
         LiveReloadBuildItem liveReloadState = new LiveReloadBuildItem();
         Properties buildSystemProperties;
@@ -240,6 +247,11 @@ public class QuarkusAugmentor {
 
         public Builder addBuildChainCustomizer(Consumer<BuildChainBuilder> customizer) {
             this.buildChainCustomizers.add(customizer);
+            return this;
+        }
+
+        public Builder addBuildExecutionCustomizer(Consumer<BuildExecutionBuilder> customizer) {
+            this.buildExecutionCustomizers.add(customizer);
             return this;
         }
 

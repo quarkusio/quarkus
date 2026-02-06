@@ -63,6 +63,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     private List<String> programArgs;
     private Optional<String> containerWorkingDirectory;
     private String outputTargetDirectory;
+    private Process containerProcess;
 
     @Override
     public void init(DockerContainerArtifactLauncher.DockerInitContext initContext) {
@@ -301,7 +302,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
 
         // We rely on the container writing log to stdout. If it just writes to a logfile inside itself, we would have
         // to mount /work/ directory to get quarkus.log.
-        final Process containerProcess = new ProcessBuilder(args)
+        containerProcess = new ProcessBuilder(args)
                 .redirectErrorStream(true)
                 .redirectOutput(ProcessBuilder.Redirect.appendTo(logPath.toFile()))
                 .start();
@@ -366,15 +367,28 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     public void close() {
         log.info("Close the container");
         try {
-            final Process dockerStopProcess = new ProcessBuilder(containerRuntimeBinaryName, "stop", containerName)
+            final Process dockerStopProcess = new ProcessBuilder(containerRuntimeBinaryName, "kill", "--signal=SIGINT",
+                    containerName)
                     .redirectError(DISCARD)
                     .redirectOutput(DISCARD).start();
             log.debug("Wait for container to stop");
-            dockerStopProcess.waitFor(10, TimeUnit.SECONDS);
-        } catch (IOException | InterruptedException e) {
+            dockerStopProcess.waitFor(5, TimeUnit.SECONDS);
+
+            if (containerProcess != null) {
+                try {
+                    containerProcess.waitFor(20, TimeUnit.SECONDS);
+                } catch (InterruptedException ignored) {
+
+                }
+                if (containerProcess.isAlive()) {
+                    containerProcess.destroyForcibly();
+                }
+            }
+            log.debug("Container stopped");
+        } catch (Exception e) {
             log.errorf("Unable to stop container '%s'", containerName);
         }
-        log.debug("Container stopped");
+
         executorService.shutdown();
 
         recordMetadata();

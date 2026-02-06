@@ -200,7 +200,7 @@
         <opensearch-testcontainers.version>2.1.3</opensearch-testcontainers.version>
         <com.dajudge.kindcontainer>2.0.0</com.dajudge.kindcontainer>
         <aesh.version>2.8.2</aesh.version>
-        <aesh-readline.version>2.6</aesh-readline.version>
+        <aesh-readline.version>3.1</aesh-readline.version>
         <jansi.version>2.4.0</jansi.version> <!-- Keep in sync with aesh-readline and dekorate -->
         <!-- these two artifacts needs to be compatible together -->
         <strimzi-oauth.version>0.16.1</strimzi-oauth.version>

@@ -3,7 +3,7 @@ package io.quarkus.builder;
 import static io.quarkus.builder.Execution.log;
 
 import java.time.LocalTime;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -135,7 +135,7 @@ public final class BuildContext {
         if (!stepInfo.getConsumes().contains(id)) {
             throw Messages.msg.undeclaredItem(id);
         }
-        return Collections.unmodifiableList(execution.getMultis().get(id));
+        return new ArrayList<>(execution.getMultis().get(id));
     }
 
     /**

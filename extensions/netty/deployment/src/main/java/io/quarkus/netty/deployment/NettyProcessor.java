@@ -39,6 +39,7 @@ import io.quarkus.deployment.builditem.GeneratedRuntimeSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
 import io.quarkus.deployment.builditem.ModuleOpenBuildItem;
+import io.quarkus.deployment.builditem.PreInitRunnableBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -50,7 +51,6 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
-import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem.JavaVersion.Status;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -108,6 +108,13 @@ class NettyProcessor {
     @BuildStep
     public SystemPropertyBuildItem disableFinalizers() {
         return new SystemPropertyBuildItem("io.netty.allocator.disableCacheFinalizersForFastThreadLocalThreads", "true");
+    }
+
+    @BuildStep
+    public PreInitRunnableBuildItem preInitPlatformDependent() {
+        // initialize PlatformDependent as a pre-init task as it's quite slow
+        return PreInitRunnableBuildItem.initializeClass(PlatformDependent.class.getName(),
+                PreInitRunnableBuildItem.DEFAULT_PRIORITY - 50);
     }
 
     /**

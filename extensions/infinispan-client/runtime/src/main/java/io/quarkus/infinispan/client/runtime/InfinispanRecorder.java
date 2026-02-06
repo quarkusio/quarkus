@@ -14,6 +14,7 @@ import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.counter.api.CounterManager;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
@@ -23,9 +24,12 @@ import io.quarkus.runtime.annotations.RelaxedValidation;
 public class InfinispanRecorder {
 
     public BeanContainerListener configureInfinispan(@RelaxedValidation Map<String, Properties> properties) {
-        return container -> {
-            InfinispanClientProducer instance = container.beanInstance(InfinispanClientProducer.class);
-            instance.setProperties(properties);
+        return new BeanContainerListener() {
+            @Override
+            public void created(BeanContainer container) {
+                InfinispanClientProducer instance = container.beanInstance(InfinispanClientProducer.class);
+                instance.setProperties(properties);
+            }
         };
     }
 

@@ -18,6 +18,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -69,6 +70,8 @@ import io.vertx.core.spi.resolver.ResolverProvider;
 public class VertxCoreRecorder {
 
     private static final String LOGGER_FACTORY_NAME_SYS_PROP = "vertx.logger-delegate-factory-class-name";
+    private static final String OTEL_CONTEXT_KEY = "io.quarkus.opentelemetry.runtime.QuarkusContextStorage.otelContext";
+    private static final List<String> cloneKeys = List.of(VertxMDC.class.getName(), OTEL_CONTEXT_KEY);
 
     static {
         System.setProperty("vertx.disableTCCL", "true");
@@ -651,16 +654,14 @@ public class VertxCoreRecorder {
                     ContextInternal vertxContext = (ContextInternal) context;
                     // The CDI contexts must not be propagated
                     // First test if VertxCurrentContextFactory is actually used
-                    if (ignoredKeys != null) {
-                        ConcurrentMap<Object, Object> local = vertxContext.localContextData();
-                        if (containsIgnoredKey(ignoredKeys, local)) {
-                            // Duplicate the context, copy the data, remove the request context
-                            vertxContext = vertxContext.duplicate();
-                            vertxContext.localContextData().putAll(local);
-                            ignoredKeys.forEach(vertxContext.localContextData()::remove);
-                            VertxContextSafetyToggle.setContextSafe(vertxContext, true);
-                        }
+                    ConcurrentMap<Object, Object> local = vertxContext.localContextData();
+                    // Duplicate the context, copy the data, remove the request context
+                    vertxContext = vertxContext.duplicate();
+                    vertxContext.localContextData().putAll(deepCopy(local));
+                    if (ignoredKeys != null && containsKey(ignoredKeys, local)) {
+                        ignoredKeys.forEach(vertxContext.localContextData()::remove);
                     }
+                    VertxContextSafetyToggle.setContextSafe(vertxContext, true);
                     vertxContext.beginDispatch();
                     try {
                         task.run();
@@ -672,7 +673,30 @@ public class VertxCoreRecorder {
                 }
             }
 
-            private boolean containsIgnoredKey(List<String> keys, Map<Object, Object> localContextData) {
+            private ConcurrentMap<Object, Object> deepCopy(ConcurrentMap<Object, Object> input) {
+                if (containsKey(cloneKeys, input)) {
+                    // Deep copy 
+                    final ConcurrentMap<Object, Object> result = new ConcurrentHashMap<>(input.size());
+                    input.entrySet().forEach(entry -> {
+                        if (entry.getKey().equals(VertxMDC.class.getName()) &&
+                                entry.getValue() instanceof ConcurrentMap) {
+                            ConcurrentMap<String, Object> value = (ConcurrentMap<String, Object>) entry.getValue();
+                            result.put(entry.getKey(), new ConcurrentHashMap<>(value));
+                        } else if (entry.getKey().equals(OTEL_CONTEXT_KEY) &&
+                                entry.getValue() instanceof ArrayBasedContext) {
+                                // FIXME class not found
+                        } else {
+                            result.put(entry.getKey(), entry.getValue());
+                        }
+                    });
+                    return result;
+                } else {
+                    // nothing to do
+                    return input;
+                }
+            }
+
+            private boolean containsKey(List<String> keys, Map<Object, Object> localContextData) {
                 if (keys.isEmpty()) {
                     return false;
                 }

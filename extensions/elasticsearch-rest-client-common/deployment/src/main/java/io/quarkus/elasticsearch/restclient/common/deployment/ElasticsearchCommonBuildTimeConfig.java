@@ -3,16 +3,19 @@ package io.quarkus.elasticsearch.restclient.common.deployment;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.elasticsearch.restclient.common.runtime.ElasticsearchClientBeanUtil;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
-import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithDefaults;
+import io.smallrye.config.WithParentName;
+import io.smallrye.config.WithUnnamedKey;
 
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
-@ConfigMapping(prefix = "quarkus.elasticsearch")
+@ConfigMapping(prefix = "quarkus.elasticsearch.devservices")
 public interface ElasticsearchCommonBuildTimeConfig {
 
     /**
@@ -20,8 +23,11 @@ public interface ElasticsearchCommonBuildTimeConfig {
      * <p>
      * Dev Services allows Quarkus to automatically start Elasticsearch in dev and test mode.
      */
-    @ConfigDocSection(generated = true)
-    ElasticsearchDevServicesBuildTimeConfig devservices();
+    @ConfigDocMapKey("client-name")
+    @WithParentName
+    @WithDefaults
+    @WithUnnamedKey(ElasticsearchClientBeanUtil.DEFAULT_ELASTICSEARCH_CLIENT_NAME)
+    Map<String, ElasticsearchDevServicesBuildTimeConfig> devservices();
 
     @ConfigGroup
     interface ElasticsearchDevServicesBuildTimeConfig {
@@ -94,7 +100,7 @@ public interface ElasticsearchCommonBuildTimeConfig {
          * This property is used when {@code shared} is set to {@code true}.
          * In this case, before starting a container, Dev Services for Elasticsearch looks for a container with the
          * {@code quarkus-dev-service-elasticsearch} label
-         * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise it
+         * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise, it
          * starts a new container with the {@code quarkus-dev-service-elasticsearch} label set to the specified value.
          * <p>
          * This property is used when you need multiple shared Elasticsearch servers.

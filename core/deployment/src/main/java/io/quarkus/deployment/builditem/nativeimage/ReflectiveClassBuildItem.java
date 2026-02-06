@@ -52,20 +52,13 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         return new Builder().className(classNames);
     }
 
-    private ReflectiveClassBuildItem(boolean constructors, boolean queryConstructors, boolean methods, boolean queryMethods,
-            boolean fields, boolean getClasses, boolean weak, boolean serialization, boolean unsafeAllocated, String reason,
-            Class<?>... classes) {
-        this(constructors, false, queryConstructors, methods, queryMethods, fields, getClasses, weak, serialization,
-                unsafeAllocated, reason, stream(classes).map(Class::getName).toArray(String[]::new));
-    }
-
     /**
      * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
      *             instead.
      */
     @Deprecated(since = "3.0", forRemoval = true)
     public ReflectiveClassBuildItem(boolean methods, boolean fields, Class<?>... classes) {
-        this(true, methods, fields, classes);
+        this(true, false, false, methods, false, fields, false, false, false, false, null, classes);
     }
 
     /**
@@ -74,7 +67,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
      */
     @Deprecated(since = "3.0", forRemoval = true)
     public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, Class<?>... classes) {
-        this(constructors, false, methods, false, fields, false, false, false, false, null, classes);
+        this(constructors, false, false, methods, false, fields, false, false, false, false, null, classes);
     }
 
     /**
@@ -83,7 +76,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
      */
     @Deprecated(since = "3.0", forRemoval = true)
     public ReflectiveClassBuildItem(boolean methods, boolean fields, String... classNames) {
-        this(true, methods, fields, classNames);
+        this(true, false, false, methods, false, fields, false, false, false, false, null, classNames);
     }
 
     /**
@@ -92,7 +85,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
      */
     @Deprecated(since = "3.0", forRemoval = true)
     public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, String... classNames) {
-        this(constructors, false, methods, false, fields, false, false, false, classNames);
+        this(constructors, false, false, methods, false, fields, false, false, false, false, null, classNames);
     }
 
     /**
@@ -102,9 +95,14 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
     @Deprecated(since = "3.0", forRemoval = true)
     public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean serialization,
             String... classNames) {
-        this(constructors, false, methods, false, fields, false, serialization, false, classNames);
+        this(constructors, false, false, methods, false, fields, false, false, serialization, false, null, classNames);
     }
 
+    /**
+     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
+     *             instead.
+     */
+    @Deprecated(forRemoval = true)
     public static ReflectiveClassBuildItem weakClass(String... classNames) {
         return ReflectiveClassBuildItem.builder(classNames).constructors().methods().fields().weak().build();
     }
@@ -113,47 +111,60 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
      * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
      *             instead.
      */
+    @Deprecated(forRemoval = true)
     public static ReflectiveClassBuildItem weakClass(boolean constructors, boolean methods, boolean fields,
             String... classNames) {
         return ReflectiveClassBuildItem.builder(classNames).constructors(constructors).methods(methods).fields(fields).weak()
                 .build();
     }
 
+    /**
+     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
+     *             instead.
+     */
+    @Deprecated(forRemoval = true)
     public static ReflectiveClassBuildItem serializationClass(String... classNames) {
         return ReflectiveClassBuildItem.builder(classNames).serialization().build();
     }
 
     @Deprecated(since = "3.14", forRemoval = true)
-    ReflectiveClassBuildItem(boolean constructors, boolean queryConstructors, boolean methods, boolean queryMethods,
+    private ReflectiveClassBuildItem(boolean constructors, boolean queryConstructors, boolean methods, boolean queryMethods,
             boolean fields, boolean weak, boolean serialization,
             boolean unsafeAllocated, String... className) {
         this(constructors, false, queryConstructors, methods, queryMethods, fields, false, weak, serialization, unsafeAllocated,
                 null, className);
     }
 
-    ReflectiveClassBuildItem(boolean constructors, boolean publicConstructors, boolean queryConstructors, boolean methods,
+    private ReflectiveClassBuildItem(boolean constructors, boolean publicConstructors, boolean queryConstructors,
+            boolean methods,
             boolean queryMethods,
             boolean fields, boolean classes, boolean weak, boolean serialization,
             boolean unsafeAllocated, String reason, String... className) {
         this(constructors, publicConstructors, queryConstructors, methods, queryMethods, fields, classes, weak, serialization,
-                unsafeAllocated, reason, Arrays.asList(className));
+                unsafeAllocated, reason, className != null ? Arrays.asList(className) : null);
     }
 
-    ReflectiveClassBuildItem(boolean constructors, boolean publicConstructors, boolean queryConstructors, boolean methods,
+    private ReflectiveClassBuildItem(boolean constructors, boolean publicConstructors, boolean queryConstructors,
+            boolean methods,
             boolean queryMethods,
             boolean fields, boolean classes, boolean weak, boolean serialization,
             boolean unsafeAllocated, String reason, Collection<String> className) {
-        for (String i : className) {
-            if (i == null) {
-                throw new NullPointerException();
+        if (className != null) {
+            for (String i : className) {
+                if (i == null) {
+                    throw new NullPointerException();
+                }
             }
+            this.className = className;
+        } else {
+            this.className = List.of();
         }
-        this.className = className;
+
         this.methods = methods;
         if (methods && queryMethods) {
             log.warnf(
                     "Both methods and queryMethods are set to true for classes: %s. queryMethods is redundant and will be ignored",
-                    String.join(", ", className));
+                    String.join(", ", this.className));
             this.queryMethods = false;
         } else {
             this.queryMethods = queryMethods;
@@ -165,7 +176,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         if (constructors && queryConstructors) {
             log.warnf(
                     "Both constructors and queryConstructors are set to true for classes: %s. queryConstructors is redundant and will be ignored",
-                    String.join(", ", className));
+                    String.join(", ", this.className));
             this.queryConstructors = false;
         } else {
             this.queryConstructors = queryConstructors;
@@ -174,6 +185,16 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         this.serialization = serialization;
         this.unsafeAllocated = unsafeAllocated;
         this.reason = reason;
+    }
+
+    private ReflectiveClassBuildItem(boolean constructors, boolean publicConstructors, boolean queryConstructors,
+            boolean methods,
+            boolean queryMethods,
+            boolean fields, boolean classes, boolean weak, boolean serialization,
+            boolean unsafeAllocated, String reason, Class<?>... clazzes) {
+        this(constructors, publicConstructors, queryConstructors, methods, queryMethods, fields, classes, weak, serialization,
+                unsafeAllocated, reason,
+                clazzes != null ? Arrays.stream(clazzes).map(Class::getName).toArray(String[]::new) : null);
     }
 
     public Collection<String> getClassNames() {

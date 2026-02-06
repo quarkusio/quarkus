@@ -96,7 +96,7 @@ public final class HibernateReactiveProcessor {
 
     @BuildStep
     void reflections(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, REFLECTIVE_CONSTRUCTORS_NEEDED));
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(REFLECTIVE_CONSTRUCTORS_NEEDED).build());
     }
 
     @BuildStep

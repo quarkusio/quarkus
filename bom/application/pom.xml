@@ -77,7 +77,7 @@
         <jakarta.validation-api.version>3.1.1</jakarta.validation-api.version>
         <jakarta.websocket-api.version>2.1.1</jakarta.websocket-api.version>
         <jakarta.ws.rs-api.version>3.1.0</jakarta.ws.rs-api.version>
-        <jakarta.xml.bind-api.version>4.0.4</jakarta.xml.bind-api.version>
+        <jakarta.xml.bind-api.version>4.0.5</jakarta.xml.bind-api.version>
         <jaxb-runtime.version>4.0.6</jaxb-runtime.version>
         <asm.version>9.9.1</asm.version>
         <commons-io.version>2.21.0</commons-io.version>

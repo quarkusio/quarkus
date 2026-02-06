@@ -266,9 +266,11 @@ public class SchedulerProcessor {
 
     @BuildStep
     void validateScheduledBusinessMethods(SchedulerConfig config, List<ScheduledBusinessMethodItem> scheduledMethods,
-            ValidationPhaseBuildItem validationPhase, BuildProducer<ValidationErrorBuildItem> validationErrors,
+            ValidationPhaseBuildItem validationPhase,
             Capabilities capabilities, BeanArchiveIndexBuildItem beanArchiveIndex,
-            DiscoveredImplementationsBuildItem discoveredImplementations) {
+            DiscoveredImplementationsBuildItem discoveredImplementations,
+            BuildProducer<ValidationErrorBuildItem> validationErrors,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         List<Throwable> errors = new ArrayList<>();
         Map<String, AnnotationInstance> encounteredIdentities = new HashMap<>();
         Set<String> methodDescriptions = new HashSet<>();
@@ -325,7 +327,7 @@ public class SchedulerProcessor {
             CronParser parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(config.cronType()));
             for (AnnotationInstance scheduled : scheduledMethod.getSchedules()) {
                 Throwable error = validateScheduled(parser, scheduled, encounteredIdentities, validationPhase.getContext(),
-                        checkPeriod, beanArchiveIndex.getIndex(), discoveredImplementations);
+                        checkPeriod, beanArchiveIndex.getIndex(), discoveredImplementations, reflectiveClasses);
                 if (error != null) {
                     errors.add(error);
                 }
@@ -392,6 +394,12 @@ public class SchedulerProcessor {
                 return name;
             }
         };
+
+        // Make sure Scheduled.Never is always registered for reflection
+        // although it's not instantiated at runtime - the class is loaded by AnnotationProxyProvider
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(Scheduled.Never.class)
+                .constructors(false)
+                .build());
 
         ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources, generatedToBaseNameFun);
         Gizmo gizmo = Gizmo.create(classOutput)
@@ -604,7 +612,8 @@ public class SchedulerProcessor {
 
     private Throwable validateScheduled(CronParser parser, AnnotationInstance schedule,
             Map<String, AnnotationInstance> encounteredIdentities, BeanDeploymentValidator.ValidationContext validationContext,
-            long checkPeriod, IndexView index, DiscoveredImplementationsBuildItem discoveredImplementations) {
+            long checkPeriod, IndexView index, DiscoveredImplementationsBuildItem discoveredImplementations,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         MethodInfo method = schedule.target().asMethod();
         AnnotationValue cronValue = schedule.value("cron");
         AnnotationValue everyValue = schedule.value("every");
@@ -698,22 +707,26 @@ public class SchedulerProcessor {
         AnnotationValue skipExecutionIfValue = schedule.value("skipExecutionIf");
         if (skipExecutionIfValue != null) {
             DotName skipPredicate = skipExecutionIfValue.asClass().name();
-            if (SchedulerDotNames.SKIP_NEVER_NAME.equals(skipPredicate)) {
-                return null;
-            }
-            List<BeanInfo> beans = validationContext.beans().withBeanType(skipPredicate).collect();
-            if (beans.size() > 1) {
-                String message = String.format(
-                        "There must be exactly one bean that matches the skip predicate: \"%s\" on: %s; beans: %s",
-                        skipPredicate, schedule, beans);
-                return new IllegalStateException(message);
-            } else if (beans.isEmpty()) {
-                ClassInfo skipPredicateClass = index.getClassByName(skipPredicate);
-                if (skipPredicateClass != null) {
-                    MethodInfo noArgsConstructor = skipPredicateClass.method("<init>");
-                    if (noArgsConstructor == null || !Modifier.isPublic(noArgsConstructor.flags())) {
-                        return new IllegalStateException(
-                                "The skip predicate class must declare a public no-args constructor: " + skipPredicateClass);
+            if (!SchedulerDotNames.SKIP_NEVER_NAME.equals(skipPredicate)) {
+                List<BeanInfo> beans = validationContext.beans().withBeanType(skipPredicate).collect();
+                if (beans.size() > 1) {
+                    String message = String.format(
+                            "There must be exactly one bean that matches the skip predicate: \"%s\" on: %s; beans: %s",
+                            skipPredicate, schedule, beans);
+                    return new IllegalStateException(message);
+                } else if (beans.isEmpty()) {
+                    ClassInfo skipPredicateClass = index.getClassByName(skipPredicate);
+                    if (skipPredicateClass != null) {
+                        MethodInfo noArgsConstructor = skipPredicateClass.method("<init>");
+                        if (noArgsConstructor == null || !Modifier.isPublic(noArgsConstructor.flags())) {
+                            return new IllegalStateException(
+                                    "The skip predicate class must declare a public no-args constructor: "
+                                            + skipPredicateClass);
+                        }
+                        // We need to register non-bean predicates for reflection
+                        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(skipPredicateClass.name().toString())
+                                .constructors()
+                                .build());
                     }
                 }
             }

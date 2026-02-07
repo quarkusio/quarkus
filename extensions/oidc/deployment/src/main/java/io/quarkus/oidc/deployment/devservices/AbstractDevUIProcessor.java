@@ -1,7 +1,6 @@
 package io.quarkus.oidc.deployment.devservices;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -28,22 +27,17 @@ public abstract class AbstractDevUIProcessor {
     protected static CardPageBuildItem createProviderWebComponent(OidcDevUiRecorder recorder,
             Capabilities capabilities,
             String oidcProviderName,
-            String oidcApplicationType,
             String oidcGrantType,
-            String authorizationUrl,
-            String tokenUrl,
-            String logoutUrl,
             boolean introspectionIsAvailable,
             BeanContainerBuildItem beanContainer,
             Duration webClientTimeout,
             Map<String, Map<String, String>> grantOptions,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            String keycloakAdminUrl,
-            Map<String, String> keycloakUsers,
-            List<String> keycloakRealms,
-            boolean alwaysLogoutUserInDevUiOnReload,
+            String devServiceConfigHashCode,
             boolean discoverMetadata,
-            String authServerUrl) {
+            String authServerUrl,
+            String buildTimeKeycloakAdminUrl,
+            String buildTimeOidcApplicationType) {
         final CardPageBuildItem cardPage = new CardPageBuildItem();
 
         cardPage.setLogo("oidc_logo.png", "oidc_logo.png");
@@ -83,19 +77,14 @@ public abstract class AbstractDevUIProcessor {
         cardPage.addBuildTimeData("devRoot", nonApplicationRootPathBuildItem.getNonApplicationRootPath());
 
         RuntimeValue<OidcDevUiRpcSvcPropertiesBean> runtimeProperties = recorder.getRpcServiceProperties(
-                authorizationUrl, tokenUrl, logoutUrl, webClientTimeout, grantOptions,
-                keycloakUsers, oidcProviderName, oidcApplicationType, oidcGrantType,
-                introspectionIsAvailable, keycloakAdminUrl, keycloakRealms, swaggerIsAvailable,
-                graphqlIsAvailable, swaggerUiPath, graphqlUiPath, alwaysLogoutUserInDevUiOnReload, discoverMetadata,
-                authServerUrl, devUiLogoutPath, devUiReadSessionCookiePath);
+                webClientTimeout, grantOptions, oidcProviderName, oidcGrantType, introspectionIsAvailable,
+                swaggerIsAvailable, graphqlIsAvailable, swaggerUiPath, graphqlUiPath, devServiceConfigHashCode,
+                discoverMetadata, devUiLogoutPath, devUiReadSessionCookiePath, authServerUrl, buildTimeKeycloakAdminUrl,
+                buildTimeOidcApplicationType);
 
         recorder.createJsonRPCService(beanContainer.getValue(), runtimeProperties);
 
         return cardPage;
-    }
-
-    protected static String getApplicationType() {
-        return getApplicationType(null);
     }
 
     protected static String getApplicationType(OidcTenantConfig providerConfig) {

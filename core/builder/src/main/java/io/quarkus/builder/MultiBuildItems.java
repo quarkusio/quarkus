@@ -86,7 +86,7 @@ class MultiBuildItems {
     <T extends MultiBuildItem> List<T> get(ItemId id) {
         final List<MultiBuildItem>[] list = multis.get(id);
         if (list == null) {
-            return List.of();
+            return new ArrayList<>();
         }
         final ArrayList<MultiBuildItem> result = new ArrayList<MultiBuildItem>();
         synchronized (list) {

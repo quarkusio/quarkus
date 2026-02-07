@@ -4,7 +4,6 @@ import static java.util.UUID.randomUUID;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
@@ -125,7 +124,8 @@ public final class RunningDevServicesRegistry {
 
     public void addRunningService(ComparableDevServicesConfig key, RunningService service) {
         servicesIndexedByConfig.put(key, service);
-        servicesIndexedByLaunchMode.computeIfAbsent(key.owner().launchMode(), k -> new HashSet<>()).add(service);
+        // Be aware of thread safety; if there are multiple services this method will be accessed by multiple threads; we use the ConcurrentHashMap's thread-safe set instead of HashSet
+        servicesIndexedByLaunchMode.computeIfAbsent(key.owner().launchMode(), k -> ConcurrentHashMap.newKeySet()).add(service);
     }
 
 }

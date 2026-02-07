@@ -39,6 +39,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
+import io.quarkus.oidc.common.ClientAssertionProvider;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcEndpoint.Type;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
@@ -48,6 +49,7 @@ import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport.TlsConfigSupport;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials;
+import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt.Source;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Provider;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret;
 import io.quarkus.oidc.common.runtime.config.OidcCommonConfig;
@@ -102,7 +104,7 @@ public class OidcCommonUtils {
     }
 
     public static void verifyCommonConfiguration(OidcClientCommonConfig oidcConfig, boolean clientIdOptional,
-            boolean isServerConfig) {
+            boolean isServerConfig, String id) {
         final String configPrefix = isServerConfig ? "quarkus.oidc." : "quarkus.oidc-client.";
         if (!clientIdOptional && !oidcConfig.clientId().isPresent()) {
             throw new ConfigurationException(
@@ -123,8 +125,8 @@ public class OidcCommonUtils {
                             configPrefix));
         }
         Credentials.Jwt jwt = creds.jwt();
-        if (jwt.source() == Credentials.Jwt.Source.BEARER) {
-            if (isServerConfig && jwt.tokenPath().isEmpty()) {
+        if (jwt.source() == Source.BEARER) {
+            if (isServerConfig && jwt.tokenPath().isEmpty() && getClientAssertionProviderFromCdi(id, Source.BEARER) == null) {
                 throw new ConfigurationException("Bearer token path must be set when the JWT source is a bearer token");
             }
         } else if (jwt.tokenPath().isPresent()) {
@@ -910,5 +912,31 @@ public class OidcCommonUtils {
             runnable.run();
             return null;
         });
+    }
+
+    public static ClientAssertionProvider getClientAssertionProvider(io.vertx.core.Vertx vertx, Credentials credentialsConfig,
+            Function<String, RuntimeException> exceptionCreator, String id) {
+        var jwtConfig = credentialsConfig.jwt();
+        if (jwtConfig.source() == Source.BEARER) {
+            if (jwtConfig.tokenPath().isPresent()) {
+                var clientAssertionProvider = new FileBasedClientAssertionProvider(vertx, jwtConfig.tokenPath().get());
+                if (clientAssertionProvider.getClientAssertion() == null) {
+                    throw exceptionCreator
+                            .apply("Cannot find a valid JWT bearer token at path: " + jwtConfig.tokenPath().get());
+                }
+                return clientAssertionProvider;
+            }
+            return getClientAssertionProviderFromCdi(id, Source.BEARER);
+        }
+        return null;
+    }
+
+    private static ClientAssertionProvider getClientAssertionProviderFromCdi(String id, Source source) {
+        for (var clientAssertionProvider : Arc.requireContainer().select(ClientAssertionProvider.class)) {
+            if (clientAssertionProvider.appliesTo(id, source)) {
+                return clientAssertionProvider;
+            }
+        }
+        return null;
     }
 }

@@ -229,6 +229,29 @@ quarkus.oidc.credentials.jwt.token-path=/var/run/secrets/tokens <2>
 <1> Use JWT bearer token to authenticate OIDC provider client, see the link:https://www.rfc-editor.org/rfc/rfc7523#section-2.2[Using JWTs for Client Authentication] section for more information.
 <2> Path to a JWT bearer token. Quarkus loads a new token from a filesystem and reloads it when the token has expired.
 
+If your JWT bearer token is not stored on the file system, you can register custom `ClientAssertionProvider` CDI bean instead:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.common.ClientAssertionProvider;
+
+@Unremovable
+@ApplicationScoped
+class CustomClientAssertionProvider implements ClientAssertionProvider {
+
+    @Override
+    public String getClientAssertion() {
+        return "ey...";
+    }
+
+}
+----
+
 ==== Additional JWT authentication options
 
 If `client_secret_jwt`, `private_key_jwt`, or an Apple `post_jwt` authentication methods are used, then you can customize the JWT signature algorithm, key identifier, audience, subject and issuer.

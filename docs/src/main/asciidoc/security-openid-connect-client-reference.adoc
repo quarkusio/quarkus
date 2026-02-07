@@ -1000,51 +1000,26 @@ quarkus.oidc-client.credentials.jwt.token-path=/var/run/secrets/tokens <1>
 
 Your other option is to use `OidcClient` methods for acquiring or refreshing tokens which accept additional grant parameters, for example, `oidcClient.getTokens(Map.of("client_assertion", "ey..."))`.
 
-If you work work with the OIDC client filters then you must register a custom filter which will provide this assertion.
-
-Here is an example of the Quarkus REST (formerly RESTEasy Reactive) custom filter:
+Another option is to implement the `ClientAssertionProvider` interface as a CDI bean. For example:
 
 [source,java]
 ----
 package io.quarkus.it.keycloak;
 
-import java.util.Map;
+import jakarta.enterprise.context.ApplicationScoped;
 
-import io.quarkus.oidc.client.reactive.filter.runtime.AbstractOidcClientRequestReactiveFilter;
-import io.quarkus.oidc.common.runtime.OidcConstants;
-import jakarta.annotation.Priority;
-import jakarta.ws.rs.Priorities;
+import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.common.ClientAssertionProvider;
 
-@Priority(Priorities.AUTHENTICATION)
-public class OidcClientRequestCustomFilter extends AbstractOidcClientRequestReactiveFilter {
-
-    @Override
-    protected Map<String, String> additionalParameters() {
-        return Map.of(OidcConstants.CLIENT_ASSERTION, "ey...");
-    }
-}
-----
-
-Here is an example of the RESTEasy Classic custom filter:
-
-[source,java]
-----
-package io.quarkus.it.keycloak;
-
-import java.util.Map;
-
-import io.quarkus.oidc.client.filter.runtime.AbstractOidcClientRequestFilter;
-import io.quarkus.oidc.common.runtime.OidcConstants;
-import jakarta.annotation.Priority;
-import jakarta.ws.rs.Priorities;
-
-@Priority(Priorities.AUTHENTICATION)
-public class OidcClientRequestCustomFilter extends AbstractOidcClientRequestFilter {
+@Unremovable
+@ApplicationScoped
+class CustomClientAssertionProvider implements ClientAssertionProvider {
 
     @Override
-    protected Map<String, String> additionalParameters() {
-        return Map.of(OidcConstants.CLIENT_ASSERTION, "ey...");
+    public String getClientAssertion() {
+        return "ey...";
     }
+
 }
 ----
 

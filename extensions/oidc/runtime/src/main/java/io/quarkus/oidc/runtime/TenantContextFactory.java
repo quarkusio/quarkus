@@ -202,7 +202,8 @@ final class TenantContextFactory {
                         "'" + getConfigPropertyForTenant(tenantId, "auth-server-url") + "' property must be configured");
             }
             OidcCommonUtils.verifyEndpointUrl(oidcConfig.authServerUrl().get());
-            OidcCommonUtils.verifyCommonConfiguration(oidcConfig, OidcUtils.isServiceApp(oidcConfig), true);
+            OidcCommonUtils.verifyCommonConfiguration(oidcConfig, OidcUtils.isServiceApp(oidcConfig), true,
+                    oidcTenantConfig.tenantId().get());
         } catch (ConfigurationException t) {
             return Uni.createFrom().failure(t);
         }

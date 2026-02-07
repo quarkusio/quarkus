@@ -1,5 +1,7 @@
 package io.quarkus.oidc.client.runtime;
 
+import static io.quarkus.oidc.common.runtime.OidcCommonUtils.getClientAssertionProvider;
+
 import java.io.IOException;
 import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
@@ -17,11 +19,11 @@ import org.jboss.logging.Logger;
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClientException;
 import io.quarkus.oidc.client.Tokens;
+import io.quarkus.oidc.common.ClientAssertionProvider;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcResponseFilter;
-import io.quarkus.oidc.common.runtime.ClientAssertionProvider;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt.Source;
@@ -94,16 +96,8 @@ public class OidcClientImpl implements OidcClient {
         this.jwtBearerAuthentication = oidcClientConfig.credentials().jwt().source() == Source.BEARER;
         this.clientJwtKey = jwtBearerAuthentication ? null : clientCredentials.clientJwtKey;
         this.clientSecret = clientCredentials.clientSecret;
-        if (jwtBearerAuthentication && oidcClientConfig.credentials().jwt().tokenPath().isPresent()) {
-            this.clientAssertionProvider = new ClientAssertionProvider(vertx,
-                    oidcClientConfig.credentials().jwt().tokenPath().get());
-            if (this.clientAssertionProvider.getClientAssertion() == null) {
-                throw new OidcClientException("Cannot find a valid JWT bearer token at path: "
-                        + oidcClientConfig.credentials().jwt().tokenPath().get());
-            }
-        } else {
-            this.clientAssertionProvider = null;
-        }
+        this.clientAssertionProvider = getClientAssertionProvider(vertx, oidcClientConfig.credentials(),
+                OidcClientException::new, oidcClientConfig.id().get());
     }
 
     @Override

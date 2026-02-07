@@ -8,11 +8,12 @@ import java.nio.file.Path;
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
 
+import io.quarkus.oidc.common.ClientAssertionProvider;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 
-public final class ClientAssertionProvider implements Closeable {
+final class FileBasedClientAssertionProvider implements ClientAssertionProvider, Closeable {
 
     private record ClientAssertion(String bearerToken, long expiresAt, long timerId) {
         private boolean isInvalid() {
@@ -21,17 +22,18 @@ public final class ClientAssertionProvider implements Closeable {
         }
     }
 
-    private static final Logger LOG = Logger.getLogger(ClientAssertionProvider.class);
+    private static final Logger LOG = Logger.getLogger(FileBasedClientAssertionProvider.class);
     private final Vertx vertx;
     private final Path bearerTokenPath;
     private volatile ClientAssertion clientAssertion;
 
-    public ClientAssertionProvider(Vertx vertx, Path bearerTokenPath) {
+    FileBasedClientAssertionProvider(Vertx vertx, Path bearerTokenPath) {
         this.vertx = vertx;
         this.bearerTokenPath = bearerTokenPath;
         this.clientAssertion = loadFromFileSystem();
     }
 
+    @Override
     public String getClientAssertion() {
         ClientAssertion clientAssertion = this.clientAssertion;
         if (isInvalid(clientAssertion)) {
@@ -60,7 +62,7 @@ public final class ClientAssertionProvider implements Closeable {
         return vertx.setTimer(delay, new Handler<Long>() {
             @Override
             public void handle(Long ignored) {
-                ClientAssertionProvider.this.clientAssertion = loadFromFileSystem();
+                FileBasedClientAssertionProvider.this.clientAssertion = loadFromFileSystem();
             }
         });
     }

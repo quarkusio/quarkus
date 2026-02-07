@@ -13,9 +13,10 @@ import org.testcontainers.utility.DockerImageName;
 
 import com.github.dockerjava.api.command.InspectContainerResponse;
 
+import io.quarkus.deployment.builditem.Startable;
 import io.quarkus.devservices.common.ConfigureUtil;
 
-public class PulsarContainer extends GenericContainer<PulsarContainer> {
+public class PulsarContainer extends GenericContainer<PulsarContainer> implements Startable {
 
     public static final DockerImageName PULSAR_IMAGE = DockerImageName.parse("apachepulsar/pulsar:3.2.4");
 
@@ -88,5 +89,15 @@ public class PulsarContainer extends GenericContainer<PulsarContainer> {
 
     private String getHttpServiceUrl(String host, int port) {
         return String.format("http://%s:%d", host, port);
+    }
+
+    @Override
+    public String getConnectionInfo() {
+        return getPulsarBrokerUrl();
+    }
+
+    @Override
+    public void close() {
+        super.close();
     }
 }

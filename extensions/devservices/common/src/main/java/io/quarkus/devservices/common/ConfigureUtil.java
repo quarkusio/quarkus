@@ -85,6 +85,8 @@ public final class ConfigureUtil {
                 createNetworkCmdModifiersField.setAccessible(true);
                 createNetworkCmdModifiersField.set(sharedNetwork, Set.of(addDevservicesLabel));
                 container.setNetwork((Network) sharedNetwork);
+                // Force creation of the shared network – otherwise native agent tests can fail with host resolution issues
+                ((Network) sharedNetwork).getId();
             } catch (Exception e) {
                 throw new IllegalStateException("Unable to obtain SHARED network from testcontainers", e);
             }

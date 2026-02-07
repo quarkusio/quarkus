@@ -1,10 +1,10 @@
 package io.quarkus.test.junit;
 
+import static io.quarkus.runtime.LaunchMode.NORMAL;
 import static io.quarkus.test.junit.ArtifactTypeUtil.isContainer;
 import static io.quarkus.test.junit.ArtifactTypeUtil.isJar;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 import static io.quarkus.test.junit.IntegrationTestUtil.determineBuildOutputDirectory;
-import static io.quarkus.test.junit.IntegrationTestUtil.determineTestProfileAndProperties;
 import static io.quarkus.test.junit.IntegrationTestUtil.ensureNoInjectAnnotationIsUsed;
 import static io.quarkus.test.junit.IntegrationTestUtil.getEffectiveArtifactType;
 import static io.quarkus.test.junit.IntegrationTestUtil.getSysPropsToRestore;
@@ -120,7 +120,7 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
                 Class<?> requiredTestClass = context.getRequiredTestClass();
 
                 Map<String, String> sysPropRestore = getSysPropsToRestore();
-                TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile);
+                TestProfileAndProperties testProfileAndProperties = TestProfileAndProperties.ofNullable(profile, NORMAL);
                 // prepare dev services after profile and properties have been determined
                 if (quarkusArtifactProperties == null) {
                     prepare(context, testProfileAndProperties);
@@ -130,7 +130,7 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
                 testResourceManager = new TestResourceManager(
                         requiredTestClass,
                         profile,
-                        copyEntriesFromProfile(testProfileAndProperties.testProfile().orElse(null),
+                        copyEntriesFromProfile(testProfileAndProperties.testProfile(),
                                 context.getRequiredTestClass().getClassLoader()),
                         testProfileAndProperties.isDisabledGlobalTestResources());
                 testResourceManager.init(testProfileAndProperties.testProfileClassName().orElse(null));

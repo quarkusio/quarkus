@@ -1,5 +1,7 @@
 package io.quarkus.test.junit.classloading;
 
+import static io.quarkus.runtime.LaunchMode.TEST;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -36,17 +38,17 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.platform.commons.support.AnnotationSupport;
 import org.junit.platform.commons.support.HierarchyTraversalMode;
 
-import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.runtime.JVMUnsafeWarningsControl;
 import io.quarkus.test.common.FacadeClassLoaderProvider;
 import io.quarkus.test.junit.AppMakerHelper;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.QuarkusTestExtension;
 import io.quarkus.test.junit.TestProfile;
+import io.quarkus.test.junit.TestProfileAndProperties;
+import io.quarkus.test.junit.TestProfileAndProperties.TestProfileConfigSource;
 import io.quarkus.test.junit.TestResourceUtil;
 
 /**
@@ -294,7 +296,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
                 // We don't have enough information to make a runtime classloader yet, but we can make a curated application and a base classloader
                 QuarkusClassLoader runtimeClassLoader = getOrCreateBaseClassLoader(getProfileKey(null), null);
                 return runtimeClassLoader.loadClass(name);
-            } catch (AppModelResolverException | BootstrapException | IOException e) {
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
@@ -375,10 +377,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
             }
 
             if (isQuarkusTest && !isIntegrationTest) {
-                QuarkusClassLoader runtimeClassLoader = getQuarkusClassLoader(inspectionClass, profile);
-                Class<?> clazz = runtimeClassLoader.loadClass(name);
-
-                return clazz;
+                return getQuarkusClassLoader(inspectionClass, profile).loadClass(name);
             } else {
                 for (FacadeClassLoaderProvider p : facadeClassLoaderProviders) {
                     ClassLoader cl = p.getClassLoader(name, getParent());
@@ -493,7 +492,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
             // If we make a classloader with a null profile, we get the problem of starting dev services multiple times, which is very bad (if temporary) - once that issue is fixed, could reconsider
             if (keyMakerClassLoader == null) {
                 // Making a classloader uses the profile key to look up a curated application
-                classLoader = getOrCreateRuntimeClassLoader(profileKey, requiredTestClass, profile);
+                classLoader = getOrCreateRuntimeClassLoader(profileKey, requiredTestClass, Optional.ofNullable(profile));
                 keyMakerClassLoader = classLoader;
 
                 // We cannot use the startup action one because it's a base runtime classloader and so will not have the right access to application classes (they're in its banned list)
@@ -509,7 +508,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
                 classLoader = runtimeClassLoaders.get(key);
                 if (classLoader == null) {
                     // Making a classloader uses the profile key to look up a curated application
-                    classLoader = getOrCreateRuntimeClassLoader(profileKey, requiredTestClass, profile);
+                    classLoader = getOrCreateRuntimeClassLoader(profileKey, requiredTestClass, Optional.ofNullable(profile));
                 }
             }
 
@@ -528,8 +527,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
 
     private static String getProfileKey(Class<?> profile) {
         final String profileName = profile != null ? profile.getName() : NO_PROFILE;
-        String profileKey = KEY_PREFIX + profileName;
-        return profileKey;
+        return KEY_PREFIX + profileName;
     }
 
     private String getResourceKey(Class<?> requiredTestClass, Class<?> profile)
@@ -544,66 +542,59 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
                 .forName(TestResourceUtil.class.getName(), true, classLoader)
                 .getMethod("getReloadGroupIdentifier", Class.class, Class.class);
 
-        ClassLoader original = Thread.currentThread()
-                .getContextClassLoader();
+        ClassLoader original = Thread.currentThread().getContextClassLoader();
         try {
-            Thread.currentThread()
-                    .setContextClassLoader(keyMakerClassLoader);
-
+            Thread.currentThread().setContextClassLoader(keyMakerClassLoader);
             // When we load the TestResourceUtil loading gets delegated to a base runtime classloader, which cannot see the app classes; so we need to pre-port the profile to its classloader before passing it to it
             Class<?> transliteratedProfile = profile != null ? keyMakerClassLoader.loadClass(profile.getName()) : null;
             // we reload the test resources (and thus the application) if we changed test class and the new test class is not a nested class, and if we had or will have per-test test resources
-            resourceKey = (String) method.invoke(null, requiredTestClass, transliteratedProfile); //   TestResourceUtil.getResourcesKey(requiredTestClass);
+            resourceKey = (String) method.invoke(null, requiredTestClass, transliteratedProfile);
         } finally {
-            Thread.currentThread()
-                    .setContextClassLoader(original);
+            Thread.currentThread().setContextClassLoader(original);
         }
         return resourceKey;
     }
 
-    private CuratedApplication getOrCreateCuratedApplication(String key, Class<?> requiredTestClass)
-            throws IOException, AppModelResolverException, BootstrapException {
+    private CuratedApplication getOrCreateCuratedApplication(String key, Class<?> requiredTestClass, List<Path> additionalPaths)
+            throws Exception {
         CuratedApplication curatedApplication = curatedApplications.get(key);
 
         if (curatedApplication == null) {
             String displayName = DISPLAY_NAME_PREFIX + key;
             // TODO should we use clonedBuilder here, like TestSupport does?
-            curatedApplication = AppMakerHelper.makeCuratedApplication(requiredTestClass, displayName,
+            curatedApplication = AppMakerHelper.makeCuratedApplication(requiredTestClass, additionalPaths, displayName,
                     isAuxiliaryApplication);
             curatedApplications.put(key, curatedApplication);
-
         }
 
         return curatedApplication;
     }
 
-    private QuarkusClassLoader getOrCreateBaseClassLoader(String key, Class<?> requiredTestClass)
-            throws AppModelResolverException, BootstrapException, IOException {
-        CuratedApplication curatedApplication = getOrCreateCuratedApplication(key, requiredTestClass);
+    private QuarkusClassLoader getOrCreateBaseClassLoader(String key, Class<?> requiredTestClass) throws Exception {
+        CuratedApplication curatedApplication = getOrCreateCuratedApplication(key, requiredTestClass, List.of());
         return curatedApplication.getOrCreateBaseRuntimeClassLoader();
     }
 
-    private QuarkusClassLoader getOrCreateRuntimeClassLoader(String key, Class<?> requiredTestClass, Class<?> profile)
-            throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException,
-            IllegalAccessException, AppModelResolverException, BootstrapException, IOException {
-        ClassLoader old = Thread.currentThread().getContextClassLoader();
-        CuratedApplication curatedApplication = getOrCreateCuratedApplication(key, requiredTestClass);
+    @SuppressWarnings("unchecked")
+    private QuarkusClassLoader getOrCreateRuntimeClassLoader(String key, Class<?> requiredTestClass, Optional<Class<?>> profile)
+            throws Exception {
 
-        // Before interacting with the profiles, set the TCCL to one which is not the FacadeClassloader
-        // This could also go in AppMakerHelper.setExtraProperties, but then it affects more code paths
-        StartupAction startupAction;
-        try {
-            if (profile != null) {
-                Thread.currentThread().setContextClassLoader(profile.getClassLoader());
-            }
-            startupAction = AppMakerHelper.getStartupAction(requiredTestClass,
-                    curatedApplication, profile);
+        // Generate Profile Resource
+        List<Path> additionalPaths = new ArrayList<>();
+        if (profile.isPresent()) {
+            ClassLoader old = Thread.currentThread().getContextClassLoader();
+            Thread.currentThread().setContextClassLoader(profile.get().getClassLoader());
 
-        } finally {
+            TestProfileAndProperties testProfileAndProperties = TestProfileAndProperties.of(profile.get(), TEST);
+            TestProfileConfigSource testProfileConfigSource = testProfileAndProperties.toTestProfileConfigSource();
+            additionalPaths.add(testProfileConfigSource.getPropertiesLocation());
+
             Thread.currentThread().setContextClassLoader(old);
         }
 
-        // If the try block fails, this would be null, but there's no catch, so we'd never get to this code
+        CuratedApplication curatedApplication = getOrCreateCuratedApplication(key, requiredTestClass, additionalPaths);
+        StartupAction startupAction = AppMakerHelper.getStartupAction(requiredTestClass, curatedApplication, profile);
+
         QuarkusClassLoader loader = startupAction.getClassLoader();
 
         initialiseTestConfig(loader);

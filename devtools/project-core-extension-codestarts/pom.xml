@@ -53,6 +53,34 @@
         </pluginManagement>
         <plugins>
             <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <!-- use the Maven wrapper we use in Quarkus: we are sure the version is working and we have added the checksum -->
+                    <execution>
+                        <id>copy-maven-wrapper</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <propertiesEncoding>UTF-8</propertiesEncoding>
+                            <outputDirectory>${project.build.outputDirectory}/codestarts/quarkus/tooling/maven-wrapper/base/</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${maven.multiModuleProjectDirectory}/</directory>
+                                    <includes>
+                                        <include>.mvn/wrapper/**</include>
+                                        <include>mvnw</include>
+                                        <include>mvnw.cmd</include>
+                                    </includes>
+                                    <filtering>false</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <systemPropertyVariables>

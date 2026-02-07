@@ -38,6 +38,30 @@ class QuarkusCodestartGenerationTest {
     }
 
     @Test
+    void generateDefaultWithWrapper(TestInfo testInfo) throws Throwable {
+        final QuarkusCodestartProjectInput input = newInputBuilder()
+                .noCode()
+                .noDockerfiles()
+                .addData(getGenerationTestInputData())
+                .addBoms(QuarkusCodestartTesting.getPlatformBoms())
+                .build();
+        final Path projectDir = testDirPath.resolve("default-with-wrapper");
+        getCatalog().createProject(input).generate(projectDir);
+
+        checkMaven(projectDir);
+        checkMavenWrapper(projectDir);
+        checkReadme(projectDir);
+
+        assertThat(projectDir.resolve(".mvnw")).doesNotExist();
+        assertThat(projectDir.resolve(".dockerignore")).doesNotExist();
+
+        assertThatMatchSnapshot(testInfo, projectDir, "pom.xml");
+        assertThatMatchSnapshot(testInfo, projectDir, "README.md");
+
+        assertThat(projectDir.resolve("src/main/java")).exists().isEmptyDirectory();
+    }
+
+    @Test
     void generateDefault(TestInfo testInfo) throws Throwable {
         final QuarkusCodestartProjectInput input = newInputBuilder()
                 .noCode()
@@ -390,6 +414,11 @@ class QuarkusCodestartGenerationTest {
         assertThat(projectDir.resolve("build.gradle")).doesNotExist();
         assertThat(projectDir.resolve("gradle.properties")).doesNotExist();
         assertThat(projectDir.resolve("settings.properties")).doesNotExist();
+    }
+
+    private void checkMavenWrapper(Path projectDir) {
+        assertThat(projectDir.resolve("mvnw")).exists().isExecutable();
+        assertThat(projectDir.resolve("mvnw.cmd")).exists();
     }
 
     private void checkGradle(Path projectDir) {

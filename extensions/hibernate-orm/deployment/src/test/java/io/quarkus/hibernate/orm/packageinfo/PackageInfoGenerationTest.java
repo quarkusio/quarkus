@@ -24,8 +24,7 @@ public class PackageInfoGenerationTest {
                     .addPackage(EntityWithoutPackageInfo.class.getPackage()))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.package.jar.enabled", "true")
-            .overrideConfigKey("quarkus.package.jar.appcds.enabled", "true")
-            .overrideConfigKey("quarkus.package.jar.appcds.use-aot", "true");
+            .overrideConfigKey("quarkus.package.jar.type", "aot-jar");
 
     @Test
     public void testExistingPackageInfoNotOverwritten() throws Exception {

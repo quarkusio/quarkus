@@ -932,7 +932,8 @@ public class JarRunnerIT extends MojoTestBase {
         Assertions.assertTrue(properties.get("path").toString().startsWith(outputDir == null ? "quarkus-app" : outputDir));
         Assertions.assertTrue(properties.get("path").toString().endsWith("quarkus-run.jar"));
 
-        Process process = doLaunch(jar, output).start();
+        // quarkus-pre-init-raise-errors is used to catch errors related to pre-init execution when running the Quarkus tests
+        Process process = doLaunch(jar, output, List.of("-Dquarkus-pre-init-raise-errors=true")).start();
         try {
             // Wait until server up
             dumpFileContentOnFailure(() -> {
@@ -946,6 +947,8 @@ public class JarRunnerIT extends MojoTestBase {
             String logs = FileUtils.readFileToString(output, "UTF-8");
 
             assertThat(logs).isNotEmpty().contains("rest");
+            assertThat(logs).doesNotContain("Exception in thread").describedAs(
+                    "An exception occurred during the pre-init phase:\n\n" + logs);
 
             // test that the application name and version are properly set
             assertApplicationPropertiesSetCorrectly();

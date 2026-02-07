@@ -1,29 +1,27 @@
 package io.quarkus.it.smallrye.graphql.keycloak;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
-import org.keycloak.util.JsonSerialization;
 
+import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-import io.restassured.RestAssured;
-import io.restassured.response.Response;
+import io.quarkus.test.keycloak.client.KeycloakTestClient;
 
-public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycleManager {
+public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycleManager, DevServicesContext.ContextAware {
 
-    private static final String KEYCLOAK_SERVER_URL = System.getProperty("keycloak.url", "http://localhost:8180");
     private static final String KEYCLOAK_REALM = "quarkus";
+
+    final KeycloakTestClient client = new KeycloakTestClient();
 
     @Override
     public Map<String, String> start() {
@@ -36,38 +34,8 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         realm.getClients().add(createClient("quarkus-app"));
         realm.getUsers().add(createUser("alice", "user"));
 
-        try {
-            Response response = RestAssured
-                    .given()
-                    .auth().oauth2(getAdminAccessToken())
-                    .contentType("application/json")
-                    .body(JsonSerialization.writeValueAsBytes(realm))
-                    .when()
-                    .post(KEYCLOAK_SERVER_URL + "/admin/realms");
-            response.then()
-                    .statusCode(201);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        Map<String, String> properties = new HashMap<>();
-
-        properties.put("quarkus.oidc.auth-server-url", KEYCLOAK_SERVER_URL + "/realms/" + KEYCLOAK_REALM);
-        properties.put("keycloak.url", KEYCLOAK_SERVER_URL);
-
-        return properties;
-    }
-
-    private static String getAdminAccessToken() {
-        return RestAssured
-                .given()
-                .param("grant_type", "password")
-                .param("username", "admin")
-                .param("password", "admin")
-                .param("client_id", "admin-cli")
-                .when()
-                .post(KEYCLOAK_SERVER_URL + "/realms/master/protocol/openid-connect/token")
-                .as(AccessTokenResponse.class).getToken();
+        client.createRealm(realm);
+        return Collections.emptyMap();
     }
 
     private static RealmRepresentation createRealm(String name) {
@@ -132,23 +100,10 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
 
     @Override
     public void stop() {
-        RestAssured
-                .given()
-                .auth().oauth2(getAdminAccessToken())
-                .when()
-                .delete(KEYCLOAK_SERVER_URL + "/admin/realms/" + KEYCLOAK_REALM).then().statusCode(204);
     }
 
-    public static String getAccessToken() {
-        io.restassured.response.Response response = RestAssured.given()
-                .contentType("application/x-www-form-urlencoded")
-                .accept("application/json")
-                .formParam("username", "alice")
-                .formParam("password", "alice")
-                .param("client_id", "quarkus-app")
-                .param("client_secret", "secret")
-                .formParam("grant_type", "password")
-                .post(KEYCLOAK_SERVER_URL + "/realms/" + KEYCLOAK_REALM + "/protocol/openid-connect/token");
-        return response.getBody().jsonPath().getString("access_token");
+    @Override
+    public void setIntegrationTestContext(DevServicesContext context) {
+        client.setIntegrationTestContext(context);
     }
 }

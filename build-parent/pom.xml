@@ -156,7 +156,7 @@
         <failsafe.argLine.additional>${surefire.argLine.additional}</failsafe.argLine.additional>
 
         <!-- google cloud functions invoker-->
-        <gcf-invoker.version>1.4.1</gcf-invoker.version>
+        <gcf-invoker.version>2.0.0</gcf-invoker.version>
         <!-- Jakarta JMS API -->
         <jakarta.jms-api.version>3.1.0</jakarta.jms-api.version>
 

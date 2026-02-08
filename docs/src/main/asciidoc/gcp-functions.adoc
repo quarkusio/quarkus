@@ -266,7 +266,7 @@ gcloud functions deploy quarkus-example-http \
 The entry point must always be set to `io.quarkus.gcp.functions.QuarkusHttpFunction` as this is the class that integrates Cloud Functions with Quarkus.
 ====
 
-This command will give you as output a `httpsTrigger.url` that points to your function.
+This command will give you as output a `url` that points to your function.
 
 === The BackgroundFunction
 

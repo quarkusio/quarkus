@@ -229,6 +229,8 @@ public class SpringWebProcessor {
             // we need to generate one JAX-RS ExceptionMapper per Exception type
             Type[] handledExceptionTypes = exceptionHandlerInstance.value().asClassArray();
             for (Type handledExceptionType : handledExceptionTypes) {
+                reflectiveClassProducer.produce(
+                        ReflectiveClassBuildItem.builder(method.declaringClass().toString()).constructors(false).build());
                 String name = new ControllerAdviceExceptionMapperGenerator(method, handledExceptionType.name(),
                         classOutput, typesUtil, isResteasyClassic).generate();
                 providersProducer.produce(new ResteasyJaxrsProviderBuildItem(name));

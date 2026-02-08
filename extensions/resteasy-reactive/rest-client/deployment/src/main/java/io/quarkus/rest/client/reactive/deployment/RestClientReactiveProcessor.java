@@ -359,7 +359,8 @@ class RestClientReactiveProcessor {
 
             }
 
-            addGeneratedProviders(index, classCreator, constructor, annotationsByClassName, generatedProviders);
+            addGeneratedProviders(index, classCreator, constructor, annotationsByClassName, generatedProviders,
+                    reflectiveClassesProducer);
 
             constructor.returnValue(null);
         }
@@ -804,13 +805,15 @@ class RestClientReactiveProcessor {
 
     private void addGeneratedProviders(IndexView index, ClassCreator classCreator, MethodCreator constructor,
             Map<String, List<AnnotationInstance>> annotationsByClassName,
-            Map<String, List<GeneratedClassResult>> generatedProviders) {
+            Map<String, List<GeneratedClassResult>> generatedProviders,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer) {
         int i = 1;
         for (Map.Entry<String, List<AnnotationInstance>> annotationsForClass : annotationsByClassName.entrySet()) {
             MethodCreator mc = classCreator.getMethodCreator("addGeneratedProviders" + i, void.class);
             ResultHandle map = mc.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
             for (AnnotationInstance value : annotationsForClass.getValue()) {
                 String className = value.value().asString();
+                reflectiveClassesProducer.produce(ReflectiveClassBuildItem.builder(className).constructors(false).build());
                 AnnotationValue priorityAnnotationValue = value.value("priority");
                 int priority;
                 if (priorityAnnotationValue == null) {

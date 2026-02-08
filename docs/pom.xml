@@ -3429,6 +3429,29 @@
                             <arguments>
                                 <argument>${project.basedir}/target/asciidoc/sources</argument>
                                 <argument>${project.basedir}/target</argument>
+                                <argument>${project.basedir}/../core/deployment</argument>
+                                <argument>${project.basedir}/../extensions</argument>
+                            </arguments>
+                            <environmentVariables>
+                                <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>
+                            </environmentVariables>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-extension-statuses-include</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skipDocs}</skip>
+                            <!-- Don't wait for unkillable reference reaper threads -->
+                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
+                            <mainClass>io.quarkus.docs.generation.ExtensionStatusGenerator</mainClass>
+                            <arguments>
+                                <argument>${project.build.directory}/quarkus-generated-doc/extensions</argument>
+                                <argument>${project.basedir}/../core/deployment</argument>
+                                <argument>${project.basedir}/../extensions</argument>
                             </arguments>
                             <environmentVariables>
                                 <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>

@@ -4,9 +4,24 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
+import org.apache.maven.model.Model;
+import org.apache.maven.model.building.DefaultModelBuilder;
+import org.apache.maven.model.building.DefaultModelBuilderFactory;
+import org.apache.maven.model.building.DefaultModelBuildingRequest;
+import org.apache.maven.model.building.ModelBuildingException;
+import org.apache.maven.model.building.ModelBuildingRequest;
+import org.apache.maven.model.resolution.UnresolvableModelException;
+import org.gradle.api.Action;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
+import org.gradle.api.artifacts.component.ProjectComponentIdentifier;
+import org.gradle.api.artifacts.result.ResolvedComponentResult;
 import org.gradle.api.internal.file.copy.DefaultCopySpec;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
@@ -21,13 +36,97 @@ import io.quarkus.bootstrap.workspace.LazySourceDir;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
+import io.quarkus.maven.dependency.GAV;
 
 public class ProjectDescriptorBuilder {
 
-    public static Provider<DefaultProjectDescriptor> buildForApp(Project project) {
+    public static Provider<DefaultProjectDescriptor> buildForApp(Project project, Configuration runtimeConfiguration,
+            Configuration deploymentConfiguration) {
         final ProjectDescriptorBuilder builder = new ProjectDescriptorBuilder(project);
-        project.afterEvaluate(evaluated -> ProjectDescriptorBuilder.initSourceDirs(evaluated, builder.moduleBuilder));
-        return project.getProviders().provider(() -> new DefaultProjectDescriptor(builder.moduleBuilder));
+        // Map<GAV, File> pomFilesHolder = new HashMap<>();
+        // final Map<String, List<DependencyInfoCollector.DeclaredDependency>> declaredDepsHolder = new HashMap<>();
+        final Map<GAV, Model> declaredDepsByModuleGAV = new HashMap<>();
+        final Map<String, List<DependencyInfoCollector.DeclaredDependency>> declaredDepsByProjectPath = new HashMap<>();
+        Action<Project> projectAction = proj -> {
+            ProjectDescriptorBuilder.initSourceDirs(proj, builder.moduleBuilder);
+            GradleAssistedMavenModelResolverImpl mavenModelResolver = new GradleAssistedMavenModelResolverImpl(project);
+            DefaultModelBuilder modelBuilder = new DefaultModelBuilderFactory().newInstance();
+            collectResolvedModuleAndProjectDependencies(project, deploymentConfiguration, mavenModelResolver, modelBuilder,
+                    declaredDepsByModuleGAV, declaredDepsByProjectPath);
+            collectResolvedModuleAndProjectDependencies(project, runtimeConfiguration, mavenModelResolver, modelBuilder,
+                    declaredDepsByModuleGAV, declaredDepsByProjectPath);
+            System.out.println("[DEBUG] Collected declared dependencies for projects: " + proj.getPath()); // TODO: remove
+        };
+        if (project.getState().getExecuted()) {
+            projectAction.execute(project);
+        } else {
+            project.afterEvaluate(projectAction);
+        }
+        return project.getProviders().provider(() -> {
+            System.out.println("[DEBUG] Creating ProjectDescriptor for project: " + project.getPath()); // TODO: remove
+            return new DefaultProjectDescriptor(builder.moduleBuilder, project.getPath(),
+                    declaredDepsByModuleGAV, declaredDepsByProjectPath);
+        });
+    }
+
+    private static void collectResolvedModuleAndProjectDependencies(
+            Project project,
+            Configuration configuration,
+            GradleAssistedMavenModelResolverImpl mavenModelResolver,
+            DefaultModelBuilder modelBuilder,
+            Map<GAV, Model> declaredDepsByModuleGAV,
+            Map<String, List<DependencyInfoCollector.DeclaredDependency>> declaredDepsByProjectPath) {
+        Set<ResolvedComponentResult> components = configuration.getIncoming().getResolutionResult()
+                .getAllComponents();
+
+        long totalTimeForModelResolution = 0;
+
+        for (ResolvedComponentResult component : components) {
+            if (component.getId() instanceof ModuleComponentIdentifier moduleId) {
+                String groupId = moduleId.getGroup();
+                String artifactId = moduleId.getModule();
+                String version = moduleId.getVersion();
+                Model effectiveModel;
+                // resolve the POM to get the file
+                try {
+                    GAV key = new GAV(groupId, artifactId, version);
+                    if (declaredDepsByModuleGAV.containsKey(key)) {
+                        continue;
+                    }
+                    var modelSource = mavenModelResolver.resolveModel(groupId, artifactId, version);
+                    ModelBuildingRequest request = new DefaultModelBuildingRequest();
+                    request.setModelSource(modelSource);
+                    request.setModelResolver(mavenModelResolver);
+                    request.getSystemProperties().putAll(System.getProperties());
+                    request.setValidationLevel(ModelBuildingRequest.VALIDATION_LEVEL_MINIMAL);
+                    var startTime = System.currentTimeMillis();
+                    effectiveModel = modelBuilder.build(request).getEffectiveModel();
+                    var endTime = System.currentTimeMillis();
+                    long l = endTime - startTime;
+                    totalTimeForModelResolution += l;
+                    System.out.println("[DEBUG] Resolved POM for " + groupId + ":" + artifactId + ":" + version + " in "
+                            + l + " ms"); // TODO: remove
+                    declaredDepsByModuleGAV.put(key,
+                            effectiveModel);
+                } catch (UnresolvableModelException | ModelBuildingException e) {
+                    project.getLogger().warn("Unable to resolve effective model for {}:{}:{}: {}",
+                            groupId, artifactId, version, e.getMessage());
+                }
+
+            } else if (component.getId() instanceof ProjectComponentIdentifier projectId) {
+                Project depProject = project.findProject(projectId.getProjectPath());
+                if (depProject == null) {
+                    continue;
+                }
+                declaredDepsByProjectPath.putIfAbsent(depProject.getPath(),
+                        // TODO: make sure we collect deps properly for application project
+                        DependencyInfoCollector.collectDeclaredFromProject(depProject, depProject.equals(project)));
+            }
+        }
+
+        System.out.println("[DEBUG] Total time for model resolution in configuration '"
+                + configuration.getName() + "' of project '" + project.getPath() + "': "
+                + totalTimeForModelResolution + " ms"); // TODO: remove
     }
 
     public static void initSourceDirs(Project project, WorkspaceModule.Mutable result) {

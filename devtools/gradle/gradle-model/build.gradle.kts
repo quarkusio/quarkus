@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     compileOnly(libs.kotlin.gradle.plugin.api)
+    implementation("org.apache.maven:maven-core")
     gradleApi()
 }
 

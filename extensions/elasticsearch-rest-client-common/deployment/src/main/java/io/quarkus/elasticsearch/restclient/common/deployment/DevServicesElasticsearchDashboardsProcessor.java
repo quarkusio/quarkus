@@ -23,7 +23,8 @@ import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 @BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public class DevServicesElasticsearchDashboardsProcessor {
 
-    static volatile DevservicesElasticsearchDashboardProcessorStrategy strategy = DevservicesElasticsearchDashboardProcessorStrategy.dashboards();
+    static volatile DevservicesElasticsearchDashboardProcessorStrategy strategy = DevservicesElasticsearchDashboardProcessorStrategy
+            .dashboards();
 
     @BuildStep
     public DevServicesResultBuildItem startElasticsearchDevService(

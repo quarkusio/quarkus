@@ -328,7 +328,7 @@ public class DevservicesElasticsearchDashboardProcessorStrategy {
 
     static DockerImageName resolveDashboardImageName(ElasticsearchDevServicesBuildTimeConfig config,
             Distribution resolvedDistribution) {
-        return DockerImageName.parse(config.imageName().orElseGet(() -> ConfigureUtil.getDefaultImageNameFor(
+        return DockerImageName.parse(config.dashboard().imageName().orElseGet(() -> ConfigureUtil.getDefaultImageNameFor(
                 Distribution.ELASTIC.equals(resolvedDistribution)
                         ? DEV_SERVICE_KIBANA
                         : DEV_SERVICE_DASHBOARDS)));

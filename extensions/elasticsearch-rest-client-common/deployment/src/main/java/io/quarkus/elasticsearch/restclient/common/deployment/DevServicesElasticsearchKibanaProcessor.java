@@ -20,7 +20,8 @@ import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 @BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public class DevServicesElasticsearchKibanaProcessor {
 
-    static volatile DevservicesElasticsearchDashboardProcessorStrategy strategy = DevservicesElasticsearchDashboardProcessorStrategy.kibana();
+    static volatile DevservicesElasticsearchDashboardProcessorStrategy strategy = DevservicesElasticsearchDashboardProcessorStrategy
+            .kibana();
 
     @BuildStep
     public DevServicesResultBuildItem startElasticsearchDevService(

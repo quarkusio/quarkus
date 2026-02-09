@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -53,6 +54,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.gizmo.Gizmo;
 import io.quarkus.mutiny.deployment.MutinyRuntimeInitBuildItem;
 import io.quarkus.netty.deployment.EventLoopSupplierBuildItem;
@@ -66,6 +68,8 @@ import io.quarkus.vertx.mdc.provider.LateBoundMDCProvider;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
+import io.vertx.core.spi.VerticleFactory;
+import io.vertx.core.spi.VertxServiceProvider;
 import io.vertx.core.spi.resolver.ResolverProvider;
 
 class VertxCoreProcessor {
@@ -238,7 +242,7 @@ class VertxCoreProcessor {
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<EventLoopSupplierBuildItem> eventLoops,
             ExecutorBuildItem executorBuildItem,
-            MutinyRuntimeInitBuildItem mutinyRuntimeInitBuildItem) {
+            MutinyRuntimeInitBuildItem mutinyRuntimeInitBuildItem) throws IOException, ClassNotFoundException {
 
         // Override the Mutiny infrastructure ScheduledExecutorService to dispatch scheduled operations to a Vert.x timer
         recorder.wrapMainExecutorForMutiny(executorBuildItem.getExecutorProxy());
@@ -248,8 +252,12 @@ class VertxCoreProcessor {
                 .map(VertxOptionsConsumerBuildItem::getConsumer)
                 .toList();
 
+        // resolve the services at build time
+        List<VertxServiceProvider> vertxServiceProviders = loadServices(VertxServiceProvider.class);
+        List<VerticleFactory> verticleFactories = loadServices(VerticleFactory.class);
+
         Supplier<Vertx> vertx = recorder.configureVertx(launchMode.getLaunchMode(), shutdown, consumers,
-                executorBuildItem.getExecutorProxy());
+                vertxServiceProviders, verticleFactories, executorBuildItem.getExecutorProxy());
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(Vertx.class)
                 .types(Vertx.class)
                 .scope(Singleton.class)
@@ -450,5 +458,24 @@ class VertxCoreProcessor {
                             .addBeanClass(io.quarkus.vertx.core.runtime.security.VertxBlockingSecurityExecutor.class)
                             .setDefaultScope(APPLICATION_SCOPED).build());
         }
+    }
+
+    private <T> List<T> loadServices(Class<T> serviceClass) throws IOException, ClassNotFoundException {
+        List<T> services = new ArrayList<>();
+        for (Class<?> serviceImplClass : ServiceUtil.classesNamedIn(Thread.currentThread().getContextClassLoader(),
+                "META-INF/services/" + serviceClass.getName())) {
+            if (!QuarkusClassLoader.isClassPresentAtRuntime(serviceImplClass.getName())) {
+                continue;
+            }
+            try {
+                services.add(serviceClass.cast(serviceImplClass.getDeclaredConstructor().newInstance()));
+            } catch (Exception e) {
+                throw new IllegalStateException(
+                        "Failed to instantiate declared " + serviceClass.getSimpleName() + " class: "
+                                + serviceImplClass.getName(),
+                        e);
+            }
+        }
+        return services;
     }
 }

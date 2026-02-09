@@ -35,7 +35,7 @@ public class JDBCMariaDBProcessor {
 
     @BuildStep
     DevServicesDatasourceConfigurationHandlerBuildItem devDbHandler() {
-        return DevServicesDatasourceConfigurationHandlerBuildItem.deferredJdbc(DatabaseKind.MARIADB);
+        return DevServicesDatasourceConfigurationHandlerBuildItem.jdbc(DatabaseKind.MARIADB);
     }
 
     @BuildStep

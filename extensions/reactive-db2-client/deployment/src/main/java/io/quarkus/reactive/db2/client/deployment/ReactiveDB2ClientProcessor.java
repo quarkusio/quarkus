@@ -124,7 +124,7 @@ class ReactiveDB2ClientProcessor {
 
     @BuildStep
     DevServicesDatasourceConfigurationHandlerBuildItem devDbHandler() {
-        return DevServicesDatasourceConfigurationHandlerBuildItem.deferredReactive(DatabaseKind.DB2);
+        return DevServicesDatasourceConfigurationHandlerBuildItem.reactive(DatabaseKind.DB2);
     }
 
     @BuildStep

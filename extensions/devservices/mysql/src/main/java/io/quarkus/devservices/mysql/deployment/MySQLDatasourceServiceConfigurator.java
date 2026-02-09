@@ -31,8 +31,7 @@ public class MySQLDatasourceServiceConfigurator implements DatasourceServiceConf
                 jdbcUrl,
                 reactiveUrl,
                 container.tryGetEnv(USERNAME_ENVS).orElse(effectiveUsername),
-                container.tryGetEnv(PASSWORD_ENVS).orElse(effectivePassword),
-                null);
+                container.tryGetEnv(PASSWORD_ENVS).orElse(effectivePassword));
     }
 
     @Override

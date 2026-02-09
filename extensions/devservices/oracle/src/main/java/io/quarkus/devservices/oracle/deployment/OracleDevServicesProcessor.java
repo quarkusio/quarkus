@@ -17,7 +17,6 @@ import org.testcontainers.utility.MountableFile;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DatasourceStartable;
-import io.quarkus.datasource.deployment.spi.DeferredDevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
@@ -48,7 +47,7 @@ public class OracleDevServicesProcessor {
     DevServicesDatasourceProviderBuildItem setupOracle(
             DevServicesComposeProjectBuildItem composeProjectBuildItem) {
 
-        return new DevServicesDatasourceProviderBuildItem(DatabaseKind.ORACLE, new DeferredDevServicesDatasourceProvider() {
+        return new DevServicesDatasourceProviderBuildItem(DatabaseKind.ORACLE, new DevServicesDatasourceProvider() {
             @Override
             public String getFeature() {
                 return Feature.JDBC_ORACLE.getName();

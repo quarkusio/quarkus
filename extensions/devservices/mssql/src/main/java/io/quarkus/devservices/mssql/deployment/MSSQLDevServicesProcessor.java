@@ -14,7 +14,6 @@ import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DatasourceStartable;
-import io.quarkus.datasource.deployment.spi.DeferredDevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
@@ -45,7 +44,7 @@ public class MSSQLDevServicesProcessor {
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             DevServicesComposeProjectBuildItem composeProjectBuildItem) {
 
-        return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MSSQL, new DeferredDevServicesDatasourceProvider() {
+        return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MSSQL, new DevServicesDatasourceProvider() {
             @Override
             public String getFeature() {
                 return Feature.JDBC_MSSQL.getName();

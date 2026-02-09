@@ -42,7 +42,7 @@ public class MsSQLProcessor {
 
     @BuildStep
     DevServicesDatasourceConfigurationHandlerBuildItem devDbHandler() {
-        return DevServicesDatasourceConfigurationHandlerBuildItem.deferredJdbc(DatabaseKind.MSSQL);
+        return DevServicesDatasourceConfigurationHandlerBuildItem.jdbc(DatabaseKind.MSSQL);
     }
 
     @BuildStep

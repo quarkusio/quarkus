@@ -48,7 +48,9 @@ public class CliProjectMavenTest {
                 "Expected confirmation that the project has been created." + result);
 
         Assertions.assertTrue(project.resolve("mvnw").toFile().exists(),
-                "Wrapper should exist by default");
+                "mvnw should exist by default");
+        Assertions.assertTrue(project.resolve("mvnw.cmd").toFile().exists(),
+                "mvnw.cmd should exist by default");
         Assertions.assertTrue(Files.exists(project.resolve("src/main/docker")),
                 "Docker folder should exist by default");
         String pomContent = validateBasicIdentifiers(CreateProjectHelper.DEFAULT_GROUP_ID,

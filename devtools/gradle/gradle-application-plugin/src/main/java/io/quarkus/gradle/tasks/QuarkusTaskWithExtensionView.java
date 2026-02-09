@@ -1,6 +1,7 @@
 package io.quarkus.gradle.tasks;
 
 import org.gradle.api.java.archives.Attributes;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Nested;
@@ -33,6 +34,9 @@ public abstract class QuarkusTaskWithExtensionView extends QuarkusTask {
     @Input
     public abstract MapProperty<String, String> getCachingRelevantInput();
 
+    @Input
+    public abstract ListProperty<String> getIgnoredListEntries();
+
     public QuarkusTaskWithExtensionView(String description, boolean compatible) {
         super(description, compatible);
         this.extensionView = getProject().getObjects().newInstance(QuarkusPluginExtensionView.class, extension());
@@ -40,7 +44,7 @@ public abstract class QuarkusTaskWithExtensionView extends QuarkusTask {
 
     public EffectiveConfigProvider effectiveProvider() {
         return new EffectiveConfigProvider(
-                getExtensionView().getIgnoredEntries(),
+                getIgnoredListEntries(),
                 getExtensionView().getMainResources(),
                 getExtensionView().getForcedProperties(),
                 getExtensionView().getProjectProperties(),

@@ -551,28 +551,19 @@ public class ExtensionCatalogResolver {
 
         ensureRegistriesConfigured();
 
-        final PlatformStream stream = findPlatformStreamOrFail(streamCoords);
-        ExtensionCatalogBuilder catalogBuilder = new ExtensionCatalogBuilder();
-        for (PlatformRelease release : stream.getReleases()) {
-            collectExtensionCatalogs(release.getMemberBoms(), catalogBuilder);
+        var catalog = resolveExtensionCatalogForStreamIfFound(streamCoords, true);
+        if (catalog != null) {
+            return catalog;
         }
-        return catalogBuilder.build();
-    }
-
-    protected PlatformStream findPlatformStreamOrFail(PlatformStreamCoords streamCoords)
-            throws RegistryResolutionException {
-        var stream = findPlatformStreamOrNull(streamCoords, true);
-        if (stream != null) {
-            return stream;
-        }
-        stream = findPlatformStreamOrNull(streamCoords, false);
-        if (stream != null) {
-            return stream;
+        catalog = resolveExtensionCatalogForStreamIfFound(streamCoords, false);
+        if (catalog != null) {
+            return catalog;
         }
         throw unknownStreamException(streamCoords, false);
     }
 
-    protected PlatformStream findPlatformStreamOrNull(PlatformStreamCoords streamCoords, boolean amongRecommended)
+    protected ExtensionCatalog resolveExtensionCatalogForStreamIfFound(PlatformStreamCoords streamCoords,
+            boolean amongRecommended)
             throws RegistryResolutionException {
         for (RegistryExtensionResolver registry : registries) {
             final PlatformCatalog platforms = amongRecommended ? registry.resolvePlatformCatalog()
@@ -584,21 +575,29 @@ public class ExtensionCatalogResolver {
                 for (Platform p : platforms.getPlatforms()) {
                     var stream = p.getStream(streamCoords.getStreamId());
                     if (stream != null) {
-                        return stream;
+                        return resolveExtensionCatalogForStream(stream, List.of(registry));
                     }
                 }
             } else {
                 final Platform platform = platforms.getPlatform(streamCoords.getPlatformKey());
-                if (platform == null) {
-                    continue;
-                }
-                var stream = platform.getStream(streamCoords.getStreamId());
-                if (stream != null) {
-                    return stream;
+                if (platform != null) {
+                    var stream = platform.getStream(streamCoords.getStreamId());
+                    if (stream != null) {
+                        return resolveExtensionCatalogForStream(stream, List.of(registry));
+                    }
                 }
             }
         }
         return null;
+    }
+
+    private ExtensionCatalog resolveExtensionCatalogForStream(PlatformStream stream, List<RegistryExtensionResolver> registries)
+            throws RegistryResolutionException {
+        ExtensionCatalogBuilder catalogBuilder = new ExtensionCatalogBuilder();
+        for (PlatformRelease release : stream.getReleases()) {
+            collectExtensionCatalogs(release.getMemberBoms(), catalogBuilder, registries);
+        }
+        return catalogBuilder.build();
     }
 
     protected RegistryResolutionException unknownStreamException(PlatformStreamCoords stream, boolean amongRecommended)
@@ -647,12 +646,13 @@ public class ExtensionCatalogResolver {
             return resolveExtensionCatalog();
         }
         final ExtensionCatalogBuilder catalogBuilder = new ExtensionCatalogBuilder();
-        collectExtensionCatalogs(preferredPlatforms, catalogBuilder);
+        collectExtensionCatalogs(preferredPlatforms, catalogBuilder, List.of());
         return catalogBuilder.build();
     }
 
     @SuppressWarnings("unchecked")
-    private void collectExtensionCatalogs(Collection<ArtifactCoords> preferredPlatforms, ExtensionCatalogBuilder catalogBuilder)
+    private void collectExtensionCatalogs(Collection<ArtifactCoords> preferredPlatforms, ExtensionCatalogBuilder catalogBuilder,
+            List<RegistryExtensionResolver> registries)
             throws RegistryResolutionException {
         final Set<String> preferredPlatformKeys = new HashSet<>(4);
         final Set<ArtifactCoords> addedPlatformBoms = new HashSet<>();
@@ -661,25 +661,27 @@ public class ExtensionCatalogResolver {
             if (!addedPlatformBoms.add(bom)) {
                 continue;
             }
-            final List<RegistryExtensionResolver> registries;
-            try {
-                registries = filterRegistries(r -> r.checkPlatform(bom));
-            } catch (ExclusiveProviderConflictException e) {
-                final StringBuilder buf = new StringBuilder();
-                buf.append(
-                        "The following registries were configured as exclusive providers of the ");
-                buf.append(PlatformArtifacts.ensureBomArtifact(bom).toCompactCoords());
-                buf.append(" platform: ").append(e.conflictingRegistries.get(0).getId());
-                for (int i = 1; i < e.conflictingRegistries.size(); ++i) {
-                    buf.append(", ").append(e.conflictingRegistries.get(i).getId());
+            if (registries == null || registries.isEmpty()) {
+                try {
+                    registries = filterRegistries(r -> r.checkPlatform(bom));
+                } catch (ExclusiveProviderConflictException e) {
+                    final StringBuilder buf = new StringBuilder();
+                    buf.append(
+                            "The following registries were configured as exclusive providers of the ");
+                    buf.append(PlatformArtifacts.ensureBomArtifact(bom).toCompactCoords());
+                    buf.append(" platform: ").append(e.conflictingRegistries.get(0).getId());
+                    for (int i = 1; i < e.conflictingRegistries.size(); ++i) {
+                        buf.append(", ").append(e.conflictingRegistries.get(i).getId());
+                    }
+                    throw new RegistryResolutionException(buf.toString());
                 }
-                throw new RegistryResolutionException(buf.toString());
+
+                if (registries.isEmpty()) {
+                    log.warn("None of the configured registries recognizes platform " + bom.toCompactCoords());
+                    continue;
+                }
             }
 
-            if (registries.isEmpty()) {
-                log.warn("None of the configured registries recognizes platform " + bom.toCompactCoords());
-                continue;
-            }
             ExtensionCatalog.Mutable catalog = null;
             RegistryExtensionResolver registry = null;
             int registryPreferenceIndex = 0;

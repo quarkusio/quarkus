@@ -37,7 +37,7 @@ public abstract class AbstractDevUIProcessor {
             boolean discoverMetadata,
             String authServerUrl,
             String buildTimeKeycloakAdminUrl,
-            String buildTimeOidcApplicationType) {
+            String buildTimeOidcApplicationType, OidcDevUiRecorder.DevServiceType devServiceType) {
         final CardPageBuildItem cardPage = new CardPageBuildItem();
 
         cardPage.setLogo("oidc_logo.png", "oidc_logo.png");
@@ -80,7 +80,7 @@ public abstract class AbstractDevUIProcessor {
                 webClientTimeout, grantOptions, oidcProviderName, oidcGrantType, introspectionIsAvailable,
                 swaggerIsAvailable, graphqlIsAvailable, swaggerUiPath, graphqlUiPath, devServiceConfigHashCode,
                 discoverMetadata, devUiLogoutPath, devUiReadSessionCookiePath, authServerUrl, buildTimeKeycloakAdminUrl,
-                buildTimeOidcApplicationType);
+                buildTimeOidcApplicationType, devServiceType);
 
         recorder.createJsonRPCService(beanContainer.getValue(), runtimeProperties);
 

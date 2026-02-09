@@ -13,8 +13,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
-import io.quarkus.devservices.oidc.OidcDevServicesConfigBuildItem;
+import io.quarkus.devservices.oidc.OidcDevServicesPreparedBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
@@ -27,7 +26,7 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 
-public class OidcDevUIProcessor extends AbstractDevUIProcessor {
+class OidcDevUIProcessor extends AbstractDevUIProcessor {
 
     private static final String TENANT_ENABLED_CONFIG_KEY = CONFIG_PREFIX + "tenant-enabled";
     private static final String DISCOVERY_ENABLED_CONFIG_KEY = CONFIG_PREFIX + "discovery-enabled";
@@ -41,29 +40,31 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
     private static final String ENTRAID = "Microsoft Entra ID";
     private static final Set<String> OTHER_PROVIDERS = Set.of("Auth0", "Okta", "Google", "Github", "Spotify");
 
-    OidcBuildTimeConfig oidcConfig;
-
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     @Consume(CoreVertxBuildItem.class) // metadata discovery requires Vertx instance
-    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     void prepareOidcDevConsole(Capabilities capabilities,
             BeanContainerBuildItem beanContainer,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             BuildProducer<CardPageBuildItem> cardPageProducer,
-            OidcDevUiRecorder recorder,
-            Optional<OidcDevServicesConfigBuildItem> oidcDevServicesConfigBuildItem) {
-        if (!isOidcTenantEnabled() || (!isClientIdSet() && oidcDevServicesConfigBuildItem.isEmpty())) {
+            OidcDevUiRecorder recorder, OidcBuildTimeConfig oidcConfig,
+            Optional<OidcDevServicesPreparedBuildItem> oidcDevServicesPreparedBuildItem) {
+        if (!isOidcTenantEnabled() || (!isClientIdSet() && oidcDevServicesPreparedBuildItem.isEmpty())) {
             return;
         }
         final OidcTenantConfig providerConfig = getProviderConfig();
-        final boolean oidcDevServicesEnabled = oidcDevServicesConfigBuildItem.isPresent();
-        final String authServerUrl = oidcDevServicesEnabled
-                ? oidcDevServicesConfigBuildItem.get().getConfig().get(AUTH_SERVER_URL_CONFIG_KEY)
-                : getAuthServerUrl(providerConfig);
-        if (authServerUrl != null) {
-            boolean discoverMetadata = isDiscoveryEnabled(providerConfig);
-            String providerName = tryToGetProviderName(authServerUrl);
+        final boolean oidcDevServicesEnabled = oidcDevServicesPreparedBuildItem.isPresent();
+        final String authServerUrl = oidcDevServicesEnabled ? null : getAuthServerUrl(providerConfig);
+        if (oidcDevServicesEnabled || authServerUrl != null) {
+            boolean discoverMetadata = !oidcDevServicesEnabled && isDiscoveryEnabled(providerConfig);
+            String providerName = authServerUrl != null ? tryToGetProviderName(authServerUrl) : null;
+
+            final OidcDevUiRecorder.DevServiceType devServiceType;
+            if (oidcDevServicesEnabled) {
+                devServiceType = OidcDevUiRecorder.DevServiceType.OIDC;
+            } else {
+                devServiceType = OidcDevUiRecorder.DevServiceType.OTHER;
+            }
 
             final String keycloakAdminUrl;
             if (KEYCLOAK.equals(providerName)) {
@@ -83,7 +84,7 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
                     nonApplicationRootPathBuildItem,
                     ALWAYS_LOGOUT_USER_IN_DEV_UI_ON_RELOAD,
                     discoverMetadata,
-                    authServerUrl, keycloakAdminUrl, getApplicationType(providerConfig));
+                    authServerUrl, keycloakAdminUrl, getApplicationType(providerConfig), devServiceType);
             cardPageProducer.produce(cardPage);
         }
     }

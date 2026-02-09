@@ -4,9 +4,11 @@ import static io.quarkus.test.common.http.TestHTTPResourceManager.host;
 import static io.quarkus.test.common.http.TestHTTPResourceManager.rootPath;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,6 +27,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.config.ConfigProvider;
+
+import com.google.common.annotations.VisibleForTesting;
 
 import io.smallrye.common.os.OS;
 import io.smallrye.config.SmallRyeConfig;
@@ -65,12 +69,11 @@ public final class LauncherUtil {
      * as can be seen in <a href="https://github.com/quarkusio/quarkus/issues/33229">here</a>
      */
     static Process launchProcessAndDrainIO(List<String> args, Map<String, String> env) throws IOException {
-        ProcessBuilder pb = new ProcessBuilder(args)
-                .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-                .redirectError(ProcessBuilder.Redirect.DISCARD)
-                .redirectInput(ProcessBuilder.Redirect.INHERIT);
+        ProcessBuilder pb = new ProcessBuilder(args).redirectInput(ProcessBuilder.Redirect.INHERIT);
         pb.environment().putAll(env);
-        return pb.start();
+        var process = pb.start();
+        new Thread(new ProcessReader(process)).start();
+        return process;
     }
 
     /**
@@ -355,27 +358,97 @@ public final class LauncherUtil {
     }
 
     /**
-     * Used to drain the input of a launched process
+     * Captures stdout + stderr of the given process to {@code System.out} and {@code System.err}
+     * respectively.
+     *
+     * <p>
+     * The {@link #run()} method runs as long as the given {@link #process} is alive.
+     *
+     *
+     *
      */
-    private static class ProcessReader implements Runnable {
+    static class ProcessReader implements Runnable {
+        private final Process process;
 
-        private final InputStream inputStream;
+        private final ByteArrayOutputStream stdoutBuffer = new ByteArrayOutputStream();
+        private final ByteArrayOutputStream stderrBuffer = new ByteArrayOutputStream();
+        private final byte[] readBuffer = new byte[100];
 
-        private ProcessReader(InputStream inputStream) {
-            this.inputStream = inputStream;
+        private final OutputStream outTo;
+        private final OutputStream errTo;
+
+        ProcessReader(Process process) {
+            this(process, System.out, System.err);
         }
 
+        @VisibleForTesting
+        ProcessReader(Process process, OutputStream outTo, OutputStream errTo) {
+            this.process = process;
+            this.outTo = outTo;
+            this.errTo = errTo;
+        }
+
+        @SuppressWarnings("BusyWait")
         @Override
         public void run() {
-            byte[] b = new byte[100];
-            int i;
-            try {
-                while ((i = inputStream.read(b)) > 0) {
-                    System.out.print(new String(b, 0, i, StandardCharsets.UTF_8));
+            try (var stdout = process.getInputStream(); var stderr = process.getErrorStream()) {
+                var exited = -1;
+                while (true) {
+                    exited = checkExited(exited);
+
+                    var anyData = flush(stderr, stderrBuffer, errTo);
+                    anyData |= flush(stdout, stdoutBuffer, outTo);
+
+                    if (exited != -1 && !anyData) {
+                        if (exited != 0) {
+                            System.err.println("Process exited with non-zero status: " + exited);
+                        }
+                        break;
+                    }
+
+                    Thread.sleep(1L);
                 }
-            } catch (IOException e) {
+                stderrBuffer.writeTo(errTo);
+                stdoutBuffer.writeTo(outTo);
+            } catch (IOException | InterruptedException e) {
                 //ignore
             }
+        }
+
+        @VisibleForTesting
+        int checkExited(int exited) {
+            if (exited == -1) {
+                try {
+                    exited = process.exitValue();
+                } catch (IllegalThreadStateException e) {
+                    // still running
+                }
+            }
+            return exited;
+        }
+
+        private boolean flush(InputStream processStream, ByteArrayOutputStream buffer, OutputStream to)
+                throws IOException {
+            var any = false;
+            var available = processStream.available();
+            while (available > 0) {
+                var read = processStream.read(readBuffer, 0, Math.min(available, readBuffer.length));
+                if (read < 0) {
+                    break;
+                }
+                for (int i = 0; i < read; i++) {
+                    var b = readBuffer[i];
+                    buffer.write(b);
+                    if (b == 10) {
+                        // Flush line to stderr
+                        buffer.writeTo(to);
+                        buffer.reset();
+                    }
+                }
+                available -= read;
+                any = true;
+            }
+            return any;
         }
     }
 

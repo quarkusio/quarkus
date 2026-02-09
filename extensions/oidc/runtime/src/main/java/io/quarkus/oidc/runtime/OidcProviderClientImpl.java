@@ -1,6 +1,7 @@
 package io.quarkus.oidc.runtime;
 
 import static io.quarkus.oidc.common.OidcEndpoint.Type.PUSHED_AUTHORIZATION_REQUEST;
+import static io.quarkus.oidc.common.runtime.OidcCommonUtils.getClientAssertionProvider;
 
 import java.io.Closeable;
 import java.net.SocketException;
@@ -98,7 +99,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         this.clientSecretBasicAuthScheme = clientCredentials.clientSecretBasicAuthScheme;
         this.jwtBearerAuthentication = oidcConfig.credentials().jwt()
                 .source() == OidcClientCommonConfig.Credentials.Jwt.Source.BEARER;
-        this.clientAssertionProvider = this.jwtBearerAuthentication ? createClientAssertionProvider(vertx, oidcConfig) : null;
+        this.clientAssertionProvider = getClientAssertionProvider(vertx, oidcConfig.credentials(), OIDCException::new);
         this.clientJwtKey = jwtBearerAuthentication ? null : clientCredentials.clientJwtKey;
         this.introspectionBasicAuthScheme = initIntrospectionBasicAuthScheme(oidcConfig);
         this.requestFilters = requestFilters;
@@ -106,16 +107,6 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         this.clientSecretQueryAuthentication = oidcConfig.credentials().clientSecret().method().orElse(null) == Method.QUERY;
         this.clientSecret = clientCredentials.clientSecret;
         this.jwtSecret = clientCredentials.jwtSecret;
-    }
-
-    private static ClientAssertionProvider createClientAssertionProvider(Vertx vertx, OidcTenantConfig oidcConfig) {
-        var clientAssertionProvider = new ClientAssertionProvider(vertx,
-                oidcConfig.credentials().jwt().tokenPath().get());
-        if (clientAssertionProvider.getClientAssertion() == null) {
-            throw new OIDCException("Cannot find a valid JWT bearer token at path: "
-                    + oidcConfig.credentials().jwt().tokenPath().get());
-        }
-        return clientAssertionProvider;
     }
 
     void setOidcProvider(OidcProvider oidcProvider) {

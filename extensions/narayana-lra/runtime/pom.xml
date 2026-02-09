@@ -50,6 +50,12 @@
         <dependency>
             <groupId>org.jboss.narayana.lra</groupId>
             <artifactId>lra-client</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jboss.resteasy</groupId>
+                    <artifactId>resteasy-client</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>jakarta.ws.rs</groupId>

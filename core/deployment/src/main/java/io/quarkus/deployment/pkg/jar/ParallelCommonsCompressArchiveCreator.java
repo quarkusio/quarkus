@@ -2,10 +2,12 @@ package io.quarkus.deployment.pkg.jar;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 import java.util.Collection;
@@ -99,40 +101,32 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
 
     @Override
     public void addDirectory(String directory, String source) throws IOException {
-        if (addedFiles.putIfAbsent(directory, source) != null) {
-            return;
-        }
         if (!directory.endsWith("/")) {
             directory += "/";
+        }
+        if (addedFiles.putIfAbsent(directory, source) != null) {
+            return;
         }
         addDirectoryEntry(new ZipArchiveEntry(directory));
     }
 
     @Override
     public void addFile(Path origin, String target, String source) throws IOException {
-        if (MANIFESTS.contains(target)) {
-            return;
-        }
-        if (addedFiles.putIfAbsent(target, source) != null) {
-            return;
-        }
-        addEntry(new ZipArchiveEntry(target), toInputStreamSupplier(origin));
+        doAddFile(toInputStreamSupplier(origin), target, source);
     }
 
     @Override
     public void addFile(byte[] bytes, String target, String source) throws IOException {
-        if (MANIFESTS.contains(target)) {
-            return;
-        }
-        addEntry(new ZipArchiveEntry(target), toInputStreamSupplier(bytes));
-        addedFiles.put(target, source);
+        doAddFile(toInputStreamSupplier(bytes), target, source);
+    }
+
+    @Override
+    public void addFile(List<byte[]> bytes, String target, String source) throws IOException {
+        addFile(joinWithNewlines(bytes), target, source);
     }
 
     @Override
     public void addFileIfNotExists(Path origin, String target, String source) throws IOException {
-        if (MANIFESTS.contains(target)) {
-            return;
-        }
         if (addedFiles.containsKey(target)) {
             return;
         }
@@ -142,9 +136,6 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
 
     @Override
     public void addFileIfNotExists(byte[] bytes, String target, String source) throws IOException {
-        if (MANIFESTS.contains(target)) {
-            return;
-        }
         if (addedFiles.containsKey(target)) {
             return;
         }
@@ -152,12 +143,21 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
         addFile(bytes, target, source);
     }
 
-    @Override
-    public void addFile(List<byte[]> bytes, String target, String source) throws IOException {
+    private void doAddFile(InputStreamSupplier inputStreamSupplier, String target, String source) throws IOException {
+        // the MANIFEST.MF file is handled separately as it need to be the first entry of the jar
         if (MANIFESTS.contains(target)) {
             return;
         }
-        addFile(joinWithNewlines(bytes), target, source);
+
+        // while not mandatory in jars, we add the full path to the files as it might be required for instance for META-INF/resources
+        // the Vert.x static handler requires the full directory hierarchy to work fine
+        Path targetPath = Paths.get(target);
+        for (int i = 1; i < targetPath.getNameCount(); i++) {
+            addDirectory(targetPath.subpath(0, i).toString().replace(File.separatorChar, '/'), source);
+        }
+
+        addEntry(new ZipArchiveEntry(target), inputStreamSupplier);
+        addedFiles.put(target, source);
     }
 
     @Override

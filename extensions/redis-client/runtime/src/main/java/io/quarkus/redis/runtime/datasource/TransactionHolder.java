@@ -39,11 +39,12 @@ public class TransactionHolder {
         List<Object> results = new ArrayList<>();
         for (int i = 0; i < mappers.size(); i++) {
             Response responsePart = response.get(i);
-            if (responsePart.type() == ResponseType.ERROR) {
+            if (responsePart == null || responsePart.type() != ResponseType.ERROR) {
+                // `null` is a valid result
+                results.add(mappers.get(i).apply(responsePart));
+            } else {
                 hasErrors = true;
                 results.add(responsePart.getDelegate()); // it's also an exception
-            } else {
-                results.add(mappers.get(i).apply(responsePart));
             }
         }
         return new OptimisticLockingTransactionResultImpl<>(discarded, hasErrors, input, results);

@@ -56,7 +56,7 @@ public class JDBCPostgreSQLProcessor {
 
     @BuildStep
     DevServicesDatasourceConfigurationHandlerBuildItem devDbHandler() {
-        return DevServicesDatasourceConfigurationHandlerBuildItem.jdbc(DatabaseKind.POSTGRESQL);
+        return DevServicesDatasourceConfigurationHandlerBuildItem.deferredJdbc(DatabaseKind.POSTGRESQL);
     }
 
     @BuildStep

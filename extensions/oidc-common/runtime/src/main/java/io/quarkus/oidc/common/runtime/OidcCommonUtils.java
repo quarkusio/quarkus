@@ -48,6 +48,7 @@ import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport.TlsConfigSupport;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials;
+import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt.Source;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Provider;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret;
 import io.quarkus.oidc.common.runtime.config.OidcCommonConfig;
@@ -911,4 +912,19 @@ public class OidcCommonUtils {
             return null;
         });
     }
+
+    public static ClientAssertionProvider getClientAssertionProvider(io.vertx.core.Vertx vertx, Credentials credentialsConfig,
+            Function<String, RuntimeException> exceptionCreator) {
+        var jwtConfig = credentialsConfig.jwt();
+        if (jwtConfig.source() == Source.BEARER && jwtConfig.tokenPath().isPresent()) {
+            var clientAssertionProvider = new KubernetesServiceClientAssertionProvider(vertx, jwtConfig.tokenPath().get());
+            if (clientAssertionProvider.getClientAssertion() == null) {
+                throw exceptionCreator
+                        .apply("Cannot find a valid JWT bearer token at path: " + jwtConfig.tokenPath().get());
+            }
+            return clientAssertionProvider;
+        }
+        return null;
+    }
+
 }

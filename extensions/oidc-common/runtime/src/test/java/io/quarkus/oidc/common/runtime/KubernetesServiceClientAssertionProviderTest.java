@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 import io.smallrye.jwt.build.Jwt;
 import io.vertx.core.Vertx;
 
-public class ClientAssertionProviderTest {
+public class KubernetesServiceClientAssertionProviderTest {
 
     @Test
     public void testJwtBearerTokenRefresh() {
@@ -26,7 +26,7 @@ public class ClientAssertionProviderTest {
         Path jwtBearerTokenPath = Path.of("target").resolve("jwt-bearer-token.json");
         String jwtBearerToken = createJwtBearerToken();
         storeNewJwtBearerToken(jwtBearerTokenPath, jwtBearerToken);
-        try (var clientAssertionProvider = new ClientAssertionProvider(vertx, jwtBearerTokenPath)) {
+        try (var clientAssertionProvider = new KubernetesServiceClientAssertionProvider(vertx, jwtBearerTokenPath)) {
             // assert first token is loaded
             assertEquals(jwtBearerToken, clientAssertionProvider.getClientAssertion());
 
@@ -47,7 +47,7 @@ public class ClientAssertionProviderTest {
         Path emptyTokenPath = Path.of("target").resolve("empty-jwt-bearer-token.json");
 
         storeNewJwtBearerToken(emptyTokenPath, "");
-        try (var clientAssertionProvider = new ClientAssertionProvider(vertx, emptyTokenPath)) {
+        try (var clientAssertionProvider = new KubernetesServiceClientAssertionProvider(vertx, emptyTokenPath)) {
             assertNull(clientAssertionProvider.getClientAssertion());
 
             String validToken = createJwtBearerToken();

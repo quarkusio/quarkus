@@ -3,6 +3,8 @@ package io.quarkus.vertx.runtime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import java.util.List;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,7 +31,7 @@ public class VertxProducerTest {
 
     @Test
     public void shouldNotFailWithoutConfig() {
-        verifyProducer(VertxCoreRecorder.initialize(null, null, null, null, LaunchMode.TEST));
+        verifyProducer(VertxCoreRecorder.initialize(null, null, null, null, LaunchMode.TEST, List.of(), List.of()));
     }
 
     private void verifyProducer(Vertx v) {

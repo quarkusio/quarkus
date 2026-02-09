@@ -40,6 +40,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
 
     private static final String AOT_DIR = "aot";
     private static final String AOT_FILE_NAME = "app.aot";
+    private static final String AOT_CONF_FILE_NAME = "app.aotconf";
 
     private int httpPort;
     private int httpsPort;
@@ -321,13 +322,14 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     private void handleAotFileArgs(List<String> args, ContainerRuntime containerRuntime) throws IOException {
         if (generateAotFile) {
             if (containerWorkingDirectory.isPresent()) {
-                args.addAll(toEnvVar("JAVA_TOOL_OPTIONS", "-XX:AOTCacheOutput=%s/%s".formatted(AOT_DIR, AOT_FILE_NAME)));
+                args.addAll(toEnvVar("JAVA_TOOL_OPTIONS",
+                        "-XX:AOTMode=record -XX:AOTConfiguration=%s/%s".formatted(AOT_DIR, AOT_CONF_FILE_NAME)));
                 Path containerAotDir = Path.of(outputTargetDirectory).resolve(AOT_DIR);
                 Files.createDirectories(containerAotDir);
                 containerAotDir.toFile().setReadable(true, false);
                 containerAotDir.toFile().setWritable(true, false);
                 containerAotDir.toFile().setExecutable(true, false);
-                Files.deleteIfExists(containerAotDir.resolve(AOT_FILE_NAME));
+                Files.deleteIfExists(containerAotDir.resolve(AOT_CONF_FILE_NAME));
                 NativeImageBuildLocalContainerRunner.addVolumeParameter(containerAotDir.toAbsolutePath().toString(),
                         containerWorkingDirectory.get() + "/%s".formatted(AOT_DIR), args, containerRuntime);
             } else {
@@ -365,33 +367,92 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
 
     @Override
     public void close() {
-        log.info("Close the container");
         try {
-            final Process dockerStopProcess = new ProcessBuilder(containerRuntimeBinaryName, "kill", "--signal=SIGINT",
+            final Process dockerKillProcess = new ProcessBuilder(containerRuntimeBinaryName, "kill", "--signal=SIGINT",
                     containerName)
                     .redirectError(DISCARD)
                     .redirectOutput(DISCARD).start();
             log.debug("Wait for container to stop");
-            dockerStopProcess.waitFor(5, TimeUnit.SECONDS);
-
-            if (containerProcess != null) {
-                try {
-                    containerProcess.waitFor(20, TimeUnit.SECONDS);
-                } catch (InterruptedException ignored) {
-
-                }
-                if (containerProcess.isAlive()) {
-                    containerProcess.destroyForcibly();
-                }
-            }
-            log.debug("Container stopped");
-        } catch (Exception e) {
+            dockerKillProcess.waitFor(10, TimeUnit.SECONDS);
+        } catch (IOException | InterruptedException e) {
             log.errorf("Unable to stop container '%s'", containerName);
         }
 
+        if (containerProcess != null) {
+            try {
+                containerProcess.waitFor(20, TimeUnit.SECONDS);
+            } catch (InterruptedException ignored) {
+
+            }
+            if (containerProcess.isAlive()) {
+                containerProcess.destroyForcibly();
+            }
+        }
+
+        if (generateAotFile) {
+            Path aotConfigFile = Path.of(outputTargetDirectory).resolve(AOT_DIR).resolve(AOT_CONF_FILE_NAME);
+            if (Files.exists(aotConfigFile)) {
+                createAotFileFromAotConfFile(aotConfigFile);
+            } else {
+                log.debug("AOT conf file not found");
+            }
+        }
+
+        log.debug("Container stopped");
         executorService.shutdown();
 
         recordMetadata();
+    }
+
+    private void createAotFileFromAotConfFile(Path aotConfigFile) {
+        aotConfigFile.toFile().setReadable(true, false);
+        List<String> args = new ArrayList<>();
+        args.add(containerRuntimeBinaryName);
+        args.add("run");
+        if (!argLine.isEmpty()) {
+            args.addAll(argLine);
+        }
+        args.add("--name");
+        args.add(containerName);
+        args.add("-i"); // Interactive, write logs to stdout
+        args.add("--rm");
+
+        ContainerRuntime containerRuntime = ContainerRuntimeUtil.detectContainerRuntime();
+        if (!volumeMounts.isEmpty()) {
+            args.addAll(NativeImageBuildLocalContainerRunner.getVolumeAccessArguments(containerRuntime));
+        }
+
+        args.addAll(toEnvVar("JAVA_TOOL_OPTIONS",
+                "-XX:AOTMode=create -XX:AOTConfiguration=%s/%s -XX:AOTCache=%s/%s".formatted(AOT_DIR,
+                        AOT_CONF_FILE_NAME, AOT_DIR, AOT_FILE_NAME)));
+        Path containerAotDir = Path.of(outputTargetDirectory).resolve(AOT_DIR);
+        Path aotFilePath = containerAotDir.resolve(AOT_FILE_NAME);
+        try {
+            Files.deleteIfExists(aotFilePath);
+        } catch (IOException ignored) {
+
+        }
+        NativeImageBuildLocalContainerRunner.addVolumeParameter(containerAotDir.toAbsolutePath().toString(),
+                containerWorkingDirectory.get() + "/%s".formatted(AOT_DIR), args, containerRuntime);
+        args.add(containerImage);
+        args.addAll(programArgs);
+
+        try {
+            var unused = new ProcessBuilder(args)
+                    .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                    .redirectError(ProcessBuilder.Redirect.DISCARD)
+                    .start().waitFor(20, TimeUnit.SECONDS);
+            if (Files.exists(aotFilePath)) {
+                log.infof("AOT file '%s' created", aotFilePath.toAbsolutePath());
+            }
+            try {
+                Files.deleteIfExists(aotConfigFile);
+            } catch (IOException e) {
+                log.debug("Unable to delete AOT config file", e);
+            }
+        } catch (Exception e) {
+            log.warn("Unable to create AOT file", e);
+        }
     }
 
     private void recordMetadata() {

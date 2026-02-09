@@ -194,7 +194,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             // make sure we write the elements in order
             for (GeneratedResourceBuildItem i : generatedResources.stream()
                     .sorted(Comparator.comparing(GeneratedResourceBuildItem::getName)).toList()) {
-                archiveCreator.addFile(i.getData(), i.getName());
+                archiveCreator.addFileIfNotExists(i.getData(), i.getName());
             }
         }
         if (decompiler != null) {

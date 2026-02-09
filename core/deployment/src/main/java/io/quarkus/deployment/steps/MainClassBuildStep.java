@@ -54,6 +54,7 @@ import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
+import io.quarkus.deployment.builditem.PreInitBuildItem;
 import io.quarkus.deployment.builditem.QuarkusApplicationClassBuildItem;
 import io.quarkus.deployment.builditem.RecordableConstructorBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
@@ -146,6 +147,7 @@ public class MainClassBuildStep {
             LiveReloadBuildItem liveReloadBuildItem,
             ApplicationInfoBuildItem applicationInfo,
             List<AllowJNDIBuildItem> allowJNDIBuildItems,
+            Optional<PreInitBuildItem> preInitBuildItem,
             NamingConfig namingConfig) {
 
         appClassNameProducer.produce(new ApplicationClassNameBuildItem(Application.APP_CLASS_NAME));
@@ -184,6 +186,21 @@ public class MainClassBuildStep {
             mv.invokeStaticMethod(ofMethod(System.class, "setProperty", String.class, String.class, String.class),
                     mv.load(i.getKey()), mv.load(i.getValue()));
         }
+
+        if (preInitBuildItem.isPresent()) {
+            // we need to initialize JBoss Logging before starting any parallel work, it's too central
+            ResultHandle tccl = mv.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(Thread.class, "getContextClassLoader", ClassLoader.class),
+                    mv.invokeStaticMethod(MethodDescriptor.ofMethod(Thread.class, "currentThread", Thread.class)));
+            mv.invokeStaticMethod(
+                    MethodDescriptor.ofMethod(Class.class, "forName", Class.class, String.class, boolean.class,
+                            ClassLoader.class),
+                    mv.load("org.jboss.logging.LoggerProviders"), mv.load(true), tccl);
+
+            // then we can preinitialize
+            mv.invokeStaticMethod(PreInitBuildStep.PRE_INIT_RUNNER_EXECUTE_PRE_INIT_TASKS_GIZMO1_METHOD);
+        }
+
         //set the launch mode
         ResultHandle lm = mv
                 .readStaticField(FieldDescriptor.of(LaunchMode.class, launchMode.getLaunchMode().name(), LaunchMode.class));

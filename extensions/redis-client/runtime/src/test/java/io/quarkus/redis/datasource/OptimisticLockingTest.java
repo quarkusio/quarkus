@@ -347,4 +347,27 @@ public class OptimisticLockingTest extends DatasourceTestBase {
         assertThat(res.getPreTransactionResult()).isEqualTo("a");
     }
 
+    @Test
+    public void nullInResult() {
+        OptimisticLockingTransactionResult<Object> result = blocking.withTransaction(
+                ds -> null,
+                (ignored, tx) -> tx.value(String.class).get(key),
+                key);
+
+        assertThat(result.size()).isEqualTo(1);
+        assertThat(result.discarded()).isFalse();
+        assertThat((Object) result.get(0)).isNull();
+    }
+
+    @Test
+    public void nullInResultReactive() {
+        OptimisticLockingTransactionResult<Void> result = reactive.withTransaction(
+                ds -> Uni.createFrom().voidItem(),
+                (ignored, tx) -> tx.value(String.class).get(key),
+                key).await().indefinitely();
+
+        assertThat(result.size()).isEqualTo(1);
+        assertThat(result.discarded()).isFalse();
+        assertThat((Object) result.get(0)).isNull();
+    }
 }

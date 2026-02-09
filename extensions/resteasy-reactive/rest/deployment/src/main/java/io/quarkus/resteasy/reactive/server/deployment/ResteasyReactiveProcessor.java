@@ -1604,9 +1604,9 @@ public class ResteasyReactiveProcessor {
         if (preExceptionMapperHandlerBuildItems.size() == 1) {
             return preExceptionMapperHandlerBuildItems.get(0).getHandler();
         }
-        Collections.sort(preExceptionMapperHandlerBuildItems);
         return new DelegatingServerRestHandler(preExceptionMapperHandlerBuildItems.stream()
-                .map(PreExceptionMapperHandlerBuildItem::getHandler).collect(toList()));
+                .sorted()
+                .map(PreExceptionMapperHandlerBuildItem::getHandler).toList());
     }
 
     private static boolean notFoundCustomExMapper(String builtInExSignature, String builtInMapperSignature,

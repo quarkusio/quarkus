@@ -52,12 +52,16 @@ public record ComparableDevServicesConfig(UUID applicationInstanceId,
         }
 
         try {
+            boolean foundConfigInterface = false;
             while (clazz != null) {
                 // Get all interfaces implemented by the class
                 for (Class<?> iface : clazz.getInterfaces()) {
                     // Check if the interface is a config one
 
                     if (isConfigInterface(iface)) {
+                        if (!foundConfigInterface) {
+                            foundConfigInterface = true;
+                        }
                         // For each method in the interface
                         // In the future, if we wanted some methods to be ignored, we could use a marker annotation in the config object
                         for (Method method : iface.getMethods()) {
@@ -83,7 +87,10 @@ public record ComparableDevServicesConfig(UUID applicationInstanceId,
                 otherClazz = otherClazz.getSuperclass();
 
             }
-            return true;
+            if (foundConfigInterface) {
+                return true;
+            }
+            return config.equals(otherConfig);
         } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException ex) {
             throw new RuntimeException(ex);
         }

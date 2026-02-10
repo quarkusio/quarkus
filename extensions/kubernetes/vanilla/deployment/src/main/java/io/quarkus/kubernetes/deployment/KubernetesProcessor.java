@@ -266,8 +266,7 @@ class KubernetesProcessor {
      */
     private Path getRunner(OutputTargetBuildItem outputTarget,
             PackageConfig packageConfig) {
-        PackageConfig.JarConfig.JarType jarType = packageConfig.jar().type();
-        return switch (jarType) {
+        return switch (packageConfig.jar().effectiveType()) {
             case LEGACY_JAR, UBER_JAR -> outputTarget.getOutputDirectory()
                     .resolve(outputTarget.getBaseName() + packageConfig.computedRunnerSuffix() + ".jar");
             case FAST_JAR, MUTABLE_JAR, AOT_JAR -> {

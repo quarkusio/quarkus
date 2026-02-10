@@ -122,7 +122,7 @@ public class JvmStartupOptimizerArchiveBuildStep {
         Path archivePath;
         JvmStartupOptimizerArchiveType archiveType = requested.get().getType();
         log.infof("Launching %s creation process.", archiveType);
-        boolean isFastJar = packageConfig.jar().type().usesFastJarLayout();
+        boolean isFastJar = packageConfig.jar().effectiveType().usesFastJarLayout();
         if (archiveType == JvmStartupOptimizerArchiveType.AppCDS) {
             archivePath = createAppCDSFromExit(jarResult, outputTarget, javaBinPath, containerImage,
                     isFastJar);

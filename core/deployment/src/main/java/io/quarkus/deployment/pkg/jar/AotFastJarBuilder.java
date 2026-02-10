@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
-import org.jboss.logging.Logger;
-
 import io.quarkus.bootstrap.runner.AotQuarkusEntryPoint;
 import io.quarkus.bootstrap.runner.AotSerializedApplication;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveBuildItem;
@@ -25,8 +23,6 @@ import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 
 public class AotFastJarBuilder extends AbstractFastJarBuilder {
-
-    private static final Logger LOG = Logger.getLogger(AotFastJarBuilder.class);
 
     public AotFastJarBuilder(CurateOutcomeBuildItem curateOutcome,
             OutputTargetBuildItem outputTarget,

@@ -2,6 +2,7 @@ package io.quarkus.tests.simpleextension.deployment;
 
 import static io.quarkus.tests.simpleextension.Constants.QUARKUS_SIMPLE_EXTENSION_BASE_URL;
 import static io.quarkus.tests.simpleextension.Constants.QUARKUS_SIMPLE_EXTENSION_STATIC_THING;
+import static io.quarkus.tests.simpleextension.Constants.SIMPLE_EXTENSION_CLASSLOADER_ON_SERVICE_START;
 
 import java.util.Map;
 
@@ -29,7 +30,8 @@ public class SimpleDevServicesProcessor {
                 .startable(SimpleContainer::new) // Builds could be speeded up a bit by using an in-process service, but coverage is probably better with a container
                 .config(Map.of(QUARKUS_SIMPLE_EXTENSION_STATIC_THING, "some value"))
                 .configProvider(Map.of(QUARKUS_SIMPLE_EXTENSION_BASE_URL,
-                        c -> c.getConnectionInfo()))
+                        c -> c.getConnectionInfo(), SIMPLE_EXTENSION_CLASSLOADER_ON_SERVICE_START,
+                        c -> c.getClassLoaderNameOnStart()))
                 .build();
 
     }

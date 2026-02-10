@@ -11,6 +11,8 @@ public class SimpleContainer extends GenericContainer<io.quarkus.tests.simpleext
     private static final DockerImageName dockerImageName = DockerImageName.parse("httpd");
     public static final int HTTPD_PORT = 80;
 
+    private String classLoaderNameOnStart;
+
     public SimpleContainer() {
         super(dockerImageName);
         this //.waitingFor(Wait.forLogMessage(".*" + "resuming normal operations" + ".*", 1))
@@ -20,6 +22,8 @@ public class SimpleContainer extends GenericContainer<io.quarkus.tests.simpleext
 
     @Override
     public void start() {
+        // At start, the classloader should be the deployment classloader; in normal mode the augmentation classloader also works, but in dev mode the augmentation classloader cannot see application resources
+        this.classLoaderNameOnStart = Thread.currentThread().getContextClassLoader().getName();
         super.start();
     }
 
@@ -31,5 +35,9 @@ public class SimpleContainer extends GenericContainer<io.quarkus.tests.simpleext
     @Override
     public void close() {
         super.close();
+    }
+
+    public String getClassLoaderNameOnStart() {
+        return classLoaderNameOnStart;
     }
 }

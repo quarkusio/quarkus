@@ -23,15 +23,17 @@ public final class BuildResult {
     private final List<Diagnostic> diagnostics;
     private final long nanos;
     private final BuildMetrics metrics;
+    private final ClassLoader deploymentClassLoader;
 
     BuildResult(final ConcurrentHashMap<ItemId, BuildItem> simpleItems,
             final MultiBuildItems multiItems, final Set<ItemId> finalIds,
-            final List<Diagnostic> diagnostics, final long nanos, BuildMetrics metrics) {
+            final List<Diagnostic> diagnostics, final long nanos, BuildMetrics metrics, ClassLoader classLoader) {
         this.simpleItems = simpleItems;
         this.multiItems = multiItems;
         this.diagnostics = diagnostics;
         this.nanos = nanos;
         this.metrics = metrics;
+        this.deploymentClassLoader = classLoader;
     }
 
     /**
@@ -125,4 +127,9 @@ public final class BuildResult {
         }
         multiItems.closeAll();
     }
+
+    public ClassLoader getDeploymentClassLoader() {
+        return deploymentClassLoader;
+    }
+
 }

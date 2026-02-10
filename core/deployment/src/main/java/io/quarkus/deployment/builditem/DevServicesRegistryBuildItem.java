@@ -85,16 +85,16 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
     public void startAll(Collection<DevServicesResultBuildItem> services,
             List<DevServicesCustomizerBuildItem> customizers,
             List<DevServicesAdditionalConfigBuildItem> additionalConfigBuildItems,
-            ClassLoader augmentClassLoader) {
+            ClassLoader deploymentClassLoader) {
         closeRemainingRunningServices(services);
         Map<String, String> config = new ConcurrentHashMap<>();
-        startSelectedServices(services, customizers, additionalConfigBuildItems, augmentClassLoader,
+        startSelectedServices(services, customizers, additionalConfigBuildItems, deploymentClassLoader,
                 dr -> !dr.hasDependencies(), config);
 
         // Now start everything with a dependency
         // This won't handle the case where the dependencies also have dependencies, but that can be a follow-on work item if people ask for it
         // I think we could implement it by getting the actual dependencies and seeing if any of them are also in the list of things we're starting, and then recursing
-        startSelectedServices(services, customizers, additionalConfigBuildItems, augmentClassLoader,
+        startSelectedServices(services, customizers, additionalConfigBuildItems, deploymentClassLoader,
                 DevServicesResultBuildItem::hasDependencies, config);
 
     }
@@ -102,20 +102,27 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
     private void startSelectedServices(Collection<DevServicesResultBuildItem> services,
             List<DevServicesCustomizerBuildItem> customizers,
             List<DevServicesAdditionalConfigBuildItem> additionalConfigBuildItems,
-            ClassLoader augmentClassLoader, Predicate<? super DevServicesResultBuildItem> filter, Map<String, String> config) {
+            ClassLoader deploymentClassLoader, Predicate<? super DevServicesResultBuildItem> filter,
+            Map<String, String> config) {
         // TODO Note that this does not handle chained dependencies; dependencies can only be one level deep for now
         // It would be easy to fix that, but let's wait until we need to
         CompletableFuture.allOf(services.stream()
                 .filter(DevServicesResultBuildItem::isStartable)
                 .filter(filter)
                 .map(serv -> CompletableFuture.runAsync(() -> {
-                    // We need to set the context classloader to the augment classloader, so that the dev services can be started with the right classloader
-                    if (augmentClassLoader != null) {
-                        Thread.currentThread().setContextClassLoader(augmentClassLoader);
+                    ClassLoader orig = Thread.currentThread().getContextClassLoader();
+                    // We need to set the context classloader to the deployment classloader, so that the dev services can be started with the right classloader
+                    if (deploymentClassLoader != null) {
+                        Thread.currentThread().setContextClassLoader(deploymentClassLoader);
                     } else {
                         Thread.currentThread().setContextClassLoader(serv.getClass().getClassLoader());
                     }
-                    this.start(serv, customizers, additionalConfigBuildItems, config);
+                    try {
+                        this.start(serv, customizers, additionalConfigBuildItems, config);
+                    } finally {
+                        // Err on the side of caution and reset the TCCL to avoid leaks
+                        Thread.currentThread().setContextClassLoader(orig);
+                    }
                 }))
                 .toArray(CompletableFuture[]::new)).join();
     }

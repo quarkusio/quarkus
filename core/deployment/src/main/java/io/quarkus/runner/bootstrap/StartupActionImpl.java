@@ -55,6 +55,7 @@ public class StartupActionImpl implements StartupAction {
 
     private final CuratedApplication curatedApplication;
     private final QuarkusClassLoader runtimeClassLoader;
+    private ClassLoader deploymentClassLoader;
 
     private final String mainClassName;
     private final String applicationClassName;
@@ -84,6 +85,7 @@ public class StartupActionImpl implements StartupAction {
         devServicesRegistry = buildResult.consumeOptional(DevServicesRegistryBuildItem.class);
         devServicesCustomizers = buildResult.consumeMulti(DevServicesCustomizerBuildItem.class);
         additionalConfigBuildItems = buildResult.consumeMulti(DevServicesAdditionalConfigBuildItem.class);
+        this.deploymentClassLoader = buildResult.getDeploymentClassLoader();
 
         Map<String, byte[]> transformedClasses = extractTransformedClasses(buildResult);
         QuarkusClassLoader baseClassLoader = curatedApplication.getOrCreateBaseRuntimeClassLoader();
@@ -212,6 +214,7 @@ public class StartupActionImpl implements StartupAction {
 
     private void doClose() {
         devServicesStarted = false;
+        deploymentClassLoader = null;
         try {
             runtimeClassLoader.loadClass(Quarkus.class.getName()).getMethod("blockingExit").invoke(null);
         } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException
@@ -309,12 +312,11 @@ public class StartupActionImpl implements StartupAction {
         }
         devServicesStarted = true;
         if (devServicesRegistry != null) {
-            QuarkusClassLoader augmentClassLoader = curatedApplication.getAugmentClassLoader();
-            if (augmentClassLoader == null) {
-                throw new IllegalStateException("Dev services cannot be started without an augmentation class loader.");
+            if (deploymentClassLoader == null) {
+                throw new IllegalStateException("Dev services cannot be started without a deployment class loader.");
             }
             devServicesRegistry.startAll(devServicesResults, devServicesCustomizers, additionalConfigBuildItems,
-                    augmentClassLoader);
+                    deploymentClassLoader);
 
             devServicesProperties.putAll(devServicesRegistry.getConfigForAllRunningServices());
         }

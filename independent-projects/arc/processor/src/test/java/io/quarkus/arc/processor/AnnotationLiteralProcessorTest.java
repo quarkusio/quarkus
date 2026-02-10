@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.arc.AbstractAnnotationLiteral;
 import io.quarkus.gizmo2.Gizmo;
-import io.quarkus.gizmo2.TestClassMaker;
+import io.quarkus.gizmo2.testing.TestClassMaker;
 
 public class AnnotationLiteralProcessorTest {
     public enum SimpleEnum {
@@ -298,8 +298,8 @@ public class AnnotationLiteralProcessorTest {
     public void test() throws ReflectiveOperationException {
         AnnotationLiteralProcessor literals = new AnnotationLiteralProcessor(index, ignored -> true);
 
-        TestClassMaker tcm = new TestClassMaker();
-        Gizmo gizmo = Gizmo.create(tcm);
+        TestClassMaker tcm = TestClassMaker.create();
+        Gizmo gizmo = tcm.gizmo();
         ClassDesc desc = gizmo.class_(generatedClass, cc -> {
             cc.staticMethod("get", mc -> {
                 mc.public_();
@@ -314,13 +314,13 @@ public class AnnotationLiteralProcessorTest {
                 .generate(literals.getCache(), Collections.emptySet());
         for (ResourceOutput.Resource resource : resources) {
             if (resource.getType() == ResourceOutput.Resource.Type.JAVA_CLASS) {
-                tcm.write(ClassDesc.of(resource.getName().replace('/', '.')), resource.getData());
+                tcm.registerResource(resource.getName() + ".class", resource.getData());
             } else {
                 throw new IllegalStateException("Unexpected " + resource.getType() + " " + resource.getName());
             }
         }
 
-        ComplexAnnotation annotation = (ComplexAnnotation) tcm.forClass(desc).staticMethod("get", Supplier.class).get();
+        ComplexAnnotation annotation = (ComplexAnnotation) tcm.staticMethod(desc, "get", Supplier.class).get();
         verify(annotation);
 
         assertInstanceOf(AbstractAnnotationLiteral.class, annotation);
@@ -342,8 +342,8 @@ public class AnnotationLiteralProcessorTest {
     public void memberless() throws ReflectiveOperationException {
         AnnotationLiteralProcessor literals = new AnnotationLiteralProcessor(index, ignored -> true);
 
-        TestClassMaker tcm = new TestClassMaker();
-        Gizmo gizmo = Gizmo.create(tcm);
+        TestClassMaker tcm = TestClassMaker.create();
+        Gizmo gizmo = tcm.gizmo();
         ClassDesc desc = gizmo.class_(generatedClass, cc -> {
             cc.staticMethod("get", mc -> {
                 mc.public_();
@@ -359,13 +359,13 @@ public class AnnotationLiteralProcessorTest {
                 .generate(literals.getCache(), Collections.emptySet());
         for (ResourceOutput.Resource resource : resources) {
             if (resource.getType() == ResourceOutput.Resource.Type.JAVA_CLASS) {
-                tcm.write(ClassDesc.of(resource.getName().replace('/', '.')), resource.getData());
+                tcm.registerResource(resource.getName() + ".class", resource.getData());
             } else {
                 throw new IllegalStateException("Unexpected " + resource.getType() + " " + resource.getName());
             }
         }
 
-        MemberlessAnnotation annotation = (MemberlessAnnotation) tcm.forClass(desc).staticMethod("get", Supplier.class).get();
+        MemberlessAnnotation annotation = (MemberlessAnnotation) tcm.staticMethod(desc, "get", Supplier.class).get();
 
         assertInstanceOf(AbstractAnnotationLiteral.class, annotation);
         AbstractAnnotationLiteral annotationLiteral = (AbstractAnnotationLiteral) annotation;
@@ -397,8 +397,8 @@ public class AnnotationLiteralProcessorTest {
     public void missingAnnotationClass() {
         AnnotationLiteralProcessor literals = new AnnotationLiteralProcessor(index, ignored -> true);
 
-        TestClassMaker tcm = new TestClassMaker();
-        Gizmo gizmo = Gizmo.create(tcm);
+        TestClassMaker tcm = TestClassMaker.create();
+        Gizmo gizmo = tcm.gizmo();
         gizmo.class_(generatedClass, cc -> {
             cc.staticMethod("get", mc -> {
                 mc.public_();
@@ -416,8 +416,8 @@ public class AnnotationLiteralProcessorTest {
     public void classRetainedAnnotation() {
         AnnotationLiteralProcessor literals = new AnnotationLiteralProcessor(index, ignored -> true);
 
-        TestClassMaker tcm = new TestClassMaker();
-        Gizmo gizmo = Gizmo.create(tcm);
+        TestClassMaker tcm = TestClassMaker.create();
+        Gizmo gizmo = tcm.gizmo();
         gizmo.class_(generatedClass, cc -> {
             cc.staticMethod("get", mc -> {
                 mc.public_();

@@ -41,7 +41,7 @@
         <version.junit>6.0.2</version.junit>
         <version.assertj>3.27.7</version.assertj>
         <version.jandex>3.5.3</version.jandex>
-        <version.gizmo2>2.1.0</version.gizmo2>
+        <version.gizmo2>2.1.1</version.gizmo2>
         <version.jboss-logging>3.6.2.Final</version.jboss-logging>
         <version.smallrye-common>2.16.0</version.smallrye-common>
         <version.smallrye-mutiny>3.1.0</version.smallrye-mutiny>

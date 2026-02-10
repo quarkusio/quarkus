@@ -7,7 +7,7 @@ import java.util.Map;
 import org.jboss.logging.Logger;
 
 import io.narayana.lra.LRAConstants;
-import io.narayana.lra.client.internal.NarayanaLRAClient;
+import io.narayana.lra.client.NarayanaLRAClient;
 import io.narayana.lra.client.internal.proxy.nonjaxrs.LRAParticipant;
 import io.narayana.lra.client.internal.proxy.nonjaxrs.LRAParticipantRegistry;
 import io.quarkus.runtime.RuntimeValue;

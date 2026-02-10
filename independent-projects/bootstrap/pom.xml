@@ -42,7 +42,7 @@
         <jboss-logging.version>3.6.2.Final</jboss-logging.version>
         <junit.version>6.0.2</junit.version>
         <maven-core.version>3.9.12</maven-core.version><!-- Keep in sync with sisu.version -->
-        <sisu.version>0.9.0.M4</sisu.version><!-- Keep in sync with maven-core.version -->
+        <sisu.version>1.0.0</sisu.version><!-- Keep in sync with maven-core.version -->
         <maven-plugin-annotations.version>3.15.1</maven-plugin-annotations.version>
         <maven-resolver.version>1.9.25</maven-resolver.version>
         <maven-shared-utils.version>3.4.2</maven-shared-utils.version> <!-- Keep in sync with maven-core.version (force this version on maven-invoker) -->

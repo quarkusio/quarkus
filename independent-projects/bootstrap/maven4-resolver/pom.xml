@@ -27,7 +27,7 @@
         <dependency>
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-resolver-provider</artifactId>
-            <version>4.0.0-rc-3</version>
+            <version>4.0.0-rc-5</version>
         </dependency>
     </dependencies>
 

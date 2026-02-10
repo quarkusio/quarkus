@@ -184,7 +184,6 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
 
     @Override
     public void close() {
-        LauncherUtil.toStdOut(logFile);
         LauncherUtil.destroyProcess(quarkusProcess);
         if (generateAotFile) {
             Path aotConfFile = jarPath.resolveSibling(AOT_CONF_FILE_NAME);

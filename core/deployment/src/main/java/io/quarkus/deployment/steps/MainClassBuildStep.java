@@ -80,6 +80,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.Application;
 import io.quarkus.runtime.ExecutionModeManager;
+import io.quarkus.runtime.JVMUnsafeWarningsControl;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.NativeImageRuntimePropertiesRecorder;
 import io.quarkus.runtime.PreventFurtherStepsException;
@@ -178,6 +179,7 @@ public class MainClassBuildStep {
         if (!namingConfig.enableJndi() && allowJNDIBuildItems.isEmpty()) {
             mv.invokeStaticMethod(ofMethod(DisabledInitialContextManager.class, "register", void.class));
         }
+        mv.invokeStaticMethod(ofMethod(JVMUnsafeWarningsControl.class, "disableUnsafeRelatedWarnings", void.class));
 
         // very first thing is to set system props (for build time)
         // make sure we record the system properties in order for build reproducibility

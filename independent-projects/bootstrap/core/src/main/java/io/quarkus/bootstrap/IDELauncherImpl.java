@@ -4,9 +4,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 import io.quarkus.bootstrap.app.AdditionalDependency;
@@ -54,18 +52,12 @@ public class IDELauncherImpl implements Closeable {
 
                 ArtifactSources mainSources = quarkusModel.getApplicationModule().getMainSources();
 
-                final Path launchingModulePath = mainSources.getSourceDirs().iterator()
-                        .next().getOutputDir();
-
-                List<Path> applicationRoots = new ArrayList<>();
-                applicationRoots.add(launchingModulePath);
-                for (SourceDir resourceDir : mainSources.getResourceDirs()) {
-                    applicationRoots.add(resourceDir.getOutputDir());
-                }
+                PathsCollection applicationRoots = collectOutputDirs(mainSources);
+                final Path launchingModulePath = applicationRoots.iterator().next();
 
                 // Gradle uses a different output directory for classes, we override the one used by the IDE
                 builder.setProjectRoot(launchingModulePath)
-                        .setApplicationRoot(PathsCollection.from(applicationRoots))
+                        .setApplicationRoot(applicationRoots)
                         .setTargetDirectory(quarkusModel.getApplicationModule().getBuildDir().toPath());
 
                 for (ResolvedDependency dep : quarkusModel.getDependencies()) {
@@ -91,6 +83,21 @@ public class IDELauncherImpl implements Closeable {
                     appInstance == null ? null : appInstance instanceof Closeable ? (Closeable) appInstance : null);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private static PathsCollection collectOutputDirs(ArtifactSources mainSources) {
+        PathsCollection.Builder outputDirs = PathsCollection.builder();
+        collectOutputDirs(mainSources.getSourceDirs(), outputDirs);
+        collectOutputDirs(mainSources.getResourceDirs(), outputDirs);
+        return outputDirs.build();
+    }
+
+    private static void collectOutputDirs(Collection<SourceDir> sourceDirs, PathsCollection.Builder applicationRoots) {
+        for (SourceDir sourceDir : sourceDirs) {
+            if (!applicationRoots.contains(sourceDir.getOutputDir()) && Files.exists(sourceDir.getOutputDir())) {
+                applicationRoots.add(sourceDir.getOutputDir());
+            }
         }
     }
 

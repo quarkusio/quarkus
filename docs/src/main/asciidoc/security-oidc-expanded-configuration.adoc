@@ -1288,6 +1288,12 @@ You can use OIDC redirect filters to observe redirect requests to both OIDC auth
 
 Use xref:security-oidc-code-flow-authentication.adoc#oidc-redirect-filters[quarkus.oidc.OidcRedirectFilter] to implement a redirect filter and if necessary, restrict it to the specific OIDC endpoint only with the `quarkus.oidc.Redirect` annotation.
 
+==== OIDC authentication completion actions
+
+You can use OIDC authentication completion actions to perform the work that must be done only once upon a successful authorization code flow completion.
+
+See xref:security-oidc-code-flow-authentication.adoc#authentication-completion-action[OIDC Authentication Completion Action] for more information.
+
 [[custom-java-script-request-checker]]
 === JavaScript request checker
 

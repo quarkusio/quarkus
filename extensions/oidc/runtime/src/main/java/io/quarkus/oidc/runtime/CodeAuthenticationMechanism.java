@@ -27,6 +27,8 @@ import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.lang.UnresolvableKeyException;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.quarkus.oidc.AuthenticationCompletionAction;
+import io.quarkus.oidc.AuthenticationCompletionAction.AuthenticationCompletionContext;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.JavaScriptRequestChecker;
@@ -82,6 +84,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private final BlockingTaskRunner<String> createTokenStateRequestContext;
     private final BlockingTaskRunner<AuthorizationCodeTokens> getTokenStateRequestContext;
+    private final BlockingTaskRunner<SecurityIdentity> authenticationCompletionActionContext;
     private final SecureRandom secureRandom = new SecureRandom();
 
     CodeAuthenticationMechanism(BlockingSecurityExecutor blockingExecutor, DefaultTenantConfigResolver resolver,
@@ -89,6 +92,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         super(resolver, parent);
         this.createTokenStateRequestContext = new BlockingTaskRunner<>(blockingExecutor);
         this.getTokenStateRequestContext = new BlockingTaskRunner<>(blockingExecutor);
+        this.authenticationCompletionActionContext = new BlockingTaskRunner<>(blockingExecutor);
     }
 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
@@ -928,6 +932,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         LOG.debug("Authorization code has been exchanged, verifying ID token");
                         return authenticate(identityProviderManager, context,
                                 new IdTokenCredential(idToken, internalIdToken))
+                                .flatMap(new AuthenticationCompletionCall(context, tokens))
                                 .call(new Function<SecurityIdentity, Uni<?>>() {
                                     @Override
                                     public Uni<Void> apply(SecurityIdentity identity) {
@@ -1629,5 +1634,37 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private static Map<String, Object> tokenMap(String token) {
         return Map.of(OidcConstants.ID_TOKEN_VALUE, token);
+    }
+
+    private class AuthenticationCompletionCall implements Function<SecurityIdentity, Uni<? extends SecurityIdentity>> {
+        final RoutingContext context;
+        final AuthorizationCodeTokens codeTokens;
+
+        AuthenticationCompletionCall(RoutingContext context, AuthorizationCodeTokens codeTokens) {
+            this.context = context;
+            this.codeTokens = codeTokens;
+        }
+
+        @Override
+        public Uni<SecurityIdentity> apply(SecurityIdentity identity) {
+            AuthenticationCompletionContext ac = new AuthenticationCompletionContext(context, codeTokens, identity,
+                    authenticationCompletionActionContext);
+            return runAuthenticationCompletionActions(resolver.authenticationCompletionActions(), 0, ac)
+                    .replaceWith(identity);
+        }
+
+        private Uni<Void> runAuthenticationCompletionActions(List<AuthenticationCompletionAction> actions,
+                int i, AuthenticationCompletionContext ac) {
+            if (i == actions.size()) {
+                return Uni.createFrom().voidItem();
+            }
+            return actions.get(i).action(ac)
+                    .onItem().transformToUni(new Function<Void, Uni<? extends Void>>() {
+                        @Override
+                        public Uni<? extends Void> apply(Void v) {
+                            return runAuthenticationCompletionActions(actions, i + 1, ac);
+                        }
+                    });
+        }
     }
 }

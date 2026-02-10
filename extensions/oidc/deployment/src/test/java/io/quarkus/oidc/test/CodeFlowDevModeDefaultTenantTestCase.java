@@ -23,7 +23,9 @@ public class CodeFlowDevModeDefaultTenantTestCase {
 
     private static Class<?>[] testClasses = {
             ProtectedResource.class,
-            UnprotectedResource.class
+            UnprotectedResource.class,
+            TestAuthenticationCompletionAction.class,
+            AuthenticationCompletionActionResource.class
     };
 
     @RegisterExtension
@@ -59,7 +61,20 @@ public class CodeFlowDevModeDefaultTenantTestCase {
 
             page = loginForm.getButtonByName("login").click();
 
+            // first call completed following a successful authentication
             assertEquals("alice", page.getBody().asNormalizedText());
+
+            // second call completed
+            page = webClient.getPage("http://localhost:8080/protected");
+            assertEquals("alice", page.getBody().asNormalizedText());
+
+            // third call completed
+            page = webClient.getPage("http://localhost:8080/protected");
+            assertEquals("alice", page.getBody().asNormalizedText());
+
+            // Authentication completion called must've been called only once
+            page = webClient.getPage("http://localhost:8080/auth-completion-count");
+            assertEquals("1", page.getBody().asNormalizedText());
 
             webClient.getCookieManager().clearCookies();
 

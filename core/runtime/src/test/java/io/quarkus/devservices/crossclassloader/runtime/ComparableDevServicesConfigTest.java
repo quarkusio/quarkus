@@ -96,6 +96,20 @@ public class ComparableDevServicesConfigTest {
                 new ComparableDevServicesConfig(null, null, null, config).hashCode());
     }
 
+    @Test
+    public void sameConstantsAreEqual() {
+        var a1 = new ComparableDevServicesConfig(uuid, null, null, "1");
+        var a2 = new ComparableDevServicesConfig(uuid, null, null, "1");
+        assertEquals(a1, a2);
+    }
+
+    @Test
+    public void differentConstantsAreNotEqual() {
+        var a1 = new ComparableDevServicesConfig(uuid, null, null, "2");
+        var a2 = new ComparableDevServicesConfig(uuid, null, null, "1");
+        assertNotEquals(a1, a2);
+    }
+
     @ConfigGroup
     interface CI {
 

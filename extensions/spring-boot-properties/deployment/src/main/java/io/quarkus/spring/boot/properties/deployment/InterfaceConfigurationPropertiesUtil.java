@@ -36,7 +36,6 @@ import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
-import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.creator.ClassCreator;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
@@ -128,8 +127,7 @@ final class InterfaceConfigurationPropertiesUtil {
         ClassDesc generatedClassDesc = ClassDesc.of(generatedClassName);
         ClassDesc configClassDesc = ClassDesc.of(Config.class.getName());
 
-        Gizmo gizmo = Gizmo.create(classOutput)
-                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
+        Gizmo gizmo = Gizmo.create(classOutput);
         gizmo.class_(generatedClassName, cc -> {
             cc.implements_(ClassDesc.of(currentInterface.name().toString()));
 

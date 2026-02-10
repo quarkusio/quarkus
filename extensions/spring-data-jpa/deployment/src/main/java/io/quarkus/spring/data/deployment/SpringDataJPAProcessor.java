@@ -45,6 +45,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.hibernate.orm.deployment.spi.IgnorableNonIndexedClasses;
@@ -128,6 +129,7 @@ public class SpringDataJPAProcessor {
             BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
             BuildProducer<EntityToPersistenceUnitBuildItem> entityToPersistenceUnit) {
 
         detectAndLogSpecificSpringPropertiesIfExist();
@@ -144,7 +146,7 @@ public class SpringDataJPAProcessor {
         Set<String> entities = implementCrudRepositories(generatedBeans, generatedClasses, generatedResources,
                 generatedServiceProviders, additionalBeans,
                 reflectiveClasses,
-                interfacesExtendingRepository, indexView);
+                constantBootstraps, interfacesExtendingRepository, indexView);
         determineEntityPersistenceUnits(jpaModelPersistenceUnitMapping, entities, "Spring Data JPA")
                 .forEach((e, pu) -> entityToPersistenceUnit.produce(new EntityToPersistenceUnitBuildItem(e, pu)));
 
@@ -253,11 +255,12 @@ public class SpringDataJPAProcessor {
             BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
             Set<ClassInfo> crudRepositoriesToImplement, IndexView index) {
 
         ClassOutput beansClassOutput = new GeneratedBeanGizmo2Adaptor(generatedBeans);
         ClassOutput otherClassOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
-                generatedServiceProviders, true);
+                generatedServiceProviders, constantBootstraps, true);
 
         SpringDataRepositoryCreator repositoryCreator = new SpringDataRepositoryCreator(beansClassOutput, otherClassOutput,
                 index, (n) -> {

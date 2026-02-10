@@ -22,6 +22,8 @@ import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
 import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
@@ -32,15 +34,21 @@ public class QuarkusInvokerFactory implements EndpointInvokerFactory {
 
     private final Predicate<String> applicationClassPredicate;
     final BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
+    final BuildProducer<GeneratedResourceBuildItem> generatedResourcesBuildItemBuildProducer;
+    final BuildProducer<ConstantBootstrapBuildItem> constantBootstrapBuildItemBuildProducer;
     final ResteasyReactiveRecorder recorder;
 
     private final Map<String, Supplier<EndpointInvoker>> generatedInvokers = new HashMap<>();
 
     public QuarkusInvokerFactory(Predicate<String> applicationClassPredicate,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
+            BuildProducer<GeneratedResourceBuildItem> generatedResourcesBuildItemBuildProducer,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstrapBuildItemBuildProducer,
             ResteasyReactiveRecorder recorder) {
         this.applicationClassPredicate = applicationClassPredicate;
         this.generatedClassBuildItemBuildProducer = generatedClassBuildItemBuildProducer;
+        this.generatedResourcesBuildItemBuildProducer = generatedResourcesBuildItemBuildProducer;
+        this.constantBootstrapBuildItemBuildProducer = constantBootstrapBuildItemBuildProducer;
         this.recorder = recorder;
     }
 
@@ -58,7 +66,9 @@ public class QuarkusInvokerFactory implements EndpointInvokerFactory {
         if (generatedInvokers.containsKey(baseName)) {
             return generatedInvokers.get(baseName);
         }
-        ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClassBuildItemBuildProducer, null,
+        ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClassBuildItemBuildProducer,
+                generatedResourcesBuildItemBuildProducer,
+                constantBootstrapBuildItemBuildProducer,
                 applicationClassPredicate.test(currentClassInfo.name().toString()));
         Gizmo g = Gizmo.create(classOutput)
                 .withDebugInfo(false)

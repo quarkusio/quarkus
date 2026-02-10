@@ -69,6 +69,7 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Const;
@@ -130,7 +131,7 @@ public class MessageBundleProcessor {
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
-            BeanRegistrationPhaseBuildItem beanRegistration,
+            final BuildProducer<ConstantBootstrapBuildItem> constantBootstraps, BeanRegistrationPhaseBuildItem beanRegistration,
             BuildProducer<BeanConfiguratorBuildItem> configurators,
             BuildProducer<MessageBundleMethodBuildItem> messageTemplateMethods,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles,
@@ -269,7 +270,7 @@ public class MessageBundleProcessor {
         // Generate implementations
         // name -> impl class
         Map<String, ClassDesc> generatedImplementations = generateImplementations(bundles, generatedClasses, generatedResources,
-                messageTemplateMethods, index);
+                constantBootstraps, messageTemplateMethods, index);
 
         // Register synthetic beans
         for (MessageBundleBuildItem bundle : bundles) {
@@ -699,13 +700,14 @@ public class MessageBundleProcessor {
     private Map<String, ClassDesc> generateImplementations(List<MessageBundleBuildItem> bundles,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
             BuildProducer<MessageBundleMethodBuildItem> messageTemplateMethods,
             IndexView index) throws IOException {
 
         Map<String, ClassDesc> generatedTypes = new HashMap<>();
 
         ClassOutput defaultClassOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
-                new AppClassPredicate());
+                constantBootstraps, new AppClassPredicate());
 
         for (MessageBundleBuildItem bundle : bundles) {
             ClassInfo bundleInterface = bundle.getDefaultBundleInterface();
@@ -745,6 +747,7 @@ public class MessageBundleProcessor {
 
                 String locale = entry.getKey();
                 ClassOutput localeAwareGizmoAdaptor = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
+                        constantBootstraps,
                         new AppClassPredicate(new Function<String, String>() {
                             @Override
                             public String apply(String className) {

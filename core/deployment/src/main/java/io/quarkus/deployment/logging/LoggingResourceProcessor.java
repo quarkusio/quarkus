@@ -90,6 +90,7 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
 import io.quarkus.deployment.builditem.StreamingLogHandlerBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
@@ -542,8 +543,9 @@ public final class LoggingResourceProcessor {
     void setUpMinLevelLogging(LogBuildTimeConfig log,
             LogCategoryMinLevelDefaultsBuildItem categoryMinLevelDefaults,
             final BuildProducer<GeneratedClassBuildItem> gcProducer,
-            final BuildProducer<GeneratedResourceBuildItem> grProducer) {
-        ClassOutput output = new GeneratedClassGizmo2Adaptor(gcProducer, grProducer, false);
+            final BuildProducer<GeneratedResourceBuildItem> grProducer,
+            final BuildProducer<ConstantBootstrapBuildItem> constantBootstraps) {
+        ClassOutput output = new GeneratedClassGizmo2Adaptor(gcProducer, grProducer, constantBootstraps, false);
         generateDefaultLoggerNode(output);
         if (allRootMinLevelOrHigher(log.minLevel().intValue(), log.categories(), categoryMinLevelDefaults.content)) {
             Level minLevel = log.minLevel();

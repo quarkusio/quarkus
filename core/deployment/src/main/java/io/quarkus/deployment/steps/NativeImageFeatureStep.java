@@ -3,7 +3,14 @@ package io.quarkus.deployment.steps;
 import static io.quarkus.gizmo2.desc.Descs.MD_Class;
 import static io.quarkus.gizmo2.desc.Descs.MD_Collection;
 import static io.quarkus.gizmo2.desc.Descs.MD_Thread;
+import static java.lang.constant.ConstantDescs.CD_Class;
+import static java.lang.constant.ConstantDescs.CD_MethodType;
+import static java.lang.constant.ConstantDescs.CD_String;
+import static java.lang.constant.ConstantDescs.CD_int;
 
+import java.lang.constant.ClassDesc;
+import java.lang.constant.ConstantDescs;
+import java.lang.constant.MethodTypeDesc;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,11 +20,13 @@ import java.util.stream.Stream;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
 import org.graalvm.nativeimage.hosted.RuntimeSystemProperties;
+import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
@@ -29,11 +38,14 @@ import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.desc.ClassMethodDesc;
 import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.graal.GraalVM;
 
 public class NativeImageFeatureStep {
+
+    private static final Logger log = Logger.getLogger(NativeImageFeatureStep.class);
 
     public static final String GRAAL_FEATURE = "io.quarkus.runner.Feature";
 
@@ -57,6 +69,18 @@ public class NativeImageFeatureStep {
     private static final MethodDesc GET_CONTEXT_CLASS_LOADER = MethodDesc.of(Thread.class, "getContextClassLoader",
             ClassLoader.class);
 
+    private static final ClassDesc CD_AccessImpl = ClassDesc.of("com.oracle.svm.hosted.FeatureImpl$DuringSetupAccessImpl");
+    private static final ClassDesc CD_Executable = ClassDesc.of("java.lang.reflect.Executable");
+    private static final ClassDesc CD_Method = ClassDesc.of("java.lang.reflect.Method");
+    private static final ClassDesc CD_TypeDescriptor = ClassDesc.of("java.lang.invoke.TypeDescriptor");
+
+    private static final MethodDesc MD_Class_getDeclaredMethod = ClassMethodDesc.of(CD_Class, "getDeclaredMethod", CD_Method,
+            CD_String, CD_Class.arrayType());
+    private static final ClassMethodDesc MD_FeatureImpl_DuringSetupAccessImpl_registerBuildTimeCondyIncludeList = ClassMethodDesc
+            .of(CD_AccessImpl, "registerBuildTimeCondyIncludeList", ConstantDescs.CD_void, CD_Executable);
+    private static final ClassMethodDesc MD_FeatureImpl_DuringSetupAccessImpl_registerBuildTimeIndyIncludeList = ClassMethodDesc
+            .of(CD_AccessImpl, "registerBuildTimeIndyIncludeList", ConstantDescs.CD_void, CD_Executable);
+
     @BuildStep
     void addExportsToNativeImage(BuildProducer<JPMSExportBuildItem> features) {
         // required in order to access org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport
@@ -65,6 +89,9 @@ public class NativeImageFeatureStep {
                 GraalVM.Version.VERSION_23_1_0));
         features.produce(new JPMSExportBuildItem("org.graalvm.nativeimage", "org.graalvm.nativeimage.impl",
                 GraalVM.Version.VERSION_23_1_0));
+        // required to access com.oracle.svm.hosted.FeatureImpl
+        features.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.hosted",
+                GraalVM.Version.VERSION_25_1_0));
     }
 
     @BuildStep
@@ -73,12 +100,15 @@ public class NativeImageFeatureStep {
             List<RuntimeInitializedPackageBuildItem> runtimeInitializedPackageBuildItems,
             List<RuntimeReinitializedClassBuildItem> runtimeReinitializedClassBuildItems,
             List<UnsafeAccessedFieldBuildItem> unsafeAccessedFields,
+            List<ConstantBootstrapBuildItem> constantBootstrapBuildItems,
             NativeConfig nativeConfig,
             LocalesBuildTimeConfig localesBuildTimeConfig) {
 
         Gizmo g = Gizmo.create(new GeneratedClassGizmo2Adaptor(
                 item -> nativeImageClass
                         .produce(new GeneratedNativeImageClassBuildItem(item.binaryName(), item.getClassData())),
+                item -> {
+                },
                 item -> {
                 },
                 false));
@@ -94,9 +124,55 @@ public class NativeImageFeatureStep {
             });
 
             cc.method("duringSetup", mc -> {
-                mc.parameter("access", Feature.DuringSetupAccess.class);
+                ParamVar access = mc.parameter("access", Feature.DuringSetupAccess.class);
                 mc.body(b0 -> {
                     b0.invokeStatic(BUILD_TIME_INITIALIZATION, b0.newArray(String.class, Const.of("")));
+
+                    if (!constantBootstrapBuildItems.isEmpty()) {
+                        LocalVar graalVMVersion = b0.localVar("graalVMVersion",
+                                b0.invokeStatic(GRAALVM_VERSION_GET_CURRENT));
+                        /* GraalVM >= 25.1; see https://github.com/oracle/graal/issues/12453 */
+                        b0.if_(b0.ge(
+                                b0.invokeVirtual(GRAALVM_VERSION_COMPARE_TO,
+                                        graalVMVersion,
+                                        b0.newArray(CD_int, Const.of(25), Const.of(1))),
+                                0), b1 -> {
+                                    // in order to register constant bootstraps, we must call a method on DuringSetupAccessImpl for each one
+                                    LocalVar accessImpl = b1.localVar("accessImpl", b1.cast(access, CD_AccessImpl));
+                                    for (ConstantBootstrapBuildItem cb : constantBootstrapBuildItems) {
+                                        MethodTypeDesc mtd = cb.methodTypeDesc();
+                                        ClassDesc typeParamType = mtd.parameterType(2);
+                                        boolean indy = false;
+                                        boolean condy = false;
+                                        if (typeParamType.descriptorString().equals(CD_Class.descriptorString())) {
+                                            condy = true;
+                                        } else if (typeParamType.descriptorString().equals(CD_MethodType.descriptorString())) {
+                                            indy = true;
+                                        } else if (typeParamType.descriptorString()
+                                                .equals(CD_TypeDescriptor.descriptorString())) {
+                                            // it can be used as either type
+                                            indy = condy = true;
+                                        } else {
+                                            log.warnf("Encountered an invalid constant bootstrap build item descriptor: %s",
+                                                    cb.methodTypeDesc().descriptorString());
+                                        }
+                                        LocalVar declaredMethod = b1.localVar("declaredMethod", b1.invokeVirtual(
+                                                MD_Class_getDeclaredMethod, Const.of(cb.classDesc()), Const.of(cb.methodName()),
+                                                b1.newArray(Class.class,
+                                                        mtd.parameterList().stream().map(Const::of).toList())));
+                                        if (condy) {
+                                            b1.invokeVirtual(
+                                                    MD_FeatureImpl_DuringSetupAccessImpl_registerBuildTimeCondyIncludeList,
+                                                    accessImpl, declaredMethod);
+                                        }
+                                        if (indy) {
+                                            b1.invokeVirtual(
+                                                    MD_FeatureImpl_DuringSetupAccessImpl_registerBuildTimeIndyIncludeList,
+                                                    accessImpl, declaredMethod);
+                                        }
+                                    }
+                                });
+                    }
                     b0.return_();
                 });
             });

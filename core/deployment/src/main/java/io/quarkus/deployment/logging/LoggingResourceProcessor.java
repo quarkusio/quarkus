@@ -91,6 +91,7 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.StreamingLogHandlerBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
@@ -113,7 +114,6 @@ import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
-import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.This;
 import io.quarkus.gizmo2.Var;
@@ -661,8 +661,10 @@ public final class LoggingResourceProcessor {
             LogCategoryMinLevelDefaultsBuildItem categoryMinLevelDefaults,
             final BuildProducer<GeneratedClassBuildItem> gcProducer,
             final BuildProducer<GeneratedResourceBuildItem> grProducer,
-            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders) {
-        ClassOutput output = new GeneratedClassGizmo2Adaptor(gcProducer, grProducer, generatedServiceProviders, false);
+            final BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
+            final BuildProducer<ConstantBootstrapBuildItem> constantBootstraps) {
+        ClassOutput output = new GeneratedClassGizmo2Adaptor(gcProducer, grProducer, generatedServiceProviders,
+                constantBootstraps, false);
         generateDefaultLoggerNode(output);
         if (allRootMinLevelOrHigher(log.minLevel().intValue(), log.categories(), categoryMinLevelDefaults.content)) {
             Level minLevel = log.minLevel();
@@ -714,7 +716,6 @@ public final class LoggingResourceProcessor {
             Map<String, InheritableLevel> categoryMinLevelDefaults, Level rootMinLevel,
             ClassOutput output) {
         Gizmo g = Gizmo.create(output)
-                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS)
                 .withDebugInfo(false)
                 .withParameters(false);
         g.class_(MIN_LEVEL_COMPUTE_CLASS_NAME, cc -> {
@@ -745,7 +746,6 @@ public final class LoggingResourceProcessor {
 
     private static void generateDefaultLoggerNode(ClassOutput output) {
         Gizmo g = Gizmo.create(output)
-                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS)
                 .withDebugInfo(false)
                 .withParameters(false);
         g.class_(LOGGER_NODE_CLASS_NAME, cc -> {
@@ -767,7 +767,6 @@ public final class LoggingResourceProcessor {
     private static void generateLogManagerLogger(ClassOutput output,
             MinLevelEnabledFunction isMinLevelEnabledFunction) {
         Gizmo gizmo = Gizmo.create(output)
-                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS)
                 .withDebugInfo(false)
                 .withParameters(false);
         gizmo.class_(LOGMANAGER_LOGGER_CLASS_NAME, cc -> {
@@ -809,7 +808,6 @@ public final class LoggingResourceProcessor {
 
     private static void generateDefaultLoggingLogger(Level minLevel, ClassOutput output) {
         Gizmo gizmo = Gizmo.create(output)
-                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS)
                 .withDebugInfo(false)
                 .withParameters(false);
         gizmo.class_(LOGGING_LOGGER_CLASS_NAME, cc -> {

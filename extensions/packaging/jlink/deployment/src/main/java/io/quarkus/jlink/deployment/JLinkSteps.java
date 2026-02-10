@@ -26,7 +26,6 @@ import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Gizmo;
-import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.jlink.launcher.JLinkAppLauncher;
@@ -99,8 +98,7 @@ public final class JLinkSteps {
                 // the list of resources produced by generating the main class
                 List<Resource> dynModuleResources = new ArrayList<>();
                 // generate the simple main class which runs the launcher with the app module info
-                Gizmo gizmo = Gizmo.create((path, bytes) -> dynModuleResources.add(new MemoryResource(path, bytes)))
-                        .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
+                Gizmo gizmo = Gizmo.create((path, bytes) -> dynModuleResources.add(new MemoryResource(path, bytes)));
                 gizmo.class_(APP_MAIN, cc -> {
                     cc.public_();
                     cc.staticMethod("main", mc -> {

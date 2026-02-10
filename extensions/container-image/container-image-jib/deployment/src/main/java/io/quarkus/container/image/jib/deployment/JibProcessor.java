@@ -461,16 +461,31 @@ public class JibProcessor {
             envVars.put("JAVA_APP_DIR", workDirInContainer.toString());
             envVars.put("JAVA_OPTS_APPEND",
                     String.join(" ",
-                            determineEffectiveJvmArguments(jibConfig, maybeJvmStartupOptimizerArchiveResult, isMutableJar)));
+                            determineEffectiveJvmArguments(jibConfig, isMutableJar)));
         } else {
             List<String> effectiveJvmArguments = determineEffectiveJvmArguments(jibConfig,
-                    maybeJvmStartupOptimizerArchiveResult, isMutableJar);
+                    isMutableJar);
             List<String> argsList = new ArrayList<>(3 + effectiveJvmArguments.size());
             argsList.add("java");
             argsList.addAll(effectiveJvmArguments);
             argsList.add("-jar");
             argsList.add(FastJarFormat.QUARKUS_RUN_JAR);
             entrypoint = Collections.unmodifiableList(argsList);
+        }
+
+        if (maybeJvmStartupOptimizerArchiveResult.isPresent()) {
+            JvmStartupOptimizerArchiveResultBuildItem appCDSResult = maybeJvmStartupOptimizerArchiveResult.get();
+            boolean containsAppCDSOptions = false;
+            for (String effectiveJvmArgument : entrypoint) {
+                if (effectiveJvmArgument.startsWith(appCDSResult.getType().getJvmFlag())) {
+                    containsAppCDSOptions = true;
+                    break;
+                }
+            }
+            if (!containsAppCDSOptions) {
+                envVars.put("JAVA_TOOL_OPTIONS",
+                        appCDSResult.getType().getJvmFlag() + "=" + appCDSResult.getArchive().getFileName().toString());
+            }
         }
 
         List<ResolvedDependency> fastChangingLibs = new ArrayList<>();
@@ -710,24 +725,9 @@ public class JibProcessor {
     }
 
     private List<String> determineEffectiveJvmArguments(ContainerImageJibConfig jibConfig,
-            Optional<JvmStartupOptimizerArchiveResultBuildItem> maybeJvmStartupOptimizerArchiveResult,
             boolean isMutableJar) {
         List<String> effectiveJvmArguments = new ArrayList<>(jibConfig.jvmArguments());
         jibConfig.jvmAdditionalArguments().ifPresent(effectiveJvmArguments::addAll);
-        if (maybeJvmStartupOptimizerArchiveResult.isPresent()) {
-            JvmStartupOptimizerArchiveResultBuildItem appCDSResult = maybeJvmStartupOptimizerArchiveResult.get();
-            boolean containsAppCDSOptions = false;
-            for (String effectiveJvmArgument : effectiveJvmArguments) {
-                if (effectiveJvmArgument.startsWith(appCDSResult.getType().getJvmFlag())) {
-                    containsAppCDSOptions = true;
-                    break;
-                }
-            }
-            if (!containsAppCDSOptions) {
-                effectiveJvmArguments
-                        .add(appCDSResult.getType().getJvmFlag() + "=" + appCDSResult.getArchive().getFileName().toString());
-            }
-        }
         if (isMutableJar) {
             // see https://github.com/quarkusio/quarkus/issues/41797
             effectiveJvmArguments.add("-Dquarkus.package.output-directory=${PWD}");
@@ -770,7 +770,7 @@ public class JibProcessor {
             // when there is no custom entry point, we just set everything up for a regular java run
             if (!jibConfig.jvmEntrypoint().isPresent()) {
                 javaContainerBuilder
-                        .addJvmFlags(determineEffectiveJvmArguments(jibConfig, Optional.empty(), false))
+                        .addJvmFlags(determineEffectiveJvmArguments(jibConfig, false))
                         .setMainClass(mainClassBuildItem.getClassName());
             }
 

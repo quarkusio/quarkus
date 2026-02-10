@@ -43,8 +43,9 @@ public class JvmStartupOptimizerArchiveBuildStep {
     public static final String CLASSES_LIST_FILE_NAME = "classes.lst";
     private static final String CONTAINER_IMAGE_BASE_BUILD_DIR = "/tmp/quarkus";
 
-    @BuildStep(onlyIf = AppCDSRequired.class)
+    @BuildStep(onlyIf = AotFileRequired.class)
     public void requested(PackageConfig packageConfig, OutputTargetBuildItem outputTarget,
+            CompiledJavaVersionBuildItem compiledJavaVersion,
             BuildProducer<JvmStartupOptimizerArchiveRequestedBuildItem> producer)
             throws IOException {
         Path archiveDir = outputTarget.getOutputDirectory().resolve("jvmstartuparchive");
@@ -52,8 +53,44 @@ public class JvmStartupOptimizerArchiveBuildStep {
 
         producer.produce(
                 new JvmStartupOptimizerArchiveRequestedBuildItem(outputTarget.getOutputDirectory().resolve("jvmstartuparchive"),
-                        packageConfig.jar().appcds().useAot() ? JvmStartupOptimizerArchiveType.AOT
-                                : JvmStartupOptimizerArchiveType.AppCDS));
+                        determineType(packageConfig, compiledJavaVersion.getJavaVersion())));
+    }
+
+    private JvmStartupOptimizerArchiveType determineType(PackageConfig packageConfig,
+            CompiledJavaVersionBuildItem.JavaVersion javaVersion) {
+        PackageConfig.JarConfig jarConfig = packageConfig.jar();
+        // first check new config
+        PackageConfig.JarConfig.AotConfig aotConfig = jarConfig.aot();
+        if (aotConfig.enabled()) {
+            Optional<PackageConfig.JarConfig.AotConfig.AotType> typeOpt = aotConfig.type();
+            if (typeOpt.isPresent()) {
+                return switch (typeOpt.get()) {
+                    case AOT -> JvmStartupOptimizerArchiveType.AOT;
+                    case AppCDS -> JvmStartupOptimizerArchiveType.AppCDS;
+                    case AUTO -> determineTypeFromJavaVersion(javaVersion);
+                };
+            }
+            return determineTypeFromJavaVersion(javaVersion);
+        }
+        // now check the old config
+        PackageConfig.JarConfig.AppcdsConfig appcdsConfig = jarConfig.appcds();
+        if (!appcdsConfig.enabled()) {
+            throw new IllegalStateException("Expected either AOT config or AppCDS config to be enabled");
+        }
+        return appcdsConfig.useAot() ? JvmStartupOptimizerArchiveType.AOT
+                : JvmStartupOptimizerArchiveType.AppCDS;
+    }
+
+    private JvmStartupOptimizerArchiveType determineTypeFromJavaVersion(
+            CompiledJavaVersionBuildItem.JavaVersion javaVersion) {
+        if (javaVersion.isJava25OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
+            log.debugf("Selecting %s as the startup file optimizer type since the project is targeting JDK 25+",
+                    JvmStartupOptimizerArchiveType.AOT);
+            return JvmStartupOptimizerArchiveType.AOT;
+        }
+        log.debugf("Selecting %s as the startup file optimizer type since the project is not targeting JDK 25+",
+                JvmStartupOptimizerArchiveType.AppCDS);
+        return JvmStartupOptimizerArchiveType.AppCDS;
     }
 
     @BuildStep(onlyIfNot = NativeOrNativeSourcesBuild.class)
@@ -119,7 +156,7 @@ public class JvmStartupOptimizerArchiveBuildStep {
             }
         }
 
-        jvmStartupOptimizerArchive.produce(new JvmStartupOptimizerArchiveResultBuildItem(archivePath));
+        jvmStartupOptimizerArchive.produce(new JvmStartupOptimizerArchiveResultBuildItem(archivePath, archiveType));
         artifactResult.produce(new ArtifactResultBuildItem(archivePath, "appCDS", Collections.emptyMap()));
     }
 
@@ -297,12 +334,12 @@ public class JvmStartupOptimizerArchiveBuildStep {
         return archivePath;
     }
 
-    static class AppCDSRequired implements BooleanSupplier {
+    static class AotFileRequired implements BooleanSupplier {
 
         private final PackageConfig packageConfig;
         private final LaunchMode launchMode;
 
-        AppCDSRequired(PackageConfig packageConfig, LaunchMode launchMode) {
+        AotFileRequired(PackageConfig packageConfig, LaunchMode launchMode) {
             this.packageConfig = packageConfig;
             this.launchMode = launchMode;
         }
@@ -313,7 +350,19 @@ public class JvmStartupOptimizerArchiveBuildStep {
                 return false;
             }
 
-            return packageConfig.jar().appcds().enabled() && packageConfig.jar().enabled();
+            PackageConfig.JarConfig jarConfig = packageConfig.jar();
+            if (!jarConfig.enabled()) {
+                return false;
+            }
+
+            // new config
+            if (jarConfig.aot().enabled()) {
+                return true;
+            }
+
+            // old config
+            //noinspection removal
+            return jarConfig.appcds().enabled();
         }
     }
 

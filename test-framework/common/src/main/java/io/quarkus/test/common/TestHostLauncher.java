@@ -20,9 +20,8 @@ public class TestHostLauncher implements ArtifactLauncher {
     @Override
     public Optional<ListeningAddress> start() throws IOException {
         Config config = ConfigProvider.getConfig();
-        // TODO - Remove this SystemProperty set / get
         // set 'quarkus.http.host' to ensure that RestAssured targets the proper host
-        previousHost = System.setProperty("quarkus.http.host", System.getProperty("quarkus.http.test-host"));
+        previousHost = System.setProperty("quarkus.http.host", config.getValue("quarkus.http.test-host", String.class));
 
         // We need to manually query and set defaults, because this runs in IT and VertxHttpConfig is not available
         boolean testSslEnabled = config.getOptionalValue("quarkus.http.test-ssl-enabled", boolean.class).orElse(false);

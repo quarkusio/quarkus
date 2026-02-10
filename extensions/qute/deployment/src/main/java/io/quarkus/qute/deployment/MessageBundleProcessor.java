@@ -70,6 +70,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Const;
@@ -135,6 +136,7 @@ public class MessageBundleProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
             BeanRegistrationPhaseBuildItem beanRegistration,
             BuildProducer<BeanConfiguratorBuildItem> configurators,
             BuildProducer<MessageBundleMethodBuildItem> messageTemplateMethods,
@@ -274,7 +276,7 @@ public class MessageBundleProcessor {
         // Generate implementations
         // name -> impl class
         Map<String, ClassDesc> generatedImplementations = generateImplementations(bundles, generatedClasses, generatedResources,
-                generatedServiceProviders, messageTemplateMethods, index);
+                generatedServiceProviders, constantBootstraps, messageTemplateMethods, index);
 
         // Register synthetic beans
         for (MessageBundleBuildItem bundle : bundles) {
@@ -719,13 +721,14 @@ public class MessageBundleProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
             BuildProducer<MessageBundleMethodBuildItem> messageTemplateMethods,
             IndexView index) throws IOException {
 
         Map<String, ClassDesc> generatedTypes = new HashMap<>();
 
         ClassOutput defaultClassOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
-                generatedServiceProviders, new AppClassPredicate());
+                generatedServiceProviders, constantBootstraps, new AppClassPredicate());
 
         for (MessageBundleBuildItem bundle : bundles) {
             ClassInfo bundleInterface = bundle.getDefaultBundleInterface();
@@ -769,7 +772,7 @@ public class MessageBundleProcessor {
 
                 String locale = entry.getKey();
                 ClassOutput localeAwareGizmoAdaptor = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
-                        generatedServiceProviders, new AppClassPredicate(new Function<String, String>() {
+                        generatedServiceProviders, constantBootstraps, new AppClassPredicate(new Function<String, String>() {
                             @Override
                             public String apply(String className) {
                                 String localeSuffix = "_" + locale;
@@ -799,7 +802,6 @@ public class MessageBundleProcessor {
         LOG.debugf("Generate forwarding bundle implementation for %s", bundleInterface);
 
         Gizmo gizmo = Gizmo.create(classOutput)
-                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS)
                 .withDebugInfo(false)
                 .withParameters(false);
         gizmo.class_(generatedClassName, cc -> {
@@ -1012,9 +1014,9 @@ public class MessageBundleProcessor {
         String resolveMethodPrefix = baseName + SUFFIX;
 
         Gizmo gizmo = Gizmo.create(classOutput)
-                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS)
                 .withDebugInfo(false)
-                .withParameters(false);
+                .withParameters(false)
+                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
         gizmo.class_(generatedClassName, cc -> {
             // MyMessages_Bundle implements MyMessages, Resolver
             cc.implements_(classDescOf(bundleInterface));

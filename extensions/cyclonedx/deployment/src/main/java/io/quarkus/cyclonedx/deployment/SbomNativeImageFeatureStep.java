@@ -20,7 +20,6 @@ import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
-import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.desc.ClassMethodDesc;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
@@ -128,8 +127,11 @@ public class SbomNativeImageFeatureStep {
                         .produce(new GeneratedNativeImageClassBuildItem(item.binaryName(), item.getClassData())),
                 item -> {
                 },
-                false))
-                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
+                item -> {
+                },
+                item -> {
+                },
+                false));
 
         g.class_(SBOM_EMBED_FEATURE, cc -> {
             cc.implements_(Feature.class);

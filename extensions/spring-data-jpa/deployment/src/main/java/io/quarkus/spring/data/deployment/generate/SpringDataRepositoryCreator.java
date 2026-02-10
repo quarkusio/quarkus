@@ -24,7 +24,6 @@ import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Gizmo;
-import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.gizmo2.desc.FieldDesc;
 import io.quarkus.panache.common.deployment.TypeBundle;
@@ -90,7 +89,6 @@ public class SpringDataRepositoryCreator {
         Set<String> existingMethods = new HashSet<>();
 
         Gizmo gizmo = Gizmo.create(classOutput)
-                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS)
                 .withDebugInfo(false)
                 .withParameters(false);
         gizmo.class_(generatedClassName, classCreator -> {

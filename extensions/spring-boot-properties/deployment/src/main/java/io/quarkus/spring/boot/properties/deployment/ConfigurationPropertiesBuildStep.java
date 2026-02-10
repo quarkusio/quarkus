@@ -25,11 +25,11 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Gizmo;
-import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.spring.boot.properties.deployment.InterfaceConfigurationPropertiesUtil.GeneratedClass;
 
 public class ConfigurationPropertiesBuildStep {
@@ -40,6 +40,7 @@ public class ConfigurationPropertiesBuildStep {
             Capabilities capabilities,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
             BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues,
@@ -52,7 +53,7 @@ public class ConfigurationPropertiesBuildStep {
 
         ClassOutput beansClassOutput = new GeneratedBeanGizmo2Adaptor(generatedBeans);
         ClassOutput nonBeansClassOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
-                generatedServiceProviders, true);
+                generatedServiceProviders, constantBootstraps, true);
 
         /*
          * We generate CDI producer bean containing one method for each of the @ConfigProperties
@@ -63,8 +64,7 @@ public class ConfigurationPropertiesBuildStep {
         IndexView index = combinedIndex.getIndex();
         YamlListObjectHandler yamlListObjectHandler = new YamlListObjectHandler(nonBeansClassOutput, index, reflectiveClasses);
 
-        Gizmo gizmo = Gizmo.create(beansClassOutput)
-                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
+        Gizmo gizmo = Gizmo.create(beansClassOutput);
         gizmo.class_(ConfigurationPropertiesUtil.PACKAGE_TO_PLACE_GENERATED_CLASSES + ".ConfigPropertiesProducer", cc -> {
             cc.addAnnotation(Singleton.class);
             cc.defaultConstructor();

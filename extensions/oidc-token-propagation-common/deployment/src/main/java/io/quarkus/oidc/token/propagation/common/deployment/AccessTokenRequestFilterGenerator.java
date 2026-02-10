@@ -18,7 +18,6 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Gizmo;
-import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.security.spi.runtime.MethodDescription;
@@ -48,8 +47,7 @@ public final class AccessTokenRequestFilterGenerator {
         return cache.computeIfAbsent(
                 new RequestFilterKey(instance.getClientName(), instance.exchangeTokenActivated(), methodDescription),
                 i -> {
-                    Gizmo gizmo = Gizmo.create(new GeneratedBeanGizmo2Adaptor(generatedBeanProducer))
-                            .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
+                    Gizmo gizmo = Gizmo.create(new GeneratedBeanGizmo2Adaptor(generatedBeanProducer));
                     String className = createUniqueClassName(i, instance);
                     gizmo.class_(className, cc -> {
                         cc.extends_(requestFilterClass);

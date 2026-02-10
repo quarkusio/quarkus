@@ -18,7 +18,6 @@ import org.jboss.logging.Logger;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DatasourceStartable;
-import io.quarkus.datasource.deployment.spi.DeferredDevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
@@ -33,7 +32,7 @@ public class H2DevServicesProcessor {
 
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupH2() {
-        return new DevServicesDatasourceProviderBuildItem(DatabaseKind.H2, new DeferredDevServicesDatasourceProvider() {
+        return new DevServicesDatasourceProviderBuildItem(DatabaseKind.H2, new DevServicesDatasourceProvider() {
             @Override
             public String getFeature() {
                 return Feature.JDBC_H2.getName();

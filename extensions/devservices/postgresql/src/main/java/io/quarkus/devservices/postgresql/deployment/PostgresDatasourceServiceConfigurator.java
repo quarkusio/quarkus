@@ -31,8 +31,7 @@ public class PostgresDatasourceServiceConfigurator implements DatasourceServiceC
                 jdbcUrl,
                 reactiveUrl,
                 container.tryGetEnv(USERNAME_ENVS).orElse(effectiveUsername),
-                extractPassword(container, effectivePassword),
-                null);
+                extractPassword(container, effectivePassword));
     }
 
     private String extractPassword(RunningContainer container, String effectivePassword) {

@@ -26,8 +26,7 @@ public class MSSQLDatasourceServiceConfigurator implements DatasourceServiceConf
                 jdbcUrl,
                 reactiveUrl,
                 effectiveUsername,
-                container.tryGetEnv(PASSWORD_ENVS).orElse(effectivePassword),
-                null);
+                container.tryGetEnv(PASSWORD_ENVS).orElse(effectivePassword));
     }
 
     @Override

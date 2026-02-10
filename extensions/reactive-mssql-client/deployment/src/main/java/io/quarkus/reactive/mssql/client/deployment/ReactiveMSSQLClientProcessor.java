@@ -124,7 +124,7 @@ class ReactiveMSSQLClientProcessor {
 
     @BuildStep
     DevServicesDatasourceConfigurationHandlerBuildItem devDbHandler() {
-        return DevServicesDatasourceConfigurationHandlerBuildItem.deferredReactive(DatabaseKind.MSSQL);
+        return DevServicesDatasourceConfigurationHandlerBuildItem.reactive(DatabaseKind.MSSQL);
     }
 
     @BuildStep

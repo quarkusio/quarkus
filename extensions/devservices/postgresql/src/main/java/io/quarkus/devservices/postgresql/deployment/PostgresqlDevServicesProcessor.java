@@ -20,7 +20,6 @@ import org.testcontainers.utility.DockerImageName;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DatasourceStartable;
-import io.quarkus.datasource.deployment.spi.DeferredDevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
@@ -53,7 +52,7 @@ public class PostgresqlDevServicesProcessor {
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupPostgres(
             DevServicesComposeProjectBuildItem composeProjectBuildItem) {
-        return new DevServicesDatasourceProviderBuildItem(DatabaseKind.POSTGRESQL, new DeferredDevServicesDatasourceProvider() {
+        return new DevServicesDatasourceProviderBuildItem(DatabaseKind.POSTGRESQL, new DevServicesDatasourceProvider() {
 
             @Override
             public String getFeature() {

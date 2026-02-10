@@ -31,8 +31,7 @@ public class OracleDatasourceServiceConfigurator implements DatasourceServiceCon
                 jdbcUrl,
                 reactiveUrl,
                 container.tryGetEnv(USERNAME_ENVS).orElse(effectiveUsername),
-                container.tryGetEnv(PASSWORD_ENVS).orElse(effectivePassword),
-                null);
+                container.tryGetEnv(PASSWORD_ENVS).orElse(effectivePassword));
     }
 
     public String getJdbcUrl(ContainerAddress containerAddress, String databaseName) {

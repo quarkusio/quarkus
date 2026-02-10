@@ -16,7 +16,6 @@ import org.testcontainers.utility.DockerImageName;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DatasourceStartable;
-import io.quarkus.datasource.deployment.spi.DeferredDevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
@@ -42,7 +41,7 @@ public class MariaDBDevServicesProcessor {
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupMariaDB(
             DevServicesComposeProjectBuildItem composeProjectBuildItem) {
-        return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MARIADB, new DeferredDevServicesDatasourceProvider() {
+        return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MARIADB, new DevServicesDatasourceProvider() {
             @Override
             public String getFeature() {
                 return Feature.JDBC_MARIADB.getName();

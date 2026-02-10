@@ -37,7 +37,7 @@ public class JDBCH2Processor {
 
     @BuildStep
     DevServicesDatasourceConfigurationHandlerBuildItem devDbHandler() {
-        return DevServicesDatasourceConfigurationHandlerBuildItem.deferredJdbc(DatabaseKind.H2);
+        return DevServicesDatasourceConfigurationHandlerBuildItem.jdbc(DatabaseKind.H2);
     }
 
     @BuildStep

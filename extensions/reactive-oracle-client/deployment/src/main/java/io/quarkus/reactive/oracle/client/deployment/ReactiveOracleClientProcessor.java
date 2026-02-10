@@ -124,7 +124,7 @@ class ReactiveOracleClientProcessor {
 
     @BuildStep
     DevServicesDatasourceConfigurationHandlerBuildItem devDbHandler() {
-        return DevServicesDatasourceConfigurationHandlerBuildItem.deferredReactive(DatabaseKind.ORACLE);
+        return DevServicesDatasourceConfigurationHandlerBuildItem.reactive(DatabaseKind.ORACLE);
     }
 
     @BuildStep

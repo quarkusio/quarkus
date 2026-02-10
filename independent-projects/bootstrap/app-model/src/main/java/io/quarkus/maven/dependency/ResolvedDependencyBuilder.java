@@ -28,6 +28,10 @@ public class ResolvedDependencyBuilder extends AbstractDependencyBuilder<Resolve
             map.put(BootstrapConstants.MAPPABLE_DEPENDENCIES,
                     Mappable.toStringCollection(deps, ArtifactCoords::toGACTVString, factory));
         }
+        final Collection<Dependency> directDeps = dependency.getDirectDependencies();
+        if (!directDeps.isEmpty()) {
+            map.put(BootstrapConstants.MAPPABLE_DIRECT_DEPS, Mappable.asMaps(directDeps, factory));
+        }
 
         if (dependency.getWorkspaceModule() != null) {
             map.put(BootstrapConstants.MAPPABLE_MODULE, dependency.getWorkspaceModule().asMap(factory));
@@ -63,6 +67,16 @@ public class ResolvedDependencyBuilder extends AbstractDependencyBuilder<Resolve
                 deps.add(ArtifactCoords.fromString(depStr));
             }
             setDependencies(deps);
+        }
+
+        final Collection<Map<String, Object>> depsMap = (Collection<Map<String, Object>>) map
+                .get(BootstrapConstants.MAPPABLE_DIRECT_DEPS);
+        if (depsMap != null) {
+            final List<Dependency> deps = new ArrayList<>(depsMap.size());
+            for (var depMap : depsMap) {
+                deps.add(DependencyBuilder.newInstance().fromMap(depMap).build());
+            }
+            setDirectDependencies(deps);
         }
 
         Map<String, Object> moduleMap = (Map<String, Object>) map.get(BootstrapConstants.MAPPABLE_MODULE);

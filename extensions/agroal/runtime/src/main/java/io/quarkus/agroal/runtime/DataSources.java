@@ -328,6 +328,9 @@ public class DataSources {
         } else {
             poolConfiguration.connectionValidator(ConnectionValidator.defaultValidator());
         }
+        if (dataSourceJdbcRuntimeConfig.loginTimeout().isPresent()) {
+            connectionFactoryConfiguration.loginTimeout(dataSourceJdbcRuntimeConfig.loginTimeout().get());
+        }
         if (dataSourceJdbcRuntimeConfig.acquisitionTimeout().isPresent()) {
             poolConfiguration.acquisitionTimeout(dataSourceJdbcRuntimeConfig.acquisitionTimeout().get());
         }

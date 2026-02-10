@@ -152,6 +152,10 @@ public class WiringProcessor {
             boolean isLegacyEmitter = injectionPoint.getRequiredType().name()
                     .equals(ReactiveMessagingDotNames.LEGACY_EMITTER);
 
+            // Skip channel production for PausableChannel injections
+            boolean isPausableChannel = injectionPoint.getRequiredType().name()
+                    .equals(ReactiveMessagingDotNames.PAUSABLE_CHANNEL);
+
             if (emitterType != null) {
                 if (isLegacyEmitter) {
                     // Deprecated Emitter from SmallRye (emitter, channel and on overflow have been added to the spec)
@@ -162,7 +166,7 @@ public class WiringProcessor {
                     handleEmitter(transformedAnnotations, appChannels, emitters, validationErrors, injectionPoint,
                             emitterType, broadcast, channel, ReactiveMessagingDotNames.ON_OVERFLOW);
                 }
-            } else {
+            } else if (!isPausableChannel) {
                 if (channel.isPresent()) {
                     handleChannelInjection(appChannels, channels, channel.get());
                 }

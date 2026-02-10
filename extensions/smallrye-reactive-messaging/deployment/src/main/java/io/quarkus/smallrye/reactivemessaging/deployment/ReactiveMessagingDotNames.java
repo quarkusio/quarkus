@@ -79,6 +79,9 @@ public final class ReactiveMessagingDotNames {
     static final DotName KEYED = DotName.createSimple(Keyed.class.getName());
     public static final DotName KEYED_MULTI = DotName.createSimple(KeyedMulti.class.getName());
 
+    static final DotName PAUSABLE_CHANNEL = DotName
+            .createSimple(io.smallrye.reactive.messaging.PausableChannel.class.getName());
+
     // Do not directly reference the MetricDecorator (due to its direct references to MP Metrics, which may not be present)
     static final DotName METRIC_DECORATOR = DotName
             .createSimple("io.smallrye.reactive.messaging.providers.metrics.MetricDecorator");

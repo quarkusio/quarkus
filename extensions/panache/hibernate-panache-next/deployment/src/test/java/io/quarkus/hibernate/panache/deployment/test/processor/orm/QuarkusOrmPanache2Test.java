@@ -55,7 +55,7 @@ public class QuarkusOrmPanache2Test {
         method = entityClass.getDeclaredMethod("statelessBlocking");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
-        Assertions.assertEquals(entityClass.getName() + "$PanacheStatelessBlockingRepository",
+        Assertions.assertEquals(Panache2Book.class.getName() + "$StatelessRepo",
                 method.getReturnType().getName());
     }
 

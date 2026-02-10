@@ -1,4 +1,4 @@
-package io.quarkus.vertx.http.deployment.console;
+package io.quarkus.vertx.http.deployment.devmode;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -39,7 +39,6 @@ import io.quarkus.dev.config.CurrentConfig;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
-import io.quarkus.vertx.http.deployment.devmode.IdeHelper;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescriptionsManager;
 

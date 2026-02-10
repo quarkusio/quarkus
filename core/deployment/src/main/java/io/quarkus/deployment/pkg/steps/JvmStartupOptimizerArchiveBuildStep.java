@@ -119,7 +119,7 @@ public class JvmStartupOptimizerArchiveBuildStep {
             }
         }
 
-        jvmStartupOptimizerArchive.produce(new JvmStartupOptimizerArchiveResultBuildItem(archivePath));
+        jvmStartupOptimizerArchive.produce(new JvmStartupOptimizerArchiveResultBuildItem(archivePath, archiveType));
         artifactResult.produce(new ArtifactResultBuildItem(archivePath, "appCDS", Collections.emptyMap()));
     }
 

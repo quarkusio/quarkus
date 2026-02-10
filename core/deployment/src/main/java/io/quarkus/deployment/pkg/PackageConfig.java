@@ -99,8 +99,18 @@ public interface PackageConfig {
         /**
          * The JAR output type to use.
          */
-        @WithDefault("fast-jar")
-        JarType type();
+        @ConfigDocDefault("fast-jar, or aot-jar if AOT is enabled")
+        Optional<JarType> type();
+
+        default JarType effectiveType() {
+            if (type().isPresent()) {
+                return type().get();
+            }
+            if (aot().enabled()) {
+                return JarType.AOT_JAR;
+            }
+            return JarType.FAST_JAR;
+        }
 
         /**
          * Whether the created jar will be compressed. This setting is not used when building a native image

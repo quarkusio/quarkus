@@ -62,7 +62,8 @@ public class PodmanProcessor extends CommonProcessor<PodmanConfig> {
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder,
             PackageConfig packageConfig,
-            @SuppressWarnings("unused") JarBuildItem jar) {
+            @SuppressWarnings("unused") JarBuildItem jar// used to ensure that the jar has been built
+    ) {
 
         buildFromJar(podmanConfig, podmanStatusBuildItem, containerImageConfig, out, containerImageInfo, buildRequest,
                 pushRequest, artifactResultProducer, containerImageBuilder, packageConfig, ContainerRuntime.PODMAN);
@@ -84,8 +85,8 @@ public class PodmanProcessor extends CommonProcessor<PodmanConfig> {
             NativeImageBuildItem nativeImage) {
 
         buildFromNativeImage(podmanConfig, podmanStatusBuildItem, containerImageConfig, containerImage,
-                buildRequest, pushRequest, out, artifactResultProducer, containerImageBuilder, packageConfig, nativeImage,
-                ContainerRuntime.PODMAN);
+                buildRequest, pushRequest, out, artifactResultProducer, containerImageBuilder, packageConfig,
+                nativeImage, ContainerRuntime.PODMAN);
     }
 
     @Override

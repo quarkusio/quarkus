@@ -87,8 +87,8 @@ public class DockerProcessor extends CommonProcessor<DockerConfig> {
             NativeImageBuildItem nativeImage) {
 
         buildFromNativeImage(dockerConfig, dockerStatusBuildItem, containerImageConfig, containerImage,
-                buildRequest, pushRequest, out, artifactResultProducer, containerImageBuilder, packageConfig, nativeImage,
-                ContainerRuntime.DOCKER, ContainerRuntime.PODMAN);
+                buildRequest, pushRequest, out, artifactResultProducer, containerImageBuilder, packageConfig,
+                nativeImage, ContainerRuntime.DOCKER, ContainerRuntime.PODMAN);
     }
 
     @Override

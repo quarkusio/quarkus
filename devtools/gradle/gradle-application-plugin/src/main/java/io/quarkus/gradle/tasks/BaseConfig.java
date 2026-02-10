@@ -48,7 +48,7 @@ final class BaseConfig {
     }
 
     PackageConfig.JarConfig.JarType jarType() {
-        return packageConfig().jar().type();
+        return packageConfig().jar().effectiveType();
     }
 
     Manifest manifest() {
@@ -57,7 +57,7 @@ final class BaseConfig {
 
     Map<String, String> cachingRelevantProperties(List<String> propertyPatterns) {
         List<Pattern> patterns = propertyPatterns.stream().map(s -> "^(" + s + ")$").map(Pattern::compile)
-                .collect(Collectors.toList());
+                .toList();
         readMissingEnvVariables(propertyPatterns);
         Predicate<Map.Entry<String, ?>> keyPredicate = e -> patterns.stream().anyMatch(p -> p.matcher(e.getKey()).matches());
         return values.entrySet().stream()

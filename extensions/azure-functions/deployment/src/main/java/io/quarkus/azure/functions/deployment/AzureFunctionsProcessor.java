@@ -88,7 +88,7 @@ public class AzureFunctionsProcessor {
             log.warn("No azure functions exist in deployment");
             return null;
         }
-        if (packageConfig.jar().type() != PackageConfig.JarConfig.JarType.LEGACY_JAR) {
+        if (packageConfig.jar().effectiveType() != PackageConfig.JarConfig.JarType.LEGACY_JAR) {
             throw new BuildException("Azure Function deployment need to use a legacy JAR, " +
                     "please set 'quarkus.package.jar.type=legacy-jar' inside your application.properties",
                     List.of());

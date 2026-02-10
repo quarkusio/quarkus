@@ -35,7 +35,7 @@ public class UberJarConfigBuildStep {
     @BuildStep
     void uberJarMergedResourceBuildItem(BuildProducer<GeneratedResourceBuildItem> generatedResourcesProducer,
             PackageConfig packageConfig) {
-        if (packageConfig.jar().type() == UBER_JAR) {
+        if (packageConfig.jar().effectiveType() == UBER_JAR) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             try {
                 XmlCombiner combiner = new XmlCombiner();

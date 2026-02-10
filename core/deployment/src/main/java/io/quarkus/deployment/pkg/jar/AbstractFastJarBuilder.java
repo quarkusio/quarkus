@@ -274,7 +274,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 .setPath(initJar)
                 .setDependencies(List.of(curateOutcome.getApplicationModel().getAppArtifact())))
                 .setRunnerPath(initJar);
-        boolean mutableJar = packageConfig.jar().type() == MUTABLE_JAR;
+        boolean mutableJar = packageConfig.jar().effectiveType() == MUTABLE_JAR;
         if (mutableJar) {
             //we output the properties in a reproducible manner, so we remove the date comment
             //and sort them
@@ -370,7 +370,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 }
             });
         }
-        return new JarBuildItem(initJar, null, libDir, packageConfig.jar().type(), null, manifestConfig.build());
+        return new JarBuildItem(initJar, null, libDir, packageConfig.jar().effectiveType(), null, manifestConfig.build());
     }
 
     protected abstract void writeSerializedApplication(OutputStream out, Path buildDir, List<Path> allJars,
@@ -400,7 +400,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             return;
         }
         Set<GACT> forceUseArtifactIdOnlyAsNameSet = packageConfig.jar().forceUseArtifactIdOnlyAsName()
-                .orElse(Collections.emptySet());
+                .orElse(Set.of());
         boolean forceUseArtifactIdOnlyAsName = forceUseArtifactIdOnlyAsNameSet.stream()
                 .anyMatch(gact -> gact.getGroupId().equals(appDep.getGroupId())
                         && gact.getArtifactId().equals(appDep.getArtifactId())

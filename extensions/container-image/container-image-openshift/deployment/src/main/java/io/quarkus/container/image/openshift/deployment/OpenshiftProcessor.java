@@ -278,7 +278,7 @@ public class OpenshiftProcessor {
             //For docker kind of builds where we use instructions like: `COPY target/*.jar /deployments` it using '/target' is a requirement.
             //For s2i kind of builds where jars are expected directly in the '/' we have to use null.
             String outputDirName = out.getOutputDirectory().getFileName().toString();
-            PackageConfig.JarConfig.JarType jarType = packageConfig.jar().type();
+            PackageConfig.JarConfig.JarType jarType = packageConfig.jar().effectiveType();
             String contextRoot = getContextRoot(outputDirName, jarType.usesFastJarLayout(),
                     config.buildStrategy());
             KubernetesClientBuilder clientBuilder = newClientBuilderWithoutHttp2(kubernetesClient.getConfiguration(),
@@ -293,7 +293,7 @@ public class OpenshiftProcessor {
                 createContainerImage(clientBuilder, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(),
                         jar.getPath());
             }
-            artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
+            artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Map.of()));
             containerImageBuilder.produce(new ContainerImageBuilderBuildItem(OPENSHIFT));
         }
     }

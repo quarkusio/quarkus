@@ -185,14 +185,14 @@ This means that Cloud Build is not activated yet. To overcome this error, open t
 ====
 
 
-This command will give you as output a `httpsTrigger.url` that points to your function.
+This command will give you as output a `url` that points to your function.
 
 You can then call your endpoints via:
 
-- For Jakarta REST: {httpsTrigger.url}/hello
-- For servlet: {httpsTrigger.url}/servlet/hello
-- For Reactive Routes: {httpsTrigger.url}/vertx/hello
-- For Funqy: {httpsTrigger.url}/funqy
+- For Jakarta REST: `{url}/hello`
+- For servlet: `{url}/servlet/hello`
+- For Reactive Routes: `{url}/vertx/hello`
+- For Funqy: `{url}/funqy`
 
 == Testing locally
 

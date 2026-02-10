@@ -28,6 +28,12 @@ public class OidcDevUiRecorder {
     public static final String KEYCLOAK_URL = "keycloak.url";
     private static final Logger LOG = Logger.getLogger(OidcDevUiRecorder.class);
 
+    public enum DevServiceType {
+        KEYCLOAK,
+        OIDC,
+        OTHER
+    }
+
     private final RuntimeValue<VertxHttpConfig> httpConfig;
 
     public OidcDevUiRecorder(final RuntimeValue<VertxHttpConfig> httpConfig) {
@@ -45,7 +51,7 @@ public class OidcDevUiRecorder {
             String oidcProviderName, String oidcGrantType, boolean introspectionIsAvailable, boolean swaggerIsAvailable,
             boolean graphqlIsAvailable, String swaggerUiPath, String graphqlUiPath, String devServiceConfigHashCode,
             boolean discoverMetadata, String devUiLogoutPath, String devUiReadSessionCookiePath, String authServerUrl,
-            String buildTimeKeycloakAdminUrl, String buildTimeOidcApplicationType) {
+            String buildTimeKeycloakAdminUrl, String buildTimeOidcApplicationType, DevServiceType devServiceType) {
         var config = ConfigProvider.getConfig();
         String authorizationUrl;
         String tokenUrl;
@@ -54,7 +60,7 @@ public class OidcDevUiRecorder {
         final List<String> keycloakRealms;
         final String keycloakAdminUrl;
         final String oidcApplicationType;
-        if (authServerUrl == null) {
+        if (devServiceType == DevServiceType.KEYCLOAK) {
             // == Keycloak Dev Services
 
             // the "keycloak.auth-server-internal-url" is in most cases 'quarkus.oidc.auth-server-url'
@@ -88,9 +94,18 @@ public class OidcDevUiRecorder {
                     .map(at -> OidcTenantConfig.ApplicationType.WEB_APP == at ? "web-app"
                             : at.name().toLowerCase())
                     .orElse(OidcTenantConfig.ApplicationType.SERVICE.name().toLowerCase());
+        } else if (devServiceType == DevServiceType.OIDC) {
+            var oidcAuthServerUrl = config.getValue("quarkus.oidc.auth-server-url", String.class);
+            authorizationUrl = oidcAuthServerUrl + "/authorize";
+            tokenUrl = oidcAuthServerUrl + "/token";
+            logoutUrl = oidcAuthServerUrl + "/logout";
+            oidcUsers = null;
+            keycloakRealms = null;
+            keycloakAdminUrl = null;
+            introspectionIsAvailable = true;
+            oidcApplicationType = config.getOptionalValue("quarkus.oidc.application-type", String.class).orElse("service");
         } else {
-            // == OIDC Dev Services or a known provider or a test resource, or whatever user configured
-            // OIDC Dev Services are not migrated yet, hence we cannot use the runtime config
+            // == known provider or a test resource, or whatever user configured
             authorizationUrl = null;
             tokenUrl = null;
             logoutUrl = null;

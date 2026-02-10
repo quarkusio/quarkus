@@ -8,10 +8,8 @@ import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.devservices.keycloak.KeycloakAdminPageBuildItem;
 import io.quarkus.devservices.keycloak.KeycloakDevServicesPreparedBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
@@ -31,7 +29,6 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     void produceProviderComponent(BuildProducer<KeycloakAdminPageBuildItem> keycloakAdminPageProducer,
             OidcDevUiRecorder recorder,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
@@ -50,7 +47,7 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
                     oidcConfig.devui().grantOptions(),
                     nonApplicationRootPathBuildItem,
                     keycloakDevServicesPreparedBuildItem.get().getDevServiceConfigHashCode(),
-                    false, null, null, null);
+                    false, null, null, null, OidcDevUiRecorder.DevServiceType.KEYCLOAK);
 
             cardPageBuildItem.setLogo("keycloak_logo.svg", "keycloak_logo.svg");
 

@@ -20,9 +20,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.UUID;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -30,14 +33,14 @@ import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
 import org.jose4j.base64url.Base64Url;
 
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
-import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
-import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
+import io.quarkus.deployment.builditem.Startable;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.jwt.build.Jwt;
@@ -51,7 +54,7 @@ import io.vertx.mutiny.ext.web.RoutingContext;
 import io.vertx.mutiny.ext.web.handler.BodyHandler;
 
 @BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
-public class OidcDevServicesProcessor {
+class OidcDevServicesProcessor {
 
     private static final Logger LOG = Logger.getLogger(OidcDevServicesProcessor.class);
     private static final String CONFIG_PREFIX = "quarkus.oidc.";
@@ -62,123 +65,95 @@ public class OidcDevServicesProcessor {
     private static final String APPLICATION_TYPE_CONFIG_KEY = CONFIG_PREFIX + "application-type";
     private static final String CLIENT_ID_CONFIG_KEY = CONFIG_PREFIX + "client-id";
     private static final String CLIENT_SECRET_CONFIG_KEY = CONFIG_PREFIX + "credentials.secret";
-
-    private static volatile KeyPair kp;
-    private static volatile String kid;
-    private static volatile String baseURI;
-    private static volatile String clientId;
-    private static volatile String clientSecret;
-    private static volatile String applicationType;
-    private static volatile Map<String, String> configProperties;
-    private static volatile Map<String, List<String>> userToDefaultRoles;
-    private static volatile Long accessTokenExpiresIn;
-    private static volatile Long idTokenExpiresIn;
-    private static volatile Runnable closeDevServiceTask;
+    private static final String SERVICE_CONFIG_IDENTIFIER_SEPARATOR = ";";
 
     @BuildStep
-    DevServicesResultBuildItem startServer(CuratedApplicationShutdownBuildItem closeBuildItem,
-            OidcDevServicesConfig devServicesConfig, DockerStatusBuildItem dockerStatusBuildItem,
-            BuildProducer<OidcDevServicesConfigBuildItem> devServiceConfigProducer) {
-        if (shouldNotStartServer(devServicesConfig, dockerStatusBuildItem)) {
-            closeDevSvcIfNecessary();
-            return null;
-        }
-
-        userToDefaultRoles = devServicesConfig.roles();
-        accessTokenExpiresIn = devServicesConfig.accessTokenExpiresIn().toSeconds();
-        idTokenExpiresIn = devServicesConfig.idTokenExpiresIn().toSeconds();
-        if (closeDevServiceTask == null) {
-            LOG.info("Starting Dev Services for OIDC");
-            Vertx vertx = Vertx.vertx();
-            HttpServerOptions options = new HttpServerOptions();
-            options.setPort(0);
-            HttpServer httpServer = vertx.createHttpServer(options);
-
-            Router router = Router.router(vertx);
-            httpServer.requestHandler(router);
-            registerRoutes(router);
-
-            httpServer.listenAndAwait();
-            baseURI = "http://localhost:" + httpServer.actualPort();
-            closeDevServiceTask = new Runnable() {
-
-                private volatile boolean closed = false;
-
-                @Override
-                public void run() {
-                    if (closed) {
-                        return;
-                    }
-                    closed = true;
-                    // this is done on delegates because closing Mutiny wrapper can result in unrelated exception
-                    // when other tests (not necessarily using this dev services) run after a test using this service
-                    httpServer.getDelegate().close(httpServerResult -> {
-                        if (httpServerResult != null && httpServerResult.failed()) {
-                            LOG.error("Failed to close HTTP Server", httpServerResult.cause());
-                        }
-                        vertx.getDelegate().close(vertxResult -> {
-                            if (vertxResult != null && vertxResult.failed()) {
-                                LOG.error("Failed to close Vertx instance", vertxResult.cause());
-                            }
-                        });
-                    });
-                }
-            };
-            closeBuildItem.addCloseTask(OidcDevServicesProcessor::closeDevSvcIfNecessary, true);
-            updateDevSvcConfigProperties();
-            LOG.infof("Dev Services for OIDC started on %s", baseURI);
-        } else if (!getOidcClientId().equals(clientId) || !getOidcApplicationType().equals(applicationType)) {
-            updateDevSvcConfigProperties();
-        }
-
-        devServiceConfigProducer.produce(new OidcDevServicesConfigBuildItem(configProperties));
-        return new RunningDevService("oidc-dev-services", null, () -> {
-        }, configProperties).toBuildItem();
-    }
-
-    private static void closeDevSvcIfNecessary() {
-        if (closeDevServiceTask != null) {
-            closeDevServiceTask.run();
-            closeDevServiceTask = null;
+    void startServer(BuildProducer<DevServicesResultBuildItem> devServicesResultProducer,
+            BuildProducer<OidcDevServicesPreparedBuildItem> oidcDevServicesPreparedProducer,
+            OidcDevServicesConfig devServicesConfig, DockerStatusBuildItem dockerStatusBuildItem) {
+        if (shouldStartServer(devServicesConfig, dockerStatusBuildItem)) {
+            devServicesResultProducer.produce(DevServicesResultBuildItem.owned()
+                    .feature(Feature.OIDC)
+                    .serviceName(Feature.OIDC.getName().toUpperCase())
+                    .serviceConfig(getServiceConfigIdentifier(devServicesConfig))
+                    .startable(new OidcServerSupplier(devServicesConfig))
+                    .configProvider(createApplicationConfigProvider())
+                    .build());
+            oidcDevServicesPreparedProducer.produce(new OidcDevServicesPreparedBuildItem());
         }
     }
 
-    private static boolean shouldNotStartServer(OidcDevServicesConfig devServicesConfig,
+    private static String getServiceConfigIdentifier(OidcDevServicesConfig config) {
+        // Dev Services are restarted if the "service config" is different then the previous one
+        // we can't rely on the static variables, hence the idea in this method is to trust the hash code is
+
+        // TODO: use the builtin hashcode once https://github.com/smallrye/smallrye-config/issues/1462 is fixed
+        int configHashCode = Objects.hash(
+                config.enabled().orElse(true), // goal is to have deterministic value, not correct 'enabled' flag
+                config.accessTokenExpiresIn(),
+                config.idTokenExpiresIn(),
+                safeMapHash(config.roles()));
+
+        return configHashCode + SERVICE_CONFIG_IDENTIFIER_SEPARATOR + getOidcClientSecret()
+                + SERVICE_CONFIG_IDENTIFIER_SEPARATOR + getOidcClientId() + SERVICE_CONFIG_IDENTIFIER_SEPARATOR
+                + getOidcApplicationType();
+    }
+
+    private static Map<String, Function<OidcServer, String>> createApplicationConfigProvider() {
+        var lazyConfigMap = new HashMap<String, Function<OidcServer, String>>();
+        lazyConfigMap.put(AUTH_SERVER_URL_CONFIG_KEY, s -> s.baseURI);
+        if (getOptionalOidcClientSecret().isEmpty()) {
+            lazyConfigMap.put(CLIENT_SECRET_CONFIG_KEY, s -> s.oidcClientSecret);
+        }
+        if (getOptionalOidcClientId().isEmpty()) {
+            lazyConfigMap.put(CLIENT_ID_CONFIG_KEY, s -> s.oidcClientId);
+        }
+        return Collections.unmodifiableMap(lazyConfigMap);
+    }
+
+    private static int safeMapHash(Map<?, ?> map) {
+        if (map == null)
+            return 0;
+
+        return map.entrySet().stream().mapToInt(e -> Objects.hash(e.getKey(), e.getValue())).sum();
+    }
+
+    private static boolean shouldStartServer(OidcDevServicesConfig devServicesConfig,
             DockerStatusBuildItem dockerStatusBuildItem) {
         boolean explicitlyDisabled = devServicesConfig.enabled().isPresent() && !devServicesConfig.enabled().get();
         if (explicitlyDisabled) {
             LOG.debug("Not starting Dev Services for OIDC as it has been disabled in the config");
-            return true;
+            return false;
         }
         if (!isOidcEnabled()) {
             LOG.debug("Not starting Dev Services for OIDC as OIDC extension has been disabled in the config");
-            return true;
+            return false;
         }
         if (!isOidcTenantEnabled()) {
             LOG.debug("Not starting Dev Services for OIDC as 'quarkus.oidc.tenant.enabled' is false");
-            return true;
+            return false;
         }
         if (ConfigUtils.isPropertyPresent(AUTH_SERVER_URL_CONFIG_KEY)) {
             LOG.debug("Not starting Dev Services for OIDC as 'quarkus.oidc.auth-server-url' has been provided");
-            return true;
+            return false;
         }
         if (ConfigUtils.isPropertyPresent(PROVIDER_CONFIG_KEY)) {
             LOG.debug("Not starting Dev Services for OIDC as 'quarkus.oidc.provider' has been provided");
-            return true;
+            return false;
         }
         if (devServicesConfig.enabled().isEmpty()) {
             if (isDockerAvailable(dockerStatusBuildItem)) {
                 LOG.debug(
                         "Not starting Dev Services for OIDC as a container runtime is available and a Keycloak Dev Services will be started."
                                 + " Set 'quarkus.oidc.devservices.enabled=true' if you prefer to start Dev Services for OIDC.");
-                return true;
+                return false;
             } else {
                 LOG.debug(
                         "Starting Dev Services for OIDC as a container runtime is not available."
                                 + "Set 'quarkus.oidc.devservices.enabled=false' if you prefer not to start Dev Services for OIDC.");
             }
         }
-        return false;
+        return true;
     }
 
     private static boolean isDockerAvailable(DockerStatusBuildItem dockerStatusBuildItem) {
@@ -187,57 +162,6 @@ public class OidcDevServicesProcessor {
         } catch (Throwable t) {
             return false;
         }
-    }
-
-    private static void updateDevSvcConfigProperties() {
-        // relevant configuration has changed
-        clientId = getOidcClientId();
-        clientSecret = getOidcClientSecret();
-        applicationType = getOidcApplicationType();
-        final Map<String, String> aConfigProperties = new HashMap<>();
-        aConfigProperties.put(AUTH_SERVER_URL_CONFIG_KEY, baseURI);
-        aConfigProperties.put(APPLICATION_TYPE_CONFIG_KEY, applicationType);
-        aConfigProperties.put(CLIENT_ID_CONFIG_KEY, clientId);
-        aConfigProperties.put(CLIENT_SECRET_CONFIG_KEY, clientSecret);
-        configProperties = Map.copyOf(aConfigProperties);
-    }
-
-    private static void registerRoutes(Router router) {
-        BodyHandler bodyHandler = BodyHandler.create();
-        router.get("/").handler(OidcDevServicesProcessor::mainRoute);
-        router.get("/.well-known/openid-configuration").handler(OidcDevServicesProcessor::configuration);
-        router.get("/authorize").handler(OidcDevServicesProcessor::authorize);
-        router.post("/login").handler(bodyHandler).handler(OidcDevServicesProcessor::login);
-        router.post("/token").handler(bodyHandler).handler(OidcDevServicesProcessor::token);
-        router.get("/keys").handler(OidcDevServicesProcessor::getKeys);
-        router.get("/logout").handler(OidcDevServicesProcessor::logout);
-        router.get("/userinfo").handler(OidcDevServicesProcessor::userInfo);
-
-        KeyPairGenerator kpg;
-        try {
-            kpg = KeyPairGenerator.getInstance("RSA");
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-        kpg.initialize(2048);
-        kp = kpg.generateKeyPair();
-        kid = createKeyId();
-    }
-
-    private static List<String> getUsers() {
-        if (userToDefaultRoles.isEmpty()) {
-            return Arrays.asList("alice", "bob");
-        } else {
-            List<String> ret = new ArrayList<>(userToDefaultRoles.keySet());
-            Collections.sort(ret);
-            return ret;
-        }
-    }
-
-    private static List<String> getUserRoles(String user) {
-        List<String> roles = userToDefaultRoles.get(user);
-        return roles == null ? ("alice".equals(user) ? List.of("admin", "user") : List.of("user"))
-                : roles;
     }
 
     private static boolean isOidcEnabled() {
@@ -249,506 +173,35 @@ public class OidcDevServicesProcessor {
     }
 
     private static String getOidcApplicationType() {
-        return ConfigProvider.getConfig().getOptionalValue(APPLICATION_TYPE_CONFIG_KEY, String.class).orElse("service");
+        return getOptionalOidcApplicationType().orElse("service");
+    }
+
+    private static Optional<String> getOptionalOidcApplicationType() {
+        return ConfigProvider.getConfig().getOptionalValue(APPLICATION_TYPE_CONFIG_KEY, String.class);
     }
 
     private static String getOidcClientId() {
-        return ConfigProvider.getConfig().getOptionalValue(CLIENT_ID_CONFIG_KEY, String.class)
-                .orElse("quarkus-app");
+        return getOptionalOidcClientId().orElse("quarkus-app");
     }
 
     private static String getOidcClientSecret() {
-        return ConfigProvider.getConfig().getOptionalValue(CLIENT_SECRET_CONFIG_KEY, String.class)
-                .orElseGet(() -> UUID.randomUUID().toString());
+        return getOptionalOidcClientSecret().orElse("secret");
+    }
+
+    private static Optional<String> getOptionalOidcClientId() {
+        return ConfigProvider.getConfig().getOptionalValue(CLIENT_ID_CONFIG_KEY, String.class);
+    }
+
+    private static Optional<String> getOptionalOidcClientSecret() {
+        return ConfigProvider.getConfig().getOptionalValue(CLIENT_SECRET_CONFIG_KEY, String.class);
     }
 
     private static void mainRoute(RoutingContext rc) {
         rc.response().endAndForget("OIDC server up and running");
     }
 
-    private static void configuration(RoutingContext rc) {
-        String data = """
-                {
-                   "token_endpoint":"%1$s/token",
-                   "token_endpoint_auth_methods_supported":[
-                      "client_secret_post",
-                      "private_key_jwt",
-                      "client_secret_basic"
-                   ],
-                   "jwks_uri":"%1$s/keys",
-                   "response_modes_supported":[
-                      "query"
-                   ],
-                   "subject_types_supported":[
-                      "pairwise"
-                   ],
-                   "id_token_signing_alg_values_supported":[
-                      "RS256"
-                   ],
-                   "response_types_supported":[
-                      "code",
-                      "id_token",
-                      "code id_token",
-                      "id_token token",
-                      "code id_token token"
-                   ],
-                   "scopes_supported":[
-                      "openid",
-                      "profile",
-                      "email",
-                      "offline_access"
-                   ],
-                   "issuer":"%1$s",
-                   "request_uri_parameter_supported":false,
-                   "userinfo_endpoint":"%1$s/userinfo",
-                   "authorization_endpoint":"%1$s/authorize",
-                   "device_authorization_endpoint":"%1$s/devicecode",
-                   "http_logout_supported":true,
-                   "frontchannel_logout_supported":true,
-                   "end_session_endpoint":"%1$s/logout",
-                   "claims_supported":[
-                      "sub",
-                      "iss",
-                      "aud",
-                      "exp",
-                      "iat",
-                      "auth_time",
-                      "acr",
-                      "nonce",
-                      "preferred_username",
-                      "name",
-                      "tid",
-                      "ver",
-                      "at_hash",
-                      "c_hash",
-                      "email"
-                   ]
-                }
-                """.formatted(baseURI);
-        rc.response().putHeader("Content-Type", "application/json");
-        rc.endAndForget(data);
-    }
-
-    /*
-     * First request:
-     * GET
-     * https://localhost:X/authorize?response_type=code&client_id=SECRET&scope=openid+openid+
-     * email+profile&redirect_uri=http://localhost:8080/Login/oidcLoginSuccess&state=STATE
-     *
-     * returns a 302 to
-     * GET http://localhost:8080/Login/oidcLoginSuccess?code=CODE&state=STATE
-     */
-    private static void authorize(RoutingContext rc) {
-        String response_type = rc.request().params().get("response_type");
-        String clientId = rc.request().params().get("client_id");
-        String scope = rc.request().params().get("scope");
-        String state = rc.request().params().get("state");
-        String redirect_uri = rc.request().params().get("redirect_uri");
-        URI redirect;
-        try {
-            redirect = new URI(redirect_uri + "?state=" + state);
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-        StringBuilder predefinedUsers = new StringBuilder();
-        for (String predefinedUser : getUsers()) {
-            predefinedUsers.append("   <button name='predefined-" + predefinedUser + "' class='link' type='submit' value='")
-                    .append(predefinedUser)
-                    .append("' title='Log in as ")
-                    .append(predefinedUser)
-                    .append(" with roles: ")
-                    .append(String.join(",", getUserRoles(predefinedUser)))
-                    .append("'>")
-                    .append(predefinedUser)
-                    .append("</button>\n");
-        }
-        rc.response()
-                .endAndForget(
-                        """
-                                <html>
-                                 <head>
-                                  <title>Login</title>
-                                  <style>
-                                        body {
-                                        display: flex;
-                                        flex-direction: column;
-                                        background-color: hsla(210, 10%, 23%, 1.0);
-                                        color: hsla(214, 96%, 96%, 0.9);
-                                        height: 100vh;
-                                        align-items: center;
-                                        justify-content: center;
-                                        margin: 0px;
-                                        font-family: -apple-system, BlinkMacSystemFont, 'Roboto', 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
-                                      }
-                                      .card {
-                                        display: flex;
-                                        flex-direction: column;
-                                        justify-content: space-between;
-                                        border: 1px solid hsla(214, 60%, 80%, 0.14);
-                                        border-radius: 4px;
-                                        width: 400px;
-                                        filter: brightness(90%);
-                                      }
-                                      .card-header {
-                                        font-size: 1.125rem;
-                                        line-height: 1;
-                                        height: 25px;
-                                        display: flex;
-                                        flex-direction: row;
-                                        justify-content: space-between;
-                                        align-items: center;
-                                        padding: 10px 10px;
-                                        background-color: hsla(214, 65%, 85%, 0.06);
-                                        border-bottom: 1px solid hsla(214, 60%, 80%, 0.14);
-                                      }
-                                      .card-body {
-                                        line-height: 1;
-                                        display: flex;
-                                        flex-direction: column;
-                                        justify-content: space-between;
-                                        padding: 10px 10px;
-                                        gap: 10px;
-                                      }
-                                      .card:hover {
-                                        box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
-                                      }
-                                      .predefined-form {
-                                        display: flex;
-                                        flex-direction: column;
-                                        align-items: flex-start;
-                                        gap: 10px;
-                                      }
-                                      .link {
-                                        background: none!important;
-                                        border: none;
-                                        color: hsla(214, 96%, 96%, 0.9);
-                                        padding: 0!important;
-                                        text-decoration: none;
-                                        cursor: pointer;
-                                        font-size: large;
-                                      }
-                                      .link:hover {
-                                        filter: brightness(90%);
-                                      }
-                                      .custom-link{
-                                        display: flex;
-                                        font-size: large;
-                                        padding-top: 4px;
-                                        cursor: pointer;
-                                      }
-                                      .custom-form {
-                                        display: flex;
-                                        flex-direction: column;
-                                        gap: 5px;
-                                        padding-top: 5px;
-                                      }
-                                      .custom-button {
-                                        background: hsla(145, 65%, 42%, 0.5);
-                                        border: unset;
-                                        color: hsla(214, 96%, 96%, 0.9);
-                                        font-size: large;
-                                        cursor: pointer;
-                                      }
-                                      .custom-button:hover {
-                                        filter: brightness(90%);
-                                      }
-                                  </style>
-                                 </head>
-                                 <body>
-                                  <div class='card'>
-                                   <div class='card-header'>
-                                    <div>Login</div>
-                                   </div>
-                                   <div class='card-body'>
-                                    <form class='predefined-form' action='/login' method='post'>
-                                """
-                                + """
-                                            <input type='hidden' name='redirect_uri' value='%1$s'>
-                                            <input type='hidden' name='response_type' value='%3$s'>
-                                            <input type='hidden' name='client_id' value='%4$s'>
-                                            <input type='hidden' name='scope' value='%5$s'>
-                                                %2$s
-                                            </form>
-                                            <details>
-                                             <summary class='custom-link'>Custom user</summary>
-                                             <form class='custom-form' action='/login' method='post'>
-                                              <input type='hidden' name='redirect_uri' value='%1$s'>
-                                              <input type='hidden' name='response_type' value='%3$s'>
-                                              <input type='hidden' name='client_id' value='%4$s'>
-                                              <input type='hidden' name='scope' value='%5$s'>
-                                              <input type='text' name='name' placeholder='Name'><br/>
-                                              <input type='text' name='roles' placeholder='Roles (comma-separated)'><br/>
-                                              <button class='custom-button' type='submit' name='login'>Login</button>
-                                             </form>
-                                            </details>
-                                           </div>
-                                          </div>
-                                         </body>
-                                        </html>
-                                        """.formatted(redirect.toASCIIString(), predefinedUsers, response_type, clientId,
-                                        scope));
-    }
-
-    private static void login(RoutingContext rc) {
-        String redirect_uri = rc.request().params().get("redirect_uri");
-        String predefined = null;
-        for (Map.Entry<String, String> param : rc.request().params()) {
-            if (param.getKey().startsWith("predefined")) {
-                predefined = param.getValue();
-                break;
-            }
-        }
-        String name = rc.request().params().get("name");
-        String roles = rc.request().params().get("roles");
-        String scope = rc.request().params().get("scope");
-        String clientId = rc.request().params().get("client_id");
-        String responseType = rc.request().params().get("response_type");
-
-        if (predefined != null) {
-            name = predefined;
-            roles = String.join(",", getUserRoles(name));
-        }
-        if (name == null || name.isBlank()) {
-            name = "user";
-        }
-
-        if (responseType == null || responseType.isEmpty()) {
-            rc.response().setStatusCode(500).endAndForget("Illegal state - the 'response_type' parameter is required");
-            return;
-        }
-
-        StringBuilder queryParams = new StringBuilder();
-
-        if (responseType.contains("code")) {
-            String code = new UserAndRoles(name, roles).encode();
-            queryParams.append("&code=").append(code);
-        }
-
-        if (responseType.contains("idtoken")) {
-            String idToken = createIdToken(name, getUserRolesSet(roles), clientId);
-            queryParams.append("&id_token=").append(idToken);
-        }
-
-        if (responseType.contains(" token")) {
-            String accessToken = createAccessToken(name, getUserRolesSet(roles), getScopeAsSet(scope));
-            queryParams.append("&access_token=").append(accessToken);
-        }
-
-        rc.response()
-                .putHeader("Location", redirect_uri + queryParams)
-                .setStatusCode(302)
-                .endAndForget();
-    }
-
-    private static void token(RoutingContext rc) {
-        String grantType = rc.request().formAttributes().get("grant_type");
-        switch (grantType) {
-            case "authorization_code" -> authorizationCodeFlowTokenEndpoint(rc);
-            case "refresh_token" -> refreshTokenEndpoint(rc);
-            case "client_credentials" -> clientCredentialsTokenEndpoint(rc);
-            case "password" -> passwordTokenEndpoint(rc);
-            default -> rc.response()
-                    .setStatusCode(400)
-                    .putHeader("Content-Type", "application/json")
-                    .putHeader("Cache-Control", "no-store")
-                    .endAndForget("Unsupported grant type: " + grantType);
-        }
-    }
-
-    private static void passwordTokenEndpoint(RoutingContext rc) {
-        String scope = rc.request().formAttributes().get("scope");
-        String username = rc.request().formAttributes().get("username");
-        if (clientCredentialsAreInvalid(rc, false)) {
-            invalidTokenResponse(rc);
-            return;
-        }
-        if (username == null || username.isEmpty()) {
-            LOG.warn("Username is not present, denying token request");
-            invalidTokenResponse(rc);
-            return;
-        }
-        List<String> userRoles = getUserRoles(username);
-        String accessToken = createAccessToken(username, new HashSet<>(userRoles), getScopeAsSet(scope));
-        String refreshToken = new UserAndRoles(username, String.join(",", userRoles)).encode();
-        String data = """
-                {
-                  "access_token":"%s",
-                  "token_type":"Bearer",
-                  "expires_in":%d,
-                  "refresh_token":"%s"
-                }
-                """.formatted(accessToken, accessTokenExpiresIn, refreshToken);
-        rc.response()
-                .putHeader("Content-Type", "application/json")
-                .putHeader("Cache-Control", "no-store")
-                .endAndForget(data);
-    }
-
-    private static void clientCredentialsTokenEndpoint(RoutingContext rc) {
-        String scope = rc.request().formAttributes().get("scope");
-        if (clientCredentialsAreInvalid(rc, false)) {
-            invalidTokenResponse(rc);
-            return;
-        }
-        String accessToken = createAccessToken(clientId, new HashSet<>(getUserRoles(clientId)), getScopeAsSet(scope));
-        String data = """
-                {
-                      "access_token": "%s",
-                      "token_type": "Bearer",
-                      "expires_in": %d
-                }
-                """.formatted(accessToken, accessTokenExpiresIn);
-        rc.response()
-                .putHeader("Content-Type", "application/json")
-                .putHeader("Cache-Control", "no-store")
-                .endAndForget(data);
-    }
-
-    private static boolean clientCredentialsAreInvalid(RoutingContext rc, boolean requireClientSecret) {
-        // first try to get credentials form attributes
-        String reqClientId = rc.request().formAttributes().get("client_id");
-        String reqClientSecret = rc.request().formAttributes().get("client_secret");
-        // and fallback to basic authentication method
-        if (reqClientSecret == null || reqClientSecret.isEmpty()) {
-            String authorizationHeader = rc.request().getHeader(HttpHeaders.AUTHORIZATION);
-            if (authorizationHeader != null && authorizationHeader.startsWith("Basic ")) {
-                String encodedClientIdToSecret = authorizationHeader.substring("Basic ".length()).trim();
-                String[] clientIdAndSecret = decodeBasicCredentials(encodedClientIdToSecret).split(":");
-                if (clientIdAndSecret.length != 2) {
-                    LOG.warn("Malformed client credentials submitted with the HTTP Authorization Basic scheme");
-                    return true;
-                }
-                reqClientId = clientIdAndSecret[0];
-                reqClientSecret = clientIdAndSecret[1];
-            }
-        }
-
-        if (reqClientId == null || reqClientId.isEmpty()) {
-            LOG.warn("Client id is not present, denying token request");
-            return true;
-        } else if (!reqClientId.equals(clientId)) {
-            LOG.warnf("Expected client id '%s', but got '%s', denying token request", clientId, reqClientId);
-            return true;
-        }
-
-        // TODO: this method verifies the client secret only when present or when required previously
-        //    we should extend client credentials verification
-        if (reqClientSecret == null || reqClientSecret.isEmpty()) {
-            if (requireClientSecret) {
-                LOG.warn("Client secret is not present, denying token request");
-                return true;
-            } else {
-                LOG.debug("Client secret is not present");
-            }
-        } else if (!reqClientSecret.equals(clientSecret)) {
-            LOG.warnf("Expected client secret '%s', but got '%s', denying token request", clientSecret, reqClientSecret);
-            return true;
-        }
-
-        return false;
-    }
-
     private static String decodeBasicCredentials(String basicCredentials) {
         return new String(getDecoder().decode(basicCredentials.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
-    }
-
-    private static void refreshTokenEndpoint(RoutingContext rc) {
-        if (clientCredentialsAreInvalid(rc, true)) {
-            invalidTokenResponse(rc);
-            return;
-        }
-        String scope = rc.request().formAttributes().get("scope");
-        String refreshToken = rc.request().formAttributes().get("refresh_token");
-        UserAndRoles userAndRoles = decode(refreshToken);
-        if (userAndRoles == null) {
-            LOG.warnf("Received invalid refresh token, denying token refresh: %s", refreshToken);
-            invalidTokenResponse(rc);
-            return;
-        }
-
-        String accessToken = createAccessToken(userAndRoles.user, userAndRoles.getRolesAsSet(), getScopeAsSet(scope));
-        String data = """
-                {
-                   "access_token": "%s",
-                   "token_type": "Bearer",
-                   "refresh_token": "%s",
-                   "expires_in": %d
-                }
-                """.formatted(accessToken, refreshToken, accessTokenExpiresIn);
-        rc.response()
-                .putHeader("Content-Type", "application/json")
-                .putHeader("Cache-Control", "no-store")
-                .endAndForget(data);
-    }
-
-    /*
-     * OIDC calls POST /token?
-     * grant_type=authorization_code
-     * &code=CODE
-     * &redirect_uri=URI
-     *
-     * returns:
-     *
-     * {
-     * "token_type":"Bearer",
-     * "scope":"openid email profile",
-     * "expires_in":EXPIRES_IN,
-     * "ext_expires_in":EXPIRES_IN,
-     * "access_token":TOKEN,
-     * "id_token":JWT
-     * }
-     *
-     * ID token:
-     * {
-     * "ver": "2.0",
-     * "iss": "http://localhost",
-     * "sub": "USERID",
-     * "aud": "CLIENTID",
-     * "exp": 1641906214,
-     * "iat": 1641819514,
-     * "nbf": 1641819514,
-     * "name": "Foo Bar",
-     * "preferred_username": "user@example.com",
-     * "oid": "OPAQUE",
-     * "email": "user@example.com",
-     * "tid": "TENANTID",
-     * "aio": "AZURE_OPAQUE"
-     * }
-     */
-    private static void authorizationCodeFlowTokenEndpoint(RoutingContext rc) {
-        // TODO: check redirect_uri is same as in the initial Authorization Request
-        String clientId = rc.request().formAttributes().get("client_id");
-        if (clientId == null || clientId.isEmpty()) {
-            clientId = OidcDevServicesProcessor.clientId;
-        }
-        String scope = rc.request().formAttributes().get("scope");
-
-        String code = rc.request().formAttributes().get("code");
-        UserAndRoles userAndRoles = decode(code);
-        if (userAndRoles == null) {
-            invalidTokenResponse(rc);
-            return;
-        }
-
-        String accessToken = createAccessToken(userAndRoles.user, userAndRoles.getRolesAsSet(), getScopeAsSet(scope));
-        String idToken = createIdToken(userAndRoles.user, userAndRoles.getRolesAsSet(), clientId);
-
-        String data = """
-                {
-                 "token_type":"Bearer",
-                 "scope":"openid email profile",
-                 "expires_in":%d,
-                 "ext_expires_in":%d,
-                 "access_token":"%s",
-                 "id_token":"%s",
-                 "refresh_token": "%s"
-                 }
-                """.formatted(accessTokenExpiresIn, accessTokenExpiresIn, accessToken, idToken,
-                userAndRoles.encode());
-        rc.response()
-                .putHeader("Content-Type", "application/json")
-                .putHeader("Cache-Control", "no-store")
-                .endAndForget(data);
     }
 
     private static void invalidTokenResponse(RoutingContext rc) {
@@ -763,40 +216,6 @@ public class OidcDevServicesProcessor {
                         """);
     }
 
-    private static String createIdToken(String user, Set<String> roles, String clientId) {
-        return Jwt.claims()
-                .expiresIn(idTokenExpiresIn)
-                .issuedAt(Instant.now())
-                .issuer(baseURI)
-                .audience(clientId)
-                .subject(user)
-                .upn(user)
-                .claim("name", buildNameClaimValue(user))
-                .claim(Claims.preferred_username, buildEmailClaimValue(user))
-                .claim(Claims.email, buildEmailClaimValue(user))
-                .groups(roles)
-                .jws()
-                .keyId(kid)
-                .sign(kp.getPrivate());
-    }
-
-    private static String createAccessToken(String user, Set<String> roles, Set<String> scope) {
-        return Jwt.claims()
-                .expiresIn(accessTokenExpiresIn)
-                .issuedAt(Instant.now())
-                .issuer(baseURI)
-                .subject(user)
-                .scope(scope)
-                .upn(user)
-                .claim("name", buildNameClaimValue(user))
-                .claim(Claims.preferred_username, buildEmailClaimValue(user))
-                .claim(Claims.email, buildEmailClaimValue(user))
-                .groups(roles)
-                .jws()
-                .keyId(kid)
-                .sign(kp.getPrivate());
-    }
-
     private static String buildNameClaimValue(String user) {
         if (user.contains("@")) {
             return capitalize(user.split("@")[0]);
@@ -809,43 +228,6 @@ public class OidcDevServicesProcessor {
             return user;
         }
         return user + "@example.com";
-    }
-
-    /*
-     * {"kty":"RSA",
-     * "use":"sig",
-     * "kid":"KEYID",
-     * "x5t":"KEYID",
-     * "n":
-     * "<MODULUS>",
-     * "e":"<EXPONENT>",
-     * "x5c":[
-     * "KEYID"
-     * ],
-     * "issuer":"http://localhost:port"},
-     */
-    private static void getKeys(RoutingContext rc) {
-        RSAPublicKey pub = (RSAPublicKey) kp.getPublic();
-        String modulus = Base64.getUrlEncoder().encodeToString(pub.getModulus().toByteArray());
-        String exponent = Base64.getUrlEncoder().encodeToString(pub.getPublicExponent().toByteArray());
-        String data = """
-                {
-                  "keys": [
-                    {
-                      "alg": "RS256",
-                      "kty": "RSA",
-                      "n": "%s",
-                      "use": "sig",
-                      "kid": "%s",
-                      "issuer": "%s",
-                      "e": "%s"
-                    }
-                  ]
-                }
-                """.formatted(modulus, kid, baseURI, exponent);
-        rc.response()
-                .putHeader("Content-Type", "application/json")
-                .endAndForget(data);
     }
 
     /*
@@ -886,25 +268,6 @@ public class OidcDevServicesProcessor {
             }
         }
         rc.response().setStatusCode(401).endAndForget("WWW-Authenticate: Bearer error=\"invalid_token\"");
-    }
-
-    private static UserAndRoles decode(String encodedContent) {
-        if (encodedContent != null && !encodedContent.isEmpty()) {
-            String decodedCode = new String(Base64.getUrlDecoder().decode(encodedContent), StandardCharsets.UTF_8);
-            int separator = decodedCode.indexOf('|');
-            if (separator != -1) {
-                String user = decodedCode.substring(0, separator);
-                String roles = decodedCode.substring(separator + 1);
-                if (roles.isBlank()) {
-                    roles = String.join(",", getUserRoles(user));
-                }
-                return new UserAndRoles(user, roles);
-            } else if (getUsers().contains(decodedCode)) {
-                String roles = String.join(",", getUserRoles(decodedCode));
-                return new UserAndRoles(decodedCode, roles);
-            }
-        }
-        return null;
     }
 
     private static JsonObject decodeJwtContent(String jwt) {
@@ -975,11 +338,706 @@ public class OidcDevServicesProcessor {
 
     }
 
-    private static String createKeyId() {
-        try {
-            return Base64Url.encode(MessageDigest.getInstance("SHA-256").digest(kp.getPrivate().getEncoded()));
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Failed to generate key id", e);
+    private record OidcServerSupplier(OidcDevServicesConfig devServicesConfig) implements Supplier<OidcServer> {
+        @Override
+        public OidcServer get() {
+            return new OidcServer(devServicesConfig, getOidcClientSecret(), getOidcClientId());
+        }
+    }
+
+    private static final class OidcServer implements Startable {
+
+        private final Map<String, List<String>> userToDefaultRoles;
+        private final Long accessTokenExpiresIn;
+        private final Long idTokenExpiresIn;
+        private final String oidcClientSecret;
+        private final String oidcClientId;
+        private volatile KeyPair kp;
+        private volatile String kid;
+        private volatile String baseURI;
+        private volatile Vertx vertx;
+        private volatile HttpServer httpServer;
+
+        private OidcServer(OidcDevServicesConfig devServicesConfig, String oidcClientSecret, String oidcClientId) {
+            this.userToDefaultRoles = devServicesConfig.roles();
+            this.accessTokenExpiresIn = devServicesConfig.accessTokenExpiresIn().toSeconds();
+            this.idTokenExpiresIn = devServicesConfig.idTokenExpiresIn().toSeconds();
+            this.oidcClientSecret = oidcClientSecret;
+            this.oidcClientId = oidcClientId;
+            this.kp = null;
+            this.kid = null;
+            this.baseURI = null;
+            this.vertx = null;
+            this.httpServer = null;
+        }
+
+        @Override
+        public void start() {
+            LOG.info("Starting Dev Services for OIDC");
+            vertx = Vertx.vertx();
+            HttpServerOptions options = new HttpServerOptions();
+            options.setPort(0);
+            httpServer = vertx.createHttpServer(options);
+
+            Router router = Router.router(vertx);
+            httpServer.requestHandler(router);
+            registerRoutes(router);
+
+            httpServer.listenAndAwait();
+            baseURI = "http://localhost:" + httpServer.actualPort();
+        }
+
+        @Override
+        public String getConnectionInfo() {
+            return baseURI != null ? baseURI : "";
+        }
+
+        @Override
+        public String getContainerId() {
+            return null;
+        }
+
+        @Override
+        public void close() {
+            if (httpServer != null) {
+                var anHttpServer = httpServer;
+                var aVertx = vertx;
+                httpServer = null;
+                vertx = null;
+
+                // this is done on delegates because closing Mutiny wrapper can result in unrelated exception
+                // when other tests (not necessarily using this dev services) run after a test using this service
+                anHttpServer.getDelegate().close(httpServerResult -> {
+                    if (httpServerResult != null && httpServerResult.failed()) {
+                        LOG.error("Failed to close HTTP Server", httpServerResult.cause());
+                    }
+                    aVertx.getDelegate().close(vertxResult -> {
+                        if (vertxResult != null && vertxResult.failed()) {
+                            LOG.error("Failed to close Vertx instance", vertxResult.cause());
+                        }
+                    });
+                });
+            }
+        }
+
+        private void registerRoutes(Router router) {
+            BodyHandler bodyHandler = BodyHandler.create();
+            router.get("/").handler(OidcDevServicesProcessor::mainRoute);
+            router.get("/.well-known/openid-configuration").handler(this::configuration);
+            router.get("/authorize").handler(this::authorize);
+            router.post("/login").handler(bodyHandler).handler(this::login);
+            router.post("/token").handler(bodyHandler).handler(this::token);
+            router.get("/keys").handler(this::getKeys);
+            router.get("/logout").handler(OidcDevServicesProcessor::logout);
+            router.get("/userinfo").handler(OidcDevServicesProcessor::userInfo);
+
+            KeyPairGenerator kpg;
+            try {
+                kpg = KeyPairGenerator.getInstance("RSA");
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            }
+            kpg.initialize(2048);
+            kp = kpg.generateKeyPair();
+            kid = createKeyId();
+
+        }
+
+        private String createIdToken(String user, Set<String> roles, String clientId) {
+            return Jwt.claims()
+                    .expiresIn(idTokenExpiresIn)
+                    .issuedAt(Instant.now())
+                    .issuer(baseURI)
+                    .audience(clientId)
+                    .subject(user)
+                    .upn(user)
+                    .claim("name", buildNameClaimValue(user))
+                    .claim(Claims.preferred_username, buildEmailClaimValue(user))
+                    .claim(Claims.email, buildEmailClaimValue(user))
+                    .groups(roles)
+                    .jws()
+                    .keyId(kid)
+                    .sign(kp.getPrivate());
+        }
+
+        private String createAccessToken(String user, Set<String> roles, Set<String> scope) {
+            return Jwt.claims()
+                    .expiresIn(accessTokenExpiresIn)
+                    .issuedAt(Instant.now())
+                    .issuer(baseURI)
+                    .subject(user)
+                    .scope(scope)
+                    .upn(user)
+                    .claim("name", buildNameClaimValue(user))
+                    .claim(Claims.preferred_username, buildEmailClaimValue(user))
+                    .claim(Claims.email, buildEmailClaimValue(user))
+                    .groups(roles)
+                    .jws()
+                    .keyId(kid)
+                    .sign(kp.getPrivate());
+        }
+
+        private List<String> getUsers() {
+            if (userToDefaultRoles.isEmpty()) {
+                return Arrays.asList("alice", "bob");
+            } else {
+                List<String> ret = new ArrayList<>(userToDefaultRoles.keySet());
+                Collections.sort(ret);
+                return ret;
+            }
+        }
+
+        private List<String> getUserRoles(String user) {
+            List<String> roles = userToDefaultRoles.get(user);
+            return roles == null ? ("alice".equals(user) ? List.of("admin", "user") : List.of("user"))
+                    : roles;
+        }
+
+        private String createKeyId() {
+            try {
+                return Base64Url.encode(MessageDigest.getInstance("SHA-256").digest(kp.getPrivate().getEncoded()));
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException("Failed to generate key id", e);
+            }
+        }
+
+        private UserAndRoles decode(String encodedContent) {
+            if (encodedContent != null && !encodedContent.isEmpty()) {
+                String decodedCode = new String(Base64.getUrlDecoder().decode(encodedContent), StandardCharsets.UTF_8);
+                int separator = decodedCode.indexOf('|');
+                if (separator != -1) {
+                    String user = decodedCode.substring(0, separator);
+                    String roles = decodedCode.substring(separator + 1);
+                    if (roles.isBlank()) {
+                        roles = String.join(",", getUserRoles(user));
+                    }
+                    return new UserAndRoles(user, roles);
+                } else if (getUsers().contains(decodedCode)) {
+                    String roles = String.join(",", getUserRoles(decodedCode));
+                    return new UserAndRoles(decodedCode, roles);
+                }
+            }
+            return null;
+        }
+
+        /*
+         * {"kty":"RSA",
+         * "use":"sig",
+         * "kid":"KEYID",
+         * "x5t":"KEYID",
+         * "n":
+         * "<MODULUS>",
+         * "e":"<EXPONENT>",
+         * "x5c":[
+         * "KEYID"
+         * ],
+         * "issuer":"http://localhost:port"},
+         */
+        private void getKeys(RoutingContext rc) {
+            RSAPublicKey pub = (RSAPublicKey) kp.getPublic();
+            String modulus = Base64.getUrlEncoder().encodeToString(pub.getModulus().toByteArray());
+            String exponent = Base64.getUrlEncoder().encodeToString(pub.getPublicExponent().toByteArray());
+            String data = """
+                    {
+                      "keys": [
+                        {
+                          "alg": "RS256",
+                          "kty": "RSA",
+                          "n": "%s",
+                          "use": "sig",
+                          "kid": "%s",
+                          "issuer": "%s",
+                          "e": "%s"
+                        }
+                      ]
+                    }
+                    """.formatted(modulus, kid, baseURI, exponent);
+            rc.response()
+                    .putHeader("Content-Type", "application/json")
+                    .endAndForget(data);
+        }
+
+        /*
+         * OIDC calls POST /token?
+         * grant_type=authorization_code
+         * &code=CODE
+         * &redirect_uri=URI
+         *
+         * returns:
+         *
+         * {
+         * "token_type":"Bearer",
+         * "scope":"openid email profile",
+         * "expires_in":EXPIRES_IN,
+         * "ext_expires_in":EXPIRES_IN,
+         * "access_token":TOKEN,
+         * "id_token":JWT
+         * }
+         *
+         * ID token:
+         * {
+         * "ver": "2.0",
+         * "iss": "http://localhost",
+         * "sub": "USERID",
+         * "aud": "CLIENTID",
+         * "exp": 1641906214,
+         * "iat": 1641819514,
+         * "nbf": 1641819514,
+         * "name": "Foo Bar",
+         * "preferred_username": "user@example.com",
+         * "oid": "OPAQUE",
+         * "email": "user@example.com",
+         * "tid": "TENANTID",
+         * "aio": "AZURE_OPAQUE"
+         * }
+         */
+        private void authorizationCodeFlowTokenEndpoint(RoutingContext rc) {
+            // TODO: check redirect_uri is same as in the initial Authorization Request
+            String clientId = rc.request().formAttributes().get("client_id");
+            if (clientId == null || clientId.isEmpty()) {
+                clientId = this.oidcClientId;
+            }
+            String scope = rc.request().formAttributes().get("scope");
+
+            String code = rc.request().formAttributes().get("code");
+            UserAndRoles userAndRoles = decode(code);
+            if (userAndRoles == null) {
+                invalidTokenResponse(rc);
+                return;
+            }
+
+            String accessToken = createAccessToken(userAndRoles.user, userAndRoles.getRolesAsSet(), getScopeAsSet(scope));
+            String idToken = createIdToken(userAndRoles.user, userAndRoles.getRolesAsSet(), clientId);
+
+            String data = """
+                    {
+                     "token_type":"Bearer",
+                     "scope":"openid email profile",
+                     "expires_in":%d,
+                     "ext_expires_in":%d,
+                     "access_token":"%s",
+                     "id_token":"%s",
+                     "refresh_token": "%s"
+                     }
+                    """.formatted(accessTokenExpiresIn, accessTokenExpiresIn, accessToken, idToken,
+                    userAndRoles.encode());
+            rc.response()
+                    .putHeader("Content-Type", "application/json")
+                    .putHeader("Cache-Control", "no-store")
+                    .endAndForget(data);
+        }
+
+        private void refreshTokenEndpoint(RoutingContext rc) {
+            if (clientCredentialsAreInvalid(rc, true)) {
+                invalidTokenResponse(rc);
+                return;
+            }
+            String scope = rc.request().formAttributes().get("scope");
+            String refreshToken = rc.request().formAttributes().get("refresh_token");
+            UserAndRoles userAndRoles = decode(refreshToken);
+            if (userAndRoles == null) {
+                LOG.warnf("Received invalid refresh token, denying token refresh: %s", refreshToken);
+                invalidTokenResponse(rc);
+                return;
+            }
+
+            String accessToken = createAccessToken(userAndRoles.user, userAndRoles.getRolesAsSet(), getScopeAsSet(scope));
+            String data = """
+                    {
+                       "access_token": "%s",
+                       "token_type": "Bearer",
+                       "refresh_token": "%s",
+                       "expires_in": %d
+                    }
+                    """.formatted(accessToken, refreshToken, accessTokenExpiresIn);
+            rc.response()
+                    .putHeader("Content-Type", "application/json")
+                    .putHeader("Cache-Control", "no-store")
+                    .endAndForget(data);
+        }
+
+        private void login(RoutingContext rc) {
+            String redirect_uri = rc.request().params().get("redirect_uri");
+            String predefined = null;
+            for (Map.Entry<String, String> param : rc.request().params()) {
+                if (param.getKey().startsWith("predefined")) {
+                    predefined = param.getValue();
+                    break;
+                }
+            }
+            String name = rc.request().params().get("name");
+            String roles = rc.request().params().get("roles");
+            String scope = rc.request().params().get("scope");
+            String clientId = rc.request().params().get("client_id");
+            String responseType = rc.request().params().get("response_type");
+
+            if (predefined != null) {
+                name = predefined;
+                roles = String.join(",", getUserRoles(name));
+            }
+            if (name == null || name.isBlank()) {
+                name = "user";
+            }
+
+            if (responseType == null || responseType.isEmpty()) {
+                rc.response().setStatusCode(500).endAndForget("Illegal state - the 'response_type' parameter is required");
+                return;
+            }
+
+            StringBuilder queryParams = new StringBuilder();
+
+            if (responseType.contains("code")) {
+                String code = new UserAndRoles(name, roles).encode();
+                queryParams.append("&code=").append(code);
+            }
+
+            if (responseType.contains("idtoken")) {
+                String idToken = createIdToken(name, getUserRolesSet(roles), clientId);
+                queryParams.append("&id_token=").append(idToken);
+            }
+
+            if (responseType.contains(" token")) {
+                String accessToken = createAccessToken(name, getUserRolesSet(roles), getScopeAsSet(scope));
+                queryParams.append("&access_token=").append(accessToken);
+            }
+
+            rc.response()
+                    .putHeader("Location", redirect_uri + queryParams)
+                    .setStatusCode(302)
+                    .endAndForget();
+        }
+
+        private void token(RoutingContext rc) {
+            String grantType = rc.request().formAttributes().get("grant_type");
+            switch (grantType) {
+                case "authorization_code" -> authorizationCodeFlowTokenEndpoint(rc);
+                case "refresh_token" -> refreshTokenEndpoint(rc);
+                case "client_credentials" -> clientCredentialsTokenEndpoint(rc);
+                case "password" -> passwordTokenEndpoint(rc);
+                default -> rc.response()
+                        .setStatusCode(400)
+                        .putHeader("Content-Type", "application/json")
+                        .putHeader("Cache-Control", "no-store")
+                        .endAndForget("Unsupported grant type: " + grantType);
+            }
+        }
+
+        private void passwordTokenEndpoint(RoutingContext rc) {
+            String scope = rc.request().formAttributes().get("scope");
+            String username = rc.request().formAttributes().get("username");
+            if (clientCredentialsAreInvalid(rc, false)) {
+                invalidTokenResponse(rc);
+                return;
+            }
+            if (username == null || username.isEmpty()) {
+                LOG.warn("Username is not present, denying token request");
+                invalidTokenResponse(rc);
+                return;
+            }
+            List<String> userRoles = getUserRoles(username);
+            String accessToken = createAccessToken(username, new HashSet<>(userRoles), getScopeAsSet(scope));
+            String refreshToken = new UserAndRoles(username, String.join(",", userRoles)).encode();
+            String data = """
+                    {
+                      "access_token":"%s",
+                      "token_type":"Bearer",
+                      "expires_in":%d,
+                      "refresh_token":"%s"
+                    }
+                    """.formatted(accessToken, accessTokenExpiresIn, refreshToken);
+            rc.response()
+                    .putHeader("Content-Type", "application/json")
+                    .putHeader("Cache-Control", "no-store")
+                    .endAndForget(data);
+        }
+
+        private void clientCredentialsTokenEndpoint(RoutingContext rc) {
+            String scope = rc.request().formAttributes().get("scope");
+            if (clientCredentialsAreInvalid(rc, false)) {
+                invalidTokenResponse(rc);
+                return;
+            }
+            String accessToken = createAccessToken(oidcClientId, new HashSet<>(getUserRoles(oidcClientId)),
+                    getScopeAsSet(scope));
+            String data = """
+                    {
+                          "access_token": "%s",
+                          "token_type": "Bearer",
+                          "expires_in": %d
+                    }
+                    """.formatted(accessToken, accessTokenExpiresIn);
+            rc.response()
+                    .putHeader("Content-Type", "application/json")
+                    .putHeader("Cache-Control", "no-store")
+                    .endAndForget(data);
+        }
+
+        private boolean clientCredentialsAreInvalid(RoutingContext rc, boolean requireClientSecret) {
+            // first try to get credentials form attributes
+            String reqClientId = rc.request().formAttributes().get("client_id");
+            String reqClientSecret = rc.request().formAttributes().get("client_secret");
+            // and fallback to basic authentication method
+            if (reqClientSecret == null || reqClientSecret.isEmpty()) {
+                String authorizationHeader = rc.request().getHeader(HttpHeaders.AUTHORIZATION);
+                if (authorizationHeader != null && authorizationHeader.startsWith("Basic ")) {
+                    String encodedClientIdToSecret = authorizationHeader.substring("Basic ".length()).trim();
+                    String[] clientIdAndSecret = decodeBasicCredentials(encodedClientIdToSecret).split(":");
+                    if (clientIdAndSecret.length != 2) {
+                        LOG.warn("Malformed client credentials submitted with the HTTP Authorization Basic scheme");
+                        return true;
+                    }
+                    reqClientId = clientIdAndSecret[0];
+                    reqClientSecret = clientIdAndSecret[1];
+                }
+            }
+
+            if (reqClientId == null || reqClientId.isEmpty()) {
+                LOG.warn("Client id is not present, denying token request");
+                return true;
+            } else if (!reqClientId.equals(oidcClientId)) {
+                LOG.warnf("Expected client id '%s', but got '%s', denying token request", oidcClientId, reqClientId);
+                return true;
+            }
+
+            // TODO: this method verifies the client secret only when present or when required previously
+            //    we should extend client credentials verification
+            if (reqClientSecret == null || reqClientSecret.isEmpty()) {
+                if (requireClientSecret) {
+                    LOG.warn("Client secret is not present, denying token request");
+                    return true;
+                } else {
+                    LOG.debug("Client secret is not present");
+                }
+            } else if (!reqClientSecret.equals(oidcClientSecret)) {
+                LOG.warnf("Expected client secret '%s', but got '%s', denying token request", oidcClientSecret,
+                        reqClientSecret);
+                return true;
+            }
+
+            return false;
+        }
+
+        private void configuration(RoutingContext rc) {
+            String data = """
+                    {
+                       "token_endpoint":"%1$s/token",
+                       "token_endpoint_auth_methods_supported":[
+                          "client_secret_post",
+                          "private_key_jwt",
+                          "client_secret_basic"
+                       ],
+                       "jwks_uri":"%1$s/keys",
+                       "response_modes_supported":[
+                          "query"
+                       ],
+                       "subject_types_supported":[
+                          "pairwise"
+                       ],
+                       "id_token_signing_alg_values_supported":[
+                          "RS256"
+                       ],
+                       "response_types_supported":[
+                          "code",
+                          "id_token",
+                          "code id_token",
+                          "id_token token",
+                          "code id_token token"
+                       ],
+                       "scopes_supported":[
+                          "openid",
+                          "profile",
+                          "email",
+                          "offline_access"
+                       ],
+                       "issuer":"%1$s",
+                       "request_uri_parameter_supported":false,
+                       "userinfo_endpoint":"%1$s/userinfo",
+                       "authorization_endpoint":"%1$s/authorize",
+                       "device_authorization_endpoint":"%1$s/devicecode",
+                       "http_logout_supported":true,
+                       "frontchannel_logout_supported":true,
+                       "end_session_endpoint":"%1$s/logout",
+                       "claims_supported":[
+                          "sub",
+                          "iss",
+                          "aud",
+                          "exp",
+                          "iat",
+                          "auth_time",
+                          "acr",
+                          "nonce",
+                          "preferred_username",
+                          "name",
+                          "tid",
+                          "ver",
+                          "at_hash",
+                          "c_hash",
+                          "email"
+                       ]
+                    }
+                    """.formatted(baseURI);
+            rc.response().putHeader("Content-Type", "application/json");
+            rc.endAndForget(data);
+        }
+
+        /*
+         * First request:
+         * GET
+         * https://localhost:X/authorize?response_type=code&client_id=SECRET&scope=openid+openid+
+         * email+profile&redirect_uri=http://localhost:8080/Login/oidcLoginSuccess&state=STATE
+         *
+         * returns a 302 to
+         * GET http://localhost:8080/Login/oidcLoginSuccess?code=CODE&state=STATE
+         */
+        private void authorize(RoutingContext rc) {
+            String response_type = rc.request().params().get("response_type");
+            String clientId = rc.request().params().get("client_id");
+            String scope = rc.request().params().get("scope");
+            String state = rc.request().params().get("state");
+            String redirect_uri = rc.request().params().get("redirect_uri");
+            URI redirect;
+            try {
+                redirect = new URI(redirect_uri + "?state=" + state);
+            } catch (URISyntaxException e) {
+                throw new RuntimeException(e);
+            }
+            StringBuilder predefinedUsers = new StringBuilder();
+            for (String predefinedUser : getUsers()) {
+                predefinedUsers.append("   <button name='predefined-" + predefinedUser + "' class='link' type='submit' value='")
+                        .append(predefinedUser)
+                        .append("' title='Log in as ")
+                        .append(predefinedUser)
+                        .append(" with roles: ")
+                        .append(String.join(",", getUserRoles(predefinedUser)))
+                        .append("'>")
+                        .append(predefinedUser)
+                        .append("</button>\n");
+            }
+            rc.response()
+                    .endAndForget(
+                            """
+                                    <html>
+                                     <head>
+                                      <title>Login</title>
+                                      <style>
+                                            body {
+                                            display: flex;
+                                            flex-direction: column;
+                                            background-color: hsla(210, 10%, 23%, 1.0);
+                                            color: hsla(214, 96%, 96%, 0.9);
+                                            height: 100vh;
+                                            align-items: center;
+                                            justify-content: center;
+                                            margin: 0px;
+                                            font-family: -apple-system, BlinkMacSystemFont, 'Roboto', 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+                                          }
+                                          .card {
+                                            display: flex;
+                                            flex-direction: column;
+                                            justify-content: space-between;
+                                            border: 1px solid hsla(214, 60%, 80%, 0.14);
+                                            border-radius: 4px;
+                                            width: 400px;
+                                            filter: brightness(90%);
+                                          }
+                                          .card-header {
+                                            font-size: 1.125rem;
+                                            line-height: 1;
+                                            height: 25px;
+                                            display: flex;
+                                            flex-direction: row;
+                                            justify-content: space-between;
+                                            align-items: center;
+                                            padding: 10px 10px;
+                                            background-color: hsla(214, 65%, 85%, 0.06);
+                                            border-bottom: 1px solid hsla(214, 60%, 80%, 0.14);
+                                          }
+                                          .card-body {
+                                            line-height: 1;
+                                            display: flex;
+                                            flex-direction: column;
+                                            justify-content: space-between;
+                                            padding: 10px 10px;
+                                            gap: 10px;
+                                          }
+                                          .card:hover {
+                                            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+                                          }
+                                          .predefined-form {
+                                            display: flex;
+                                            flex-direction: column;
+                                            align-items: flex-start;
+                                            gap: 10px;
+                                          }
+                                          .link {
+                                            background: none!important;
+                                            border: none;
+                                            color: hsla(214, 96%, 96%, 0.9);
+                                            padding: 0!important;
+                                            text-decoration: none;
+                                            cursor: pointer;
+                                            font-size: large;
+                                          }
+                                          .link:hover {
+                                            filter: brightness(90%);
+                                          }
+                                          .custom-link{
+                                            display: flex;
+                                            font-size: large;
+                                            padding-top: 4px;
+                                            cursor: pointer;
+                                          }
+                                          .custom-form {
+                                            display: flex;
+                                            flex-direction: column;
+                                            gap: 5px;
+                                            padding-top: 5px;
+                                          }
+                                          .custom-button {
+                                            background: hsla(145, 65%, 42%, 0.5);
+                                            border: unset;
+                                            color: hsla(214, 96%, 96%, 0.9);
+                                            font-size: large;
+                                            cursor: pointer;
+                                          }
+                                          .custom-button:hover {
+                                            filter: brightness(90%);
+                                          }
+                                      </style>
+                                     </head>
+                                     <body>
+                                      <div class='card'>
+                                       <div class='card-header'>
+                                        <div>Login</div>
+                                       </div>
+                                       <div class='card-body'>
+                                        <form class='predefined-form' action='/login' method='post'>
+                                    """
+                                    + """
+                                                <input type='hidden' name='redirect_uri' value='%1$s'>
+                                                <input type='hidden' name='response_type' value='%3$s'>
+                                                <input type='hidden' name='client_id' value='%4$s'>
+                                                <input type='hidden' name='scope' value='%5$s'>
+                                                    %2$s
+                                                </form>
+                                                <details>
+                                                 <summary class='custom-link'>Custom user</summary>
+                                                 <form class='custom-form' action='/login' method='post'>
+                                                  <input type='hidden' name='redirect_uri' value='%1$s'>
+                                                  <input type='hidden' name='response_type' value='%3$s'>
+                                                  <input type='hidden' name='client_id' value='%4$s'>
+                                                  <input type='hidden' name='scope' value='%5$s'>
+                                                  <input type='text' name='name' placeholder='Name'><br/>
+                                                  <input type='text' name='roles' placeholder='Roles (comma-separated)'><br/>
+                                                  <button class='custom-button' type='submit' name='login'>Login</button>
+                                                 </form>
+                                                </details>
+                                               </div>
+                                              </div>
+                                             </body>
+                                            </html>
+                                            """.formatted(redirect.toASCIIString(), predefinedUsers, response_type, clientId,
+                                            scope));
         }
     }
 }

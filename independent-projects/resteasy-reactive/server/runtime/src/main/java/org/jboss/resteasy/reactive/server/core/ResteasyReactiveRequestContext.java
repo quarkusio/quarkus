@@ -79,6 +79,7 @@ public abstract class ResteasyReactiveRequestContext
         implements Closeable, ResteasyReactiveInjectionContext, ServerRequestContext {
 
     public static final Object[] EMPTY_ARRAY = new Object[0];
+    private static final Annotation[] EMPTY_ANNOTATIONS = new Annotation[0];
     protected final Deployment deployment;
     /**
      * The parameters array, populated by handlers
@@ -613,7 +614,7 @@ public abstract class ResteasyReactiveRequestContext
                 List<Annotation> list = new ArrayList<>(methodAnnotations.length + additionalAnnotations.length);
                 list.addAll(Arrays.asList(methodAnnotations));
                 list.addAll(Arrays.asList(additionalAnnotations));
-                allAnnotations = list.toArray(new Annotation[0]);
+                allAnnotations = list.toArray(EMPTY_ANNOTATIONS);
             }
         }
         return allAnnotations;
@@ -626,7 +627,7 @@ public abstract class ResteasyReactiveRequestContext
     public Annotation[] getMethodAnnotations() {
         if (methodAnnotations == null) {
             if (target == null) {
-                return null;
+                return EMPTY_ANNOTATIONS;
             }
             return target.getLazyMethod().getAnnotations();
         }

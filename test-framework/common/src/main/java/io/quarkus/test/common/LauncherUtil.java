@@ -9,7 +9,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -229,16 +228,6 @@ public final class LauncherUtil {
             throw new RuntimeException("Unable to start target quarkus application " + waitTimeSeconds + "s");
         }
         return result;
-    }
-
-    static void toStdOut(Path log) {
-        if (log != null) {
-            try (var r = Files.newBufferedReader(log, StandardCharsets.UTF_8)) {
-                r.lines().forEach(System.out::println);
-            } catch (IOException ignored) {
-                System.err.println("Unable to write process output");
-            }
-        }
     }
 
     /**

@@ -641,6 +641,14 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
         return isServiceLoaderMechanism;
     }
 
+    /**
+     * Returns true if, after test discovery, multiple classloaders have been created. This would mean multiple Quarkus
+     * applications will be started to run the tests.
+     */
+    public boolean hasMultipleClassLoaders() {
+        return runtimeClassLoaders != null && runtimeClassLoaders.size() > 1;
+    }
+
     @Override
     public String getName() {
         return NAME;
@@ -659,5 +667,4 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
         runtimeClassLoaders.clear();
 
     }
-
 }

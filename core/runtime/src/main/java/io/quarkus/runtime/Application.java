@@ -109,10 +109,6 @@ public abstract class Application implements Closeable {
             stateLock.unlock();
         }
         try {
-            //We do this here because a static-init block has shown to not be effective enough:
-            //some Vert.x and Netty classes will trigger the warning merely by initializing their classes.
-            //An alternative would be to do this in /bootstrap but then we can't reuse the code in other modes.
-            JVMUnsafeWarningsControl.disableUnsafeRelatedWarnings();
             doStart(args);
         } catch (Throwable t) {
             stateLock.lock();

@@ -250,7 +250,7 @@
             <plugin>
                 <groupId>org.eclipse.sisu</groupId>
                 <artifactId>sisu-maven-plugin</artifactId>
-                <version>0.3.5</version>
+                <version>1.0.0</version>
                 <executions>
                     <execution>
                         <id>index-project</id>

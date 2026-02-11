@@ -162,6 +162,18 @@ public class DirectoryPathTreeTest {
                 "src/main/java/Main.java"));
     }
 
+    @Test
+    public void isEmpty() throws Exception {
+        final Path root = resolveTreeRoot("non-existing");
+        assertThat(root).doesNotExist();
+        final PathTree tree = new DirectoryPathTree(root);
+        assertThat(tree.isEmpty()).isTrue();
+
+        Path emptyDir = Files.createTempDirectory(baseDir, "empty");
+        assertThat(emptyDir).exists();
+        assertThat(tree.isEmpty()).isTrue();
+    }
+
     /**
      * Returns a path relative to src/test/resources/paths/directory-path-tree/
      *

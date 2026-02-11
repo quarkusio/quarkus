@@ -49,7 +49,6 @@ public interface TestConfig {
      * @see <a href=https://docs.junit.org/current/user-guide/#writing-tests-test-execution-order-classes>JUnit Class
      *      Order<a/>
      */
-    @WithDefault("io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer")
     Optional<String> classOrderer();
 
     /**

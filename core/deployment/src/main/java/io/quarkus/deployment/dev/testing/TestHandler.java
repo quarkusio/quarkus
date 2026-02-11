@@ -8,6 +8,8 @@ import org.jboss.logging.Logger;
 import io.quarkus.banner.BannerConfig;
 import io.quarkus.builder.BuildResult;
 import io.quarkus.deployment.dev.testing.TestConfig.Mode;
+import io.quarkus.deployment.jvm.JvmModulesReconfigurer;
+import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 import io.quarkus.deployment.steps.BannerProcessor;
 import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.runtime.BannerRecorder;
@@ -17,8 +19,16 @@ import io.quarkus.runtime.logging.LoggingSetupRecorder;
 import io.smallrye.config.SmallRyeConfig;
 
 public class TestHandler implements BiConsumer<Object, BuildResult> {
+
+    private static final JvmModulesReconfigurer jvmModulesReconfigurer = JvmModulesReconfigurer.getInstance();
+
     @Override
     public void accept(Object o, BuildResult buildResult) {
+        // Apply JVM module configuration for test mode (add-opens, etc.)
+        ResolvedJVMRequirements jvmRequirements = buildResult.consume(ResolvedJVMRequirements.class);
+        jvmRequirements.applyJavaModuleConfigurationToRuntime(jvmModulesReconfigurer,
+                Thread.currentThread().getContextClassLoader());
+
         QuarkusConsole.start();
         TestSupport.instance().get().start();
 

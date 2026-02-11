@@ -55,18 +55,36 @@ public final class ArtifactInfoUtil {
                 // the jar to read the pom properties, which gets done as next attempt.
                 // This also acts as a fast path to prevent expensive path comparisons.
                 boolean isJar = pathAsString.endsWith(".jar");
+                // Check if this is a target/classes directory (workspace module loaded from classes)
+                boolean isTargetClasses = !isJar
+                        && pathAsString.endsWith("target" + path.getFileSystem().getSeparator() + "classes");
                 for (ResolvedDependency i : curateOutcomeBuildItem.getApplicationModel().getDependencies()) {
                     if (isJar && !pathAsString.contains(i.getArtifactId())) {
                         continue;
                     }
                     for (Path p : i.getResolvedPaths()) {
                         if (path.equals(p)) {
-
                             String artifactId = i.getArtifactId();
                             if (artifactId.endsWith(DEPLOYMENT)) {
                                 artifactId = artifactId.substring(0, artifactId.length() - DEPLOYMENT.length());
                             }
                             return new AbstractMap.SimpleEntry<>(i.getGroupId(), artifactId);
+                        }
+                        // Handle case where class is loaded from target/classes but dependency points to target/*.jar
+                        // This happens in multi-module projects where workspace modules are resolved to their JAR files
+                        if (isTargetClasses && p.toString().endsWith(".jar")) {
+                            // Check if the JAR is in the same target directory as our classes
+                            // path: .../module/target/classes
+                            // p:    .../module/target/artifact-version.jar
+                            Path classesTargetDir = path.getParent(); // .../module/target
+                            Path jarParentDir = p.getParent(); // .../module/target (if JAR is in target dir)
+                            if (classesTargetDir != null && classesTargetDir.equals(jarParentDir)) {
+                                String artifactId = i.getArtifactId();
+                                if (artifactId.endsWith(DEPLOYMENT)) {
+                                    artifactId = artifactId.substring(0, artifactId.length() - DEPLOYMENT.length());
+                                }
+                                return new AbstractMap.SimpleEntry<>(i.getGroupId(), artifactId);
+                            }
                         }
                     }
                 }
@@ -90,10 +108,10 @@ public final class ArtifactInfoUtil {
                 // Just try to locate the pom.properties file in the target/maven-archiver directory
                 // Note that this hack will not work if addMavenDescriptor=false or if the pomPropertiesFile is overridden
                 Path location = Paths.get(codeLocation.toURI());
-                while (!isDeploymentTargetClasses(location) && location.getParent() != null) {
+                while (!isTargetClasses(location) && location.getParent() != null) {
                     location = location.getParent();
                 }
-                if (location != null) {
+                if (isTargetClasses(location)) {
                     Path mavenArchiver = location.getParent().resolve("maven-archiver");
                     if (mavenArchiver.toFile().canRead()) {
                         Entry<String, String> ret = groupIdAndArtifactId(mavenArchiver);
@@ -116,19 +134,19 @@ public final class ArtifactInfoUtil {
         }
     }
 
-    static boolean isDeploymentTargetClasses(Path location) {
+    /**
+     * Checks if the given path represents a Maven target/classes directory.
+     * This works for any module type (deployment, runtime, spi, etc.).
+     */
+    static boolean isTargetClasses(Path location) {
+        if (location == null || location.getFileName() == null) {
+            return false;
+        }
         if (!location.getFileName().toString().equals("classes")) {
             return false;
         }
         Path target = location.getParent();
-        if (target == null || !target.getFileName().toString().equals("target")) {
-            return false;
-        }
-        Path deployment = location.getParent().getParent();
-        if (deployment == null || !deployment.getFileName().toString().equals("deployment")) {
-            return false;
-        }
-        return true;
+        return !(target == null || target.getFileName() == null || !target.getFileName().toString().equals("target"));
     }
 
     /**

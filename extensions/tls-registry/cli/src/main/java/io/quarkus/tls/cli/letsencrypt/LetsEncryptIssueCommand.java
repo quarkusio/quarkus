@@ -7,9 +7,10 @@ import static io.quarkus.tls.cli.letsencrypt.LetsEncryptConstants.LETS_ENCRYPT_D
 import static io.quarkus.tls.cli.letsencrypt.LetsEncryptHelpers.adjustPermissions;
 import static io.quarkus.tls.cli.letsencrypt.LetsEncryptHelpers.createAccount;
 import static io.quarkus.tls.cli.letsencrypt.LetsEncryptHelpers.issueCertificate;
-import static java.lang.System.Logger.Level.INFO;
 
 import java.util.concurrent.Callable;
+
+import org.jboss.logging.Logger;
 
 import picocli.CommandLine;
 
@@ -18,7 +19,7 @@ import picocli.CommandLine;
         "Make sure the application is running before running this command.")
 public class LetsEncryptIssueCommand implements Callable<Integer> {
 
-    static System.Logger LOGGER = System.getLogger("lets-encrypt-issue");
+    static Logger LOGGER = Logger.getLogger(LetsEncryptIssueCommand.class);
 
     @CommandLine.Option(names = { "-d",
             "--domain" }, description = "The domain for which the certificate will be generated", required = true)
@@ -56,20 +57,19 @@ public class LetsEncryptIssueCommand implements Callable<Integer> {
         // Step 0 - Verification
         // - Make sure the .letsencrypt directory exists
         if (!LETS_ENCRYPT_DIR.exists()) {
-            LOGGER.log(System.Logger.Level.ERROR,
+            LOGGER.error(
                     "The .letsencrypt directory does not exist, please run the `quarkus tls letsencrypt prepare` command first");
             return 1;
         }
         // - Make sure the cert and key files exist
         if (!CERT_FILE.isFile() || !KEY_FILE.isFile()) {
-            LOGGER.log(System.Logger.Level.ERROR,
+            LOGGER.error(
                     "The certificate and key files do not exist, please run the `quarkus tls letsencrypt prepare` command first");
             return 1;
         }
         // - Make sure the .env file exists
         if (!DOT_ENV_FILE.isFile()) {
-            LOGGER.log(System.Logger.Level.ERROR,
-                    "The .env file does not exist, please run the `quarkus tls letsencrypt prepare` command first");
+            LOGGER.error("The .env file does not exist, please run the `quarkus tls letsencrypt prepare` command first");
             return 1;
         }
         // - Make sure application is running
@@ -81,14 +81,14 @@ public class LetsEncryptIssueCommand implements Callable<Integer> {
         createAccount(client, LETS_ENCRYPT_DIR.getAbsolutePath(), staging, email);
 
         // Step 2 - run the challenge to obtain first certificate
-        LOGGER.log(INFO, "\uD83D\uDD35 Requesting initial certificate from {0} Let's Encrypt", (staging ? "staging" : ""));
+        LOGGER.infof("\uD83D\uDD35 Requesting initial certificate from %s Let's Encrypt", (staging ? "staging" : ""));
         issueCertificate(client, LETS_ENCRYPT_DIR, staging, domain, CERT_FILE, KEY_FILE);
         adjustPermissions(CERT_FILE, KEY_FILE);
 
         // Step 3 - Reload certificate
         client.certificateChainAndKeyAreReady();
 
-        LOGGER.log(INFO, "✅ Successfully obtained certificate for {0}", domain);
+        LOGGER.infof("✅ Successfully obtained certificate for %s", domain);
 
         return 0;
     }

@@ -261,7 +261,6 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
 
     @Override
     public void close() {
-        LauncherUtil.toStdOut(logFile);
         LauncherUtil.destroyProcess(quarkusProcess);
     }
 }

@@ -2,8 +2,10 @@ package io.quarkus.bootstrap;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -68,15 +70,8 @@ public class IDELauncherImpl implements Closeable {
 
                 for (ResolvedDependency dep : quarkusModel.getDependencies()) {
                     final WorkspaceModule module = dep.getWorkspaceModule();
-                    if (module == null) {
-                        continue;
-                    }
-                    final ArtifactSources sources = module.getSources(dep.getClassifier());
-                    for (SourceDir dir : sources.getSourceDirs()) {
-                        builder.addAdditionalApplicationArchive(new AdditionalDependency(dir.getOutputDir(), true, false));
-                    }
-                    for (SourceDir dir : sources.getResourceDirs()) {
-                        builder.addAdditionalApplicationArchive(new AdditionalDependency(dir.getOutputDir(), true, false));
+                    if (module != null) {
+                        addAdditionalArchives(module.getSources(dep.getClassifier()), builder);
                     }
                 }
             } else {
@@ -96,6 +91,19 @@ public class IDELauncherImpl implements Closeable {
                     appInstance == null ? null : appInstance instanceof Closeable ? (Closeable) appInstance : null);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private static void addAdditionalArchives(ArtifactSources sources, QuarkusBootstrap.Builder builder) {
+        addAdditionalArchives(builder, sources.getSourceDirs());
+        addAdditionalArchives(builder, sources.getResourceDirs());
+    }
+
+    private static void addAdditionalArchives(QuarkusBootstrap.Builder builder, Collection<SourceDir> sourceDirs) {
+        for (SourceDir dir : sourceDirs) {
+            if (Files.exists(dir.getOutputDir())) {
+                builder.addAdditionalApplicationArchive(new AdditionalDependency(dir.getOutputDir(), true, false));
+            }
         }
     }
 

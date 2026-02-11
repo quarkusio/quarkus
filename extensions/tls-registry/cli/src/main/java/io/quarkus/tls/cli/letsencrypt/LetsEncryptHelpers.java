@@ -1,9 +1,5 @@
 package io.quarkus.tls.cli.letsencrypt;
 
-import static java.lang.System.Logger.Level.DEBUG;
-import static java.lang.System.Logger.Level.ERROR;
-import static java.lang.System.Logger.Level.INFO;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -24,6 +20,7 @@ import java.util.Base64;
 
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
+import org.jboss.logging.Logger;
 import org.wildfly.security.x500.cert.X509CertificateChainAndSigningKey;
 import org.wildfly.security.x500.cert.acme.AcmeAccount;
 import org.wildfly.security.x500.cert.acme.AcmeException;
@@ -33,7 +30,7 @@ import io.vertx.core.json.JsonObject;
 
 public class LetsEncryptHelpers {
 
-    static System.Logger LOGGER = System.getLogger("lets-encrypt");
+    static Logger LOGGER = Logger.getLogger(LetsEncryptHelpers.class);
 
     public static void writePrivateKeyAndCertificateChainsAsPem(PrivateKey pk, X509Certificate[] chain, File privateKeyFile,
             File certificateChainFile) throws Exception {
@@ -73,7 +70,7 @@ public class LetsEncryptHelpers {
             String letsEncryptPath,
             boolean staging,
             String contactEmail) {
-        LOGGER.log(INFO, "\uD83D\uDD35 Creating {0} Let's Encrypt account", (staging ? "staging" : "production"));
+        LOGGER.infof("\uD83D\uDD35 Creating %s Let's Encrypt account", (staging ? "staging" : "production"));
 
         AcmeAccount acmeAccount = AcmeAccount.builder()
                 .setTermsOfServiceAgreed(true)
@@ -84,16 +81,16 @@ public class LetsEncryptHelpers {
 
         try {
             if (!acmeClient.createAccount(acmeAccount, staging)) {
-                LOGGER.log(INFO, "\uD83D\uDD35 {0} Let's Encrypt account {1} already exists",
+                LOGGER.infof("\uD83D\uDD35 %s Let's Encrypt account %s already exists",
                         (staging ? "Staging" : "Production"),
                         contactEmail);
             } else {
-                LOGGER.log(INFO, "\uD83D\uDD35 {0} Let's Encrypt account {1} has been created",
+                LOGGER.infof("\uD83D\uDD35 %s Let's Encrypt account %s has been created",
                         (staging ? "Staging" : "Production"),
                         contactEmail);
             }
         } catch (AcmeException ex) {
-            LOGGER.log(ERROR, "⚠\uFE0F Failed to create Let's Encrypt account");
+            LOGGER.error("⚠\uFE0F Failed to create Let's Encrypt account");
             throw new RuntimeException(ex);
         }
 
@@ -115,7 +112,7 @@ public class LetsEncryptHelpers {
                 json.put("certificate", new String(Base64.getEncoder().encode(acmeAccount.getCertificate().getEncoded()),
                         StandardCharsets.US_ASCII));
             } catch (CertificateEncodingException ex) {
-                LOGGER.log(INFO, "⚠\uFE0F Failed to get encoded certificate data");
+                LOGGER.info("⚠\uFE0F Failed to get encoded certificate data");
                 throw new RuntimeException(ex);
             }
         }
@@ -127,7 +124,7 @@ public class LetsEncryptHelpers {
     }
 
     private static void saveAccount(String letsEncryptPath, JsonObject accountJson) {
-        LOGGER.log(DEBUG, "Saving account to {0}", letsEncryptPath);
+        LOGGER.debugf("Saving account to %s", letsEncryptPath);
 
         // If more than one account must be supported, we can save accounts to unique files in .lets-encrypt/accounts
         // and require an account alias/id during operations requiring an account
@@ -154,7 +151,7 @@ public class LetsEncryptHelpers {
         } catch (AcmeException t) {
             throw new RuntimeException(t.getMessage());
         }
-        LOGGER.log(INFO, "\uD83D\uDD35 Certificate and private key issued, converting them to PEM files");
+        LOGGER.info("\uD83D\uDD35 Certificate and private key issued, converting them to PEM files");
 
         try {
             LetsEncryptHelpers.writePrivateKeyAndCertificateChainsAsPem(certChainAndPrivateKey.getSigningKey(),
@@ -165,7 +162,7 @@ public class LetsEncryptHelpers {
     }
 
     private static AcmeAccount getAccount(File letsEncryptPath) {
-        LOGGER.log(DEBUG, "Getting account from {0}", letsEncryptPath);
+        LOGGER.debugf("Getting account from %s", letsEncryptPath);
 
         JsonObject json = readAccountJson(letsEncryptPath);
         AcmeAccount.Builder builder = AcmeAccount.builder().setTermsOfServiceAgreed(true)
@@ -192,7 +189,7 @@ public class LetsEncryptHelpers {
     }
 
     private static JsonObject readAccountJson(File letsEncryptPath) {
-        LOGGER.log(DEBUG, "Reading account information from {0}", letsEncryptPath);
+        LOGGER.debugf("Reading account information from %s", letsEncryptPath);
         java.nio.file.Path accountPath = Paths.get(letsEncryptPath + "/account.json");
         try (FileInputStream fis = new FileInputStream(accountPath.toString())) {
             return new JsonObject(new String(fis.readAllBytes(), StandardCharsets.US_ASCII));
@@ -228,17 +225,17 @@ public class LetsEncryptHelpers {
             String domain,
             File certChainPemLoc,
             File privateKeyPemLoc) {
-        LOGGER.log(INFO, "\uD83D\uDD35 Renewing {0} Let's Encrypt certificate chain and private key",
+        LOGGER.infof("\uD83D\uDD35 Renewing %s Let's Encrypt certificate chain and private key",
                 (staging ? "staging" : "production"));
         issueCertificate(acmeClient, letsEncryptPath, staging, domain, certChainPemLoc, privateKeyPemLoc);
     }
 
     public static void deactivateAccount(AcmeClient acmeClient, File letsEncryptPath, boolean staging) throws IOException {
         AcmeAccount acmeAccount = getAccount(letsEncryptPath);
-        LOGGER.log(INFO, "Deactivating {0} Let's Encrypt account", (staging ? "staging" : "production"));
+        LOGGER.infof("Deactivating %s Let's Encrypt account", (staging ? "staging" : "production"));
         acmeClient.deactivateAccount(acmeAccount, staging);
 
-        LOGGER.log(INFO, "Removing account file from {0}", letsEncryptPath);
+        LOGGER.infof("Removing account file from %s", letsEncryptPath);
 
         java.nio.file.Path accountPath = Paths.get(letsEncryptPath + "/account.json");
         Files.deleteIfExists(accountPath);
@@ -246,16 +243,16 @@ public class LetsEncryptHelpers {
 
     public static void adjustPermissions(File certFile, File keyFile) {
         if (!certFile.setReadable(true, false)) {
-            LOGGER.log(ERROR, "Failed to set certificate file readable");
+            LOGGER.error("Failed to set certificate file readable");
         }
         if (!certFile.setWritable(true, true)) {
-            LOGGER.log(ERROR, "Failed to set certificate file as not writable");
+            LOGGER.error("Failed to set certificate file as not writable");
         }
         if (!keyFile.setReadable(true, false)) {
-            LOGGER.log(ERROR, "Failed to set key file as readable");
+            LOGGER.error("Failed to set key file as readable");
         }
         if (!keyFile.setWritable(true, true)) {
-            LOGGER.log(ERROR, "Failed to set key file as not writable");
+            LOGGER.error("Failed to set key file as not writable");
         }
     }
 }

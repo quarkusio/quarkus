@@ -4,6 +4,9 @@ import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem.JavaVersion.Status;
 
 /**
+ * IMPORTANT: when updating this file, please also update
+ * {@code devtools/bom-descriptor-json/src/main/resources/catalog-overrides.json}
+ *
  * This class is used to define the container images that are used by Quarkus.
  * <p>
  * For each image, the image name and version are defined as constants:

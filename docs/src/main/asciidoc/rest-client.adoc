@@ -1996,7 +1996,7 @@ An example logging configuration:
 quarkus.rest-client.logging.scope=request-response
 quarkus.rest-client.logging.body-limit=50
 
-quarkus.rest-client.extensions-api.scope=all
+quarkus.rest-client.extensions-api.logging.scope=all
 ----
 
 [TIP]

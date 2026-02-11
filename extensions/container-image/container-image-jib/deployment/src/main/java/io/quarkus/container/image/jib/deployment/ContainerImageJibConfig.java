@@ -21,9 +21,12 @@ public interface ContainerImageJibConfig {
     /**
      * The base image to be used when a container image is being produced for the jar build.
      *
-     * When the application is built against Java 21 or higher, {@code registry.access.redhat.com/ubi9/openjdk-21-runtime:1.23}
+     * When the application is built against Java 25 or higher, {@code registry.access.redhat.com/ubi9/openjdk-25-runtime:1.24}
      * is used as the default.
-     * Otherwise {@code registry.access.redhat.com/ubi9/openjdk-17-runtime:1.23} is used as the default.
+     * Otherwise, when the application is built against Java 21 to Java 24,
+     * {@code registry.access.redhat.com/ubi9/openjdk-21-runtime:1.24}
+     * is used as the default.
+     * Otherwise {@code registry.access.redhat.com/ubi9/openjdk-17-runtime:1.24} is used as the default.
      */
     Optional<String> baseJvmImage();
 

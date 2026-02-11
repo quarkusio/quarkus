@@ -3,8 +3,11 @@ package io.quarkus.paths;
 import java.io.IOException;
 import java.io.Serial;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 public class DirectoryPathTree extends OpenContainerPathTree implements Serializable {
 
@@ -54,6 +57,18 @@ public class DirectoryPathTree extends OpenContainerPathTree implements Serializ
 
     @Override
     public boolean isOpen() {
+        return true;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        if (Files.exists(dir)) {
+            try (Stream<Path> stream = Files.list(dir)) {
+                return stream.findAny().isEmpty();
+            } catch (IOException e) {
+                throw new UncheckedIOException("Failed to list content of " + dir, e);
+            }
+        }
         return true;
     }
 

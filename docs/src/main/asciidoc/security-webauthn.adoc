@@ -16,8 +16,6 @@ include::_attributes.adoc[]
 This guide demonstrates how your Quarkus application can use WebAuthn authentication instead of
 passwords.
 
-include::{includes}/extension-status.adoc[]
-
 == Prerequisites
 
 include::{includes}/prerequisites.adoc[]

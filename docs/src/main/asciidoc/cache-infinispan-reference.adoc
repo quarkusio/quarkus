@@ -14,8 +14,6 @@ include::_attributes.adoc[]
 By default, Quarkus Cache uses Caffeine as backend.
 It's possible to use Infinispan instead.
 
-include::{includes}/extension-status.adoc[]
-
 == Infinispan as cache backend
 
 When using Infinispan as the backend for Quarkus cache, each cached item will be stored in Infinispan:

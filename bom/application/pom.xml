@@ -19,7 +19,7 @@
         <bouncycastle.version>1.83</bouncycastle.version>
         <bouncycastle.fips.version>2.1.2</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>2.1.22</bouncycastle.tls.fips.version>
-        <cyclonedx.version>11.0.1</cyclonedx.version>
+        <cyclonedx.version>12.1.0</cyclonedx.version>
         <expressly.version>6.0.0</expressly.version>
         <findbugs.version>3.0.2</findbugs.version>
         <jandex.version>3.5.3</jandex.version>

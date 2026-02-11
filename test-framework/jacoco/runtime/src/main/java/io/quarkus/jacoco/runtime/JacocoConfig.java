@@ -4,10 +4,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import io.quarkus.deployment.index.IndexDependencyConfig;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -121,4 +121,26 @@ public interface JacocoConfig {
      */
     @WithDefault("false")
     boolean aggregateReportData();
+
+    // Implementation note: we can't reuse the io.quarkus.deployment.index.IndexDependencyConfig
+    // as it lives in the deployment module
+    @ConfigGroup
+    public interface IndexDependencyConfig {
+
+        /**
+         * The maven groupId of the artifact.
+         */
+        String groupId();
+
+        /**
+         * The maven artifactId of the artifact (optional).
+         */
+        Optional<String> artifactId();
+
+        /**
+         * The maven classifier of the artifact (optional).
+         */
+        Optional<String> classifier();
+
+    }
 }

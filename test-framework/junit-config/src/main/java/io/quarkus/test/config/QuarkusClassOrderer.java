@@ -4,25 +4,26 @@ import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.ClassOrdererContext;
 import org.junit.platform.commons.util.ReflectionUtils;
 
-import io.quarkus.deployment.dev.testing.TestConfig;
-import io.smallrye.config.Config;
-
 /**
  * A JUnit {@link ClassOrderer}, used to delegate to a custom implementations of {@link ClassOrderer} set by Quarkus
  * config.
+ *
+ * @deprecated This no longer does anything except delegate to the QuarkusTestProfileAwareClassOrderer. In most cases it will
+ *             not be active, unless explicitly configured in.
  */
+@Deprecated(forRemoval = true, since = "3.34")
 public class QuarkusClassOrderer implements ClassOrderer {
     private final ClassOrderer delegate;
 
     public QuarkusClassOrderer() {
-        TestConfig testConfig = Config.get(ClassLoader.getSystemClassLoader()).getConfigMapping(TestConfig.class);
-        delegate = testConfig.classOrderer()
-                .map(klass -> ReflectionUtils.tryToLoadClass(klass)
-                        .andThenTry(ReflectionUtils::newInstance)
-                        .andThenTry(instance -> (ClassOrderer) instance)
-                        .toOptional()
-                        .orElse(EMPTY))
+
+        String klass = "io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer";
+        delegate = ReflectionUtils.tryToLoadClass(klass)
+                .andThenTry(ReflectionUtils::newInstance)
+                .andThenTry(instance -> (ClassOrderer) instance)
+                .toOptional()
                 .orElse(EMPTY);
+
     }
 
     @Override

@@ -130,9 +130,9 @@ public abstract class CommonProcessor<C extends CommonConfig> {
 
             JsonObject config = imageData.get("Config");
 
-            JsonArray entrypointArray = config.get("Entrypoint");
             List<String> entrypoints = new ArrayList<>();
-            if (entrypointArray != null) {
+            JsonValue entrypointValue = config.get("Entrypoint");
+            if (entrypointValue instanceof JsonArray entrypointArray) {
                 entrypointArray.value().forEach(entrypoint -> {
                     if (entrypoint instanceof JsonString s) {
                         entrypoints.add(s.value());

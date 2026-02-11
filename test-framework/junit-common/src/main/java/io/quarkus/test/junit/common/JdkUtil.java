@@ -1,4 +1,4 @@
-package io.quarkus.test.common;
+package io.quarkus.test.junit.common;
 
 import java.util.Locale;
 

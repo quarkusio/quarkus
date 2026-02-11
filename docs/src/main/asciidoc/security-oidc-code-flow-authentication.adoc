@@ -734,6 +734,40 @@ public class SessionExpiredResource {
 <5> Remove the custom cookie.
 <6> Use the username in the decrypted token and the tenant id to generate the service expired page response.
 
+[[authentication-completion-action]]
+=== Authentication completion actions
+
+Sometimes you may need to perform one or more actions upon a successful authorization code flow completion only.
+
+One way to achieve it is to <<listen-to-authentication-events, listen to OIDC events such as a user login>>.
+However, when an even listener must perform an asycnhronous action, this action will be completed some time after the request that sent the event was allowed to proceed.  
+
+When you need an action to be completed before the current request is allowed to proceed, especially when an action requires a blocking call, register one or more `io.quarkus.oidc.AuthenticationCompletionAction` interface implementations.
+
+For example:
+
+[source,java]
+----
+package io.quarkus.oidc.test;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.AuthenticationCompletionAction;
+import io.smallrye.mutiny.Uni;
+
+@ApplicationScoped
+@Unremovable
+public class CustomAuthenticationCompletionAction implements AuthenticationCompletionAction {
+
+    @Override
+    public Uni<Void> action(AuthenticationCompletionContext authCompletionContext) {
+        // perform a required action
+        return Uni.createFrom().voidItem();
+    }
+}
+----
+
 === Accessing authorization data
 
 You can access information about authorization in different ways.

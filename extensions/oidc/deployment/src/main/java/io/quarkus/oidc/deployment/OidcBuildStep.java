@@ -9,7 +9,6 @@ import static io.quarkus.oidc.common.runtime.OidcConstants.CODE_FLOW_CODE;
 import static io.quarkus.oidc.runtime.OidcRecorder.ACR_VALUES_TO_MAX_AGE_SEPARATOR;
 import static io.quarkus.oidc.runtime.OidcUtils.DEFAULT_TENANT_ID;
 import static io.quarkus.security.spi.ClassSecurityAnnotationBuildItem.useClassLevelSecurity;
-import static io.quarkus.security.spi.SecurityTransformerBuildItem.createSecurityTransformer;
 import static io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBindingBuildItem.toTargetName;
 import static io.quarkus.vertx.http.deployment.HttpSecurityProcessor.collectAnnotatedClasses;
 import static io.quarkus.vertx.http.deployment.HttpSecurityProcessor.collectClassMethodsWithoutRbacAnnotation;

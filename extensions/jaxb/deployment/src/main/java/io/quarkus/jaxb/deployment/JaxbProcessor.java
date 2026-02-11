@@ -202,7 +202,8 @@ public class JaxbProcessor {
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle,
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeClasses,
             BuildProducer<JaxbClassesToBeBoundBuildItem> classesToBeBoundProducer,
-            ApplicationArchivesBuildItem applicationArchivesBuildItem) throws ClassNotFoundException {
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            List<IgnoreJaxbAnnotatedClassesBuildItem> ignoreJaxbAnnotatedClasses) throws ClassNotFoundException {
 
         List<String> classesToBeBound = new ArrayList<>();
         IndexView index = combinedIndexBuildItem.getIndex();
@@ -216,19 +217,27 @@ public class JaxbProcessor {
                 if (jaxbRootAnnotationInstance.target().kind() == Kind.CLASS
                         && !JAXB_ANNOTATIONS.contains(jaxbRootAnnotationInstance.target().asClass().getClass())) {
                     ClassInfo targetClassInfo = jaxbRootAnnotationInstance.target().asClass();
-                    final var name = targetClassInfo.name();
+                    final DotName name = targetClassInfo.name();
+                    final String stringName = name.toString();
 
-                    reflectiveHierarchies.produce(ReflectiveHierarchyBuildItem
-                            .builder(name)
-                            .index(index)
-                            .ignoreTypePredicate(t -> ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE.test(t)
-                                    || IGNORE_TYPES.contains(t))
-                            .ignoreFieldPredicate(JaxbProcessor::isFieldIgnored)
-                            .ignoreMethodPredicate(JaxbProcessor::isMethodIgnored)
-                            .source(getClass().getSimpleName() + " annotated with @" + jaxbRootAnnotation + " > " + name)
-                            .build());
-                    classesToBeBound.add(targetClassInfo.name().toString());
-                    jaxbRootAnnotationsDetected = true;
+                    if (ignoreJaxbAnnotatedClasses.stream()
+                            .map(IgnoreJaxbAnnotatedClassesBuildItem::getPredicate)
+                            .noneMatch(p -> p.test(stringName))) {
+
+                        reflectiveHierarchies.produce(ReflectiveHierarchyBuildItem
+                                .builder(name)
+                                .index(index)
+                                .ignoreTypePredicate(
+                                        t -> ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE.test(t)
+                                                || IGNORE_TYPES.contains(t))
+                                .ignoreFieldPredicate(JaxbProcessor::isFieldIgnored)
+                                .ignoreMethodPredicate(JaxbProcessor::isMethodIgnored)
+                                .source(getClass().getSimpleName() + " annotated with @" + jaxbRootAnnotation + " > " + name)
+                                .build());
+                        classesToBeBound.add(targetClassInfo.name().toString());
+                        jaxbRootAnnotationsDetected = true;
+
+                    }
                 }
             }
         }

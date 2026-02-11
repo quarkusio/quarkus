@@ -1,9 +1,8 @@
 package io.quarkus.grpc.stubs;
 
-import io.grpc.stub.StreamObserver;
 import io.smallrye.mutiny.subscription.UniEmitter;
 
-public class UniStreamObserver<T> implements StreamObserver<T> {
+public class UniStreamObserver<X, T> extends MutinyClientStreamObserver<X, T> {
 
     private final UniEmitter<? super T> emitter;
 

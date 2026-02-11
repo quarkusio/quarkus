@@ -1,4 +1,4 @@
-package io.quarkus.test.junit;
+package io.quarkus.test.junit.common;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

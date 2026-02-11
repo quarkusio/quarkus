@@ -25,7 +25,7 @@ import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporterProvider;
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.common.JdkUtil;
+import io.quarkus.test.junit.common.JdkUtil;
 import io.restassured.RestAssured;
 
 /**

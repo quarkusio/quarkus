@@ -20,8 +20,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.opentelemetry.sdk.metrics.data.MetricDataType;
-import io.quarkus.test.common.JdkUtil;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.common.JdkUtil;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest

@@ -50,18 +50,8 @@ public interface ArtifactSources extends Mappable {
         final Collection<SourceDir> sourceDirs = getSourceDirs();
         final Collection<SourceDir> resourceDirs = getResourceDirs();
         final List<PathTree> trees = new ArrayList<>(sourceDirs.size() + resourceDirs.size());
-        for (SourceDir src : sourceDirs) {
-            final PathTree outputTree = src.getOutputTree();
-            if (outputTree != null && !outputTree.isEmpty() && !trees.contains(outputTree)) {
-                trees.add(outputTree);
-            }
-        }
-        for (SourceDir src : resourceDirs) {
-            final PathTree outputTree = src.getOutputTree();
-            if (outputTree != null && !outputTree.isEmpty() && !trees.contains(outputTree)) {
-                trees.add(outputTree);
-            }
-        }
+        collectOutputs(sourceDirs, trees);
+        collectOutputs(resourceDirs, trees);
         if (trees.isEmpty()) {
             return EmptyPathTree.getInstance();
         }
@@ -69,6 +59,15 @@ public interface ArtifactSources extends Mappable {
             return trees.get(0);
         }
         return new MultiRootPathTree(trees.toArray(new PathTree[0]));
+    }
+
+    private static void collectOutputs(Collection<SourceDir> sourceDirs, List<PathTree> trees) {
+        for (SourceDir src : sourceDirs) {
+            final PathTree outputTree = src.getOutputTree();
+            if (outputTree != null && !trees.contains(outputTree) && !outputTree.isEmpty()) {
+                trees.add(outputTree);
+            }
+        }
     }
 
     @Override

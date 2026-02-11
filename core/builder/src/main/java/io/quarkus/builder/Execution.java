@@ -151,7 +151,7 @@ final class Execution {
         long duration = max(0, System.nanoTime() - start);
         metrics.buildFinished(TimeUnit.NANOSECONDS.toMillis(duration));
         return new BuildResult(singles, multis, finalIds, Collections.unmodifiableList(diagnostics),
-                duration, metrics);
+                duration, metrics, chain.getClassLoader());
     }
 
     EnhancedQueueExecutor getExecutor() {

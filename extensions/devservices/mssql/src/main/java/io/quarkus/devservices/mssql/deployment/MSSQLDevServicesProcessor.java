@@ -101,7 +101,6 @@ public class MSSQLDevServicesProcessor {
         private final boolean useSharedNetwork;
 
         private final String hostName;
-        private ClassLoader creationClassloader;
 
         public QuarkusMSSQLServerContainer(Optional<String> imageName, OptionalInt fixedExposedPort,
                 String defaultNetworkId, boolean useSharedNetwork) {
@@ -111,23 +110,6 @@ public class MSSQLDevServicesProcessor {
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "mssql");
-            creationClassloader = Thread.currentThread().getContextClassLoader();
-        }
-
-        @Override
-        public void start() {
-            // Ideally StartupActionImpl would set the deployment classloader as the TCCL, but it sets the augmentation classloader as the TCCL
-            // In normal mode this doesn't matter because the augmentation classloader can see application classes, but in continuous testing/dev mode, it can't
-            // As a tactical workaround, stash away the deployment classloader and use it for the start, so that test containers classes can find application resources
-            ClassLoader orig = Thread.currentThread().getContextClassLoader();
-            try {
-                Thread.currentThread().setContextClassLoader(creationClassloader);
-                super.start();
-            } finally {
-                Thread.currentThread().setContextClassLoader(orig);
-                // Assume the same container instance won't start() twice, and null out the CL to be cautious about CL leaks
-                creationClassloader = null;
-            }
         }
 
         @Override

@@ -18,7 +18,6 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -173,12 +172,6 @@ public class KeycloakDevServicesProcessor {
                             .config(configs)
                             .build();
                 }).orElseGet(() -> {
-                    // this is done because ATM, sometimes resources are not available with the TCCL
-                    // loaded on the owned service startup; I experienced it every time when
-                    // I run KeycloakAdminClientMutualTlsDevServicesTest;
-                    // I expect this will be fixed over time by Holly and then, we can drop this workaround
-                    // TODO: we should re-check from time to time if this is still necessary
-                    ClassLoader buildStepTcclUsedToLoadResources = Thread.currentThread().getContextClassLoader();
 
                     return DevServicesResultBuildItem.owned().feature(feature)
                             .serviceName(feature.getName())
@@ -186,7 +179,7 @@ public class KeycloakDevServicesProcessor {
                             .startable(
                                     () -> new KeycloakServer(useSharedNetwork, config, devServicesConfig,
                                             devServicesConfigurator,
-                                            composeProjectBuildItem, imageName, buildStepTcclUsedToLoadResources))
+                                            composeProjectBuildItem, imageName))
                             .postStartHook(keycloakServer -> {
                                 for (String error : keycloakServer.errors) {
                                     // these errors would be hidden by the 'StartupLogCompressor' if the capture was not dumped
@@ -416,12 +409,10 @@ public class KeycloakDevServicesProcessor {
         private KeycloakDevServicesConfigurator.ConfigPropertiesContext configPropertiesContext;
         private QuarkusOidcContainer oidcContainer;
         private final List<String> errors;
-        private final ClassLoader buildStepTcclUsedToLoadResources;
 
         private KeycloakServer(boolean useSharedNetwork, KeycloakDevServicesConfig config, DevServicesConfig devServicesConfig,
                 KeycloakDevServicesConfigurator devServicesConfigurator,
-                DevServicesComposeProjectBuildItem composeProjectBuildItem, String imageName,
-                ClassLoader buildStepTcclUsedToLoadResources) {
+                DevServicesComposeProjectBuildItem composeProjectBuildItem, String imageName) {
             this.useSharedNetwork = useSharedNetwork;
             this.config = config;
             this.devServicesConfig = devServicesConfig;
@@ -429,7 +420,6 @@ public class KeycloakDevServicesProcessor {
             this.composeProjectBuildItem = composeProjectBuildItem;
             this.imageName = imageName;
             this.errors = new ArrayList<>();
-            this.buildStepTcclUsedToLoadResources = buildStepTcclUsedToLoadResources;
         }
 
         @Override
@@ -475,8 +465,7 @@ public class KeycloakDevServicesProcessor {
                     config.features(),
                     config.showLogs(),
                     config.containerMemoryLimit(),
-                    errors,
-                    buildStepTcclUsedToLoadResources);
+                    errors);
 
             timeout.ifPresent(oidcContainer::withStartupTimeout);
             oidcContainer.withEnv(config.containerEnv());
@@ -559,7 +548,6 @@ public class KeycloakDevServicesProcessor {
         private final boolean showLogs;
         private final MemorySize containerMemoryLimit;
         private final List<String> errors;
-        private final ClassLoader buildStepTcclUsedToLoadResources;
 
         public QuarkusOidcContainer(KeycloakDevServicesConfig config, DockerImageName dockerImageName,
                 OptionalInt fixedExposedPort,
@@ -568,7 +556,7 @@ public class KeycloakDevServicesProcessor {
                 List<String> realmPaths, Map<String, String> resources, String containerLabelValue,
                 boolean sharedContainer, Optional<String> javaOpts, Optional<String> startCommand,
                 Optional<Set<String>> features, boolean showLogs, MemorySize containerMemoryLimit,
-                List<String> errors, ClassLoader buildStepTcclUsedToLoadResources) {
+                List<String> errors) {
             super(dockerImageName);
 
             this.useSharedNetwork = useSharedNetwork;
@@ -578,7 +566,6 @@ public class KeycloakDevServicesProcessor {
             this.sharedContainer = sharedContainer;
             this.javaOpts = javaOpts;
             this.keycloakX = isKeycloakX(config, dockerImageName);
-            this.buildStepTcclUsedToLoadResources = buildStepTcclUsedToLoadResources;
 
             if (useSharedNetwork && fixedExposedPort.isEmpty()) {
                 // We need to know the port we are exposing when using the shared network, in order to be able to tell
@@ -652,9 +639,6 @@ public class KeycloakDevServicesProcessor {
                 URL realmPathUrl = null;
                 if ((realmPathUrl = Thread.currentThread().getContextClassLoader().getResource(realmPath)) != null) {
                     readRealmFile(realmPathUrl, realmPath, errors).ifPresent(realmReps::add);
-                } else if (buildStepTcclUsedToLoadResources != Thread.currentThread().getContextClassLoader()
-                        && (realmPathUrl = buildStepTcclUsedToLoadResources.getResource(realmPath)) != null) {
-                    readRealmFile(realmPathUrl, realmPath, errors).ifPresent(realmReps::add);
                 } else {
                     Path filePath = Paths.get(realmPath);
                     if (Files.exists(filePath)) {
@@ -690,22 +674,6 @@ public class KeycloakDevServicesProcessor {
                 LOG.debugf("Mapping the classpath %s resource to %s", resourcePath, mappedResource);
                 withClasspathResourceMapping(resourcePath, mappedResource, BindMode.READ_ONLY);
             } else {
-                if (buildStepTcclUsedToLoadResources.getResource(resourcePath) != null) {
-                    try {
-                        Path tempPath = Files.createTempFile("keycloak-dev-svc-resource-", null);
-                        tempPath.toFile().deleteOnExit();
-                        try (InputStream in = buildStepTcclUsedToLoadResources.getResourceAsStream(resourcePath)) {
-                            Files.copy(in, tempPath, StandardCopyOption.REPLACE_EXISTING);
-                        }
-                        LOG.debugf("Mapping the classpath '%s' resource from a temporary file '%s' resource to '%s'",
-                                resourcePath, tempPath, mappedResource);
-                        withFileSystemBind(tempPath.toString(), mappedResource, BindMode.READ_ONLY);
-                        return;
-                    } catch (IOException e) {
-                        LOG.debugf(e, "Failed to copy the resource '%s' to a temporary file", resourcePath);
-                    }
-                }
-
                 if (Files.exists(Paths.get(resourcePath))) {
                     LOG.debugf("Mapping the file system %s resource to %s", resourcePath, mappedResource);
                     withFileSystemBind(resourcePath, mappedResource, BindMode.READ_ONLY);

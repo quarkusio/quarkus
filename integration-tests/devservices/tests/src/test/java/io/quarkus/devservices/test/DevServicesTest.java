@@ -9,6 +9,7 @@ import static io.quarkus.tests.dependentextension.Constants.QUARKUS_UNSATISFIED_
 import static io.quarkus.tests.dependentextension.Constants.QUARKUS_UNSATISFIED_OPTIONAL_DEPENDENT_EXTENSION_SEES_DEPENDENCY;
 import static io.quarkus.tests.simpleextension.Constants.QUARKUS_SIMPLE_EXTENSION_BASE_URL;
 import static io.quarkus.tests.simpleextension.Constants.QUARKUS_SIMPLE_EXTENSION_STATIC_THING;
+import static io.quarkus.tests.simpleextension.Constants.SIMPLE_EXTENSION_CLASSLOADER_ON_SERVICE_START;
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -25,6 +26,7 @@ import io.quarkus.test.junit.QuarkusTest;
 public class DevServicesTest {
     private static final String UNSET = "unset";
 
+    // All these config properties are ways for the dev service to communicate back to the test
     @ConfigProperty(name = QUARKUS_SIMPLE_EXTENSION_BASE_URL, defaultValue = UNSET)
     String simpleExtensionBaseUrl;
 
@@ -51,6 +53,9 @@ public class DevServicesTest {
 
     @ConfigProperty(name = QUARKUS_UNSATISFIED_OPTIONAL_DEPENDENT_EXTENSION_SEES_DEPENDENCY, defaultValue = "false")
     boolean unsatisfiedOptionalDependentExtensionSeesDependencyService;
+
+    @ConfigProperty(name = SIMPLE_EXTENSION_CLASSLOADER_ON_SERVICE_START, defaultValue = UNSET)
+    String classloaderOnServiceStart;
 
     @Test
     public void testTheLazyDevServicesConfigIsAvailable() {
@@ -108,6 +113,13 @@ public class DevServicesTest {
     public void testOptionalDependentServiceWithUnsatisfiedDependencyIsStarted() {
         assertIsSet(unsatisfiedOptionalDependentExtensionBaseUrl);
         assertFalse(unsatisfiedOptionalDependentExtensionSeesDependencyService);
+    }
+
+    @Test
+    public void testDeploymentClassLoaderIsSetAsTCCLOnStart() {
+        assertIsSet(classloaderOnServiceStart);
+        // In dev mode, the augmentation classloader cannot see application resources, so dev services should be started with a deployment classloader as the TCCL
+        assertTrue(classloaderOnServiceStart.contains("Deployment"));
     }
 
     private void assertIsSet(String value) {

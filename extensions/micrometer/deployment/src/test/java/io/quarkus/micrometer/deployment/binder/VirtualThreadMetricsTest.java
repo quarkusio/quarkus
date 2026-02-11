@@ -12,8 +12,8 @@ import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.micrometer.runtime.binder.virtualthreads.VirtualThreadCollector;
-import io.quarkus.test.DisabledOnSemeru;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.junit.common.DisabledOnSemeru;
 
 @EnabledForJreRange(min = JRE.JAVA_21)
 @DisabledOnSemeru(reason = "JFR is not supported on Semeru yet")

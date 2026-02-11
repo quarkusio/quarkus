@@ -44,6 +44,7 @@ import java.util.function.Supplier;
 import java.util.regex.PatternSyntaxException;
 
 import jakarta.enterprise.inject.spi.DeploymentException;
+import jakarta.ws.rs.core.EntityPart;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.PathSegment;
 
@@ -109,8 +110,10 @@ public class ServerEndpointIndexer
     private static final DotName PATH_DOT_NAME = DotName.createSimple(Path.class.getName());
     private static final DotName FILEUPLOAD_DOT_NAME = DotName.createSimple(FileUpload.class.getName());
 
+    private static final DotName ENTITY_PART_NAME = DotName.createSimple(EntityPart.class.getName());
+
     private static final Set<DotName> SUPPORTED_MULTIPART_FILE_TYPES = Set.of(FILE_DOT_NAME, PATH_DOT_NAME,
-            FILEUPLOAD_DOT_NAME);
+            FILEUPLOAD_DOT_NAME, ENTITY_PART_NAME);
     protected final EndpointInvokerFactory endpointInvokerFactory;
     protected final List<MethodScanner> methodScanners;
     protected final FieldInjectionIndexerExtension fieldInjectionHandler;
@@ -483,6 +486,7 @@ public class ServerEndpointIndexer
         if (SUPPORTED_MULTIPART_FILE_TYPES.contains(DotName.createSimple(declaredType))) {
             fileFormNames.add(name);
         }
+
         return new ServerMethodParameter(name,
                 elementType, declaredType, declaredTypes.getDeclaredUnresolvedType(),
                 type, single, signature,
@@ -716,7 +720,8 @@ public class ServerEndpointIndexer
         } else if (elementType.equals(FileUpload.class.getName())
                 || elementType.equals(Path.class.getName())
                 || elementType.equals(File.class.getName())
-                || elementType.equals(InputStream.class.getName())) {
+                || elementType.equals(InputStream.class.getName())
+                || elementType.equals(EntityPart.class.getName())) {
             // this is handled by MultipartFormParamExtractor
             return null;
         } else {

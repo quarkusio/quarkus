@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.regex.Pattern;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -274,4 +275,11 @@ public interface MailerRuntimeConfig {
      */
     @WithDefault("60S")
     Duration timeout();
+
+    /**
+     * Sets the max emails count per connection before it gets closed.
+     * <p>
+     * Some SMTP servers have the requirement to allow only a number of emails sent per connection.
+     */
+    OptionalLong maxMailsPerConnection();
 }

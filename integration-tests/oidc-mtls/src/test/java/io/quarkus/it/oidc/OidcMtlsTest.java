@@ -151,7 +151,7 @@ public class OidcMtlsTest {
         String name = resp.bodyAsString();
         assertEquals("Identities: CN=backend-service, alice;"
                 + " Client: backend-client-with-secret;"
-                + " Scope: email microprofile:jwt profile;"
+                + " Scope: email microprofile:jwt;"
                 + " JWT cert thumbprint: false, introspection cert thumbprint: false", name);
 
         // HTTP 401, token is valid but it is not certificate bound

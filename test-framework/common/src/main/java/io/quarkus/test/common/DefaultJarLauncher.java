@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -32,6 +33,8 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
     private static final String VERTX_HTTP_RECORDER = "io.quarkus.vertx.http.runtime.VertxHttpRecorder";
     private static final String AOT_FILE_NAME = "app.aot";
     private static final String AOT_CONF_FILE_NAME = "app.aotconf";
+
+    public static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
 
     static boolean HTTP_PRESENT;
 
@@ -184,7 +187,27 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
 
     @Override
     public void close() {
-        LauncherUtil.destroyProcess(quarkusProcess);
+        if (!IS_WINDOWS) {
+            long pid = quarkusProcess.pid();
+            try {
+                final Process killProcess = new ProcessBuilder("kill", "-s", "SIGINT", pid + "")
+                        .redirectError(ProcessBuilder.Redirect.DISCARD)
+                        .redirectOutput(ProcessBuilder.Redirect.DISCARD).start();
+                log.infof("Wait for process '%s' to stop", pid);
+                killProcess.waitFor(10, TimeUnit.SECONDS);
+            } catch (IOException | InterruptedException e) {
+                log.errorf("unable to stop process '%s'", pid);
+            }
+            try {
+                quarkusProcess.waitFor(20, TimeUnit.SECONDS);
+            } catch (InterruptedException ignored) {
+
+            }
+        }
+        if (quarkusProcess.isAlive()) {
+            LauncherUtil.destroyProcess(quarkusProcess);
+        }
+
         if (generateAotFile) {
             Path aotConfFile = jarPath.resolveSibling(AOT_CONF_FILE_NAME);
             if (Files.exists(aotConfFile)) {

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -318,6 +319,10 @@ public class FakeSmtpTestBase {
             return Duration.ofSeconds(60);
         }
 
+        @Override
+        public OptionalLong maxMailsPerConnection() {
+            return OptionalLong.empty();
+        }
     }
 
 }

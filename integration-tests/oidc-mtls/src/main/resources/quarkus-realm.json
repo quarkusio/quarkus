@@ -589,7 +589,7 @@
         "address",
         "phone",
         "offline_access",
-        "microprofile-jwt"
+        "microprofile:jwt"
       ]
     },
     {
@@ -643,7 +643,7 @@
         "address",
         "phone",
         "offline_access",
-        "microprofile-jwt"
+        "microprofile:jwt"
       ]
     },
     {
@@ -683,7 +683,7 @@
         "address",
         "phone",
         "offline_access",
-        "microprofile-jwt"
+        "microprofile:jwt"
       ]
     },
     {
@@ -786,7 +786,7 @@
         "address",
         "phone",
         "offline_access",
-        "microprofile-jwt"
+        "microprofile:jwt"
       ]
     },
     {
@@ -896,7 +896,7 @@
         "address",
         "phone",
         "offline_access",
-        "microprofile-jwt"
+        "microprofile:jwt"
       ]
     },
     {
@@ -937,7 +937,7 @@
         "address",
         "phone",
         "offline_access",
-        "microprofile-jwt"
+        "microprofile:jwt"
       ]
     },
     {
@@ -976,7 +976,7 @@
         "address",
         "phone",
         "offline_access",
-        "microprofile-jwt"
+        "microprofile:jwt"
       ]
     },
     {
@@ -1040,7 +1040,7 @@
         "address",
         "phone",
         "offline_access",
-        "microprofile-jwt"
+        "microprofile:jwt"
       ]
     }
   ],
@@ -1249,7 +1249,7 @@
     },
     {
       "id": "55621a1e-cd6b-45a7-9f06-a678e0801b9c",
-      "name": "microprofile-jwt",
+      "name": "microprofile:jwt",
       "description": "Microprofile - JWT built-in scope",
       "protocol": "openid-connect",
       "attributes": {
@@ -1604,7 +1604,7 @@
   "defaultOptionalClientScopes": [
     "address",
     "phone",
-    "microprofile-jwt",
+    "microprofile:jwt",
     "offline_access"
   ],
   "browserSecurityHeaders": {

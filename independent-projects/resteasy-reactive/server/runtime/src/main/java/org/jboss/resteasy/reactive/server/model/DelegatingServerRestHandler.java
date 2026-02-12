@@ -28,7 +28,7 @@ public class DelegatingServerRestHandler implements ServerRestHandler {
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
         for (int i = 0; i < delegates.size(); i++) {
-            delegates.get(0).handle(requestContext);
+            delegates.get(i).handle(requestContext);
         }
     }
 }

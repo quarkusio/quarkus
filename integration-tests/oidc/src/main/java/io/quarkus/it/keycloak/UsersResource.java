@@ -26,6 +26,13 @@ public class UsersResource {
     }
 
     @GET
+    @Path("/me/jwk-delayed-resolution")
+    @RolesAllowed("user")
+    public User principalNameJwkDelayedResolution() {
+        return new User(identity.getPrincipal().getName());
+    }
+
+    @GET
     @Path("/preferredUserName")
     @RolesAllowed("user")
     public User preferredUserName() {

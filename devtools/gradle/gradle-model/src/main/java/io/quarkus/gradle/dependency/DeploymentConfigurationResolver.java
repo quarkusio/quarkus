@@ -13,7 +13,6 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ResolvedConfiguration;
 import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier;
-import org.gradle.api.internal.tasks.TaskDependencyFactory;
 import org.gradle.api.provider.ListProperty;
 
 import io.quarkus.gradle.tooling.dependency.DependencyUtils;
@@ -42,22 +41,17 @@ public class DeploymentConfigurationResolver {
      * @param project project
      * @param mode launch mode
      * @param configurationName configuration name
-     * @param taskDependencyFactory task dependency factory
      */
-    public static void registerDeploymentConfiguration(Project project, LaunchMode mode, String configurationName,
-            TaskDependencyFactory taskDependencyFactory) {
+    public static void registerDeploymentConfiguration(Project project, LaunchMode mode, String configurationName) {
         project.getConfigurations().register(configurationName,
-                config -> new DeploymentConfigurationResolver(project, config, mode, taskDependencyFactory));
+                config -> new DeploymentConfigurationResolver(project, config, mode));
     }
 
     private final Project project;
-    private final TaskDependencyFactory taskDependencyFactory;
     private byte walkingFlags;
 
-    private DeploymentConfigurationResolver(Project project, Configuration deploymentConfig, LaunchMode mode,
-            TaskDependencyFactory taskDependencyFactory) {
+    private DeploymentConfigurationResolver(Project project, Configuration deploymentConfig, LaunchMode mode) {
         this.project = project;
-        this.taskDependencyFactory = taskDependencyFactory;
 
         final Configuration baseRuntimeConfig = project.getConfigurations()
                 .getByName(ApplicationDeploymentClasspathBuilder.getFinalRuntimeConfigName(mode));

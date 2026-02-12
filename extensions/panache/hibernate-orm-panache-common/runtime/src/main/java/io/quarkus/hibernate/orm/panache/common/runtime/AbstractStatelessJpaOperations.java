@@ -51,6 +51,15 @@ public abstract class AbstractStatelessJpaOperations<PanacheQueryType>
         session.update(entity);
     }
 
+    public void upsert(Object entity) {
+        StatelessSession session = getSession(entity.getClass());
+        upsert(session, entity);
+    }
+
+    public void upsert(StatelessSession session, Object entity) {
+        session.upsert(entity);
+    }
+
     public void delete(Object entity) {
         StatelessSession session = getSession(entity.getClass());
         session.delete(entity);

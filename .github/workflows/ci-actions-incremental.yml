@@ -1,9 +1,13 @@
 name: Quarkus CI
 
 on:
+  # the build for main is run periodically and cancelled if there are no changes since the last run
+  schedule:
+    - cron: '0 */8 * * *'
   push:
     branches-ignore:
       - 'dependabot/**'
+      - 'main'
     paths-ignore:
       - '*.adoc'
       - '*.md'
@@ -155,6 +159,7 @@ jobs:
       maven-disable-gib: ${{ steps.gib-status.outputs.maven-disable-gib }}
       maven-disable-develocity-cache: ${{ steps.develocity-cache-status.outputs.maven-disable-develocity-cache }}
       common-maven-args: ${{ steps.configure-maven-args.outputs.common-maven-args }}
+      run-ci-build: ${{ steps.check-changes.outputs.run-ci-build }}
     steps:
       - name: Set up JDK 25
         uses: actions/setup-java@v5
@@ -203,11 +208,75 @@ jobs:
           else
             echo "common-maven-args=${COMMON_MAVEN_ARGS}" >> $GITHUB_OUTPUT
           fi
+      # Handle scheduled workflow runs for main branch of quarkusio/quarkus:
+      # - we download the previous sha from the last successful scheduled run
+      # - we compare it with current and skip the build if there are no changes
+      - name: Download previous scheduled build SHA
+        if: github.event_name == 'schedule' && github.ref_name == 'main' && github.repository == 'quarkusio/quarkus'
+        id: download-previous-sha
+        continue-on-error: true
+        run: |
+          # Find the most recent successful scheduled workflow run
+          RUN_ID=$(gh run list \
+            --workflow=ci-actions-incremental.yml \
+            --branch=main \
+            --event=schedule \
+            --status=completed \
+            --limit=20 \
+            --json databaseId,conclusion \
+            --jq '.[] | .databaseId' \
+            | head -1)
 
+          if [ -n "$RUN_ID" ]; then
+            echo "Found previous run: $RUN_ID"
+            # Download the artifact containing the SHA
+            gh run download "$RUN_ID" --name main-last-build-sha --dir . 2>/dev/null || echo "No artifact found"
+          else
+            echo "No previous run found"
+          fi
+      - name: Check if CI build is needed
+        id: check-changes
+        run: |
+          # Default: always run CI for non-scheduled events
+          if [ "${{ github.event_name }}" != "schedule" ] || \
+             [ "${{ github.ref_name }}" != "main" ] || \
+             [ "${{ github.repository }}" != "quarkusio/quarkus" ]; then
+            echo "Not a scheduled main run - CI will proceed"
+            echo "run-ci-build=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # For scheduled runs: check if there are new commits
+          CURRENT_SHA="${{ github.sha }}"
+
+          if [ -f main-last-build-sha.txt ]; then
+            LAST_SHA=$(cat main-last-build-sha.txt)
+            if [ "$LAST_SHA" == "$CURRENT_SHA" ]; then
+              echo "No changes detected since last scheduled run (SHA: $CURRENT_SHA)"
+              echo "run-ci-build=false" >> $GITHUB_OUTPUT
+            else
+              echo "Changes detected: $LAST_SHA -> $CURRENT_SHA"
+              echo "run-ci-build=true" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "No previous SHA found - assuming first run, CI will proceed"
+            echo "run-ci-build=true" >> $GITHUB_OUTPUT
+          fi
+      - name: Save current build SHA for next run
+        if: github.event_name == 'schedule' && github.ref_name == 'main' && github.repository == 'quarkusio/quarkus'
+        run: echo "${{ github.sha }}" > main-last-build-sha.txt
+      - name: Upload build SHA artifact
+        if: github.event_name == 'schedule' && github.ref_name == 'main' && github.repository == 'quarkusio/quarkus'
+        uses: actions/upload-artifact@v6
+        with:
+          name: main-last-build-sha
+          path: main-last-build-sha.txt
+          retention-days: 30
 
   build-jdk17:
     name: "Initial JDK 17 Build"
     needs: [ configure ]
+    if: needs.configure.outputs.run-ci-build == 'true'
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest-large'].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners['ubuntu-latest-large'].runsOn, 'initial-jdk-17') || 'ubuntu-latest' }}
     env:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
@@ -1599,8 +1668,8 @@ jobs:
   build-report:
     runs-on: ubuntu-latest
     name: Build report
-    needs: [build-jdk17,jvm-tests,maven-tests,gradle-tests,devtools-tests,kubernetes-tests,quickstarts-tests,platform-tests,tcks-test,native-tests,virtual-thread-native-tests]
-    if: always()
+    needs: [configure,build-jdk17,jvm-tests,maven-tests,gradle-tests,devtools-tests,kubernetes-tests,quickstarts-tests,platform-tests,tcks-test,native-tests,virtual-thread-native-tests]
+    if: always() && needs.configure.outputs.run-ci-build == 'true'
     steps:
       - uses: runs-on/action@v2
       - uses: actions/download-artifact@v7

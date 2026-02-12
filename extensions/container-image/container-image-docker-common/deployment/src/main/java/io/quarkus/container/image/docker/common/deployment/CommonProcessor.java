@@ -10,6 +10,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -102,15 +104,18 @@ public abstract class CommonProcessor<C extends CommonConfig> {
 
             // a pull is not required when using this image locally because the strategy always builds the container image
             // locally before pushing it to the registry
+            Map<String, String> metadata = new HashMap<>();
+            metadata.put("container-image", builtContainerImage);
+            metadata.put("pull-required", "false");
+            if (workingDirectory != null) {
+                metadata.put("working-directory", workingDirectory);
+            }
+            metadata.put("output-directory", out.getOutputDirectory().toAbsolutePath().toString());
             artifactResultProducer.produce(
                     new ArtifactResultBuildItem(
                             null,
                             "jar-container",
-                            Map.of(
-                                    "container-image", builtContainerImage,
-                                    "pull-required", "false",
-                                    "working-directory", workingDirectory,
-                                    "output-directory", out.getOutputDirectory().toAbsolutePath().toString())));
+                            Collections.unmodifiableMap(metadata)));
 
             containerImageBuilder.produce(new ContainerImageBuilderBuildItem(getProcessorImplementation()));
         }

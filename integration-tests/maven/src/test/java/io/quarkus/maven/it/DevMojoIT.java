@@ -39,7 +39,9 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledForJreRange;
 import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.bootstrap.model.CapabilityErrors;
@@ -1776,6 +1778,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
     }
 
     @Test
+    @DisabledForJreRange(min = JRE.JAVA_25, disabledReason = "APT in classpath is not supported anymore")
     public void testThatAptInClasspathWorks() throws MavenInvocationException, IOException {
         testDir = initProject("projects/apt-in-classpath", "projects/project-apt-in-classpath");
         run(true);

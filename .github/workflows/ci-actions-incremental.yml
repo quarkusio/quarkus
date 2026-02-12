@@ -110,6 +110,16 @@ defaults:
     shell: bash
 
 jobs:
+  approval:
+    name: "Wait for approval if Dependabot"
+    runs-on: ubuntu-latest
+    # For Dependabot, we require a manual approval before running the CI build
+    environment:
+      name: ${{ github.actor == 'dependabot[bot]' && 'dependabot' || 'ci' }}
+    steps:
+      - run: echo "Waiting for approval for Dependabot pull request..."
+        if: github.actor == 'dependabot[bot]'
+
   # This is a hack to work around a GitHub API limitation:
   # when the PR is coming from another fork, the pull_requests field of the
   # workflow_run payload is empty.
@@ -117,6 +127,7 @@ jobs:
   # https://github.community/t/pull-request-attribute-empty-in-workflow-run-event-object-for-pr-from-forked-repo/154682
   attach-pr-number:
     runs-on: ubuntu-latest
+    needs: [ approval ]
     name: Attach pull request number
     if: github.event_name == 'pull_request'
     steps:
@@ -131,6 +142,7 @@ jobs:
           retention-days: 1
   ci-sanity-check:
     name: "CI Sanity Check"
+    needs: [ approval ]
     runs-on: ubuntu-latest
     # Skip main in forks
     if: github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')
@@ -139,6 +151,7 @@ jobs:
         run: sleep 30
   configure:
     name: "Configure jobs"
+    needs: [ approval ]
     runs-on: ubuntu-latest
     # Skip main in forks
     # Skip draft PRs, rerun as soon as its removed

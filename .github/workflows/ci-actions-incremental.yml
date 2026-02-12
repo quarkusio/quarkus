@@ -1402,7 +1402,7 @@ jobs:
       - uses: runs-on/action@v2
       - name: Gradle Enterprise environment
         run: |
-          echo "GE_TAGS=jdk-25" >> "$GITHUB_ENV"
+          echo "GE_TAGS=jdk-21" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=MicroProfile TCKs Tests" >> "$GITHUB_ENV"
       - uses: actions/checkout@v6
         with:
@@ -1412,11 +1412,11 @@ jobs:
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
-      - name: Set up JDK 25
+      - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: 25
+          java-version: 21
       - name: Restore Maven Repository
         uses: actions/cache/restore@v5
         with:

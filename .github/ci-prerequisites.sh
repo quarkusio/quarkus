@@ -33,6 +33,16 @@
 # alpine           3.15        c4fc93816858   4 months ago   5.58MB
 
 time sudo docker image prune --all --force || true
+
+sudo apt-get remove -y '^dotnet-.*'
+sudo apt-get remove -y '^llvm-.*'
+sudo apt-get remove -y 'php.*'
+sudo apt-get remove -y '^mongodb-.*'
+sudo apt-get remove -y '^mysql-.*'
+sudo apt-get remove -y azure-cli google-cloud-sdk google-chrome-stable firefox powershell mono-devel libgl1-mesa-dri
+sudo apt-get autoremove -y
+sudo apt-get clean
+
 # That is 979M
 time sudo rm -rf /usr/share/dotnet || true
 # That is 1.7G

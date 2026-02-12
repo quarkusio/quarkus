@@ -7,15 +7,46 @@
 
 echo "# df -h"
 df -h
+echo
+echo "##################################################################"
+echo
 echo "# du -sh /"
 sudo du -sh /* || true
+echo
+echo "##################################################################"
+echo
 echo "# du -sh /home/runner/work/quarkus/quarkus/integration-tests/*"
 sudo du -sh /home/runner/work/quarkus/quarkus/integration-tests/* || true
+echo
+echo "##################################################################"
+echo
 echo "# docker images"
 docker images || true
+echo
+echo "##################################################################"
+echo
+echo "# docker system df"
+docker system df || true
+echo
+echo "##################################################################"
+echo
 echo "# du -sh /var/lib/*"
 sudo du -sh /var/lib/* || true
+echo
+echo "##################################################################"
+echo
 echo "# du -sh /opt/hostedtoolcache/*"
 sudo du -sh /opt/hostedtoolcache/* || true
+echo
+echo "##################################################################"
+echo
 echo "# du -sh /imagegeneration/installers/*"
 sudo du -sh /imagegeneration/installers/* || true
+echo
+echo "##################################################################"
+echo
+echo "# du -sh /tmp/*"
+sudo du -sh /tmp/* || true
+echo
+echo "##################################################################"
+echo

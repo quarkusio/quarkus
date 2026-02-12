@@ -34,4 +34,13 @@ public interface PanacheStatelessReactiveEntity extends PanacheStatelessEntityOp
     public default Uni<Void> update() {
         return operations().update(this);
     }
+
+    /**
+     * Insert or update this entity in the database. An insert will be performed if the entity does not already exist
+     * in the database, otherwise it will be updated. Note that you cannot upsert an entity with a null ID.
+     */
+    @Override
+    public default Uni<Void> upsert() {
+        return operations().upsert(this);
+    }
 }

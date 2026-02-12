@@ -546,7 +546,10 @@
         </profile>
         <profile>
             <id>gradle-8</id>
-            <!-- Adds an execution to the surefire plugin that runs selected tests with Gradle 8 -->
+            <activation>
+                <jdk>[17,25)</jdk>
+            </activation>
+            <!-- Adds an execution to the surefire plugin that runs selected tests with Gradle 8, only for Java < 25 -->
             <build>
                 <pluginManagement>
                     <plugins>

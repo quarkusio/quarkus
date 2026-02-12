@@ -17,4 +17,10 @@ public interface PanacheStatelessEntityOperations<Completion, Confirmation> exte
      * Update this entity to the database.
      */
     public Completion update();
+
+    /**
+     * Insert or update this entity in the database. An insert will be performed if the entity does not already exist
+     * in the database, otherwise it will be updated. Note that you cannot upsert an entity with a null ID.
+     */
+    public Completion upsert();
 }

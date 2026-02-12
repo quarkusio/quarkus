@@ -17,6 +17,9 @@ import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVI
 import static io.quarkus.rest.client.reactive.deployment.DotNames.RESPONSE_EXCEPTION_MAPPER;
 import static io.quarkus.rest.client.reactive.deployment.RegisteredRestClientBuildItem.toRegisteredRestClients;
 import static java.util.Arrays.asList;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.addAnnotation;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.genericTypeOf;
 import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.CDI_WRAPPER_SUFFIX;
 import static org.jboss.resteasy.reactive.common.processor.JandexUtil.isImplementorOf;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.APPLICATION;
@@ -25,6 +28,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner.BUILTIN_HTTP_ANNOTATIONS_TO_METHOD;
 
 import java.lang.annotation.RetentionPolicy;
+import java.lang.constant.ClassDesc;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -56,6 +60,7 @@ import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;
@@ -69,6 +74,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanGizmo2Adaptor;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
@@ -95,6 +101,13 @@ import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.InterfaceMethodDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.jaxrs.client.reactive.deployment.JaxrsClientReactiveEnricherBuildItem;
 import io.quarkus.jaxrs.client.reactive.deployment.RestClientDefaultConsumesBuildItem;
 import io.quarkus.jaxrs.client.reactive.deployment.RestClientDefaultProducesBuildItem;
@@ -552,31 +565,41 @@ class RestClientReactiveProcessor {
             }
 
             String wrapperClassName = jaxrsInterface.name().toString() + CDI_WRAPPER_SUFFIX;
-            try (ClassCreator classCreator = ClassCreator.builder()
-                    .className(wrapperClassName)
-                    .classOutput(new GeneratedBeanGizmoAdaptor(generatedBeans))
-                    .interfaces(jaxrsInterface.name().toString())
-                    .superClass(RestClientReactiveCDIWrapperBase.class)
-                    .build()) {
+            // CLASS LEVEL
+            final Optional<String> configKey = registerRestClient.getConfigKey();
 
-                // CLASS LEVEL
-                final Optional<String> configKey = registerRestClient.getConfigKey();
+            configKey.ifPresent(
+                    key -> configKeys.put(jaxrsInterface.name().toString(), key));
 
-                configKey.ifPresent(
-                        key -> configKeys.put(jaxrsInterface.name().toString(), key));
+            final ScopeInfo scope = restClientsBuildTimeConfig.getScope(capabilities, jaxrsInterface)
+                    .orElse(BuiltinScope.APPLICATION).getInfo();
 
-                final ScopeInfo scope = restClientsBuildTimeConfig.getScope(capabilities, jaxrsInterface)
-                        .orElse(BuiltinScope.APPLICATION).getInfo();
+            Optional<String> baseUri = registerRestClient.getDefaultBaseUri();
+            boolean lazyDelegate = scope.getDotName().equals(REQUEST_SCOPED)
+                    || requestedRestClientMocks.contains(jaxrsInterface.name());
+
+            final String configKeyValue = configKey.orElse(null);
+            final String baseUriValue = baseUri.orElse("");
+
+            ClassDesc interfaceClassDesc = classDescOf(jaxrsInterface);
+            ClassDesc wrapperBaseClassDesc = ClassDesc.of(RestClientReactiveCDIWrapperBase.class.getName());
+
+            Gizmo gizmo = Gizmo.create(new GeneratedBeanGizmo2Adaptor(generatedBeans));
+            gizmo.class_(wrapperClassName, cc -> {
+                cc.extends_(RestClientReactiveCDIWrapperBase.class);
+                cc.implements_(interfaceClassDesc);
+
                 // add a scope annotation, e.g. @Singleton
-                classCreator.addAnnotation(scope.getDotName().toString());
-                classCreator.addAnnotation(RestClient.class);
+                cc.addAnnotation(classDescOf(scope.getDotName()), RetentionPolicy.RUNTIME, ab -> {
+                });
+                cc.addAnnotation(RestClient.class);
+
                 // e.g. @Typed({InterfaceClass.class})
                 // needed for CDI to inject the proper wrapper in case of
                 // subinterfaces
-                org.objectweb.asm.Type asmType = org.objectweb.asm.Type
-                        .getObjectType(jaxrsInterface.name().toString().replace('.', '/'));
-                classCreator.addAnnotation(Typed.class.getName(), RetentionPolicy.RUNTIME)
-                        .addValue("value", new org.objectweb.asm.Type[] { asmType });
+                cc.addAnnotation(Typed.class, ab -> {
+                    ab.addArray("value", new ClassDesc[] { interfaceClassDesc });
+                });
 
                 for (AnnotationInstance annotation : annotationsStore.getAnnotations(jaxrsInterface)) {
                     if (SKIP_COPYING_ANNOTATIONS_TO_GENERATED_CLASS.contains(annotation.name())) {
@@ -588,28 +611,23 @@ class RestClientReactiveProcessor {
                         continue;
                     }
 
-                    classCreator.addAnnotation(annotation);
+                    addAnnotation(cc, annotation, index);
                 }
 
                 // CONSTRUCTOR:
-
-                MethodCreator constructor = classCreator
-                        .getMethodCreator(MethodDescriptor.ofConstructor(classCreator.getClassName()));
-
-                Optional<String> baseUri = registerRestClient.getDefaultBaseUri();
-
-                ResultHandle baseUriHandle = constructor.load(baseUri.isPresent() ? baseUri.get() : "");
-                boolean lazyDelegate = scope.getDotName().equals(REQUEST_SCOPED)
-                        || requestedRestClientMocks.contains(jaxrsInterface.name());
-                constructor.invokeSpecialMethod(
-                        MethodDescriptor.ofConstructor(RestClientReactiveCDIWrapperBase.class, Class.class, String.class,
-                                String.class, boolean.class),
-                        constructor.getThis(),
-                        constructor.loadClassFromTCCL(jaxrsInterface.toString()),
-                        baseUriHandle,
-                        configKey.isPresent() ? constructor.load(configKey.get()) : constructor.loadNull(),
-                        constructor.load(lazyDelegate));
-                constructor.returnValue(null);
+                cc.constructor(ctor -> {
+                    ctor.body(bc -> {
+                        ConstructorDesc superCtor = ConstructorDesc.of(wrapperBaseClassDesc,
+                                Class.class, String.class, String.class, boolean.class);
+                        bc.invokeSpecial(superCtor,
+                                cc.this_(),
+                                Const.of(interfaceClassDesc),
+                                Const.of(baseUriValue),
+                                configKeyValue != null ? Const.of(configKeyValue) : Const.ofNull(String.class),
+                                Const.of(lazyDelegate));
+                        bc.return_();
+                    });
+                });
 
                 // METHODS:
                 for (MethodInfo method : methodsToImplement) {
@@ -622,50 +640,75 @@ class RestClientReactiveProcessor {
                     // public JsonArray get() {
                     //     return InterfaceClass.super.get();
                     // }
-                    MethodCreator methodCreator = classCreator.getMethodCreator(MethodDescriptor.of(method));
-                    for (Type exception : method.exceptions()) {
-                        // declared exceptions are important in case the client is intercepted, because interception
-                        // subclasses wrap undeclared checked exceptions into `ArcUndeclaredThrowableException`
-                        methodCreator.addException(exception.name().toString());
-                    }
-                    methodCreator.setSignature(method.genericSignatureIfRequired());
+                    cc.method(method.name(), mc -> {
+                        mc.public_();
+                        mc.returning(genericTypeOf(method.returnType(), index));
 
-                    // copy method annotations, there can be interceptors bound to them:
-                    for (AnnotationInstance annotation : annotationsStore.getAnnotations(method)) {
-                        if (annotation.target().kind() == AnnotationTarget.Kind.METHOD
-                                && !BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.containsKey(annotation.name())
-                                && !ResteasyReactiveDotNames.PATH.equals(annotation.name())) {
-                            methodCreator.addAnnotation(annotation);
+                        // Collect parameter annotations grouped by position
+                        Map<Short, List<AnnotationInstance>> paramAnnotations = new HashMap<>();
+                        for (AnnotationInstance annotation : annotationsStore.getAnnotations(method)) {
+                            if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
+                                short position = annotation.target().asMethodParameter().position();
+                                paramAnnotations.computeIfAbsent(position, k -> new ArrayList<>()).add(annotation);
+                            }
                         }
-                        if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
-                            // TODO should skip annotations like `@PathParam` / `@RestPath`, probably (?)
-                            short position = annotation.target().asMethodParameter().position();
-                            methodCreator.getParameterAnnotations(position).addAnnotation(annotation);
+
+                        List<ParamVar> params = new ArrayList<>();
+                        List<MethodParameterInfo> methodParams = method.parameters();
+                        for (short i = 0; i < methodParams.size(); i++) {
+                            MethodParameterInfo param = methodParams.get(i);
+                            List<AnnotationInstance> annotations = paramAnnotations.get(i);
+                            final IndexView indexView = index;
+                            params.add(mc.parameter(param.nameOrDefault(), pc -> {
+                                pc.setType(genericTypeOf(param.type(), indexView));
+                                if (annotations != null) {
+                                    for (AnnotationInstance annotation : annotations) {
+                                        addAnnotation(pc, annotation, indexView);
+                                    }
+                                }
+                            }));
                         }
-                    }
 
-                    ResultHandle result;
+                        for (Type exception : method.exceptions()) {
+                            mc.throws_(classDescOf(exception));
+                        }
 
-                    int parameterCount = method.parameterTypes().size();
-                    ResultHandle[] params = new ResultHandle[parameterCount];
-                    for (int i = 0; i < parameterCount; i++) {
-                        params[i] = methodCreator.getMethodParam(i);
-                    }
+                        // copy method annotations, there can be interceptors bound to them:
+                        for (AnnotationInstance annotation : annotationsStore.getAnnotations(method)) {
+                            if (annotation.target().kind() == AnnotationTarget.Kind.METHOD
+                                    && !BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.containsKey(annotation.name())
+                                    && !ResteasyReactiveDotNames.PATH.equals(annotation.name())) {
+                                addAnnotation(mc, annotation, index);
+                            }
+                        }
 
-                    if (Modifier.isAbstract(method.flags())) { // RestClient method
-                        ResultHandle delegate = methodCreator.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(RestClientReactiveCDIWrapperBase.class, "getDelegate",
-                                        Object.class),
-                                methodCreator.getThis());
+                        mc.body(bc -> {
+                            Expr result;
+                            if (Modifier.isAbstract(method.flags())) { // RestClient method
+                                MethodDesc getDelegateMethod = MethodDesc.of(RestClientReactiveCDIWrapperBase.class,
+                                        "getDelegate",
+                                        Object.class);
+                                Expr delegate = bc.invokeVirtual(getDelegateMethod, cc.this_());
 
-                        result = methodCreator.invokeInterfaceMethod(method, delegate, params);
-                    } else { // default method
-                        result = methodCreator.invokeSpecialInterfaceMethod(method, methodCreator.getThis(), params);
-                    }
-
-                    methodCreator.returnValue(result);
+                                InterfaceMethodDesc interfaceMethod = InterfaceMethodDesc.of(
+                                        interfaceClassDesc,
+                                        method.name(),
+                                        classDescOf(method.returnType()),
+                                        method.parameterTypes().stream().map(t -> classDescOf(t)).toArray(ClassDesc[]::new));
+                                result = bc.invokeInterface(interfaceMethod, delegate, params);
+                            } else { // default method
+                                InterfaceMethodDesc interfaceMethod = InterfaceMethodDesc.of(
+                                        interfaceClassDesc,
+                                        method.name(),
+                                        classDescOf(method.returnType()),
+                                        method.parameterTypes().stream().map(t -> classDescOf(t)).toArray(ClassDesc[]::new));
+                                result = bc.invokeSpecial(interfaceMethod, cc.this_(), params);
+                            }
+                            bc.return_(result);
+                        });
+                    });
                 }
-            }
+            });
         }
 
         Set<String> blockingClassNames = new HashSet<>();

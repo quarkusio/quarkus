@@ -311,6 +311,8 @@ jobs:
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
+      - name: Print disk usage before build
+        run: .github/ci-disk-usage.sh
       - name: Set up JDK 17
         uses: actions/setup-java@v5
         with:
@@ -415,6 +417,8 @@ jobs:
           echo 'impacted_modules<<EOF' >> $GITHUB_OUTPUT
           echo "${GIB_IMPACTED}" >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
+      - name: Print disk usage after build
+        run: .github/ci-disk-usage.sh
       - name: Tar .m2 content pushed to subsequent jobs
         run: |
           if [ -d .m2/.develocity/build-cache ]; then
@@ -555,6 +559,10 @@ jobs:
         if: ${{ !startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos') }}
         run: .github/ci-prerequisites.sh
 
+      - name: Print disk usage before build
+        if: ${{ !startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos') }}
+        run: .github/ci-disk-usage.sh
+
       - name: Set up JDK ${{ env.JAVA_VERSION_GRADLE }} for Gradle (if needed)
         if: env.JAVA_VERSION_GRADLE != matrix.java.java-version
         uses: actions/setup-java@v5
@@ -623,9 +631,9 @@ jobs:
       - name: Clean Gradle temp directory
         if: always()
         run: devtools/gradle/gradlew --stop && rm -rf devtools/gradle/gradle-extension-plugin/build/tmp
-      #- name: Analyze disk space
-      #  if: always() && !startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')
-      #  run: .github/ci-disk-usage.sh
+      - name: Print disk usage after build
+        if: always() && !startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')
+        run: .github/ci-disk-usage.sh
       - name: Prepare failure archive (if maven failed)
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -

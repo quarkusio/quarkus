@@ -6,11 +6,7 @@ import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_PORT;
 
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.OptionalInt;
-import java.util.ServiceLoader;
+import java.util.*;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
@@ -47,7 +43,7 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
                     config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
                     config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
                     testConfig.waitTime(),
-                    testConfig.stopWaitTime(),
+                    config.getOptionalValue("quarkus.shutdown.timeout", Duration.class),
                     testConfig.integrationTestProfile(),
                     TestConfigUtil.argLineValues(testConfig.argLine().orElse("")),
                     testConfig.env(),
@@ -69,11 +65,12 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
         private final Path jarPath;
         private final boolean generateAotFile;
 
-        DefaultJarInitContext(int httpPort, int httpsPort, Duration waitTime, Duration stopWaitTime, String testProfile,
+        DefaultJarInitContext(int httpPort, int httpsPort, Duration waitTime, Optional<Duration> shutdownTimeout,
+                String testProfile,
                 List<String> argLine, Map<String, String> env,
                 ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult, Path jarPath,
                 boolean generateAotFile) {
-            super(httpPort, httpsPort, waitTime, stopWaitTime, testProfile, argLine, env, devServicesLaunchResult);
+            super(httpPort, httpsPort, waitTime, shutdownTimeout, testProfile, argLine, env, devServicesLaunchResult);
             this.jarPath = jarPath;
             this.generateAotFile = generateAotFile;
         }

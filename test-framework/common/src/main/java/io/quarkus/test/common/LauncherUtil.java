@@ -140,9 +140,9 @@ public final class LauncherUtil {
         destroyProcess(quarkusProcess, Duration.ofSeconds(10));
     }
 
-    public static void destroyProcess(Process quarkusProcess, Duration stopWaitTime) {
+    public static void destroyProcess(Process quarkusProcess, Duration waitTime) {
         quarkusProcess.destroy();
-        Instant max = Instant.now().plus(stopWaitTime);
+        Instant max = Instant.now().plus(waitTime);
         while (Instant.now().isBefore(max)) {
             try {
                 Thread.sleep(LOG_CHECK_INTERVAL);

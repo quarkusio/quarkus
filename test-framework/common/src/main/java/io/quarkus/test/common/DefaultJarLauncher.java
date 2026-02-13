@@ -1,7 +1,5 @@
 package io.quarkus.test.common;
 
-import static io.quarkus.deployment.dev.testing.TestConfig.DEFAULT_AOT_STOP_WAIT_TIME;
-import static io.quarkus.deployment.dev.testing.TestConfig.DEFAULT_STOP_WAIT_TIME;
 import static io.quarkus.test.common.LauncherUtil.createStartedFunction;
 import static io.quarkus.test.common.LauncherUtil.waitForCapturedListeningData;
 import static io.quarkus.test.common.LauncherUtil.waitForStartedFunction;
@@ -51,12 +49,12 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
     private int httpPort;
     private int httpsPort;
     private long waitTimeSeconds;
+    private Optional<Duration> shutdownTimeout;
     private String testProfile;
     private List<String> argLine;
     private Map<String, String> env;
     private Path jarPath;
     private boolean generateAotFile;
-    private Duration stopWaitTime;
 
     private final Map<String, String> systemProps = new HashMap<>();
     private Process quarkusProcess;
@@ -69,7 +67,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         this.httpPort = initContext.httpPort();
         this.httpsPort = initContext.httpsPort();
         this.waitTimeSeconds = initContext.waitTime().getSeconds();
-        this.stopWaitTime = initContext.stopWaitTime();
+        this.shutdownTimeout = initContext.shutdownTimeout();
         this.testProfile = initContext.testProfile();
         this.argLine = initContext.argLine();
         this.env = initContext.env();
@@ -189,7 +187,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
 
     @Override
     public void close() {
-        LauncherUtil.destroyProcess(quarkusProcess, getAdjustedStopWaitTime());
+        LauncherUtil.destroyProcess(quarkusProcess, getAdjustedShutdownTimeout());
         if (generateAotFile) {
             Path aotConfFile = jarPath.resolveSibling(AOT_CONF_FILE_NAME);
             if (Files.exists(aotConfFile)) {
@@ -200,10 +198,8 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         }
     }
 
-    private Duration getAdjustedStopWaitTime() {
-        return (generateAotFile && stopWaitTime.equals(Duration.parse(DEFAULT_STOP_WAIT_TIME)))
-                ? Duration.parse(DEFAULT_AOT_STOP_WAIT_TIME) // increase default stop wait time when generating AOT file
-                : stopWaitTime;
+    private Duration getAdjustedShutdownTimeout() {
+        return shutdownTimeout.orElse(Duration.ZERO).plus(generateAotFile ? Duration.ofMinutes(1) : Duration.ofSeconds(10));
     }
 
     private void createAotFileFromAotConfFile(Path aotConfigFile) {

@@ -512,19 +512,22 @@ public final class HibernateOrmProcessor {
             LiveReloadBuildItem liveReloadBuildItem,
             ExecutorService buildExecutor) throws ExecutionException, InterruptedException {
         Set<String> managedClassAndPackageNames = new HashSet<>(jpaModel.getEntityClassNames());
+        Set<String> managedClassNamesOnly = new HashSet<>(jpaModel.getEntityClassNames());
         for (PersistenceUnitDescriptorBuildItem pud : persistenceUnitDescriptorBuildItems) {
             // Note: getManagedClassNames() can also return *package* names
             // See the source code of Hibernate ORM for proof:
             // org.hibernate.boot.archive.scan.internal.ScanResultCollector.isListedOrDetectable
             // is used for packages too, and it relies (indirectly) on getManagedClassNames().
             managedClassAndPackageNames.addAll(pud.getManagedClassNames());
+            managedClassNamesOnly.addAll(pud.getManagedClassNamesOnly());
         }
 
         for (AdditionalJpaModelBuildItem additionalJpaModelBuildItem : additionalJpaModelBuildItems) {
             managedClassAndPackageNames.add(additionalJpaModelBuildItem.getClassName());
+            managedClassNamesOnly.add(additionalJpaModelBuildItem.getClassName());
         }
 
-        PreGeneratedProxies proxyDefinitions = generateProxies(managedClassAndPackageNames,
+        PreGeneratedProxies proxyDefinitions = generateProxies(managedClassAndPackageNames, managedClassNamesOnly,
                 indexBuildItem.getIndex(), transformedClassesBuildItem,
                 generatedClassBuildItemBuildProducer, liveReloadBuildItem, buildExecutor);
 
@@ -1013,6 +1016,7 @@ public final class HibernateOrmProcessor {
                     hibernateOrmConfig, jpaModel, PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
                     hibernateOrmConfig.defaultPersistenceUnit(),
                     modelForDefaultPersistenceUnit.allModelClassAndPackageNames(),
+                    modelForDefaultPersistenceUnit.allModelClassNamesOnly(),
                     jpaModel.getXmlMappings(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME),
                     jdbcDataSources, reactiveDataSources, applicationArchivesBuildItem, launchMode, capabilities,
                     additionalSqlLoadScriptDefaults,
@@ -1046,6 +1050,7 @@ public final class HibernateOrmProcessor {
             producePersistenceUnitDescriptorFromConfig(
                     hibernateOrmConfig, jpaModel, persistenceUnitName, persistenceUnitEntry.getValue(),
                     model == null ? Collections.emptySet() : model.allModelClassAndPackageNames(),
+                    model == null ? Collections.emptySet() : model.allModelClassNamesOnly(),
                     jpaModel.getXmlMappings(persistenceUnitName),
                     jdbcDataSources, reactiveDataSources, applicationArchivesBuildItem, launchMode, capabilities,
                     additionalSqlLoadScriptDefaults,
@@ -1059,6 +1064,7 @@ public final class HibernateOrmProcessor {
             String persistenceUnitName,
             HibernateOrmConfigPersistenceUnit persistenceUnitConfig,
             Set<String> modelClassesAndPackages,
+            Set<String> allModelClassNamesOnly,
             List<RecordableXmlMapping> xmlMappings,
             List<JdbcDataSourceBuildItem> jdbcDataSources,
             List<ReactiveDataSourceBuildItem> reactiveDataSources,
@@ -1116,6 +1122,7 @@ public final class HibernateOrmProcessor {
                 // - the comment at org/hibernate/boot/model/process/internal/ScanningCoordinator.java:246:
                 //   "IMPL NOTE : "explicitlyListedClassNames" can contain class or package names..."
                 new ArrayList<>(modelClassesAndPackages),
+                new ArrayList<>(allModelClassNamesOnly),
                 new Properties(),
                 false);
         Set<String> entityClassNames = new HashSet<>(descriptor.getManagedClassNames());
@@ -1264,6 +1271,11 @@ public final class HibernateOrmProcessor {
             IndexView index, boolean enableDefaultPersistenceUnit) {
         Map<String, JpaPersistenceUnitModel> modelPerPersistenceUnit = new HashMap<>();
 
+        Set<String> managedClassNamesOnly = new HashSet<>(jpaModel.getManagedClassNames());
+        for (AdditionalJpaModelBuildItem additionalJpaModel : additionalJpaModelBuildItems) {
+            managedClassNamesOnly.add(additionalJpaModel.getClassName());
+        }
+
         boolean hasPackagesInQuarkusConfig = hasPackagesInQuarkusConfig(hibernateOrmConfig);
         Collection<AnnotationInstance> packageLevelPersistenceUnitAnnotations = getPackageLevelPersistenceUnitAnnotations(
                 index);
@@ -1332,19 +1344,26 @@ public final class HibernateOrmProcessor {
             model.entityClassNames().addAll(jpaModel.getEntityClassNames());
             model.allModelClassAndPackageNames().addAll(jpaModel.getAllModelClassNames());
             model.allModelClassAndPackageNames().addAll(jpaModel.getAllModelPackageNames());
+            model.allModelClassNamesOnly().addAll(jpaModel.getAllModelClassNames());
             return Map.of(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, model);
         }
 
         Set<String> modelClassesWithPersistenceUnitAnnotations = new TreeSet<>();
 
         for (String modelClassName : jpaModel.getAllModelClassNames()) {
-            ClassInfo modelClassInfo = index.getClassByName(DotName.createSimple(modelClassName));
-            Set<String> relatedModelClassNames = getRelatedModelClassNames(index, jpaModel.getAllModelClassNames(),
-                    modelClassInfo);
 
-            if (modelClassInfo != null && (modelClassInfo.declaredAnnotation(ClassNames.QUARKUS_PERSISTENCE_UNIT) != null
-                    || modelClassInfo.declaredAnnotation(ClassNames.QUARKUS_PERSISTENCE_UNIT_REPEATABLE_CONTAINER) != null)) {
-                modelClassesWithPersistenceUnitAnnotations.add(modelClassInfo.name().toString());
+            Set<String> relatedModelClassNames = new HashSet<>();
+            if (managedClassNamesOnly.contains(modelClassName)) {
+
+                ClassInfo modelClassInfo = index.getClassByName(DotName.createSimple(modelClassName));
+                relatedModelClassNames = getRelatedModelClassNames(index, jpaModel.getAllModelClassNames(),
+                        modelClassInfo);
+
+                if (modelClassInfo != null && (modelClassInfo.declaredAnnotation(ClassNames.QUARKUS_PERSISTENCE_UNIT) != null
+                        || modelClassInfo
+                                .declaredAnnotation(ClassNames.QUARKUS_PERSISTENCE_UNIT_REPEATABLE_CONTAINER) != null)) {
+                    modelClassesWithPersistenceUnitAnnotations.add(modelClassInfo.name().toString());
+                }
             }
 
             for (Entry<String, Set<String>> packageRuleEntry : packageRules.entrySet()) {
@@ -1355,6 +1374,7 @@ public final class HibernateOrmProcessor {
 
                         if (jpaModel.getEntityClassNames().contains(modelClassName)) {
                             model.entityClassNames().add(modelClassName);
+                            model.allModelClassNamesOnly().add(modelClassName);
                         }
                         model.allModelClassAndPackageNames().add(modelClassName);
 
@@ -1382,6 +1402,7 @@ public final class HibernateOrmProcessor {
 
                 if (jpaModel.getEntityClassNames().contains(className)) {
                     model.entityClassNames().add(className);
+                    model.allModelClassNamesOnly().add(className);
                 }
                 model.allModelClassAndPackageNames().add(className);
             }
@@ -1542,7 +1563,8 @@ public final class HibernateOrmProcessor {
         return multiTenancyStrategy;
     }
 
-    private PreGeneratedProxies generateProxies(Set<String> managedClassAndPackageNames, IndexView combinedIndex,
+    private PreGeneratedProxies generateProxies(Set<String> managedClassAndPackageNames, Set<String> managedClassNamesOnly,
+            IndexView combinedIndex,
             TransformedClassesBuildItem transformedClassesBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             LiveReloadBuildItem liveReloadBuildItem,
@@ -1569,18 +1591,19 @@ public final class HibernateOrmProcessor {
             final ConcurrentLinkedDeque<Future<CachedProxy>> generatedProxyQueue = new ConcurrentLinkedDeque<>();
             Set<String> proxyInterfaceNames = Set.of(ClassNames.HIBERNATE_PROXY.toString());
 
-            for (String managedClassOrPackageName : managedClassAndPackageNames) {
-                if (proxyCache.cache.containsKey(managedClassOrPackageName)
-                        && !isModified(managedClassOrPackageName, changedClasses, combinedIndex)) {
-                    CachedProxy proxy = proxyCache.cache.get(managedClassOrPackageName);
+            for (String managedClassName : managedClassNamesOnly) {
+
+                if (proxyCache.cache.containsKey(managedClassName)
+                        && !isModified(managedClassName, changedClasses, combinedIndex)) {
+                    CachedProxy proxy = proxyCache.cache.get(managedClassName);
                     generatedProxyQueue.add(CompletableFuture.completedFuture(proxy));
                 } else {
-                    if (!proxyHelper.isProxiable(combinedIndex.getClassByName(managedClassOrPackageName))) {
+                    if (!proxyHelper.isProxiable(combinedIndex.getClassByName(managedClassName))) {
                         // we need to make sure we have a class and not a package and that it is proxiable
                         continue;
                     }
                     // we now are sure we have a proper class and not a package, let's avoid the confusion
-                    String managedClass = managedClassOrPackageName;
+                    String managedClass = managedClassName;
                     generatedProxyQueue.add(buildExecutor.submit(() -> {
                         DynamicType.Unloaded<?> unloaded = proxyHelper.buildUnloadedProxy(managedClass);
                         return new CachedProxy(managedClass, unloaded);

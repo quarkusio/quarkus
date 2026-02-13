@@ -13,7 +13,7 @@ public class PostgresTestResourceLifecycleManager implements QuarkusTestResource
     @SuppressWarnings("resource")
     @Override
     public Map<String, String> start() {
-        postgres = new PostgreSQLContainer<>("postgres:14") // the exact value doesn't really matter here
+        postgres = new PostgreSQLContainer<>("postgres:18") // the exact value doesn't really matter here
                 .withDatabaseName("testdb")
                 .withUsername("test")
                 .withPassword("test");

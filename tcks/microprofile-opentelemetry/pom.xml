@@ -54,7 +54,7 @@
                             <systemPropertyVariables>
                                 <quarkus.otel.traces.exporter>none</quarkus.otel.traces.exporter>
                                 <quarkus.otel.metrics.enabled>true</quarkus.otel.metrics.enabled>
-                                <quarkus.otel.metric.export.interval>1000</quarkus.otel.metric.export.interval>
+                                <quarkus.otel.metric.export.interval>PT0.5S</quarkus.otel.metric.export.interval>
                             </systemPropertyVariables>
                             <dependenciesToScan>
                                 <dependency>org.eclipse.microprofile.telemetry:microprofile-telemetry-metrics-tck</dependency>

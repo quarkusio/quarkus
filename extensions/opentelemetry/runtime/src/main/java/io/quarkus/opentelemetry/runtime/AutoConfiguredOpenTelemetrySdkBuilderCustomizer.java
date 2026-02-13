@@ -9,6 +9,7 @@ import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -26,6 +27,9 @@ import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessor;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
 import io.opentelemetry.sdk.logs.export.SimpleLogRecordProcessor;
 import io.opentelemetry.sdk.metrics.SdkMeterProviderBuilder;
+import io.opentelemetry.sdk.metrics.export.MetricExporter;
+import io.opentelemetry.sdk.metrics.export.MetricReader;
+import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import io.opentelemetry.sdk.metrics.internal.MeterConfig;
 import io.opentelemetry.sdk.metrics.internal.SdkMeterProviderUtil;
 import io.opentelemetry.sdk.resources.Resource;
@@ -251,12 +255,21 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
     @Singleton
     final class MetricProviderCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
         private final OTelBuildConfig oTelBuildConfig;
+        private final OTelRuntimeConfig oTelRuntimeConfig;
         private final Instance<Clock> clock;
+        private final Instance<MetricExporter> metricExporter;
+        private final Instance<ScheduledExecutorService> managedExecutor;
 
         public MetricProviderCustomizer(OTelBuildConfig oTelBuildConfig,
-                final Instance<Clock> clock) {
+                OTelRuntimeConfig runtimeConfig,
+                final Instance<Clock> clock,
+                final Instance<MetricExporter> metricExporter,
+                final Instance<ScheduledExecutorService> managedExecutor) {
             this.oTelBuildConfig = oTelBuildConfig;
             this.clock = clock;
+            this.metricExporter = metricExporter;
+            this.managedExecutor = managedExecutor;
+            this.oTelRuntimeConfig = runtimeConfig;
         }
 
         @Override
@@ -287,6 +300,20 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                                 }
                             }
                             return meterProviderBuilder;
+                        }
+                    })
+                    .addMetricReaderCustomizer(new BiFunction<MetricReader, ConfigProperties, MetricReader>() {
+                        @Override
+                        public MetricReader apply(MetricReader metricReader, ConfigProperties configProperties) {
+                            // Replace the provided metric reader because it uses an unmanaged executor
+                            // with a null classloader
+                            if (metricExporter.isResolvable() && managedExecutor.isResolvable()) {
+                                return PeriodicMetricReader.builder(metricExporter.get())
+                                        .setInterval(oTelRuntimeConfig.metric().exportInterval())
+                                        .setExecutor(managedExecutor.get())
+                                        .build();
+                            }
+                            return metricReader;
                         }
                     });
         }

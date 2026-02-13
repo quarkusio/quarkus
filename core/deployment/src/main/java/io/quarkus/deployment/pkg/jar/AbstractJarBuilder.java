@@ -150,7 +150,7 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
                 if (Files.isDirectory(pathEntry.getValue())) {
                     archiveCreator.addDirectory(pathEntry.getKey());
                 } else {
-                    archiveCreator.addFileIfNotExists(pathEntry.getValue(), pathEntry.getKey());
+                    archiveCreator.addFile(pathEntry.getValue(), pathEntry.getKey());
                 }
             }
         } catch (RuntimeException re) {

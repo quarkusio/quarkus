@@ -34,6 +34,10 @@ public interface JvmModulesReconfigurer {
     }
 
     private static JvmModulesReconfigurer create() {
+        if (Runtime.version().feature() < 25) {
+            return NoopJvmModulesReconfigurer.INSTANCE;
+        }
+
         final Logger logger = JVMDeploymentLogger.logger;
 
         //First thing to check, is if we have our agent connected; that would make things really simple and avoid any need

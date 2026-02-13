@@ -758,12 +758,12 @@ You can reference a named query instead of a (simplified) HQL query by prefixing
 package org.acme;
 
 import java.time.LocalDate;
+import java.util.Map;
 import jakarta.persistence.Entity;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
-import io.quarkus.panache.common.Parameters;
 
 @Entity
 @NamedQueries({
@@ -783,11 +783,11 @@ public class Person extends PanacheEntity {
     }
 
     public static long countByStatus(Status status) {
-        return count("#Person.countByStatus", Parameters.with("status", status).map());
+        return count("#Person.countByStatus", Map.of("status", status));
     }
 
     public static long updateStatusById(Status status, long id) {
-        return update("#Person.updateStatusById", Parameters.with("status", status).and("id", id));
+        return update("#Person.updateStatusById", Map.of("status", status, "id", id));
     }
 
     public static long deleteById(long id) {
@@ -815,29 +815,12 @@ Or by name using a `Map`:
 
 [source,java]
 ----
-import java.util.HashMap;
 import java.util.Map;
 
-Map<String, Object> params = new HashMap<>();
-params.put("name", "stef");
-params.put("status", Status.Alive);
-Person.find("name = :name and status = :status", params);
+Person.find("name = :name and status = :status", Map.of("name", "stef", "status", Status.Alive));
 ----
 
-Or using the convenience class `Parameters` either as is or to build a `Map`:
-
-[source,java]
-----
-// generate a Map
-Person.find("name = :name and status = :status",
-         Parameters.with("name", "stef").and("status", Status.Alive).map());
-
-// use it as-is
-Person.find("name = :name and status = :status",
-         Parameters.with("name", "stef").and("status", Status.Alive));
-----
-
-Every query operation accepts passing parameters by index (`Object...`), or by name (`Map<String,Object>` or `Parameters`).
+Every query operation accepts passing parameters by index (`Object...`), or by name (`Map<String,Object>`).
 
 === Query projection
 

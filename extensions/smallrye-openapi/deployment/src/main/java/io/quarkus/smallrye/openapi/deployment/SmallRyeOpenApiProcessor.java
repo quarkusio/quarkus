@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -235,7 +236,7 @@ public class SmallRyeOpenApiProcessor {
 
         openApiConfig.documents().forEach((documentName, documentConfig) -> {
 
-            List<String> userDefinedRuntimeFilters = getUserDefinedRuntimeFilters(config,
+            Map<OpenApiFilter.RunStage, List<String>> filtersByStage = getUserDefinedFiltersByStage(config,
                     apiFilteredIndexViewBuildItem.getIndex(), documentName);
 
             AutoSecurityFilter autoSecurityFilter = null;
@@ -246,9 +247,15 @@ public class SmallRyeOpenApiProcessor {
                         .orElse(null);
             }
 
-            recorder.prepareDocument(autoSecurityFilter, userDefinedRuntimeFilters, documentName);
+            recorder.prepareDocument(autoSecurityFilter, filtersByStage, documentName);
 
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(userDefinedRuntimeFilters.toArray(new String[] {}))
+            List<String> allRuntimeFilters = new ArrayList<>();
+            filtersByStage.forEach((stage, filters) -> {
+                if (stage != OpenApiFilter.RunStage.BUILD) {
+                    allRuntimeFilters.addAll(filters);
+                }
+            });
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(allRuntimeFilters.toArray(new String[] {}))
                     .reason(getClass().getName()).build());
         });
     }
@@ -277,7 +284,9 @@ public class SmallRyeOpenApiProcessor {
 
             for (String documentName : documentNames) {
                 Config wrappedConfig = OpenApiConfigHelper.wrap(config, documentName);
-                userDefinedRuntimeFilters.addAll(getUserDefinedRuntimeFilters(wrappedConfig, index, documentName));
+                userDefinedRuntimeFilters.addAll(getUserDefinedRuntimeStartupFilters(wrappedConfig, index, documentName));
+                userDefinedRuntimeFilters
+                        .addAll(getUserDefinedFilters(index, documentName, OpenApiFilter.RunStage.RUNTIME_PER_REQUEST));
             }
         }
 
@@ -288,6 +297,22 @@ public class SmallRyeOpenApiProcessor {
 
         // Make sure the filter beans are kept so they may be loaded programmatically at runtime
         unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(runtimeFilterClassNames));
+    }
+
+    @BuildStep
+    @Produce(ServiceStartBuildItem.class)
+    void validateOpenApiFilterStages(BeanArchiveIndexBuildItem indexBuildItem) {
+        IndexView index = indexBuildItem.getIndex();
+        Collection<AnnotationInstance> annotations = index.getAnnotations(NAME_OPEN_API_FILTER);
+
+        for (AnnotationInstance annotation : annotations) {
+            AnnotationValue stagesValue = annotation.valueWithDefault(index, "stages");
+            if (stagesValue.asArrayList().isEmpty()) {
+                log.warnf(
+                        "@OpenApiFilter on '%s' will not be run, since the stages array is set to an empty array (stages = {}).",
+                        annotation.target().asClass().name());
+            }
+        }
     }
 
     @BuildStep
@@ -356,6 +381,7 @@ public class SmallRyeOpenApiProcessor {
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             OpenApiRecorder recorder,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
             ShutdownContextBuildItem shutdownContext,
             SmallRyeOpenApiConfig openApiConfig,
             List<FilterBuildItem> filterBuildItems,
@@ -392,9 +418,12 @@ public class SmallRyeOpenApiProcessor {
             String documentName = entry.getKey();
             OpenApiDocumentConfig documentConfig = entry.getValue();
 
-            Handler<RoutingContext> handler = recorder.handler(documentName, openApiConfig.documents()
-                    .get(documentName)
-                    .alwaysRunFilter());
+            boolean hasPerRequestFilters = !getUserDefinedFilters(
+                    apiFilteredIndexViewBuildItem.getIndex(), documentName, OpenApiFilter.RunStage.RUNTIME_PER_REQUEST)
+                    .isEmpty();
+
+            boolean dynamic = documentConfig.alwaysRunFilter() || hasPerRequestFilters;
+            Handler<RoutingContext> handler = recorder.handler(documentName, dynamic);
 
             String managementEnabledKey = MANAGEMENT_ENABLED;
 
@@ -578,19 +607,82 @@ public class SmallRyeOpenApiProcessor {
         });
     }
 
-    private List<String> getUserDefinedBuildTimeFilters(IndexView index, String documentName) {
-        return getUserDefinedFilters(index, OpenApiFilter.RunStage.BUILD, documentName);
-    }
-
-    private List<String> getUserDefinedRuntimeFilters(Config config, IndexView index, String documentName) {
-        List<String> userDefinedFilters = getUserDefinedFilters(index, OpenApiFilter.RunStage.RUN, documentName);
+    private List<String> getUserDefinedRuntimeStartupFilters(Config config, IndexView index, String documentName) {
+        @SuppressWarnings("removal")
+        List<String> userDefinedFilters = getUserDefinedFilters(index,
+                documentName, OpenApiFilter.RunStage.RUNTIME_STARTUP, OpenApiFilter.RunStage.RUN);
         // Also add the MP way
         config.getOptionalValue(OASConfig.FILTER, String.class).ifPresent(userDefinedFilters::add);
         return userDefinedFilters;
     }
 
-    private List<String> getUserDefinedFilters(IndexView index, OpenApiFilter.RunStage stage, String documentName) {
-        EnumSet<OpenApiFilter.RunStage> stages = EnumSet.of(OpenApiFilter.RunStage.BOTH, stage);
+    /**
+     * Builds a map of all user-defined filters grouped by their resolved {@link OpenApiFilter.RunStage}.
+     * The map never contains {@link OpenApiFilter.RunStage#BOTH} as a key; filters annotated with
+     * {@code BOTH} are resolved to {@code BUILD} + {@code RUN}.
+     */
+    @SuppressWarnings("removal")
+    private Map<OpenApiFilter.RunStage, List<String>> getUserDefinedFiltersByStage(Config config, IndexView index,
+            String documentName) {
+        Map<OpenApiFilter.RunStage, List<String>> result = new EnumMap<>(OpenApiFilter.RunStage.class);
+        for (OpenApiFilter.RunStage stage : OpenApiFilter.RunStage.values()) {
+            if (stage == OpenApiFilter.RunStage.BOTH) {
+                continue;
+            }
+            result.put(stage, getUserDefinedFilters(index, documentName, stage));
+        }
+
+        // Also add the MP way
+        config.getOptionalValue(OASConfig.FILTER, String.class)
+                .ifPresent(filter -> result.get(OpenApiFilter.RunStage.RUN).add(filter));
+        return result;
+    }
+
+    /**
+     * resolves the effective stages from {@link OpenApiFilter#stages()} and {@link OpenApiFilter#value()}.
+     *
+     * @param ai the OpenApiFilter annotation placed on an OASFilter implementation
+     * @param index
+     * @return set of the Runstages this OasFilter should run in, never null.
+     *         {@link io.quarkus.smallrye.openapi.OpenApiFilter.RunStage#BOTH} will not be present, instead it will be resolved
+     *         to {@link io.quarkus.smallrye.openapi.OpenApiFilter.RunStage#BUILD} +
+     *         {@link io.quarkus.smallrye.openapi.OpenApiFilter.RunStage#RUN}
+     * @deprecated This will be removed once {@link OpenApiFilter#value()} is also removed.
+     */
+    @Deprecated(since = "3.34", forRemoval = true)
+    @SuppressWarnings("removal")
+    private Set<OpenApiFilter.RunStage> resolveStages(AnnotationInstance ai, IndexView index) {
+
+        // remember: AnnotationInstance.value does NOT return default values, and instead return null if not explicitly set
+
+        Set<OpenApiFilter.RunStage> runStages = EnumSet.noneOf(OpenApiFilter.RunStage.class);
+        AnnotationValue stages = ai.value("stages");
+        if (stages != null) {
+            for (AnnotationValue sv : stages.asArrayList()) {
+                runStages.add(OpenApiFilter.RunStage.valueOf(sv.asEnum()));
+            }
+        } else {
+            AnnotationValue value = ai.value();
+            if (value != null) {
+                runStages.add(OpenApiFilter.RunStage.valueOf(value.asEnum()));
+            } else {
+                stages = ai.valueWithDefault(index, "stages");
+                for (AnnotationValue sv : stages.asArrayList()) {
+                    runStages.add(OpenApiFilter.RunStage.valueOf(sv.asEnum()));
+                }
+            }
+        }
+
+        if (runStages.remove(OpenApiFilter.RunStage.BOTH)) {
+            runStages.add(OpenApiFilter.RunStage.BUILD);
+            runStages.add(OpenApiFilter.RunStage.RUN);
+        }
+
+        return runStages;
+    }
+
+    private List<String> getUserDefinedFilters(IndexView index, String documentName,
+            OpenApiFilter.RunStage... requestedStages) {
         Comparator<Object> comparator = Comparator
                 .comparing(x -> ((AnnotationInstance) x).valueWithDefault(index, "priority").asInt())
                 .reversed();
@@ -598,7 +690,15 @@ public class SmallRyeOpenApiProcessor {
         return index
                 .getAnnotations(OpenApiFilter.class)
                 .stream()
-                .filter(ai -> stages.contains(OpenApiFilter.RunStage.valueOf(ai.valueWithDefault(index).asEnum())))
+                .filter(ai -> {
+                    Set<OpenApiFilter.RunStage> resolved = resolveStages(ai, index);
+                    for (OpenApiFilter.RunStage stage : requestedStages) {
+                        if (resolved.contains(stage)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                })
                 .filter(ai -> {
                     List<String> documentNames = extractDocumentNames(index, ai);
                     for (String dn : documentNames) {
@@ -1161,7 +1261,7 @@ public class SmallRyeOpenApiProcessor {
                 .enableStandardFilter(false)
                 .withFilters(oasFilters);
 
-        getUserDefinedBuildTimeFilters(index, documentName).forEach(builder::addFilterName);
+        getUserDefinedFilters(index, documentName, OpenApiFilter.RunStage.BUILD).forEach(builder::addFilterName);
 
         // This should be the final filter to run
         builder.addFilter(new DefaultInfoFilter(config));
@@ -1192,7 +1292,7 @@ public class SmallRyeOpenApiProcessor {
 
         try {
             SmallRyeOpenAPI.Builder builder = filterOnlyBuilder.get();
-            getUserDefinedRuntimeFilters(config, index, documentName).forEach(builder::addFilterName);
+            getUserDefinedRuntimeStartupFilters(config, index, documentName).forEach(builder::addFilterName);
             return builder.build();
         } catch (Exception e) {
             // Try again without the user-defined runtime filters

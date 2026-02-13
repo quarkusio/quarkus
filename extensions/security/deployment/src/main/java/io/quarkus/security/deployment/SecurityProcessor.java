@@ -335,6 +335,13 @@ public class SecurityProcessor {
                     "org.bouncycastle.jcajce.provider.asymmetric.rsa.PSSSignatureSpi$SHA256withRSA").methods().fields()
                     .build());
         }
+
+        if (curateOutcomeBuildItem.getApplicationModel().getDependencies().stream().anyMatch(
+                x -> x.getGroupId().equals("org.bouncycastle") && x.getArtifactId().startsWith("bcpkix-"))) {
+            reflection.produce(
+                    ReflectiveClassBuildItem.builder("org.bouncycastle.openssl.PEMParser").constructors(false).build());
+        }
+
         runtimeReInitialized
                 .produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.crypto.CryptoServicesRegistrar"));
         if (!isFipsMode) {

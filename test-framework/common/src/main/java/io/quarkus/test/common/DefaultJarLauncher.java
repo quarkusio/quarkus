@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -53,6 +54,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
     private Map<String, String> env;
     private Path jarPath;
     private boolean generateAotFile;
+    private Duration stopWaitTime;
 
     private final Map<String, String> systemProps = new HashMap<>();
     private Process quarkusProcess;
@@ -70,6 +72,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         this.env = initContext.env();
         this.jarPath = initContext.jarPath();
         this.generateAotFile = initContext.generateAotFile();
+        this.stopWaitTime = initContext.getStopWaitTime();
     }
 
     @Override
@@ -184,7 +187,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
 
     @Override
     public void close() {
-        LauncherUtil.destroyProcess(quarkusProcess);
+        LauncherUtil.destroyProcess(quarkusProcess, stopWaitTime);
         if (generateAotFile) {
             Path aotConfFile = jarPath.resolveSibling(AOT_CONF_FILE_NAME);
             if (Files.exists(aotConfFile)) {

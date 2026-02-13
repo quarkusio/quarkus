@@ -1,6 +1,7 @@
 package io.quarkus.test.common;
 
 import java.nio.file.Path;
+import java.time.Duration;
 
 /**
  * If an implementation of this class is found using the ServiceLoader mechanism, then it is used.
@@ -13,5 +14,7 @@ public interface JarArtifactLauncher extends ArtifactLauncher<JarArtifactLaunche
         Path jarPath();
 
         boolean generateAotFile();
+
+        Duration getStopWaitTime();
     }
 }

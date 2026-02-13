@@ -156,6 +156,13 @@ public interface TestConfig {
     Duration waitTime();
 
     /**
+     * Used in {@code @QuarkusIntegrationTest} to determine how long the test will wait for the
+     * application to stop gracefully
+     */
+    @WithDefault("10S")
+    Duration stopWaitTime();
+
+    /**
      * Configures the hang detection in @QuarkusTest. If no activity happens (i.e. no test callbacks are called) over
      * this period then QuarkusTest will dump all threads stack traces, to help diagnose a potential hang.
      * <p>

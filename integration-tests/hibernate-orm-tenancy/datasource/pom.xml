@@ -232,6 +232,7 @@
                                         </healthCheck>
                                     </build>
                                     <run>
+                                        <namingStrategy>alias</namingStrategy>
                                         <ports>
                                             <port>3308:3306</port>
                                         </ports>

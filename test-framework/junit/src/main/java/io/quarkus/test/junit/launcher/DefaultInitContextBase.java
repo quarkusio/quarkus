@@ -3,7 +3,6 @@ package io.quarkus.test.junit.launcher;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import io.quarkus.test.common.ArtifactLauncher;
 
@@ -11,14 +10,14 @@ class DefaultInitContextBase {
     private final int httpPort;
     private final int httpsPort;
     private final Duration waitTime;
-    private final Optional<Duration> shutdownTimeout;
+    private final Duration shutdownTimeout;
     private final String testProfile;
     private final List<String> argLine;
 
     private final Map<String, String> env;
     private final ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult;
 
-    DefaultInitContextBase(int httpPort, int httpsPort, Duration waitTime, Optional<Duration> shutdownTimeout,
+    DefaultInitContextBase(int httpPort, int httpsPort, Duration waitTime, Duration shutdownTimeout,
             String testProfile,
             List<String> argLine,
             Map<String, String> env,
@@ -45,7 +44,7 @@ class DefaultInitContextBase {
         return waitTime;
     }
 
-    public Optional<Duration> shutdownTimeout() {
+    public Duration shutdownTimeout() {
         return shutdownTimeout;
     }
 

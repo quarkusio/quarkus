@@ -43,7 +43,7 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
                     config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
                     config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
                     testConfig.waitTime(),
-                    config.getOptionalValue("quarkus.shutdown.timeout", Duration.class),
+                    config.getOptionalValue("quarkus.shutdown.timeout", Duration.class).orElse(Duration.ZERO),
                     testConfig.integrationTestProfile(),
                     TestConfigUtil.argLineValues(testConfig.argLine().orElse("")),
                     testConfig.env(),
@@ -65,7 +65,7 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
         private final Path jarPath;
         private final boolean generateAotFile;
 
-        DefaultJarInitContext(int httpPort, int httpsPort, Duration waitTime, Optional<Duration> shutdownTimeout,
+        DefaultJarInitContext(int httpPort, int httpsPort, Duration waitTime, Duration shutdownTimeout,
                 String testProfile,
                 List<String> argLine, Map<String, String> env,
                 ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult, Path jarPath,

@@ -49,7 +49,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
     private int httpPort;
     private int httpsPort;
     private long waitTimeSeconds;
-    private Optional<Duration> shutdownTimeout;
+    private Duration shutdownTimeout;
     private String testProfile;
     private List<String> argLine;
     private Map<String, String> env;
@@ -199,7 +199,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
     }
 
     private Duration getAdjustedShutdownTimeout() {
-        return shutdownTimeout.orElse(Duration.ZERO).plus(generateAotFile ? Duration.ofMinutes(1) : Duration.ofSeconds(10));
+        return shutdownTimeout.plus(generateAotFile ? Duration.ofMinutes(1) : Duration.ofSeconds(10));
     }
 
     private void createAotFileFromAotConfFile(Path aotConfigFile) {

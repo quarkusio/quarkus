@@ -27,7 +27,7 @@ public interface ArtifactLauncher<T extends ArtifactLauncher.InitContext> extend
 
         Duration waitTime();
 
-        Optional<Duration> shutdownTimeout();
+        Duration shutdownTimeout();
 
         String testProfile();
 

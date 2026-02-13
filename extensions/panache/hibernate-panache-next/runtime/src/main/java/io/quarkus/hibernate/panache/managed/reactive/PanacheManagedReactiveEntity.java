@@ -10,7 +10,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.quarkus.hibernate.panache.managed.PanacheManagedEntityOperations;
 import io.quarkus.hibernate.panache.runtime.spi.PanacheOperations;
 import io.quarkus.hibernate.panache.runtime.spi.PanacheReactiveOperations;
-import io.quarkus.panache.common.Parameters;
 import io.smallrye.mutiny.Uni;
 
 public interface PanacheManagedReactiveEntity extends PanacheManagedEntityOperations<Uni<Void>, Uni<Boolean>> {
@@ -52,7 +51,6 @@ public interface PanacheManagedReactiveEntity extends PanacheManagedEntityOperat
      * @see #isPersistent()
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
-     * @see #delete(String, Parameters)
      * @see #deleteAll()
      */
     @Override

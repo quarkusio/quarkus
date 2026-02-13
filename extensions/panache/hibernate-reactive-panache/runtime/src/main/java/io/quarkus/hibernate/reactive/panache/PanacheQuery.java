@@ -200,7 +200,9 @@ public interface PanacheQuery<Entity> {
      * @param filterName The name of the filter to enable
      * @param parameters The set of parameters for the filter, if the filter requires parameters
      * @return this query, modified
+     * @deprecated Use {@link #filter(String, Map)} with {@link Map#of()}
      */
+    @Deprecated(since = "3.34")
     public <T extends Entity> PanacheQuery<T> filter(String filterName, Parameters parameters);
 
     /**

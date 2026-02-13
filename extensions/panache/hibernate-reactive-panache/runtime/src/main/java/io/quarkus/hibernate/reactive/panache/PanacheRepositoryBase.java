@@ -82,7 +82,6 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #isPersistent(Object)
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
-     * @see #delete(String, Parameters)
      * @see #deleteAll()
      */
     @CheckReturnValue
@@ -147,7 +146,6 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @return a new {@link PanacheQuery} instance for the given query
      * @see #find(String, Sort, Object...)
      * @see #find(String, Map)
-     * @see #find(String, Parameters)
      * @see #list(String, Object...)
      */
     @GenerateBridge
@@ -164,7 +162,6 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @return a new {@link PanacheQuery} instance for the given query
      * @see #find(String, Object...)
      * @see #find(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
      * @see #list(String, Sort, Object...)
      */
     @GenerateBridge
@@ -180,7 +177,6 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @return a new {@link PanacheQuery} instance for the given query
      * @see #find(String, Sort, Map)
      * @see #find(String, Object...)
-     * @see #find(String, Parameters)
      * @see #list(String, Map)
      */
     @GenerateBridge
@@ -197,7 +193,6 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @return a new {@link PanacheQuery} instance for the given query
      * @see #find(String, Map)
      * @see #find(String, Sort, Object...)
-     * @see #find(String, Sort, Parameters)
      * @see #list(String, Sort, Map)
      */
     @GenerateBridge
@@ -211,11 +206,10 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @param query a {@link io.quarkus.hibernate.reactive.panache query string}
      * @param params {@link Parameters} of named parameters
      * @return a new {@link PanacheQuery} instance for the given query
-     * @see #find(String, Sort, Parameters)
      * @see #find(String, Map)
-     * @see #find(String, Parameters)
-     * @see #list(String, Parameters)
+     * @deprecated Use {@link #find(String, Map)} with {@link Map#of()}
      */
+    @Deprecated(since = "3.34")
     @GenerateBridge
     public default PanacheQuery<Entity> find(String query, Parameters params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -228,11 +222,10 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @param sort the sort strategy to use
      * @param params {@link Parameters} of indexed parameters
      * @return a new {@link PanacheQuery} instance for the given query
-     * @see #find(String, Parameters)
      * @see #find(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
-     * @see #list(String, Sort, Parameters)
+     * @deprecated Use {@link #find(String, Sort, Map)} with {@link Map#of()}
      */
+    @Deprecated(since = "3.34")
     @GenerateBridge
     public default PanacheQuery<Entity> find(String query, Sort sort, Parameters params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -272,7 +265,6 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @return a {@link List} containing all results, without paging
      * @see #list(String, Sort, Object...)
      * @see #list(String, Map)
-     * @see #list(String, Parameters)
      * @see #find(String, Object...)
      */
     @CheckReturnValue
@@ -291,7 +283,6 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @return a {@link List} containing all results, without paging
      * @see #list(String, Object...)
      * @see #list(String, Sort, Map)
-     * @see #list(String, Sort, Parameters)
      * @see #find(String, Sort, Object...)
      */
     @CheckReturnValue
@@ -309,7 +300,6 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @return a {@link List} containing all results, without paging
      * @see #list(String, Sort, Map)
      * @see #list(String, Object...)
-     * @see #list(String, Parameters)
      * @see #find(String, Map)
      */
     @CheckReturnValue
@@ -328,7 +318,6 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @return a {@link List} containing all results, without paging
      * @see #list(String, Map)
      * @see #list(String, Sort, Object...)
-     * @see #list(String, Sort, Parameters)
      * @see #find(String, Sort, Map)
      */
     @CheckReturnValue
@@ -344,11 +333,11 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @param query a {@link io.quarkus.hibernate.reactive.panache query string}
      * @param params {@link Parameters} of named parameters
      * @return a {@link List} containing all results, without paging
-     * @see #list(String, Sort, Parameters)
      * @see #list(String, Object...)
      * @see #list(String, Map)
-     * @see #find(String, Parameters)
+     * @deprecated Use {@link #list(String, Map)} with {@link Map#of()}
      */
+    @Deprecated(since = "3.34")
     @CheckReturnValue
     @GenerateBridge
     public default Uni<List<Entity>> list(String query, Parameters params) {
@@ -363,11 +352,11 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @param sort the sort strategy to use
      * @param params {@link Parameters} of indexed parameters
      * @return a {@link List} containing all results, without paging
-     * @see #list(String, Parameters)
      * @see #list(String, Sort, Object...)
      * @see #list(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
+     * @deprecated Use {@link #list(String, Sort, Map)} with {@link Map#of()}
      */
+    @Deprecated(since = "3.34")
     @CheckReturnValue
     @GenerateBridge
     public default Uni<List<Entity>> list(String query, Sort sort, Parameters params) {
@@ -409,7 +398,6 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @return the number of this type of entity in the database.
      * @see #count(String, Object...)
      * @see #count(String, Map)
-     * @see #count(String, Parameters)
      */
     @CheckReturnValue
     @GenerateBridge
@@ -425,7 +413,6 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @return the number of entities counted.
      * @see #count()
      * @see #count(String, Map)
-     * @see #count(String, Parameters)
      */
     @CheckReturnValue
     @GenerateBridge
@@ -441,7 +428,6 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @return the number of entities counted.
      * @see #count()
      * @see #count(String, Object...)
-     * @see #count(String, Parameters)
      */
     @CheckReturnValue
     @GenerateBridge
@@ -458,7 +444,9 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #count()
      * @see #count(String, Object...)
      * @see #count(String, Map)
+     * @deprecated Use {@link #count(String, Map)} with {@link Map#of()}
      */
+    @Deprecated(since = "3.34")
     @CheckReturnValue
     @GenerateBridge
     public default Uni<Long> count(String query, Parameters params) {
@@ -474,7 +462,6 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @return the number of entities deleted.
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
-     * @see #delete(String, Parameters)
      */
     @CheckReturnValue
     @GenerateBridge
@@ -505,7 +492,6 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @return the number of entities deleted.
      * @see #deleteAll()
      * @see #delete(String, Map)
-     * @see #delete(String, Parameters)
      */
     @CheckReturnValue
     @GenerateBridge
@@ -524,7 +510,6 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @return the number of entities deleted.
      * @see #deleteAll()
      * @see #delete(String, Object...)
-     * @see #delete(String, Parameters)
      */
     @CheckReturnValue
     @GenerateBridge
@@ -544,7 +529,9 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #deleteAll()
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
+     * @deprecated Use {@link #delete(String, Map)} with {@link Map#of()}
      */
+    @Deprecated(since = "3.34")
     @CheckReturnValue
     @GenerateBridge
     public default Uni<Long> delete(String query, Parameters params) {
@@ -600,7 +587,6 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @param params optional sequence of indexed parameters
      * @return the number of entities updated.
      * @see #update(String, Map)
-     * @see #update(String, Parameters)
      */
     @CheckReturnValue
     @GenerateBridge
@@ -615,7 +601,6 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @param params {@link Map} of named parameters
      * @return the number of entities updated.
      * @see #update(String, Object...)
-     * @see #update(String, Parameters)
      */
     @CheckReturnValue
     @GenerateBridge
@@ -631,7 +616,9 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @return the number of entities updated.
      * @see #update(String, Object...)
      * @see #update(String, Map)
+     * @deprecated Use {@link #update(String, Map)} with {@link Map#of()}
      */
+    @Deprecated(since = "3.34")
     @CheckReturnValue
     @GenerateBridge
     public default Uni<Integer> update(String query, Parameters params) {

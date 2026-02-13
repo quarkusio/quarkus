@@ -119,7 +119,9 @@ public class Panache {
      * @param query a normal HQL query
      * @param params {@link Parameters} of named parameters
      * @return the number of rows operated on.
+     * @deprecated Use {@link #executeUpdate(String, Map)} with {@link Map#of()}
      */
+    @Deprecated(since = "3.34")
     public static Uni<Integer> executeUpdate(String query, Parameters params) {
         return KotlinJpaOperations.INSTANCE.executeUpdate(query, params.map());
     }

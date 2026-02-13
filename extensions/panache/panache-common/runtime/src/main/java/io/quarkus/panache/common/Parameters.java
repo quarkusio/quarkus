@@ -21,7 +21,9 @@ import java.util.Map;
  * </pre></code>
  *
  * @author Stéphane Épardaud
+ * @deprecated Use {@link Map#of()}
  */
+@Deprecated(since = "3.34")
 public class Parameters {
     private final Map<String, Object> values = new HashMap<>();
 
@@ -32,7 +34,9 @@ public class Parameters {
      * @param value value of the parameter to add
      * @return this instance, modified.
      * @see {@link Parameters#map()}
+     * @deprecated Use {@link Map#of(Object, Object)}
      */
+    @Deprecated(since = "3.34")
     public Parameters and(String name, Object value) {
         values.put(name, value);
         return this;
@@ -42,7 +46,9 @@ public class Parameters {
      * Constructs an unmodifiable {@link Map} with the current parameters.
      *
      * @return an unmodifiable {@link Map} with the current parameters.
+     * @deprecated Use {@link Map#of(Object, Object)}
      */
+    @Deprecated(since = "3.34")
     public Map<String, Object> map() {
         return Collections.unmodifiableMap(values);
     }
@@ -55,7 +61,9 @@ public class Parameters {
      * @return a {@link Parameters} with a single parameter.
      * @see {@link Parameters#and(String, Object)}
      * @see {@link Parameters#map()}
+     * @deprecated Use {@link Map#of(Object, Object)}
      */
+    @Deprecated(since = "3.34")
     public static Parameters with(String name, Object value) {
         return new Parameters().and(name, value);
     }

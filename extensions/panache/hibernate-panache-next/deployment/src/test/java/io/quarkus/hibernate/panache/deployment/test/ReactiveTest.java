@@ -95,6 +95,63 @@ public class ReactiveTest {
                 .replaceWithVoid();
     }
 
+    @WithTransaction(stateless = true)
+    Uni<Void> upsertNew() {
+        return MyReactiveEntity_.statelessReactive().count()
+                .flatMap(count -> {
+                    Assertions.assertEquals(0, count);
+
+                    MyReactiveEntity entity = new MyReactiveEntity();
+                    entity.foo = "bar";
+                    entity.id = 1L;
+
+                    return entity.statelessReactive().upsert();
+                })
+                .flatMap(v -> MyReactiveEntity_.statelessReactive().count())
+                .map(count -> {
+                    Assertions.assertEquals(1, count);
+                    return null;
+                });
+    }
+
+    @WithTransaction(stateless = true)
+    Uni<Void> upsertExisting() {
+        return MyReactiveEntity_.statelessReactive().listAll()
+                .flatMap(list -> {
+                    Assertions.assertEquals(1, list.size());
+
+                    MyReactiveEntity entity = list.get(0);
+                    Assertions.assertEquals("bar", entity.foo);
+                    Assertions.assertEquals(1L, entity.id);
+                    entity.foo = "fu";
+
+                    return entity.statelessReactive().upsert();
+                })
+                .flatMap(v -> MyReactiveEntity_.statelessReactive().count())
+                .map(count -> {
+                    Assertions.assertEquals(1, count);
+                    return null;
+                });
+    }
+
+    @WithTransaction(stateless = true)
+    Uni<Void> upsertCheck() {
+        return MyReactiveEntity_.statelessReactive().listAll()
+                .flatMap(list -> {
+                    Assertions.assertEquals(1, list.size());
+
+                    MyReactiveEntity entity = list.get(0);
+                    Assertions.assertEquals("fu", entity.foo);
+
+                    return entity.statelessReactive().upsert();
+                })
+                .flatMap(v -> MyReactiveEntity_.statelessReactive().count())
+                .map(count -> {
+                    Assertions.assertEquals(1, count);
+                    return null;
+                });
+    }
+
     @WithTransaction
     Uni<Void> clear() {
         return MyReactiveEntity_.managedReactive().deleteAll().replaceWithVoid();
@@ -127,6 +184,10 @@ public class ReactiveTest {
         asserter.execute(() -> modifyOneStatelessNoUpdate());
         asserter.execute(() -> modifyOneStateless());
         asserter.execute(() -> modifyOneStatelessCheck());
+        asserter.execute(() -> clear());
+        asserter.execute(() -> upsertNew());
+        asserter.execute(() -> upsertExisting());
+        asserter.execute(() -> upsertCheck());
         asserter.execute(() -> runQueries());
     }
 

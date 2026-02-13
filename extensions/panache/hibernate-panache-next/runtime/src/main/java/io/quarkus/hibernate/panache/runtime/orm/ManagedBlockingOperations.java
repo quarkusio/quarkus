@@ -63,6 +63,11 @@ public class ManagedBlockingOperations implements PanacheBlockingOperations {
     }
 
     @Override
+    public Void upsert(Object entity) {
+        throw new UnsupportedOperationException("Stateless operations not supported");
+    }
+
+    @Override
     public Boolean isPersistent(Object entity) {
         return DELEGATE.isPersistent(entity);
     }

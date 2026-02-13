@@ -134,6 +134,11 @@ public interface PanacheEntityMarker {
         }
 
         @Override
+        public Uni<Void> upsert() {
+            return operations().upsert(entity);
+        }
+
+        @Override
         public Uni<Void> delete() {
             return operations().delete(entity);
         }
@@ -160,6 +165,11 @@ public interface PanacheEntityMarker {
         @Override
         public Void update() {
             return operations().update(entity);
+        }
+
+        @Override
+        public Void upsert() {
+            return operations().upsert(entity);
         }
 
         @Override

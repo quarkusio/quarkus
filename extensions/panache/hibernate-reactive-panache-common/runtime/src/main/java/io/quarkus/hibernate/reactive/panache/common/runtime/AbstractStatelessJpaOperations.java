@@ -63,6 +63,10 @@ public abstract class AbstractStatelessJpaOperations<PanacheQueryType>
         return getSession(entity.getClass()).chain(session -> session.update(entity));
     }
 
+    public Uni<Void> upsert(Object entity) {
+        return getSession(entity.getClass()).chain(session -> session.upsert(entity));
+    }
+
     public Uni<Void> delete(Object entity) {
         return getSession(entity.getClass()).chain(session -> session.delete(entity));
     }

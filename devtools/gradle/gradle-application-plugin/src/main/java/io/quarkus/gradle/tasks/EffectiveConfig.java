@@ -235,7 +235,7 @@ public final class EffectiveConfig {
      * @param sourceDirectories a Set of source directories specified by the Gradle build.
      * @return a {@link ClassLoader} with the source paths
      */
-    private static ClassLoader toUrlClassloader(Set<File> sourceDirectories) {
+    public static ClassLoader toUrlClassloader(Set<File> sourceDirectories) {
         List<URL> urls = new ArrayList<>();
         for (File sourceDirectory : sourceDirectories) {
             try {

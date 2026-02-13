@@ -16,7 +16,6 @@ import javax.inject.Inject;
 
 import org.gradle.api.Action;
 import org.gradle.api.GradleException;
-import org.gradle.api.provider.ListProperty;
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
@@ -53,15 +52,10 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
         return this;
     }
 
-    @Internal
-    public ListProperty<String> getIgnoredEntries() {
-        return extension().ignoredEntriesProperty();
-    }
-
     @Option(description = "When using the uber-jar option, this option can be used to "
             + "specify one or more entries that should be excluded from the final jar", option = "ignored-entry")
     public void setIgnoredEntries(List<String> ignoredEntries) {
-        getIgnoredEntries().addAll(ignoredEntries);
+        getIgnoredListEntries().addAll(ignoredEntries);
     }
 
     @Internal

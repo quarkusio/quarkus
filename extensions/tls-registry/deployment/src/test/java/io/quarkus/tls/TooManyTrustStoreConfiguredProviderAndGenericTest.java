@@ -22,11 +22,11 @@ import io.vertx.core.Vertx;
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "test-formats", password = "password", formats = { Format.JKS, Format.PEM, Format.PKCS12 })
 })
-public class TooManyTrustStoreConfiguredProviderAndP12Test {
+public class TooManyTrustStoreConfiguredProviderAndGenericTest {
 
     private static final String configuration = """
-            quarkus.tls.trust-store.p12.path=target/certs/test-formats-truststore.p12
-            quarkus.tls.trust-store.p12.password=password
+            quarkus.tls.trust-store.pkcs12.path=target/certs/test-formats-truststore.p12
+            quarkus.tls.trust-store.pkcs12.password=password
             """;
 
     @RegisterExtension
@@ -36,7 +36,7 @@ public class TooManyTrustStoreConfiguredProviderAndP12Test {
                     .add(new StringAsset(configuration), "application.properties"))
             .assertException(t -> {
                 assertThat(t)
-                        .hasMessageContaining("cannot be configured with a provider and P12 at the same time");
+                        .hasMessageContaining("cannot be configured with a provider and pkcs12 at the same time");
             });
 
     @Test

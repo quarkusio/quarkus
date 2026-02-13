@@ -14,7 +14,7 @@ import io.quarkus.smallrye.openapi.OpenApiFilter;
 /**
  * Filter to add custom elements
  */
-@OpenApiFilter(OpenApiFilter.RunStage.BUILD)
+@OpenApiFilter(stages = OpenApiFilter.RunStage.BUILD)
 public class MyBuildTimeFilter implements OASFilter {
 
     private IndexView view;

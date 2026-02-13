@@ -331,12 +331,12 @@ You can change the Generated OpenAPI Schema using one or more filter. Filters ca
 /**
  * Filter to add custom elements
  */
-@OpenApiFilter(OpenApiFilter.RunStage.BUILD) //<1>
-public class MyBuildTimeFilter implements OASFilter { //<2>
+@OpenApiFilter(stages = {OpenApiFilter.RunStage.BUILD, OpenApiFilter.RunStage.RUNTIME_PER_REQUEST}) //<1>
+public class MyMultiStageFilter implements OASFilter { //<2>
 
     private IndexView view;
 
-    public MyBuildTimeFilter(IndexView view) { //<3>
+    public MyMultiStageFilter(IndexView view) { //<3>
         this.view = view;
     }
 
@@ -350,17 +350,54 @@ public class MyBuildTimeFilter implements OASFilter { //<2>
 
 }
 ----
-<1> Annotate method with `@OpenApiFilter` and the run stage (BUILD,RUN,BOTH)
-<2> Implement OASFilter and override any of the methods
-<3> For Build stage filters, the index can be passed in (optional)
+<1> Annotate the class with `@OpenApiFilter` and use the `stages` field with one or more of `BUILD`, `RUNTIME_STARTUP`, or `RUNTIME_PER_REQUEST`. This filter runs once during build, and once every time the OpenAPI document is requested.
+<2> Implement OASFilter and override any of its methods
+<3> Filters which run during the build of the application - i.e. `BUILD` Stage filters (See also <<Advanced interactions of RunStages>>) - the Jandex index can be passed in the constructor. During application runtime, the Jandex index will *not* be null. However it will be empty, i.e it won't contain info about any classes or annotations.
 <4> Get a hold of the generated `OpenAPI` Schema, and enhance as required
 
 Remember that setting fields on the schema will override what has been generated, you might want to get and add to (so modify). Also know that the generated values might be null, so you will have to check for that.
 
-=== Runtime filters
+=== Overview of RunStages
 
-Runtime filters by default runs on startup (when the final OpenAPI document gets created). You can change runtime filters to run on every request, making the OpenAPI document dynamic.
-To do this you need to set this propery: `quarkus.smallrye-openapi.always-run-filter=true`.
+[cols="1,3", options="header"]
+|===
+| Stage | Meaning
+
+| BUILD
+| The filter executes at build time.
+
+| RUNTIME_STARTUP
+| The filter executes (eagerly) at application startup.
+
+| RUNTIME_PER_REQUEST
+| The filter executes each time the OpenAPI document is requested.
+
+| RUN
+| DEPRECATED. The filter executes at stage `RUNTIME_STARTUP` if `quarkus.smallrye-openapi.always-run-filter` is set to `false`,
+or at stage `RUNTIME_PER_REQUEST` if `quarkus.smallrye-openapi.always-run-filter` is set to `true`. (See also <<Advanced interactions of RunStages>>.)
+
+| BOTH
+| DEPRECATED. The filter executes as if both the `BUILD` and `RUN` stages were specified.
+|===
+
+NOTE: The `quarkus.smallrye-openapi.always-run-filter` configuration property is deprecated. Annotate your filters with `@OpenApiFilter(stages = OpenApiFilter.RunStage.RUNTIME_PER_REQUEST)` instead.
+
+
+=== Advanced interactions of RunStages
+
+While the `BUILD` RunStage is expected to run at build time - as the name already suggests - there are additional RunStages that also execute at build time.
+
+The `quarkus-smallrye-openapi` extension saves the OpenAPI Document to a file when the `quarkus.smallrye-openapi.store-schema-directory` is configured.
+This saved version of the OpenAPI Document is useful for downstream consumers.
+
+To produce an OpenAPI Document which possibly *could* match the one produced during runtime, the `RUN` and `RUNTIME_STARTUP` RunStages are executed at build time - in a separate step from the `BUILD` RunStage.
+Any exception which occurs during this additional processing step is ignored, i.e. if one of the filters throws, none will have any effect.
+
+This additional processing step is done even if `quarkus.smallrye-openapi.store-schema-directory` is *NOT* configured.
+
+=== The MicroProfile OpenAPI way
+
+The Microprofile OpenAPI specification defines that *one* OASFilter implementation can be specified using the `mp.openapi.filter` configuration property. This filter will be run during RunStage `RUN`.
 
 == Loading OpenAPI Schema From Static Files
 

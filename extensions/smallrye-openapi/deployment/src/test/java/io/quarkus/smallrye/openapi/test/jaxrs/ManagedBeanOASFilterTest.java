@@ -40,7 +40,6 @@ class ManagedBeanOASFilterTest {
                             quarkus.security.users.embedded.plain-text=true
                             quarkus.security.users.embedded.users.alice=alice
                             quarkus.security.users.embedded.users.bob=bob
-                            quarkus.smallrye-openapi.always-run-filter=true
                             """),
                             "application.properties"))
             .setForcedDependencies(List.of(
@@ -49,7 +48,7 @@ class ManagedBeanOASFilterTest {
                     Dependency.of("io.quarkus", "quarkus-elytron-security-properties-file", Version.getVersion())));
 
     @RequestScoped
-    @OpenApiFilter(value = RunStage.RUN, priority = 99)
+    @OpenApiFilter(stages = RunStage.RUNTIME_PER_REQUEST, priority = 99)
     public static class MyFilter1 implements OASFilter {
         @Inject
         HttpServerRequest req;
@@ -66,7 +65,7 @@ class ManagedBeanOASFilterTest {
     }
 
     @ApplicationScoped
-    @OpenApiFilter(value = RunStage.RUN, priority = 98)
+    @OpenApiFilter(stages = RunStage.RUNTIME_PER_REQUEST, priority = 98)
     public static class MyFilter2 implements OASFilter {
         @Inject
         HttpServerRequest req;

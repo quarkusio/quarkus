@@ -10,7 +10,7 @@ import io.quarkus.smallrye.openapi.OpenApiFilter;
 /**
  * Filter to add custom elements
  */
-@OpenApiFilter(OpenApiFilter.RunStage.RUN)
+@OpenApiFilter
 public class MyRunTimeFilter implements OASFilter {
 
     @Override

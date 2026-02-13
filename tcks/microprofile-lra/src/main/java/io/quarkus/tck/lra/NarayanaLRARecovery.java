@@ -59,6 +59,7 @@ public class NarayanaLRARecovery implements LRARecoveryService {
     @Override
     public void waitForCallbacks(URI lraId) {
         log.trace("waitForCallbacks for: " + lraId.toASCIIString());
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
         try (Client client = ClientBuilder.newClient()) {
             try {
                 await().atMost(Duration.ofMillis(WAIT_CALLBACK_TIMEOUT)).catchUncaughtExceptions()
@@ -66,6 +67,7 @@ public class NarayanaLRARecovery implements LRARecoveryService {
                             try {
                                 WebTarget target;
                                 try {
+                                    Thread.currentThread().setContextClassLoader(old);
                                     target = client.target(lraId);
                                 } catch (Exception | Error e) {
                                     // Some TCK tests don't start Quarkus application, so we can't create REST request

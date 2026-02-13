@@ -1,5 +1,7 @@
 package io.quarkus.test.common;
 
+import static io.quarkus.deployment.dev.testing.TestConfig.DEFAULT_AOT_STOP_WAIT_TIME;
+import static io.quarkus.deployment.dev.testing.TestConfig.DEFAULT_STOP_WAIT_TIME;
 import static io.quarkus.test.common.LauncherUtil.createStartedFunction;
 import static io.quarkus.test.common.LauncherUtil.waitForCapturedListeningData;
 import static io.quarkus.test.common.LauncherUtil.waitForStartedFunction;
@@ -67,12 +69,12 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         this.httpPort = initContext.httpPort();
         this.httpsPort = initContext.httpsPort();
         this.waitTimeSeconds = initContext.waitTime().getSeconds();
+        this.stopWaitTime = initContext.stopWaitTime();
         this.testProfile = initContext.testProfile();
         this.argLine = initContext.argLine();
         this.env = initContext.env();
         this.jarPath = initContext.jarPath();
         this.generateAotFile = initContext.generateAotFile();
-        this.stopWaitTime = initContext.getStopWaitTime();
     }
 
     @Override
@@ -187,7 +189,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
 
     @Override
     public void close() {
-        LauncherUtil.destroyProcess(quarkusProcess, stopWaitTime);
+        LauncherUtil.destroyProcess(quarkusProcess, getAdjustedStopWaitTime());
         if (generateAotFile) {
             Path aotConfFile = jarPath.resolveSibling(AOT_CONF_FILE_NAME);
             if (Files.exists(aotConfFile)) {
@@ -196,6 +198,12 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
                 log.debug("AOT conf file not found");
             }
         }
+    }
+
+    private Duration getAdjustedStopWaitTime() {
+        return (generateAotFile && stopWaitTime.equals(Duration.parse(DEFAULT_STOP_WAIT_TIME)))
+                ? Duration.parse(DEFAULT_AOT_STOP_WAIT_TIME) // increase default stop wait time when generating AOT file
+                : stopWaitTime;
     }
 
     private void createAotFileFromAotConfFile(Path aotConfigFile) {

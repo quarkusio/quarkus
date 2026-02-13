@@ -27,6 +27,8 @@ public interface ArtifactLauncher<T extends ArtifactLauncher.InitContext> extend
 
         Duration waitTime();
 
+        Duration stopWaitTime();
+
         String testProfile();
 
         List<String> argLine();

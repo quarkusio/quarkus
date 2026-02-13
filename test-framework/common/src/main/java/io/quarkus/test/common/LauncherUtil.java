@@ -137,22 +137,7 @@ public final class LauncherUtil {
      * and resort to forceful destruction if necessary
      */
     static void destroyProcess(Process quarkusProcess) {
-        quarkusProcess.destroy();
-        int i = 0;
-        while (i++ < 200) {
-            try {
-                Thread.sleep(LOG_CHECK_INTERVAL);
-            } catch (InterruptedException ignored) {
-
-            }
-            if (!quarkusProcess.isAlive()) {
-                break;
-            }
-        }
-
-        if (quarkusProcess.isAlive()) {
-            quarkusProcess.destroyForcibly();
-        }
+        destroyProcess(quarkusProcess, Duration.ofSeconds(10));
     }
 
     public static void destroyProcess(Process quarkusProcess, Duration stopWaitTime) {

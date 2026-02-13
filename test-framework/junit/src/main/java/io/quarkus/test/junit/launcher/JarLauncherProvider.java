@@ -68,16 +68,14 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
 
         private final Path jarPath;
         private final boolean generateAotFile;
-        private final Duration stopWaitTime;
 
         DefaultJarInitContext(int httpPort, int httpsPort, Duration waitTime, Duration stopWaitTime, String testProfile,
                 List<String> argLine, Map<String, String> env,
                 ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult, Path jarPath,
                 boolean generateAotFile) {
-            super(httpPort, httpsPort, waitTime, testProfile, argLine, env, devServicesLaunchResult);
+            super(httpPort, httpsPort, waitTime, stopWaitTime, testProfile, argLine, env, devServicesLaunchResult);
             this.jarPath = jarPath;
             this.generateAotFile = generateAotFile;
-            this.stopWaitTime = stopWaitTime;
         }
 
         @Override
@@ -88,11 +86,6 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
         @Override
         public boolean generateAotFile() {
             return generateAotFile;
-        }
-
-        @Override
-        public Duration getStopWaitTime() {
-            return stopWaitTime;
         }
     }
 }

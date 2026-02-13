@@ -21,6 +21,9 @@ import io.smallrye.config.WithParentName;
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public interface TestConfig {
 
+    String DEFAULT_STOP_WAIT_TIME = "PT10S";
+    String DEFAULT_AOT_STOP_WAIT_TIME = "PT60S";
+
     /**
      * If continuous testing is enabled.
      * <p>
@@ -157,9 +160,9 @@ public interface TestConfig {
 
     /**
      * Used in {@code @QuarkusIntegrationTest} to determine how long the test will wait for the
-     * application to stop gracefully
+     * application to stop gracefully. the default is raised to 1 minute if generating an aot file.
      */
-    @WithDefault("10S")
+    @WithDefault(DEFAULT_STOP_WAIT_TIME)
     Duration stopWaitTime();
 
     /**

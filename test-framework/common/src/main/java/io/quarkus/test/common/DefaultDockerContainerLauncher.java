@@ -1,5 +1,7 @@
 package io.quarkus.test.common;
 
+import static io.quarkus.deployment.dev.testing.TestConfig.DEFAULT_AOT_STOP_WAIT_TIME;
+import static io.quarkus.deployment.dev.testing.TestConfig.DEFAULT_STOP_WAIT_TIME;
 import static io.quarkus.test.common.LauncherUtil.createStartedFunction;
 import static io.quarkus.test.common.LauncherUtil.waitForCapturedListeningData;
 import static io.quarkus.test.common.LauncherUtil.waitForStartedFunction;
@@ -10,6 +12,7 @@ import java.net.ServerSocket;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,6 +48,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     private int httpPort;
     private int httpsPort;
     private long waitTimeSeconds;
+    private Duration stopWaitTime;
     private String testProfile;
     private List<String> argLine;
     private Map<String, String> env;
@@ -71,6 +75,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         this.httpPort = initContext.httpPort();
         this.httpsPort = initContext.httpsPort();
         this.waitTimeSeconds = initContext.waitTime().getSeconds();
+        this.stopWaitTime = initContext.stopWaitTime();
         this.testProfile = initContext.testProfile();
         this.argLine = initContext.argLine();
         this.env = initContext.env();
@@ -380,7 +385,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
 
         if (containerProcess != null) {
             try {
-                containerProcess.waitFor(20, TimeUnit.SECONDS);
+                containerProcess.waitFor(getAdjustedStopWaitTime().getSeconds(), TimeUnit.SECONDS);
             } catch (InterruptedException ignored) {
 
             }
@@ -402,6 +407,12 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         executorService.shutdown();
 
         recordMetadata();
+    }
+
+    private Duration getAdjustedStopWaitTime() {
+        return (generateAotFile && stopWaitTime.equals(Duration.parse(DEFAULT_STOP_WAIT_TIME)))
+                ? Duration.parse(DEFAULT_AOT_STOP_WAIT_TIME) // increase default stop wait time when generating AOT file
+                : stopWaitTime;
     }
 
     private void createAotFileFromAotConfFile(Path aotConfigFile) {

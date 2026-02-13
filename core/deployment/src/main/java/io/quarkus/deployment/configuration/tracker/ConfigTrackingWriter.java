@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -15,6 +16,7 @@ import java.util.regex.Pattern;
 import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.smallrye.config.ConfigValue;
+import io.smallrye.config.SmallRyeConfig;
 
 public class ConfigTrackingWriter {
 
@@ -108,5 +110,27 @@ public class ConfigTrackingWriter {
      */
     public static void write(Writer writer, String name, String value) throws IOException {
         PropertyUtils.store(writer, name, value);
+    }
+
+    public static Map<String, String> getFilteredBuildTimeProperties(Iterable<String> propertyNames,
+            BuildTimeConfigurationReader buildTimeConfigurationReader, SmallRyeConfig config) {
+        final Map<String, String> filteredProperties = new HashMap<>();
+        ConfigTrackingConfig configTrackingConfig = config.unwrap(SmallRyeConfig.class)
+                .getConfigMapping(ConfigTrackingConfig.class);
+        BuildTimeConfigurationReader.ReadResult configReadResult = buildTimeConfigurationReader.readConfiguration(config);
+
+        final Map<String, ConfigValue> allBuildTimeValues = configReadResult.getAllBuildTimeValues();
+        final Map<String, ConfigValue> buildTimeRuntimeValues = configReadResult.getBuildTimeRunTimeValues();
+
+        for (String name : propertyNames) {
+            if ((!allBuildTimeValues.containsKey(name) && !buildTimeRuntimeValues.containsKey(name))
+                    || matches(name, configTrackingConfig.getExcludePatterns())) {
+                continue;
+            }
+
+            filteredProperties.put(name, ConfigTrackingValueTransformer.asString(config.getConfigValue(name)));
+        }
+
+        return filteredProperties;
     }
 }

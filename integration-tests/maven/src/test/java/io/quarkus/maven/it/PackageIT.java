@@ -70,7 +70,7 @@ public class PackageIT extends MojoTestBase {
         result = running.execute(List.of("package -DskipTests -Dquarkus.package.jar.type=uber-jar"), Map.of());
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
         assertThat(running.log())
-                .contains("Option quarkus.package.jar.type has changed since the last build from fast-jar to uber-jar");
+                .contains("Option quarkus.package.jar.type was not previously set and is now set to uber-jar");
     }
 
     @Test
@@ -107,7 +107,7 @@ public class PackageIT extends MojoTestBase {
         result = running.execute(List.of("package -DskipTests -Dquarkus.package.jar.type=uber-jar"), Map.of());
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
         assertThat(running.log())
-                .contains("Option quarkus.package.jar.type has changed since the last build from fast-jar to uber-jar");
+                .contains("Option quarkus.package.jar.type was not previously set and is now set to uber-jar");
     }
 
     @Test

@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.StringJoiner;
@@ -244,16 +245,30 @@ public class CodeGenerator {
             }
             return;
         }
-        Config config = null;
+
+        final Config config;
+        final Map<String, String> newlyDefinedProperties = new HashMap<>();
         try {
-            config = getConfig(appModel, mode, buildSystemProps, deploymentClassLoader);
+            config = readConfig(appModel, mode, buildSystemProps, deploymentClassLoader,
+                    configReader -> {
+                        SmallRyeConfig localConfig = configReader.initConfiguration(buildSystemProps, new Properties(),
+                                appModel.getPlatformProperties());
+
+                        newlyDefinedProperties
+                                .putAll(ConfigTrackingWriter.getFilteredBuildTimeProperties(localConfig.getPropertyNames(),
+                                        configReader, localConfig));
+
+                        return localConfig;
+                    });
         } catch (CodeGenException e) {
             throw new RuntimeException("Failed to load application configuration", e);
         }
+
         var valueTransformer = ConfigTrackingValueTransformer.newInstance(config);
         final Properties currentValues = new Properties(previouslyRecordedProperties.size());
         for (var prevProp : previouslyRecordedProperties.entrySet()) {
             var name = prevProp.getKey().toString();
+            newlyDefinedProperties.remove(name);
             var currentValue = config.getConfigValue(name);
             final String current = valueTransformer.transform(name, currentValue);
             var originalValue = prevProp.getValue();
@@ -263,6 +278,16 @@ public class CodeGenerator {
             if (current != null) {
                 currentValues.put(name, current);
             }
+        }
+
+        for (Entry<String, String> newlyDefinedProperty : newlyDefinedProperties.entrySet()) {
+            // to be consistent with previous handling
+            if (newlyDefinedProperty.getValue() == null) {
+                continue;
+            }
+            log.info("Option " + newlyDefinedProperty.getKey() + " was not previously set and is now set to "
+                    + newlyDefinedProperty.getValue());
+            currentValues.put(newlyDefinedProperty.getKey(), newlyDefinedProperty.getValue());
         }
 
         final List<String> names = new ArrayList<>(currentValues.stringPropertyNames());

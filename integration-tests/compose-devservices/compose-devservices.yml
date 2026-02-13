@@ -1,7 +1,7 @@
 name: devservices
 services:
   postgres:
-    image: docker.io/library/postgres:17
+    image: docker.io/library/postgres:18
     labels:
       io.quarkus.devservices.compose.wait_for.logs: .*database system is ready to accept connections.*
       io.quarkus.devservices.compose.config_map.env.DB_CONFIG: postgres.db.name

@@ -538,11 +538,11 @@ public class Person extends PanacheEntity {
     }
 
     public static Uni<Long> countByStatus(Status status) {
-        return count("#Person.countByStatus", Parameters.with("status", status).map());
+        return count("#Person.countByStatus", Map.of("status", status);
     }
 
     public static Uni<Long> updateStatusById(Status status, Long id) {
-        return update("#Person.updateStatusById", Parameters.with("status", status).and("id", id));
+        return update("#Person.updateStatusById", Map.of("status", status, "id", id));
     }
 
     public static Uni<Long> deleteById(Long id) {
@@ -570,26 +570,10 @@ Or by name using a `Map`:
 
 [source,java]
 ----
-Map<String, Object> params = new HashMap<>();
-params.put("name", "stef");
-params.put("status", Status.Alive);
-Person.find("name = :name and status = :status", params);
+Person.find("name = :name and status = :status", Map.of("name", "stef", "status", Status.Alive));
 ----
 
-Or using the convenience class `Parameters` either as is or to build a `Map`:
-
-[source,java]
-----
-// generate a Map
-Person.find("name = :name and status = :status",
-         Parameters.with("name", "stef").and("status", Status.Alive).map());
-
-// use it as-is
-Person.find("name = :name and status = :status",
-         Parameters.with("name", "stef").and("status", Status.Alive));
-----
-
-Every query operation accepts passing parameters by index (`Object...`), or by name (`Map<String,Object>` or `Parameters`).
+Every query operation accepts passing parameters by index (`Object...`), or by name (`Map<String,Object>`).
 
 === Query projection
 

@@ -10,7 +10,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.quarkus.hibernate.panache.managed.PanacheManagedEntityOperations;
 import io.quarkus.hibernate.panache.runtime.spi.PanacheBlockingOperations;
 import io.quarkus.hibernate.panache.runtime.spi.PanacheOperations;
-import io.quarkus.panache.common.Parameters;
 
 public interface PanacheManagedBlockingEntity extends PanacheManagedEntityOperations<Void, Boolean> {
 
@@ -51,7 +50,6 @@ public interface PanacheManagedBlockingEntity extends PanacheManagedEntityOperat
      * @see #isPersistent()
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
-     * @see #delete(String, Parameters)
      * @see #deleteAll()
      */
     @Override

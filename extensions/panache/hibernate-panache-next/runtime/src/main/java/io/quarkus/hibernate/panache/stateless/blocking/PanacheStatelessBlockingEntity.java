@@ -6,7 +6,6 @@ import java.util.stream.Stream;
 import io.quarkus.hibernate.panache.runtime.spi.PanacheBlockingOperations;
 import io.quarkus.hibernate.panache.runtime.spi.PanacheOperations;
 import io.quarkus.hibernate.panache.stateless.PanacheStatelessEntityOperations;
-import io.quarkus.panache.common.Parameters;
 
 public interface PanacheStatelessBlockingEntity extends PanacheStatelessEntityOperations<Void, Boolean> {
 
@@ -31,7 +30,6 @@ public interface PanacheStatelessBlockingEntity extends PanacheStatelessEntityOp
      *
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
-     * @see #delete(String, Parameters)
      * @see #deleteAll()
      */
     @Override

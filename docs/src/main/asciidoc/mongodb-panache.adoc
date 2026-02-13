@@ -622,27 +622,12 @@ Or by name using a `Map`:
 
 [source,java]
 ----
-Map<String, Object> params = new HashMap<>();
-params.put("name", "Loïc");
-params.put("status", Status.Alive);
+Map<String, Object> params = Map.of("name", "Loïc", "status", Status.Alive);
 Person.find("name = :name and status = :status", params);
 Person.find("{'name': :name, 'status', :status}", params);
 ----
 
-Or using the convenience class `Parameters` either as is or to build a `Map`:
-
-[source,java]
-----
-// generate a Map
-Person.find("name = :name and status = :status",
-         Parameters.with("name", "Loïc").and("status", Status.Alive).map());
-
-// use it as-is
-Person.find("{'name': :name, 'status': :status}",
-         Parameters.with("name", "Loïc").and("status", Status.Alive));
-----
-
-Every query operation accepts passing parameters by index (`Object...`), or by name (`Map<String,Object>` or `Parameters`).
+Every query operation accepts passing parameters by index (`Object...`), or by name (`Map<String,Object>`).
 
 When you use query parameters, be careful that PanacheQL queries will refer to the Object parameters name but native queries will refer to MongoDB field names.
 

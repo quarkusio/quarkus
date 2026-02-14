@@ -150,7 +150,7 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
                 if (Files.isDirectory(pathEntry.getValue())) {
                     archiveCreator.addDirectory(pathEntry.getKey());
                 } else {
-                    archiveCreator.addFileIfNotExists(pathEntry.getValue(), pathEntry.getKey());
+                    archiveCreator.addFile(pathEntry.getValue(), pathEntry.getKey());
                 }
             }
         } catch (RuntimeException re) {
@@ -162,26 +162,21 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
         }
     }
 
-    protected void copyCommonContent(ArchiveCreator archiveCreator,
+    protected void copyApplicationContent(ArchiveCreator archiveCreator,
             Map<String, List<byte[]>> concatenatedEntries,
             Predicate<String> ignoredEntriesPredicate)
             throws IOException {
+
+        // the order of operations is important here as we override elements in order
+        copyFiles(applicationArchives.getRootArchive(), archiveCreator, concatenatedEntries, ignoredEntriesPredicate);
 
         //TODO: this is probably broken in gradle
         //        if (Files.exists(augmentOutcome.getConfigDir())) {
         //            copyFiles(augmentOutcome.getConfigDir(), runnerZipFs, services);
         //        }
-        for (Set<TransformedClassesBuildItem.TransformedClass> transformed : transformedClasses
-                .getTransformedClassesByJar().values()) {
-            for (TransformedClassesBuildItem.TransformedClass i : transformed) {
-                if (i.getData() != null) {
-                    archiveCreator.addFile(i.getData(), i.getFileName());
-                }
-            }
-        }
         for (GeneratedClassBuildItem i : generatedClasses) {
             String fileName = fromClassNameToResourceName(i.internalName());
-            archiveCreator.addFileIfNotExists(i.getClassData(), fileName, ArchiveCreator.CURRENT_APPLICATION);
+            archiveCreator.addFile(i.getClassData(), fileName, ArchiveCreator.CURRENT_APPLICATION);
         }
 
         for (GeneratedResourceBuildItem i : generatedResources) {
@@ -192,10 +187,17 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
                 concatenatedEntries.computeIfAbsent(i.getName(), (u) -> new ArrayList<>()).add(i.getData());
                 continue;
             }
-            archiveCreator.addFileIfNotExists(i.getData(), i.getName(), ArchiveCreator.CURRENT_APPLICATION);
+            archiveCreator.addFile(i.getData(), i.getName(), ArchiveCreator.CURRENT_APPLICATION);
         }
 
-        copyFiles(applicationArchives.getRootArchive(), archiveCreator, concatenatedEntries, ignoredEntriesPredicate);
+        for (Set<TransformedClassesBuildItem.TransformedClass> transformed : transformedClasses
+                .getTransformedClassesByJar().values()) {
+            for (TransformedClassesBuildItem.TransformedClass i : transformed) {
+                if (i.getData() != null) {
+                    archiveCreator.addFile(i.getData(), i.getFileName());
+                }
+            }
+        }
 
         for (Map.Entry<String, List<byte[]>> entry : concatenatedEntries.entrySet()) {
             archiveCreator.addFile(entry.getValue(), entry.getKey());

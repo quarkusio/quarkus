@@ -204,43 +204,16 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
         }
     }
 
-    /**
-     * Manifest generation is quite simple : we just have to push some attributes in manifest.
-     * However, it gets a little more complex if the manifest preexists.
-     * So we first try to see if a manifest exists, and otherwise create a new one.
-     *
-     * <b>BEWARE</b> this method should be invoked after file copy from target/classes and so on.
-     * Otherwise, this manifest manipulation will be useless.
-     */
-    protected static void generateManifest(ArchiveCreator archiveCreator, final String classPath, PackageConfig config,
-            ResolvedDependency appArtifact,
-            ResolvedJVMRequirements jvmRequirements,
-            String mainClassName,
-            ApplicationInfoBuildItem applicationInfo)
-            throws IOException {
+    protected static Manifest createManifest(PackageConfig config, ResolvedDependency appArtifact,
+            ApplicationInfoBuildItem applicationInfo) {
         final Manifest manifest = new Manifest();
 
         Attributes attributes = manifest.getMainAttributes();
         attributes.put(Attributes.Name.MANIFEST_VERSION, "1.0");
 
-        jvmRequirements.renderAddOpensElementToJarManifest(attributes);
-
         for (Map.Entry<String, String> attribute : config.jar().manifest().attributes().entrySet()) {
             attributes.putValue(attribute.getKey(), attribute.getValue());
         }
-        if (attributes.containsKey(Attributes.Name.CLASS_PATH)) {
-            LOG.warn(
-                    "A CLASS_PATH entry was already defined in your MANIFEST.MF or using the property quarkus.package.jar.manifest.attributes.\"Class-Path\". Quarkus has overwritten this existing entry.");
-        }
-        attributes.put(Attributes.Name.CLASS_PATH, classPath);
-        if (attributes.containsKey(Attributes.Name.MAIN_CLASS)) {
-            String existingMainClass = attributes.getValue(Attributes.Name.MAIN_CLASS);
-            if (!mainClassName.equals(existingMainClass)) {
-                LOG.warn(
-                        "A MAIN_CLASS entry was already defined in your MANIFEST.MF or using the property quarkus.package.jar.manifest.attributes.\"Main-Class\". Quarkus has overwritten your existing entry.");
-            }
-        }
-        attributes.put(Attributes.Name.MAIN_CLASS, mainClassName);
         if (config.jar().manifest().addImplementationEntries()
                 && !attributes.containsKey(Attributes.Name.IMPLEMENTATION_TITLE)) {
             String name = ApplicationInfoBuildItem.UNSET_VALUE.equals(applicationInfo.getName())
@@ -262,7 +235,30 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
             }
         }
 
-        archiveCreator.addManifest(manifest);
+        return manifest;
+    }
+
+    protected static Manifest attachRunnerMetadata(Manifest manifest, String mainClassName, String classPath,
+            ResolvedJVMRequirements jvmRequirements) {
+        Attributes attributes = manifest.getMainAttributes();
+
+        jvmRequirements.renderAddOpensElementToJarManifest(attributes);
+
+        if (attributes.containsKey(Attributes.Name.CLASS_PATH)) {
+            LOG.warn(
+                    "A CLASS_PATH entry was already defined in your MANIFEST.MF or using the property quarkus.package.jar.manifest.attributes.\"Class-Path\". Quarkus has overwritten this existing entry.");
+        }
+        attributes.put(Attributes.Name.CLASS_PATH, classPath);
+        if (attributes.containsKey(Attributes.Name.MAIN_CLASS)) {
+            String existingMainClass = attributes.getValue(Attributes.Name.MAIN_CLASS);
+            if (!mainClassName.equals(existingMainClass)) {
+                LOG.warn(
+                        "A MAIN_CLASS entry was already defined in your MANIFEST.MF or using the property quarkus.package.jar.manifest.attributes.\"Main-Class\". Quarkus has overwritten your existing entry.");
+            }
+        }
+        attributes.put(Attributes.Name.MAIN_CLASS, mainClassName);
+
+        return manifest;
     }
 
     /**

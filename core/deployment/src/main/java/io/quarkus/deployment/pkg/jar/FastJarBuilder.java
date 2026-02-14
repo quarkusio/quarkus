@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -210,6 +211,7 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
         }
 
         //now the application classes
+        ResolvedDependency appArtifact = curateOutcome.getApplicationModel().getAppArtifact();
         Path runnerJar = appDir.resolve(outputTarget.getBaseName() + DOT_JAR);
         fastJarJarsBuilder.setRunnerJar(runnerJar);
 
@@ -222,6 +224,10 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                     packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null),
                     executorService)) {
                 copyFiles(applicationArchives.getRootArchive(), archiveCreator, null, ignoredEntriesPredicate);
+
+                // we also attach the configured manifest information to the application jar
+                // so that the application code can obtain information from the manifest
+                archiveCreator.addManifest(createManifest(packageConfig, appArtifact, applicationInfo));
             }
         }
         final StringBuilder classPath = new StringBuilder();
@@ -312,11 +318,9 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(initJar,
                     packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null),
                     executorService)) {
-                ResolvedDependency appArtifact = curateOutcome.getApplicationModel().getAppArtifact();
-                generateManifest(archiveCreator, classPath.toString(), packageConfig, appArtifact,
-                        jvmRequirements,
-                        QuarkusEntryPoint.class.getName(),
-                        applicationInfo);
+                Manifest manifest = createManifest(packageConfig, appArtifact, applicationInfo);
+                attachRunnerMetadata(manifest, QuarkusEntryPoint.class.getName(), classPath.toString(), jvmRequirements);
+                archiveCreator.addManifest(manifest);
             }
 
             //now copy the deployment artifacts, if required

@@ -25,7 +25,7 @@ import io.smallrye.config.common.AbstractConfigSource;
  * <a href="https://github.com/quarkusio/quarkus/discussions/46915">#46915</a>.
  */
 public class TestValueRegistryConfigSource extends AbstractConfigSource {
-    public static final ExtensionContext.Namespace CONFIG = ExtensionContext.Namespace.create(new Object());
+    public static final ExtensionContext.Namespace CONFIG = ExtensionContext.Namespace.create("quarkus-test-config");
     private static final Namespace LAUNCHER_CONFIG = Namespace.create(CONFIG.getParts());
 
     private final NamespacedHierarchicalStore<Namespace> store;

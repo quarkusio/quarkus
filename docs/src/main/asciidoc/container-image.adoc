@@ -104,8 +104,8 @@ this property needs to be known very early on in the build process.
 
 ==== AppCDS
 
-Quarkus supports generating and including an link:https://docs.oracle.com/en/java/javase/17/docs/specs/man/java.html#application-class-data-sharing[Application Class Data Sharing] archive when generating a container image using Jib.
-See the xref:appcds.adoc[AppCDS documentation] for more details.
+Quarkus supports generating and including AOT caches (including link:https://docs.oracle.com/en/java/javase/17/docs/specs/man/java.html#application-class-data-sharing[Application Class Data Sharing] archives) when generating container images.
+See the xref:aot.adoc[AOT Caching documentation] for more details.
 
 [[docker]]
 === Docker

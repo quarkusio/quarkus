@@ -37,7 +37,9 @@ public interface ReactivePanacheUpdate {
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params {@link Parameters} of named parameters
      * @return the number of entities updated.
+     * @deprecated Use {@link #where(String, Map)} with {@link Map#of()}
      */
+    @Deprecated(since = "3.34")
     public Uni<Long> where(String query, Parameters params);
 
     /**

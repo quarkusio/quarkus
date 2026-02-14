@@ -72,7 +72,6 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @param entity the entity to delete.
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
-     * @see #delete(String, Parameters)
      * @see #deleteAll()
      */
     default Uni<Void> delete(Entity entity) {
@@ -122,7 +121,6 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @return a new {@link ReactivePanacheQuery} instance for the given query
      * @see #find(String, Sort, Object...)
      * @see #find(String, Map)
-     * @see #find(String, Parameters)
      * @see #list(String, Object...)
      * @see #stream(String, Object...)
      */
@@ -140,7 +138,6 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @return a new {@link ReactivePanacheQuery} instance for the given query
      * @see #find(String, Object...)
      * @see #find(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
      * @see #list(String, Sort, Object...)
      * @see #stream(String, Sort, Object...)
      */
@@ -157,7 +154,6 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @return a new {@link ReactivePanacheQuery} instance for the given query
      * @see #find(String, Sort, Map)
      * @see #find(String, Object...)
-     * @see #find(String, Parameters)
      * @see #list(String, Map)
      * @see #stream(String, Map)
      */
@@ -175,7 +171,6 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @return a new {@link ReactivePanacheQuery} instance for the given query
      * @see #find(String, Map)
      * @see #find(String, Sort, Object...)
-     * @see #find(String, Sort, Parameters)
      * @see #list(String, Sort, Map)
      * @see #stream(String, Sort, Map)
      */
@@ -190,12 +185,10 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params {@link Parameters} of named parameters
      * @return a new {@link ReactivePanacheQuery} instance for the given query
-     * @see #find(String, Sort, Parameters)
      * @see #find(String, Map)
-     * @see #find(String, Parameters)
-     * @see #list(String, Parameters)
-     * @see #stream(String, Parameters)
+     * @deprecated Use {@link #find(String, Map)} with {@link Map#of()}
      */
+    @Deprecated(since = "3.34")
     @GenerateBridge
     default ReactivePanacheQuery<Entity> find(String query, Parameters params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -208,12 +201,10 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @param sort the sort strategy to use
      * @param params {@link Parameters} of indexed parameters
      * @return a new {@link ReactivePanacheQuery} instance for the given query
-     * @see #find(String, Parameters)
      * @see #find(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
-     * @see #list(String, Sort, Parameters)
-     * @see #stream(String, Sort, Parameters)
+     * @deprecated Use {@link #find(String, Sort, Map)} with {@link Map#of()}
      */
+    @Deprecated(since = "3.34")
     @GenerateBridge
     default ReactivePanacheQuery<Entity> find(String query, Sort sort, Parameters params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -288,7 +279,6 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @return a {@link List} containing all results, without paging
      * @see #list(String, Sort, Object...)
      * @see #list(String, Map)
-     * @see #list(String, Parameters)
      * @see #find(String, Object...)
      * @see #stream(String, Object...)
      */
@@ -307,7 +297,6 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @return a {@link List} containing all results, without paging
      * @see #list(String, Object...)
      * @see #list(String, Sort, Map)
-     * @see #list(String, Sort, Parameters)
      * @see #find(String, Sort, Object...)
      * @see #stream(String, Sort, Object...)
      */
@@ -325,7 +314,6 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @return a {@link List} containing all results, without paging
      * @see #list(String, Sort, Map)
      * @see #list(String, Object...)
-     * @see #list(String, Parameters)
      * @see #find(String, Map)
      * @see #stream(String, Map)
      */
@@ -344,7 +332,6 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @return a {@link List} containing all results, without paging
      * @see #list(String, Map)
      * @see #list(String, Sort, Object...)
-     * @see #list(String, Sort, Parameters)
      * @see #find(String, Sort, Map)
      * @see #stream(String, Sort, Map)
      */
@@ -360,12 +347,11 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params {@link Parameters} of named parameters
      * @return a {@link List} containing all results, without paging
-     * @see #list(String, Sort, Parameters)
      * @see #list(String, Object...)
      * @see #list(String, Map)
-     * @see #find(String, Parameters)
-     * @see #stream(String, Parameters)
+     * @deprecated Use {@link #list(String, Map)} with {@link Map#of()}
      */
+    @Deprecated(since = "3.34")
     @GenerateBridge
     default Uni<List<Entity>> list(String query, Parameters params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -379,12 +365,11 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @param sort the sort strategy to use
      * @param params {@link Parameters} of indexed parameters
      * @return a {@link List} containing all results, without paging
-     * @see #list(String, Parameters)
      * @see #list(String, Sort, Object...)
      * @see #list(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
-     * @see #stream(String, Sort, Parameters)
+     * @deprecated Use {@link #list(String, Sort, Map)} with {@link Map#of()}
      */
+    @Deprecated(since = "3.34")
     @GenerateBridge
     default Uni<List<Entity>> list(String query, Sort sort, Parameters params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -463,7 +448,6 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @return a {@link Multi} containing all results, without paging
      * @see #stream(String, Sort, Object...)
      * @see #stream(String, Map)
-     * @see #stream(String, Parameters)
      * @see #find(String, Object...)
      * @see #list(String, Object...)
      */
@@ -482,7 +466,6 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @return a {@link Multi} containing all results, without paging
      * @see #stream(String, Object...)
      * @see #stream(String, Sort, Map)
-     * @see #stream(String, Sort, Parameters)
      * @see #find(String, Sort, Object...)
      * @see #list(String, Sort, Object...)
      */
@@ -500,7 +483,6 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @return a {@link Multi} containing all results, without paging
      * @see #stream(String, Sort, Map)
      * @see #stream(String, Object...)
-     * @see #stream(String, Parameters)
      * @see #find(String, Map)
      * @see #list(String, Map)
      */
@@ -519,7 +501,6 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @return a {@link Multi} containing all results, without paging
      * @see #stream(String, Map)
      * @see #stream(String, Sort, Object...)
-     * @see #stream(String, Sort, Parameters)
      * @see #find(String, Sort, Map)
      * @see #list(String, Sort, Map)
      */
@@ -535,12 +516,11 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params {@link Parameters} of named parameters
      * @return a {@link Multi} containing all results, without paging
-     * @see #stream(String, Sort, Parameters)
      * @see #stream(String, Object...)
      * @see #stream(String, Map)
-     * @see #find(String, Parameters)
-     * @see #list(String, Parameters)
+     * @deprecated Use {@link #stream(String, Map)} with {@link Map#of()}
      */
+    @Deprecated(since = "3.34")
     @GenerateBridge
     default Multi<Entity> stream(String query, Parameters params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -554,12 +534,11 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @param sort the sort strategy to use
      * @param params {@link Parameters} of indexed parameters
      * @return a {@link Multi} containing all results, without paging
-     * @see #stream(String, Parameters)
      * @see #stream(String, Sort, Object...)
      * @see #stream(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
-     * @see #list(String, Sort, Parameters)
+     * @deprecated Use {@link #stream(String, Sort, Map)} with {@link Map#of()}
      */
+    @Deprecated(since = "3.34")
     @GenerateBridge
     default Multi<Entity> stream(String query, Sort sort, Parameters params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -636,7 +615,6 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @return the number of this type of entity in the database.
      * @see #count(String, Object...)
      * @see #count(String, Map)
-     * @see #count(String, Parameters)
      */
     @GenerateBridge
     default Uni<Long> count() {
@@ -651,7 +629,6 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @return the number of entities counted.
      * @see #count()
      * @see #count(String, Map)
-     * @see #count(String, Parameters)
      */
     @GenerateBridge
     default Uni<Long> count(String query, Object... params) {
@@ -666,7 +643,6 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @return the number of entities counted.
      * @see #count()
      * @see #count(String, Object...)
-     * @see #count(String, Parameters)
      */
     @GenerateBridge
     default Uni<Long> count(String query, Map<String, Object> params) {
@@ -682,7 +658,9 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #count()
      * @see #count(String, Object...)
      * @see #count(String, Map)
+     * @deprecated Use {@link #count(String, Map)} with {@link Map#of()}
      */
+    @Deprecated(since = "3.34")
     @GenerateBridge
     default Uni<Long> count(String query, Parameters params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -708,7 +686,6 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @return the number of entities deleted.
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
-     * @see #delete(String, Parameters)
      */
     @GenerateBridge
     default Uni<Long> deleteAll() {
@@ -734,7 +711,6 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @return the number of entities deleted.
      * @see #deleteAll()
      * @see #delete(String, Map)
-     * @see #delete(String, Parameters)
      */
     @GenerateBridge
     default Uni<Long> delete(String query, Object... params) {
@@ -749,7 +725,6 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @return the number of entities deleted.
      * @see #deleteAll()
      * @see #delete(String, Object...)
-     * @see #delete(String, Parameters)
      */
     @GenerateBridge
     default Uni<Long> delete(String query, Map<String, Object> params) {
@@ -765,7 +740,9 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #deleteAll()
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
+     * @deprecated Use {@link #delete(String, Map)} with {@link Map#of()}
      */
+    @Deprecated(since = "3.34")
     @GenerateBridge
     default Uni<Long> delete(String query, Parameters params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -904,7 +881,6 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @return a new {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate } instance for the given update
      *         document
      * @see #update(String, Map)
-     * @see #update(String, Parameters)
      */
     @GenerateBridge
     default io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate update(String update, Object... params) {
@@ -922,7 +898,6 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @return a new {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate } instance for the given update
      *         document
      * @see #update(String, Object...)
-     * @see #update(String, Parameters)
      *
      */
     @GenerateBridge
@@ -942,7 +917,9 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      *         document
      * @see #update(String, Object...)
      * @see #update(String, Map)
+     * @deprecated Use {@link #update(String, Map)} with {@link Map#of()}
      */
+    @Deprecated(since = "3.34")
     @GenerateBridge
     default io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate update(String update, Parameters params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -959,7 +936,6 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      *         document
      * @see #update(String, Object...)
      * @see #update(String, Map)
-     * @see #update(String, Parameters)
      */
     @GenerateBridge
     default io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate update(Bson update) {

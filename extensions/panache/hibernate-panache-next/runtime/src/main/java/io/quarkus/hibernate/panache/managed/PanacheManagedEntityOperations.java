@@ -8,7 +8,6 @@ import jakarta.json.bind.annotation.JsonbTransient;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.quarkus.hibernate.panache.PanacheEntityMarker;
-import io.quarkus.panache.common.Parameters;
 
 public interface PanacheManagedEntityOperations<Completion, Confirmation> extends PanacheEntityMarker {
     /**
@@ -38,7 +37,6 @@ public interface PanacheManagedEntityOperations<Completion, Confirmation> extend
      * @see #isPersistent()
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
-     * @see #delete(String, Parameters)
      * @see #deleteAll()
      */
     public Completion delete();

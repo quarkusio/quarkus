@@ -75,7 +75,7 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
                     mainClass.getClassName(),
                     applicationInfo);
 
-            copyCommonContent(archiveCreator, services, ignoredEntriesPredicate);
+            copyApplicationContent(archiveCreator, services, ignoredEntriesPredicate);
         }
         runnerJar.toFile().setReadable(true, false);
     }

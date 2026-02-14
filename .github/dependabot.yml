@@ -5,7 +5,7 @@ updates:
     target-branch: "main"
     schedule:
       interval: daily
-      time: "23:00"
+      time: "16:00"
       timezone: Europe/Paris
     open-pull-requests-limit: 20
     labels:
@@ -137,7 +137,7 @@ updates:
       # jaeger
       - dependency-name: io.jaegertracing:*
       # Kotlin
-      - dependency-name: org.jetbrains.kotlin:*
+      - dependency-name: org.jetbrains.kotlin:kotlin-bom
       - dependency-name: org.jetbrains.kotlinx:*
       - dependency-name: org.jetbrains.dokka:*
       - dependency-name: org.jetbrains:*

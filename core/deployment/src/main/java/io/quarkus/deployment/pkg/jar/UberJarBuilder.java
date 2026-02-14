@@ -208,7 +208,7 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 }
             }
 
-            copyCommonContent(archiveCreator, concatenatedEntries, allIgnoredEntriesPredicate);
+            copyApplicationContent(archiveCreator, concatenatedEntries, allIgnoredEntriesPredicate);
             // now that all entries have been added, check if there's a META-INF/versions/ entry. If present,
             // mark this jar as multi-release jar. Strictly speaking, the jar spec expects META-INF/versions/N
             // directory where N is an integer greater than 8, but we don't do that level of checks here but that

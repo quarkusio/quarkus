@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.logging.Logger;
 import org.junit.jupiter.api.ClassDescriptor;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.ClassOrdererContext;
@@ -37,7 +38,8 @@ import io.quarkus.test.junit.main.QuarkusMainTest;
  * via {@code CFGKEY_ORDER_PREFIX_*}, e.g. non-Quarkus tests can be run first (not last) by setting
  * {@link #CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST} to {@code 10_}.
  * <p/>
- * The secondary order suffix can be changed via {@value #CFGKEY_SECONDARY_ORDERER}, e.g. a value of
+ * The secondary order suffix can be changed via {@value #CFGKEY_DOCUMENTED_SECONDARY_ORDERER} or
+ * {@value #CFGKEY_UNDOCUMENTED_SECONDARY_ORDERER}, e.g. a value of
  * {@link org.junit.jupiter.api.ClassOrderer.Random org.junit.jupiter.api.ClassOrderer$Random} will order the test classes
  * within one group randomly instead by class name.
  * That order will also generally be maintained across groups, with each group running according to the position of its earliest
@@ -50,6 +52,8 @@ import io.quarkus.test.junit.main.QuarkusMainTest;
  * </ul>
  */
 public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
+
+    private static final Logger LOG = Logger.getLogger(QuarkusTestProfileAwareClassOrderer.class);
 
     protected static final String DEFAULT_ORDER_PREFIX_QUARKUS_TEST = "20_";
     protected static final String DEFAULT_ORDER_PREFIX_QUARKUS_MAIN_TEST = "30_";
@@ -64,7 +68,8 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
 
     static final String CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST = "junit.quarkus.orderer.prefix.non-quarkus-test";
 
-    static final String CFGKEY_SECONDARY_ORDERER = "junit.quarkus.orderer.secondary-orderer";
+    static final String CFGKEY_UNDOCUMENTED_SECONDARY_ORDERER = "junit.quarkus.orderer.secondary-orderer";
+    static final String CFGKEY_DOCUMENTED_SECONDARY_ORDERER = "quarkus.test.class-orderer";
 
     private final String prefixQuarkusTest;
     private final String prefixQuarkusMainTest;
@@ -83,7 +88,18 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
                 .orElse(DEFAULT_ORDER_PREFIX_QUARKUS_INTEGRATION_TEST);
         this.prefixNonQuarkusTest = config.getOptionalValue(CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST, String.class)
                 .orElse(DEFAULT_ORDER_PREFIX_NON_QUARKUS_TEST);
-        this.secondaryOrderer = config.getOptionalValue(CFGKEY_SECONDARY_ORDERER, String.class);
+
+        // We have two config values we honour. Since it's just one value, not a namespace, relocation + fallback is a bit heavy, just look both up.
+        String secondaryOrdererFromConfig = config.getOptionalValue(CFGKEY_UNDOCUMENTED_SECONDARY_ORDERER, String.class)
+                .orElse(config.getOptionalValue(CFGKEY_DOCUMENTED_SECONDARY_ORDERER, String.class).orElse(null));
+
+        if (this.getClass().getName().equals(secondaryOrdererFromConfig)) {
+            // Avoid infinitely recursing
+            LOG.warnf("Not using the configured secondary orderer, %s, because that would cause an infinite recursion.",
+                    secondaryOrdererFromConfig);
+            secondaryOrdererFromConfig = null;
+        }
+        this.secondaryOrderer = secondaryOrdererFromConfig != null ? Optional.of(secondaryOrdererFromConfig) : Optional.empty();
     }
 
     QuarkusTestProfileAwareClassOrderer(

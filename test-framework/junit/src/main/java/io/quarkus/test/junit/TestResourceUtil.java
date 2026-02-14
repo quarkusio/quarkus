@@ -17,6 +17,7 @@ import java.util.Set;
 
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestResourceScope;
+import io.quarkus.test.junit.QuarkusTestProfile.TestResourceEntry;
 
 /**
  * Contains methods that are needed for determining how to deal with {@link io.quarkus.test.common.QuarkusTestResource} and
@@ -31,9 +32,11 @@ public final class TestResourceUtil {
      * This is where we decide if the test resources of the current state vs the ones required by the next test class
      * to be executed require a Quarkus restart.
      */
-    public static boolean testResourcesRequireReload(QuarkusTestExtensionState state, Class<?> nextTestClass,
-            Class<? extends QuarkusTestProfile> nextTestClassProfile) {
-        QuarkusTestProfile profileInstance = instantiateProfile(nextTestClassProfile);
+    public static boolean testResourcesRequireReload(
+            QuarkusTestExtensionState state,
+            Class<?> nextTestClass,
+            Optional<Class<? extends QuarkusTestProfile>> nextTestClassProfile) {
+        Optional<QuarkusTestProfile> profileInstance = instantiateProfile(nextTestClassProfile);
         Set<TestResourceManager.TestResourceComparisonInfo> existingTestResources = existingTestResources(state);
         Set<TestResourceManager.TestResourceComparisonInfo> nextTestResources = nextTestResources(nextTestClass,
                 profileInstance);
@@ -57,13 +60,15 @@ public final class TestResourceUtil {
         return Collections.emptySet();
     }
 
-    static Set<TestResourceManager.TestResourceComparisonInfo> nextTestResources(Class<?> requiredTestClass,
-            QuarkusTestProfile profileInstance) {
+    static Set<TestResourceManager.TestResourceComparisonInfo> nextTestResources(
+            Class<?> requiredTestClass,
+            Optional<QuarkusTestProfile> profileInstance) {
 
         List<TestResourceManager.TestResourceClassEntry> entriesFromProfile = Collections.emptyList();
-        if (profileInstance != null) {
-            entriesFromProfile = new ArrayList<>(profileInstance.testResources().size());
-            for (QuarkusTestProfile.TestResourceEntry entry : profileInstance.testResources()) {
+        if (profileInstance.isPresent()) {
+            List<TestResourceEntry> testResourceEntries = profileInstance.get().testResources();
+            entriesFromProfile = new ArrayList<>(testResourceEntries.size());
+            for (QuarkusTestProfile.TestResourceEntry entry : testResourceEntries) {
                 entriesFromProfile.add(new TestResourceManager.TestResourceClassEntry(entry.getClazz(), entry.getArgs(), null,
                         entry.isParallel(), TestResourceScope.MATCHING_RESOURCES));
             }
@@ -73,29 +78,35 @@ public final class TestResourceUtil {
                 .testResourceComparisonInfo(requiredTestClass, getTestClassesLocation(requiredTestClass), entriesFromProfile);
     }
 
-    public static String getReloadGroupIdentifier(Class<?> requiredTestClass,
+    // Called by reflection
+    public static String getReloadGroupIdentifier(
+            Class<?> requiredTestClass,
             Class<? extends QuarkusTestProfile> profileClass) {
         return TestResourceManager
-                .getReloadGroupIdentifier(nextTestResources(requiredTestClass, instantiateProfile(profileClass)));
+                .getReloadGroupIdentifier(
+                        nextTestResources(requiredTestClass, instantiateProfile(Optional.ofNullable(profileClass))));
     }
 
-    private static QuarkusTestProfile instantiateProfile(Class<? extends QuarkusTestProfile> nextTestClassProfile) {
-        if (nextTestClassProfile != null) {
+    @SuppressWarnings("unchecked")
+    private static Optional<QuarkusTestProfile> instantiateProfile(
+            Optional<Class<? extends QuarkusTestProfile>> nextTestClassProfile) {
+        if (nextTestClassProfile.isPresent()) {
             // The class we are given could be in the app classloader, so swap it over
             // All this reflective classloading is a bit wasteful, so it would be ideal if the implementation was less picky about classloaders (that's not just moving the reflection further down the line)
             // TODO this may not be necessary with changes in FacadeClassLoader, check
             // TODO not only is it not necessary, it actually cannot work because we've lost access to the runtime classloader which we need to load app classes
             try {
-                if (!QuarkusTestProfile.class.isAssignableFrom(nextTestClassProfile)) {
-                    nextTestClassProfile = (Class<? extends QuarkusTestProfile>) TestResourceUtil.class.getClassLoader()
-                            .loadClass(nextTestClassProfile.getName());
+                Class<? extends QuarkusTestProfile> profileClass = nextTestClassProfile.get();
+                if (!QuarkusTestProfile.class.isAssignableFrom(nextTestClassProfile.get())) {
+                    profileClass = (Class<? extends QuarkusTestProfile>) TestResourceUtil.class.getClassLoader()
+                            .loadClass(nextTestClassProfile.get().getName());
                 }
-                return nextTestClassProfile.getConstructor().newInstance();
+                return Optional.of(profileClass.getConstructor().newInstance());
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
-        return null;
+        return Optional.empty();
     }
 
     /**
@@ -113,10 +124,9 @@ public final class TestResourceUtil {
          * we need to convert the user input {@link QuarkusTestProfile.TestResourceEntry} into instances of
          * {@link TestResourceManager.TestResourceClassEntry} that are loaded from that ClassLoader
          */
-        public static <T> List<T> copyEntriesFromProfile(
-                QuarkusTestProfile profileInstance, ClassLoader classLoader) {
-            if ((profileInstance == null) || profileInstance.testResources()
-                    .isEmpty()) {
+        public static <T> List<T> copyEntriesFromProfile(Optional<QuarkusTestProfile> profileInstance,
+                ClassLoader classLoader) {
+            if (profileInstance.isEmpty() || profileInstance.get().testResources().isEmpty()) {
                 return Collections.emptyList();
             }
 
@@ -126,7 +136,7 @@ public final class TestResourceUtil {
                         .forName(TestResourceManager.TestResourceClassEntry.class.getName(), true, classLoader)
                         .getConstructor(Class.class, Map.class, Annotation.class, boolean.class, testResourceScopeClass);
 
-                List<QuarkusTestProfile.TestResourceEntry> testResources = profileInstance.testResources();
+                List<QuarkusTestProfile.TestResourceEntry> testResources = profileInstance.get().testResources();
                 List<T> result = new ArrayList<>(testResources.size());
                 for (QuarkusTestProfile.TestResourceEntry testResource : testResources) {
                     T instance = (T) testResourceClassEntryConstructor.newInstance(

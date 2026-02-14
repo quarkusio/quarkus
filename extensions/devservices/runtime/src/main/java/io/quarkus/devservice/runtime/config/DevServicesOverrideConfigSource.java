@@ -59,7 +59,6 @@ public class DevServicesOverrideConfigSource implements ConfigSource {
 
     @Override
     public int getOrdinal() {
-        // This is a dynamic override, so it needs a high priority to be able to override ephemeral port (0) with real values
-        return 410; // a bit more than system properties
+        return Integer.MAX_VALUE - 500;
     }
 }

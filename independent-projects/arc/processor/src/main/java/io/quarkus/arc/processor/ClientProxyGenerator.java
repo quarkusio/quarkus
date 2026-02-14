@@ -3,10 +3,6 @@ package io.quarkus.arc.processor;
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 import static java.lang.constant.ConstantDescs.CD_Object;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
-import static org.jboss.jandex.gizmo2.Jandex2Gizmo.copyTypeParameters;
-import static org.jboss.jandex.gizmo2.Jandex2Gizmo.genericTypeOf;
-import static org.jboss.jandex.gizmo2.Jandex2Gizmo.genericTypeOfClass;
-import static org.jboss.jandex.gizmo2.Jandex2Gizmo.genericTypeOfThrows;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
 
 import java.lang.constant.ClassDesc;
@@ -38,7 +34,6 @@ import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
-import io.quarkus.gizmo2.GenericType;
 import io.quarkus.gizmo2.Gizmo;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.ParamVar;
@@ -129,13 +124,10 @@ public class ClientProxyGenerator extends AbstractGenerator {
 
         // Foo_ClientProxy extends Foo implements ClientProxy
         gizmo.class_(generatedName, cc -> {
-            copyTypeParameters(providerClass, cc);
-
-            GenericType.OfClass providerGenericType = genericTypeOfClass(providerType);
             if (!isInterface) {
-                cc.extends_(providerGenericType);
+                cc.extends_(providerClassDesc);
             } else {
-                cc.implements_(providerGenericType);
+                cc.implements_(providerClassDesc);
             }
             cc.implements_(ClientProxy.class);
             if (mockable) {
@@ -254,15 +246,13 @@ public class ClientProxyGenerator extends AbstractGenerator {
             for (MethodInfo method : getDelegatingMethods(bean, bytecodeTransformerConsumer, transformUnproxyableClasses)) {
                 MethodDesc originalMethodDesc = methodDescOf(method);
                 cc.method(method.name(), mc -> {
-                    copyTypeParameters(method, mc);
-
-                    mc.returning(genericTypeOf(method.returnType()));
+                    mc.returning(classDescOf(method.returnType()));
                     List<ParamVar> params = new ArrayList<>();
                     for (MethodParameterInfo param : method.parameters()) {
-                        params.add(mc.parameter(param.nameOrDefault(), genericTypeOf(param.type())));
+                        params.add(mc.parameter(param.nameOrDefault(), classDescOf(param.type())));
                     }
                     for (Type exception : method.exceptions()) {
-                        mc.throws_(genericTypeOfThrows(exception));
+                        mc.throws_(classDescOf(exception));
                     }
 
                     mc.body(bc -> {

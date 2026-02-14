@@ -622,7 +622,8 @@ public class JarRunnerIT extends MojoTestBase {
         RunningInvoker running = new RunningInvoker(testDir, false);
 
         MavenProcessInvocationResult result = running
-                .execute(Arrays.asList("package", "-DskipTests", "-Dquarkus.package.jar.aot.enabled=true"),
+                .execute(Arrays.asList("package", "-DskipTests", "-Dquarkus.package.jar.aot.enabled=true",
+                                "-Dquarkus.package.jar.aot.phase=BUILD"),
                         Collections.emptyMap());
 
         await().atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)

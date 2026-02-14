@@ -357,7 +357,11 @@ public class JvmStartupOptimizerArchiveBuildStep {
 
             // new config
             if (jarConfig.aot().enabled()) {
-                return true;
+                // Only generate during build phase if phase is explicitly set to BUILD.
+                // When phase is not set or set to AUTO/INTEGRATION_TESTS, the AOT file
+                // will be generated during integration tests instead.
+                Optional<PackageConfig.JarConfig.AotConfig.AotPhase> phase = jarConfig.aot().phase();
+                return phase.isPresent() && phase.get() == PackageConfig.JarConfig.AotConfig.AotPhase.BUILD;
             }
 
             // old config

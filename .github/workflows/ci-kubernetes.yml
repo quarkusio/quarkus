@@ -61,7 +61,7 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up Minikube-Kubernetes
-        uses: manusa/actions-setup-minikube@v2.14.0
+        uses: manusa/actions-setup-minikube@v2.15.0
         with:
           minikube version: 'v1.36.0'
           kubernetes version: ${{ matrix.kubernetes }}

@@ -43,6 +43,16 @@
                 </configuration>
             </plugin>
             <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                         <manifestEntries>
+                             <Automatic-Module-Name>io.quarkus.arc.runtime</Automatic-Module-Name>
+                         </manifestEntries>
+                     </archive>
+                </configuration>
+            </plugin>
+            <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <executions>
                     <execution>

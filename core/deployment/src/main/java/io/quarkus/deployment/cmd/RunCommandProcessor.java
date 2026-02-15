@@ -31,7 +31,7 @@ public class RunCommandProcessor {
             BuildProducer<RunCommandActionBuildItem> cmds,
             BuildSystemTargetBuildItem buildSystemTarget) {
 
-        Path jarPath = switch (packageConfig.jar().type()) {
+        Path jarPath = switch (packageConfig.jar().effectiveType()) {
             case UBER_JAR -> jar.getOutputDirectory()
                     .resolve(jar.getBaseName() + packageConfig.computedRunnerSuffix() + ".jar");
             // todo: legacy JAR should be using runnerSuffix()

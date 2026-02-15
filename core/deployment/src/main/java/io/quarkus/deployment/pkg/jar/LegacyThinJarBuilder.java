@@ -54,7 +54,7 @@ public class LegacyThinJarBuilder extends AbstractLegacyThinJarBuilder<JarBuildI
 
         doBuild(runnerJar, libDir);
 
-        return new JarBuildItem(runnerJar, null, libDir, packageConfig.jar().type(),
+        return new JarBuildItem(runnerJar, null, libDir, packageConfig.jar().effectiveType(),
                 suffixToClassifier(packageConfig.computedRunnerSuffix()));
     }
 }

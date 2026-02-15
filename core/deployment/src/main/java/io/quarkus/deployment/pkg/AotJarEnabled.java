@@ -15,6 +15,6 @@ public class AotJarEnabled implements BooleanSupplier {
     @Override
     public boolean getAsBoolean() {
         return packageConfig.jar().enabled() &&
-                packageConfig.jar().type() == JarType.AOT_JAR;
+                packageConfig.jar().effectiveType() == JarType.AOT_JAR;
     }
 }

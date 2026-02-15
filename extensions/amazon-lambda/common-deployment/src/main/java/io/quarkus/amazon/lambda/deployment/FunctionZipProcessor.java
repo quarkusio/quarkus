@@ -52,7 +52,7 @@ public class FunctionZipProcessor {
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             JarBuildItem jar) throws Exception {
 
-        if (packageConfig.jar().type() != PackageConfig.JarConfig.JarType.LEGACY_JAR) {
+        if (packageConfig.jar().effectiveType() != PackageConfig.JarConfig.JarType.LEGACY_JAR) {
             throw new BuildException("Lambda deployments need to use a legacy JAR, " +
                     "please set 'quarkus.package.jar.type=legacy-jar' inside your application.properties",
                     List.of());

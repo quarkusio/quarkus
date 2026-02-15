@@ -247,6 +247,8 @@ jobs:
           else
             echo "No previous run found"
           fi
+        env:
+          GH_TOKEN: ${{ github.token }}
       - name: Check if CI build is needed
         id: check-changes
         run: |

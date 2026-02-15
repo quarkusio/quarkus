@@ -143,15 +143,32 @@ public class ModelUtils {
     }
 
     /**
+     * Returns the raw version of the model. This method returns the result of {@link #getRawVersionOrNull(Model)}
+     * except if it's null, it throws an exception.
+     *
+     * @param model POM
+     * @return raw model
+     */
+    public static String getRawVersion(Model model) {
+        String version = getRawVersionOrNull(model);
+        if (version != null) {
+            return version;
+        }
+        throw new IllegalStateException("Failed to determine version for project model");
+    }
+
+    /**
      * Returns the raw version of the model. If the model does not include
-     * the version directly, it will return the version of the parent.
+     * the version directly and the coordinates of the parent artifact are configured,
+     * the parent version will be returned.
+     * If the parent coordinates are not configured, the method will return null.
      * The version is raw in a sense if it's a property expression, the
      * expression will not be resolved.
      *
      * @param model POM
      * @return raw model
      */
-    public static String getRawVersion(Model model) {
+    public static String getRawVersionOrNull(Model model) {
         String version = model.getVersion();
         if (version != null) {
             return version;
@@ -163,7 +180,7 @@ public class ModelUtils {
                 return version;
             }
         }
-        throw new IllegalStateException("Failed to determine version for project model");
+        return null;
     }
 
     public static String getVersion(Model model) {
@@ -239,7 +256,7 @@ public class ModelUtils {
 
     public static Model readModel(InputStream stream) throws IOException {
         try (InputStream is = stream) {
-            return new MavenXpp3Reader().read(stream);
+            return new MavenXpp3Reader().read(is);
         } catch (XmlPullParserException e) {
             throw new IOException("Failed to parse POM", e);
         }

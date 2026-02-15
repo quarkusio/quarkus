@@ -193,7 +193,9 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
                             break;
                         }
                     }
+                    boolean addProfileToParent = false;
                     if (profile == null) {
+                        addProfileToParent = true;
                         for (Profile p : appPom.getProfiles()) {
                             if (p.getId().equals(profileModules.getKey())) {
                                 profile = p;
@@ -205,13 +207,13 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
                                     "Failed to locate profile " + profileModules.getKey() + " in the application POM");
                         }
                         final Profile tmp = new Profile();
+                        tmp.setId(profileModules.getKey());
                         tmp.setActivation(profile.getActivation());
                         profile = tmp;
-                        parentPom.getProfiles().add(profile);
                     }
 
                     for (TsArtifact a : profileModules.getValue()) {
-                        profile.getModules().add(a.getArtifactId());
+                        profile.addModule(a.getArtifactId());
                         Model modulePom = a.getPomModel();
                         modulePom.setParent(parent);
                         final Path moduleDir = IoUtils.mkdirs(ws.resolve(modulePom.getArtifactId()));
@@ -225,6 +227,10 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
                         ZipUtils.unzip(resolvedJar, moduleTargetDir.resolve("classes"));
                         IoUtils.copy(resolvedJar,
                                 moduleTargetDir.resolve(modulePom.getArtifactId() + "-" + modulePom.getVersion() + ".jar"));
+                    }
+
+                    if (addProfileToParent) {
+                        parentPom.addProfile(profile);
                     }
                 }
 

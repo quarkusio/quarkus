@@ -6,6 +6,7 @@ import static io.smallrye.common.expression.Expression.Flag.NO_TRIM;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +20,7 @@ import javax.inject.Named;
 
 import org.apache.maven.SessionScoped;
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Model;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
@@ -77,24 +79,44 @@ public class QuarkusBootstrapProvider implements Closeable {
         return ArtifactKey.ga(project.getGroupId(), project.getArtifactId());
     }
 
-    static void setProjectModels(BootstrapMavenContextConfig<?> config, List<MavenProject> allProjects, Set<File> reloadPoms) {
-        if (allProjects != null) {
-            for (MavenProject mp : allProjects) {
-                if (reloadPoms.contains(mp.getFile())) {
-                    continue;
-                }
-                final Model model = getRawModel(mp);
-                config.addProvidedModule(mp.getFile().toPath(), model, mp.getModel());
-                // The Maven Model API determines the project directory as the directory containing the POM file.
-                // However, in case when plugins manipulating POMs store their results elsewhere
-                // (such as the flatten plugin storing the flattened POM under the target directory),
-                // both the base directory and the directory containing the POM file should be added to the map.
-                var pomDir = mp.getFile().getParentFile();
-                if (!pomDir.equals(mp.getBasedir())) {
-                    config.addProvidedModule(mp.getBasedir().toPath().resolve("pom.xml"), model, mp.getModel());
-                }
+    static void setProvidedModules(BootstrapMavenContextConfig<?> config, MavenSession session, Set<File> reloadPoms) {
+        // sorting projects at this point is an optimization, not a requirement
+        for (MavenProject mp : getSortedProjects(session)) {
+            if (reloadPoms.contains(mp.getFile())) {
+                continue;
+            }
+            final Model model = getRawModel(mp);
+            config.addProvidedModule(mp.getFile().toPath(), model, mp.getModel());
+            // The Maven Model API determines the project directory as the directory containing the POM file.
+            // However, in case when plugins manipulating POMs store their results elsewhere
+            // (such as the flatten plugin storing the flattened POM under the target directory),
+            // both the base directory and the directory containing the POM file should be added to the map.
+            var pomDir = mp.getFile().getParentFile();
+            if (!pomDir.equals(mp.getBasedir())) {
+                config.addProvidedModule(mp.getBasedir().toPath().resolve("pom.xml"), model, mp.getModel());
             }
         }
+    }
+
+    private static List<MavenProject> getSortedProjects(MavenSession session) {
+        if (session.getAllProjects().size() == session.getProjects().size()) {
+            // these are supposed to be sorted already
+            return session.getProjects();
+        }
+        final List<MavenProject> sorted = new ArrayList<>(session.getAllProjects().size());
+        addAfterParent(session.getTopLevelProject(), new HashSet<>(session.getAllProjects().size()), sorted);
+        return sorted;
+    }
+
+    private static void addAfterParent(MavenProject project, Set<File> added, List<MavenProject> sorted) {
+        if (!added.add(project.getFile())) {
+            return;
+        }
+        MavenProject parent = project.getParent();
+        if (parent != null) {
+            addAfterParent(parent, added, sorted);
+        }
+        sorted.add(project);
     }
 
     /**
@@ -234,7 +256,7 @@ public class QuarkusBootstrapProvider implements Closeable {
                             .setRemoteRepositories(mojo.remoteRepositories())
                             .setEffectiveModelBuilder(BootstrapMavenContextConfig
                                     .getEffectiveModelBuilderProperty(mojo.mavenProject().getProperties()));
-                    setProjectModels(config, mojo.mavenSession().getAllProjects(), mojo.reloadPoms);
+                    setProvidedModules(config, mojo.mavenSession(), mojo.reloadPoms);
                     var resolver = workspaceProvider.createArtifactResolver(config);
                     final LocalProject currentProject = resolver.getMavenContext().getCurrentProject();
                     if (currentProject != null && workspaceId == 0) {

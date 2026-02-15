@@ -1536,7 +1536,7 @@ public class DevMojo extends AbstractMojo {
                     .setEffectiveModelBuilder(BootstrapMavenContextConfig.getEffectiveModelBuilderProperty(projectProperties))
                     .setRootProjectDir(rootProjectDir);
             // to support Maven plugins and extensions manipulating POM files
-            QuarkusBootstrapProvider.setProjectModels(mvnConfig, session.getAllProjects(), toFiles(reloadPoms));
+            QuarkusBootstrapProvider.setProvidedModules(mvnConfig, session, toFiles(reloadPoms));
 
             // There are a couple of reasons we don't want to use the original Maven session:
             // 1) a reload could be triggered by a change in a pom.xml, in which case the Maven session might not be in sync anymore with the effective POM;

@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -48,6 +49,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
     private int httpPort;
     private int httpsPort;
     private long waitTimeSeconds;
+    private Duration shutdownTimeout;
     private String testProfile;
     private List<String> argLine;
     private Map<String, String> env;
@@ -65,6 +67,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         this.httpPort = initContext.httpPort();
         this.httpsPort = initContext.httpsPort();
         this.waitTimeSeconds = initContext.waitTime().getSeconds();
+        this.shutdownTimeout = initContext.shutdownTimeout();
         this.testProfile = initContext.testProfile();
         this.argLine = initContext.argLine();
         this.env = initContext.env();
@@ -184,7 +187,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
 
     @Override
     public void close() {
-        LauncherUtil.destroyProcess(quarkusProcess);
+        LauncherUtil.destroyProcess(quarkusProcess, getAdjustedShutdownTimeout());
         if (generateAotFile) {
             Path aotConfFile = jarPath.resolveSibling(AOT_CONF_FILE_NAME);
             if (Files.exists(aotConfFile)) {
@@ -193,6 +196,10 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
                 log.debug("AOT conf file not found");
             }
         }
+    }
+
+    private Duration getAdjustedShutdownTimeout() {
+        return shutdownTimeout.plus(generateAotFile ? Duration.ofMinutes(1) : Duration.ofSeconds(10));
     }
 
     private void createAotFileFromAotConfFile(Path aotConfigFile) {

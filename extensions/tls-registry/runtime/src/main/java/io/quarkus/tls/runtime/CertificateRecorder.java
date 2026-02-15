@@ -21,6 +21,7 @@ import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.tls.runtime.config.TlsBucketConfig;
 import io.quarkus.tls.runtime.config.TlsConfig;
+import io.quarkus.tls.runtime.keystores.GenericKeyStores;
 import io.quarkus.tls.runtime.keystores.JKSKeyStores;
 import io.quarkus.tls.runtime.keystores.P12KeyStores;
 import io.quarkus.tls.runtime.keystores.PemKeyStores;
@@ -141,6 +142,9 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
                     return P12KeyStores.verifyP12KeyStore(config, vertx, name);
                 } else if (config.jks().isPresent()) {
                     return JKSKeyStores.verifyJKSKeyStore(config, vertx, name);
+                } else if (!config.generic().isEmpty()) {
+                    var firstKey = config.generic().entrySet().iterator().next().getKey();
+                    return GenericKeyStores.verifyGenericKeyStore(config, vertx, name, firstKey);
                 }
             }
 
@@ -165,6 +169,9 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
                     return P12KeyStores.verifyP12TrustStoreStore(config, vertx, name);
                 } else if (config.jks().isPresent()) {
                     return JKSKeyStores.verifyJKSTrustStoreStore(config, vertx, name);
+                } else if (!config.generic().isEmpty()) {
+                    var firstKey = config.generic().entrySet().iterator().next().getKey();
+                    return GenericKeyStores.verifyGenericTrustStore(config, vertx, name, firstKey);
                 }
             }
 

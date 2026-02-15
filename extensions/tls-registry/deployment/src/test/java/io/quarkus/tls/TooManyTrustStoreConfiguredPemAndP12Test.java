@@ -30,7 +30,7 @@ public class TooManyTrustStoreConfiguredPemAndP12Test {
             () -> ShrinkWrap.create(JavaArchive.class)
                     .add(new StringAsset(configuration), "application.properties"))
             .assertException(t -> {
-                assertThat(t).hasMessageContaining("PEM", "PKCS12", "trust");
+                assertThat(t).hasMessageContaining("PEM", "P12", "trust");
             });
 
     @Test

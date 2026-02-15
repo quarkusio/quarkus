@@ -1,11 +1,15 @@
 package io.quarkus.tls.runtime.config;
 
+import java.util.Map;
 import java.util.Optional;
+import java.util.TreeSet;
 
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.tls.runtime.TrustStoreProvider;
 import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithParentName;
 
 @ConfigGroup
 public interface TrustStoreConfig {
@@ -24,6 +28,13 @@ public interface TrustStoreConfig {
      * Configure the JKS trust store.
      */
     Optional<JKSTrustStoreConfig> jks();
+
+    /**
+     * Configures generic trust stores from other providers
+     */
+    @ConfigDocMapKey("trust-store-type")
+    @WithParentName
+    Map<String, GenericTrustStoreConfig> generic();
 
     /**
      * Enforce certificate expiration.
@@ -59,22 +70,18 @@ public interface TrustStoreConfig {
     TrustStoreCredentialProviderConfig credentialsProvider();
 
     default void validate(InstanceHandle<TrustStoreProvider> provider, String name) {
-        if (provider.isAvailable() && (pem().isPresent() || p12().isPresent() || jks().isPresent())) {
-            throw new IllegalStateException(
-                    "Invalid truststore '" + name
-                            + "' - The truststore cannot be configured with a provider and PEM or PKCS12 or JKS at the same time");
+        var enabledTrustStoreTypes = new TreeSet(String.CASE_INSENSITIVE_ORDER);
+        if (provider.isAvailable()) {
+            enabledTrustStoreTypes.add("a provider");
         }
+        pem().ifPresent(c -> enabledTrustStoreTypes.add("PEM"));
+        p12().ifPresent(c -> enabledTrustStoreTypes.add("P12"));
+        jks().ifPresent(c -> enabledTrustStoreTypes.add("JKS"));
+        enabledTrustStoreTypes.addAll(generic().keySet());
 
-        if (pem().isPresent() && (p12().isPresent() || jks().isPresent())) {
-            throw new IllegalStateException(
-                    "Invalid truststore '" + name
-                            + "' - The truststore cannot be configured with PEM and PKCS12 or JKS at the same time");
-        }
-
-        if (p12().isPresent() && jks().isPresent()) {
-            throw new IllegalStateException(
-                    "Invalid truststore '" + name
-                            + "' - The truststore cannot be configured with PKCS12 and JKS at the same time");
+        if (enabledTrustStoreTypes.size() > 1) {
+            throw new IllegalStateException("Invalid truststore '" + name + "' - The truststore cannot be configured with "
+                    + String.join(" and ", enabledTrustStoreTypes) + " at the same time");
         }
     }
 

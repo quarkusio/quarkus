@@ -1,7 +1,10 @@
 package io.quarkus.tls;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.fail;
+
+import java.security.KeyStoreException;
+import java.security.cert.CertificateParsingException;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -17,25 +20,21 @@ import io.smallrye.certs.junit5.Certificates;
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "test-formats", password = "password", formats = { Format.JKS, Format.PEM, Format.PKCS12 })
 })
-public class TooManyTrustStoreConfiguredJKSAndP12Test {
+public class GenericKeyStoreWithWrongPasswordTest {
 
     private static final String configuration = """
-            quarkus.tls.trust-store.jks.path=target/certs/test-formats-truststore.jks
-            quarkus.tls.trust-store.jks.password=password
-            quarkus.tls.trust-store.p12.path=target/certs/test-formats-truststore.p12
-            quarkus.tls.trust-store.p12.password=password
+            quarkus.tls.key-store.pkcs12.path=target/certs/test-formats-keystore.p12
+            quarkus.tls.key-store.pkcs12.password=not-the-right-password
             """;
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .add(new StringAsset(configuration), "application.properties"))
-            .assertException(t -> {
-                assertThat(t).hasMessageContaining("P12", "JKS", "trust");
-            });
+            .assertException(t -> assertThat(t.getMessage()).contains("default", "pkcs12", "password"));
 
     @Test
-    void shouldNotBeCalled() {
-        fail("This test should not be called");
+    void test() throws KeyStoreException, CertificateParsingException {
+        fail("Should not be called as the extension should fail before.");
     }
 }

@@ -45,6 +45,7 @@ import io.quarkus.gradle.actions.BeforeTestAction;
 import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
 import io.quarkus.gradle.extension.SourceSetExtension;
+import io.quarkus.gradle.tasks.BuildAotEnhancedImage;
 import io.quarkus.gradle.tasks.Deploy;
 import io.quarkus.gradle.tasks.ImageBuild;
 import io.quarkus.gradle.tasks.ImageCheckRequirementsTask;
@@ -109,6 +110,7 @@ public class QuarkusPlugin implements Plugin<Project> {
     public static final String IMAGE_BUILD_TASK_NAME = "imageBuild";
     public static final String IMAGE_PUSH_TASK_NAME = "imagePush";
     public static final String DEPLOY_TASK_NAME = "deploy";
+    public static final String BUILD_AOT_ENHANCED_IMAGE_TASK_NAME = "buildAotEnhancedImage";
 
     @Deprecated
     public static final String BUILD_NATIVE_TASK_NAME = "buildNative";
@@ -323,6 +325,10 @@ public class QuarkusPlugin implements Plugin<Project> {
         tasks.register(DEPLOY_TASK_NAME, Deploy.class, task -> {
             configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider, customFs, quarkusExt);
             task.finalizedBy(quarkusBuild);
+        });
+
+        tasks.register(BUILD_AOT_ENHANCED_IMAGE_TASK_NAME, BuildAotEnhancedImage.class, task -> {
+            configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider, customFs, quarkusExt);
         });
 
         TaskProvider<QuarkusDev> quarkusDev = tasks.register(QUARKUS_DEV_TASK_NAME, QuarkusDev.class, devRuntimeDependencies,

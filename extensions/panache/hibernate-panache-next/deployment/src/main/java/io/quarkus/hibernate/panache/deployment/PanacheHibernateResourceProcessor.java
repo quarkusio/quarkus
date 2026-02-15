@@ -41,7 +41,7 @@ import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildIt
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.panache.PanacheEntityMarker;
-import io.quarkus.hibernate.panache.PanacheRepositoryQueries;
+import io.quarkus.hibernate.panache.PanacheRepositorySwitcher;
 import io.quarkus.hibernate.panache.managed.blocking.PanacheManagedBlockingEntity;
 import io.quarkus.hibernate.panache.managed.reactive.PanacheManagedReactiveEntity;
 import io.quarkus.hibernate.panache.runtime.PanacheHibernateRecorder;
@@ -52,7 +52,7 @@ import io.quarkus.panache.hibernate.common.deployment.HibernateEnhancersRegister
 
 public final class PanacheHibernateResourceProcessor {
 
-    static final DotName DOTNAME_PANACHE_REPOSITORY_QUERIES = DotName.createSimple(PanacheRepositoryQueries.class.getName());
+    static final DotName DOTNAME_PANACHE_REPOSITORY_SWITCHER = DotName.createSimple(PanacheRepositorySwitcher.class.getName());
 
     static final DotName DOTNAME_PANACHE_MANAGED_BLOCKING_ENTITY = DotName
             .createSimple(PanacheManagedBlockingEntity.class.getName());
@@ -120,15 +120,14 @@ public final class PanacheHibernateResourceProcessor {
             BuildProducer<EntityToPersistenceUnitBuildItem> entityToPersistenceUnit) {
 
         Set<String> panacheEntities = new HashSet<>();
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementations(DOTNAME_PANACHE_REPOSITORY_QUERIES)) {
+        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementations(DOTNAME_PANACHE_REPOSITORY_SWITCHER)) {
             // we don't want to add methods to abstract/generic entities/repositories: they get added to bottom types
             // which can't be either
             if (Modifier.isAbstract(classInfo.flags())
                     || !classInfo.typeParameters().isEmpty())
                 continue;
             List<org.jboss.jandex.Type> typeParameters = JandexUtil
-                    .resolveTypeParameters(classInfo.name(), DOTNAME_PANACHE_REPOSITORY_QUERIES, index.getIndex());
-            // FIXME: this may be a Uni<X> for reactive repos
+                    .resolveTypeParameters(classInfo.name(), DOTNAME_PANACHE_REPOSITORY_SWITCHER, index.getIndex());
             panacheEntities.add(typeParameters.get(0).name().toString());
         }
 
@@ -164,13 +163,13 @@ public final class PanacheHibernateResourceProcessor {
                 capabilities.isPresent(Capability.HIBERNATE_REACTIVE));
         // Panache 2 repos
         Map<Class<?>, Class<?>> repositoryClassesToEntityClasses = new HashMap<>();
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementations(DOTNAME_PANACHE_REPOSITORY_QUERIES)) {
+        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementations(DOTNAME_PANACHE_REPOSITORY_SWITCHER)) {
             // Only keep concrete classes
             if (classInfo.isInterface() || classInfo.isAbstract()) {
                 continue;
             }
             List<org.jboss.jandex.Type> typeParameters = JandexUtil
-                    .resolveTypeParameters(classInfo.name(), DOTNAME_PANACHE_REPOSITORY_QUERIES, index.getIndex());
+                    .resolveTypeParameters(classInfo.name(), DOTNAME_PANACHE_REPOSITORY_SWITCHER, index.getIndex());
             if (typeParameters.get(0).kind() == Kind.CLASS) {
                 String entityClassName = typeParameters.get(0).name().toString();
                 Class<?> entityClass = Class.forName(entityClassName, false, Thread.currentThread().getContextClassLoader());
@@ -211,7 +210,7 @@ public final class PanacheHibernateResourceProcessor {
         // Now, some entities that do not explicitely add stateless/managed query repos will get some generated, so
         // either we figure out who they are, or we blanket add them all
         index.getIndex().getKnownClasses();
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementations(DOTNAME_PANACHE_REPOSITORY_QUERIES)) {
+        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementations(DOTNAME_PANACHE_REPOSITORY_SWITCHER)) {
             // Only keep concrete classes
             if (classInfo.isInterface() || classInfo.isAbstract()) {
                 continue;

@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
+import java.util.jar.Manifest;
 
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
@@ -71,9 +72,10 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
             ResolvedDependency appArtifact = curateOutcome.getApplicationModel().getAppArtifact();
             // the manifest needs to be the first entry in the jar, otherwise JarInputStream does not work properly
             // see https://bugs.openjdk.java.net/browse/JDK-8031748
-            generateManifest(archiveCreator, classPath.toString(), packageConfig, appArtifact, jvmRequirements,
-                    mainClass.getClassName(),
-                    applicationInfo);
+            // the ArchiveCreator now makes sure it's the case, keeping the comment in case we change the implementation at some point
+            Manifest manifest = createManifest(packageConfig, appArtifact, applicationInfo);
+            attachRunnerMetadata(manifest, mainClass.getClassName(), classPath.toString(), jvmRequirements);
+            archiveCreator.addManifest(manifest);
 
             copyApplicationContent(archiveCreator, services, ignoredEntriesPredicate);
         }

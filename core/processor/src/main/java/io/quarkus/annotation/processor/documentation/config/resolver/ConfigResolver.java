@@ -121,6 +121,8 @@ public class ConfigResolver {
                             .map(p -> p + ConfigNamingUtil.getMapKey(discoveryConfigProperty.getMapKey()))
                             .collect(Collectors.toCollection(ArrayList::new));
                 }
+            } else if (discoveryConfigProperty.getType().isList()) {
+                potentiallyMappedPath += ConfigNamingUtil.getListIndex();
             }
 
             ResolutionContext configGroupContext;

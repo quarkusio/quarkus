@@ -224,6 +224,10 @@ jobs:
       # Handle scheduled workflow runs for main branch of quarkusio/quarkus:
       # - we download the previous sha from the last successful scheduled run
       # - we compare it with current and skip the build if there are no changes
+      # Note: gh needs the repository around to be able to resolve it
+      - name: Checkout repository
+        if: github.event_name == 'schedule' && github.ref_name == 'main' && github.repository == 'quarkusio/quarkus'
+        uses: actions/checkout@v6
       - name: Download previous scheduled build SHA
         if: github.event_name == 'schedule' && github.ref_name == 'main' && github.repository == 'quarkusio/quarkus'
         id: download-previous-sha

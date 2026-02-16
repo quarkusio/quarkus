@@ -1769,3 +1769,63 @@ public class FooTest {
 <5> We can leverage the Mockito API in a test method to configure the behavior.
 
 You can find more examples and hints in the xref:testing-components.adoc[testing components reference guide].
+
+
+== Working with Test Fixtures
+
+If your Quarkus project is designed to be used as a library it is sometimes usefull to provide test helper classes
+to the projects using your library. These test helper classes do not belong to the main code and shall not 
+be delivered normally in the jar produced by aour project. However other projects using and extending your library
+should be able to use the test helper classes.
+An attempt to solve this are text fixtures.
+In Gradle this is supported by the test fixture plugin.
+To use it add this pluging to your library project `lib`:
+
+.Gradle Test Fixtures
+[source, gradle]
+----
+plugins {
+    id 'java-library'
+    id 'java-test-fixtures' <1>
+}
+----
+<1> Adds the test fixture gradle plugin.
+
+You can place the test helper classes in the `src/testFixtures/java` directory.
+By default the test fixture classes can see the main source set classes and the api dependencies.
+Additional dependencies can be added to the `testFixturesImplementation ` configuration:
+
+.Adding Gradle Test Fixtures Dependencies
+[source, gradle]
+----
+dependencies {
+    testFixturesImplementation 'org.apache.commons:commons-text:1.6' <1>
+}
+----
+<1> For example use the `commons-text` in your test fixture.
+
+If the test fixture should see some of the quarkus dependencies we do not like to specify
+the version since this is fixed in the platform BOM.
+To make this available for the `testFixturesImplementation ` configuration
+you have to enforce the BOM to this configuration:
+
+.Enforcing Quarkus BOM to the test Fixture Configuration
+[source, gradle]
+----
+dependencies {
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}") <1>
+    testFixturesImplementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}") <2>
+}
+----
+<1> Applies the Quarkus platform BOM to the `implementation` configuration as usual.
+<2> Applies the Quarkus platform BOM to the `testFixturesImplementation` configuration.
+
+Other projects can refer it like:
+
+.Use Gradle Test Fixtures
+[source, gradle]
+----
+dependencies {
+   testImplementation(testFixtures(project(":lib")))
+}
+----

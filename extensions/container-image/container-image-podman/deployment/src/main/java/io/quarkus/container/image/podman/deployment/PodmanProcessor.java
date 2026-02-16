@@ -214,7 +214,7 @@ public class PodmanProcessor extends CommonProcessor<PodmanConfig> {
             throw new UnsupportedOperationException("Unable to save enhanced Dockerfile contents to disk", e);
         }
 
-        String executableName = getExecutableName(podmanConfig, ContainerRuntime.DOCKER, ContainerRuntime.PODMAN);
+        String executableName = getExecutableName(podmanConfig, ContainerRuntime.PODMAN);
         var dockerBuildArgs = getPodmanBuildArgs(enhancedImage, new DockerfilePaths() {
             @Override
             public Path dockerfilePath() {

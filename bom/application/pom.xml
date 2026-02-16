@@ -127,7 +127,7 @@
         <db2-jdbc.version>12.1.0.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
-        <junit.jupiter.version>6.0.2</junit.jupiter.version>
+        <junit.jupiter.version>6.0.3</junit.jupiter.version>
         <infinispan.version>16.0.5</infinispan.version>
         <infinispan.protostream.version>6.0.3</infinispan.protostream.version>
         <caffeine.version>3.2.3</caffeine.version>

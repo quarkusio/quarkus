@@ -4,7 +4,6 @@ import java.util.Map;
 
 import jakarta.persistence.LockModeType;
 
-import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 
 public interface PanacheRepositoryQueries<Entity, EntityList, Query extends PanacheQuery<?, ?, ?, ?>, Count, Confirmation, Id> {
@@ -36,7 +35,6 @@ public interface PanacheRepositoryQueries<Entity, EntityList, Query extends Pana
      * @return a new {@link PanacheQuery} instance for the given query
      * @see #find(String, Sort, Object...)
      * @see #find(String, Map)
-     * @see #find(String, Parameters)
      * @see #list(String, Object...)
      * @see #stream(String, Object...)
      */
@@ -51,7 +49,6 @@ public interface PanacheRepositoryQueries<Entity, EntityList, Query extends Pana
      * @return a new {@link PanacheQuery} instance for the given query
      * @see #find(String, Object...)
      * @see #find(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
      * @see #list(String, Sort, Object...)
      * @see #stream(String, Sort, Object...)
      */
@@ -65,7 +62,6 @@ public interface PanacheRepositoryQueries<Entity, EntityList, Query extends Pana
      * @return a new {@link PanacheQuery} instance for the given query
      * @see #find(String, Sort, Map)
      * @see #find(String, Object...)
-     * @see #find(String, Parameters)
      * @see #list(String, Map)
      * @see #stream(String, Map)
      */
@@ -80,7 +76,6 @@ public interface PanacheRepositoryQueries<Entity, EntityList, Query extends Pana
      * @return a new {@link PanacheQuery} instance for the given query
      * @see #find(String, Map)
      * @see #find(String, Sort, Object...)
-     * @see #find(String, Sort, Parameters)
      * @see #list(String, Sort, Map)
      * @see #stream(String, Sort, Map)
      */
@@ -116,7 +111,6 @@ public interface PanacheRepositoryQueries<Entity, EntityList, Query extends Pana
      * @return a {@link List} containing all results, without paging
      * @see #list(String, Sort, Object...)
      * @see #list(String, Map)
-     * @see #list(String, Parameters)
      * @see #find(String, Object...)
      * @see #stream(String, Object...)
      */
@@ -132,7 +126,6 @@ public interface PanacheRepositoryQueries<Entity, EntityList, Query extends Pana
      * @return a {@link List} containing all results, without paging
      * @see #list(String, Object...)
      * @see #list(String, Sort, Map)
-     * @see #list(String, Sort, Parameters)
      * @see #find(String, Sort, Object...)
      * @see #stream(String, Sort, Object...)
      */
@@ -147,7 +140,6 @@ public interface PanacheRepositoryQueries<Entity, EntityList, Query extends Pana
      * @return a {@link List} containing all results, without paging
      * @see #list(String, Sort, Map)
      * @see #list(String, Object...)
-     * @see #list(String, Parameters)
      * @see #find(String, Map)
      * @see #stream(String, Map)
      */
@@ -163,7 +155,6 @@ public interface PanacheRepositoryQueries<Entity, EntityList, Query extends Pana
      * @return a {@link List} containing all results, without paging
      * @see #list(String, Map)
      * @see #list(String, Sort, Object...)
-     * @see #list(String, Sort, Parameters)
      * @see #find(String, Sort, Map)
      * @see #stream(String, Sort, Map)
      */
@@ -198,7 +189,6 @@ public interface PanacheRepositoryQueries<Entity, EntityList, Query extends Pana
      * @return the number of this type of entity in the database.
      * @see #count(String, Object...)
      * @see #count(String, Map)
-     * @see #count(String, Parameters)
      */
     Count count();
 
@@ -210,7 +200,6 @@ public interface PanacheRepositoryQueries<Entity, EntityList, Query extends Pana
      * @return the number of entities counted.
      * @see #count()
      * @see #count(String, Map)
-     * @see #count(String, Parameters)
      */
     Count count(String query, Object... params);
 
@@ -222,7 +211,6 @@ public interface PanacheRepositoryQueries<Entity, EntityList, Query extends Pana
      * @return the number of entities counted.
      * @see #count()
      * @see #count(String, Object...)
-     * @see #count(String, Parameters)
      */
     Count count(String query, Map<String, Object> params);
 
@@ -235,7 +223,6 @@ public interface PanacheRepositoryQueries<Entity, EntityList, Query extends Pana
      * @return the number of entities deleted.
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
-     * @see #delete(String, Parameters)
      */
     Count deleteAll();
 
@@ -258,7 +245,6 @@ public interface PanacheRepositoryQueries<Entity, EntityList, Query extends Pana
      * @return the number of entities deleted.
      * @see #deleteAll()
      * @see #delete(String, Map)
-     * @see #delete(String, Parameters)
      */
     Count delete(String query, Object... params);
 
@@ -273,7 +259,6 @@ public interface PanacheRepositoryQueries<Entity, EntityList, Query extends Pana
      * @return the number of entities deleted.
      * @see #deleteAll()
      * @see #delete(String, Object...)
-     * @see #delete(String, Parameters)
      */
     Count delete(String query, Map<String, Object> params);
 
@@ -284,7 +269,6 @@ public interface PanacheRepositoryQueries<Entity, EntityList, Query extends Pana
      * @param params optional sequence of indexed parameters
      * @return the number of entities updated.
      * @see #update(String, Map)
-     * @see #update(String, Parameters)
      */
     Count update(String query, Object... params);
 
@@ -295,7 +279,6 @@ public interface PanacheRepositoryQueries<Entity, EntityList, Query extends Pana
      * @param params {@link Map} of named parameters
      * @return the number of entities updated.
      * @see #update(String, Object...)
-     * @see #update(String, Parameters)
      */
     Count update(String query, Map<String, Object> params);
 }

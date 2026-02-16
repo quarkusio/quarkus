@@ -3,7 +3,6 @@ package io.quarkus.swaggerui.deployment;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +28,8 @@ import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.util.UriNormalizationUtil;
-import io.quarkus.devui.deployment.menu.EndpointsProcessor;
+import io.quarkus.devui.spi.Constants;
+import io.quarkus.devui.spi.DevContextBuildItem;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
@@ -121,7 +121,21 @@ public class SwaggerUiProcessor {
                             Set.of(documentPath, "quarkus.swagger-ui.path"));
                 }
 
-            String openApiPath = nonApplicationRootPathBuildItem.resolvePath(openapi.path());
+                String openApiPath;
+                if (swaggerUiConfig.rootPath().isPresent()) {
+                    URI root = UriNormalizationUtil.toURI("/", true);
+                    openApiPath = UriNormalizationUtil.normalizeWithBase(
+                            root,
+                            swaggerUiConfig.rootPath().get()
+                                    + devUIContextRoot
+                                    + nonApplicationRootPathBuildItem.resolvePath(documentPath),
+                            false).getPath();
+                } else {
+                    openApiPath = devUIContextRoot
+                            + nonApplicationRootPathBuildItem.resolvePath(documentPath);
+                }
+                urls.put(documentName, openApiPath);
+            });
 
             String swaggerUiPath = devUIContextRoot + nonApplicationRootPathBuildItem.resolvePath(swaggerUiConfig.path());
             ThemeHref theme = swaggerUiConfig.theme().orElse(ThemeHref.feeling_blue);

@@ -48,7 +48,7 @@
         <version.jandex>3.5.3</version.jandex>
         <version.gizmo2>2.1.1</version.gizmo2>
         <version.jboss-logging>3.6.2.Final</version.jboss-logging>
-        <version.mutiny>3.1.0</version.mutiny>
+        <version.mutiny>3.1.1</version.mutiny>
         <version.bridger>1.6.Final</version.bridger>
         <version.smallrye-common>2.16.0</version.smallrye-common>
         <!-- test versions -->

@@ -44,7 +44,7 @@
         <version.gizmo2>2.1.1</version.gizmo2>
         <version.jboss-logging>3.6.2.Final</version.jboss-logging>
         <version.smallrye-common>2.16.0</version.smallrye-common>
-        <version.smallrye-mutiny>3.1.0</version.smallrye-mutiny>
+        <version.smallrye-mutiny>3.1.1</version.smallrye-mutiny>
         <version.lsp4j>0.24.0</version.lsp4j>
     </properties>
 

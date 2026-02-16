@@ -55,6 +55,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.EffectiveJarTypeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
@@ -82,13 +83,14 @@ public class AzureFunctionsProcessor {
             OutputTargetBuildItem target,
             AzureFunctionsConfig functionsConfig,
             PackageConfig packageConfig,
+            EffectiveJarTypeBuildItem effectiveJarType,
             AzureFunctionsAppNameBuildItem appName,
             JarBuildItem jar) throws Exception {
         if (functions == null || functions.isEmpty()) {
             log.warn("No azure functions exist in deployment");
             return null;
         }
-        if (packageConfig.jar().type() != PackageConfig.JarConfig.JarType.LEGACY_JAR) {
+        if (effectiveJarType.getJarType() != PackageConfig.JarConfig.JarType.LEGACY_JAR) {
             throw new BuildException("Azure Function deployment need to use a legacy JAR, " +
                     "please set 'quarkus.package.jar.type=legacy-jar' inside your application.properties",
                     List.of());

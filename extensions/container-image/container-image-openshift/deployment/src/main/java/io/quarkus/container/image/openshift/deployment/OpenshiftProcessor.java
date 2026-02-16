@@ -66,6 +66,7 @@ import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.EffectiveJarTypeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
@@ -242,6 +243,7 @@ public class OpenshiftProcessor {
             KubernetesClientBuildItem kubernetesClientBuilder,
             ContainerImageInfoBuildItem containerImage,
             ArchiveRootBuildItem archiveRoot, OutputTargetBuildItem out, PackageConfig packageConfig,
+            EffectiveJarTypeBuildItem effectiveJarType,
             List<GeneratedFileSystemResourceBuildItem> generatedResources,
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
@@ -278,7 +280,7 @@ public class OpenshiftProcessor {
             //For docker kind of builds where we use instructions like: `COPY target/*.jar /deployments` it using '/target' is a requirement.
             //For s2i kind of builds where jars are expected directly in the '/' we have to use null.
             String outputDirName = out.getOutputDirectory().getFileName().toString();
-            PackageConfig.JarConfig.JarType jarType = packageConfig.jar().type();
+            PackageConfig.JarConfig.JarType jarType = effectiveJarType.getJarType();
             String contextRoot = getContextRoot(outputDirName, jarType.usesFastJarLayout(),
                     config.buildStrategy());
             KubernetesClientBuilder clientBuilder = newClientBuilderWithoutHttp2(kubernetesClient.getConfiguration(),
@@ -293,7 +295,7 @@ public class OpenshiftProcessor {
                 createContainerImage(clientBuilder, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(),
                         jar.getPath());
             }
-            artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
+            artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Map.of()));
             containerImageBuilder.produce(new ContainerImageBuilderBuildItem(OPENSHIFT));
         }
     }

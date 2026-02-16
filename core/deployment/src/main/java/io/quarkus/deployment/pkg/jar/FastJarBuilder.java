@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
-import org.jboss.logging.Logger;
-
 import io.quarkus.bootstrap.runner.QuarkusEntryPoint;
 import io.quarkus.bootstrap.runner.SerializedApplication;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveBuildItem;
@@ -21,17 +19,17 @@ import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.EffectiveJarTypeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 
 public class FastJarBuilder extends AbstractFastJarBuilder {
 
-    private static final Logger LOG = Logger.getLogger(FastJarBuilder.class);
-
     public FastJarBuilder(CurateOutcomeBuildItem curateOutcome,
             OutputTargetBuildItem outputTarget,
             ApplicationInfoBuildItem applicationInfo,
             PackageConfig packageConfig,
+            EffectiveJarTypeBuildItem effectiveJarType,
             MainClassBuildItem mainClass,
             ApplicationArchivesBuildItem applicationArchives,
             List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchives,
@@ -42,7 +40,7 @@ public class FastJarBuilder extends AbstractFastJarBuilder {
             Set<ArtifactKey> removedArtifactKeys,
             ExecutorService executorService,
             ResolvedJVMRequirements jvmRequirements) {
-        super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives,
+        super(curateOutcome, outputTarget, applicationInfo, packageConfig, effectiveJarType, mainClass, applicationArchives,
                 additionalApplicationArchives, transformedClasses, generatedClasses, generatedResources,
                 parentFirstArtifactKeys, removedArtifactKeys, executorService, jvmRequirements);
     }

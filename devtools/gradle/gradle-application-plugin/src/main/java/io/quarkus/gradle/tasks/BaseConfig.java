@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType;
 import io.quarkus.gradle.dsl.Manifest;
 
 /**
@@ -48,7 +49,14 @@ final class BaseConfig {
     }
 
     PackageConfig.JarConfig.JarType jarType() {
-        return packageConfig().jar().type();
+        // unfortunately, we have to duplicate the logic that leads to EffectiveJarTypeBuildItem here
+        if (packageConfig.jar().type().isPresent()) {
+            return packageConfig.jar().type().get();
+        }
+        if (packageConfig.jar().aot().enabled()) {
+            return JarType.AOT_JAR;
+        }
+        return JarType.FAST_JAR;
     }
 
     Manifest manifest() {
@@ -57,7 +65,7 @@ final class BaseConfig {
 
     Map<String, String> cachingRelevantProperties(List<String> propertyPatterns) {
         List<Pattern> patterns = propertyPatterns.stream().map(s -> "^(" + s + ")$").map(Pattern::compile)
-                .collect(Collectors.toList());
+                .toList();
         readMissingEnvVariables(propertyPatterns);
         Predicate<Map.Entry<String, ?>> keyPredicate = e -> patterns.stream().anyMatch(p -> p.matcher(e.getKey()).matches());
         return values.entrySet().stream()

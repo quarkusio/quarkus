@@ -28,9 +28,11 @@ import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.configuration.ClassLoadingConfig;
 import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.EffectiveJarTypeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveRequestedBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
@@ -62,6 +64,21 @@ import io.quarkus.maven.dependency.GACT;
  * build items and transform them into {@link ArtifactResultBuildItem}.
  */
 public class JarResultBuildStep {
+
+    @BuildStep
+    EffectiveJarTypeBuildItem resolveEffectiveJarType(PackageConfig packageConfig) {
+        // if you adjust the logic here, make sure you also adjust Gradle's BaseConfig
+        // note that we may not move this logic to PackageConfig (e.g. with an effectiveType() method),
+        // because it would defeat the ConfigTrackingInterceptor
+
+        if (packageConfig.jar().type().isPresent()) {
+            return new EffectiveJarTypeBuildItem(packageConfig.jar().type().get());
+        }
+        if (packageConfig.jar().aot().enabled()) {
+            return new EffectiveJarTypeBuildItem(JarType.AOT_JAR);
+        }
+        return new EffectiveJarTypeBuildItem(JarType.FAST_JAR);
+    }
 
     @BuildStep
     OutputTargetBuildItem outputTarget(BuildSystemTargetBuildItem bst, PackageConfig packageConfig) {
@@ -97,6 +114,7 @@ public class JarResultBuildStep {
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             ApplicationInfoBuildItem applicationInfo,
             PackageConfig packageConfig,
+            EffectiveJarTypeBuildItem effectiveJarType,
             ClassLoadingConfig classLoadingConfig,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
@@ -116,11 +134,12 @@ public class JarResultBuildStep {
         Set<ArtifactKey> removedArtifactKeys = getRemovedArtifactKeys(classLoadingConfig);
         Set<ArtifactKey> parentFirstArtifactKeys = getParentFirstArtifactKeys(curateOutcomeBuildItem, classLoadingConfig);
 
-        return switch (packageConfig.jar().type()) {
+        return switch (effectiveJarType.getJarType()) {
             case UBER_JAR -> new UberJarBuilder(curateOutcomeBuildItem,
                     outputTargetBuildItem,
                     applicationInfo,
                     packageConfig,
+                    effectiveJarType,
                     mainClassBuildItem,
                     applicationArchivesBuildItem,
                     transformedClasses,
@@ -135,6 +154,7 @@ public class JarResultBuildStep {
                     outputTargetBuildItem,
                     applicationInfo,
                     packageConfig,
+                    effectiveJarType,
                     mainClassBuildItem,
                     applicationArchivesBuildItem,
                     transformedClasses,
@@ -147,6 +167,7 @@ public class JarResultBuildStep {
                     outputTargetBuildItem,
                     applicationInfo,
                     packageConfig,
+                    effectiveJarType,
                     mainClassBuildItem,
                     applicationArchivesBuildItem,
                     additionalApplicationArchiveBuildItems,
@@ -161,6 +182,7 @@ public class JarResultBuildStep {
                     outputTargetBuildItem,
                     applicationInfo,
                     packageConfig,
+                    effectiveJarType,
                     mainClassBuildItem,
                     applicationArchivesBuildItem,
                     additionalApplicationArchiveBuildItems,
@@ -184,6 +206,7 @@ public class JarResultBuildStep {
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             ApplicationInfoBuildItem applicationInfo,
             PackageConfig packageConfig,
+            EffectiveJarTypeBuildItem effectiveJarType,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedNativeImageClassBuildItem> nativeImageResources,
             List<GeneratedResourceBuildItem> generatedResources,
@@ -196,6 +219,7 @@ public class JarResultBuildStep {
                 outputTargetBuildItem,
                 applicationInfo,
                 packageConfig,
+                effectiveJarType,
                 mainClassBuildItem,
                 applicationArchivesBuildItem,
                 transformedClasses,

@@ -44,6 +44,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.deployment.pkg.builditem.EffectiveJarTypeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.kubernetes.spi.ConfigurationSupplierBuildItem;
@@ -98,6 +99,7 @@ class KubernetesProcessor {
     public void build(ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget,
             PackageConfig packageConfig,
+            EffectiveJarTypeBuildItem effectiveJarType,
             KubernetesConfig kubernetesConfig,
             OpenShiftConfig openshiftConfig,
             KnativeConfig knativeConfig,
@@ -131,7 +133,7 @@ class KubernetesProcessor {
                 .map(DeploymentTargetEntry::getName)
                 .collect(Collectors.toSet());
 
-        Path artifactPath = getRunner(outputTarget, packageConfig);
+        Path artifactPath = getRunner(outputTarget, packageConfig, effectiveJarType);
 
         try {
             // by passing false to SimpleFileWriter, we ensure that no files are actually written during this phase
@@ -265,9 +267,8 @@ class KubernetesProcessor {
      * https://github.com/quarkusio/quarkus/pull/20113).
      */
     private Path getRunner(OutputTargetBuildItem outputTarget,
-            PackageConfig packageConfig) {
-        PackageConfig.JarConfig.JarType jarType = packageConfig.jar().type();
-        return switch (jarType) {
+            PackageConfig packageConfig, EffectiveJarTypeBuildItem effectiveJarType) {
+        return switch (effectiveJarType.getJarType()) {
             case LEGACY_JAR, UBER_JAR -> outputTarget.getOutputDirectory()
                     .resolve(outputTarget.getBaseName() + packageConfig.computedRunnerSuffix() + ".jar");
             case FAST_JAR, MUTABLE_JAR, AOT_JAR -> {

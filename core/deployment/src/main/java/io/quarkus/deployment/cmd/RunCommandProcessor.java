@@ -13,6 +13,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
+import io.quarkus.deployment.pkg.builditem.EffectiveJarTypeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 
 public class RunCommandProcessor {
@@ -27,11 +28,12 @@ public class RunCommandProcessor {
     @SuppressWarnings("deprecation") // legacy jar
     @BuildStep
     public void defaultJavaCommand(PackageConfig packageConfig,
+            EffectiveJarTypeBuildItem effectiveJarType,
             OutputTargetBuildItem jar,
             BuildProducer<RunCommandActionBuildItem> cmds,
             BuildSystemTargetBuildItem buildSystemTarget) {
 
-        Path jarPath = switch (packageConfig.jar().type()) {
+        Path jarPath = switch (effectiveJarType.getJarType()) {
             case UBER_JAR -> jar.getOutputDirectory()
                     .resolve(jar.getBaseName() + packageConfig.computedRunnerSuffix() + ".jar");
             // todo: legacy JAR should be using runnerSuffix()

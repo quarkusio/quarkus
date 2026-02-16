@@ -26,6 +26,7 @@ import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildAotOptimizedContainerImageRequestBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildAotOptimizedContainerImageResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
+import io.quarkus.deployment.pkg.builditem.EffectiveJarTypeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
@@ -63,12 +64,13 @@ public class DockerProcessor extends CommonProcessor<DockerConfig> {
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder,
             PackageConfig packageConfig,
+            EffectiveJarTypeBuildItem effectiveJarType,
             @SuppressWarnings("unused") JarBuildItem jar// used to ensure that the jar has been built
     ) {
 
         buildFromJar(dockerConfig, dockerStatusBuildItem, containerImageConfig, out, containerImageInfo,
                 buildRequest, pushRequest, artifactResultProducer, containerImageBuilder, packageConfig,
-                ContainerRuntime.DOCKER, ContainerRuntime.PODMAN);
+                effectiveJarType, ContainerRuntime.DOCKER, ContainerRuntime.PODMAN);
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, NativeBuild.class, DockerBuild.class })
@@ -87,8 +89,8 @@ public class DockerProcessor extends CommonProcessor<DockerConfig> {
             NativeImageBuildItem nativeImage) {
 
         buildFromNativeImage(dockerConfig, dockerStatusBuildItem, containerImageConfig, containerImage,
-                buildRequest, pushRequest, out, artifactResultProducer, containerImageBuilder, packageConfig, nativeImage,
-                ContainerRuntime.DOCKER, ContainerRuntime.PODMAN);
+                buildRequest, pushRequest, out, artifactResultProducer, containerImageBuilder, packageConfig,
+                nativeImage, ContainerRuntime.DOCKER, ContainerRuntime.PODMAN);
     }
 
     @Override

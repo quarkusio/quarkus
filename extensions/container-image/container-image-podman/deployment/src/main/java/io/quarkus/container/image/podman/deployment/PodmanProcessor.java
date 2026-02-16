@@ -25,6 +25,7 @@ import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildAotOptimizedContainerImageRequestBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildAotOptimizedContainerImageResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
+import io.quarkus.deployment.pkg.builditem.EffectiveJarTypeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
@@ -62,10 +63,13 @@ public class PodmanProcessor extends CommonProcessor<PodmanConfig> {
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder,
             PackageConfig packageConfig,
-            @SuppressWarnings("unused") JarBuildItem jar) {
+            EffectiveJarTypeBuildItem effectiveJarType,
+            @SuppressWarnings("unused") JarBuildItem jar// used to ensure that the jar has been built
+    ) {
 
         buildFromJar(podmanConfig, podmanStatusBuildItem, containerImageConfig, out, containerImageInfo, buildRequest,
-                pushRequest, artifactResultProducer, containerImageBuilder, packageConfig, ContainerRuntime.PODMAN);
+                pushRequest, artifactResultProducer, containerImageBuilder, packageConfig, effectiveJarType,
+                ContainerRuntime.PODMAN);
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, NativeBuild.class, PodmanBuild.class })
@@ -84,8 +88,8 @@ public class PodmanProcessor extends CommonProcessor<PodmanConfig> {
             NativeImageBuildItem nativeImage) {
 
         buildFromNativeImage(podmanConfig, podmanStatusBuildItem, containerImageConfig, containerImage,
-                buildRequest, pushRequest, out, artifactResultProducer, containerImageBuilder, packageConfig, nativeImage,
-                ContainerRuntime.PODMAN);
+                buildRequest, pushRequest, out, artifactResultProducer, containerImageBuilder, packageConfig,
+                nativeImage, ContainerRuntime.PODMAN);
     }
 
     @Override

@@ -83,6 +83,7 @@ import io.quarkus.deployment.pkg.builditem.BuildAotOptimizedContainerImageReques
 import io.quarkus.deployment.pkg.builditem.BuildAotOptimizedContainerImageResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.EffectiveJarTypeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveContainerImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveResultBuildItem;
@@ -156,6 +157,7 @@ public class JibProcessor {
     @BuildStep(onlyIf = { IsProduction.class, JibBuild.class }, onlyIfNot = NativeBuild.class)
     public void buildFromJar(ContainerImageConfig containerImageConfig, ContainerImageJibConfig jibConfig,
             PackageConfig packageConfig,
+            EffectiveJarTypeBuildItem effectiveJarType,
             ContainerImageInfoBuildItem containerImage,
             JarBuildItem sourceJar,
             MainClassBuildItem mainClass,
@@ -176,7 +178,7 @@ public class JibProcessor {
         }
 
         JibContainerBuilder jibContainerBuilder;
-        PackageConfig.JarConfig.JarType jarType = packageConfig.jar().type();
+        PackageConfig.JarConfig.JarType jarType = effectiveJarType.getJarType();
         jibContainerBuilder = switch (jarType) {
             case LEGACY_JAR, UBER_JAR ->
                 createContainerBuilderFromLegacyJar(determineBaseJvmImage(jibConfig, compiledJavaVersion),

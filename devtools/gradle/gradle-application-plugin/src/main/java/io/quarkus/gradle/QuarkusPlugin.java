@@ -612,7 +612,7 @@ public class QuarkusPlugin implements Plugin<Project> {
         task.getOutputDirectory()
                 .set(Path.of(quarkusExt.packageConfig().outputDirectory().map(Path::toString)
                         .orElse(QuarkusPlugin.DEFAULT_OUTPUT_DIRECTORY)));
-        task.getJarType().set(quarkusExt.packageConfig().jar().type());
+        task.getJarType().set(quarkusExt.effectiveJarType());
         task.getManifestAttributes().set(quarkusExt.manifest().getAttributes());
         task.getManifestSections().set(quarkusExt.manifest().getSections());
 

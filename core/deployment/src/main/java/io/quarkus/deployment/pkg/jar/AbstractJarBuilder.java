@@ -33,6 +33,7 @@ import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.EffectiveJarTypeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
@@ -47,6 +48,7 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
     protected final OutputTargetBuildItem outputTarget;
     protected final ApplicationInfoBuildItem applicationInfo;
     protected final PackageConfig packageConfig;
+    protected final EffectiveJarTypeBuildItem effectiveJarType;
     protected final MainClassBuildItem mainClass;
     protected final ApplicationArchivesBuildItem applicationArchives;
     protected final TransformedClassesBuildItem transformedClasses;
@@ -60,6 +62,7 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
             OutputTargetBuildItem outputTarget,
             ApplicationInfoBuildItem applicationInfo,
             PackageConfig packageConfig,
+            EffectiveJarTypeBuildItem effectiveJarType,
             MainClassBuildItem mainClass,
             ApplicationArchivesBuildItem applicationArchives,
             TransformedClassesBuildItem transformedClasses,
@@ -72,6 +75,7 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
         this.outputTarget = outputTarget;
         this.applicationInfo = applicationInfo;
         this.packageConfig = packageConfig;
+        this.effectiveJarType = effectiveJarType;
         this.mainClass = mainClass;
         this.applicationArchives = applicationArchives;
         this.transformedClasses = transformedClasses;

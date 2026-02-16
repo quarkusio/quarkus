@@ -19,6 +19,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.deployment.pkg.builditem.EffectiveJarTypeBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarIgnoredResourceBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarMergedResourceBuildItem;
 
@@ -34,8 +35,8 @@ public class UberJarConfigBuildStep {
 
     @BuildStep
     void uberJarMergedResourceBuildItem(BuildProducer<GeneratedResourceBuildItem> generatedResourcesProducer,
-            PackageConfig packageConfig) {
-        if (packageConfig.jar().type() == UBER_JAR) {
+            PackageConfig packageConfig, EffectiveJarTypeBuildItem effectiveJarType) {
+        if (effectiveJarType.getJarType() == UBER_JAR) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             try {
                 XmlCombiner combiner = new XmlCombiner();

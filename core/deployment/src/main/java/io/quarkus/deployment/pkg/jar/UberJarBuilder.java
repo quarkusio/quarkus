@@ -28,6 +28,7 @@ import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.EffectiveJarTypeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarIgnoredResourceBuildItem;
@@ -65,6 +66,7 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             OutputTargetBuildItem outputTarget,
             ApplicationInfoBuildItem applicationInfo,
             PackageConfig packageConfig,
+            EffectiveJarTypeBuildItem effectiveJarType,
             MainClassBuildItem mainClass,
             ApplicationArchivesBuildItem applicationArchives,
             TransformedClassesBuildItem transformedClasses,
@@ -75,8 +77,9 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             List<UberJarIgnoredResourceBuildItem> ignoredResources,
             ExecutorService executorService,
             ResolvedJVMRequirements jvmRequirements) {
-        super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
-                generatedClasses, generatedResources, removedArtifactKeys, executorService, jvmRequirements);
+        super(curateOutcome, outputTarget, applicationInfo, packageConfig, effectiveJarType, mainClass,
+                applicationArchives, transformedClasses, generatedClasses, generatedResources, removedArtifactKeys,
+                executorService, jvmRequirements);
 
         this.mergedResources = mergedResources;
         this.ignoredResources = ignoredResources;

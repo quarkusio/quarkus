@@ -28,6 +28,7 @@ import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 import io.quarkus.deployment.pkg.JarUnsigner;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.EffectiveJarTypeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
@@ -38,6 +39,7 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
             OutputTargetBuildItem outputTarget,
             ApplicationInfoBuildItem applicationInfo,
             PackageConfig packageConfig,
+            EffectiveJarTypeBuildItem effectiveJarType,
             MainClassBuildItem mainClass,
             ApplicationArchivesBuildItem applicationArchives,
             TransformedClassesBuildItem transformedClasses,
@@ -46,8 +48,9 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
             Set<ArtifactKey> removedArtifactKeys,
             ExecutorService executorService,
             ResolvedJVMRequirements jvmRequirements) {
-        super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
-                generatedClasses, generatedResources, removedArtifactKeys, executorService, jvmRequirements);
+        super(curateOutcome, outputTarget, applicationInfo, packageConfig, effectiveJarType, mainClass,
+                applicationArchives, transformedClasses, generatedClasses, generatedResources, removedArtifactKeys,
+                executorService, jvmRequirements);
     }
 
     public abstract T build() throws IOException;

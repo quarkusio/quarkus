@@ -27,6 +27,7 @@ import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.EffectiveJarTypeBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -40,6 +41,7 @@ public class NativeImageSourceJarBuilder extends AbstractLegacyThinJarBuilder<Na
             OutputTargetBuildItem outputTarget,
             ApplicationInfoBuildItem applicationInfo,
             PackageConfig packageConfig,
+            EffectiveJarTypeBuildItem effectiveJarType,
             MainClassBuildItem mainClass,
             ApplicationArchivesBuildItem applicationArchives,
             TransformedClassesBuildItem transformedClasses,
@@ -49,7 +51,8 @@ public class NativeImageSourceJarBuilder extends AbstractLegacyThinJarBuilder<Na
             Set<ArtifactKey> removedArtifactKeys,
             ExecutorService executorService,
             ResolvedJVMRequirements jvmRequirements) {
-        super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
+        super(curateOutcome, outputTarget, applicationInfo, packageConfig, effectiveJarType, mainClass,
+                applicationArchives, transformedClasses,
                 augmentGeneratedClasses(generatedClasses, nativeImageResources), generatedResources,
                 augmentRemovedArtifactKeys(removedArtifactKeys), executorService, jvmRequirements);
     }

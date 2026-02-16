@@ -120,7 +120,8 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
-import io.quarkus.deployment.pkg.AotJarEnabled;
+import io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType;
+import io.quarkus.deployment.pkg.builditem.EffectiveJarTypeBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.IoUtil;
@@ -894,12 +895,16 @@ public final class HibernateOrmProcessor {
      * So point of this method is to generate an empty package-info in packages where we have a mapped class,
      * if there isn't a package-info already.
      */
-    @BuildStep(onlyIf = AotJarEnabled.class, onlyIfNot = NativeOrNativeSourcesBuild.class)
+    @BuildStep(onlyIfNot = NativeOrNativeSourcesBuild.class)
     void generateMissingPackageInfos(CombinedIndexBuildItem combinedIndex,
             JpaModelBuildItem jpaModel,
             List<ApplicationClassPredicateBuildItem> predicates,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
-            BuildProducer<GeneratedResourceBuildItem> generatedResources) {
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            EffectiveJarTypeBuildItem effectiveJarType) {
+        if (effectiveJarType.getJarType() != JarType.AOT_JAR) {
+            return;
+        }
 
         IndexView index = combinedIndex.getIndex();
 

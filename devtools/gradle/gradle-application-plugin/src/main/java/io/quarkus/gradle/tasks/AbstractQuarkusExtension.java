@@ -25,6 +25,7 @@ import org.gradle.process.JavaForkOptions;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType;
 import io.quarkus.gradle.dsl.Manifest;
 import io.quarkus.maven.dependency.ResolvedDependency;
 
@@ -112,6 +113,10 @@ public abstract class AbstractQuarkusExtension {
 
     public PackageConfig packageConfig() {
         return baseConfig().packageConfig();
+    }
+
+    public JarType effectiveJarType() {
+        return baseConfig().jarType();
     }
 
     public Map<String, String> cachingRelevantProperties(List<String> propertyPatterns) {

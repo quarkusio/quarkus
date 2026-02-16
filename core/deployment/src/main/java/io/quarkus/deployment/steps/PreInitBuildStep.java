@@ -13,7 +13,8 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.PreInitBuildItem;
 import io.quarkus.deployment.builditem.PreInitRunnableBuildItem;
-import io.quarkus.deployment.pkg.AotJarEnabled;
+import io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType;
+import io.quarkus.deployment.pkg.builditem.EffectiveJarTypeBuildItem;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Const;
@@ -37,10 +38,14 @@ public class PreInitBuildStep {
      * For now, this is only used when using the AOT runner.
      * We might want to also use it for fast-jar at some point but let's be safe for now.
      */
-    @BuildStep(onlyIf = AotJarEnabled.class)
     PreInitBuildItem executePreInitTasks(List<PreInitRunnableBuildItem> preInitRunnables,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
-            BuildProducer<GeneratedResourceBuildItem> generatedResources) {
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            EffectiveJarTypeBuildItem effectiveJarType) {
+        if (effectiveJarType.getJarType() != JarType.AOT_JAR) {
+            return null;
+        }
+
         ClassOutput output = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources, false);
         Gizmo gizmo = Gizmo.create(output)
                 .withDebugInfo(false)

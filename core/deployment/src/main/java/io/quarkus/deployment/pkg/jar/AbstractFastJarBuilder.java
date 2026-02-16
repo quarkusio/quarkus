@@ -50,6 +50,7 @@ import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 import io.quarkus.deployment.pkg.JarUnsigner;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.EffectiveJarTypeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.util.FileUtil;
@@ -70,6 +71,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             OutputTargetBuildItem outputTarget,
             ApplicationInfoBuildItem applicationInfo,
             PackageConfig packageConfig,
+            EffectiveJarTypeBuildItem effectiveJarType,
             MainClassBuildItem mainClass,
             ApplicationArchivesBuildItem applicationArchives,
             List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchives,
@@ -80,8 +82,9 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             Set<ArtifactKey> removedArtifactKeys,
             ExecutorService executorService,
             ResolvedJVMRequirements jvmRequirements) {
-        super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
-                generatedClasses, generatedResources, removedArtifactKeys, executorService, jvmRequirements);
+        super(curateOutcome, outputTarget, applicationInfo, packageConfig, effectiveJarType, mainClass,
+                applicationArchives, transformedClasses, generatedClasses, generatedResources, removedArtifactKeys,
+                executorService, jvmRequirements);
         this.additionalApplicationArchives = additionalApplicationArchives;
         this.parentFirstArtifactKeys = parentFirstArtifactKeys;
     }
@@ -268,7 +271,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 .setPath(initJar)
                 .setDependencies(List.of(curateOutcome.getApplicationModel().getAppArtifact())))
                 .setRunnerPath(initJar);
-        boolean mutableJar = packageConfig.jar().type() == MUTABLE_JAR;
+        boolean mutableJar = effectiveJarType.getJarType() == MUTABLE_JAR;
         if (mutableJar) {
             //we output the properties in a reproducible manner, so we remove the date comment
             //and sort them
@@ -366,7 +369,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 }
             });
         }
-        return new JarBuildItem(initJar, null, libDir, packageConfig.jar().type(), null, manifestConfig.build());
+        return new JarBuildItem(initJar, null, libDir, effectiveJarType.getJarType(), null, manifestConfig.build());
     }
 
     protected abstract void writeSerializedApplication(OutputStream out, Path buildDir, List<Path> allJars,
@@ -396,7 +399,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             return;
         }
         Set<GACT> forceUseArtifactIdOnlyAsNameSet = packageConfig.jar().forceUseArtifactIdOnlyAsName()
-                .orElse(Collections.emptySet());
+                .orElse(Set.of());
         boolean forceUseArtifactIdOnlyAsName = forceUseArtifactIdOnlyAsNameSet.stream()
                 .anyMatch(gact -> gact.getGroupId().equals(appDep.getGroupId())
                         && gact.getArtifactId().equals(appDep.getArtifactId())

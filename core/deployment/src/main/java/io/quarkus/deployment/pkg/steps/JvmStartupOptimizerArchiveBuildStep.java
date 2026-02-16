@@ -22,6 +22,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
+import io.quarkus.deployment.pkg.builditem.EffectiveJarTypeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveContainerImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveRequestedBuildItem;
@@ -96,6 +97,7 @@ public class JvmStartupOptimizerArchiveBuildStep {
     @BuildStep(onlyIfNot = NativeOrNativeSourcesBuild.class)
     public void build(Optional<JvmStartupOptimizerArchiveRequestedBuildItem> requested,
             JarBuildItem jarResult, OutputTargetBuildItem outputTarget, PackageConfig packageConfig,
+            EffectiveJarTypeBuildItem effectiveJarType,
             CompiledJavaVersionBuildItem compiledJavaVersion,
             Optional<JvmStartupOptimizerArchiveContainerImageBuildItem> jvmStartupOptimizerArchiveContainerImage,
             BuildProducer<JvmStartupOptimizerArchiveResultBuildItem> jvmStartupOptimizerArchive,
@@ -122,7 +124,7 @@ public class JvmStartupOptimizerArchiveBuildStep {
         Path archivePath;
         JvmStartupOptimizerArchiveType archiveType = requested.get().getType();
         log.infof("Launching %s creation process.", archiveType);
-        boolean isFastJar = packageConfig.jar().type().usesFastJarLayout();
+        boolean isFastJar = effectiveJarType.getJarType().usesFastJarLayout();
         if (archiveType == JvmStartupOptimizerArchiveType.AppCDS) {
             archivePath = createAppCDSFromExit(jarResult, outputTarget, javaBinPath, containerImage,
                     isFastJar);

@@ -23,6 +23,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.EffectiveJarTypeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
@@ -49,10 +50,11 @@ public class FunctionZipProcessor {
     @BuildStep(onlyIf = IsProduction.class, onlyIfNot = NativeBuild.class)
     public void jvmZip(OutputTargetBuildItem target,
             PackageConfig packageConfig,
+            EffectiveJarTypeBuildItem effectiveJarType,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             JarBuildItem jar) throws Exception {
 
-        if (packageConfig.jar().type() != PackageConfig.JarConfig.JarType.LEGACY_JAR) {
+        if (effectiveJarType.getJarType() != PackageConfig.JarConfig.JarType.LEGACY_JAR) {
             throw new BuildException("Lambda deployments need to use a legacy JAR, " +
                     "please set 'quarkus.package.jar.type=legacy-jar' inside your application.properties",
                     List.of());

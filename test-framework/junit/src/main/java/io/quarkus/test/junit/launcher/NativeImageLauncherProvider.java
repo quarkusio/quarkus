@@ -45,6 +45,7 @@ public class NativeImageLauncherProvider implements ArtifactLauncherProvider {
                     config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
                     config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
                     testConfig.waitTime(),
+                    config.getOptionalValue("quarkus.shutdown.timeout", Duration.class).orElse(Duration.ZERO),
                     testConfig.integrationTestProfile(),
                     TestConfigUtil.argLineValues(testConfig.argLine().orElse("")),
                     testConfig.env(),
@@ -65,11 +66,12 @@ public class NativeImageLauncherProvider implements ArtifactLauncherProvider {
         private final Class<?> testClass;
         private final String configuredOutputDirectory;
 
-        public DefaultNativeImageInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile,
+        public DefaultNativeImageInitContext(int httpPort, int httpsPort, Duration waitTime, Duration shutdownTimeout,
+                String testProfile,
                 List<String> argLine, Map<String, String> env,
                 ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult,
                 String nativeImagePath, String configuredOutputDirectory, Class<?> testClass) {
-            super(httpPort, httpsPort, waitTime, testProfile, argLine, env, devServicesLaunchResult);
+            super(httpPort, httpsPort, waitTime, shutdownTimeout, testProfile, argLine, env, devServicesLaunchResult);
             this.nativeImagePath = nativeImagePath;
             this.configuredOutputDirectory = configuredOutputDirectory;
             this.testClass = testClass;

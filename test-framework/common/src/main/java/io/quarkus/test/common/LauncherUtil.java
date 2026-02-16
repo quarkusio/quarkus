@@ -12,6 +12,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -136,9 +137,13 @@ public final class LauncherUtil {
      * and resort to forceful destruction if necessary
      */
     static void destroyProcess(Process quarkusProcess) {
+        destroyProcess(quarkusProcess, Duration.ofSeconds(10));
+    }
+
+    public static void destroyProcess(Process quarkusProcess, Duration waitTime) {
         quarkusProcess.destroy();
-        int i = 0;
-        while (i++ < 200) {
+        Instant max = Instant.now().plus(waitTime);
+        while (Instant.now().isBefore(max)) {
             try {
                 Thread.sleep(LOG_CHECK_INTERVAL);
             } catch (InterruptedException ignored) {

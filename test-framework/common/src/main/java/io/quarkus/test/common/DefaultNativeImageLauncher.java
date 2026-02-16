@@ -12,6 +12,7 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.CodeSource;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -36,6 +37,7 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
     private int httpPort;
     private int httpsPort;
     private long waitTimeSeconds;
+    private Duration shutdownTimeout;
     private String testProfile;
     private List<String> argLine;
     private Map<String, String> env;
@@ -53,6 +55,7 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
         this.httpPort = initContext.httpPort();
         this.httpsPort = initContext.httpsPort();
         this.waitTimeSeconds = initContext.waitTime().getSeconds();
+        this.shutdownTimeout = initContext.shutdownTimeout();
         this.testProfile = initContext.testProfile();
         this.nativeImagePath = initContext.nativeImagePath();
         this.configuredOutputDirectory = initContext.getConfiguredOutputDirectory();

@@ -55,10 +55,10 @@
         <gizmo.version>1.10.1</gizmo.version>
         <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version>
 
-        <mutiny.version>3.1.0</mutiny.version>
-        <smallrye-mutiny-vertx-core.version>3.21.4</smallrye-mutiny-vertx-core.version>
+        <mutiny.version>3.1.1</mutiny.version>
+        <smallrye-mutiny-vertx-core.version>3.21.5</smallrye-mutiny-vertx-core.version>
         <smallrye-common.version>2.16.0</smallrye-common.version>
-        <vertx.version>4.5.24</vertx.version>
+        <vertx.version>4.5.25</vertx.version>
         <rest-assured.version>5.5.6</rest-assured.version>
         <commons-logging-jboss-logging.version>2.0.0.Final</commons-logging-jboss-logging.version>
         <jackson-bom.version>2.21.0</jackson-bom.version>

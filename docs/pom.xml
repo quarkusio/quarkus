@@ -3540,7 +3540,7 @@
                             <skip>${skipDocs}</skip>
                             <backend>html5</backend>
                             <attributes>
-                                <source-highlighter>coderay</source-highlighter>
+                                <source-highlighter>rouge</source-highlighter>
                                 <!-- avoid content security policy violations -->
                                 <linkcss>true</linkcss>
                                 <copycss>true</copycss>
@@ -3701,7 +3701,7 @@
                                     <skip>${skipDocs}</skip>
                                     <backend>pdf</backend>
                                     <outputDirectory>${project.build.directory}/generated-docs-pdf</outputDirectory>
-                                    <sourceHighlighter>coderay</sourceHighlighter>
+                                    <sourceHighlighter>rouge</sourceHighlighter>
                                     <attributes>
                                         <pdf-stylesdir>${basedir}/src/main/resources/theme</pdf-stylesdir>
                                         <pdf-style>quarkus</pdf-style>

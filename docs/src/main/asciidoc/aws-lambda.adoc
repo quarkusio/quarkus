@@ -87,7 +87,8 @@ with an environment variable too.
 
 If you look at the three generated handler classes in the project, you'll see that they are `@Named` differently.
 
-[source,java,subs=attributes+]
+[source,java,subs=attributes+,role="primary asciidoc-tabs-sync-java"]
+.Java
 ----
 @Named("test")
 public class TestLambda implements RequestHandler<InputObject, OutputObject> {
@@ -100,6 +101,19 @@ public class UnusedLambda implements RequestHandler<InputObject, OutputObject> {
 @Named("stream")
 public class StreamLambda implements RequestStreamHandler {
 }
+----
+
+[source,kotlin,subs=attributes+,role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin
+----
+@Named("test")
+class TestLambda : RequestHandler<InputObject, OutputObject> {}
+
+@Named("unused")
+class UnusedLambda : RequestHandler<InputObject, OutputObject> {}
+
+@Named("stream")
+class StreamLambda : RequestStreamHandler {}
 ----
 
 The CDI name of the handler class must match the value specified within the `quarkus.lambda.handler` property.
@@ -321,7 +335,8 @@ The default port for Rest Assured is automatically set to 8081 by Quarkus, so yo
 on this endpoint.
 
 
-[source,java]
+[source,java,role="primary asciidoc-tabs-sync-java"]
+.Java
 ----
 import org.junit.jupiter.api.Test;
 
@@ -346,6 +361,36 @@ public class LambdaHandlerTest {
                 .then()
                 .statusCode(200)
                 .body(containsString("Hello Stu"));
+    }
+}
+----
+
+[source,kotlin,role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin
+----
+import org.junit.jupiter.api.Test
+
+import io.quarkus.test.junit.QuarkusTest
+
+import static io.restassured.RestAssured.given
+import static org.hamcrest.CoreMatchers.containsString
+
+
+@QuarkusTest
+class LambdaHandlerTest {
+
+    @Test
+    @Throws(Exception::class)
+    fun testSimpleLambdaSuccess() = {
+        given()
+            .contentType("application/json")
+            .accept("application/json")
+            .body(Person(name = "Stu"))
+            .`when`()
+            .post()
+            .then()
+            .statusCode(200)
+            .body(containsString("Hello Stu"))
     }
 }
 ----

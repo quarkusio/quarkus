@@ -133,8 +133,7 @@ Configure and start the https://opentelemetry.io/docs/collector/[OpenTelemetry C
 [NOTE]
 ====
 Jaeger-all-in-one includes the Jaeger agent, an OTel collector, and the query service/UI.
-You do not need to install a separated collector. You can directly send the trace data to Jaeger (after enabling OTLP receivers there, see e.g. this
-https://medium.com/jaegertracing/introducing-native-support-for-opentelemetry-in-jaeger-eb661be8183c[blog entry] for details).
+You can send the trace data directly to Jaeger without installing a separate collector.
 ====
 
 Start the OpenTelemetry Collector and Jaeger system via the following `docker-compose.yml` file that you can launch via `docker-compose up -d`:
@@ -153,8 +152,6 @@ services:
       - "4317:4317"   # OTLP gRPC receiver
       - "4318:4318"   # OTLP HTTP receiver
       - "14250:14250" # Receive from external otel-collector, optional
-    environment:
-      - COLLECTOR_OTLP_ENABLED=true
 ----
 You should remove the optional ports you don't need them.
 

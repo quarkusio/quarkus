@@ -1,6 +1,5 @@
 package io.quarkus.rest.client.reactive.deployment;
 
-import static io.quarkus.jaxrs.client.reactive.deployment.MethodDescriptors.MAP_PUT;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_EXCEPTION_MAPPER;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_FORM_PARAM;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_FORM_PARAMS;
@@ -75,7 +74,6 @@ import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmo2Adaptor;
-import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.ScopeInfo;
@@ -97,14 +95,13 @@ import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBuildItem;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.ClassMethodDesc;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.gizmo2.desc.InterfaceMethodDesc;
 import io.quarkus.gizmo2.desc.MethodDesc;
@@ -152,6 +149,19 @@ class RestClientReactiveProcessor {
             CLIENT_FORM_PARAM,
             CLIENT_FORM_PARAMS,
             REGISTER_CLIENT_HEADERS);
+
+    private static final MethodDesc GET_CONTEXT_CLASS_LOADER = MethodDesc.of(Thread.class, "getContextClassLoader",
+            ClassLoader.class);
+    private static final MethodDesc ADD_GLOBAL_PROVIDER_METHOD = MethodDesc.of(AnnotationRegisteredProviders.class,
+            "addGlobalProvider", void.class, Class.class, int.class);
+    private static final MethodDesc ADD_PROVIDERS_METHOD = MethodDesc.of(AnnotationRegisteredProviders.class, "addProviders",
+            void.class, String.class, Map.class);
+    private static final ConstructorDesc HASHMAP_CONSTRUCTOR = ConstructorDesc.of(HashMap.class);
+    private static final InterfaceMethodDesc MAP_PUT_GIZMO2 = InterfaceMethodDesc.of(ClassDesc.of(Map.class.getName()), "put",
+            ClassDesc.of(Object.class.getName()), ClassDesc.of(Object.class.getName()), ClassDesc.of(Object.class.getName()));
+
+    private record ProviderToRegister(String className, int priority, boolean fromTCCL) {
+    }
 
     @BuildStep
     void announceFeature(BuildProducer<FeatureBuildItem> features) {
@@ -313,88 +323,167 @@ class RestClientReactiveProcessor {
                     .add(bi.getAnnotationInstance());
         }
 
-        try (ClassCreator classCreator = ClassCreator.builder()
-                .className(annotationRegisteredProvidersImpl)
-                .classOutput(new GeneratedBeanGizmoAdaptor(generatedBeansProducer))
-                .superClass(AnnotationRegisteredProviders.class)
-                .build()) {
+        // Collect global providers
+        List<ProviderToRegister> globalProviders = new ArrayList<>();
+        if (clientConfig.providerAutodiscovery()) {
+            for (AnnotationInstance instance : index.getAnnotations(ResteasyReactiveDotNames.PROVIDER)) {
+                ClassInfo providerClass = instance.target().asClass();
 
-            classCreator.addAnnotation(Singleton.class.getName());
-            MethodCreator constructor = classCreator
-                    .getMethodCreator(MethodDescriptor.ofConstructor(annotationRegisteredProvidersImpl));
-            constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(AnnotationRegisteredProviders.class),
-                    constructor.getThis());
-
-            if (clientConfig.providerAutodiscovery()) {
-                for (AnnotationInstance instance : index.getAnnotations(ResteasyReactiveDotNames.PROVIDER)) {
-                    ClassInfo providerClass = instance.target().asClass();
-
-                    // ignore providers annotated with `@ConstrainedTo(SERVER)`
-                    AnnotationInstance constrainedToInstance = providerClass
-                            .declaredAnnotation(ResteasyReactiveDotNames.CONSTRAINED_TO);
-                    if (constrainedToInstance != null) {
-                        if (RuntimeType.valueOf(constrainedToInstance.value().asEnum()) == RuntimeType.SERVER) {
-                            continue;
-                        }
-                    }
-
-                    if (skipAutoDiscoveredProvider(providerClass.interfaceNames())) {
+                // ignore providers annotated with `@ConstrainedTo(SERVER)`
+                AnnotationInstance constrainedToInstance = providerClass
+                        .declaredAnnotation(ResteasyReactiveDotNames.CONSTRAINED_TO);
+                if (constrainedToInstance != null) {
+                    if (RuntimeType.valueOf(constrainedToInstance.value().asEnum()) == RuntimeType.SERVER) {
                         continue;
                     }
-
-                    registerGlobalProvider(providerClass.name(), index, constructor, reflectiveClassesProducer);
                 }
-            }
 
-            Set<DotName> providersFromBuildItems = new HashSet<>();
-            providersFromBuildItems.addAll(clientRequestFilters.stream().map(ClientRequestFilterBuildItem::getClassName)
-                    .map(DotName::createSimple).collect(
-                            Collectors.toSet()));
-            providersFromBuildItems.addAll(clientResponseFilters.stream().map(ClientResponseFilterBuildItem::getClassName)
-                    .map(DotName::createSimple).collect(
-                            Collectors.toSet()));
-            if (!providersFromBuildItems.isEmpty()) {
-                for (DotName dotName : providersFromBuildItems) {
-                    registerGlobalProvider(dotName, index, constructor, reflectiveClassesProducer);
+                if (skipAutoDiscoveredProvider(providerClass.interfaceNames())) {
+                    continue;
                 }
-                unremovableBeansProducer.produce(UnremovableBeanBuildItem.beanTypes(providersFromBuildItems));
+
+                String className = providerClass.name().toString();
+                int priority = getAnnotatedPriority(index, className, Priorities.USER);
+                globalProviders.add(new ProviderToRegister(className, priority, true));
+                reflectiveClassesProducer.produce(ReflectiveClassBuildItem.builder(className).build());
             }
-
-            MultivaluedMap<String, GeneratedClassResult> generatedProviders = new QuarkusMultivaluedHashMap<>();
-            populateClientExceptionMapperFromAnnotations(index, generatedClassesProducer, reflectiveClassesProducer,
-                    executionModelAnnotationsAllowedProducer)
-                    .forEach(generatedProviders::add);
-            populateClientRedirectHandlerFromAnnotations(generatedClassesProducer, reflectiveClassesProducer, index)
-                    .forEach(generatedProviders::add);
-            for (AnnotationToRegisterIntoClientContextBuildItem annotation : annotationsToRegisterIntoClientContext) {
-                populateClientProviderFromAnnotations(annotation, generatedClassesProducer, reflectiveClassesProducer, index)
-                        .forEach(generatedProviders::add);
-
-            }
-
-            addGeneratedProviders(index, classCreator, constructor, annotationsByClassName, generatedProviders);
-
-            constructor.returnValue(null);
         }
+
+        Set<DotName> providersFromBuildItems = new HashSet<>();
+        providersFromBuildItems.addAll(clientRequestFilters.stream().map(ClientRequestFilterBuildItem::getClassName)
+                .map(DotName::createSimple).collect(Collectors.toSet()));
+        providersFromBuildItems.addAll(clientResponseFilters.stream().map(ClientResponseFilterBuildItem::getClassName)
+                .map(DotName::createSimple).collect(Collectors.toSet()));
+        if (!providersFromBuildItems.isEmpty()) {
+            for (DotName dotName : providersFromBuildItems) {
+                String className = dotName.toString();
+                int priority = getAnnotatedPriority(index, className, Priorities.USER);
+                globalProviders.add(new ProviderToRegister(className, priority, true));
+                reflectiveClassesProducer.produce(ReflectiveClassBuildItem.builder(className).build());
+            }
+            unremovableBeansProducer.produce(UnremovableBeanBuildItem.beanTypes(providersFromBuildItems));
+        }
+
+        MultivaluedMap<String, GeneratedClassResult> generatedProviders = new QuarkusMultivaluedHashMap<>();
+        populateClientExceptionMapperFromAnnotations(index, generatedClassesProducer, reflectiveClassesProducer,
+                executionModelAnnotationsAllowedProducer)
+                .forEach(generatedProviders::add);
+        populateClientRedirectHandlerFromAnnotations(generatedClassesProducer, reflectiveClassesProducer, index)
+                .forEach(generatedProviders::add);
+        for (AnnotationToRegisterIntoClientContextBuildItem annotation : annotationsToRegisterIntoClientContext) {
+            populateClientProviderFromAnnotations(annotation, generatedClassesProducer, reflectiveClassesProducer, index)
+                    .forEach(generatedProviders::add);
+        }
+
+        // Precompute interface-based provider maps
+        Map<String, List<ProviderToRegister>> interfaceProviders = new HashMap<>();
+        for (Map.Entry<String, List<AnnotationInstance>> annotationsForClass : annotationsByClassName.entrySet()) {
+            String ifaceName = annotationsForClass.getKey();
+            List<ProviderToRegister> providers = new ArrayList<>();
+            for (AnnotationInstance value : annotationsForClass.getValue()) {
+                String className = value.value().asString();
+                AnnotationValue priorityAnnotationValue = value.value("priority");
+                int priority;
+                if (priorityAnnotationValue == null) {
+                    priority = getAnnotatedPriority(index, className, Priorities.USER);
+                } else {
+                    priority = priorityAnnotationValue.asInt();
+                }
+                providers.add(new ProviderToRegister(className, priority, true));
+            }
+            if (generatedProviders.containsKey(ifaceName)) {
+                List<GeneratedClassResult> genProviders = generatedProviders.remove(ifaceName);
+                for (GeneratedClassResult classResult : genProviders) {
+                    providers.add(new ProviderToRegister(classResult.generatedClassName, classResult.priority, false));
+                }
+            }
+            interfaceProviders.put(ifaceName, providers);
+        }
+
+        // Handle remaining generated providers not associated with annotated interfaces
+        Map<String, List<ProviderToRegister>> remainingGeneratedProviders = new HashMap<>();
+        for (Map.Entry<String, List<GeneratedClassResult>> entry : generatedProviders.entrySet()) {
+            List<ProviderToRegister> providers = new ArrayList<>();
+            for (GeneratedClassResult classResult : entry.getValue()) {
+                providers.add(new ProviderToRegister(classResult.generatedClassName, classResult.priority, false));
+            }
+            remainingGeneratedProviders.put(entry.getKey(), providers);
+        }
+
+        // Generate the class using Gizmo2
+        Gizmo gizmo = Gizmo.create(new GeneratedBeanGizmo2Adaptor(generatedBeansProducer));
+        gizmo.class_(annotationRegisteredProvidersImpl, cc -> {
+            cc.extends_(AnnotationRegisteredProviders.class);
+            cc.addAnnotation(Singleton.class);
+
+            // Create helper methods for each interface
+            int methodIndex = 1;
+            for (Map.Entry<String, List<ProviderToRegister>> entry : interfaceProviders.entrySet()) {
+                String ifaceName = entry.getKey();
+                List<ProviderToRegister> providers = entry.getValue();
+                String methodName = "addGeneratedProviders" + methodIndex;
+                methodIndex++;
+
+                cc.method(methodName, mc -> {
+                    mc.body(bc -> {
+                        LocalVar map = bc.localVar("map", bc.new_(HASHMAP_CONSTRUCTOR));
+                        for (ProviderToRegister provider : providers) {
+                            Expr clazz;
+                            if (provider.fromTCCL()) {
+                                clazz = loadClassFromTCCL(bc, provider.className());
+                            } else {
+                                clazz = Const.of(ClassDesc.of(provider.className()));
+                            }
+                            bc.withMap(map).put(clazz, Const.of(provider.priority()));
+                        }
+                        bc.invokeVirtual(ADD_PROVIDERS_METHOD, cc.this_(), Const.of(ifaceName), map);
+                        bc.return_();
+                    });
+                });
+            }
+
+            // Constructor
+            cc.constructor(ctor -> {
+                ctor.body(bc -> {
+                    bc.invokeSpecial(ConstructorDesc.of(AnnotationRegisteredProviders.class), cc.this_());
+
+                    // Register global providers
+                    for (ProviderToRegister provider : globalProviders) {
+                        Expr clazz = loadClassFromTCCL(bc, provider.className());
+                        bc.invokeVirtual(ADD_GLOBAL_PROVIDER_METHOD, cc.this_(), clazz, Const.of(provider.priority()));
+                    }
+
+                    // Call helper methods for interface providers
+                    int callIndex = 1;
+                    for (String ifaceName : interfaceProviders.keySet()) {
+                        String methodName = "addGeneratedProviders" + callIndex;
+                        callIndex++;
+                        bc.invokeVirtual(ClassMethodDesc.of(ClassDesc.of(annotationRegisteredProvidersImpl), methodName,
+                                void.class), cc.this_());
+                    }
+
+                    // Handle remaining generated providers directly in constructor
+                    for (Map.Entry<String, List<ProviderToRegister>> entry : remainingGeneratedProviders.entrySet()) {
+                        LocalVar map = bc.localVar("map", bc.new_(HASHMAP_CONSTRUCTOR));
+                        for (ProviderToRegister provider : entry.getValue()) {
+                            Expr clazz = Const.of(ClassDesc.of(provider.className()));
+                            bc.invokeInterface(MAP_PUT_GIZMO2, map, clazz, bc.box(Const.of(provider.priority())));
+                        }
+                        bc.invokeVirtual(ADD_PROVIDERS_METHOD, cc.this_(), Const.of(entry.getKey()), map);
+                    }
+
+                    bc.return_();
+                });
+            });
+        });
 
         unremovableBeansProducer.produce(UnremovableBeanBuildItem.beanClassNames(annotationRegisteredProvidersImpl));
     }
 
-    private void registerGlobalProvider(DotName providerClassName,
-            IndexView index, MethodCreator methodCreator,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer) {
-        int priority = getAnnotatedPriority(index, providerClassName.toString(), Priorities.USER);
-
-        methodCreator.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(AnnotationRegisteredProviders.class, "addGlobalProvider",
-                        void.class, Class.class,
-                        int.class),
-                methodCreator.getThis(), methodCreator.loadClassFromTCCL(providerClassName.toString()),
-                methodCreator.load(priority));
-
-        // when the server is not included, providers are not automatically registered for reflection,
-        // so we need to always do it for the client to be on the safe side
-        reflectiveClassesProducer.produce(ReflectiveClassBuildItem.builder(providerClassName.toString()).build());
+    private Expr loadClassFromTCCL(BlockCreator bc, String className) {
+        Expr currentThread = bc.currentThread();
+        Expr tccl = bc.invokeVirtual(GET_CONTEXT_CLASS_LOADER, currentThread);
+        return bc.classForName(Const.of(className), Const.of(false), tccl);
     }
 
     @BuildStep
@@ -843,63 +932,6 @@ class RestClientReactiveProcessor {
                     .build());
         }
         return result;
-    }
-
-    private void addGeneratedProviders(IndexView index, ClassCreator classCreator, MethodCreator constructor,
-            Map<String, List<AnnotationInstance>> annotationsByClassName,
-            Map<String, List<GeneratedClassResult>> generatedProviders) {
-        int i = 1;
-        for (Map.Entry<String, List<AnnotationInstance>> annotationsForClass : annotationsByClassName.entrySet()) {
-            MethodCreator mc = classCreator.getMethodCreator("addGeneratedProviders" + i, void.class);
-            ResultHandle map = mc.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
-            for (AnnotationInstance value : annotationsForClass.getValue()) {
-                String className = value.value().asString();
-                AnnotationValue priorityAnnotationValue = value.value("priority");
-                int priority;
-                if (priorityAnnotationValue == null) {
-                    priority = getAnnotatedPriority(index, className, Priorities.USER);
-                } else {
-                    priority = priorityAnnotationValue.asInt();
-                }
-
-                mc.invokeInterfaceMethod(MAP_PUT, map, mc.loadClassFromTCCL(className),
-                        mc.load(priority));
-            }
-            String ifaceName = annotationsForClass.getKey();
-            if (generatedProviders.containsKey(ifaceName)) {
-                // remove the interface from the generated provider since it's going to be handled now
-                // the remaining entries will be handled later
-                List<GeneratedClassResult> providers = generatedProviders.remove(ifaceName);
-                for (GeneratedClassResult classResult : providers) {
-                    mc.invokeInterfaceMethod(MAP_PUT, map, mc.loadClass(classResult.generatedClassName),
-                            mc.load(classResult.priority));
-                }
-
-            }
-            addProviders(mc, ifaceName, map);
-            mc.returnVoid();
-
-            constructor.invokeVirtualMethod(mc.getMethodDescriptor(), constructor.getThis());
-
-            i++;
-        }
-
-        for (Map.Entry<String, List<GeneratedClassResult>> entry : generatedProviders.entrySet()) {
-            ResultHandle map = constructor.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
-            for (GeneratedClassResult classResult : entry.getValue()) {
-                constructor.invokeInterfaceMethod(MAP_PUT, map, constructor.loadClass(classResult.generatedClassName),
-                        constructor.load(classResult.priority));
-                addProviders(constructor, entry.getKey(), map);
-            }
-
-        }
-    }
-
-    private void addProviders(MethodCreator mc, String providerClass, ResultHandle map) {
-        mc.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(AnnotationRegisteredProviders.class, "addProviders", void.class, String.class,
-                        Map.class),
-                mc.getThis(), mc.load(providerClass), map);
     }
 
     private int getAnnotatedPriority(IndexView index, String className, int defaultPriority) {

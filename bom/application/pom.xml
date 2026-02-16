@@ -43,7 +43,7 @@
         <microprofile-reactive-streams-operators.version>3.0.1</microprofile-reactive-streams-operators.version>
         <microprofile-rest-client.version>4.0</microprofile-rest-client.version>
         <microprofile-jwt.version>2.1</microprofile-jwt.version>
-        <microprofile-lra.version>2.0.1</microprofile-lra.version>
+        <microprofile-lra.version>2.0.2</microprofile-lra.version>
         <microprofile-openapi.version>4.1.1</microprofile-openapi.version>
         <smallrye-common.version>2.16.0</smallrye-common.version>
         <smallrye-config.version>3.16.0</smallrye-config.version>

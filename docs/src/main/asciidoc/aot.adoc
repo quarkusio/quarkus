@@ -1,0 +1,203 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Ahead-of-Time (AOT) Caching
+include::_attributes.adoc[]
+:categories: core, cloud
+:summary: This guide explains how to use Leyden AOT caching with Quarkus for dramatically faster startup times on JDK 24+.
+:topics: aot,leyden,startup,performance
+
+This guide explains how to leverage JDK's Ahead-of-Time (AOT) caching capabilities in Quarkus to achieve significantly faster application startup times.
+
+== Overview
+
+Starting with JDK 24, link:https://openjdk.org/projects/leyden/[Project Leyden] introduces powerful AOT caching capabilities (link:https://openjdk.org/jeps/483[JEP 483]) that can significantly reduce Java application startup time.
+Quarkus provides first-class support for these features, making it easy to build and deploy AOT-optimized applications.
+
+[IMPORTANT]
+====
+Leyden AOT requires **JDK 24 or newer**. For older JDK versions, Quarkus can fall back to AppCDS (see <<appcds-legacy>>).
+====
+
+== Quick start
+
+To build a Quarkus application with AOT caching enabled:
+
+[source,bash]
+----
+./mvnw verify -Dquarkus.package.jar.type=aot-jar -Dquarkus.package.jar.aot.enabled=true
+----
+
+NOTE: In a future Quarkus release, specifying `-Dquarkus.package.jar.type=aot-jar` will no longer be necessary - enabling AOT via `-Dquarkus.package.jar.aot.enabled=true` will automatically use the appropriate JAR type.
+
+Then run the application with:
+
+[source,bash]
+----
+cd target/quarkus-app
+java -XX:AOTCache=app.aot -jar quarkus-run.jar
+----
+
+== AOT-optimized JAR packaging
+
+Quarkus provides a specialized `aot-jar` packaging type designed to work optimally with JDK's AOT features.
+This packaging type:
+
+* Structures the application for optimal AOT class loading
+* Delegates all class loading to the JDK's class loaders (required for AOT to work effectively as Leyden currently does not support custom class loaders)
+* Caches frequently-accessed resources (like service loader files) to avoid classpath scanning at runtime
+
+NOTE: It is not recommended to use the `aot-jar` packaging outside of the AOT use case, as the `fast-jar` packaging offers more optimizations that result in better performance compares to the `aot-jar` when Leyden's AOT cache is not used.
+
+== Generating the AOT cache
+
+Enable AOT cache generation with:
+
+[source,bash]
+----
+./mvnw package -Dquarkus.package.jar.type=aot-jar -Dquarkus.package.jar.aot.enabled=true
+----
+
+On JDK 24+, this generates an `app.aot` file in `target/quarkus-app/`.
+
+=== Training with integration tests
+
+For optimal results, the AOT cache should be "trained" by running actual application workloads.
+Quarkus can use your `@QuarkusIntegrationTest` test suite for this training:
+
+[source,bash]
+----
+./mvnw verify -Dquarkus.package.jar.type=aot-jar -Dquarkus.package.jar.aot.enabled=true
+----
+
+With this approach:
+
+1. Quarkus builds the application
+2. Integration tests run against the application with AOT training enabled
+3. The JVM captures profiling data during the test run
+4. An optimized `app.aot` cache is generated
+
+The more representative your integration tests are of production traffic, the more effective the AOT cache will be.
+
+=== Controlling the training phase
+
+The `quarkus.package.jar.aot.phase` configuration controls when training occurs:
+
+* `AUTO` (default): Uses `INTEGRATION_TESTS` for Leyden AOT
+* `BUILD`: Generates the cache during build (limited training, faster builds)
+* `INTEGRATION_TESTS`: Generates during test execution (better optimization)
+
+[source,bash]
+----
+# Explicit integration test training
+./mvnw verify -Dquarkus.package.jar.type=aot-jar -Dquarkus.package.jar.aot.enabled=true -Dquarkus.package.jar.aot.phase=INTEGRATION_TESTS
+
+# Build-time only (faster, less optimal)
+./mvnw package -Dquarkus.package.jar.type=aot-jar -Dquarkus.package.jar.aot.enabled=true -Dquarkus.package.jar.aot.phase=BUILD
+----
+
+== Running with AOT cache
+
+Launch your application with the `-XX:AOTCache` JVM flag:
+
+[source,bash]
+----
+cd target/quarkus-app
+java -XX:AOTCache=app.aot -jar quarkus-run.jar
+----
+
+== Container images
+
+Quarkus can automatically build container images that include AOT caches, giving you fast startup times out of the box.
+
+=== Building AOT-enhanced container images
+
+When using `quarkus-container-image-jib`, `quarkus-container-image-docker`, or `quarkus-container-image-podman`:
+
+[source,bash]
+----
+./mvnw verify -Dquarkus.package.jar.type=aot-jar \
+              -Dquarkus.package.jar.aot.enabled=true \
+              -Dquarkus.container-image.build=true
+----
+
+This will:
+
+1. Build your application with `aot-jar` packaging
+2. Create a base container image
+3. Run integration tests to train the AOT cache
+4. Create a new container image with `-aot` suffix in the version of the image that includes the AOT cache, pre-configured to use it
+
+=== Adding the container image extension
+
+Add one of the following dependencies to your project:
+
+[source,xml]
+----
+<!-- Jib (recommended for most use cases) -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-container-image-jib</artifactId>
+</dependency>
+
+<!-- Or Docker -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-container-image-docker</artifactId>
+</dependency>
+
+<!-- Or Podman -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-container-image-podman</artifactId>
+</dependency>
+----
+
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-core_quarkus.package.adoc[opts=optional, leveloffset=+1]
+
+== Requirements and limitations
+
+* **JDK 24 or newer** is required for Leyden AOT features
+* The AOT cache is **JDK version specific** - you must use the exact same JDK version at runtime as was used to generate the cache
+* Generating the AOT file from the integration tests is currently only supported with the Maven extension. Support will be added for Gradle in the future
+* The feature is untested on Windows environments
+
+[#appcds-legacy]
+== AppCDS (Legacy)
+
+For JDK versions prior to 24, Quarkus supports link:https://docs.oracle.com/en/java/javase/17/docs/specs/man/java.html#application-class-data-sharing[Application Class Data Sharing (AppCDS)] as a fallback.
+AppCDS provides more modest startup improvements compared to Leyden AOT, but works on older JDKs.
+
+=== Generating AppCDS archive
+
+[source,bash]
+----
+./mvnw package -Dquarkus.package.jar.aot.enabled=true -Dquarkus.package.jar.aot.type=AppCDS
+----
+
+This generates an `app-cds.jsa` file.
+
+=== Running with AppCDS
+
+[source,bash]
+----
+cd target/quarkus-app
+java -XX:SharedArchiveFile=app-cds.jsa -jar quarkus-run.jar
+----
+
+=== AppCDS limitations
+
+* The paths to the JAR and archive must match exactly between build and runtime
+* The JDK version must be **exactly** the same
+* AppCDS only caches class metadata, not method profiles or verification results
+* Training during integration tests is not supported for AppCDS (only build-time generation)
+
+[TIP]
+====
+The legacy `quarkus.package.jar.appcds.enabled` configuration is still supported but deprecated.
+Use `quarkus.package.jar.aot.enabled=true` with `quarkus.package.jar.aot.type=AppCDS` instead.
+====

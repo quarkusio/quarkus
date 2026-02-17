@@ -397,7 +397,9 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
             if (Files.exists(aotConfigFile)) {
                 createAotFileFromAotConfFile(aotConfigFile);
             } else {
-                log.debug("AOT conf file not found");
+                log.warnf("The AOT conf file %s was not generated, the AOT-optimized container image won't be created. " +
+                        "A possible cause could be that your application didn't stop gracefully and was killed forcibly. " +
+                        "Raising quarkus.shutdown.timeout might help solve the issue.", aotConfigFile);
             }
         }
 
@@ -451,6 +453,8 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
                     .start().waitFor(20, TimeUnit.SECONDS);
             if (Files.exists(aotFilePath)) {
                 log.infof("AOT file '%s' created", aotFilePath.toAbsolutePath());
+            } else {
+                log.warnf("AOT file '%s' was not created, the AOT-optimized container image won't be created", aotFilePath);
             }
             try {
                 Files.deleteIfExists(aotConfigFile);

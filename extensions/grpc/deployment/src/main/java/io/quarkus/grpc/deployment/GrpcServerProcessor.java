@@ -72,6 +72,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.grpc.auth.DefaultAuthExceptionHandlerProvider;
@@ -612,7 +613,7 @@ public class GrpcServerProcessor {
             List<AdditionalGlobalInterceptorBuildItem> additionalGlobalInterceptors,
             List<DelegatingGrpcBeanBuildItem> delegatingGrpcBeans,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             RecorderContext recorderContext,
             GrpcServerRecorder recorder) {
 
@@ -664,6 +665,8 @@ public class GrpcServerProcessor {
 
         Set<Class<?>> globalInterceptors = new HashSet<>();
         for (String interceptor : interceptors.globalInterceptors) {
+            reflectiveClassBuildItemBuildProducer
+                    .produce(ReflectiveClassBuildItem.builder(interceptor).constructors(false).build());
             globalInterceptors.add(recorderContext.classProxy(interceptor));
         }
         for (AdditionalGlobalInterceptorBuildItem globalInterceptorBuildItem : additionalGlobalInterceptors) {

@@ -61,6 +61,7 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo.ClassTransformer;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.hibernate.orm.PersistenceUnit;
@@ -155,7 +156,8 @@ public class HibernateOrmCdiProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void generateJpaConfigBean(HibernateOrmRecorder recorder,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItem) {
         ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                 .configure(JPAConfig.class)
                 .addType(JPAConfig.class)
@@ -163,6 +165,8 @@ public class HibernateOrmCdiProcessor {
                 .unremovable()
                 .setRuntimeInit()
                 .supplier(recorder.jpaConfigSupplier());
+
+        reflectiveClassBuildItem.produce(ReflectiveClassBuildItem.builder(JPAConfig.class).constructors(false).build());
 
         syntheticBeanBuildItemBuildProducer.produce(configurator.done());
     }

@@ -118,6 +118,7 @@ class VertxProcessor {
             BuildProducer<GeneratedResourceBuildItem> generatedResource,
             AnnotationProxyBuildItem annotationProxy, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
             BuildProducer<ServiceStartBuildItem> serviceStart,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             List<MessageCodecBuildItem> codecs, LocalCodecSelectorTypesBuildItem localCodecSelectorTypes,
             RecorderContext recorderContext) {
         List<EventConsumerInfo> messageConsumerConfigurations = new ArrayList<>();
@@ -135,6 +136,8 @@ class VertxProcessor {
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         Map<Class<?>, Class<?>> codecByClass = new HashMap<>();
         for (MessageCodecBuildItem messageCodecItem : codecs) {
+            reflectiveClassBuildItemBuildProducer
+                    .produce(ReflectiveClassBuildItem.builder(messageCodecItem.getType()).constructors(false).build());
             codecByClass.put(tryLoad(messageCodecItem.getType(), tccl), tryLoad(messageCodecItem.getCodec(), tccl));
         }
 

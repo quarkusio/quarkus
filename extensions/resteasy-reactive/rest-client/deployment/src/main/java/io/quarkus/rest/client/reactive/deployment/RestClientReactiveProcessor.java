@@ -430,7 +430,7 @@ class RestClientReactiveProcessor {
                         for (ProviderToRegister provider : providers) {
                             Expr clazz;
                             if (provider.fromTCCL()) {
-                                clazz = loadClassFromTCCL(bc, provider.className());
+                                clazz = loadClassFromTCCL(bc, provider.className(), reflectiveClassesProducer);
                             } else {
                                 clazz = Const.of(ClassDesc.of(provider.className()));
                             }
@@ -449,7 +449,7 @@ class RestClientReactiveProcessor {
 
                     // Register global providers
                     for (ProviderToRegister provider : globalProviders) {
-                        Expr clazz = loadClassFromTCCL(bc, provider.className());
+                        Expr clazz = loadClassFromTCCL(bc, provider.className(), reflectiveClassesProducer);
                         bc.invokeVirtual(ADD_GLOBAL_PROVIDER_METHOD, cc.this_(), clazz, Const.of(provider.priority()));
                     }
 
@@ -480,7 +480,9 @@ class RestClientReactiveProcessor {
         unremovableBeansProducer.produce(UnremovableBeanBuildItem.beanClassNames(annotationRegisteredProvidersImpl));
     }
 
-    private Expr loadClassFromTCCL(BlockCreator bc, String className) {
+    private Expr loadClassFromTCCL(BlockCreator bc, String className,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer) {
+        reflectiveClassesProducer.produce(ReflectiveClassBuildItem.builder(className).constructors(false).build());
         Expr currentThread = bc.currentThread();
         Expr tccl = bc.invokeVirtual(GET_CONTEXT_CLASS_LOADER, currentThread);
         return bc.classForName(Const.of(className), Const.of(false), tccl);

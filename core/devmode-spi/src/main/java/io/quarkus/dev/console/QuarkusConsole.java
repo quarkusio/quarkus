@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.io.PrintStream;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -18,31 +17,30 @@ public abstract class QuarkusConsole {
     public static final int TEST_RESULTS = 200;
     public static final int COMPILE_ERROR = 300;
 
+    /**
+     * @deprecated this should never have been public in the first place.
+     */
+    @Deprecated(forRemoval = true, since = "3.32")
     public static final String FORCE_COLOR_SUPPORT = "io.quarkus.force-color-support";
 
-    public static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
-    public static final boolean IS_MAC = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("mac");
-    public static final boolean IS_LINUX = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("linux");
+    /**
+     * @deprecated this should never have been public in the first place.
+     */
+    @Deprecated(forRemoval = true, since = "3.32")
+    public static final boolean IS_CON_EMU_ANSI = TerminalUtils.IS_CON_EMU_ANSI;
 
     /**
-     * <a href="https://conemu.github.io">ConEmu</a> ANSI X3.64 support enabled,
-     * used by <a href="https://cmder.net/">cmder</a>
+     * @deprecated this should never have been public in the first place.
      */
-    public static final boolean IS_CON_EMU_ANSI = IS_WINDOWS && "ON".equals(System.getenv("ConEmuANSI"));
+    @Deprecated(forRemoval = true, since = "3.32")
+    public static final boolean IS_CYGWIN = TerminalUtils.IS_CYGWIN;
 
     /**
-     * These tests are same as used in jansi
-     * Source: https://github.com/fusesource/jansi/commit/bb3d538315c44f799d34fd3426f6c91c8e8dfc55
+     * @deprecated this should never have been public in the first place.
      */
-    public static final boolean IS_CYGWIN = IS_WINDOWS
-            && System.getenv("PWD") != null
-            && System.getenv("PWD").startsWith("/")
-            && !"cygwin".equals(System.getenv("TERM"));
+    @Deprecated(forRemoval = true, since = "3.32")
+    public static final boolean IS_MINGW_XTERM = TerminalUtils.IS_MINGW_XTERM;
 
-    public static final boolean IS_MINGW_XTERM = IS_WINDOWS
-            && System.getenv("MSYSTEM") != null
-            && System.getenv("MSYSTEM").startsWith("MINGW")
-            && "xterm".equals(System.getenv("TERM"));
     protected volatile Consumer<int[]> inputHandler;
 
     public static volatile QuarkusConsole INSTANCE = new BasicConsole(hasColorSupport(), false, System.out::print);
@@ -104,34 +102,12 @@ public abstract class QuarkusConsole {
         redirectsInstalled = false;
     }
 
-    private static void checkAndSetJdkConsole() {
-        // the JLine console in JDK 23+ causes significant startup slowdown,
-        // so we avoid it unless the user opted into it
-        String res = System.getProperty("jdk.console");
-        if (res == null) {
-            System.setProperty("jdk.console", "java.base");
-        }
-    }
-
+    /**
+     * @deprecated
+     */
+    @Deprecated(forRemoval = true, since = "3.32")
     public static boolean hasColorSupport() {
-        checkAndSetJdkConsole();
-        if (Boolean.getBoolean(FORCE_COLOR_SUPPORT)) {
-            return true; //assume the IDE run window has color support
-        }
-        if (IS_WINDOWS) {
-            // On Windows without a known good emulator
-            // TODO: optimally we would check if Win32 getConsoleMode has
-            // ENABLE_VIRTUAL_TERMINAL_PROCESSING enabled or enable it via
-            // setConsoleMode.
-            // For now we turn it off to not generate noisy output for most
-            // users.
-            // Must be on some Unix variant or ANSI-enabled windows terminal...
-            return IS_CON_EMU_ANSI || IS_CYGWIN || IS_MINGW_XTERM;
-        } else {
-            // on sane operating systems having a console is a good indicator
-            // you are attached to a TTY with colors.
-            return TerminalUtils.isTerminal(System.console());
-        }
+        return TerminalUtils.hasColorSupport();
     }
 
     public static void start() {

@@ -552,7 +552,8 @@ The common cookie properties impact both the authorization code flow session and
 |quarkus.oidc.authentication.cookie-path |'/'| The cookie path
 |quarkus.oidc.authentication.cookie-domain || The cookie domain
 |quarkus.oidc.authentication.cookie-path-header || The cookie path header
-|quarkus.oidc.authentication.cookie-same-site |lax| The cookie SameSite status
+|quarkus.oidc.authentication.cookie-same-site |lax| The session cookie SameSite status
+|quarkus.oidc.authentication.state-cookie-same-site |lax| The state cookie SameSite status
 |quarkus.oidc.authentication.cookie-suffix || The cookie suffix
 |quarkus.oidc.authentication.cookie-force-secure |false| The cookie force secure
 |====
@@ -562,7 +563,11 @@ You may also want to restrict it when the specific endpoint paths should only be
 
 `quarkus.oidc.authentication.cookie-path-header` can be used to dynamically set the required cookie path - this property should be used with care and only when it fits your deployment requirements.
 
-`quarkus.oidc.authentication.cookie-same-site` defines a `Same-Site` attribute as `lax` by default, since setting it to `strict` proved to be breaking some deployments. However, setting it to `strict` is RECOMMENDED when it is known to work in your deployment, for example, when the OIDC provider is hosted in the same domain as the application, etc.
+`quarkus.oidc.authentication.cookie-same-site` defines a `Same-Site` attribute for a session cookie as `lax` by default, since setting it to `strict` proved to be breaking some deployments. However, setting it to `strict` is RECOMMENDED when it is known to work in your deployment, for example, when the OIDC provider is hosted in the same domain as the application, etc.
+
+Similarly, `quarkus.oidc.authentication.state-cookie-same-site` defines a `Same-Site` attribute for a state cookie as `lax` by default, but setting it to `strict` is RECOMMENDED when it is known to work in your deployment.
+
+Ideally both the session and state cookies have the same `Same-Site` attribute value, however having the same `Same-Site` `strict` value for both cookies also proved to be problematic in some cases.
 
 `quarkus.oidc.authentication.cookie-suffix` can be used to customize the state and session cookie names. For example, by setting `%test.quarkus.oidc.authentication.cookie-suffix=test` you can have the session cookie name qualified with the `_test` suffix in the test profile only.
 

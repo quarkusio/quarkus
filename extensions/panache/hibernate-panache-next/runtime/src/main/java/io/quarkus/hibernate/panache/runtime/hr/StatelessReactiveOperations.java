@@ -59,6 +59,11 @@ public class StatelessReactiveOperations implements PanacheReactiveOperations {
     }
 
     @Override
+    public Uni<Void> upsert(Object entity) {
+        return DELEGATE.upsert(entity);
+    }
+
+    @Override
     public Uni<Boolean> isPersistent(Object entity) {
         throw new UnsupportedOperationException("Managed operations not supported");
     }

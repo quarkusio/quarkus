@@ -45,6 +45,8 @@ public interface PanacheOperations<One, Many, Query, Count, Completion, Confirma
 
     Completion update(Object entity);
 
+    Completion upsert(Object entity);
+
     Confirmation isPersistent(Object entity);
 
     Completion flush(Object entity);

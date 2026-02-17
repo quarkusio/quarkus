@@ -75,7 +75,7 @@ public class CodeFlowTest {
             Cookie stateCookie = getStateCookie(webClient, null);
             assertNotNull(stateCookie);
             assertEquals(stateCookie.getName(), "q_auth_Default_test_" + getStateCookieStateParam(stateCookie));
-            assertNull(stateCookie.getSameSite());
+            assertEquals("lax", stateCookie.getSameSite());
 
             webClient.getCookieManager().clearCookies();
 
@@ -294,7 +294,7 @@ public class CodeFlowTest {
             String endpointLocation = webResponse.getResponseHeaderValue("location");
 
             Cookie stateCookie = getStateCookie(webClient, "tenant-https_test");
-            assertNull(stateCookie.getSameSite());
+            assertEquals("none", stateCookie.getSameSite());
             verifyCodeVerifierAndNonce(stateCookie, keycloakUrl);
 
             assertTrue(endpointLocation.startsWith("https"));
@@ -369,7 +369,7 @@ public class CodeFlowTest {
 
             // State cookie is present
             Cookie stateCookie = getStateCookie(webClient, "tenant-https_test");
-            assertNull(stateCookie.getSameSite());
+            assertEquals("none", stateCookie.getSameSite());
             verifyCodeVerifierAndNonce(stateCookie, keycloakUrl);
 
             // Make a call without an extra state query param, status is 401

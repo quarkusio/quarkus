@@ -30,7 +30,8 @@ public final class AuthenticationConfigBuilder {
             Optional<List<String>> scopes, Optional<String> scopeSeparator, boolean nonceRequired,
             Optional<Boolean> addOpenidScope, Map<String, String> extraParams, Optional<List<String>> forwardParams,
             boolean cookieForceSecure, Optional<String> cookieSuffix, String cookiePath, Optional<String> cookiePathHeader,
-            Optional<String> cookieDomain, CookieSameSite cookieSameSite, Optional<Set<CacheControl>> cacheControl,
+            Optional<String> cookieDomain, CookieSameSite cookieSameSite, CookieSameSite stateCookieSameSite,
+            Optional<Set<CacheControl>> cacheControl,
             boolean allowMultipleCodeFlows, boolean failOnMissingStateParam, boolean failOnUnresolvedKid,
             Optional<Boolean> userInfoRequired, Optional<Duration> sessionAgeExtension,
             Duration stateCookieAge, boolean javaScriptAutoRedirect, Optional<Boolean> idTokenRequired,
@@ -60,6 +61,7 @@ public final class AuthenticationConfigBuilder {
     private Optional<String> cookiePathHeader;
     private Optional<String> cookieDomain;
     private CookieSameSite cookieSameSite;
+    private CookieSameSite stateCookieSameSite;
     private Set<CacheControl> cacheControl = new HashSet<>();
     private boolean allowMultipleCodeFlows;
     private boolean failOnMissingStateParam;
@@ -107,6 +109,7 @@ public final class AuthenticationConfigBuilder {
         this.cookiePathHeader = authentication.cookiePathHeader();
         this.cookieDomain = authentication.cookieDomain();
         this.cookieSameSite = authentication.cookieSameSite();
+        this.stateCookieSameSite = authentication.stateCookieSameSite();
         if (authentication.cacheControl().isPresent()) {
             this.cacheControl.addAll(authentication.cacheControl().get());
         }
@@ -396,6 +399,15 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
+     * @param stateCookieSameSite {@link Authentication#stateCookieSameSite()}
+     * @return this builder
+     */
+    public AuthenticationConfigBuilder stateCookieSameSite(CookieSameSite cookieSameSite) {
+        this.stateCookieSameSite = Objects.requireNonNull(stateCookieSameSite);
+        return this;
+    }
+
+    /**
      * Sets {@link Authentication#allowMultipleCodeFlows()} to true.
      *
      * @return this builder
@@ -657,7 +669,8 @@ public final class AuthenticationConfigBuilder {
         return new AuthenticationImpl(responseMode, redirectPath, restorePathAfterRedirect, removeRedirectParameters, errorPath,
                 sessionExpiredPath, verifyAccessToken, forceRedirectHttpsScheme, optionalScopes, scopeSeparator, nonceRequired,
                 addOpenidScope, Map.copyOf(extraParams), optionalForwardParams, cookieForceSecure, cookieSuffix, cookiePath,
-                cookiePathHeader, cookieDomain, cookieSameSite, optionalCacheControl, allowMultipleCodeFlows,
+                cookiePathHeader, cookieDomain, cookieSameSite, stateCookieSameSite, optionalCacheControl,
+                allowMultipleCodeFlows,
                 failOnMissingStateParam,
                 failOnUnresolvedKid,
                 userInfoRequired, sessionAgeExtension, stateCookieAge, javaScriptAutoRedirect, idTokenRequired,

@@ -38,13 +38,13 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <version.junit>6.0.2</version.junit>
+        <version.junit>6.0.3</version.junit>
         <version.assertj>3.27.7</version.assertj>
         <version.jandex>3.5.3</version.jandex>
         <version.gizmo2>2.1.1</version.gizmo2>
         <version.jboss-logging>3.6.2.Final</version.jboss-logging>
         <version.smallrye-common>2.16.0</version.smallrye-common>
-        <version.smallrye-mutiny>3.1.0</version.smallrye-mutiny>
+        <version.smallrye-mutiny>3.1.1</version.smallrye-mutiny>
         <version.lsp4j>0.24.0</version.lsp4j>
     </properties>
 

@@ -248,6 +248,7 @@ public final class AmazonLambdaProcessor {
             AmazonLambdaRecorder recorder,
             List<ServiceStartBuildItem> orderServicesFirst, // try to order this after service recorders
             RecorderContext context,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchies) {
         // Have to set lambda class at runtime if there is not a provided lambda or there is more than one lambda in
@@ -260,6 +261,8 @@ public final class AmazonLambdaProcessor {
             Map<String, Class<? extends RequestStreamHandler>> namedStreamHandler = new HashMap<>();
 
             for (AmazonLambdaBuildItem i : lambdas) {
+                reflectiveClassBuildItemBuildProducer
+                        .produce(ReflectiveClassBuildItem.builder(i.getHandlerClass()).constructors(false).build());
                 if (i.isStreamHandler()) {
                     if (i.getName() == null) {
                         unnamedStreamHandler

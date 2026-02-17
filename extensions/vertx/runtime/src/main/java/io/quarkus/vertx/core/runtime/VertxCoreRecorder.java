@@ -374,6 +374,7 @@ public class VertxCoreRecorder {
                 File cache = getRandomDirectory(tmp);
                 LOGGER.debugf("Vert.x Cache configured to: %s", cache.getAbsolutePath());
                 fileSystemOptions.setFileCacheDir(cache.getAbsolutePath());
+                fileSystemOptions.setFileCacheDirAsExactPath(true);
                 if (shutdown != null) {
                     shutdown.addLastShutdownTask(new Runnable() {
                         @Override
@@ -388,6 +389,7 @@ public class VertxCoreRecorder {
             }
         } else {
             fileSystemOptions.setFileCacheDir(fileCacheDir);
+            fileSystemOptions.setFileCacheDirAsExactPath(true);
         }
 
         options.setFileSystemOptions(fileSystemOptions);

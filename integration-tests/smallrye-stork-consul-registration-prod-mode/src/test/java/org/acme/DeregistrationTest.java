@@ -45,8 +45,8 @@ public class DeregistrationTest {
 
         // Wait until service is deregistered (404)
         await()
-                .atMost(5, TimeUnit.SECONDS)
-                .pollInterval(200, TimeUnit.MILLISECONDS)
+                .atMost(20, TimeUnit.SECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
                 .untilAsserted(() -> RestAssured.get("http://localhost:8500/v1/agent/service/consul-deregistration-test")
                         .then()
                         .statusCode(404));

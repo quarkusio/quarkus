@@ -128,8 +128,8 @@
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
         <junit.jupiter.version>6.0.3</junit.jupiter.version>
-        <infinispan.version>16.0.5</infinispan.version>
-        <infinispan.protostream.version>6.0.3</infinispan.protostream.version>
+        <infinispan.version>16.0.6</infinispan.version>
+        <infinispan.protostream.version>6.0.4</infinispan.protostream.version>
         <caffeine.version>3.2.3</caffeine.version>
         <netty.version>4.1.130.Final</netty.version>
         <brotli4j.version>1.16.0</brotli4j.version>

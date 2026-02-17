@@ -68,6 +68,7 @@ public class MicrometerTimedInterceptorTest {
                 .tag("extra", "tag")
                 .lastReadingDataPoint(HistogramPointData.class).getCount());
 
+        metricExporter.assertCountDataPointsAtLeastOrEqual("call.max", null, 1);
         assertThat(metricExporter.get("call.max")
                 .tag("method", "call")
                 .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
@@ -91,6 +92,7 @@ public class MicrometerTimedInterceptorTest {
         assertEquals(1, metricFilterSupplier.get()
                 .lastReadingDataPoint(HistogramPointData.class).getCount());
 
+        metricExporter.assertCountDataPointsAtLeastOrEqual("call.max", null, 1);
         assertThat(metricExporter.get("call.max")
                 .tag("method", "call")
                 .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
@@ -117,6 +119,7 @@ public class MicrometerTimedInterceptorTest {
         assertEquals(1, metricFilterSupplier.get()
                 .lastReadingDataPoint(HistogramPointData.class).getCount());
 
+        metricExporter.assertCountDataPointsAtLeastOrEqual("async.call", null, 1);
         assertThat(metricExporter.get("async.call.max")
                 .tag("method", "asyncCall")
                 .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
@@ -141,6 +144,7 @@ public class MicrometerTimedInterceptorTest {
                 .tag("extra", "tag")
                 .lastReadingDataPoint(HistogramPointData.class).getCount());
 
+        metricExporter.assertCountDataPointsAtLeastOrEqual("async.call.max", null, 1);
         assertThat(metricExporter.get("async.call.max")
                 .tag("method", "asyncCall")
                 .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
@@ -165,6 +169,7 @@ public class MicrometerTimedInterceptorTest {
                 .tag("extra", "tag")
                 .lastReadingDataPoint(HistogramPointData.class).getCount());
 
+        metricExporter.assertCountDataPointsAtLeastOrEqual("uni.call.max", null, 1);
         assertThat(metricExporter.get("uni.call.max")
                 .tag("method", "uniCall")
                 .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
@@ -193,6 +198,7 @@ public class MicrometerTimedInterceptorTest {
         assertEquals(1, metricFilterSupplier.get()
                 .lastReadingDataPoint(HistogramPointData.class).getCount());
 
+        metricExporter.assertCountDataPointsAtLeastOrEqual("uni.call.max", null, 1);
         assertThat(metricExporter.get("uni.call.max")
                 .tag("method", "uniCall")
                 .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
@@ -288,6 +294,7 @@ public class MicrometerTimedInterceptorTest {
                 .tag("extra", "tag")
                 .lastReadingDataPoint(LongPointData.class).getValue());
 
+        metricExporter.assertCountDataPointsAtLeastOrEqual("uni.longCall.duration", null, 1);
         assertEquals(0, metricExporter.get("uni.longCall.duration")
                 .tag("method", "longUniCall")
                 .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
@@ -301,7 +308,6 @@ public class MicrometerTimedInterceptorTest {
         timed.repeatableCall(false);
 
         metricExporter.assertCountDataPointsAtLeastOrEqual("alpha", null, 1);
-
         assertEquals(1, metricExporter.get("alpha")
                 .tag("method", "repeatableCall")
                 .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
@@ -309,6 +315,7 @@ public class MicrometerTimedInterceptorTest {
                 .tag("extra", "tag")
                 .lastReadingPointsSize());
 
+        metricExporter.assertCountDataPointsAtLeastOrEqual("bravo", null, 1);
         assertEquals(1, metricExporter.get("bravo")
                 .tag("method", "repeatableCall")
                 .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")

@@ -38,6 +38,15 @@ public interface PanacheStatelessRepositoryOperations<Entity, Session, Completio
     Completion update(Entity entity);
 
     /**
+     * Insert or update this entity in the database. An insert will be performed if the entity does not already exist
+     * in the database, otherwise it will be updated. Note that you cannot upsert an entity with a null ID.
+     *
+     * @param entity the entity to insert or update.
+     * @return the entity passed as parameter
+     */
+    Completion upsert(Entity entity);
+
+    /**
      * Insert all given entities.
      *
      * @param entities the entities to insert

@@ -1,13 +1,12 @@
 package io.quarkus.hibernate.panache.stateless.blocking;
 
-import java.util.Map;
-import java.util.stream.Stream;
-
+import io.quarkus.hibernate.panache.PanacheEntityMarker;
 import io.quarkus.hibernate.panache.runtime.spi.PanacheBlockingOperations;
 import io.quarkus.hibernate.panache.runtime.spi.PanacheOperations;
 import io.quarkus.hibernate.panache.stateless.PanacheStatelessEntityOperations;
 
-public interface PanacheStatelessBlockingEntity extends PanacheStatelessEntityOperations<Void, Boolean> {
+public interface PanacheStatelessBlockingEntity<Entity extends PanacheEntityMarker<Entity>>
+        extends PanacheStatelessEntityOperations<Entity, Entity, Boolean> {
 
     private PanacheBlockingOperations operations() {
         return PanacheOperations.getBlockingStateless();
@@ -21,8 +20,9 @@ public interface PanacheStatelessBlockingEntity extends PanacheStatelessEntityOp
      * @see #insert(Object, Object...)
      */
     @Override
-    public default Void insert() {
-        return operations().insert(this);
+    public default Entity insert() {
+        operations().insert(this);
+        return (Entity) this;
     }
 
     /**
@@ -33,16 +33,18 @@ public interface PanacheStatelessBlockingEntity extends PanacheStatelessEntityOp
      * @see #deleteAll()
      */
     @Override
-    public default Void delete() {
-        return operations().delete(this);
+    public default Entity delete() {
+        operations().delete(this);
+        return (Entity) this;
     }
 
     /**
      * Update this entity in the database.
      */
     @Override
-    public default Void update() {
-        return operations().update(this);
+    public default Entity update() {
+        operations().update(this);
+        return (Entity) this;
     }
 
     /**
@@ -50,7 +52,8 @@ public interface PanacheStatelessBlockingEntity extends PanacheStatelessEntityOp
      * in the database, otherwise it will be updated. Note that you cannot upsert an entity with a null ID.
      */
     @Override
-    public default Void upsert() {
-        return operations().upsert(this);
+    public default Entity upsert() {
+        operations().upsert(this);
+        return (Entity) this;
     }
 }

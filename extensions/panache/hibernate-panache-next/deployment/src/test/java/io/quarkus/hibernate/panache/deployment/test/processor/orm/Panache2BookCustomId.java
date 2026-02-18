@@ -17,7 +17,7 @@ import io.quarkus.hibernate.panache.managed.blocking.PanacheManagedBlockingRepos
 import io.quarkus.hibernate.panache.stateless.blocking.PanacheStatelessBlockingRepositoryBase;
 
 @Entity
-public class Panache2BookCustomId implements PanacheEntity.Managed {
+public class Panache2BookCustomId implements PanacheEntity.Managed<Panache2BookCustomId> {
     public @NaturalId String isbn;
     public @NaturalId String title;
     public @NaturalId String author;

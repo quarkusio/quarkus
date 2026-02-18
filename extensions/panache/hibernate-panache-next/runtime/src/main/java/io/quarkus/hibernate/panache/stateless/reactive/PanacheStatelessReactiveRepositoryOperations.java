@@ -11,7 +11,8 @@ import io.quarkus.hibernate.panache.stateless.PanacheStatelessRepositoryOperatio
 import io.smallrye.mutiny.Uni;
 
 public interface PanacheStatelessReactiveRepositoryOperations<Entity, Id>
-        extends PanacheStatelessRepositoryOperations<Entity, Uni<Mutiny.StatelessSession>, Uni<Void>, Uni<Boolean>, Id> {
+        extends
+        PanacheStatelessRepositoryOperations<Entity, Uni<Mutiny.StatelessSession>, Uni<Entity>, Uni<Void>, Uni<Boolean>, Id> {
 
     private Class<? extends Entity> getEntityClass() {
         return AbstractJpaOperations.getRepositoryEntityClass(getClass());
@@ -38,8 +39,8 @@ public interface PanacheStatelessReactiveRepositoryOperations<Entity, Id>
      *
      * @param entity the entity to insert.
      */
-    default Uni<Void> insert(Entity entity) {
-        return operations().insert(entity);
+    default Uni<Entity> insert(Entity entity) {
+        return operations().insert(entity).replaceWith(entity);
     }
 
     /**
@@ -47,8 +48,8 @@ public interface PanacheStatelessReactiveRepositoryOperations<Entity, Id>
      *
      * @param entity the entity to delete.
      */
-    default Uni<Void> delete(Entity entity) {
-        return operations().delete(entity);
+    default Uni<Entity> delete(Entity entity) {
+        return operations().delete(entity).replaceWith(entity);
     }
 
     /**
@@ -56,8 +57,8 @@ public interface PanacheStatelessReactiveRepositoryOperations<Entity, Id>
      *
      * @param entity the entity to update.
      */
-    default Uni<Void> update(Entity entity) {
-        return operations().update(entity);
+    default Uni<Entity> update(Entity entity) {
+        return operations().update(entity).replaceWith(entity);
     }
 
     /**
@@ -66,8 +67,8 @@ public interface PanacheStatelessReactiveRepositoryOperations<Entity, Id>
      *
      * @param entity the entity to insert or update.
      */
-    default Uni<Void> upsert(Entity entity) {
-        return operations().upsert(entity);
+    default Uni<Entity> upsert(Entity entity) {
+        return operations().upsert(entity).replaceWith(entity);
     }
 
     /**

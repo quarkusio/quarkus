@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.panache.stateless.blocking;
 
-import java.util.Map;
 import java.util.stream.Stream;
 
 import org.hibernate.StatelessSession;
@@ -11,7 +10,7 @@ import io.quarkus.hibernate.panache.runtime.spi.PanacheOperations;
 import io.quarkus.hibernate.panache.stateless.PanacheStatelessRepositoryOperations;
 
 public interface PanacheStatelessBlockingRepositoryOperations<Entity, Id>
-        extends PanacheStatelessRepositoryOperations<Entity, StatelessSession, Void, Boolean, Id> {
+        extends PanacheStatelessRepositoryOperations<Entity, StatelessSession, Entity, Void, Boolean, Id> {
 
     private Class<? extends Entity> getEntityClass() {
         return AbstractJpaOperations.getRepositoryEntityClass(getClass());
@@ -40,8 +39,9 @@ public interface PanacheStatelessBlockingRepositoryOperations<Entity, Id>
      * @see #insert(Stream)
      * @see #insert(Object, Object...)
      */
-    default Void insert(Entity entity) {
-        return operations().insert(entity);
+    default Entity insert(Entity entity) {
+        operations().insert(entity);
+        return entity;
     }
 
     /**
@@ -53,8 +53,9 @@ public interface PanacheStatelessBlockingRepositoryOperations<Entity, Id>
      * @see #delete(String, Map)
      * @see #deleteAll()
      */
-    default Void delete(Entity entity) {
-        return operations().delete(entity);
+    default Entity delete(Entity entity) {
+        operations().delete(entity);
+        return entity;
     }
 
     /**
@@ -62,8 +63,9 @@ public interface PanacheStatelessBlockingRepositoryOperations<Entity, Id>
      *
      * @param entity the entity to update.
      */
-    default Void update(Entity entity) {
-        return operations().update(entity);
+    default Entity update(Entity entity) {
+        operations().update(entity);
+        return entity;
     }
 
     /**
@@ -72,8 +74,9 @@ public interface PanacheStatelessBlockingRepositoryOperations<Entity, Id>
      *
      * @param entity the entity to insert or update.
      */
-    default Void upsert(Entity entity) {
-        return operations().upsert(entity);
+    default Entity upsert(Entity entity) {
+        operations().upsert(entity);
+        return entity;
     }
 
     /**

@@ -15,7 +15,7 @@ import org.hibernate.annotations.processing.HQL;
 import io.quarkus.hibernate.panache.PanacheEntity;
 
 @Entity
-public class Panache2Book extends PanacheEntity {
+public class Panache2Book extends PanacheEntity<Panache2Book> {
     public @NaturalId String isbn;
     public @NaturalId String title;
     public @NaturalId String author;

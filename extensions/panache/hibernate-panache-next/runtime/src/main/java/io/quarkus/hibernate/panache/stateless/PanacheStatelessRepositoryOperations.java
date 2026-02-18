@@ -1,9 +1,8 @@
 package io.quarkus.hibernate.panache.stateless;
 
-import java.util.Map;
 import java.util.stream.Stream;
 
-public interface PanacheStatelessRepositoryOperations<Entity, Session, Completion, Confirmation, Id> {
+public interface PanacheStatelessRepositoryOperations<Entity, Session, CompletionEntity, Completion, Confirmation, Id> {
 
     // Operations
 
@@ -18,11 +17,12 @@ public interface PanacheStatelessRepositoryOperations<Entity, Session, Completio
      * Insert the given entity in the database.
      *
      * @param entity the entity to insert.
+     * @return the entity passed as parameter
      * @see #insert(Iterable)
      * @see #insert(Stream)
      * @see #insert(Object, Object...)
      */
-    Completion insert(Entity entity);
+    CompletionEntity insert(Entity entity);
 
     /**
      * Delete the given entity from the database.
@@ -31,15 +31,17 @@ public interface PanacheStatelessRepositoryOperations<Entity, Session, Completio
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
      * @see #deleteAll()
+     * @return the entity passed as parameter
      */
-    Completion delete(Entity entity);
+    CompletionEntity delete(Entity entity);
 
     /**
      * Update the given entity in the database.
      *
      * @param entity the entity to update.
+     * @return the entity passed as parameter
      */
-    Completion update(Entity entity);
+    CompletionEntity update(Entity entity);
 
     /**
      * Insert all given entities.

@@ -9,8 +9,8 @@ import io.quarkus.hibernate.panache.stateless.blocking.PanacheStatelessBlockingE
 import io.quarkus.hibernate.panache.stateless.reactive.PanacheStatelessReactiveEntity;
 import io.smallrye.mutiny.Uni;
 
-public interface PanacheEntityMarker {
-    default PanacheManagedBlockingEntity managedBlocking() {
+public interface PanacheEntityMarker<Entity extends PanacheEntityMarker<Entity>> {
+    default PanacheManagedBlockingEntity<Entity> managedBlocking() {
         if (this instanceof PanacheManagedBlockingEntity) {
             return (PanacheManagedBlockingEntity) this;
         } else {
@@ -18,7 +18,7 @@ public interface PanacheEntityMarker {
         }
     }
 
-    default PanacheManagedReactiveEntity managedReactive() {
+    default PanacheManagedReactiveEntity<Entity> managedReactive() {
         if (this instanceof PanacheManagedReactiveEntity) {
             return (PanacheManagedReactiveEntity) this;
         } else {
@@ -26,7 +26,7 @@ public interface PanacheEntityMarker {
         }
     }
 
-    default PanacheStatelessReactiveEntity statelessReactive() {
+    default PanacheStatelessReactiveEntity<Entity> statelessReactive() {
         if (this instanceof PanacheStatelessReactiveEntity) {
             return (PanacheStatelessReactiveEntity) this;
         } else {
@@ -34,7 +34,7 @@ public interface PanacheEntityMarker {
         }
     }
 
-    default PanacheStatelessBlockingEntity statelessBlocking() {
+    default PanacheStatelessBlockingEntity<Entity> statelessBlocking() {
         if (this instanceof PanacheStatelessBlockingEntity) {
             return (PanacheStatelessBlockingEntity) this;
         } else {
@@ -43,11 +43,12 @@ public interface PanacheEntityMarker {
     }
 
     // FIXME: move to runtime
-    static class PanacheManagedBlockingEntityOperationsImpl implements PanacheManagedBlockingEntity {
+    static class PanacheManagedBlockingEntityOperationsImpl<Entity extends PanacheEntityMarker<Entity>>
+            implements PanacheManagedBlockingEntity<Entity> {
 
-        private Object entity;
+        private Entity entity;
 
-        public PanacheManagedBlockingEntityOperationsImpl(Object entity) {
+        public PanacheManagedBlockingEntityOperationsImpl(Entity entity) {
             this.entity = entity;
         }
 
@@ -56,18 +57,21 @@ public interface PanacheEntityMarker {
         }
 
         @Override
-        public Void persist() {
-            return operations().persist(entity);
+        public Entity persist() {
+            operations().persist(entity);
+            return entity;
         }
 
         @Override
-        public Void persistAndFlush() {
-            return operations().persistAndFlush(entity);
+        public Entity persistAndFlush() {
+            operations().persistAndFlush(entity);
+            return entity;
         }
 
         @Override
-        public Void delete() {
-            return operations().delete(entity);
+        public Entity delete() {
+            operations().delete(entity);
+            return entity;
         }
 
         @Override
@@ -77,11 +81,12 @@ public interface PanacheEntityMarker {
     }
 
     // FIXME: move to runtime
-    static class PanacheManagedReactiveEntityOperationsImpl implements PanacheManagedReactiveEntity {
+    static class PanacheManagedReactiveEntityOperationsImpl<Entity extends PanacheEntityMarker<Entity>>
+            implements PanacheManagedReactiveEntity<Entity> {
 
-        private Object entity;
+        private Entity entity;
 
-        public PanacheManagedReactiveEntityOperationsImpl(Object entity) {
+        public PanacheManagedReactiveEntityOperationsImpl(Entity entity) {
             this.entity = entity;
         }
 
@@ -90,18 +95,18 @@ public interface PanacheEntityMarker {
         }
 
         @Override
-        public Uni<Void> persist() {
-            return operations().persist(entity);
+        public Uni<Entity> persist() {
+            return operations().persist(entity).replaceWith(entity);
         }
 
         @Override
-        public Uni<Void> persistAndFlush() {
-            return operations().persistAndFlush(entity);
+        public Uni<Entity> persistAndFlush() {
+            return operations().persistAndFlush(entity).replaceWith(entity);
         }
 
         @Override
-        public Uni<Void> delete() {
-            return operations().delete(entity);
+        public Uni<Entity> delete() {
+            return operations().delete(entity).replaceWith(entity);
         }
 
         @Override
@@ -111,11 +116,12 @@ public interface PanacheEntityMarker {
     }
 
     // FIXME: move to runtime
-    static class PanacheStatelessReactiveEntityOperationsImpl implements PanacheStatelessReactiveEntity {
+    static class PanacheStatelessReactiveEntityOperationsImpl<Entity extends PanacheEntityMarker<Entity>>
+            implements PanacheStatelessReactiveEntity<Entity> {
 
-        private Object entity;
+        private Entity entity;
 
-        public PanacheStatelessReactiveEntityOperationsImpl(Object entity) {
+        public PanacheStatelessReactiveEntityOperationsImpl(Entity entity) {
             this.entity = entity;
         }
 
@@ -124,32 +130,33 @@ public interface PanacheEntityMarker {
         }
 
         @Override
-        public Uni<Void> insert() {
-            return operations().insert(entity);
+        public Uni<Entity> insert() {
+            return operations().insert(entity).replaceWith(entity);
         }
 
         @Override
-        public Uni<Void> update() {
-            return operations().update(entity);
+        public Uni<Entity> update() {
+            return operations().update(entity).replaceWith(entity);
         }
 
         @Override
-        public Uni<Void> upsert() {
-            return operations().upsert(entity);
+        public Uni<Entity> upsert() {
+            return operations().upsert(entity).replaceWith(entity);
         }
 
         @Override
-        public Uni<Void> delete() {
-            return operations().delete(entity);
+        public Uni<Entity> delete() {
+            return operations().delete(entity).replaceWith(entity);
         }
     }
 
     // FIXME: move to runtime
-    static class PanacheStatelessBlockingEntityOperationsImpl implements PanacheStatelessBlockingEntity {
+    static class PanacheStatelessBlockingEntityOperationsImpl<Entity extends PanacheEntityMarker<Entity>>
+            implements PanacheStatelessBlockingEntity<Entity> {
 
-        private Object entity;
+        private Entity entity;
 
-        public PanacheStatelessBlockingEntityOperationsImpl(Object entity) {
+        public PanacheStatelessBlockingEntityOperationsImpl(Entity entity) {
             this.entity = entity;
         }
 
@@ -158,23 +165,27 @@ public interface PanacheEntityMarker {
         }
 
         @Override
-        public Void insert() {
-            return operations().insert(entity);
+        public Entity insert() {
+            operations().insert(entity);
+            return entity;
         }
 
         @Override
-        public Void update() {
-            return operations().update(entity);
+        public Entity update() {
+            operations().update(entity);
+            return entity;
         }
 
         @Override
-        public Void upsert() {
-            return operations().upsert(entity);
+        public Entity upsert() {
+            operations().upsert(entity);
+            return entity;
         }
 
         @Override
-        public Void delete() {
-            return operations().delete(entity);
+        public Entity delete() {
+            operations().delete(entity);
+            return entity;
         }
     }
 }

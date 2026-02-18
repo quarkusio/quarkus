@@ -1,17 +1,16 @@
 package io.quarkus.hibernate.panache.managed.blocking;
 
-import java.util.Map;
-import java.util.stream.Stream;
-
 import jakarta.json.bind.annotation.JsonbTransient;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import io.quarkus.hibernate.panache.PanacheEntityMarker;
 import io.quarkus.hibernate.panache.managed.PanacheManagedEntityOperations;
 import io.quarkus.hibernate.panache.runtime.spi.PanacheBlockingOperations;
 import io.quarkus.hibernate.panache.runtime.spi.PanacheOperations;
 
-public interface PanacheManagedBlockingEntity extends PanacheManagedEntityOperations<Void, Boolean> {
+public interface PanacheManagedBlockingEntity<Entity extends PanacheEntityMarker<Entity>>
+        extends PanacheManagedEntityOperations<Entity, Entity, Boolean> {
 
     private PanacheBlockingOperations operations() {
         return PanacheOperations.getBlockingManaged();
@@ -26,8 +25,9 @@ public interface PanacheManagedBlockingEntity extends PanacheManagedEntityOperat
      * @see #persist(Object, Object...)
      */
     @Override
-    public default Void persist() {
-        return operations().persist(this);
+    public default Entity persist() {
+        operations().persist(this);
+        return (Entity) this;
     }
 
     /**
@@ -40,8 +40,9 @@ public interface PanacheManagedBlockingEntity extends PanacheManagedEntityOperat
      * @see #persist(Object, Object...)
      */
     @Override
-    public default Void persistAndFlush() {
-        return operations().persistAndFlush(this);
+    public default Entity persistAndFlush() {
+        operations().persistAndFlush(this);
+        return (Entity) this;
     }
 
     /**
@@ -53,8 +54,9 @@ public interface PanacheManagedBlockingEntity extends PanacheManagedEntityOperat
      * @see #deleteAll()
      */
     @Override
-    public default Void delete() {
-        return operations().delete(this);
+    public default Entity delete() {
+        operations().delete(this);
+        return (Entity) this;
     }
 
     /**

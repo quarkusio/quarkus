@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.panache.managed.reactive;
 
-import java.util.Map;
 import java.util.stream.Stream;
 
 import org.hibernate.reactive.mutiny.Mutiny;
@@ -12,7 +11,7 @@ import io.quarkus.hibernate.panache.runtime.spi.PanacheReactiveOperations;
 import io.smallrye.mutiny.Uni;
 
 public interface PanacheManagedReactiveRepositoryOperations<Entity, Id>
-        extends PanacheManagedRepositoryOperations<Entity, Uni<Mutiny.Session>, Uni<Void>, Uni<Boolean>, Id> {
+        extends PanacheManagedRepositoryOperations<Entity, Uni<Mutiny.Session>, Uni<Entity>, Uni<Void>, Uni<Boolean>, Id> {
 
     private Class<? extends Entity> getEntityClass() {
         return AbstractJpaOperations.getRepositoryEntityClass(getClass());
@@ -42,8 +41,8 @@ public interface PanacheManagedReactiveRepositoryOperations<Entity, Id>
      * @see #persist(Stream)
      * @see #persist(Object, Object...)
      */
-    default Uni<Void> persist(Entity entity) {
-        return operations().persist(entity);
+    default Uni<Entity> persist(Entity entity) {
+        return operations().persist(entity).replaceWith(entity);
     }
 
     /**
@@ -56,8 +55,8 @@ public interface PanacheManagedReactiveRepositoryOperations<Entity, Id>
      * @see #persist(Stream)
      * @see #persist(Object, Object...)
      */
-    default Uni<Void> persistAndFlush(Entity entity) {
-        return operations().persistAndFlush(entity);
+    default Uni<Entity> persistAndFlush(Entity entity) {
+        return operations().persistAndFlush(entity).replaceWith(entity);
     }
 
     /**
@@ -69,8 +68,8 @@ public interface PanacheManagedReactiveRepositoryOperations<Entity, Id>
      * @see #delete(String, Map)
      * @see #deleteAll()
      */
-    default Uni<Void> delete(Entity entity) {
-        return operations().delete(entity);
+    default Uni<Entity> delete(Entity entity) {
+        return operations().delete(entity).replaceWith(entity);
     }
 
     /**

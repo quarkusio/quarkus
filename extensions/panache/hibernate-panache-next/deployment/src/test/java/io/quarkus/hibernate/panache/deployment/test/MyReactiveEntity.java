@@ -13,7 +13,7 @@ import io.quarkus.hibernate.panache.WithId;
 import io.smallrye.mutiny.Uni;
 
 @Entity
-public class MyReactiveEntity extends WithId.AutoLong implements PanacheEntity.Reactive {
+public class MyReactiveEntity extends WithId.AutoLong implements PanacheEntity.Reactive<MyReactiveEntity> {
 
     public String foo;
     public String bar;

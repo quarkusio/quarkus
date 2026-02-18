@@ -17,7 +17,7 @@ import io.quarkus.hibernate.panache.WithId;
 import io.smallrye.mutiny.Uni;
 
 @Entity
-public class Panache2Book extends WithId.AutoLong implements PanacheEntity.Reactive {
+public class Panache2Book extends WithId.AutoLong implements PanacheEntity.Reactive<Panache2Book> {
     public @NaturalId String isbn;
     public @NaturalId String title;
     public @NaturalId String author;

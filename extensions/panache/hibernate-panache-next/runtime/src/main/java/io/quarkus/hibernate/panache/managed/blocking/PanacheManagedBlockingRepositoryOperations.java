@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.panache.managed.blocking;
 
-import java.util.Map;
 import java.util.stream.Stream;
 
 import org.hibernate.Session;
@@ -11,7 +10,7 @@ import io.quarkus.hibernate.panache.runtime.spi.PanacheBlockingOperations;
 import io.quarkus.hibernate.panache.runtime.spi.PanacheOperations;
 
 public interface PanacheManagedBlockingRepositoryOperations<Entity, Id>
-        extends PanacheManagedRepositoryOperations<Entity, Session, Void, Boolean, Id> {
+        extends PanacheManagedRepositoryOperations<Entity, Session, Entity, Void, Boolean, Id> {
 
     private Class<? extends Entity> getEntityClass() {
         return AbstractJpaOperations.getRepositoryEntityClass(getClass());
@@ -41,8 +40,9 @@ public interface PanacheManagedBlockingRepositoryOperations<Entity, Id>
      * @see #persist(Stream)
      * @see #persist(Object, Object...)
      */
-    default Void persist(Entity entity) {
-        return operations().persist(entity);
+    default Entity persist(Entity entity) {
+        operations().persist(entity);
+        return entity;
     }
 
     /**
@@ -55,8 +55,9 @@ public interface PanacheManagedBlockingRepositoryOperations<Entity, Id>
      * @see #persist(Stream)
      * @see #persist(Object, Object...)
      */
-    default Void persistAndFlush(Entity entity) {
-        return operations().persistAndFlush(entity);
+    default Entity persistAndFlush(Entity entity) {
+        operations().persistAndFlush(entity);
+        return entity;
     }
 
     /**
@@ -68,8 +69,9 @@ public interface PanacheManagedBlockingRepositoryOperations<Entity, Id>
      * @see #delete(String, Map)
      * @see #deleteAll()
      */
-    default Void delete(Entity entity) {
-        return operations().delete(entity);
+    default Entity delete(Entity entity) {
+        operations().delete(entity);
+        return entity;
     }
 
     /**

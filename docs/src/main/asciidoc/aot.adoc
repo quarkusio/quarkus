@@ -75,11 +75,13 @@ Quarkus can use your `@QuarkusIntegrationTest` test suite for this training:
 With this approach:
 
 1. Quarkus builds the application
-2. Integration tests run against the application with AOT training enabled
+2. Integration tests (i.e. tests that are annotated with `@QuarkusIntegrationTest`) run against the application with AOT training enabled
 3. The JVM captures profiling data during the test run
 4. An optimized `app.aot` cache is generated
 
 The more representative your integration tests are of production traffic, the more effective the AOT cache will be.
+
+IMPORTANT: For this approach to work, the integration tests must not be skipped
 
 === Controlling the training phase
 

@@ -228,9 +228,13 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
     }
 
     _showResultNotification(response){
-        if(response.type === "success"){
-            notifier.showInfoMessage(response.message + " (" + response.number + ")");
-        }else{
+        if (response.type === "success") {
+            if (response.number >= 0) {
+                notifier.showInfoMessage(response.message + " (" + response.number + ")");
+            } else {
+                notifier.showInfoMessage(response.message);
+            }
+        } else {
             notifier.showWarningMessage(response.message);
         }
     }

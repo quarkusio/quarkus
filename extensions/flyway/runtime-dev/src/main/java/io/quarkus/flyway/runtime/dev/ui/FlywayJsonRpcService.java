@@ -1,5 +1,6 @@
 package io.quarkus.flyway.runtime.dev.ui;
 
+import static io.quarkus.datasource.common.runtime.DataSourceUtil.DEFAULT_DATASOURCE_NAME;
 import static java.util.List.of;
 
 import java.math.BigInteger;
@@ -9,20 +10,24 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
+import jakarta.inject.Inject;
+
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.output.CleanResult;
 import org.flywaydb.core.api.output.MigrateResult;
 
 import io.quarkus.dev.config.CurrentConfig;
 import io.quarkus.dev.console.DevConsoleManager;
+import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
 import io.quarkus.flyway.runtime.FlywayContainer;
 import io.quarkus.flyway.runtime.FlywayContainersSupplier;
-import io.quarkus.runtime.configuration.ConfigUtils;
+import io.quarkus.flyway.runtime.FlywayRuntimeConfig;
+import io.smallrye.config.SmallRyeConfig;
 
 public class FlywayJsonRpcService {
 
@@ -31,11 +36,12 @@ public class FlywayJsonRpcService {
     private String artifactId;
     private Map<String, FlywayDatasource> datasources;
 
-    @ConfigProperty(name = "quarkus.flyway.locations")
-    private List<String> locations;
-
-    @ConfigProperty(name = "quarkus.flyway.clean-disabled")
-    private boolean cleanDisabled;
+    @Inject
+    SmallRyeConfig config;
+    @Inject
+    FlywayBuildTimeConfig buildTimeConfig;
+    @Inject
+    FlywayRuntimeConfig runtimeConfig;
 
     public void setInitialSqlSuppliers(Map<String, Supplier<String>> initialSqlSuppliers) {
         this.initialSqlSuppliers = initialSqlSuppliers;
@@ -62,7 +68,7 @@ public class FlywayJsonRpcService {
     }
 
     public boolean isCleanDisabled() {
-        return this.cleanDisabled;
+        return runtimeConfig.datasources().get(DEFAULT_DATASOURCE_NAME).cleanDisabled();
     }
 
     public FlywayActionResponse clean(String ds) {
@@ -120,9 +126,9 @@ public class FlywayJsonRpcService {
         String script = found.get();
 
         Flyway flyway = getFlyway(ds);
+        List<String> locations = buildTimeConfig.datasources().get(DEFAULT_DATASOURCE_NAME).locations();
         if (flyway != null) {
             if (script != null) {
-                Map<String, String> params = Map.of("ds", ds, "script", script, "artifactId", artifactId);
                 try {
                     if (locations.isEmpty()) {
                         return new FlywayActionResponse("error", "Datasource has no locations configured");
@@ -146,19 +152,15 @@ public class FlywayJsonRpcService {
                     FlywayDatasource flywayDatasource = datasources.get(ds);
                     flywayDatasource.hasMigrations = true;
                     flywayDatasource.createPossible = false;
-                    Map<String, String> newConfig = new HashMap<>();
-                    boolean isBaselineOnMigrateConfigured = ConfigUtils
-                            .isPropertyPresent("quarkus.flyway.baseline-on-migrate");
-                    boolean isMigrateAtStartConfigured = ConfigUtils.isPropertyPresent("quarkus.flyway.migrate-at-start");
-                    boolean isCleanAtStartConfigured = ConfigUtils.isPropertyPresent("quarkus.flyway.clean-at-start");
-                    if (!isBaselineOnMigrateConfigured) {
-                        newConfig.put("quarkus.flyway.baseline-on-migrate", "true");
-                    }
-                    if (!isMigrateAtStartConfigured) {
+                    Map<String, String> newConfig = new LinkedHashMap<>();
+                    if (config.getConfigValue("quarkus.flyway.migrate-at-start").isDefault()) {
                         newConfig.put("quarkus.flyway.migrate-at-start", "true");
                     }
-                    for (var profile : of("test", "dev")) {
-                        if (!isCleanAtStartConfigured) {
+                    if (config.getConfigValue("quarkus.flyway.baseline-on-migrate").isDefault()) {
+                        newConfig.put("quarkus.flyway.baseline-on-migrate", "true");
+                    }
+                    for (var profile : of("dev", "test")) {
+                        if (config.getConfigValue("quarkus.flyway.clean-at-start").isDefault()) {
                             newConfig.put("%" + profile + ".quarkus.flyway.clean-at-start", "true");
                         }
                     }
@@ -177,6 +179,7 @@ public class FlywayJsonRpcService {
     }
 
     public FlywayActionResponse update(String ds) {
+        List<String> locations = buildTimeConfig.datasources().get(DEFAULT_DATASOURCE_NAME).locations();
         try {
             Supplier<String> found = updateSqlSuppliers.get(ds);
             if (found == null) {

@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.panache.stateless;
 
-import java.util.Map;
 import java.util.stream.Stream;
 
 public interface PanacheStatelessRepositoryOperations<Entity, Session, Completion, Confirmation, Id> {
@@ -28,9 +27,6 @@ public interface PanacheStatelessRepositoryOperations<Entity, Session, Completio
      * Delete the given entity from the database.
      *
      * @param entity the entity to delete.
-     * @see #delete(String, Object...)
-     * @see #delete(String, Map)
-     * @see #deleteAll()
      */
     Completion delete(Entity entity);
 

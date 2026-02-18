@@ -25,18 +25,31 @@ Leyden AOT requires **JDK 24 or newer**. For older JDK versions, Quarkus can fal
 
 To build a Quarkus application with AOT caching enabled:
 
-[source,bash]
+[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-maven"]
+.Maven
 ----
 ./mvnw verify -Dquarkus.package.jar.aot.enabled=true
+----
+[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+----
+./gradlew build quarkusIntTest buildAotEnhancedImage -Dquarkus.package.jar.aot.enabled=true
 ----
 
 NOTE: When enabling AOT via `quarkus.package.jar.aot.enabled=true`, Quarkus will automatically switch to the `aot-jar` type if none is explicitly configured via `quarkus.package.jar.type`.
 
 Then run the application with:
 
-[source,bash]
+[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-maven"]
+.Maven
 ----
 cd target/quarkus-app
+java -XX:AOTCache=app.aot -jar quarkus-run.jar
+----
+[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+----
+cd build/quarkus-app
 java -XX:AOTCache=app.aot -jar quarkus-run.jar
 ----
 
@@ -55,21 +68,33 @@ NOTE: It is not recommended to use the `aot-jar` packaging outside of the AOT us
 
 Enable AOT cache generation with:
 
-[source,bash]
+[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-maven"]
+.Maven
 ----
 ./mvnw package -Dquarkus.package.jar.aot.enabled=true
 ----
+[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+----
+./gradle build -Dquarkus.package.jar.aot.enabled=true
+----
 
-On JDK 24+, this generates an `app.aot` file in `target/quarkus-app/`.
+On JDK 24+, this generates an `app.aot` file in `target/quarkus-app/` for Maven and `build/quarkus-app/` for Gradle.
 
 === Training with integration tests
 
 For optimal results, the AOT cache should be "trained" by running actual application workloads.
 Quarkus can use your `@QuarkusIntegrationTest` test suite for this training:
 
-[source,bash]
+[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-maven"]
+.Maven
 ----
 ./mvnw verify -Dquarkus.package.jar.aot.enabled=true
+----
+[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+----
+./gradlew build quarkusIntTest buildAotEnhancedImage -Dquarkus.package.jar.aot.enabled=true
 ----
 
 With this approach:
@@ -91,7 +116,8 @@ The `quarkus.package.jar.aot.phase` configuration controls when training occurs:
 * `BUILD`: Generates the cache during build (limited training, faster builds)
 * `INTEGRATION_TESTS`: Generates during test execution (better optimization)
 
-[source,bash]
+[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-maven"]
+.Maven
 ----
 # Explicit integration test training
 ./mvnw verify -Dquarkus.package.jar.aot.enabled=true -Dquarkus.package.jar.aot.phase=INTEGRATION_TESTS
@@ -99,14 +125,30 @@ The `quarkus.package.jar.aot.phase` configuration controls when training occurs:
 # Build-time only (faster, less optimal)
 ./mvnw package -Dquarkus.package.jar.aot.enabled=true -Dquarkus.package.jar.aot.phase=BUILD
 ----
+[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+----
+# Explicit integration test training
+./mvnw build quarkusIntTest buildAotEnhancedImage -Dquarkus.package.jar.aot.enabled=true -Dquarkus.package.jar.aot.phase=INTEGRATION_TESTS
+
+# Build-time only (faster, less optimal)
+./mvnw build -Dquarkus.package.jar.aot.enabled=true -Dquarkus.package.jar.aot.phase=BUILD
+----
 
 == Running with AOT cache
 
 Launch your application with the `-XX:AOTCache` JVM flag:
 
-[source,bash]
+[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-maven"]
+.Maven
 ----
 cd target/quarkus-app
+java -XX:AOTCache=app.aot -jar quarkus-run.jar
+----
+[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+----
+cd build/quarkus-app
 java -XX:AOTCache=app.aot -jar quarkus-run.jar
 ----
 
@@ -118,10 +160,15 @@ Quarkus can automatically build container images that include AOT caches, giving
 
 When using `quarkus-container-image-jib`, `quarkus-container-image-docker`, or `quarkus-container-image-podman`:
 
-[source,bash]
+[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-maven"]
+.Maven
 ----
-./mvnw verify -Dquarkus.package.jar.aot.enabled=true \
-              -Dquarkus.container-image.build=true
+./mvnw verify -Dquarkus.package.jar.aot.enabled=true -Dquarkus.container-image.build=true
+----
+[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+----
+./gradlew build quarkusIntTest buildAotEnhancedImage -Dquarkus.package.jar.aot.enabled=true -Dquarkus.container-image.build=true
 ----
 
 This will:
@@ -135,7 +182,8 @@ This will:
 
 Add one of the following dependencies to your project:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <!-- Jib (recommended for most use cases) -->
 <dependency>
@@ -154,6 +202,18 @@ Add one of the following dependencies to your project:
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-container-image-podman</artifactId>
 </dependency>
+----
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+// Jib (recommended for most use cases)
+implementation("io.quarkus:quarkus-container-image-jib")
+
+// Or Docker
+implementation("io.quarkus:quarkus-container-image-docker")
+
+// Or Podman
+implementation("io.quarkus:quarkus-container-image-podman")
 ----
 
 == Configuration reference
@@ -175,18 +235,31 @@ AppCDS provides more modest startup improvements compared to Leyden AOT, but wor
 
 === Generating AppCDS archive
 
-[source,bash]
+[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-maven"]
+.Maven
 ----
 ./mvnw package -Dquarkus.package.jar.aot.enabled=true -Dquarkus.package.jar.aot.type=AppCDS
+----
+[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+----
+./gradlew build -Dquarkus.package.jar.aot.enabled=true -Dquarkus.package.jar.aot.type=AppCDS
 ----
 
 This generates an `app-cds.jsa` file.
 
 === Running with AppCDS
 
-[source,bash]
+[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-maven"]
+.Maven
 ----
 cd target/quarkus-app
+java -XX:SharedArchiveFile=app-cds.jsa -jar quarkus-run.jar
+----
+[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+----
+cd build/quarkus-app
 java -XX:SharedArchiveFile=app-cds.jsa -jar quarkus-run.jar
 ----
 

@@ -633,7 +633,7 @@ jobs:
           # see https://maven.apache.org/configure.html#a.mvn.2Fmaven.config_file.3A
           # IMPORTANT: we cannot simply replace all spaces with new lines as we have a module with spaces in the name (to test spaces are supported)
           echo -e "$MATRIX_JAVA_MODULES" >> .mvn/maven.config
-          ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS clean verify -Dsurefire.timeout=1200 -Dno-test-kubernetes ${{ matrix.java.maven_args }}
+          ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS clean install -Dsurefire.timeout=1200 -Dno-test-kubernetes ${{ matrix.java.maven_args }}
       - name: Clean Gradle temp directory
         if: always()
         run: devtools/gradle/gradlew --stop && rm -rf devtools/gradle/gradle-extension-plugin/build/tmp

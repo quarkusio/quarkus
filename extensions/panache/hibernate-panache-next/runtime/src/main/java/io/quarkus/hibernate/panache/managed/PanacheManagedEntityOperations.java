@@ -1,8 +1,5 @@
 package io.quarkus.hibernate.panache.managed;
 
-import java.util.Map;
-import java.util.stream.Stream;
-
 import jakarta.json.bind.annotation.JsonbTransient;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -14,9 +11,6 @@ public interface PanacheManagedEntityOperations<Completion, Confirmation> extend
      * Persist this entity in the database, if not already persisted. This will set your ID field if it is not already set.
      *
      * @see #isPersistent()
-     * @see #persist(Iterable)
-     * @see #persist(Stream)
-     * @see #persist(Object, Object...)
      */
     public Completion persist();
 
@@ -25,9 +19,6 @@ public interface PanacheManagedEntityOperations<Completion, Confirmation> extend
      * Then flushes all pending changes to the database.
      *
      * @see #isPersistent()
-     * @see #persist(Iterable)
-     * @see #persist(Stream)
-     * @see #persist(Object, Object...)
      */
     public Completion persistAndFlush();
 
@@ -35,9 +26,6 @@ public interface PanacheManagedEntityOperations<Completion, Confirmation> extend
      * Delete this entity from the database, if it is already persisted.
      *
      * @see #isPersistent()
-     * @see #delete(String, Object...)
-     * @see #delete(String, Map)
-     * @see #deleteAll()
      */
     public Completion delete();
 

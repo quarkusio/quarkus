@@ -1,5 +1,6 @@
 package io.quarkus.devservices.deployment.compose;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -125,9 +126,7 @@ public class ComposeProjectTest {
 
         // Verify only kafka service is selected (as it's in the kafka profile)
         Map<String, WaitAllStrategy> waitStrategies = composeProject.getWaitStrategies();
-        assertEquals(2, waitStrategies.size());
-        assertTrue(waitStrategies.containsKey("kafka"));
-        assertTrue(waitStrategies.containsKey("zookeeper"));
+        assertThat(waitStrategies).containsOnlyKeys("kafka");
 
         // Verify project name set in file
         assertEquals("devservices", composeProject.getProject());

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -12,8 +13,16 @@ import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
+import io.quarkus.arc.Arc;
+import io.quarkus.proxy.ProxyConfiguration;
+import io.quarkus.proxy.ProxyConfigurationRegistry;
+import io.quarkus.proxy.ProxyType;
 
 public class KubernetesClientUtils {
+
+    private enum Protocols {
+        HTTP
+    }
 
     private static final String PREFIX = "quarkus.kubernetes-client.";
 
@@ -54,14 +63,53 @@ public class KubernetesClientUtils {
         buildConfig.clientKeyData().ifPresent(configBuilder::withClientKeyData);
         buildConfig.clientKeyAlgo().ifPresent(configBuilder::withClientKeyAlgo);
         buildConfig.clientKeyPassphrase().ifPresent(configBuilder::withClientKeyPassphrase);
+
+        if (isLegacyProxySet(buildConfig)) {
+            configureWithLegacyProxy(buildConfig, configBuilder);
+        } else {
+            configureWithProxyRegistry(buildConfig, configBuilder);
+        }
+
+        buildConfig.requestRetryBackoffInterval().ifPresent(d -> configBuilder.withRequestRetryBackoffInterval(millisAsInt(d)));
+        buildConfig.requestRetryBackoffLimit().ifPresent(configBuilder::withRequestRetryBackoffLimit);
+        return configBuilder.build();
+    }
+
+    private static void configureWithProxyRegistry(KubernetesClientBuildConfig buildConfig, ConfigBuilder configBuilder) {
+        ProxyConfigurationRegistry registry = Arc.container().select(ProxyConfigurationRegistry.class).get();
+
+        System.out.println("Registry: " + registry);
+
+        registry.get(buildConfig.proxyConfigurationName())
+                .map(ProxyConfiguration::assertHttpType)
+                .ifPresent(proxyConfiguration -> {
+                    applyProxyRegistry(proxyConfiguration, configBuilder);
+                });
+    }
+
+    private static void applyProxyRegistry(ProxyConfiguration proxyConfiguration, ConfigBuilder configBuilder) {
+
+        String host = proxyConfiguration.host();
+        int port = proxyConfiguration.port();
+
+        if (Objects.requireNonNull(proxyConfiguration.type()) == ProxyType.HTTP) {
+            if (proxyConfiguration.host().startsWith("https://")) {
+                configBuilder.withHttpsProxy(host + ":" + port);
+            } else {
+                configBuilder.withHttpProxy(host + ":" + port);
+            }
+        }
+        proxyConfiguration.username().ifPresent(configBuilder::withUsername);
+        proxyConfiguration.password().ifPresent(configBuilder::withPassword);
+        proxyConfiguration.nonProxyHosts().ifPresent(list -> configBuilder.withNoProxy(list.toArray(new String[0])));
+    }
+
+    private static void configureWithLegacyProxy(KubernetesClientBuildConfig buildConfig, ConfigBuilder configBuilder) {
         buildConfig.httpProxy().ifPresent(configBuilder::withHttpProxy);
         buildConfig.httpsProxy().ifPresent(configBuilder::withHttpsProxy);
         buildConfig.proxyUsername().ifPresent(configBuilder::withProxyUsername);
         buildConfig.proxyPassword().ifPresent(configBuilder::withProxyPassword);
         buildConfig.noProxy().ifPresent(list -> list.toArray(new String[0]));
-        buildConfig.requestRetryBackoffInterval().ifPresent(d -> configBuilder.withRequestRetryBackoffInterval(millisAsInt(d)));
-        buildConfig.requestRetryBackoffLimit().ifPresent(configBuilder::withRequestRetryBackoffLimit);
-        return configBuilder.build();
     }
 
     private static int millisAsInt(Duration duration) {
@@ -111,5 +159,9 @@ public class KubernetesClientUtils {
 
     private static <T> Optional<T> optional(org.eclipse.microprofile.config.Config config, String key, Class<T> valueType) {
         return config.getOptionalValue(PREFIX + key, valueType);
+    }
+
+    private static boolean isLegacyProxySet(KubernetesClientBuildConfig buildConfig) {
+        return buildConfig.httpProxy().isPresent() || buildConfig.httpsProxy().isPresent();
     }
 }

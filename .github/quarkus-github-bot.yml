@@ -586,7 +586,7 @@ triage:
       directories:
         - extensions/narayana-lra/
         - integration-tests/narayana-lra/
-      notify: [xstefank, mmusgrov]
+      notify: [xstefank, mmusgrov, marcosgopen]
     - id: neo4j
       labels: [area/neo4j]
       title: "neo4j"

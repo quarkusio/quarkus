@@ -48,6 +48,7 @@ import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.test.devmode.util.DevModeClient;
+import io.quarkus.test.junit.common.DisabledOnSemeru;
 import io.smallrye.common.process.ProcessUtil;
 
 @DisableForNative
@@ -663,6 +664,7 @@ public class JarRunnerIT extends MojoTestBase {
 
     @Test
     @EnabledOnJre(JRE.JAVA_25)
+    @DisabledOnSemeru(reason = "Semeru does not support Leyden")
     public void testThatAotFileUsable() throws Exception {
         File testDir = initProject("projects/aot", "projects/project-aot");
         RunningInvoker running = new RunningInvoker(testDir, false);

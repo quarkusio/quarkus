@@ -245,6 +245,10 @@ public class Mailers {
             cfg.addDKIMSignOption(toVertxDkimSignOptions(config.dkim()));
         }
 
+        if (config.maxMailsPerConnection().isPresent()) {
+            cfg.setMaxMailsPerConnection(config.maxMailsPerConnection().getAsLong());
+        }
+
         cfg.setStarttls(StartTLSOptions.valueOf(config.startTLS().toUpperCase()));
         cfg.setMultiPartOnly(config.multiPartOnly());
 

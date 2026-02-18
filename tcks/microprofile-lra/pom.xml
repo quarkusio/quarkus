@@ -13,7 +13,7 @@
     <name>Quarkus - TCK - MicroProfile LRA</name>
 
     <properties>
-        <microprofile-lra-tck.version>2.0.1</microprofile-lra-tck.version>
+        <microprofile-lra-tck.version>2.0.2</microprofile-lra-tck.version>
     </properties>
 
     <build>

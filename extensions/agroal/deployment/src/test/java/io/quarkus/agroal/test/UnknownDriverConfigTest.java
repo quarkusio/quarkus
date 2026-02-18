@@ -29,14 +29,15 @@ public class UnknownDriverConfigTest {
 
     @Test
     public void testDefaultDataSourceInjection() throws SQLException {
-        testDataSource(defaultDataSource, "username-default", 3, 13, 7, Duration.ofSeconds(53), Duration.ofSeconds(54),
-                Duration.ofSeconds(55), Duration.ofSeconds(56), Duration.ofSeconds(57),
+        testDataSource(defaultDataSource, "username-default", 3, 13, 7, Duration.ofSeconds(52), Duration.ofSeconds(53),
+                Duration.ofSeconds(54), Duration.ofSeconds(55), Duration.ofSeconds(56), Duration.ofSeconds(57),
                 "create schema if not exists schema_default");
     }
 
     private static void testDataSource(AgroalDataSource dataSource, String username, int minSize, int maxSize,
-            int initialSize, Duration backgroundValidationInterval, Duration acquisitionTimeout, Duration leakDetectionInterval,
-            Duration idleRemovalInterval, Duration maxLifetime, String newConnectionSql) throws SQLException {
+            int initialSize, Duration loginTimeout, Duration backgroundValidationInterval, Duration acquisitionTimeout,
+            Duration leakDetectionInterval, Duration idleRemovalInterval, Duration maxLifetime, String newConnectionSql)
+            throws SQLException {
         AgroalConnectionPoolConfiguration configuration = dataSource.getConfiguration().connectionPoolConfiguration();
         AgroalConnectionFactoryConfiguration agroalConnectionFactoryConfiguration = configuration
                 .connectionFactoryConfiguration();
@@ -46,6 +47,7 @@ public class UnknownDriverConfigTest {
         assertEquals(maxSize, configuration.maxSize());
         assertEquals(initialSize, configuration.initialSize());
         assertEquals(backgroundValidationInterval, configuration.validationTimeout());
+        assertEquals(loginTimeout, agroalConnectionFactoryConfiguration.loginTimeout());
         assertEquals(acquisitionTimeout, configuration.acquisitionTimeout());
         assertEquals(leakDetectionInterval, configuration.leakTimeout());
         assertEquals(idleRemovalInterval, configuration.reapTimeout());

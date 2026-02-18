@@ -96,6 +96,7 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
                 config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
                 config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
                 testConfig.waitTime(),
+                config.getOptionalValue("quarkus.shutdown.timeout", Duration.class).orElse(Duration.ZERO),
                 testConfig.integrationTestProfile(),
                 TestConfigUtil.argLineValues(testConfig.argLine().orElse("")),
                 testConfig.env(),
@@ -176,7 +177,8 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
         private final Map<String, String> volumeMounts;
         private final String outputTargetDirectory;
 
-        public DefaultDockerInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile,
+        public DefaultDockerInitContext(int httpPort, int httpsPort, Duration waitTime, Duration shutdownTimeout,
+                String testProfile,
                 List<String> argLine, Map<String, String> env,
                 DevServicesLaunchResult devServicesLaunchResult,
                 String containerImage, boolean pullRequired,
@@ -187,7 +189,7 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
                 Optional<String> entryPoint,
                 Optional<String> containerWorkingDirectory,
                 List<String> programArgs, String outputTargetDirectory) {
-            super(httpPort, httpsPort, waitTime, testProfile, argLine, env, devServicesLaunchResult);
+            super(httpPort, httpsPort, waitTime, shutdownTimeout, testProfile, argLine, env, devServicesLaunchResult);
             this.containerImage = containerImage;
             this.pullRequired = pullRequired;
             this.additionalExposedPorts = additionalExposedPorts;

@@ -98,6 +98,10 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-container-image-jib</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core</artifactId>
         </dependency>
         <dependency>
@@ -208,6 +212,19 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-avro-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-container-image-jib-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -546,7 +563,10 @@
         </profile>
         <profile>
             <id>gradle-8</id>
-            <!-- Adds an execution to the surefire plugin that runs selected tests with Gradle 8 -->
+            <activation>
+                <jdk>[17,25)</jdk>
+            </activation>
+            <!-- Adds an execution to the surefire plugin that runs selected tests with Gradle 8, only for Java < 25 -->
             <build>
                 <pluginManagement>
                     <plugins>

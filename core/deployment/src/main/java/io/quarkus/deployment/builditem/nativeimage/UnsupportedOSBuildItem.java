@@ -1,9 +1,5 @@
 package io.quarkus.deployment.builditem.nativeimage;
 
-import static io.quarkus.dev.console.QuarkusConsole.IS_LINUX;
-import static io.quarkus.dev.console.QuarkusConsole.IS_MAC;
-import static io.quarkus.dev.console.QuarkusConsole.IS_WINDOWS;
-
 import io.quarkus.builder.item.MultiBuildItem;
 import io.smallrye.common.cpu.CPU;
 import io.smallrye.common.os.OS;
@@ -22,9 +18,9 @@ public final class UnsupportedOSBuildItem extends MultiBuildItem {
      */
     @Deprecated(forRemoval = true, since = "3.26.0")
     public enum Os {
-        WINDOWS(IS_WINDOWS),
-        MAC(IS_MAC),
-        LINUX(IS_LINUX),
+        WINDOWS(OS.WINDOWS.isCurrent()),
+        MAC(OS.MAC.isCurrent()),
+        LINUX(OS.LINUX.isCurrent()),
         NONE(false);
 
         public final boolean active;

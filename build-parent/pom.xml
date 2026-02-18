@@ -460,7 +460,7 @@
                         <!-- the add-opens java.base/java.lang=ALL-UNNAMED is here for
                              org.jboss.JDKSpecific.ThreadAccess.clearThreadLocals() -->
                         <!-- set -XX:+HeapDumpOnOutOfMemoryError to provide some useful debugging info, should this happen -->
-                        <argLine>${jacoco.agent.argLine} -Xmx1500m -XX:+HeapDumpOnOutOfMemoryError -XX:MaxMetaspaceSize=1500m -Djava.io.tmpdir="${project.build.directory}" ${surefire.argLine.additional} --add-opens java.naming/com.sun.naming.internal=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
+                        <argLine>${jacoco.agent.argLine} -Xmx1500m -XX:+HeapDumpOnOutOfMemoryError -XX:MaxMetaspaceSize=1500m -Djava.io.tmpdir="${project.build.directory}" ${surefire.argLine.additional} --add-opens java.naming/com.sun.naming.internal=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED</argLine>
                         <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
                     </configuration>
                 </plugin>

@@ -5,8 +5,8 @@ import static org.hamcrest.Matchers.startsWith;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.junit.DisabledOnSemeru;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.common.DisabledOnSemeru;
 import io.restassured.RestAssured;
 
 @QuarkusTest

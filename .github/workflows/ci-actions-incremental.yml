@@ -3,7 +3,7 @@ name: Quarkus CI
 on:
   # the build for main is run periodically and cancelled if there are no changes since the last run
   schedule:
-    - cron: '0 */8 * * *'
+    - cron: '0 */12 * * *'
   push:
     branches-ignore:
       - 'dependabot/**'

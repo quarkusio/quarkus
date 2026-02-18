@@ -27,10 +27,10 @@ To build a Quarkus application with AOT caching enabled:
 
 [source,bash]
 ----
-./mvnw verify -Dquarkus.package.jar.type=aot-jar -Dquarkus.package.jar.aot.enabled=true
+./mvnw verify -Dquarkus.package.jar.aot.enabled=true
 ----
 
-NOTE: In a future Quarkus release, specifying `-Dquarkus.package.jar.type=aot-jar` will no longer be necessary - enabling AOT via `-Dquarkus.package.jar.aot.enabled=true` will automatically use the appropriate JAR type.
+NOTE: When enabling AOT via `quarkus.package.jar.aot.enabled=true`, Quarkus will automatically switch to the `aot-jar` type if none is explicitly configured via `quarkus.package.jar.type`.
 
 Then run the application with:
 
@@ -57,7 +57,7 @@ Enable AOT cache generation with:
 
 [source,bash]
 ----
-./mvnw package -Dquarkus.package.jar.type=aot-jar -Dquarkus.package.jar.aot.enabled=true
+./mvnw package -Dquarkus.package.jar.aot.enabled=true
 ----
 
 On JDK 24+, this generates an `app.aot` file in `target/quarkus-app/`.
@@ -69,7 +69,7 @@ Quarkus can use your `@QuarkusIntegrationTest` test suite for this training:
 
 [source,bash]
 ----
-./mvnw verify -Dquarkus.package.jar.type=aot-jar -Dquarkus.package.jar.aot.enabled=true
+./mvnw verify -Dquarkus.package.jar.aot.enabled=true
 ----
 
 With this approach:
@@ -92,10 +92,10 @@ The `quarkus.package.jar.aot.phase` configuration controls when training occurs:
 [source,bash]
 ----
 # Explicit integration test training
-./mvnw verify -Dquarkus.package.jar.type=aot-jar -Dquarkus.package.jar.aot.enabled=true -Dquarkus.package.jar.aot.phase=INTEGRATION_TESTS
+./mvnw verify -Dquarkus.package.jar.aot.enabled=true -Dquarkus.package.jar.aot.phase=INTEGRATION_TESTS
 
 # Build-time only (faster, less optimal)
-./mvnw package -Dquarkus.package.jar.type=aot-jar -Dquarkus.package.jar.aot.enabled=true -Dquarkus.package.jar.aot.phase=BUILD
+./mvnw package -Dquarkus.package.jar.aot.enabled=true -Dquarkus.package.jar.aot.phase=BUILD
 ----
 
 == Running with AOT cache
@@ -118,8 +118,7 @@ When using `quarkus-container-image-jib`, `quarkus-container-image-docker`, or `
 
 [source,bash]
 ----
-./mvnw verify -Dquarkus.package.jar.type=aot-jar \
-              -Dquarkus.package.jar.aot.enabled=true \
+./mvnw verify -Dquarkus.package.jar.aot.enabled=true \
               -Dquarkus.container-image.build=true
 ----
 

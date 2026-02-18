@@ -35,7 +35,7 @@
         <echarts.version>6.0.0</echarts.version>
         <es-module-shims.version>2.0.10</es-module-shims.version>
         <path-to-regexp.version>6.3.0</path-to-regexp.version>
-        <type-fest.version>5.4.3</type-fest.version>
+        <type-fest.version>5.4.4</type-fest.version>
         <tagged-tag.version>1.0.0</tagged-tag.version>
         <codeblock.version>1.1.2</codeblock.version>
         <qomponent.version>1.0.4</qomponent.version>

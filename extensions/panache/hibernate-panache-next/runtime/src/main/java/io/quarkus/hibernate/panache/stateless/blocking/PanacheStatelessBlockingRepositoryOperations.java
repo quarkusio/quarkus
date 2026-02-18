@@ -42,6 +42,7 @@ public interface PanacheStatelessBlockingRepositoryOperations<Entity, Id>
         return operations().update(entity);
     }
 
+    @Override
     default Void upsert(Entity entity) {
         return operations().upsert(entity);
     }

@@ -43,6 +43,7 @@ public interface PanacheStatelessReactiveRepositoryOperations<Entity, Id>
         return operations().update(entity);
     }
 
+    @Override
     default Uni<Void> upsert(Entity entity) {
         return operations().upsert(entity);
     }

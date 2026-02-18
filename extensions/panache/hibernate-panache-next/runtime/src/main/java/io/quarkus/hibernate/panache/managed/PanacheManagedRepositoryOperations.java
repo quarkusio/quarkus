@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.panache.managed;
 
-import java.util.Map;
 import java.util.stream.Stream;
 
 public interface PanacheManagedRepositoryOperations<Entity, Session, Completion, Confirmation, Id> {
@@ -42,9 +41,6 @@ public interface PanacheManagedRepositoryOperations<Entity, Session, Completion,
      *
      * @param entity the entity to delete.
      * @see #isPersistent(Object)
-     * @see #delete(String, Object...)
-     * @see #delete(String, Map)
-     * @see #deleteAll()
      */
     Completion delete(Entity entity);
 

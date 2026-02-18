@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.panache.stateless;
 
-import java.util.Map;
 import java.util.stream.Stream;
 
 public interface PanacheStatelessRepositoryOperations<Entity, Session, Completion, Confirmation, Id> {
@@ -28,9 +27,6 @@ public interface PanacheStatelessRepositoryOperations<Entity, Session, Completio
      * Delete the given entity from the database.
      *
      * @param entity the entity to delete.
-     * @see #delete(String, Object...)
-     * @see #delete(String, Map)
-     * @see #deleteAll()
      */
     Completion delete(Entity entity);
 
@@ -40,6 +36,15 @@ public interface PanacheStatelessRepositoryOperations<Entity, Session, Completio
      * @param entity the entity to update.
      */
     Completion update(Entity entity);
+
+    /**
+     * Insert or update this entity in the database. An insert will be performed if the entity does not already exist
+     * in the database, otherwise it will be updated. Note that you cannot upsert an entity with a null ID.
+     *
+     * @param entity the entity to insert or update.
+     * @return the entity passed as parameter
+     */
+    Completion upsert(Entity entity);
 
     /**
      * Insert all given entities.

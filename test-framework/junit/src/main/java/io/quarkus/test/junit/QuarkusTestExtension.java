@@ -393,7 +393,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         }
         resetHangTimeout();
         if (!failedBoot) {
-            pushMockContext();
+            MockSupport.pushContext();
             Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
             invokeBeforeEachCallbacks(tuple.getKey(), tuple.getValue());
             String endpointPath = getEndpointPath(context, testHttpEndpointProviders);
@@ -521,7 +521,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         }
         resetHangTimeout();
         if (!failedBoot) {
-            popMockContext();
+            MockSupport.popContext();
             Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
             invokeAfterEachCallbacks(tuple.getKey(), tuple.getValue());
             runningQuarkusApplication.getClassLoader().loadClass(RestAssuredStateManager.class.getName())
@@ -688,10 +688,9 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             return;
         }
         resetHangTimeout();
+        MockSupport.pushContext();
         ensureStarted(context);
         if (runningQuarkusApplication != null) {
-            pushMockContext();
-
             // TODO this is now redundant, we can just get the class from requiredTestClass
             invokeBeforeClassCallbacks(Class.class,
                     runningQuarkusApplication.getClassLoader().loadClass(requiredTestClass.getName()));
@@ -699,30 +698,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         } else {
             // can this ever happen?
             invokeBeforeClassCallbacks(Class.class, requiredTestClass);
-        }
-    }
-
-    private void pushMockContext() {
-        try {
-            //classloader issues
-            Method pushContext = runningQuarkusApplication.getClassLoader().loadClass(MockSupport.class.getName())
-                    .getDeclaredMethod("pushContext");
-            pushContext.setAccessible(true);
-            pushContext.invoke(null);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void popMockContext() {
-        try {
-            //classloader issues
-            Method popContext = runningQuarkusApplication.getClassLoader().loadClass(MockSupport.class.getName())
-                    .getDeclaredMethod("popContext");
-            popContext.setAccessible(true);
-            popContext.invoke(null);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -1063,10 +1038,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         resetHangTimeout();
         runAfterAllCallbacks(context);
         try {
-            if (!isNativeOrIntegrationTest(context.getRequiredTestClass()) && (runningQuarkusApplication != null)) {
-                popMockContext();
-            }
-
+            MockSupport.popContext();
         } finally {
             currentTestClassStack.pop();
             if (!outerInstances.isEmpty()) {

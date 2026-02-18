@@ -1,30 +1,18 @@
 package io.quarkus.virtual.graphql;
 
-import java.util.Map;
-
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.QuarkusTestProfile;
-import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.junit.virtual.ShouldNotPin;
 import io.quarkus.test.junit.virtual.VirtualThreadUnit;
 import io.restassured.RestAssured;
 
 @QuarkusTest
-@TestProfile(RunOnVirtualThreadTest.CustomVirtualThreadProfile.class)
 @VirtualThreadUnit
 @ShouldNotPin
 class RunOnVirtualThreadTest extends AbstractGraphQLTest {
-
-    public static class CustomVirtualThreadProfile implements QuarkusTestProfile {
-        @Override
-        public Map<String, String> getConfigOverrides() {
-            return Map.of("quarkus.virtual-threads.name-prefix", "quarkus-virtual-thread-");
-        }
-    }
 
     @Test
     public void testAnnotatedBlockingObject() {

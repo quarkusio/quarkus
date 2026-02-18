@@ -117,7 +117,7 @@ import jakarta.persistence.Entity;
 import java.time.LocalDate;
 
 @Entity
-public class Cat extends PanacheEntity {
+public class Cat extends PanacheEntity<Cat> {
     public String name;
     public LocalDate birth;
     public Breed breed;
@@ -132,7 +132,7 @@ In order to map a Java class to a Database table, just:
 
 - Write a class
 - Annotate it with link:{jakarta-persistence-javadocs-url}/jakarta/persistence/entity[`@Entity`]
-- Make it extend `PanacheEntity`
+- Make it extend `PanacheEntity<your-entity>`
 - Make its fields `public`
 
 And that's it, now you can start creating instances of your entity, persist it to your database, after which point
@@ -189,7 +189,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Entity
-public class Cat extends PanacheEntity {
+public class Cat extends PanacheEntity<Cat> {
     public String name;
     public LocalDate birth;
     public Breed breed;
@@ -450,7 +450,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Entity
-public class CatWithId implements PanacheEntity.Managed {
+public class CatWithId implements PanacheEntity.Managed<CatWithId> {
     @Id
     public String id;
     public String name;
@@ -486,7 +486,7 @@ extend any of these types if you define you own ID:
 
 |`Long`
 |`WithId.AutoLong`
-|`PanacheEntity`
+|`PanacheEntity<Entity>`
 
 |`UUID`
 |`WithId.AutoUUID`
@@ -526,7 +526,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Entity
-public class Cat extends WithId.AutoLong implements PanacheEntity.Stateless {
+public class Cat extends WithId.AutoLong implements PanacheEntity.Stateless<Cat> {
     public String name;
     public LocalDate birth;
     public Breed breed;
@@ -677,7 +677,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Entity
-public class Cat extends WithId.AutoLong implements PanacheEntity.Reactive {
+public class Cat extends WithId.AutoLong implements PanacheEntity.Reactive<Cat> {
     public String name;
     public LocalDate birth;
     public Breed breed;
@@ -765,7 +765,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Entity
-public class Cat extends WithId.AutoLong implements PanacheEntity.Reactive.Stateless {
+public class Cat extends WithId.AutoLong implements PanacheEntity.Reactive.Stateless<Cat> {
     public String name;
     public LocalDate birth;
     public Breed breed;
@@ -895,19 +895,19 @@ All the alternative entity operations are available from these methods:
 
 |`Session`
 |`.managedBlocking()`
-|`PanacheEntity.Managed`
+|`PanacheEntity.Managed<Cat>`
 
 |`StatelessSession`
 |`.statelessBlocking()`
-|`PanacheEntity.Stateless`
+|`PanacheEntity.Stateless<Cat>`
 
 |`Mutiny.Session`
 |`.managedReactive()`
-|`PanacheEntity.Reactive`
+|`PanacheEntity.Reactive<Cat>`
 
 |`Mutiny.StatelessSession`
 |`.statelessReactive()`
-|`PanacheEntity.Reactive.Stateless`
+|`PanacheEntity.Reactive.Stateless<Cat>`
 
 |===
 
@@ -951,7 +951,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Entity
-public class Cat extends PanacheEntity {
+public class Cat extends PanacheEntity<Cat> {
     public String name;
     public LocalDate birth;
     public Breed breed;
@@ -1018,33 +1018,33 @@ define your own ID entity field:
 
 |`Session` (managed, blocking)
 |`Long`
-|`PanacheEntity`
+|`PanacheEntity<Entity>`
 |
 |`PanacheRepository<Entity>`
 
 |`Session` (managed, blocking)
 |`Id`
 |`WithId<Id>`
-|`PanacheEntity.Managed`
+|`PanacheEntity.Managed<Entity>`
 |`PanacheRepository.Managed<Entity, Id>`
 
 |`StatelessSession` (stateless, blocking)
 |`Id`
 |`WithId<Id>`
-|`PanacheEntity.Stateless`
+|`PanacheEntity.Stateless<Entity>`
 |`PanacheRepository.Stateless<Entity, Id>`
 
 |`Mutiny.Session` (managed, reactive)
 |`Id`
 |`WithId<Id>`
-|`PanacheEntity.Reactive`
+|`PanacheEntity.Reactive<Entity>`
 |`PanacheRepository.Reactive<Entity, Id>`
 
 
 |`Mutiny.StatelessSession` (stateless, reactive)
 |`Id`
 |`WithId<Id>`
-|`PanacheEntity.Reactive.Stateless`
+|`PanacheEntity.Reactive.Stateless<Entity>`
 |`PanacheRepository.Reactive.Stateless<Entity, Id>`
 
 |===

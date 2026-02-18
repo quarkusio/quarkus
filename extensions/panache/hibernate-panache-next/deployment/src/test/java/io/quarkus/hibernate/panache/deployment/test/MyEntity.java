@@ -11,7 +11,7 @@ import io.quarkus.hibernate.panache.PanacheEntity;
 import io.quarkus.hibernate.panache.PanacheRepository;
 
 @Entity
-public class MyEntity extends PanacheEntity {
+public class MyEntity extends PanacheEntity<MyEntity> {
     public String foo;
     public String bar;
 

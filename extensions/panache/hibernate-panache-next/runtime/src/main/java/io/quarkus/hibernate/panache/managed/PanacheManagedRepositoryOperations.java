@@ -1,9 +1,8 @@
 package io.quarkus.hibernate.panache.managed;
 
-import java.util.Map;
 import java.util.stream.Stream;
 
-public interface PanacheManagedRepositoryOperations<Entity, Session, Completion, Confirmation, Id> {
+public interface PanacheManagedRepositoryOperations<Entity, Session, CompletionEntity, Completion, Confirmation, Id> {
 
     // Operations
 
@@ -18,35 +17,38 @@ public interface PanacheManagedRepositoryOperations<Entity, Session, Completion,
      * Persist the given entity in the database, if not already persisted.
      *
      * @param entity the entity to persist.
+     * @return the entity passed as parameter
      * @see #isPersistent(Object)
      * @see #persist(Iterable)
      * @see #persist(Stream)
      * @see #persist(Object, Object...)
      */
-    Completion persist(Entity entity);
+    CompletionEntity persist(Entity entity);
 
     /**
      * Persist the given entity in the database, if not already persisted.
      * Then flushes all pending changes to the database.
      *
      * @param entity the entity to persist.
+     * @return the entity passed as parameter
      * @see #isPersistent(Object)
      * @see #persist(Iterable)
      * @see #persist(Stream)
      * @see #persist(Object, Object...)
      */
-    Completion persistAndFlush(Entity entity);
+    CompletionEntity persistAndFlush(Entity entity);
 
     /**
      * Delete the given entity from the database, if it is already persisted.
      *
      * @param entity the entity to delete.
+     * @return the entity passed as parameter
      * @see #isPersistent(Object)
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
      * @see #deleteAll()
      */
-    Completion delete(Entity entity);
+    CompletionEntity delete(Entity entity);
 
     /**
      * Returns true if the given entity is persistent in the database. If yes, all modifications to

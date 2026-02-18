@@ -9,28 +9,29 @@ import io.quarkus.hibernate.panache.stateless.reactive.PanacheStatelessReactiveE
  * This is just an alias for {@link PanacheManagedBlockingEntity} and {@link WithId.AutoLong}
  * for people coming from Panache 1
  */
-public abstract class PanacheEntity extends WithId.AutoLong implements PanacheManagedBlockingEntity {
+public abstract class PanacheEntity<Entity extends PanacheEntityMarker<Entity>> extends WithId.AutoLong
+        implements PanacheManagedBlockingEntity<Entity> {
 
     /**
      * Represents an entity with managed blocking operations.
      */
-    public interface Managed extends PanacheManagedBlockingEntity {
+    public interface Managed<Entity extends PanacheEntityMarker<Entity>> extends PanacheManagedBlockingEntity<Entity> {
     }
 
     /**
      * Represents an entity with stateless blocking operations.
      */
-    public interface Stateless extends PanacheStatelessBlockingEntity {
+    public interface Stateless<Entity extends PanacheEntityMarker<Entity>> extends PanacheStatelessBlockingEntity<Entity> {
     }
 
     /**
      * Represents an entity with managed reactive operations.
      */
-    public interface Reactive extends PanacheManagedReactiveEntity {
+    public interface Reactive<Entity extends PanacheEntityMarker<Entity>> extends PanacheManagedReactiveEntity<Entity> {
         /**
          * Represents an entity with stateless reactive operations.
          */
-        public interface Stateless extends PanacheStatelessReactiveEntity {
+        public interface Stateless<Entity extends PanacheEntityMarker<Entity>> extends PanacheStatelessReactiveEntity<Entity> {
         }
     }
 }

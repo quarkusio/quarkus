@@ -18,7 +18,7 @@ import io.quarkus.hibernate.panache.stateless.reactive.PanacheStatelessReactiveR
 import io.smallrye.mutiny.Uni;
 
 @Entity
-public class Panache2BookCustomId implements PanacheEntity.Reactive {
+public class Panache2BookCustomId implements PanacheEntity.Reactive<Panache2BookCustomId> {
     public @NaturalId String isbn;
     public @NaturalId String title;
     public @NaturalId String author;

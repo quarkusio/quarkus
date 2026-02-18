@@ -43,7 +43,7 @@ public class RunMojo extends QuarkusBootstrapMojo {
 
     /**
      * The list of environment variables with which the process will be launched. To be specified in a format like
-     * {@code -DsysProps=prop1=val1,prop2=val2}
+     * {@code -DenvVars=VAR1=val1,VAR2=val2}
      */
     @Parameter(defaultValue = "${envVars}")
     String environmentVariables;
@@ -153,7 +153,7 @@ public class RunMojo extends QuarkusBootstrapMojo {
                     String[] envVars = environmentVariables.split(",");
                     Map<String, String> env = new HashMap<>();
                     for (String envVar : envVars) {
-                        String[] parts = envVar.split("=");
+                        String[] parts = envVar.split("=", 2);
                         if (parts.length == 2) {
                             env.put(parts[0], parts[1]);
                         } else {

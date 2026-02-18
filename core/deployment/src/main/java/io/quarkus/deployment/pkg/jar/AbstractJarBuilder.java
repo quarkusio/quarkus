@@ -150,7 +150,7 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
                 if (Files.isDirectory(pathEntry.getValue())) {
                     archiveCreator.addDirectory(pathEntry.getKey());
                 } else {
-                    archiveCreator.addFileIfNotExists(pathEntry.getValue(), pathEntry.getKey());
+                    archiveCreator.addFile(pathEntry.getValue(), pathEntry.getKey());
                 }
             }
         } catch (RuntimeException re) {
@@ -162,26 +162,21 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
         }
     }
 
-    protected void copyCommonContent(ArchiveCreator archiveCreator,
+    protected void copyApplicationContent(ArchiveCreator archiveCreator,
             Map<String, List<byte[]>> concatenatedEntries,
             Predicate<String> ignoredEntriesPredicate)
             throws IOException {
+
+        // the order of operations is important here as we override elements in order
+        copyFiles(applicationArchives.getRootArchive(), archiveCreator, concatenatedEntries, ignoredEntriesPredicate);
 
         //TODO: this is probably broken in gradle
         //        if (Files.exists(augmentOutcome.getConfigDir())) {
         //            copyFiles(augmentOutcome.getConfigDir(), runnerZipFs, services);
         //        }
-        for (Set<TransformedClassesBuildItem.TransformedClass> transformed : transformedClasses
-                .getTransformedClassesByJar().values()) {
-            for (TransformedClassesBuildItem.TransformedClass i : transformed) {
-                if (i.getData() != null) {
-                    archiveCreator.addFile(i.getData(), i.getFileName());
-                }
-            }
-        }
         for (GeneratedClassBuildItem i : generatedClasses) {
             String fileName = fromClassNameToResourceName(i.internalName());
-            archiveCreator.addFileIfNotExists(i.getClassData(), fileName, ArchiveCreator.CURRENT_APPLICATION);
+            archiveCreator.addFile(i.getClassData(), fileName, ArchiveCreator.CURRENT_APPLICATION);
         }
 
         for (GeneratedResourceBuildItem i : generatedResources) {
@@ -192,53 +187,33 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
                 concatenatedEntries.computeIfAbsent(i.getName(), (u) -> new ArrayList<>()).add(i.getData());
                 continue;
             }
-            archiveCreator.addFileIfNotExists(i.getData(), i.getName(), ArchiveCreator.CURRENT_APPLICATION);
+            archiveCreator.addFile(i.getData(), i.getName(), ArchiveCreator.CURRENT_APPLICATION);
         }
 
-        copyFiles(applicationArchives.getRootArchive(), archiveCreator, concatenatedEntries, ignoredEntriesPredicate);
+        for (Set<TransformedClassesBuildItem.TransformedClass> transformed : transformedClasses
+                .getTransformedClassesByJar().values()) {
+            for (TransformedClassesBuildItem.TransformedClass i : transformed) {
+                if (i.getData() != null) {
+                    archiveCreator.addFile(i.getData(), i.getFileName());
+                }
+            }
+        }
 
         for (Map.Entry<String, List<byte[]>> entry : concatenatedEntries.entrySet()) {
             archiveCreator.addFile(entry.getValue(), entry.getKey());
         }
     }
 
-    /**
-     * Manifest generation is quite simple : we just have to push some attributes in manifest.
-     * However, it gets a little more complex if the manifest preexists.
-     * So we first try to see if a manifest exists, and otherwise create a new one.
-     *
-     * <b>BEWARE</b> this method should be invoked after file copy from target/classes and so on.
-     * Otherwise, this manifest manipulation will be useless.
-     */
-    protected static void generateManifest(ArchiveCreator archiveCreator, final String classPath, PackageConfig config,
-            ResolvedDependency appArtifact,
-            ResolvedJVMRequirements jvmRequirements,
-            String mainClassName,
-            ApplicationInfoBuildItem applicationInfo)
-            throws IOException {
+    protected static Manifest createManifest(PackageConfig config, ResolvedDependency appArtifact,
+            ApplicationInfoBuildItem applicationInfo) {
         final Manifest manifest = new Manifest();
 
         Attributes attributes = manifest.getMainAttributes();
         attributes.put(Attributes.Name.MANIFEST_VERSION, "1.0");
 
-        jvmRequirements.renderAddOpensElementToJarManifest(attributes);
-
         for (Map.Entry<String, String> attribute : config.jar().manifest().attributes().entrySet()) {
             attributes.putValue(attribute.getKey(), attribute.getValue());
         }
-        if (attributes.containsKey(Attributes.Name.CLASS_PATH)) {
-            LOG.warn(
-                    "A CLASS_PATH entry was already defined in your MANIFEST.MF or using the property quarkus.package.jar.manifest.attributes.\"Class-Path\". Quarkus has overwritten this existing entry.");
-        }
-        attributes.put(Attributes.Name.CLASS_PATH, classPath);
-        if (attributes.containsKey(Attributes.Name.MAIN_CLASS)) {
-            String existingMainClass = attributes.getValue(Attributes.Name.MAIN_CLASS);
-            if (!mainClassName.equals(existingMainClass)) {
-                LOG.warn(
-                        "A MAIN_CLASS entry was already defined in your MANIFEST.MF or using the property quarkus.package.jar.manifest.attributes.\"Main-Class\". Quarkus has overwritten your existing entry.");
-            }
-        }
-        attributes.put(Attributes.Name.MAIN_CLASS, mainClassName);
         if (config.jar().manifest().addImplementationEntries()
                 && !attributes.containsKey(Attributes.Name.IMPLEMENTATION_TITLE)) {
             String name = ApplicationInfoBuildItem.UNSET_VALUE.equals(applicationInfo.getName())
@@ -260,7 +235,30 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
             }
         }
 
-        archiveCreator.addManifest(manifest);
+        return manifest;
+    }
+
+    protected static Manifest attachRunnerMetadata(Manifest manifest, String mainClassName, String classPath,
+            ResolvedJVMRequirements jvmRequirements) {
+        Attributes attributes = manifest.getMainAttributes();
+
+        jvmRequirements.renderAddOpensElementToJarManifest(attributes);
+
+        if (attributes.containsKey(Attributes.Name.CLASS_PATH)) {
+            LOG.warn(
+                    "A CLASS_PATH entry was already defined in your MANIFEST.MF or using the property quarkus.package.jar.manifest.attributes.\"Class-Path\". Quarkus has overwritten this existing entry.");
+        }
+        attributes.put(Attributes.Name.CLASS_PATH, classPath);
+        if (attributes.containsKey(Attributes.Name.MAIN_CLASS)) {
+            String existingMainClass = attributes.getValue(Attributes.Name.MAIN_CLASS);
+            if (!mainClassName.equals(existingMainClass)) {
+                LOG.warn(
+                        "A MAIN_CLASS entry was already defined in your MANIFEST.MF or using the property quarkus.package.jar.manifest.attributes.\"Main-Class\". Quarkus has overwritten your existing entry.");
+            }
+        }
+        attributes.put(Attributes.Name.MAIN_CLASS, mainClassName);
+
+        return manifest;
     }
 
     /**

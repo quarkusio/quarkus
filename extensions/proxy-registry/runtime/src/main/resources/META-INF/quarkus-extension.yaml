@@ -5,6 +5,7 @@ metadata:
   categories:
   - "web"
   status: "stable"
+  guide: "https://quarkus.io/guides/proxy-registry"
   unlisted: true
   config:
   - "quarkus.proxy."

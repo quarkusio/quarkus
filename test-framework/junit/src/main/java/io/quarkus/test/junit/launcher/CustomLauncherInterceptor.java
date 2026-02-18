@@ -12,11 +12,13 @@ import org.junit.platform.launcher.TestPlan;
 
 import io.quarkus.test.config.QuarkusClassOrderer;
 import io.quarkus.test.junit.classloading.FacadeClassLoader;
+import io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer;
 
 public class CustomLauncherInterceptor
         implements LauncherDiscoveryListener, LauncherSessionListener, TestExecutionListener {
 
-    private static final Class<? extends ClassOrderer> DESIRED_CLASS_ORDERER = QuarkusClassOrderer.class;
+    private static final Class<? extends ClassOrderer> DESIRED_CLASS_ORDERER = QuarkusTestProfileAwareClassOrderer.class;
+    private static final Class<? extends ClassOrderer> CONFIG_SETTING_DESIRED_CLASS_ORDERER = QuarkusClassOrderer.class;
 
     private static FacadeClassLoader facadeLoader = null;
     // Also use a static variable to store a 'first' starting state that we can reset to
@@ -133,7 +135,9 @@ public class CustomLauncherInterceptor
 
             Optional<String> orderer = request.getConfigurationParameters().get("junit.jupiter.testclass.order.default");
 
-            if (orderer.isEmpty() || !orderer.get().equals(DESIRED_CLASS_ORDERER.getName())) {
+            if (orderer.isEmpty() || !(orderer.get()
+                    .equals(DESIRED_CLASS_ORDERER.getName())
+                    || orderer.get().equals(CONFIG_SETTING_DESIRED_CLASS_ORDERER.getName()))) {
                 if (facadeLoader.hasMultipleClassLoaders()) {
                     String message = getFailureMessageForJUnitMisconfiguration(orderer);
                     throw new IllegalStateException(message);

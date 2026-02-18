@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-reactive-datasource-parent</artifactId>
-        <version>3.32.999-SNAPSHOT</version>
+        <version>3.32.0</version>
     </parent>
 
     <artifactId>quarkus-reactive-datasource-spi</artifactId>

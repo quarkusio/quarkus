@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-reactive-oracle-client-parent</artifactId>
-        <version>3.32.999-SNAPSHOT</version>
+        <version>3.32.0</version>
     </parent>
 
     <artifactId>quarkus-reactive-oracle-client</artifactId>

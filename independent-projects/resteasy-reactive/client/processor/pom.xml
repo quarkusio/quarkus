@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.quarkus.resteasy.reactive</groupId>
         <artifactId>resteasy-reactive-client-parent</artifactId>
-        <version>3.32.999-SNAPSHOT</version>
+        <version>3.32.0</version>
     </parent>
 
     <artifactId>resteasy-reactive-client-processor</artifactId>

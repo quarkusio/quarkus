@@ -5,7 +5,9 @@ import javax.inject.Inject;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.tasks.Internal;
 
+import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.deployment.dev.DevModeCommandLineBuilder;
+import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.IsolatedTestModeMain;
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
 import io.quarkus.runtime.LaunchMode;
@@ -22,8 +24,12 @@ public abstract class QuarkusTest extends QuarkusDev {
 
     @Override
     protected void modifyDevModeContext(DevModeCommandLineBuilder builder) {
-        builder.entryPointCustomizer(
-                devModeContext -> devModeContext.setAlternateEntryPoint(IsolatedTestModeMain.class.getName()));
+        builder.entryPointCustomizer(QuarkusTest::configureContinuousTesting);
+    }
+
+    private static void configureContinuousTesting(DevModeContext devModeContext) {
+        devModeContext.setMode(QuarkusBootstrap.Mode.CONTINUOUS_TEST);
+        devModeContext.setAlternateEntryPoint(IsolatedTestModeMain.class.getName());
     }
 
     @Override

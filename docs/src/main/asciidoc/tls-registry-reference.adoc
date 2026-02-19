@@ -351,6 +351,7 @@ Other types of keystores provided by registered keystore providers are also supp
 For example a Bouncy Castle FIPS provided keystore where the type of the keystore is `bcfks`:
 [source,properties]
 ----
+quarkus.tls.key-store.bcfks.provider=BCFIPS
 quarkus.tls.key-store.bcfks.path=server-keystore.bcfks
 quarkus.tls.key-store.bcfks.password=secret
 quarkus.tls.key-store.bcfks.alias=my-alias
@@ -509,6 +510,7 @@ Other types of truststores provided by registered truststore providers are also 
 For example a Bouncy Castle FIPS provided truststore where the type of the truststore is `bcfks`:
 [source,properties]
 ----
+quarkus.tls.trust-store.bcfks.provider=BCFIPS
 quarkus.tls.trust-store.bcfks.path=client-truststore.bcfks
 quarkus.tls.trust-store.bcfks.password=secret
 quarkus.tls.trust-store.bcfks.alias=my-alias

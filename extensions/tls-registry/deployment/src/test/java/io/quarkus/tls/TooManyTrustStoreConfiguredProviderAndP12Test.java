@@ -36,7 +36,7 @@ public class TooManyTrustStoreConfiguredProviderAndP12Test {
                     .add(new StringAsset(configuration), "application.properties"))
             .assertException(t -> {
                 assertThat(t)
-                        .hasMessageContaining("cannot be configured with a provider and P12 at the same time");
+                        .hasMessageContaining("cannot be configured with a TrustStoreProvider and P12 at the same time");
             });
 
     @Test

@@ -62,9 +62,12 @@ public interface KeyStoreConfig {
     KeyStoreCredentialProviderConfig credentialsProvider();
 
     default void validate(InstanceHandle<KeyStoreProvider> provider, String name) {
+        // Collect all enabled key store types including `KeyStoreProvider` beans and ensure that only one type of
+        // keystore is enabled
         var enabledKeyStoreTypes = new TreeSet(String.CASE_INSENSITIVE_ORDER);
         if (provider.isAvailable()) {
-            enabledKeyStoreTypes.add("a provider");
+            // Prepend "a " for readability in the exception message below
+            enabledKeyStoreTypes.add("a " + KeyStoreProvider.class.getSimpleName());
         }
         pem().ifPresent(c -> enabledKeyStoreTypes.add("PEM"));
         p12().ifPresent(c -> enabledKeyStoreTypes.add("P12"));
@@ -76,5 +79,4 @@ public interface KeyStoreConfig {
                     + String.join(" and ", enabledKeyStoreTypes) + " at the same time");
         }
     }
-
 }

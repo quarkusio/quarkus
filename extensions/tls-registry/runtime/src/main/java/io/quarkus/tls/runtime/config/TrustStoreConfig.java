@@ -70,9 +70,12 @@ public interface TrustStoreConfig {
     TrustStoreCredentialProviderConfig credentialsProvider();
 
     default void validate(InstanceHandle<TrustStoreProvider> provider, String name) {
+        // Collect all enabled trust store types including `TrustStoreProvider` beans and ensure that only one type of
+        // keystore is enabled
         var enabledTrustStoreTypes = new TreeSet(String.CASE_INSENSITIVE_ORDER);
         if (provider.isAvailable()) {
-            enabledTrustStoreTypes.add("a provider");
+            // Prepend "a " for readability in the exception message below
+            enabledTrustStoreTypes.add("a " + TrustStoreProvider.class.getSimpleName());
         }
         pem().ifPresent(c -> enabledTrustStoreTypes.add("PEM"));
         p12().ifPresent(c -> enabledTrustStoreTypes.add("P12"));

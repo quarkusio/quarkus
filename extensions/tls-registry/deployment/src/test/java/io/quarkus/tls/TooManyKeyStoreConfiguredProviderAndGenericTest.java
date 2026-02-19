@@ -36,7 +36,7 @@ public class TooManyKeyStoreConfiguredProviderAndGenericTest {
                     .add(new StringAsset(configuration), "application.properties"))
             .assertException(t -> {
                 assertThat(t)
-                        .hasMessageContaining("cannot be configured with a provider and pkcs12 at the same time");
+                        .hasMessageContaining("cannot be configured with a KeyStoreProvider and pkcs12 at the same time");
             });
 
     @Test

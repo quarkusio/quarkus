@@ -125,8 +125,8 @@ Enable them with `-DskipITs=false`.
 The `quarkus.package.jar.aot.phase` configuration controls when training occurs:
 
 * `auto` (default): Uses `integration-tests` for Leyden AOT
-* `build`: Generates the cache during build (limited training, faster builds)
-* `integration-tests`: Generates during integration tests execution (better optimization)
+* `build`: Generates the cache during build (very limited training, faster builds)
+* `integration-tests`: Generates during integration tests execution (better optimization). For Leyden AOT, this has the same effect as `auto`
 
 [source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-maven"]
 .Maven

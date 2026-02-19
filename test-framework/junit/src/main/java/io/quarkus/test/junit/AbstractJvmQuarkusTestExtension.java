@@ -3,6 +3,7 @@ package io.quarkus.test.junit;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceConfigurationError;
 import java.util.Set;
@@ -39,11 +40,11 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
     private static final Logger log = Logger.getLogger(StartupActionImpl.class);
 
     // TODO is it nicer to pass in the test class, or invoke the getter twice?
-    public static Class<? extends QuarkusTestProfile> getQuarkusTestProfile(Class testClass,
+    public static Optional<Class<? extends QuarkusTestProfile>> getQuarkusTestProfile(Class<?> testClass,
             ExtensionContext extensionContext) {
         // If the current class or any enclosing class in its hierarchy is annotated with `@TestProfile`.
-        Class<? extends QuarkusTestProfile> testProfile = findTestProfileAnnotation(testClass);
-        if (testProfile != null) {
+        Optional<Class<? extends QuarkusTestProfile>> testProfile = findTestProfileAnnotation(testClass);
+        if (testProfile.isPresent()) {
             return testProfile;
         }
 
@@ -51,7 +52,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         if (testClass.isAnnotationPresent(Nested.class)) {
             // let's try to find the `@TestProfile` from the enclosing classes:
             testProfile = findTestProfileAnnotation(testClass.getEnclosingClass());
-            if (testProfile != null) {
+            if (testProfile.isPresent()) {
                 return testProfile;
             }
 
@@ -64,7 +65,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
                 }
 
                 testProfile = findTestProfileAnnotation(currentExtensionContext.getTestClass().get());
-                if (testProfile != null) {
+                if (testProfile.isPresent()) {
                     return testProfile;
                 }
 
@@ -72,14 +73,14 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
             }
         }
 
-        return null;
+        return Optional.empty();
     }
 
-    protected Class<? extends QuarkusTestProfile> getQuarkusTestProfile(ExtensionContext extensionContext) {
-        Class testClass = extensionContext.getRequiredTestClass();
-        Class testProfile = getQuarkusTestProfile(testClass, extensionContext);
+    protected Optional<Class<? extends QuarkusTestProfile>> getQuarkusTestProfile(ExtensionContext extensionContext) {
+        Class<?> testClass = extensionContext.getRequiredTestClass();
+        Optional<Class<? extends QuarkusTestProfile>> testProfile = getQuarkusTestProfile(testClass, extensionContext);
 
-        if (testProfile != null) {
+        if (testProfile.isPresent()) {
             return testProfile;
         }
 
@@ -95,7 +96,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
                 }
 
                 testProfile = findTestProfileAnnotation(currentExtensionContext.getTestClass().get());
-                if (testProfile != null) {
+                if (testProfile.isPresent()) {
                     return testProfile;
                 }
 
@@ -103,21 +104,25 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
             }
         }
 
-        return null;
+        return Optional.empty();
     }
 
-    private static Class<? extends QuarkusTestProfile> findTestProfileAnnotation(Class<?> clazz) {
+    protected boolean isWrongProfile(ExtensionContext extensionContext) {
+        Optional<Class<? extends QuarkusTestProfile>> selectedProfile = getQuarkusTestProfile(extensionContext);
+        return !Objects.equals(selectedProfile.orElse(null), quarkusTestProfile);
+    }
+
+    private static Optional<Class<? extends QuarkusTestProfile>> findTestProfileAnnotation(Class<?> clazz) {
         Class<?> testClass = clazz;
         while (testClass != null) {
             TestProfile annotation = testClass.getAnnotation(TestProfile.class);
             if (annotation != null) {
-                return annotation.value();
+                return Optional.of(annotation.value());
             }
 
             testClass = testClass.getEnclosingClass();
         }
-
-        return null;
+        return Optional.empty();
     }
 
     protected boolean isNewApplication(QuarkusTestExtensionState state, Class<?> currentJUnitTestClass) {
@@ -215,14 +220,14 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
             return ConditionEvaluationResult.enabled("No Quarkus Test Profile tags");
         }
 
-        Class<? extends QuarkusTestProfile> testProfile = getQuarkusTestProfile(context);
-        if (testProfile == null) {
+        Optional<Class<? extends QuarkusTestProfile>> testProfile = getQuarkusTestProfile(context);
+        if (testProfile.isEmpty()) {
             return ConditionEvaluationResult.disabled("Test '" + context.getRequiredTestClass()
                     + "' is not annotated with '@QuarkusTestProfile' but 'quarkus.profile.test.tags' was set");
         }
         QuarkusTestProfile profileInstance;
         try {
-            profileInstance = testProfile.getConstructor().newInstance();
+            profileInstance = testProfile.get().getConstructor().newInstance();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

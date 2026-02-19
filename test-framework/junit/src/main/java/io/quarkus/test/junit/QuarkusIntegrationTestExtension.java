@@ -1,11 +1,11 @@
 package io.quarkus.test.junit;
 
+import static io.quarkus.runtime.LaunchMode.NORMAL;
 import static io.quarkus.test.config.TestValueRegistryConfigSource.CONFIG;
 import static io.quarkus.test.junit.ArtifactTypeUtil.isContainer;
 import static io.quarkus.test.junit.ArtifactTypeUtil.isJar;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 import static io.quarkus.test.junit.IntegrationTestUtil.determineBuildOutputDirectory;
-import static io.quarkus.test.junit.IntegrationTestUtil.determineTestProfileAndProperties;
 import static io.quarkus.test.junit.IntegrationTestUtil.doProcessTestInstance;
 import static io.quarkus.test.junit.IntegrationTestUtil.ensureNoInjectAnnotationIsUsed;
 import static io.quarkus.test.junit.IntegrationTestUtil.findProfile;
@@ -167,7 +167,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         boolean reloadTestResources = false;
         if ((state == null && !failedBoot) || wrongProfile || (reloadTestResources = isNewTestClass
                 && TestResourceUtil.testResourcesRequireReload(state, extensionContext.getRequiredTestClass(),
-                        selectedProfile))) {
+                        Optional.ofNullable(selectedProfile)))) {
             if (wrongProfile || reloadTestResources) {
                 if (state != null) {
                     try {
@@ -219,7 +219,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
 
             Map<String, String> sysPropRestore = getSysPropsToRestore();
 
-            TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile);
+            TestProfileAndProperties testProfileAndProperties = TestProfileAndProperties.ofNullable(profile, NORMAL);
             // prepare dev services after profile and properties have been determined
             ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult = handleDevServices(context,
                     isDockerLaunch, testProfileAndProperties);
@@ -232,7 +232,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             testResourceManager = new TestResourceManager(
                     requiredTestClass,
                     quarkusTestProfile,
-                    copyEntriesFromProfile(testProfileAndProperties.testProfile().orElse(null),
+                    copyEntriesFromProfile(testProfileAndProperties.testProfile(),
                             context.getRequiredTestClass().getClassLoader()),
                     testProfileAndProperties.isDisabledGlobalTestResources(),
                     devServicesProps,

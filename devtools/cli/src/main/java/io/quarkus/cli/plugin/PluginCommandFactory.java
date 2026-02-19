@@ -7,10 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import io.quarkus.cli.common.OutputOptionMixin;
-import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.runtime.util.StringUtil;
 import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
@@ -33,7 +32,8 @@ public class PluginCommandFactory {
     private Optional<PluginCommand> createPluginCommand(Plugin plugin) {
         switch (plugin.getType()) {
             case maven:
-                return plugin.getLocation().flatMap(PluginUtil::checkGACTV).map(g -> new JBangCommand(toGAVC(g), output));
+                return plugin.getLocation().flatMap(PluginUtil::checkArtifactCoords)
+                        .map(g -> new JBangCommand(toGAVC(g), output));
             case java:
             case jar:
             case jbang:
@@ -41,8 +41,9 @@ public class PluginCommandFactory {
             case executable:
                 return plugin.getLocation().map(l -> new ShellCommand(plugin.getName(), Paths.get(l), output));
             case extension:
-                if (PluginUtil.checkGACTV(plugin.getLocation()).isPresent()) {
-                    return plugin.getLocation().flatMap(PluginUtil::checkGACTV).map(g -> new JBangCommand(toGAVC(g), output));
+                if (PluginUtil.checkArtifactCoords(plugin.getLocation()).isPresent()) {
+                    return plugin.getLocation().flatMap(PluginUtil::checkArtifactCoords)
+                            .map(g -> new JBangCommand(toGAVC(g), output));
                 } else if (plugin.getLocation().filter(l -> l.endsWith(".jar")).isPresent()) {
                     return plugin.getLocation().map(l -> new JBangCommand(l, output));
                 }
@@ -73,8 +74,7 @@ public class PluginCommandFactory {
                             if (value == null) {
                                 return value;
                             }
-                            if (value instanceof String[]) {
-                                String[] array = (String[]) value;
+                            if (value instanceof String[] array) {
                                 command.useArguments(Arrays.asList(array));
                             }
                             return value;
@@ -89,7 +89,6 @@ public class PluginCommandFactory {
      *
      * @param cmd the CommandLine.
      * @param plugins the available plugins.
-     * @param factory the factory use to create the commands.
      */
     public void populateCommands(CommandLine cmd, Map<String, Plugin> plugins) {
         plugins.entrySet().stream()
@@ -103,11 +102,10 @@ public class PluginCommandFactory {
                         String remaining = name.substring(current.getCommandName().length() + 1);
                         name = remaining;
                         List<String> subcommandKeys = current.getSubcommands().keySet().stream()
-                                .filter(k -> remaining.startsWith(k))
-                                .collect(Collectors.toList());
-                        Optional<String> matchedKey = subcommandKeys.stream().sorted(Comparator.comparingInt(String::length))
-                                .findFirst();
-                        if (!matchedKey.isPresent()) {
+                                .filter(remaining::startsWith)
+                                .toList();
+                        Optional<String> matchedKey = subcommandKeys.stream().min(Comparator.comparingInt(String::length));
+                        if (matchedKey.isEmpty()) {
                             break;
                         }
                         current = current.getSubcommands().get(matchedKey.get());
@@ -126,7 +124,7 @@ public class PluginCommandFactory {
                 });
     }
 
-    private static String toGAVC(GACTV gactv) {
+    private static String toGAVC(ArtifactCoords gactv) {
         return gactv.getGroupId() + ":" + gactv.getArtifactId() + ":" + gactv.getVersion()
                 + (StringUtil.isNullOrEmpty(gactv.getClassifier()) ? "" : ":" + gactv.getClassifier());
     }

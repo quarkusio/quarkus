@@ -324,6 +324,13 @@ public class QuarkusCli implements QuarkusApplication, OutputProvider, Callable<
         if (buildTool == null) {
             return () -> null;
         }
+        if (buildTool == BuildTool.MAVEN) {
+            return () -> QuarkusProjectHelper.getQuarkusMavenProject(root, output);
+        }
+        // TODO below is the previous implementation, which basically resolves the latest recommended catalog
+        // instead of the one corresponding to the project configuration.
+        // This is something that's not easy to do for Gradle unless it's done from a Gradle task.
+        // So this functionality should probably move to BuildSystemRunner.
         return () -> {
             try {
                 return registryClient.createQuarkusProject(root, new TargetQuarkusPlatformGroup(), buildTool, output);
@@ -336,7 +343,7 @@ public class QuarkusCli implements QuarkusApplication, OutputProvider, Callable<
     private PluginManager pluginManager(OutputOptionMixin output, Optional<String> testDir, boolean interactiveMode) {
         PluginManagerSettings settings = PluginManagerSettings.defaultSettings()
                 .withInteractivetMode(interactiveMode); // Why not just getting it from output.isClieTest ? Cause args have not been parsed yet.
-        return PluginManager.create(settings, output, Optional.ofNullable(Paths.get(System.getProperty("user.home"))),
+        return PluginManager.create(settings, output, Optional.of(Path.of(System.getProperty("user.home"))),
                 getProjectRoot(testDir), quarkusProject(testDir));
     }
 }

@@ -5,7 +5,6 @@ import java.util.Set;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.IndexView;
 
 import io.grpc.internal.DnsNameResolverProvider;
 import io.grpc.internal.PickFirstLoadBalancerProvider;
@@ -13,10 +12,17 @@ import io.grpc.netty.NettyChannelProvider;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 
 public class GrpcCommonProcessor {
+
+    @BuildStep
+    public IndexDependencyBuildItem indexProtobuf() {
+        // needed with reflection lookup
+        return new IndexDependencyBuildItem("com.google.protobuf", "protobuf-java");
+    }
 
     @BuildStep
     public void configureNativeExecutable(CombinedIndexBuildItem combinedIndex,
@@ -71,7 +77,7 @@ public class GrpcCommonProcessor {
         }
 
         // reflect all of it -- it's a lot
-        reflectiveClasses(reflectiveClass, combinedIndex.getComputingIndex(), GrpcDotNames.DESRIPTOR_PROTOS);
+        reflectiveClasses(reflectiveClass, combinedIndex, GrpcDotNames.DESCRIPTOR_PROTOS);
 
         // Built-In providers:
         reflectiveClass.produce(ReflectiveClassBuildItem
@@ -86,19 +92,19 @@ public class GrpcCommonProcessor {
 
     private static void reflectiveClasses(
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            IndexView index,
+            CombinedIndexBuildItem combinedIndex,
             DotName className) {
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(
                 className.toString()).methods().build());
 
-        ClassInfo classByName = index.getClassByName(className);
+        ClassInfo classByName = combinedIndex.getIndex().getClassByName(className);
         if (classByName == null) {
-            return; // should not be here, but let's just make sure
+            return; // should not be here, but let's just make sure no NPE
         }
 
         Set<DotName> members = classByName.memberClasses();
         for (DotName memberClassName : members) {
-            reflectiveClasses(reflectiveClass, index, memberClassName);
+            reflectiveClasses(reflectiveClass, combinedIndex, memberClassName);
         }
     }
 

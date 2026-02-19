@@ -457,6 +457,16 @@
             <!-- OpenTelemetry components, imported as a BOM -->
             <!-- opentelemetry-instrumentation-bom-alpha includes the main and alpha-bom inside.-->
             <!-- Also includes semantic conventions-->
+
+
+            <dependency>
+                <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-bom-alpha</artifactId>
+                <version>1.56.0-alpha-SNAPSHOT</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <dependency>
                 <groupId>io.opentelemetry.instrumentation</groupId>
                 <artifactId>opentelemetry-instrumentation-bom-alpha</artifactId>

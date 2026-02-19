@@ -62,7 +62,9 @@ import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.Cookie;
+import io.vertx.core.http.CookieSameSite;
 import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.impl.ServerCookie;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
@@ -1299,9 +1301,12 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             cookieValue += (COOKIE_DELIM + encodeExtraStateValue(extraStateValue, configContext));
         }
         String stateCookieNameSuffix = configContext.oidcConfig().authentication().allowMultipleCodeFlows() ? "_" + uuid : "";
-        OidcUtils.createCookie(context, configContext.oidcConfig(),
+        ServerCookie stateCookie = OidcUtils.createCookie(context, configContext.oidcConfig(),
                 getStateCookieName(configContext.oidcConfig()) + stateCookieNameSuffix, cookieValue,
                 configContext.oidcConfig().authentication().stateCookieAge().toSeconds());
+        stateCookie
+                .setSameSite(CookieSameSite.valueOf(configContext.oidcConfig().authentication().stateCookieSameSite().name()));
+
         return uuid;
     }
 

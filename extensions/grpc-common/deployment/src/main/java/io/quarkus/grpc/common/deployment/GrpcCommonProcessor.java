@@ -1,8 +1,11 @@
 package io.quarkus.grpc.common.deployment;
 
 import java.util.Collection;
+import java.util.Set;
 
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 
 import io.grpc.internal.DnsNameResolverProvider;
 import io.grpc.internal.PickFirstLoadBalancerProvider;
@@ -67,6 +70,9 @@ public class GrpcCommonProcessor {
                     .build());
         }
 
+        // reflect all of it -- it's a lot
+        reflectiveClasses(reflectiveClass, combinedIndex.getComputingIndex(), GrpcDotNames.DESRIPTOR_PROTOS);
+
         // Built-In providers:
         reflectiveClass.produce(ReflectiveClassBuildItem
                 .builder(DnsNameResolverProvider.class, PickFirstLoadBalancerProvider.class, NettyChannelProvider.class)
@@ -76,6 +82,24 @@ public class GrpcCommonProcessor {
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("io.grpc.util.SecretRoundRobinLoadBalancerProvider$Provider")
                 .reason(getClass().getName() + " built-in provider")
                 .methods().build());
+    }
+
+    private static void reflectiveClasses(
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            IndexView index,
+            DotName className) {
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(
+                className.toString()).methods().build());
+
+        ClassInfo classByName = index.getClassByName(className);
+        if (classByName == null) {
+            return; // should not be here, but let's just make sure
+        }
+
+        Set<DotName> members = classByName.memberClasses();
+        for (DotName memberClassName : members) {
+            reflectiveClasses(reflectiveClass, index, memberClassName);
+        }
     }
 
     @BuildStep

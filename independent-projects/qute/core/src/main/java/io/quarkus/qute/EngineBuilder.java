@@ -29,6 +29,9 @@ public final class EngineBuilder {
 
     private static final Logger LOG = Logger.getLogger(EngineBuilder.class);
 
+    private static final EngineListener /* RegisterDebugServerAdapter */ DEBUGGER = DebuggerConfigurationUtils
+            .createDebuggerIfNeeded();
+
     final Map<String, SectionHelperFactory<?>> sectionHelperFactories;
     final List<ValueResolver> valueResolvers;
     final List<NamespaceResolver> namespaceResolvers;
@@ -59,6 +62,10 @@ public final class EngineBuilder {
         this.timeout = 10_000;
         this.useAsyncTimeout = true;
         this.listeners = new ArrayList<>();
+        if (DEBUGGER != null) {
+            enableTracing(true);
+            addEngineListener(DEBUGGER);
+        }
     }
 
     /**

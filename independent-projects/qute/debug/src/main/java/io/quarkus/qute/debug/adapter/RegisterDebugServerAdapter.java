@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.debug.DebugLauncher;
 
+import io.quarkus.qute.DebuggerConfigurationUtils;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder.EngineListener;
 import io.quarkus.qute.debug.agent.DebuggeeAgent;
@@ -101,58 +102,34 @@ public class RegisterDebugServerAdapter implements EngineListener {
     }
 
     /**
-     * Returns the Qute debugger port defines with "-DquteDebugPort" environment variable and false otherwise.
+     * Returns the Qute debugger port defines with "-DquteDebugPort" environment
+     * variable and false otherwise.
      *
-     * @return the Qute debugger port defines with "-DquteDebugPort" environment variable and false otherwise.
+     * @return the Qute debugger port defines with "-DquteDebugPort" environment
+     *         variable and false otherwise.
      */
     public Integer getPort() {
         if (port != null) {
             return port;
         }
-        port = doGetPort();
+        port = DebuggerConfigurationUtils.getDebugPort();
+        if (port == null && DebuggerConfigurationUtils.isDebugEnabled()) {
+            // free port
+            try {
+                port = findAvailableSocketPort();
+            } catch (Exception e) {
+                // Ignore error: handle exception
+            }
+        }
         return port;
-    }
-
-    private static Integer doGetPort() {
-        // Read the debug port from the environment variable
-        String portStr = getPropertyValue("quteDebugPort");
-        if (portStr == null || portStr.isBlank()) {
-            return null;
-        }
-        try {
-            return Integer.parseInt(portStr);
-        } catch (Exception e) {
-            return null;
-        }
     }
 
     private boolean isSuspend() {
         if (suspend != null) {
             return suspend;
         }
-        suspend = doIsSuspend();
+        suspend = DebuggerConfigurationUtils.isDebugSuspend();
         return suspend;
-    }
-
-    private boolean doIsSuspend() {
-        // Read the suspend flag from the environment variable
-        String suspend = getPropertyValue("quteDebugSuspend");
-        if (suspend == null || suspend.isBlank()) {
-            return false;
-        }
-        try {
-            return Boolean.parseBoolean(suspend);
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    private static String getPropertyValue(String name) {
-        String value = System.getenv(name);
-        if (value == null || value.isBlank()) {
-            value = System.getProperty(name);
-        }
-        return value;
     }
 
     /**
@@ -262,6 +239,20 @@ public class RegisterDebugServerAdapter implements EngineListener {
                 }
             });
             notInitializedEngines.clear();
+        }
+    }
+
+    public static int findAvailableSocketPort() throws IOException {
+        try (ServerSocket serverSocket = new ServerSocket(0)) {
+            int port = serverSocket.getLocalPort();
+            synchronized (serverSocket) {
+                try {
+                    serverSocket.wait(1L);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            return port;
         }
     }
 

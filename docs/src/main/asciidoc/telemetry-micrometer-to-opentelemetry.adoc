@@ -15,8 +15,6 @@ include::_attributes.adoc[]
 
 This extension provides support for both Micrometer and OpenTelemetry in Quarkus applications. It streamlines integration by incorporating both extensions along with a bridge that enables sending Micrometer metrics via OpenTelemetry.
 
-include::{includes}/extension-status.adoc[]
-
 include::{includes}/observability-include.adoc[]
 
 [NOTE]

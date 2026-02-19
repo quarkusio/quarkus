@@ -14,8 +14,6 @@ include::_attributes.adoc[]
 This guide explains how your Quarkus application can utilize https://opentelemetry.io/[OpenTelemetry] (OTel) to provide
 metrics for interactive web applications.
 
-include::{includes}/extension-status.adoc[]
-
 include::{includes}/observability-include.adoc[]
 
 [NOTE]

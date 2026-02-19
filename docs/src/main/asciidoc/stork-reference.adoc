@@ -13,8 +13,6 @@ include::_attributes.adoc[]
 This guide is the companion from the xref:stork.adoc[Stork Getting Started Guide].
 It explains the configuration and usage of SmallRye Stork integration in Quarkus.
 
-include::{includes}/extension-status.adoc[]
-
 == Supported clients
 
 The current integration of Stork supports:

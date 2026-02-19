@@ -14,8 +14,6 @@ This guide explains how to use Stork with Kubernetes for service discovery and l
 
 If you are new to Stork, please read the xref:stork.adoc[Stork Getting Started Guide].
 
-include::{includes}/extension-status.adoc[]
-
 == Prerequisites
 
 :prerequisites-docker:

@@ -23,11 +23,6 @@ The document header ends at the first blank line. Do not remove the blank line b
 A short introduction that describes the content of this reference.
 This summary should help a reader determine if this document is likely to contain the information they are looking for.
 
-////
-TODO: If this is a reference for an experimental or tech-preview extension, uncomment the following (otherwise delete)
-include::{includes}/extension-status.adoc[]
-////
-
 == Add additional sections
 
 - xref:../doc-concept.adoc#reference[Quarkus documentation content types: Reference guides]

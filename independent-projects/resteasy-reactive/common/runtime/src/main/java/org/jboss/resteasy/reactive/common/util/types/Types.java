@@ -119,6 +119,8 @@ public final class Types {
 
         Class<?> superclass = root.getSuperclass();
         Type genericSuper = root.getGenericSuperclass();
+        if (superclass == null)
+            return null;
 
         return recurseSuperclassForInterface(searchedForInterface, typeVarMap, genericSuper, superclass);
     }

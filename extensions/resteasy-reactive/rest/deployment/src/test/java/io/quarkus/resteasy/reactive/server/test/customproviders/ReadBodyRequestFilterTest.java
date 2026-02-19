@@ -105,7 +105,7 @@ public class ReadBodyRequestFilterTest {
             ResteasyReactiveRequestContext rrContext = (ResteasyReactiveRequestContext) containerRequestContext
                     .getServerRequestContext();
             if (containerRequestContext.getMethod().equals("POST")) {
-                String nameFormParam = (String) rrContext.getFormParameter("name", true, false);
+                String nameFormParam = (String) rrContext.getFormParameter("name", true, false, false);
                 if (nameFormParam != null) {
                     containerRequestContext.getHeaders().putSingle("suffix", "!".repeat(nameFormParam.length()));
                 } else {

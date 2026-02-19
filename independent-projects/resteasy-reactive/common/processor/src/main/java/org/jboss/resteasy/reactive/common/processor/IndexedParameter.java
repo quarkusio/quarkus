@@ -33,6 +33,7 @@ public class IndexedParameter<T extends IndexedParameter<T>> {
     protected boolean single;
     protected boolean optional;
     protected String separator;
+    protected boolean triParameter;
 
     public boolean isObtainedAsCollection() {
         return !single
@@ -228,6 +229,15 @@ public class IndexedParameter<T extends IndexedParameter<T>> {
 
     public T setSeparator(String separator) {
         this.separator = separator;
+        return (T) this;
+    }
+
+    public boolean isTriParameter() {
+        return triParameter;
+    }
+
+    public T setTriParameter(boolean triParameter) {
+        this.triParameter = triParameter;
         return (T) this;
     }
 }

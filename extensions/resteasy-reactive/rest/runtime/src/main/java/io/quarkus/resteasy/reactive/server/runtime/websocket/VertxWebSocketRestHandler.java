@@ -17,7 +17,10 @@ public class VertxWebSocketRestHandler implements HandlerChainCustomizer {
                 @Override
                 public void handle(ResteasyReactiveRequestContext requestContext)
                         throws Exception {
-                    throw new IllegalStateException("FAILURE: should never be restarted");
+                    throw new IllegalStateException("VertxWebSocketRestHandler was restarted unexpectedly. " +
+                               "WebSocket REST handlers are not designed to be restarted once initialized. " +
+                               "This indicates an invalid lifecycle state.");
+
                 }
             }
     };

@@ -43,6 +43,7 @@
         <junit.version>6.0.3</junit.version>
         <maven-core.version>3.9.12</maven-core.version><!-- Keep in sync with sisu.version -->
         <sisu.version>0.9.0.M4</sisu.version><!-- Keep in sync with maven-core.version -->
+        <maven-model.version>4.0.0-rc-5</maven-model.version>
         <maven-plugin-annotations.version>3.15.1</maven-plugin-annotations.version>
         <maven-resolver.version>1.9.25</maven-resolver.version>
         <maven-shared-utils.version>3.4.2</maven-shared-utils.version> <!-- Keep in sync with maven-core.version (force this version on maven-invoker) -->
@@ -69,7 +70,8 @@
         <plexus-cipher.version>2.0</plexus-cipher.version>
         <plexus-interpolation.version>1.26</plexus-interpolation.version>
         <plexus-sec-dispatcher.version>2.0</plexus-sec-dispatcher.version>
-        <plexus-utils.version>3.5.1</plexus-utils.version>
+        <plexus-utils.version>4.0.2</plexus-utils.version>
+        <plexus-xml.version>4.1.0</plexus-xml.version>
         <smallrye-common.version>2.16.0</smallrye-common.version>
         <smallrye-beanbag.version>1.6.1</smallrye-beanbag.version>
         <gradle-tooling.version>9.3.1</gradle-tooling.version>

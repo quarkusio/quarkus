@@ -161,13 +161,21 @@ public class DependencyUtils {
     }
 
     public static ResolvedDependencyBuilder toAppArtifact(Artifact artifact, WorkspaceModule module) {
+        String version = artifact.getVersion();
+        // Hopefully, this version check won't be necessary once we move to the Maven resolver 2.x.
+        // For now, when we resolve an artifact descriptor for a local project that has a dependency
+        // on another local project but doesn't configure a version for that dependency (and it's not managed),
+        // we will get an empty version for that dependency, which will also appear in the corresponding DependencyNode.
+        if (version.isEmpty() && module != null) {
+            version = module.getId().getVersion();
+        }
         return ResolvedDependencyBuilder.newInstance()
                 .setWorkspaceModule(module)
                 .setGroupId(artifact.getGroupId())
                 .setArtifactId(artifact.getArtifactId())
                 .setClassifier(artifact.getClassifier())
                 .setType(artifact.getExtension())
-                .setVersion(artifact.getVersion())
+                .setVersion(version)
                 .setResolvedPaths(artifact.getFile() == null ? PathList.empty() : PathList.of(artifact.getFile().toPath()));
     }
 

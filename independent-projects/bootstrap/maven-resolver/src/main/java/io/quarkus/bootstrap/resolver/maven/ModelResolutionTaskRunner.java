@@ -6,43 +6,56 @@ package io.quarkus.bootstrap.resolver.maven;
 public interface ModelResolutionTaskRunner {
 
     /**
-     * Returns an instance of a non-blocking task runner with an error handler
-     * that collects all task execution errors and throws a single error when all the tasks
-     * have finished.
+     * @deprecated in favor of {@link ModelResolutionTaskRunnerFactory#getNonBlockingTaskRunner()}
+     *
+     *             Returns an instance of a non-blocking task runner with an error handler
+     *             that collects all task execution errors and throws a single error when all the tasks
+     *             have finished.
      *
      * @return an instance of a non-blocking task runner
      */
+    @Deprecated(forRemoval = true)
     static ModelResolutionTaskRunner getNonBlockingTaskRunner() {
-        return getNonBlockingTaskRunner(new FailAtCompletionErrorHandler());
+        return ModelResolutionTaskRunnerFactory.getNonBlockingTaskRunner();
     }
 
     /**
-     * Returns an instance of a non-blocking task runner with a custom error handler.
+     * @deprecated in favor of
+     *             {@link ModelResolutionTaskRunnerFactory#getNonBlockingTaskRunner(ModelResolutionTaskErrorHandler)}
+     *
+     *             Returns an instance of a non-blocking task runner with a custom error handler.
      *
      * @param errorHandler error handler
      * @return an instance of non-blocking task runner
      */
+    @Deprecated(forRemoval = true)
     static ModelResolutionTaskRunner getNonBlockingTaskRunner(ModelResolutionTaskErrorHandler errorHandler) {
-        return new NonBlockingModelResolutionTaskRunner(errorHandler);
+        return ModelResolutionTaskRunnerFactory.getNonBlockingTaskRunner(errorHandler);
     }
 
     /**
-     * Returns an instance of a blocking task runner with no error handler.
-     * Exceptions thrown from tasks will be immediately propagated to the caller.
+     * @deprecated in favor of {@link ModelResolutionTaskRunnerFactory#getBlockingTaskRunner()}
+     *
+     *             Returns an instance of a blocking task runner with no error handler.
+     *             Exceptions thrown from tasks will be immediately propagated to the caller.
      *
      * @return an instance of a blocking task runner
      */
+    @Deprecated(forRemoval = true)
     static ModelResolutionTaskRunner getBlockingTaskRunner() {
-        return BlockingModelResolutionTaskRunner.getInstance();
+        return ModelResolutionTaskRunnerFactory.getBlockingTaskRunner();
     }
 
     /**
-     * Returns an instance of a blocking task runner with a custom error handler.
+     * @deprecated in favor of {@link ModelResolutionTaskRunnerFactory#getBlockingTaskRunner(ModelResolutionTaskErrorHandler)}
+     *
+     *             Returns an instance of a blocking task runner with a custom error handler.
      *
      * @return an instance of a blocking task runner
      */
+    @Deprecated(forRemoval = true)
     static ModelResolutionTaskRunner getBlockingTaskRunner(ModelResolutionTaskErrorHandler errorHandler) {
-        return BlockingModelResolutionTaskRunner.getInstance(errorHandler);
+        return ModelResolutionTaskRunnerFactory.getBlockingTaskRunner(errorHandler);
     }
 
     /**

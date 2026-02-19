@@ -42,6 +42,7 @@ final class SmartPomMergeCodestartFileStrategyHandler implements CodestartFileSt
         while (iterator.hasNext()) {
             merger.merge(targetModel, Maven.readModel(new StringReader(iterator.next().getContent())), true, null);
         }
+
         Maven.writeModel(targetModel, targetPath,
                 XMLFormat.builder().indent("    ").insertLineBreakBetweenMajorSections().build());
     }

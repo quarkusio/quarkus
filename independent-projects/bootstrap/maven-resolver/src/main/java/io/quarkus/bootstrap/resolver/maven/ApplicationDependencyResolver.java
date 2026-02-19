@@ -74,11 +74,6 @@ public class ApplicationDependencyResolver {
     private static final byte COLLECT_DEPLOYMENT_INJECTION_POINTS = 0b1000;
     /* @formatter:on */
 
-    /**
-     * Whether to use a blocking or non-blocking dependency resolution and processing task runner
-     */
-    private static final boolean BLOCKING_TASK_RUNNER = Boolean.getBoolean("quarkus.bootstrap.blocking-task-runner");
-
     public static ApplicationDependencyResolver newInstance() {
         return new ApplicationDependencyResolver();
     }
@@ -89,8 +84,7 @@ public class ApplicationDependencyResolver {
      * @return task runner
      */
     private static ModelResolutionTaskRunner getTaskRunner() {
-        return BLOCKING_TASK_RUNNER ? ModelResolutionTaskRunner.getBlockingTaskRunner()
-                : ModelResolutionTaskRunner.getNonBlockingTaskRunner();
+        return ModelResolutionTaskRunnerFactory.newTaskRunner();
     }
 
     private final ExtensionInfo EXT_INFO_NONE = new ExtensionInfo();
@@ -371,12 +365,12 @@ public class ApplicationDependencyResolver {
     private Collection<AppDep> collectDeploymentDeps() {
         final ConcurrentLinkedDeque<AppDep> injectQueue = new ConcurrentLinkedDeque<>();
         final ModelResolutionTaskRunner taskRunner;
-        if (deploymentInjectionPoints.size() == 1 || BLOCKING_TASK_RUNNER) {
-            taskRunner = ModelResolutionTaskRunner.getBlockingTaskRunner();
+        if (deploymentInjectionPoints.size() == 1 || ModelResolutionTaskRunnerFactory.isDefaultRunnerBlocking()) {
+            taskRunner = ModelResolutionTaskRunnerFactory.getBlockingTaskRunner();
         } else {
             // We've been running into Maven resolver failures to acquire a lock to a local fail when resolving dependencies lately.
             // This error handler will catch those errors and will re-try the corresponding tasks with the blocking task runner.
-            taskRunner = ModelResolutionTaskRunner.getNonBlockingTaskRunner(new RetryLockAcquisitionErrorHandler());
+            taskRunner = ModelResolutionTaskRunnerFactory.getNonBlockingTaskRunner(new RetryLockAcquisitionErrorHandler());
         }
         for (AppDep extDep : deploymentInjectionPoints) {
             extDep.scheduleCollectDeploymentDeps(taskRunner, injectQueue);

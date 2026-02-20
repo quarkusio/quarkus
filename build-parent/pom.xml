@@ -81,6 +81,7 @@
         <elasticsearch.protocol>http</elasticsearch.protocol>
         <opensearch-server.version>3.4.0</opensearch-server.version>
         <opensearch.image>docker.io/opensearchproject/opensearch:${opensearch-server.version}</opensearch.image>
+        <opensearch-dashboards.image>docker.io/opensearchproject/opensearch-dashboards:${opensearch-server.version}</opensearch-dashboards.image>
         <opensearch.protocol>http</opensearch.protocol>
         <junit-pioneer.version>2.3.0</junit-pioneer.version>
 

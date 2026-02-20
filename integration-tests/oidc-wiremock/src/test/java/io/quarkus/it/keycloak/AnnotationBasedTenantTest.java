@@ -53,6 +53,7 @@ public class AnnotationBasedTenantTest {
             return Map.ofEntries(Map.entry("quarkus.http.auth.proactive", "false"),
                     Map.entry("quarkus.oidc.hr.authentication.user-info-required", "false"),
                     Map.entry("quarkus.oidc.hr.auth-server-url", "http://localhost:8180/auth/realms/quarkus2/"),
+                    Map.entry("quarkus.oidc.hr.discovery-path", "/.well-known/oauth-authorization-server"),
                     Map.entry("quarkus.oidc.hr.client-id", "quarkus-app"),
                     Map.entry("quarkus.oidc.hr.credentials.secret", "secret"),
                     Map.entry("quarkus.oidc.hr.tenant-paths", "/api/tenant-echo/http-security-policy-applies-all-same"),

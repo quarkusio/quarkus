@@ -13,20 +13,30 @@ import io.smallrye.config.WithDefault;
 @ConfigGroup
 public interface OidcCommonConfig {
     /**
-     * The base URL of the OpenID Connect (OIDC) server, for example, `https://host:port/auth`.
-     * Do not set this property if you use 'quarkus-oidc' and the public key verification ({@link #publicKey})
-     * or certificate chain verification only ({@link #certificateChain}) is required.
-     * The OIDC discovery endpoint is called by default by appending a `.well-known/openid-configuration` path to this URL.
+     * The base URL of an OpenID Connect (OIDC) server, for example, `https://host:port/auth`.
+     * Do not set this property if you use the public key verification ({@link #publicKey})
+     * or certificate chain verification only ({@link #certificateChain}).
+     * <p>
+     * By default, when an OIDC configuration metadata discovery is enabled with the {@link #discoveryEnabled()} property,
+     * it is retrieved from a well known provider endpoint with its URL calculated by appending a value
+     * of the {@link #discoveryPath()} path such as `.well-known/openid-configuration` to this URL.
+     * <p>
      * For Keycloak, use `https://host:port/realms/{realm}`, replacing `{realm}` with the Keycloak realm name.
      */
     Optional<String> authServerUrl();
 
     /**
-     * Discovery of the OIDC endpoints.
+     * Enable discovery of the OIDC endpoints.
      * If not enabled, you must configure the OIDC endpoint URLs individually.
      */
     @ConfigDocDefault("true")
     Optional<Boolean> discoveryEnabled();
+
+    /**
+     * The relative path of the OIDC discovery endpoint.
+     */
+    @WithDefault(".well-known/openid-configuration")
+    String discoveryPath();
 
     /**
      * The relative path or absolute URL of the OIDC dynamic client registration endpoint.

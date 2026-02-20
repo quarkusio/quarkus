@@ -15,6 +15,7 @@ final class OidcClientConfigImpl implements OidcClientConfig {
     enum ConfigMappingMethods {
         ID,
         AUTH_SERVER_URL,
+        DISCOVERY_PATH,
         DISCOVERY_ENABLED,
         REGISTRATION_PATH,
         CONNECTION_DELAY,
@@ -431,6 +432,12 @@ final class OidcClientConfigImpl implements OidcClientConfig {
     public Optional<String> authServerUrl() {
         invocationsRecorder.put(ConfigMappingMethods.AUTH_SERVER_URL, true);
         return Optional.empty();
+    }
+
+    @Override
+    public String discoveryPath() {
+        invocationsRecorder.put(ConfigMappingMethods.DISCOVERY_PATH, true);
+        return null;
     }
 
     @Override

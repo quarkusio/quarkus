@@ -576,9 +576,9 @@ public class OidcCommonUtils {
     public static Uni<JsonObject> discoverMetadata(WebClient client,
             Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters,
             OidcRequestContextProperties contextProperties, Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters,
-            String authServerUrl,
+            String discoveryUrl,
             long connectionDelayInMillisecs, Vertx vertx, boolean blockingDnsLookup) {
-        final String discoveryUrl = getDiscoveryUri(authServerUrl);
+
         final OidcRequestContextProperties requestProps = requestFilters.isEmpty() ? null
                 : getDiscoveryRequestProps(contextProperties, discoveryUrl);
 
@@ -695,8 +695,8 @@ public class OidcCommonUtils {
         return updatedResponseBody == null ? buffer : updatedResponseBody;
     }
 
-    public static String getDiscoveryUri(String authServerUrl) {
-        return authServerUrl + OidcConstants.WELL_KNOWN_CONFIGURATION;
+    public static String getDiscoveryUri(String authServerUrl, String discoveryPath) {
+        return authServerUrl + (discoveryPath != null ? prependSlash(discoveryPath) : OidcConstants.WELL_KNOWN_CONFIGURATION);
     }
 
     private static byte[] getFileContent(Path path) throws IOException {

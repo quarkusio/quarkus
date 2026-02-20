@@ -80,7 +80,7 @@ public class OidcClientHealthCheck implements HealthCheck {
             } else if (oidcClientConfig.discoveryEnabled().orElse(true) && oidcClientConfig.authServerUrl().isPresent()) {
                 try {
                     String authServerUriString = OidcCommonUtils.getAuthServerUrl(oidcClientConfig);
-                    String discoveryUri = getDiscoveryUri(authServerUriString);
+                    String discoveryUri = getDiscoveryUri(authServerUriString, oidcClientConfig.discoveryPath());
                     status = checkHealth(oidcClientImpl, discoveryUri).await().indefinitely();
                 } catch (Exception e) {
                     status = ERROR_STATUS + ": " + e.getMessage();

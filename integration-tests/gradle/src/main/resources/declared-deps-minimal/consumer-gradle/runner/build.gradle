@@ -1,0 +1,26 @@
+plugins {
+    id 'java'
+    id 'io.quarkus'
+}
+
+group = 'org.acme'
+version = '1.0.0'
+
+repositories {
+    mavenLocal {
+        content {
+            includeGroup 'org.acme.deps'
+            includeGroupByRegex 'io.quarkus.*'
+            includeGroup 'org.hibernate.orm'
+        }
+    }
+    mavenCentral()
+}
+
+dependencies {
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation 'io.quarkus:quarkus-rest'
+    implementation project(':local-lib')
+    implementation 'org.acme.deps:lib-a:1.0.0'
+    testImplementation 'org.acme.deps:lib-e:1.0.0'
+}

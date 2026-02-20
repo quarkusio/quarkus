@@ -87,7 +87,7 @@ class HibernateSearchElasticsearchProcessor {
             Collection<AnnotationInstance> indexedAnnotationsForPU = new ArrayList<>();
             for (AnnotationInstance indexedAnnotation : indexedAnnotations) {
                 String targetName = indexedAnnotation.target().asClass().name().toString();
-                if (puDescriptor.getManagedClassNames().contains(targetName)) {
+                if (puDescriptor.getManagedClassesAndPackagedNames().contains(targetName)) {
                     indexedAnnotationsForPU.add(indexedAnnotation);
                 }
             }

@@ -712,6 +712,7 @@ However, note that it is not possible to assign different test profiles or resou
 Quarkus supports the use of mock objects using two different approaches. You can either use CDI alternatives to
 mock out a bean for all test classes, or use `QuarkusMock` to mock out beans on a per test basis.
 
+[[mock-cdi-alternative]]
 === CDI `@Alternative` mechanism.
 
 To use this simply override the bean you wish to mock with a class in the `src/test/java` directory, and put the `@Alternative` and `@Priority(1)` annotations on the bean.
@@ -1066,6 +1067,13 @@ public class GreetingResourceTest {
 }
 ----
 <1> Indicate that this injection point is meant to use an instance of `RestClient`.
+
+=== Mocking on Startup
+
+Beans accessed and used during startup are not subject to automatic mocking, even if the test declares injection points
+with the same bean types annotated with @InjectMock or @InjectSpy. Mocking is a local operation within a test, whereas
+startup is a global operation for executing many tests. In such cases, the recommendation is to use the
+<<mock-cdi-alternative>>.
 
 === Mocking with Panache
 

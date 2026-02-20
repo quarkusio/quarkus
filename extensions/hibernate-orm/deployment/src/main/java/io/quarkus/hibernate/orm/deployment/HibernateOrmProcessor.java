@@ -1078,25 +1078,88 @@ public final class HibernateOrmProcessor {
                 persistenceUnitName,
                 jdbcDataSources,
                 JdbcDataSourceBuildItem::getName,
-                JdbcDataSourceBuildItem::isDefault, persistenceUnitConfig.datasource());
+                JdbcDataSourceBuildItem::isDefault,
+                persistenceUnitConfig.datasource());
 
         Optional<ReactiveDataSourceBuildItem> reactiveDataSource = HibernateDataSourceUtil.findDataSourceWithNameDefault(
                 persistenceUnitName,
                 reactiveDataSources,
                 ReactiveDataSourceBuildItem::getName,
-                ReactiveDataSourceBuildItem::isDefault, persistenceUnitConfig.datasource());
+                ReactiveDataSourceBuildItem::isDefault,
+                persistenceUnitConfig.datasource());
 
-        if (jdbcDataSource.isEmpty() && reactiveDataSource.isPresent()) {
-            LOG.debugf("The datasource '%s' is only reactive, do not create this PU '%s' as blocking",
-                    persistenceUnitConfig.datasource().orElse(DEFAULT_PERSISTENCE_UNIT_NAME), persistenceUnitName);
-            return;
+        final boolean hasKnownJdbcDataSource = jdbcDataSource.isPresent();
+        final boolean hasKnownReactiveDataSource = reactiveDataSource.isPresent();
+        final boolean hasKnownDataSource = hasKnownJdbcDataSource || hasKnownReactiveDataSource;
+        final boolean explicitDataSource = persistenceUnitConfig.datasource().isPresent();
+
+        final var mode = persistenceUnitConfig.mode();
+
+        /*
+         * Decide early whether this PU should result in a *blocking* Hibernate ORM persistence unit.
+         *
+         * - REACTIVE: never bootstrap a blocking PU, even if JDBC is available.
+         * - BLOCKING/BOTH: require JDBC; fail fast with a clear error if missing.
+         * - AUTO: if the datasource is reactive-only (no JDBC) then skip bootstrapping the blocking PU (Route A).
+         */
+        switch (mode) {
+            case REACTIVE:
+                LOG.debugf("Persistence unit '%s' is configured with mode=REACTIVE; skipping blocking Hibernate ORM PU",
+                        persistenceUnitName);
+                return;
+            case BLOCKING:
+            case BOTH:
+                // Only require JDBC if Quarkus actually knows a datasource for this PU.
+                // Some advanced setups rely on custom connection providers (e.g. certain multitenancy configurations),
+                // in which case Quarkus cannot infer datasource capabilities at build time.
+                if (hasKnownDataSource && !hasKnownJdbcDataSource) {
+                    throw new ConfigurationException(String.format(Locale.ROOT,
+                            "Persistence unit '%s' is configured with mode=%s, but its datasource '%s' has no JDBC datasource. "
+                                    + "Either configure a JDBC datasource for it, or set mode=REACTIVE/AUTO as appropriate.",
+                            persistenceUnitName, mode,
+                            persistenceUnitConfig.datasource().orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME)));
+                }
+                break;
+            case AUTO:
+                // AUTO + reactive-only datasource -> do not create a blocking PU.
+                if (!hasKnownJdbcDataSource && hasKnownReactiveDataSource) {
+                    LOG.debugf("The datasource '%s' is only reactive, do not create this PU '%s' as blocking (mode=%s)",
+                            persistenceUnitConfig.datasource().orElse(DEFAULT_PERSISTENCE_UNIT_NAME),
+                            persistenceUnitName,
+                            mode);
+                    return;
+                }
+                break;
+            default:
+                // Defensive: if new modes are introduced later, do not silently change behavior.
+                throw new ConfigurationException(String.format(Locale.ROOT,
+                        "Unsupported persistence unit mode '%s' for persistence unit '%s'.",
+                        mode, persistenceUnitName));
         }
 
-        boolean explicitDataSource = persistenceUnitConfig.datasource().isPresent();
-        if (jdbcDataSource.isEmpty() && explicitDataSource) {
-            String dataSourceName = persistenceUnitConfig.datasource().get();
-            throw PersistenceUnitUtil.unableToFindDataSource(persistenceUnitName, dataSourceName,
-                    DataSourceUtil.dataSourceNotConfigured(dataSourceName));
+        // If a datasource is explicitly referenced but Quarkus cannot find it at build time,
+        // the idea is to only fail when the mode requires JDBC.
+        // This allows advanced setups relying on custom connection providers, and also avoids
+        // false negatives when reactive datasource metadata is not available at build time.
+        if (explicitDataSource && !hasKnownDataSource) {
+            switch (mode) {
+                case BLOCKING:
+                case BOTH:
+                    String dataSourceName = persistenceUnitConfig.datasource().get();
+                    throw PersistenceUnitUtil.unableToFindDataSource(persistenceUnitName, dataSourceName,
+                            DataSourceUtil.dataSourceNotConfigured(dataSourceName));
+                case AUTO:
+                case REACTIVE:
+                    LOG.debugf("Datasource '%s' for persistence unit '%s' is not known at build time; "
+                            + "mode=%s allows proceeding without a known datasource",
+                            persistenceUnitConfig.datasource().orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
+                            persistenceUnitName, mode);
+                    break;
+                default:
+                    throw new ConfigurationException(String.format(Locale.ROOT,
+                            "Unsupported persistence unit mode '%s' for persistence unit '%s'.",
+                            mode, persistenceUnitName));
+            }
         }
 
         Optional<String> dataSourceName = jdbcDataSource.map(JdbcDataSourceBuildItem::getName);
@@ -1105,28 +1168,24 @@ public final class HibernateOrmProcessor {
                 persistenceUnitName,
                 new HibernateOrmPersistenceUnitProviderHelper(),
                 PersistenceUnitTransactionType.JTA,
-                // That's right, we're pushing both class names and package names
-                // to a method called "addClasses".
-                // It's a misnomer: while the method populates the set that backs getManagedClasses(),
-                // that method is also poorly named because it can actually return both class names
-                // and package names.
-                // See for proof:
-                // - how org.hibernate.boot.archive.scan.internal.ScanResultCollector.isListedOrDetectable
-                //   is used for packages too, even though it relies (indirectly) on getManagedClassNames().
-                // - the comment at org/hibernate/boot/model/process/internal/ScanningCoordinator.java:246:
-                //   "IMPL NOTE : "explicitlyListedClassNames" can contain class or package names..."
                 new ArrayList<>(modelClassesAndPackages),
                 new Properties(),
                 false);
+
         Set<String> entityClassNames = new HashSet<>(descriptor.getManagedClassNames());
         entityClassNames.retainAll(jpaModel.getEntityClassNames());
 
         MultiTenancyStrategy multiTenancyStrategy = getMultiTenancyStrategy(persistenceUnitConfig.multitenant());
 
-        Optional<DatabaseKind.SupportedDatabaseKind> supportedDatabaseKind = collectDialectConfig(persistenceUnitName,
+        Optional<DatabaseKind.SupportedDatabaseKind> supportedDatabaseKind = collectDialectConfig(
+                persistenceUnitName,
                 persistenceUnitConfig,
-                dbKindMetadataBuildItems, jdbcDataSource, multiTenancyStrategy,
-                systemProperties, reflectiveMethods, descriptor.getProperties()::setProperty);
+                dbKindMetadataBuildItems,
+                jdbcDataSource,
+                multiTenancyStrategy,
+                systemProperties,
+                reflectiveMethods,
+                descriptor.getProperties()::setProperty);
 
         configureProperties(descriptor, persistenceUnitConfig, hibernateOrmConfig, false);
 
@@ -1136,12 +1195,15 @@ public final class HibernateOrmProcessor {
 
         Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
         Optional<FormatMapperKind> xmlMapper = xmlMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
+
         jsonMapper.flatMap(FormatMapperKind::requiredBeanType)
                 .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
         xmlMapper.flatMap(FormatMapperKind::requiredBeanType)
                 .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
-        JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck = jsonFormatterCustomizationCheck(
-                capabilities, jsonMapper);
+
+        JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck = jsonFormatterCustomizationCheck(capabilities,
+                jsonMapper);
+
         persistenceUnitDescriptors.produce(
                 new PersistenceUnitDescriptorBuildItem(descriptor,
                         new RecordedConfig(

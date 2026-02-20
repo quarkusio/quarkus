@@ -21,10 +21,9 @@ public class ConfigDefaultPUDatasourceMissingTest {
             .assertException(t -> assertThat(t)
                     .isInstanceOf(ConfigurationException.class)
                     .hasMessageContainingAll(
-                            "Unable to find datasource 'ds-1' for persistence unit '<default>'",
-                            "Datasource 'ds-1' is not configured.",
-                            "To solve this, configure datasource 'ds-1'.",
-                            "Refer to https://quarkus.io/guides/datasource for guidance."));
+                            "Datasource must be defined for persistence unit '<default>'",
+                            "quarkus.hibernate-orm.datasource",
+                            "Refer to https://quarkus.io/guides/datasource"));
 
     @Test
     public void testInvalidConfiguration() {

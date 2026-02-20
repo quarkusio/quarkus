@@ -238,9 +238,10 @@ public class OidcClientRegistrationRecorder {
             Map<OidcEndpoint.Type, List<OidcResponseFilter>> oidcResponseFilters,
             String authServerUrl, io.vertx.mutiny.core.Vertx vertx, OidcClientRegistrationConfig oidcConfig) {
         final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
+        final String discoveryUri = OidcCommonUtils.getDiscoveryUri(authServerUrl, oidcConfig.discoveryPath());
         return OidcCommonUtils
                 .discoverMetadata(client, oidcRequestFilters, new OidcRequestContextProperties(),
-                        oidcResponseFilters, authServerUrl,
+                        oidcResponseFilters, discoveryUri,
                         connectionDelayInMillisecs, vertx,
                         oidcConfig.useBlockingDnsLookup())
                 .onItem().transform(json -> new OidcConfigurationMetadata(json.getString("registration_endpoint")));

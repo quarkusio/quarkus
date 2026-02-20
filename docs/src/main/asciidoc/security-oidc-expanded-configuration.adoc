@@ -77,6 +77,7 @@ See the <<multi-tenancy>> section for more details.
 |Property name |Default |Description
 
 |quarkus.oidc.auth-server-url ||OIDC base URL
+|quarkus.oidc.discovery-path |.well-known/openid-configuration|Discovery path
 |quarkus.oidc.discovery-enabled |true|Enable discovery
 |quarkus.oidc.authorization-path ||Authorization path
 |quarkus.oidc.token-path ||Token path
@@ -88,7 +89,10 @@ See the <<multi-tenancy>> section for more details.
 |quarkus.oidc.registration-path ||OIDC client registration path
 |====
 
-`quarkus.oidc.auth-server-url` is a key base OIDC URL property. By default, Quarkus OIDC adds a `.well-known/openid-configuration` path segment to this URL and discovers the OIDC provider metadata.
+`quarkus.oidc.auth-server-url` is a key base OIDC URL property.
+
+By default, Quarkus OIDC adds a `.well-known/openid-configuration` path segment to this URL and discovers the OIDC provider metadata.
+The discovery path can be customized with `quarkus.oidc.discovery-path`, for example, it can be set to `.well-known/oauth-authorization-server`.
 
 You can disable metadata discovery with `quarkus.oidc.discovery-enabled=false` when the provider does not support it (most OAuth2 providers do not), when you would like to optimize start up time by skipping a remote discovery call and configure individual OIDC provider endpoint URLs instead.
 

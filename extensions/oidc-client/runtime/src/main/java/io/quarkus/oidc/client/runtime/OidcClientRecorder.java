@@ -232,8 +232,9 @@ public class OidcClientRecorder {
         final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
         OidcRequestContextProperties contextProps = new OidcRequestContextProperties(
                 Map.of(CLIENT_ID_ATTRIBUTE, oidcConfig.id().orElse(DEFAULT_OIDC_CLIENT_ID)));
+        final String discoveryUrl = OidcCommonUtils.getDiscoveryUri(authServerUrl, oidcConfig.discoveryPath());
         return OidcCommonUtils.discoverMetadata(client, oidcRequestFilters, contextProps, oidcResponseFilters,
-                authServerUrl, connectionDelayInMillisecs, vertx, oidcConfig.useBlockingDnsLookup())
+                discoveryUrl, connectionDelayInMillisecs, vertx, oidcConfig.useBlockingDnsLookup())
                 .onItem().transform(json -> new OidcConfigurationMetadata(json.getString("token_endpoint"),
                         json.getString("revocation_endpoint")));
     }

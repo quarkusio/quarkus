@@ -467,10 +467,11 @@ final class TenantContextFactory {
             metadataUni = Uni.createFrom().item(createLocalMetadata(oidcConfig, authServerUriString));
         } else {
             final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
+            final String discoveryUri = OidcCommonUtils.getDiscoveryUri(authServerUriString, oidcConfig.discoveryPath());
             OidcRequestContextProperties contextProps = new OidcRequestContextProperties(
                     Map.of(OidcUtils.TENANT_ID_ATTRIBUTE, oidcConfig.tenantId().orElse(OidcUtils.DEFAULT_TENANT_ID)));
             metadataUni = OidcCommonUtils
-                    .discoverMetadata(client, oidcRequestFilters, contextProps, oidcResponseFilters, authServerUriString,
+                    .discoverMetadata(client, oidcRequestFilters, contextProps, oidcResponseFilters, discoveryUri,
                             connectionDelayInMillisecs,
                             mutinyVertx,
                             oidcConfig.useBlockingDnsLookup())
@@ -479,7 +480,7 @@ final class TenantContextFactory {
                         @Override
                         public OidcConfigurationMetadata apply(JsonObject json) {
                             return new OidcConfigurationMetadata(json, createLocalMetadata(oidcConfig, authServerUriString),
-                                    OidcCommonUtils.getDiscoveryUri(authServerUriString));
+                                    discoveryUri);
                         }
                     });
         }

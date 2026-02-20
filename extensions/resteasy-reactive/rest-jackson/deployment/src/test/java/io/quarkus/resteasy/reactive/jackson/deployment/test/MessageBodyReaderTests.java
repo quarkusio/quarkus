@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,6 +41,7 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIdentityReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.core.exc.StreamConstraintsException;
 import com.fasterxml.jackson.core.exc.StreamReadException;
 import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -92,6 +94,14 @@ class MessageBodyReaderTests {
             Object invalid = new InvalidDefinition(null);
             reader.readFrom((Class<Object>) invalid.getClass(), null, null, null, null, stream);
         }
+
+        void deserializeNumberExceedingConstraints() throws IOException {
+            String bigNumber = "9".repeat(1001);
+            var stream = new ByteArrayInputStream(
+                    ("{\"value\": " + bigNumber + "}").getBytes(StandardCharsets.UTF_8));
+            Object dto = new NumberDto();
+            reader.readFrom((Class<Object>) dto.getClass(), null, null, null, null, stream);
+        }
     }
 
     @Nested
@@ -117,6 +127,11 @@ class MessageBodyReaderTests {
         @Test
         void shouldThrowInvalidDefinitionException() {
             assertThrows(InvalidDefinitionException.class, tests::deserializeClassWithInvalidDefinition);
+        }
+
+        @Test
+        void shouldThrowStreamConstraintsException() {
+            assertThrows(StreamConstraintsException.class, tests::deserializeNumberExceedingConstraints);
         }
     }
 
@@ -163,6 +178,17 @@ class MessageBodyReaderTests {
                 assertThat(ValueInstantiationException.class).isAssignableFrom(e.getCause().getClass());
             }
         }
+
+        @Test
+        void shouldThrowWebExceptionWithStreamConstraintsExceptionCause() {
+            var e = assertThrows(WebApplicationException.class, tests::deserializeNumberExceedingConstraints);
+            assertThat(e.getResponse().getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+            assertThat(StreamConstraintsException.class).isAssignableFrom(e.getCause().getClass());
+        }
+    }
+
+    static class NumberDto {
+        public BigDecimal value;
     }
 
     static class InvalidDefinition {

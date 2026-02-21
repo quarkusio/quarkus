@@ -21,6 +21,65 @@ public class MultipartResourceTest {
     private static final String EXPECTED_CONTENT_TYPE_PART = "Content-Type: %s";
 
     @Test
+    public void shouldHandleSingleEntityPartFormParam() {
+        // @formatter:off
+        given()
+                .header("Content-Type", "multipart/form-data")
+                .multiPart("part", "file1.txt", "Hello, World!".getBytes())
+        .when().post("/client/single-entity-part-form-param")
+        .then()
+                .statusCode(200)
+                .body(equalTo("OK"));
+        // @formatter:on
+    }
+
+    @Test
+    public void shouldHandleMultipleEntityPartsFormParam() {
+        // @formatter:off
+        given()
+                .header("Content-Type", "multipart/form-data")
+                .multiPart("part", "file1.txt", "Hello, World!".getBytes())
+                .multiPart("part", "file2.txt", "Hello, World!".getBytes())
+        .when().post("/client/multiple-entity-parts-form-param")
+        .then()
+                .statusCode(200)
+                .body(equalTo("OK"));
+        // @formatter:on
+    }
+
+    @Test
+    public void shouldHandleEntityPartMessage() {
+        // @formatter:off
+        MultipartResource.TestObject o1 = new MultipartResource.TestObject("hello");
+        MultipartResource.TestObject o2 = new MultipartResource.TestObject("world");
+
+        given()
+                .multiPart("partA", o1, "application/json")
+                .multiPart("partB", o2, "application/json")
+        .when().post("/client/entity-part-message-body-reader")
+        .then()
+                .statusCode(200)
+                .body(equalTo("OK"));
+        // @formatter:on
+    }
+
+    /*
+    @Test
+    public void shouldHandleMultipleEntityParts() {
+        // @formatter:off
+        given()
+                .header("Content-Type", "multipart/form-data")
+                .multiPart("partA", "file1.txt", "Hello, World!".getBytes())
+                .multiPart("partB", "file2.txt", "Hello, World!".getBytes())
+                .when().post("/client/entity-parts-body-param")
+                .then()
+                .statusCode(200)
+                .body(equalTo("OK"));
+        // @formatter:on
+    }
+    */
+
+    @Test
     public void shouldSendByteArrayAsBinaryFile() {
         // @formatter:off
         given()

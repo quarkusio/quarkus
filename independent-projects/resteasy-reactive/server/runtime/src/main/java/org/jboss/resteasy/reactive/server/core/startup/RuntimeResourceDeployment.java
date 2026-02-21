@@ -24,6 +24,7 @@ import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.core.EntityPart;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
@@ -661,6 +662,8 @@ public class RuntimeResourceDeployment {
                     multiPartType = MultipartFormParamExtractor.Type.InputStream;
                 } else if (param.type.equals(byte[].class.getName())) {
                     multiPartType = MultipartFormParamExtractor.Type.ByteArray;
+                } else if (param.type.equals(EntityPart.class.getName())) {
+                    multiPartType = MultipartFormParamExtractor.Type.EntityPart;
                 } else if (param.mimeType != null && !param.mimeType.equals(MediaType.TEXT_PLAIN)) {
                     multiPartType = MultipartFormParamExtractor.Type.PartType;
                     // TODO: special primitive handling?

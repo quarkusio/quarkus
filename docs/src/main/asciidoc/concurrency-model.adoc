@@ -1,0 +1,1451 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="concurrency-model"]
+= Quarkus concurrency model
+include::_attributes.adoc[]
+:diataxis-type: concept
+:summary: Explanation of the Quarkus concurrency model and how to write safe concurrent code
+:categories: architecture
+:topics: concurrency,threads,reactive
+
+Marketing materials often boast about how _Quarkus unifies imperative and reactive_, which leads to both a familiar programming model and high efficiency.
+This is true, but it omits an important detail: by unifying imperative and reactive, Quarkus also mixes the two concurrency models: _multithreading_ and _event loops_.
+This document explains the resulting concurrency model and how to use it safely.
+
+NOTE: This concurrency model is relatively advanced and there are parts that require your cooperation.
+We are also thinking about introducing a more basic concurrency model that would include more hand-holding and safety at the expense of power and freedom.
+It doesn't exist yet.
+
+As mentioned above, there are 2 basic parts of the Quarkus concurrency model: _multithreading_, coming from the Java platform itself, and _event loops_, coming from Vert.x.
+Both these concurrency models are backed by primitives provided by operating systems, and each has its own rules for writing concurrency-safe code.
+
+Unfortunately, concurrency models do not compose easily.
+This is especially true in Quarkus, where the programming model is mostly declarative, or annotation-based.
+A big part of this is reliance on values that are not passed around explicitly; instead, they are stored on the side and retrieved when necessary.
+A proper name for these would be _implicit parameters_, but we often call them _contexts_ (see https://tomasp.net/coeffects/[Tomáš Petříček's PhD thesis on coeffects] for a rigorous treatment of that term).
+
+== Multithreading
+
+=== Overview
+
+Multithreading (or _shared memory multithreading_) is a well-known topic across the Java ecosystem, so let's just summarize it very briefly.
+
+Threads execute code in program order, independently of other threads.
+Parts of the code need to communicate with other threads through shared memory, and they generally do it in one of two ways.
+The first way is guarding parts of the code where multiple threads need to access the same memory location(s) using synchronization primitives like locks, read-write locks, semaphores, monitors, etc.
+These primitives ensure that only one thread (or at most a given number of threads) access the memory location(s), while the other threads are suspended.
+The second way relies on atomic read/modify/write primitives (such as _compare and swap_) to implement algorithms that do not require suspending threads.
+Such algorithms are often called lock-free, although entire classification exists (obstruction-free, lock-free, wait-free).
+The first way is also called _blocking concurrency_ and the second _non-blocking concurrency_, but we shall not use these terms, because they collide with _blocking I/O_ and _non-blocking I/O_, which is what we actually mean when talking about "blocking" and "non-blocking" in Quarkus.
+
+In a multithreaded world, requests are typically handled in a thread-per-request manner.
+Whenever a framework accepts a request, it picks up a thread from a thread pool and runs the entire request processing on that thread.
+After the request processing is done, the thread is returned back to the pool.
+If request processing requires concurrency, more threads are obtained by the application code, typically from a _different_ thread pool.
+
+=== Implicit parameters
+
+To store contexts (implicit parameters), `ThreadLocal` variables are typically used.
+Note that many libraries also use `ThreadLocal` variables for caching or object pooling (and sometimes for preventing infinite regress), which is an entirely different situation.
+It is important to know whether a `ThreadLocal` is used to store an implicit parameter on the side, or for a different purpose.
+
+If the request processing code obtains other threads and delegates some processing to them, contexts are often not propagated.
+It may happen that some `ThreadLocal` variable is in fact an `InheritableThreadLocal`; in this case, contexts may be propagated if the application doesn't use a thread pool but creates new threads.
+Creating threads has non-trivial overhead, so this is not very common.
+
+=== References
+
+For more information about multithreading, read https://jcip.net/[Java Concurrency in Practice] or https://www.oreilly.com/library/view/the-art-of/9780123973375/[The Art of Multiprocessor Programming].
+
+== Event loops
+
+=== Introduction
+
+Event loops are not as well understood as multithreading, so this section is a lot longer, more detailed and includes examples.
+In fact, let's start with a simple HTTP server written in bare Vert.x:
+
+[source,java]
+----
+import io.vertx.core.Vertx;
+
+public class Main {
+    public static void main(String[] args) {
+        Vertx vertx = Vertx.vertx();
+        vertx.runOnContext(ignored -> run(vertx));
+    }
+
+    static void run(Vertx vertx) {
+        vertx.createHttpServer()
+                .requestHandler(req -> req.response().end("Hello World"))
+                .listen(8080)
+                .onSuccess(server -> System.out.println("Server started"));
+    }
+}
+
+----
+
+Typical Vert.x introduction starts with _verticles_, but Quarkus almost never uses them, so the examples here don't use them either.
+We'll mention verticles later on.
+
+The interesting thing about this example is the `runOnContext()` call.
+It is technically possible to call Vert.x APIs from non-Vert.x threads, but this is in fact outside the Vert.x concurrency model and may lead to subtle, hard to uncover bugs; see https://vertx.io/docs/vertx-core/java/#_request_and_response_flow_composition[this documentation] for an example.
+It is recommended to always call into Vert.x APIs from Vert.x threads, which is straightforward: just call `Vertx.runOnContext()` or `Context.runOnContext()`.
+
+Other than that, the HTTP server just replies `Hello World` to each request.
+Not entirely interesting; let's add some simulation of real work:
+
+[source,java]
+----
+static void run(Vertx vertx) {
+    vertx.createHttpServer()
+            .requestHandler(req -> {
+                vertx.setTimer(50, ignored -> {
+                    req.response().end("Hello World");
+                });
+            })
+            .listen(8080)
+            .onSuccess(server -> System.out.println("Server started"));
+}
+----
+
+Here, the request handler sets a timer that fires after 50 millis.
+After setting the timer and hence scheduling more work for the future, the request handler has done everything it could.
+In the code, the request handler was called by the event loop handling logic, and since the request handler has finished, the event loop logic takes over.
+An event loop maintains a queue of tasks to call and does exactly one thing: polls the queue for the next task to run.
+After roughly 50 millis elapse, the registered timer handler is put to the event loop queue and when all previous handlers finish, it is executed.
+The timer handler finishes the request processing by once again replying `Hello World`.
+
+This timer here is not useful, but it illustrates how actual request processing works and how requests are interleaved.
+The following scenario may easily occur on a single event loop thread:
+
+. At time 100, request R1 comes in. Timer is scheduled to fire at time 150.
+. At time 120, request R2 comes in. Timer is scheduled to fire at time 170.
+. At time 150, the timer scheduled by R1 fires. Response to R1 is finished.
+. At time 170, the timer scheduled by R2 fires. Response to R2 is finished.
+
+As shown above, requests are processed concurrently on a small number of threads; these are called _event loop threads_ (or sometimes _I/O threads_).
+Each request is assigned to an event loop thread and processing of requests is interleaved on that thread.
+(Yes, it is a form of cooperative multitasking.)
+Since Vert.x is ultimately a Java toolkit, this interleaving is expressed in Java code using _callbacks_ and _futures_; other programming languages often use the `async` / `await` keywords.
+
+Since many requests are processed on a small number of event loop threads, these threads must never be blocked.
+For example, instead of scheduling a timer, one might be tempted to simply run `Thread.sleep()` -- but that would be a terrible idea on an event loop, because it would prevent handling all other requests.
+This is sometimes called https://vertx.io/docs/vertx-core/java/#golden_rule[_the golden rule_]: don't block the event loop.
+
+It is common that non-blocking implementation of some feature (such as a network protocol) is not available, or that you just need to run a long computation.
+For that reason, Vert.x provides _worker threads_; you can offload blocking code to them.
+
+Vert.x maintains one built-in pool of worker threads (_worker pool_) and users may create others as needed.
+In this text, we'll just use the built-in worker pool.
+
+Tasks may be submitted to a worker pool in an _ordered_ manner, which is the default, or in an _unordered_ manner.
+This determines whether the tasks may be executed concurrently.
+All tasks that are submitted from one event loop in an ordered manner are executed serially; tasks that are submitted in an unordered manner may be executed concurrently.
+To facilitate this ordering, each event loop also has a second queue, which we'll call the _worker queue_ (different to the event loop queue we already mentioned).
+This queue maintains tasks submitted from that event loop to a worker pool in an ordered manner.
+Tasks submitted to a worker pool in an unordered manner are not held in a special-purpose queue and go directly to the thread pool (which might store them in its own queue).
+
+In the example above, the timer simulates some kind of work that can be done in a non-blocking manner, for example using a Vert.x database driver to perform a database query.
+Imagine we do not have a non-blocking implementation of a database driver, or some other network protocol; we simply have to execute blocking code.
+We'll simulate that by calling the trusted method `Thread.sleep()`.
+As mentioned above, this would be a bad idea on an event loop, so we'll offload it to a worker thread:
+
+[source,java]
+----
+static void run(Vertx vertx) {
+    vertx.createHttpServer()
+            .requestHandler(req -> {
+                vertx.executeBlocking(() -> {
+                    Thread.sleep(50);
+                    req.response().end("Hello World");
+                    return null;
+                });
+            })
+            .listen(8080)
+            .onSuccess(server -> System.out.println("Server started"));
+}
+----
+
+With this code, the scenario above would execute like this:
+
+. At time 100, request R1 comes in on event loop EL. A task is added to a worker queue of EL.
+. Worker thread W1 picks up the task submitted by R1 and sleeps for 50 millis.
+. At time 120, request R2 comes in on event loop EL. A task is added to a worker queue of EL.
+. At time 150, W1 wakes up from sleep and finishes the response to R1.
+. Worker thread W1 picks up the task submitted by R2 and sleeps for 50 millis.
+. At time 200, W1 wakes up from sleep and finishes the response to R2.
+
+This might look unusual, but note again that by default, tasks are submitted to a worker pool in an _ordered_ manner, so they may not be executed concurrently.
+The `executeBlocking()` method takes a `boolean` parameter `ordered` that may be set to `false` to allow concurrent execution:
+
+[source,java]
+----
+static void run(Vertx vertx) {
+    vertx.createHttpServer()
+            .requestHandler(req -> {
+                vertx.executeBlocking(() -> {
+                    Thread.sleep(50);
+                    req.response().end("Hello World");
+                    return null;
+                }, false);
+            })
+            .listen(8080)
+            .onSuccess(server -> System.out.println("Server started"));
+}
+----
+
+With this code, the scenario above would execute like this:
+
+. At time 100, request R1 comes in on event loop EL. A task is submitted to a worker pool W.
+. Worker thread W1 picks up the task submitted by R1 and sleeps for 50 millis.
+. At time 120, request R2 comes in on event loop EL. A task is submitted to a worker pool W.
+. Worker thread W2 picks up the task submitted by R2 and sleeps for 50 millis.
+. At time 150, W1 wakes up from sleep and finishes the response to R1.
+. At time 170, W2 wakes up from sleep and finishes the response to R2.
+
+Note that the `executeBlocking()` method accepts a `Callable` that may return a value.
+In this case, the return value is not interesting, but it is not hard to imagine that the worker thread executes some blocking code, produces a value, and we want to continue with that value on the original event loop.
+For example:
+
+[source,java]
+----
+static void run(Vertx vertx) {
+    vertx.createHttpServer()
+            .requestHandler(req -> {
+                vertx.executeBlocking(() -> {
+                    Thread.sleep(50);
+                    return "Hello World";
+                }, false).onSuccess(value -> {
+                    req.response().end(value);
+                });
+            })
+            .listen(8080)
+            .onSuccess(server -> System.out.println("Server started"));
+}
+----
+
+The `executeBlocking()` method returns a `Future` that completes with the return value from the `Callable` executed on the worker thread.
+We attach a callback to that future and when the value is produced on the worker thread, the callback is invoked on the original event loop thread.
+
+The scenario above would execute like this:
+
+. At time 100, request R1 comes in on event loop EL. A task is submitted to a worker pool W.
+. Worker thread W1 picks up the task submitted by R1 and sleeps for 50 millis.
+. At time 120, request R2 comes in on event loop EL. A task is submitted to a worker pool W.
+. Worker thread W2 picks up the task submitted by R2 and sleeps for 50 millis.
+. At time 150, W1 wakes up from sleep and returns a value. The future completes and the callback is added to the queue of EL.
+. EL picks up the task added by W1 and finishes the response to R1.
+. At time 170, W2 wakes up from sleep and returns a value. The future completes and the callback is added to the queue of EL.
+. EL picks up the task added by W2 and finishes the response to R2.
+
+Note that the request processing switches from an event loop thread to a worker thread and then back, but the entire processing remains serial.
+This is a rule in the Vert.x concurrency model: *request processing must not be concurrent*, concurrency only happens between requests.
+
+It is easy to misuse the `executeBlocking()` method and break the rule.
+For example:
+
+[source,java]
+----
+static void run(Vertx vertx) {
+    vertx.createHttpServer()
+            .requestHandler(req -> {
+                // DO NOT DO THIS!
+                vertx.executeBlocking(() -> {
+                    Thread.sleep(50);
+                    return null;
+                });
+                req.response().end("Hello World");
+            })
+            .listen(8080)
+            .onSuccess(server -> System.out.println("Server started"));
+}
+----
+
+Here, the worker thread does some work (in our example, just sleeping), and the event loop at the same time finishes the response to the request.
+
+We will see why this *must not be done* later on.
+
+=== Verticles
+
+The code that we've seen so far uses bare Vert.x APIs.
+It is possible, and it is how Quarkus generally uses Vert.x, but the idiomatic way of using Vert.x is:
+
+* structure code into relatively independent deployment units, called _verticles_
+* communicate between verticles over the Vert.x event bus
+
+We will not look into the event bus here, but we'll take a brief detour to demonstrate verticles.
+For example:
+
+[source,java]
+----
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
+
+public class MainVerticle extends AbstractVerticle {
+    public static void main(String[] args) {
+        Vertx vertx = Vertx.vertx();
+        vertx.deployVerticle(new MainVerticle());
+    }
+
+    @Override
+    public void start(Promise<Void> startPromise) {
+        vertx.createHttpServer()
+                .requestHandler(req -> {
+                    req.response().end("Hello World");
+                })
+                .listen(8080)
+                .onSuccess(ignored -> startPromise.complete());
+    }
+}
+----
+
+This code is equivalent to the first example in the previous section.
+More specifically:
+
+. It deploys 1 instance of a verticle.
+It is possible to deploy multiple instances of a verticle; they all run the same code.
+Each instance of a verticle is bound to a specific event loop thread and all its callbacks are executed on that event loop.
+. It deploys the verticle in the event loop mode, which is the default.
+It is also possible to deploy a verticle in the worker mode.
+
+We won't discuss the second item here, but the first one is interesting.
+We didn't actually say that, but all examples in the previous section only create one event loop.
+If we want to create multiple event loops and reap all benefits of modern multicore CPUs, it is easiest to use verticles.
+Say we want to deploy 16 instances of the verticle above:
+
+[source,java]
+----
+import io.vertx.core.DeploymentOptions;
+
+public static void main(String[] args) {
+    Vertx vertx = Vertx.vertx();
+    vertx.deployVerticle(MainVerticle::new, new DeploymentOptions().setInstances(16));
+}
+----
+
+That is all, the rest of the code remains untouched.
+
+You might instantly ask: how can we run 16 HTTP servers, all listening on port 8080?
+The truth is that Vert.x only starts one HTTP server, on the first attempt.
+The started HTTP server contains a group of event loops across which the accepted requests are load balanced.
+Subsequent attempts to start an HTTP server just add the originating event loop to the load balancing group.
+
+So now that we have 16 verticles, does that mean we have 16 event loops that may handle the request?
+Not necessarily.
+The number of started event loop threads is derived from the number of available CPU cores.
+The way it is derived is simple (`2 * number of CPU cores`), but that isn't interesting here and may change in the future.
+
+Nowadays, all machines are multicore machines, but we can find ourselves in a single-core situation fairly easily: just run the application in a container and limit the number of CPUs available to the container.
+Single-core containers are fairly common in environments like Kubernetes.
+In any case, assuming we have a multicore machine, we can easily see that multiple event loops are employed if we stop responding with `Hello World` and instead start responding with the name of the current thread (`Thread.currentThread().getName()`).
+In the first example, with just 1 verticle, all requests just return `vert.x-eventloop-thread-0`.
+In the second example, with 16 verticles, multiple values may be returned, such as `vert.x-eventloop-thread-5`, `vert.x-eventloop-thread-10` etc.
+
+=== Thread safety
+
+Since a single event loop thread is used to run all callbacks from a verticle, there's no need for synchronization when accessing data confined to the verticle.
+For example, the following code is valid:
+
+[source,java]
+----
+private int counter = 0;
+
+@Override
+public void start(Promise<Void> startPromise) {
+    vertx.createHttpServer()
+            .requestHandler(req -> {
+                counter++;
+                req.response().end("Hello " + counter);
+            })
+            .listen(8080)
+            .onSuccess(ignored -> startPromise.complete());
+}
+----
+
+If you employ worker threads, on the other hand, you will have to take care about proper synchronization.
+For example, the following code is _not_ valid:
+
+[source,java]
+----
+private int counter = 0;
+
+@Override
+public void start(Promise<Void> startPromise) {
+    vertx.createHttpServer()
+            .requestHandler(req -> {
+                // DO NOT DO THIS!
+                vertx.executeBlocking(() -> {
+                    counter++;
+                    req.response().end("Hello " + counter);
+                    return null;
+                }, false);
+            })
+            .listen(8080)
+            .onSuccess(ignored -> startPromise.complete());
+}
+----
+
+Why?
+Because in this case, multiple threads may access the `counter` variable concurrently.
+We specifically submit tasks to a worker pool in an unordered manner, so that concurrency is obviously possible, but concurrency is also possible in other, not so obvious situations.
+For example, there may be easily be other code on the event loop that also wants to access shared state, concurrently with the worker threads.
+The situation we mentioned above (as forbidden!), when submitting a task to a worker thread and continuing on an event loop thread immediately, is one case of this.
+
+In plain Vert.x applications, verticles are common and workers are relatively rare, so this may be a useful property to rely on.
+In Quarkus applications, verticles are uncommon and workers are everywhere, so it is not recommended to rely on event loop confinement for ensuring thread safety.
+
+=== Execution context
+
+Vert.x provides an interface called `Context`, which serves two purposes.
+
+First of all, it is an _execution context_ and so can be used to enqueue a task to run.
+
+At this point, it shouldn't be surprising that each event loop has its own `Context`.
+Let's imagine we're trying to integrate a third-party library that manages its own thread pool.
+If you wish, you can also imagine we're integrating a third-party library that manages its own event loop; the solution is identical.
+The integration will do two main things:
+
+* accept a request from a Vert.x context and call into the library
+* when the library returns, emit the response to the original Vert.x context
+
+For example:
+
+[source,java]
+----
+import io.vertx.core.Context;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+
+public class Main {
+    public static void main(String[] args) {
+        Vertx vertx = Vertx.vertx();
+        vertx.runOnContext(ignored -> run(vertx));
+    }
+
+    static void run(Vertx vertx) {
+        MyLibrary library = new MyLibrary();
+
+        vertx.createHttpServer()
+                .requestHandler(req -> {
+                    library.ask("Hello World", answer -> {
+                        req.response().end(answer);
+                    });
+                })
+                .listen(8080)
+                .onSuccess(ignored -> System.out.println("Server started"));
+    }
+
+    static class MyLibrary {
+        private final Executor executor = Executors.newCachedThreadPool();
+
+        public void ask(String request, Handler<String> handler) {
+            Context ctx = Vertx.currentContext();
+            executor.execute(() -> {
+                String response = request.toUpperCase(); // hard work
+                ctx.runOnContext(ignored -> {
+                    handler.handle(response);
+                });
+            });
+        }
+    }
+}
+----
+
+The `ask` method accepts a callback that shall be called on the original Vert.x `Context` with an answer.
+
+The first thing the method does is it remembers the current Vert.x `Context`.
+It then calls into a "library"; in this example, directly submits a task to a thread pool.
+Once the hard work is done and an answer is available, we enqueue a task on the remembered `Context`.
+
+Note that the callback has a very simple form -- it doesn't even allow expressing failures.
+If we wanted that, the method could instead accept a `Handler<AsyncResult<String>>`.
+(This was actually the only way in Vert.x 3 and is still possible in Vert.x 4.)
+However, these days, it is more common to use futures.
+Let's rewrite the `ask` method to return a `Future<String>` instead:
+
+[source,java]
+----
+static void run(Vertx vertx) {
+    MyLibrary library = new MyLibrary();
+
+    vertx.createHttpServer()
+            .requestHandler(req -> {
+                library.ask("Hello World").onSuccess(answer -> {
+                    req.response().end(answer);
+                });
+            })
+            .listen(8080)
+            .onSuccess(ignored -> System.out.println("Server started"));
+}
+
+static class MyLibrary {
+    private final Executor executor = Executors.newCachedThreadPool();
+
+    public Future<String> ask(String request) {
+        Context ctx = Vertx.currentContext();
+        Promise<String> promise = Promise.promise();
+        executor.execute(() -> {
+            String response = request.toUpperCase(); // hard work
+            ctx.runOnContext(ignored -> {
+                promise.complete(response);
+            });
+        });
+        return promise.future();
+    }
+}
+----
+
+As you can see, Vert.x ``Future``s are split into two parts:
+
+* `Promise`, which creates a `Future` and allows completing it; should not be exposed to the caller
+* `Future`, which allows registering callbacks for completion and includes common synchronous and asynchronous composition operators
+
+The code of `ask` is relatively lengthy, because we have to explicitly care about completing the promise on the original context.
+There's an internal API in Vert.x that takes care of this for us:
+
+[source,java]
+----
+public Future<String> ask(String request) {
+    Promise<String> promise = ContextInternal.current().promise();
+    executor.execute(() -> {
+        String response = request.toUpperCase(); // hard work
+        promise.complete(response);
+    });
+    return promise.future();
+}
+----
+
+`ContextInternal.current()` is similar to `Vertx.currentContext()`, except it returns `ContextInternal`.
+`ContextInternal.promise()` creates a _context-bound promise_.
+When a context-bound promise is completed, it automatically enqueues the callback on the context from which it was created.
+
+WARNING: As mentioned above, `ContextInternal` is an _internal_ API.
+In Vert.x 5, it moves to a different package, so prepare to deal with the fallout.
+
+==== Context origin and thread association
+
+It is important to notice that there are 2 distinct set of methods on `Context` that seem to do a similar thing:
+
+* static methods `isOnEventLoopThread()` and `isOnWorkerThread()`: these methods return whether the currently executing thread is an event loop thread or a worker thread, regardless of the origin of the current `Context`
+* instance methods `isEventLoopContext()` and `isWorkerContext()`: these methods return the origin of the `Context`, regardless of the currently executing thread
+
+As mentioned above, it is possible to deploy verticles in a worker mode.
+In such verticles, the created ``Context``s originate on a worker and so `isWorkerContext()` returns `true`.
+These verticles are not very common; most verticles are deployed on an event loop and so `isWorkerContext()` returns `false` (and `isEventLoopContext()` returns `true`).
+
+(Deploying a worker verticle is the most common way of creating a worker ``Context``.
+There's an internal API on `VertxInternal` to create all kinds of ``Context``s, but the ability to create worker contexts manually is not commonly used.
+It seems fair to say that all ``Context``s created outside verticles originate on an event loop.)
+
+Now, the origin of the `Context` has *nothing* to do with what thread currently executes the code.
+Let's illustrate that using a small modification of one of the previous examples:
+
+[source,java]
+----
+static void run(Vertx vertx) {
+    vertx.createHttpServer()
+            .requestHandler(req -> {
+                System.out.println(Context.isOnEventLoopThread());
+                vertx.executeBlocking(() -> {
+                    System.out.println(Context.isOnEventLoopThread());
+                    return "Hello World";
+                }, false).onSuccess(value -> {
+                    System.out.println(Context.isOnEventLoopThread());
+                    req.response().end(value);
+                });
+            })
+            .listen(8080)
+            .onSuccess(server -> System.out.println("Server started"));
+}
+----
+
+If we run this code and submit a single HTTP request to the server, the following values are printed:
+
+[source]
+----
+true    // the request starts on an event loop ...
+false   // ... continues on a worker thread ...
+true    // ... and finishes back on the event loop
+----
+
+On all 3 places, `Vertx.currentContext().isEventLoopContext()` returns `true`.
+
+This introduces more complexity into integrating with third-party libraries, because it is possible to call into a library from an event-loop `Context` that currently executes on a worker thread.
+Using `Context.runOnContext()` will shift the execution to an event loop, even though the caller was on a worker thread.
+This may be OK, but often, it is not.
+Let's rewrite one of the previous examples to account for the calling thread as well:
+
+[source,java]
+----
+static class MyLibrary {
+    private final Executor executor = Executors.newCachedThreadPool();
+
+     public void ask(String request, Handler<String> handler) {
+        Context ctx = Vertx.currentContext();
+        boolean worker = Context.isOnWorkerThread();
+
+        executor.execute(() -> {
+            String response = request.toUpperCase(); // hard work
+
+            if (worker) {
+                ctx.executeBlocking(() -> {
+                    handler.handle(response);
+                    return null;
+                });
+            } else {
+                ctx.runOnContext(ignored -> {
+                    handler.handle(response);
+                });
+            }
+        });
+    }
+}
+----
+
+Note that if you're shifting back to an event loop using `Context.runOnContext()`, the callback will be executed on the exact same original thread.
+If you're shifting back to a worker thread using `Context.executeBlocking()`, no such guarantee exists!
+The callback will be executed on an arbitrary worker thread.
+
+Also, context-bound promises do _not_ solve this problem automatically.
+Context-bound promises work as if you simply did `Context.runOnContext()`.
+If the kind of the executing thread is important to you, you have to account for it explicitly.
+
+=== Implicit parameters
+
+The second purpose of ``Context``s is, well, to store contexts (implicit parameters).
+
+There are 2 kinds of ``Context``s: root and _duplicated_.
+A root `Context` is global to the entire event loop, so it is not very useful for storing implicit parameters.
+For most entrypoints (such as an HTTP server), Vert.x actually creates a duplicated `Context` for each request.
+Duplicated `Context` delegates the "execution context" work (as described above) to the root `Context` from which it was created, so it is very light-weight.
+What's important about a duplicated `Context` is that it lives for the duration of the request and is isolated from other requests.
+Therefore, it can be used to store request-local data.
+
+The `Context` interface contains 2 sets of methods for working with contextual data:
+
+* `get()` / `put()` / `remove()`: they always access the global, per-thread data
+* `getLocal()` / `putLocal()` / `removeLocal()`: they access the local data, which in case of a duplicated context are request-local.
+
+NOTE: In Quarkus, accessing global data is impossible and the methods throw an exception.
+Accessing local data on a root context is also not possible and the methods throw an exception.
+You may only access local data and must do that only on a duplicated context.
+
+The interesting thing about `Context` is that it stays the same for the duration of a request, even as we switch from an event loop thread to a worker thread and back.
+Let's illustrate that using a small modification of one of the previous examples:
+
+[source,java]
+----
+public class Main {
+    public static void main(String[] args) {
+        Vertx vertx = Vertx.vertx();
+        vertx.runOnContext(ignored -> run(vertx));
+    }
+
+    static void run(Vertx vertx) {
+        vertx.createHttpServer()
+                .requestHandler(req -> {
+                    Vertx.currentContext().putLocal("id", UUID.randomUUID().toString());
+
+                    System.out.println(Vertx.currentContext().<String>getLocal("id"));
+                    vertx.executeBlocking(() -> {
+                        System.out.println(Vertx.currentContext().<String>getLocal("id"));
+                        return "Hello World";
+                    }, false).onSuccess(value -> {
+                        System.out.println(Vertx.currentContext().<String>getLocal("id"));
+                        req.response().end(value);
+                    });
+                })
+                .listen(8080)
+                .onSuccess(server -> System.out.println("Server started"));
+    }
+}
+----
+
+If we run this code and submit a single HTTP request to the server, we'll see the same UUID printed 3 times.
+
+To repeat: *the duplicated `Context` is a good place to store request-local data*.
+
+In Vert.x, as mentioned above, request processing must be entirely serial, so we can actually use the duplicated `Context` to store data that live for a shorter duration than the entire request.
+Typical example is a logging MDC (mapped diagnostic context), or tracing data (for example for OpenTelemetry).
+
+In Quarkus, however, concurrency inside the request is allowed, so *duplicated `Context` must not contain data that are shorter than the whole request*.
+
+=== References
+
+For more information, see the https://vertx.io/docs/vertx-core/java/[Vert.x core manual] and the https://vertx.io/docs/guides/advanced-vertx-guide/[Advanced Vert.x guide].
+A good book is https://www.manning.com/books/vertx-in-action[Vert.x in Action].
+
+== Mutiny
+
+Mutiny is a functional reactive programming library, similar to RxJava and others.
+It exposes two types: `Uni` and `Multi`.
+`Uni` represents a single result (of one action), while `Multi` represents a stream of results (of one or more actions).
+The `Multi` type implements `java.util.concurrent.Flow.Publisher` and so follows the https://www.reactive-streams.org/[Reactive Streams] specification.
+The `Uni` type does _not_ follow Reactive Streams, because there is no need for backpressure when only one result may ever come in.
+
+NOTE: If you read the Reactive Streams website, you'll see it talks about backpressure, which is essentially an opposing force applied in case of overflow.
+The API itself, however, requires the exact opposite: _demand signaling_.
+If consumers signal demand to producers only when they have spare capacity, no overflow situation ever occurs and so there's no need to _press back_.
+The end effect is the same, but the mechanisms are different.
+
+The following table compares the Mutiny types with built-in JDK types:
+
+[cols="h,1,1",options="header"]
+|===
+| | Single item | Multiple items
+|Eager, synchronous, in-memory | `T` | `Iterable<T>`
+|Lazy, asynchronous, I/O | `Uni<T>` | `Multi<T>`
+|===
+
+The core difference is that both Mutiny types are _lazy_.
+Therefore, if you get a `Uni` from somewhere, it doesn't mean the computation has started; in fact, no computation should have started yet.
+You must _subscribe_ to the `Uni` in order to start the computation.
+
+NOTE: The `Future` type from Vert.x, as shown in the previous section, is relatively close to JDK's `CompletionStage`.
+They are both _eager_: they represent a result of a computation that has already started, but not necessarily finished.
+
+Laziness allows _resubscriptions_: each `Uni` (or `Multi`) may be subscribed to multiple times, and ideally, each such subscription triggers a whole new computation.
+It is possible to create a `Uni` (or `Multi`) from an existing `CompletionStage`, in which case there's just one computation and all subscriptions obtain the same result.
+It is recommended to instead create the `Uni` (or `Multi`) from a `Supplier<CompletionStage>`; that is more aligned with common expectations around Mutiny.
+
+Further, the Mutiny types are meant to be used for orchestrating asynchronous I/O.
+If you need to lazily process items that you already have in memory, use `Stream`.
+In this case, the demand protocol that is built into Reactive Streams is useless and its overhead just slows down your code for no good reason.
+
+This applies to certain I/O use cases (such as network protocols), too.
+For example, common relational databases do _not_ stream results; they just return them all in one go.
+In such case, there's no use for the demand protocol, as there's literally only one big result.
+The best representation in these situations is not `Multi<T>`; it is `Uni<List<T>>`.
+
+The following sections assume basic familiarity with the Mutiny API, but no deep understanding of the concepts is required.
+
+=== Concurrency with `Uni`
+
+Mutiny does not switch threads on its own.
+The thread that emits the value is used for running subsequent operators in the pipeline.
+
+Let's assume we have a simple method that accepts a thread name and returns a single-threaded `Executor`:
+
+[source,java]
+----
+static Executor executor(String name) {
+    ThreadFactory tf = runnable -> new Thread(runnable, name);
+    return Executors.newSingleThreadExecutor(tf);
+}
+----
+
+[NOTE]
+====
+If you want to see more details about which threads are used, use this variant instead:
+
+[source,java]
+----
+static Executor executor(String name) {
+    ThreadFactory tf = runnable -> new Thread(runnable, name);
+    Executor delegate = Executors.newSingleThreadExecutor(tf);
+    return runnable -> {
+        System.out.println(Thread.currentThread().getName());
+        delegate.execute(() -> {
+            System.out.println(Thread.currentThread().getName());
+            runnable.run();
+        });
+    };
+}
+----
+====
+
+Imagine the following pipeline:
+
+[source,java]
+----
+public static void main(String[] args) {
+    Uni.createFrom().<String>emitter(em -> {
+        executor("origin").execute(() -> {
+            em.complete("foobar");
+        });
+    }).map(item -> {
+        return item.toUpperCase();
+    }).subscribe().with(item -> {
+        System.out.println(item);
+    });
+}
+----
+
+This program does two major things:
+
+. constructs the pipeline
+. subscribes to the pipeline once
+
+Pipeline construction happens on the `main` thread; it is basically a series of builder invocations, which remember the passed callbacks and the upstream/downstream relationship.
+For example, the `map()` operator in the middle has the emitter as its upstream and the subscriber as its downstream.
+
+Subscription is more interesting:
+
+. subscription itself is invoked on the `main` thread, and the first thing it does is it asks upstream for an item
+. upstream is the `map()` operator, so the first thing it does is it asks upstream for an item (still on the `main` thread)
+. upstream is the emitter, which is called on the `main` thread
+. the emitter emits an item *on the `origin` thread* once it decides to
+. the `map()` operator is called on the `origin` thread and passes the received item to the callback
+. the `map()` callback produces a value
+. the subscriber is called on the `origin` thread and passes the received item to the callback
+. the subscriber callback prints the value
+
+To better illustrate on which thread each callback is called, print `Thread.currentThread().getName()` on several places and see for yourself.
+(Don't be scared that the program doesn't exit at the end.
+We have started a non-daemon thread which keeps the JVM alive.)
+
+To summarize: information flows in two directions in two phases.
+*In the first phase, information flows upwards (from downstream to upstream), carrying the subscription intent.*
+Once the subscription reaches the emitter, its callback is called, which produces an item, possibly asynchronously.
+*In the second phase, information flows downwards (from upstream to downstream), carrying the emitted item.*
+
+This example used _synchronous composition_.
+A slightly more complex example uses _asynchronous composition_:
+
+[source,java]
+----
+public static void main(String[] args) {
+    Uni.createFrom().<String>emitter(em -> { // <1>
+        executor("origin").execute(() -> { // <2>
+            em.complete("foobar");
+        });
+    }).flatMap(item -> { // <3>
+        return Uni.createFrom().emitter(em -> { // <4>
+            executor("transformer").execute(() -> { // <5>
+                em.complete(item.toUpperCase());
+            });
+        });
+    }).subscribe().with(item -> { // <6>
+        System.out.println(item);
+    });
+}
+----
+
+It should be no surprise now that:
+
+<1> The emitter is called on the `main` thread.
+<2> It emits an item on the `origin` thread.
+<3> Asynchronous composition is called on the `origin` thread.
+<4> It creates a new `Uni`, still on the `origin` thread. Note that the new `Uni` is not complete yet.
+<5> The new `Uni` is completed on the `transformer` thread.
+<6> The subscriber is called on the `transformer` thread.
+
+As mentioned and shown above, Mutiny does not switch threads on its own.
+However, it has two operators that affect:
+
+* what thread is subscription made on (`runSubscriptionOn()`)
+* what thread is the item emitted on (`emitOn()`)
+
+The second is fairly easy to observe:
+
+[source,java]
+----
+public static void main(String[] args) {
+    Uni.createFrom().<String>emitter(em -> {
+        executor("origin").execute(() -> { // <1>
+            em.complete("foobar");
+        });
+    })
+    .emitOn(executor("transformer")) // <2>
+    .map(item -> { // <3>
+        return item.toUpperCase();
+    })
+    .emitOn(executor("subscriber")) // <4>
+    .subscribe().with(item -> { // <5>
+        System.out.println(item);
+    });
+}
+----
+
+<1> The item is emitted on the `origin` thread.
+<2> The `emitOn()` operator is invoked on the `origin` thread and emits the item on the `transformer` thread.
+<3> The `map()` operator is invoked on the `transformer` thread. It doesn't switch threads on its own.
+<4> The `emitOn()` operator is invoked on the `transformer` thread and emits the item on the `subscriber` thread.
+<5> The subscription is invoked on the `subscriber` thread.
+
+This shows that the `emitOn()` operator works during the _second_ phase, where the emitted item flows from upstream to downstream, and affects the thread on which the downstream is invoked.
+
+The `runSubscriptionOn()` operator works during the _first_ phase, where subscription intent flows from downstream to upstream.
+It is hard to see its effect in our current example, because all registered callbacks are invoked during the second phase and we explicitly emit the original item on an extra thread.
+However, we've previously observed that the emitter is called on the `main` thread, because this is what the subscription was triggered on.
+It worked like this:
+
+[source,java]
+----
+public static void main(String[] args) {
+    Uni.createFrom().<String>emitter(em -> {
+        // <1>
+        executor("origin").execute(() -> {
+            // <2>
+            em.complete("foobar");
+        });
+    }).subscribe().with(System.out::println);
+}
+----
+
+<1> On the `main` thread.
+<2> On the `origin` thread.
+
+We can insert the `runSubscriptionOn()` operator into the pipeline, affecting the thread on which subscription flows upwards:
+
+[source,java]
+----
+public static void main(String[] args) {
+    Uni.createFrom().<String>emitter(em -> {
+        // <3>
+        executor("origin").execute(() -> {
+            // <4>
+            em.complete("foobar");
+        });
+    })
+    .runSubscriptionOn(executor("subscription")) // <2>
+    .subscribe().with(System.out::println); // <1>
+}
+----
+
+<1> The subscription is triggered on the `main` thread.
+<2> The `runSubscriptionOn()` operator moves the subscription to the `subscription` thread.
+<3> The emitter is called on the `subscription` thread.
+<4> And it emits an item on the `origin` thread.
+
+The `runSubscriptionOn()` operator only operates in the first phase and does nothing in the second phase.
+Similarly, the `emitOn()` operator only operates in the second phase and does nothing in the first phase.
+
+==== Combining multiple ``Uni``s
+
+The previous section explains how single `Uni` behaves in terms of concurrency.
+It is relatively common to express the entire request processing as a single `Uni` pipeline, but it is also possible to create _multiple_ ``Uni``s.
+Often, we then need to combine those ``Uni``s into one, on a "join point", and continue with the composite result.
+In Quarkus, it is common for request processing to return `Uni` and let the framework subscribe to it; in this case, combination becomes a must
+
+This can be done using the `Uni.combine()` and `Uni.join()` methods.
+They work very similarly:
+
+* `join().all()` takes `List<Uni<T>>` and produces `Uni<List<T>>`
+* `join().first()` takes `List<Uni<T>>` and produces a `Uni<T>` that completes with the result of the first taken `Uni` that completes
+* `combine().all()` takes `List<Uni<T>>` and a combination function `List<T> -> U` (or `List<T> -> Uni<U>`), and produces `Uni<U>`
+* `combine().any()` is an equivalent of `join().first()`
+
+It is possible to implement `join()` in terms of `combine()` and also to implement `combine()` in terms of `join()`, so in the following example, we just use `join()`:
+
+[source,java]
+----
+public static void main(String[] args) {
+    List<Uni<String>> unis = new ArrayList<>();
+    for (int i = 0; i < 10; i++) {
+        int finalI = i;
+        unis.add(Uni.createFrom().emitter(em -> {
+            executor("origin" + finalI).execute(() -> {
+                em.complete("foobar" + finalI);
+            });
+        }));
+    }
+
+    Uni.join().all(unis).andFailFast().subscribe().with(list -> {
+        System.out.println(list);
+    });
+}
+----
+
+In this example, we create 10 ``Uni``s, each emitting an item on thread `originN`.
+Then, we join those ``Uni``s and subscribe to the result.
+
+When we subscribe to the joined `Uni`, it subscribes to all ``Uni``s it accepted.
+*This introduces concurrency!*
+
+The subscriber is invoked on a thread that emits the last item, which is not deterministic.
+Note that the shape of the resulting list is deterministic -- specifically, it maintains the original order.
+
+It is possible to limit the number of ``Uni``s to which the joined `Uni` subscribes concurrently.
+To avoid concurrency entirely, call `usingConcurrencyOf(1)`.
+This turns non-deterministic processing into deterministic: the ``Uni``s are subscribed to in the original order, and only when one has completed, the subsequent one is subscribed to.
+
+==== Error handling
+
+The previous code examples omitted error handling entirely.
+If a `Uni` is subscribed to, it may either emit an item, or an error.
+
+When it comes to concurrent processing, errors behave like items: the thread on which an error is produced is the thread on which the next operator in the pipeline is invoked.
+The methods to combine/join multiple ``Uni``s have configuration options to specify how to treat errors.
+It is either _fail on first error_ or _collect all results_, regardless of errors.
+
+=== Concurrency with `Multi`
+
+TODO
+
+=== Vert.x bindings
+
+The bare Vert.x API is exposed in Quarkus, so you can just use that and deal with ``Future``s (and Vert.x streams), but Quarkus also exposes the Mutiny variant of Vert.x APIs.
+This is provided by the https://smallrye.io/smallrye-mutiny-vertx-bindings/[Mutiny Vert.x bindings] project.
+The Mutiny bindings are in fact preferred by Quarkus, just for consistency.
+
+A short example:
+
+[source,java]
+----
+import io.vertx.mutiny.core.Context;
+import io.vertx.mutiny.core.Vertx;
+
+public class Main {
+    public static void main(String[] args) {
+        Vertx vertx = Vertx.vertx();
+        vertx.runOnContext(() -> run(vertx));
+    }
+
+    static void run(Vertx vertx) {
+        vertx.createHttpServer()
+                .requestHandler(req -> {
+                    vertx.executeBlocking(() -> {
+                        Thread.sleep(50);
+                        return "Hello World";
+                    }, false).invoke(value -> {
+                        req.response().endAndForget(value);
+                    }).subscribeAsCompletionStage();
+                })
+                .listen(8080)
+                .subscribe().with(ignored -> System.out.println("Server started"));
+    }
+}
+----
+
+The APIs are not all that different, _except_ one thing: you instantly notice the two places (and maybe also the third place after a short while) where we have to subscribe to the `Uni`.
+Without those subscription calls, no work would ever get started.
+We ignore the subscription result during request processing (`subscribeAsCompletionStage()`, `\...AndForget()`) just for the sake of the example.
+
+The examples in previous sections used plain old threads.
+There's nothing wrong with that, but it's also not the only way Mutiny can be used.
+Together with Vert.x, Mutiny can be used to orchestrate asynchronous I/O on event loops:
+
+[source,java]
+----
+import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.core.Context;
+import io.vertx.mutiny.core.Vertx;
+
+public class Main {
+    public static void main(String[] args) {
+        Vertx vertx = Vertx.vertx();
+        vertx.runOnContext(() -> run(vertx));
+    }
+
+    static void run(Vertx vertx) {
+        Uni.createFrom().<String>emitter(em -> {
+            vertx.setTimer(10, ignored -> {
+                em.complete("foobar");
+            });
+        }).flatMap(item -> {
+            return Uni.createFrom().emitter(em -> {
+                vertx.setTimer(10, ignored -> {
+                    em.complete(item.toUpperCase());
+                });
+            });
+        }).subscribe().with(item -> {
+            System.out.println(item);
+        });
+    }
+}
+----
+
+Again, we use timers for easy exposition, but just to simulate non-blocking asynchronous work.
+Everything happens on a single event loop, possibly interleaved with other non-blocking asynchronous work on the same event loop.
+
+Note that nothing changes when we join multiple ``Uni``s.
+It may all be happening on a single thread, but the processing *is still concurrent*.
+
+=== References
+
+For more information about Mutiny, see the https://smallrye.io/smallrye-mutiny/[documentation].
+
+== Quarkus
+
+Vast majority of Quarkus applications use Vert.x and so the concurrency model is a mix of multithreading and event loops.
+Certain Quarkus applications do not include Vert.x at all (typically CLI applications), in which case the concurrency model collapses to multithreading.
+In this chapter, we assume that Vert.x is present, as well as Mutiny.
+
+Vast majority of Quarkus extensions that expose some form of entrypoint (such as HTTP endpoint) do that through Vert.x.
+This means that most traffic handling starts on an event loop thread.
+The way this is exposed to users is more complicated, because typically, there's framework code in Quarkus that sits between Vert.x and the application.
+This framework code, among others, decides how the application code should be invoked.
+Typically, it works like this:
+
+* If the application method returns a non-blocking type (`CompletionStage`, `Uni`, `Multi`), it is invoked on the event loop thread directly.
+* If the application method returns any other type, it is offloaded to a worker thread.
+* This decision may be overridden by the `@Blocking` and `@NonBlocking` annotations.
+If the method is annotated `@Blocking`, it is always offloaded to a worker thread.
+If it is annotated `@NonBlocking`, it is always executed on the event loop.
+
+TODO
+
+== Kotlin coroutines
+
+TODO
+
+maybe put this into xref:kotlin.adoc#coroutines-support[Kotlin: Coroutines support] instead?
+
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+other relevant documentation:
+
+* xref:quarkus-reactive-architecture.adoc[Quarkus reactive architecture]
+* xref:duplicated-context.adoc[Duplicated context, context locals, asynchronous processing and propagation]
+
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+what I'm trying to do here:
+
+. gather information about what we do by looking at the code and talking to people
+. infer the concurrency model from that information
+. probably fix bugs, as there are bound to be some
+
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+entrypoints:
+
+sources of incoming traffic (sources of outgoing traffic do not affect the concurrency model I think)
+
+* HTTP (Vert.x, Reactive Routes, Undertow, RESTEasy classic, RESTEasy Reactive)
+* WebSockets (Undertow, WebSockets.Next): related to HTTP
+* GraphQL (SmallRye GraphQL): spec not tied to a transport, but in practice based on HTTP
+* messaging (SmallRye Reactive Messaging): Kafka, AMQP, MQTT, RabbitMQ, Pulsar, etc.
+* gRPC: I think we have one based on Vert.x and one based on gRPC-Java; we should probably ignore the second?
+* scheduler
+* Funqy / Amazon Lambda / Azure Functions: don't know anything about that
+* external extensions?
+
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+request/response vs. streaming:
+
+* HTTP: usually request/response, may include streaming?
+* WebSockets: usually request/response, may include streaming?
+* GraphQL: usually request/response, may include streaming?
+* messaging: request/response and streaming (streaming is the underlying model, but commonly, we expose it as a series of request/response cycles)
+* gRPC: request/response and streaming (may genuinely contain both)
+* scheduler: request/response
+* Funqy / Amazon Lambda / Azure Functions: don't know anything about that
+
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+async types:
+
+* `CompletionStage` (and `CompletableFuture`)
+* Vert.x `Future`
+* Mutiny `Uni` and `Multi`
+
+differences:
+
+* `CompletionStage` and `Future` are eager
+* `Uni` and `Multi` are lazy, must be subscribed to, and *may be subscribed to multiple times*
+* `Uni` and `Multi` may be "pre-built", stored in a field and returned from a method, again, _multiple times_
+
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+concurrency types:
+
+* serial/linear (with possible thread switches)
+* structured concurrency (subtasks must finish before original task finishes); *I'm not talking about the proposed JDK API*, just about the concept
+* arbitrary concurrency
+
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+context: implicit parameter (a value that is accessible even if it is not passed around explicitly)
+
+contexts we have:
+
+* Vert.x "root" `Context`: per event loop / worker thread; we don't use it AFAIK
+* Vert.x `DuplicatedContext`: per request
+* CDI global: application, singleton
+* CDI local: request, session, unused: conversation
+* REST (maybe only RESTEasy classic?)
+* Security (everything in CDI request context, so no extra context actually?)
+* OpenTelemetry (maybe Micrometer as well?)
+* Logging (MDC)
+* Transactions (`@TransactionScoped`)
+* TCCL
+* Servlet, GraphQL, gRPC, ... and more?
+
+*I don't know anything about Mutiny contexts.*
+
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+context storage:
+
+* as long as the request: should be `DuplicatedContext`
+* longer than the request: stored elsewhere, but reference may be in `DuplicatedContext` for automatic propagation
+* shorter than the request: *may not be be in `DuplicatedContext`, it cannot work under concurrent access*
+
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+context propagation:
+
+* Vert.x root `Context` and `DuplicatedContext`: automatically propagated by Vert.x, but only on Vert.x threads
+* CDI global contexts: in `static` fields, not an issue
+* CDI request context:
+** in `DuplicatedContext` on Vert.x threads, propagation automatic by Vert.x
+** in `ThreadLocal` on non-Vert.x threads, propagation disabled by default, may use MP Context Propagation (I _think_?)
+* CDI session context:
+** ArC built-in variant: don't know, need to take a look, probably like the request context?
+** Undertow: stored in `HttpSession`
+* OpenTelemetry:
+** this is shorter than the request! using `DuplicatedContext` to store it would be wrong, but we possibly do that? need to investigate
+* MDC:
+** not sure, issues keep popping up
+** this is shorter than the request! using `DuplicatedContext` to store it would be wrong, but we possibly do that? need to investigate
+* Transactions: `ThreadLocal`
+* TCCL: field on `Thread`
+* others: don't know, need to investigate
+
+Lately, we started overrelying on Vert.x `DuplicatedContext` for storing contexts, getting propagation for free.
+See above: if we store contexts that are _shorter than the request_ there, we're bound to fail.
+
+We still have MicroProfile Context Propagation.
+The API is dead, but we can just duplicate it somewhere.
+It is apparently a performance hog, but the model is sound.
+We need to investigate those performance problems and we already have ideas for some fixes; need to test, measure, test, measure, test, measure.
+
+Automatic context propagation in general:
+
+* makes sense in request/response processing, probably not in streaming?
+* makes sense in serial processing and possibly in structured concurrency
+* does _not_ make sense in arbitrary concurrency
+* does _not_ make sense for pre-built `Uni` and `Multi`
+** at least not the way we currently do it; maybe subscription-bound contexts could be used?
+
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+list of `ThreadLocal` usages
+
+caching / object pooling:
+
+* `biz.paluch.logging.gelf.*`
+* `co.elastic.clients.util.ApiTypeHelper`
+* `com.amazonaws.auth.AbstractAWSSigner`
+* `com.amazonaws.auth.SigningAlgorithm`
+* `com.amazonaws.xray.internal.RecyclableBuffers`
+* `com.amazonaws.util.XmlUtils`
+* `com.amazonaws.util.XpathUtils`
+* `com.arjuna.ats.arjuna.utils.ThreadUtil`
+* `com.fasterxml.jackson.core.util.BufferRecyclers`
+* `com.fasterxml.jackson.dataformat.yaml.UTF8Reader`
+* `com.fasterxml.jackson.dataformat.yaml.UTF8Writer`
+* `com.github.javaparser.StaticJavaParser`
+* `com.google.common.escape.Platform`
+* `com.google.api.client.util.escape.Platform`
+* `com.google.protobuf.ByteBufferWriter`
+* `com.google.protobuf.util.Timestamps`
+* `com.microsoft.azure.toolkit.lib.common.cache.Cache1`
+* `io.agroal.api.cache.LocalConnectionCache`
+** in Quarkus, we don't use this
+* `io.confluent.logredactor.internal.StringRedactor.RedactionRule`
+* `io.micrometer.core.instrument.util.DoubleFormat`
+* `io.opentelemetry.api.internal.TemporaryBuffers`
+* `io.quarkus.agroal.runtime.QuarkusNettyConnectionCache`
+* `io.quarkus.agroal.runtime.QuarkusSimpleConnectionCache`
+* `io.vertx.uritemplate.impl.UriTemplateImpl`
+* `io.undertow.attribute.DateTimeAttribute`
+* `io.undertow.util.DateUtils`
+* `jakarta.el.ELUtil`
+* `liquibase.statement.ExecutablePreparedStatementBase`
+* `org.apache.activemq.artemis.core.io.util.ThreadLocalByteBufferPool`
+* `org.apache.activemq.artemis.core.journal.impl.JournalImpl`
+* `org.apache.activemq.artemis.core.remoting.impl.netty.NettyConnection`
+* `org.apache.activemq.artemis.protocol.amqp.connect.mirror.AMQPMirrorControllerSource`
+* `org.apache.activemq.artemis.protocol.amqp.connect.mirror.AMQPMirrorControllerTarget`
+* `org.apache.activemq.artemis.protocol.amqp.util.TLSEncode`
+* `org.apache.activemq.artemis.utils.UTF8Util`
+* `org.apache.avro.compiler.idl.DocCommentHelper`
+** doesn't seem relevant, this occurs during IDL compilation
+* `org.apache.avro.generic.GenericDatumReader`
+* `org.apache.commons.lang3.RandomUtils`
+* `org.apache.commons.io.IOUtils`
+* `org.apache.commons.io.input.ReadAheadInputStream`
+* `org.apache.http.client.utils.DateUtils.DateFormatHolder`
+* `org.apache.mina.core.buffer.CachedBufferAllocator`
+* `org.asynchttpclient.netty.util.ByteBufUtils`
+* `org.asynchttpclient.netty.util.Utf8ByteBufCharsetDecoder`
+* `org.asynchttpclient.oauth.OAuthSignatureCalculator`
+* `org.asynchttpclient.util.MessageDigestUtils`
+* `org.asynchttpclient.util.StringBuilderPool`
+* `org.fusesource.jansi.Ansi`
+* `org.hibernate.bytecode.enhance.internal.bytebuddy.EnhancerCacheProvider`
+* `org.hibernate.id.enhanced.PooledLoThreadLocalOptimizer`
+* `org.hibernate.type.descriptor.DateTimeUtils`
+* `org.infinispan.protostream.impl.json.BaseJsonWriter`
+* `org.jline.jansi.Ansi`
+* `org.jsoup.internal.StringUtil`
+* `org.jsoup.nodes.Document.OutputSettings`
+* `software.amazon.awssdk.auth.signer.internal.AbstractAwsSigner`
+* `software.amazon.awssdk.auth.signer.internal.SigningAlgorithm`
+* `tools.jackson.core.util.JsonRecyclerPools`
+
+implicit parameter storage:
+
+* `com.arjuna.ats.internal.arjuna.thread.ThreadActionData`
+* `com.arjuna.ats.internal.jta.transaction.arjunacore.BaseTransaction`
+* `com.google.api.pathtemplate.ValidationException`
+* `com.google.protobuf.ProtobufToStringOutput`
+** it seems very localized and harmless
+* `com.google.protobuf.TextFormat`
+** it seems very localized and harmless
+* `com.microsoft.applicationinsights.web.internal.ThreadContext`
+* `com.microsoft.azure.toolkit.lib.common.operation.OperationThreadContext`
+* `io.confluent.kafka.serializers.AbstractKafkaSchemaSerDe`
+** I don't really understand what's going on here, but it seems very localized and harmless
+* `io.fabric8.kubernetes.client.vertx.InputStreamReadStream`
+** I don't really understand what's going on here, but it seems very localized and harmless
+* `io.fabric8.kubernetes.model.jackson.UnmatchedFieldTypeModule`
+** I don't really understand what's going on here, but it seems very localized and harmless
+* `io.grpc.ThreadLocalContextStorage`
+** in Quarkus, we use `io.grpc.override.ContextStorageOverride`, which overrides the gRPC default and uses duplicated context on Vert.x threads
+* `io.micrometer.core.instrument.binder.logging.LogbackMetrics`
+** it seems very localized and harmless
+* `io.micrometer.observation.SimpleObservationRegistry`
+* `io.narayana.lra.Current`
+* `io.opentelemetry.instrumentation.api.internal.InstrumenterContext`
+* `io.opentelemetry.context.ThreadLocalContextStorage`
+** in Quarkus, we use `io.quarkus.opentelemetry.runtime.QuarkusContextStorage`, which uses duplicated context on Vert.x threads
+** unfortunately, the OpenTelemetry context is _shorter_ than the request, so this is wrong
+* `io.quarkus.arc.impl.ThreadLocalCurrentContext`
+** in Quarkus, when Vert.x is present, we use `io.quarkus.vertx.runtime.VertxCurrentContextFactory.VertxCurrentContext`, which uses duplicated context on Vert.x threads
+* `io.quarkus.deployment.console.AeshConsole`
+* `io.quarkus.dev.console.BasicConsole`
+* `io.quarkus.undertow.runtime.HttpSessionContext`
+** just during session context destruction, so should be fine
+* `io.quarkus.vertx.core.runtime.VertxMDC`
+* `io.quarkus.vertx.mdc.provider.LateBoundMDCProvider`
+* `io.smallrye.config.Expressions`
+** it seems very localized and harmless
+* `io.smallrye.config.SecretKeys`
+** it seems very localized and harmless
+* `io.smallrye.graphql.client.modelbuilder.ClientModelBuilder`
+** seems harmless, just passes the index around in a weird way for no good reason
+* `io.smallrye.graphql.schema.ScanningContext`
+** seems harmless, just passes the index around in a weird way for no good reason
+* `io.smallrye.graphql.execution.QueryCache`
+** seems harmless, just passes around some data between two callbacks
+* `io.smallrye.graphql.execution.context.SmallRyeContextManager`
+* `io.smallrye.graphql.spi.LookupService.DefaultLookupService`
+** in Quarkus, we don't use this; instead, we use `io.smallrye.graphql.cdi.CdiLookupService`, which is OK
+* `io.undertow.servlet.core.ApplicationListeners`
+* `io.undertow.servlet.handlers.ServletRequestContext`
+* `io.vertx.core.impl.VertxImpl`
+* `jakarta.servlet.http.HttpServlet.NoBodyOutputStream`
+** it seems very localized and harmless
+* `liquibase.Scope`
+* `liquibase.changelog.DatabaseChangeLog`,
+* `org.apache.activemq.artemis.core.persistence.impl.journal.AbstractJournalStorageManager`
+** I don't really understand what's going on here, but it seems very localized and harmless
+* `org.apache.activemq.artemis.logs.AuditLogger`
+** I don't really understand what's going on here, but it seems very localized and harmless
+* `org.apache.activemq.artemis.selector.filter.ComparisonExpression`
+** it seems very localized and harmless
+* `org.apache.commons.io.input.DemuxInputStream`
+* `org.apache.commons.io.output.DemuxOutputStream`
+* `org.dataloader.stats.ThreadLocalStatisticsCollector`
+* `org.glassfish.jaxb.runtime.v2.runtime.property.SingleMapNodeProperty`
+** I don't really understand what's going on here, but it seems very localized and harmless
+* `org.hibernate.context.internal.ManagedSessionContext`
+* `org.hibernate.context.internal.ThreadLocalSessionContext` (not in native build, see `Substitute_ThreadLocalSessionContext`)
+* `org.infinispan.commons.tx.TransactionManagerImpl`
+* `org.jboss.logging.AbstractLoggerProvider`
+* `org.jboss.logging.AbstractMdcLoggerProvider`
+* `org.jboss.logmanager.ThreadLocalMDC.Holder`
+** in Quarkus, we use one of the Vert.x-based MDC providers, which use duplicated context on Vert.x threads
+* `org.jboss.logmanager.ThreadLocalNDC.Holder`
+* `org.jboss.resteasy.core.MessageBodyParameterInjector`
+* `org.jboss.resteasy.core.ResteasyContext`
+* `org.jboss.resteasy.core.ThreadLocalResteasyProviderFactory`
+* `org.jboss.resteasy.reactive.client.impl.InputStreamReadStream`
+** I don't really understand what's going on here, but it seems very localized and harmless
+* `org.jboss.resteasy.reactive.server.core.CurrentRequestManager.DefaultCurrentRequest`
+** in Quarkus, we instead use `io.quarkus.resteasy.reactive.server.runtime.QuarkusCurrentRequest`, which stores data in CDI request context
+* `org.jboss.resteasy.util.ThreadLocalStack`
+* `org.jline.builtins.Completers.RegexCompleter`
+** it seems very localized and harmless
+* `org.quartz.impl.jdbcjobstore.DBSemaphore`
+* `org.quartz.impl.jdbcjobstore.JobStoreSupport`
+* `org.quartz.impl.jdbcjobstore.JTANonClusteredSemaphore`
+* `org.quartz.impl.jdbcjobstore.SimpleSemaphore`
+* `org.wildfly.common.context.ContextManager`
+* `org.wildfly.common.function.ThreadLocalStack`
+* `org.wildfly.security.auth.server.SecurityDomain`
+
+other:
+
+* `com.google.gson.Gson`
+** avoiding infinite regress
+* `com.ibm.asyncutil.locks.FairAsyncSemaphore`, `com.ibm.asyncutil.locks.StripedEpoch`
+** trampolines, random numbers
+* `io.smallrye.config.SmallRyeConfig.SmallRyeConfigSourceInterceptorContext`
+** avoiding infinite regress
+* `org.apache.avro.protobuf.ProtobufData`
+** avoiding infinite regress
+* `org.apache.commons.configuration.\*`, `org.apache.commons.lang.builder.\*`, `org.apache.commons.lang3.builder.\*`
+** avoiding infinite regress
+* `org.apache.mina.filter.logging.MdcInjectionFilter`
+** tracking call depth
+* `org.infinispan.protostream.impl.parser.ProtostreamProtoParser`
+** some weird comments handling? seems harmless though
+* `org.jboss.logmanager.errormanager.HandlerErrorManager`
+** avoiding infinite regress
+* `org.jboss.resteasy.spi.config.DefaultConfiguration.Resolver`
+** avoiding infinite regress
+
+skipped:
+
+* JDK
+* Netty and Vert.x: most usages are caching/object pooling, and we assume the others are correct anyway
+* other languages: Kotlin, Groovy, JRuby
+* build systems: Maven, Maven Resolver (Aether), Gradle
+* testing: JUnit, TestNG, AssertJ, Mockito, Arquillian, Wiremock, HTMLUnit
+* non-JBoss logging: SLF4J, Log4j
+* others that don't seem relevant to me
+** Apache Commons Configuration
+** AspectJ
+** BouncyCastle
+** Docker Java
+** Ehcache
+** Freemarker
+** Guice
+** H2
+** Javassist
+** JAXB
+** JBoss Metadata
+** JDeparser
+** JDOM
+** JNA (https://github.com/java-native-access)
+** JNR (https://github.com/jnr)
+** JGit
+** JGroups
+** Lombok
+** LSP4J
+** OSGi
+** Pulsar: uses thread locals _a lot_, mostly for caching/object pooling, but I couldn't be bothered to look in detail
+** Reactor Netty
+** Roaster
+** Sisu
+** UnboundID
+** Woodstox
+
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+implementations of `org.eclipse.microprofile.context.spi.ThreadContextProvider` in Quarkus:
+
+* `io.smallrye.context.jta.context.propagation.JtaContextProvider`
+* `io.smallrye.graphql.cdi.context.GraphQLThreadContextProvider`
+* `io.quarkus.arc.runtime.context.ArcContextProvider`
+** we store the CDI request context (and built-in session context) in the Vert.x duplicated context and so we almost never need this
+* `io.quarkus.opentelemetry.runtime.propagation.OpenTelemetryMpContextPropagationProvider`
+** note that we store the OpenTelemetry context in the Vert.x duplicated context, which is wrong!
+* `io.quarkus.resteasy.common.runtime.ResteasyContextProvider`
+** this is only for RESTEasy classic; for RR, we store the JAX-RS context in CDI request context
+* `io.quarkus.undertow.runtime.ServletThreadContextProvider`
+
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _

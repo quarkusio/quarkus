@@ -17,6 +17,7 @@ import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
+import com.fasterxml.jackson.core.exc.StreamConstraintsException;
 import com.fasterxml.jackson.core.exc.StreamReadException;
 import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -56,12 +57,16 @@ public class ServerJacksonMessageBodyReader extends AbstractServerJacksonMessage
              * communicate potential Jackson integration issues, and potential solutions for resolving them.
              */
             throw e;
-        } catch (StreamReadException | DatabindException e) {
+        } catch (StreamReadException | DatabindException | StreamConstraintsException e) {
             /*
-             * As JSON is evaluated, it can be invalid due to one of two reasons:
-             * 1) Malformed JSON. Un-parsable JSON results in a StreamReadException
-             * 2) Valid JSON that violates some binding constraint, i.e., a required property, mismatched data types, etc.
-             * Violations of these types are captured via a DatabindException.
+             * StreamReadException and DatabindException both represent client errors, covering malformed and
+             * semantically invalid JSON respectively. Note that MismatchedInputException and
+             * InvalidDefinitionException are DatabindException subtypes that are handled separately above
+             * and are not wrapped as client errors here.
+             *
+             * StreamConstraintsException must be listed explicitly because it extends JsonProcessingException
+             * directly rather than StreamReadException, and covers constraint violations such as a number
+             * value exceeding the default limit of 1000 digits.
              */
             throw new WebApplicationException(e, Response.Status.BAD_REQUEST);
         }

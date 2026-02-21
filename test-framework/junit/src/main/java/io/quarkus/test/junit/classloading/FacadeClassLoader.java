@@ -24,7 +24,6 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
 
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
@@ -246,20 +245,6 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
             this.profiles = null;
         }
 
-        // In the case where a QuarkusMainTest is present, but not a QuarkusTest, tests will be loaded and run using
-        // the parent classloader. In continuous testing mode, that will be a Quarkus classloader and it will not have
-        // the test config on it, so get that classloader test-ready.
-
-        // It would be nice to do this without the guard, but doing this on the normal path causes us to write something we don't want
-        if (isContinuousTesting) {
-            try {
-                initialiseTestConfig(parent);
-            } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException | InstantiationException
-                    | IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
         facadeClassLoaderProviders = new ArrayList<>();
         ServiceLoader<FacadeClassLoaderProvider> loader = ServiceLoader.load(FacadeClassLoaderProvider.class,
                 FacadeClassLoader.class.getClassLoader());
@@ -376,9 +361,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
 
             if (isQuarkusTest && !isIntegrationTest) {
                 QuarkusClassLoader runtimeClassLoader = getQuarkusClassLoader(inspectionClass, profile);
-                Class<?> clazz = runtimeClassLoader.loadClass(name);
-
-                return clazz;
+                return runtimeClassLoader.loadClass(name);
             } else {
                 for (FacadeClassLoaderProvider p : facadeClassLoaderProviders) {
                     ClassLoader cl = p.getClassLoader(name, getParent());
@@ -528,8 +511,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
 
     private static String getProfileKey(Class<?> profile) {
         final String profileName = profile != null ? profile.getName() : NO_PROFILE;
-        String profileKey = KEY_PREFIX + profileName;
-        return profileKey;
+        return KEY_PREFIX + profileName;
     }
 
     private String getResourceKey(Class<?> requiredTestClass, Class<?> profile)
@@ -584,8 +566,8 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
     }
 
     private QuarkusClassLoader getOrCreateRuntimeClassLoader(String key, Class<?> requiredTestClass, Class<?> profile)
-            throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException,
-            IllegalAccessException, AppModelResolverException, BootstrapException, IOException {
+            throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException,
+            AppModelResolverException, BootstrapException, IOException {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         CuratedApplication curatedApplication = getOrCreateCuratedApplication(key, requiredTestClass);
 
@@ -603,38 +585,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
             Thread.currentThread().setContextClassLoader(old);
         }
 
-        // If the try block fails, this would be null, but there's no catch, so we'd never get to this code
-        QuarkusClassLoader loader = startupAction.getClassLoader();
-
-        initialiseTestConfig(loader);
-
-        return loader;
-
-    }
-
-    private static void initialiseTestConfig(ClassLoader loader) throws ClassNotFoundException, InstantiationException,
-            IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-        // Make sure that our new classloader has config on it; this is a bit of a scattergun approach to setting config, but it helps cover most paths
-        Class<?> configProviderResolverClass = loader.loadClass(ConfigProviderResolver.class.getName());
-
-        Class<?> testConfigProviderResolverClass = loader.loadClass(QuarkusTestConfigProviderResolver.class.getName());
-        Object testConfigProviderResolver = testConfigProviderResolverClass.getDeclaredConstructor()
-                .newInstance();
-
-        configProviderResolverClass.getDeclaredMethod("setInstance", configProviderResolverClass)
-                .invoke(null, testConfigProviderResolver);
-
-        if (loader instanceof QuarkusClassLoader quarkusClassLoader) {
-            quarkusClassLoader.addCloseTask(() -> {
-                try {
-                    Method releaseMethod = testConfigProviderResolverClass.getMethod("releaseConfig",
-                            ClassLoader.class);
-                    releaseMethod.invoke(testConfigProviderResolver, quarkusClassLoader);
-                } catch (Exception e) {
-                    throw new IllegalStateException("Unable to release config of QuarkusTestConfigProviderResolver", e);
-                }
-            });
-        }
+        return startupAction.getClassLoader();
     }
 
     public boolean isServiceLoaderMechanism() {

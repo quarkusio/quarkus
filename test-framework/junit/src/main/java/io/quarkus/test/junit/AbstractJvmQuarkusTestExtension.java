@@ -1,14 +1,14 @@
 package io.quarkus.test.junit;
 
+import static io.quarkus.runtime.configuration.ConfigUtils.configBuilder;
+
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
-import java.util.ServiceConfigurationError;
 import java.util.Set;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-import org.jboss.logging.Logger;
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
@@ -16,9 +16,11 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.deployment.dev.testing.TestConfig;
-import io.quarkus.runner.bootstrap.StartupActionImpl;
-import io.quarkus.test.junit.classloading.FacadeClassLoader;
+import io.quarkus.deployment.dev.testing.TestConfigCustomizer;
+import io.quarkus.runtime.LaunchMode;
+import io.smallrye.config.Config;
 import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithContextExtension
         implements ExecutionCondition {
@@ -36,7 +38,34 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
     protected static final Deque<Class<?>> currentTestClassStack = new ArrayDeque<>();
     protected static Class<?> currentJUnitTestClass;
 
-    private static final Logger log = Logger.getLogger(StartupActionImpl.class);
+    /**
+     * AbstractJvmQuarkusTestExtension may be loaded by different ClassLoaders.
+     * <p>
+     * To access Config, we need to access ConfigProviderResolver, which is registered very early in the test launch
+     * process in ConfigLauncherSession. At this stage, the Config is registered in the SystemClassLoader. The
+     * ClassLoader of AbstractJvmQuarkusTestExtension may not support parent delegation, which prevents
+     * ConfigProviderResolver from being initialized. Therefore, we initialize it here if the ClassLoader is not the
+     * SystemClassLoader, and associate it with the SystemClassLoader. Lookups to the test Config, must always use
+     * the SystemClassLoader.
+     */
+    protected AbstractJvmQuarkusTestExtension() {
+        ClassLoader classLoader = AbstractJvmQuarkusTestExtension.class.getClassLoader();
+        if (classLoader != ClassLoader.getSystemClassLoader()) {
+            LaunchMode current = LaunchMode.current();
+            LaunchMode.set(LaunchMode.TEST);
+            SmallRyeConfig config = configBuilder()
+                    .forClassLoader(classLoader)
+                    .withCustomizers(new TestConfigCustomizer(LaunchMode.TEST))
+                    .build();
+            LaunchMode.set(current);
+
+            // Multiple Test may use the same ClassLoader, and each will instantiate a new AbstractJvmQuarkusTestExtension.
+            // In these cases, the Config is already registered, so it is just easier to release it and set it again
+            SmallRyeConfigProviderResolver resolver = (SmallRyeConfigProviderResolver) ConfigProviderResolver.instance();
+            resolver.releaseConfig(ClassLoader.getSystemClassLoader());
+            resolver.registerConfig(config, ClassLoader.getSystemClassLoader());
+        }
+    }
 
     // TODO is it nicer to pass in the test class, or invoke the getter twice?
     public static Class<? extends QuarkusTestProfile> getQuarkusTestProfile(Class testClass,
@@ -139,77 +168,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
             return ConditionEvaluationResult.enabled("Quarkus Test Profile tags only affect classes");
         }
 
-        // At this point, the TCCL is sometimes a deployment classloader (for multimodule tests), or the runtime classloader (for nested tests), and sometimes a FacadeClassLoader in continuous cases
-        // Getting back to a FacadeClassLoader is non-trivial. We can't use the singleton on the class, because we will be accessing it from different classloaders.
-        // We can't have a hook back from the runtime classloader to the facade classloader, because
-        // when evaluating execution conditions for native tests, the test will have been loaded with the system classloader, not the runtime classloader.
-        // The one classloader we can reliably get to when evaluating test execution is the system classloader, so hook our config on that.
-
-        // To avoid instanceof check, check for the system classloader instead of checking for the quarkusclassloader
-        boolean isFlatClasspath = this.getClass().getClassLoader() == ClassLoader.getSystemClassLoader();
-
-        ClassLoader original = Thread.currentThread().getContextClassLoader();
-
-        // In native mode tests, a testconfig will not have been registered on the system classloader with a testconfig instance of our classloader, so in those cases, we do not want to set the TCCL
-        if (!isFlatClasspath && !(original instanceof FacadeClassLoader)) {
-            // In most cases, we reset the TCCL to the system classloader after discovery finishes, so we could get away without this setting of the TCCL
-            // However, in multi-module and continuous tests the TCCL lifecycle is more complex, so this setting is still needed (for now)
-            Thread.currentThread().setContextClassLoader(ClassLoader.getSystemClassLoader());
-        }
-
-        TestConfig testConfig;
-        try {
-            testConfig = ConfigProvider.getConfig()
-                    .unwrap(SmallRyeConfig.class)
-                    .getConfigMapping(TestConfig.class);
-        } catch (Exception | ServiceConfigurationError e) {
-            String javaCommand = System.getProperty("sun.java.command");
-            boolean isEclipse = javaCommand != null
-                    && javaCommand.contains("JUnit5TestLoader");
-
-            // VS Code has the exact same java command and runner as Eclipse, but needs its own message
-            boolean isVSCode = isEclipse && (System.getProperty("java.class.path").contains("vscode"));
-            boolean isMaybeVSCode = isEclipse && (javaCommand.contains("testNames") && javaCommand.contains("testNameFile"));
-
-            if (isVSCode) {
-                // Will need https://github.com/eclipse-jdt/eclipse.jdt.ui/issues/2257 and a reconsume by VSCode
-                log.error(
-                        "Could not read configuration while evaluating whether to run a test. This is a known issue when running tests in the VS Code IDE. To work around the problem, run individual test methods.");
-            } else if (isMaybeVSCode) {
-                // Will need https://github.com/eclipse-jdt/eclipse.jdt.ui/issues/2257 and a reconsume by VSCode
-                log.error(
-                        "Could not read configuration while evaluating whether to run a test. It looks like you're probably running tests with VS Code. This is a known issue when running tests in the VS Code IDE. To work around the problem, run individual test methods.");
-            } else if (isEclipse) {
-                // Tracked by https://github.com/eclipse-jdt/eclipse.jdt.ui/issues/2257; fixed in Eclipse 4.37
-                log.error(
-                        "Could not read configuration while evaluating whether to run a test. This is a known issue when running tests in older versions of the Eclipse IDE. Please upgrade to at least version 2025-09. Alternatively, to work around the problem, edit the run configuration and add `-uniqueId [engine:junit-jupiter]/[class:"
-                                + context.getRequiredTestClass().getName()
-                                + "]` in the program arguments. Running the whole package, or running individual test methods, will also work without any extra configuration.");
-            } else {
-                log.error("Internal error: Could not read configuration while evaluating whether to run "
-                        + context.getRequiredTestClass()
-                        + ". Please let the Quarkus team know what you were doing when this error happened.");
-
-            }
-            log.debug("Underlying exception: " + e);
-            log.debug("Thread Context ClassLoader: " + Thread.currentThread().getContextClassLoader());
-            log.debug("The classloader of the class we use for mapping is " + TestConfig.class.getClassLoader());
-            String message = isVSCode || isMaybeVSCode
-                    ? "Could not execute test class because it was loaded with the wrong classloader by the VS Code test runner. Try running test methods individually instead."
-                    : isEclipse
-                            ? "Could not execute test class because it was loaded with the wrong classloader by the Eclipse test runner. Try running test methods individually, or edit the run configuration and add `-uniqueId [engine:junit-jupiter]/[class:"
-                                    + context.getRequiredTestClass().getName()
-                                    + "]` in the program arguments. "
-                            : "Internal error: Test class was loaded with an unexpected classloader ("
-                                    + context.getRequiredTestClass().getClassLoader() + ") or the thread context classloader ("
-                                    + Thread.currentThread().getContextClassLoader() + ") was incorrect.";
-            throw new IllegalStateException(message, e);
-        } finally {
-            if (!isFlatClasspath) {
-                Thread.currentThread().setContextClassLoader(original);
-            }
-        }
-
+        TestConfig testConfig = Config.get(ClassLoader.getSystemClassLoader()).getConfigMapping(TestConfig.class);
         Optional<List<String>> tags = testConfig.profile().tags();
         if (tags.isEmpty() || tags.get().isEmpty()) {
             return ConditionEvaluationResult.enabled("No Quarkus Test Profile tags");

@@ -5,6 +5,7 @@ import java.util.Properties;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.literal.NamedLiteral;
 import jakarta.enterprise.util.AnnotationLiteral;
@@ -14,6 +15,9 @@ import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.counter.api.CounterManager;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.InjectableInstance;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.runtime.RuntimeValue;
@@ -96,6 +100,17 @@ public class InfinispanRecorder {
         public T get() {
             InfinispanClientProducer infinispanClientProducer = Arc.container().instance(InfinispanClientProducer.class).get();
             return producer.apply(infinispanClientProducer);
+        }
+    }
+
+    public void eagerInitAllCaches() {
+        ArcContainer container = Arc.container();
+        // match all RemoteCache
+        InjectableInstance<RemoteCache> allCaches = container.select(
+                RemoteCache.class, Any.Literal.INSTANCE);
+
+        for (InstanceHandle<RemoteCache> handle : allCaches.handles()) {
+            handle.get(); // Force init
         }
     }
 }

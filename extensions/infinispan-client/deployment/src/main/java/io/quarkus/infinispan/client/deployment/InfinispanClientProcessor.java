@@ -567,6 +567,9 @@ class InfinispanClientProcessor {
                             recorder.infinispanRemoteCacheSupplier(remoteCacheBean.clientName,
                                     remoteCacheBean.cacheName)));
         }
+        // There could be some blocking code when getting a cache for the first time.
+        // Needs to be eager to avoid blocking the vert.x loop
+        recorder.eagerInitAllCaches();
     }
 
     static <T> SyntheticBeanBuildItem configureAndCreateSyntheticBean(String name,

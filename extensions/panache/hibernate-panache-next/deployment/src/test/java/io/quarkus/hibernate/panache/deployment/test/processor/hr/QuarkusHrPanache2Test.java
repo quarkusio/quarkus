@@ -36,12 +36,12 @@ public class QuarkusHrPanache2Test {
         method = entityClass.getDeclaredMethod("managedReactive");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
-        Assertions.assertEquals(entityClass.getName() + "$PanacheManagedReactiveRepository", method.getReturnType().getName());
+        Assertions.assertEquals(entityClass.getName() + "$PanacheManagedReactiveRepository_", method.getReturnType().getName());
 
         method = entityClass.getDeclaredMethod("statelessReactive");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
-        Assertions.assertEquals(entityClass.getName() + "$PanacheStatelessReactiveRepository",
+        Assertions.assertEquals(entityClass.getName() + "$PanacheStatelessReactiveRepository_",
                 method.getReturnType().getName());
     }
 

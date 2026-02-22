@@ -54,6 +54,11 @@
 
         <!-- test dependencies -->
         <dependency>
+            <groupId>jakarta.data</groupId>
+            <artifactId>jakarta.data-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-vertx</artifactId>
             <scope>test</scope>
@@ -109,7 +114,7 @@
                             <annotationProcessorPaths>
                                 <annotationProcessorPath>
                                     <groupId>org.hibernate.orm</groupId>
-                                    <artifactId>hibernate-jpamodelgen</artifactId>
+                                    <artifactId>hibernate-processor</artifactId>
                                 </annotationProcessorPath>
                             </annotationProcessorPaths>
                         </configuration>

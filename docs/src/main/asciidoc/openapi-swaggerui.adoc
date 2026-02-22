@@ -603,9 +603,13 @@ This will trigger Quarkus to create 3 OpenAPI documents.
 
 Exclusions are also possible using `quarkus.smallrye-openapi.<document-name>.scan-exclude-profiles`.
 
+The `@Extension` annotation can be placed on resource classes and resource methods. However, the list of extensions defined at both places will *not* be combined.
+The effective extensions of an OpenAPI operation are either the list of extensions from the resource method, or if none are present the list of extensions from the resource class.
+
 Multiple profiles can be specified for the `scan-profiles` and `scan-exclude-profiles` configuration properties.
-Multiple profiles can be specified on a resource method by using multiple `@Extension` annotations.
+Multiple profiles can be specified on resource classes and resource methods by using multiple `@Extension` annotations.
 The `x-smallrye-profile` extensions are *not* included in the final OpenAPI documents.
+
 
 === Filtering of operations
 

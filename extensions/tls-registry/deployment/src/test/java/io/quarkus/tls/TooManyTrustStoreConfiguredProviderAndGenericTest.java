@@ -12,8 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.tls.runtime.KeyStoreAndKeyCertOptions;
-import io.quarkus.tls.runtime.KeyStoreProvider;
+import io.quarkus.tls.runtime.TrustStoreAndTrustOptions;
+import io.quarkus.tls.runtime.TrustStoreProvider;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
@@ -22,21 +22,20 @@ import io.vertx.core.Vertx;
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "test-formats", password = "password", formats = { Format.JKS, Format.PEM, Format.PKCS12 })
 })
-public class TooManyKeyStoreConfiguredProviderAndP12Test {
-
+public class TooManyTrustStoreConfiguredProviderAndGenericTest {
     private static final String configuration = """
-            quarkus.tls.key-store.p12.path=target/certs/test-formats-keystore.p12
-            quarkus.tls.key-store.p12.password=password
+            quarkus.tls.trust-store.pkcs12.path=target/certs/test-formats-truststore.p12
+            quarkus.tls.trust-store.pkcs12.password=password
             """;
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClass(TestKeyStoreProvider.class)
+                    .addClass(TestTrustStoreProvider.class)
                     .add(new StringAsset(configuration), "application.properties"))
             .assertException(t -> {
                 assertThat(t)
-                        .hasMessageContaining("cannot be configured with a KeyStoreProvider and P12 at the same time");
+                        .hasMessageContaining("cannot be configured with a TrustStoreProvider and pkcs12 at the same time");
             });
 
     @Test
@@ -45,9 +44,9 @@ public class TooManyKeyStoreConfiguredProviderAndP12Test {
     }
 
     @ApplicationScoped
-    static class TestKeyStoreProvider implements KeyStoreProvider {
+    static class TestTrustStoreProvider implements TrustStoreProvider {
         @Override
-        public KeyStoreAndKeyCertOptions getKeyStore(Vertx vertx) {
+        public TrustStoreAndTrustOptions getTrustStore(Vertx vertx) {
             // this method should never be called
             return null;
         }

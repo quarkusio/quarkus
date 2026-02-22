@@ -344,6 +344,22 @@ quarkus.tls.key-store.jks.alias-password=my-alias-password
 * Alternatively, use SNI to select the appropriate certificate and private key.
 Note that all keys must use the same password.
 
+==== Other keystore types
+
+Other types of keystores provided by registered keystore providers are also supported. Generally it supports any type of keystore that can be loaded via `java.security.KeyStore.getInstance(type, provider)`.
+
+For example a Bouncy Castle FIPS provided keystore where the type of the keystore is `bcfks`:
+[source,properties]
+----
+quarkus.tls.key-store.bcfks.provider=BCFIPS
+quarkus.tls.key-store.bcfks.path=server-keystore.bcfks
+quarkus.tls.key-store.bcfks.password=secret
+quarkus.tls.key-store.bcfks.alias=my-alias
+quarkus.tls.key-store.bcfks.alias-password=my-alias-password
+----
+
+Note that all of the standard keystore properties are supported via configuration: `path`, `password`, `alias`, `alias-password`, and `provider` (where `provider` is the name of the security provider and the second argument to `java.security.KeyStore.getInstance(type, provider)`).
+
 ==== Provided keystores
 If you need more control over the keystore used in a TLS configuration, you can provide a CDI bean implementing the `io.quarkus.tls.runtime.KeyStoreProvider` interface. Quarkus calls `KeyStoreProvider::getKeyStore` when the TLS configuration is <<startup-checks,initially created>> and any time the configuration is <<reloading-certificates,reloaded>>. The resulting keystore and options are then made available via `TlsConfiguration::getKeyStore` and `TlsConfiguration::getKeyStoreOptions`.
 
@@ -432,7 +448,7 @@ quarkus.tls.key-store.credentials-provider.password-key=password
 quarkus.tls.key-store.credentials-provider.alias-password-key=alias-password
 ----
 
-IMPORTANT: The credential provider can only be used with PKCS12 and JKS keystores.
+IMPORTANT: The credential provider can only be used with PKCS12, JKS, and generic provider keystores.
 
 === Trust stores
 
@@ -486,6 +502,21 @@ quarkus.tls.trust-store.jks.alias=my-alias
 
 `.jks` files are password-protected, so you need to provide the password to open the truststore.
 However, unlike keystores, the alias does not require a password because it contains a public certificate, not a private key.
+
+==== Other truststore types
+
+Other types of truststores provided by registered truststore providers are also supported. Generally it supports any type of truststore that can be loaded via `java.security.KeyStore.getInstance(type, provider)`.
+
+For example a Bouncy Castle FIPS provided truststore where the type of the truststore is `bcfks`:
+[source,properties]
+----
+quarkus.tls.trust-store.bcfks.provider=BCFIPS
+quarkus.tls.trust-store.bcfks.path=client-truststore.bcfks
+quarkus.tls.trust-store.bcfks.password=secret
+quarkus.tls.trust-store.bcfks.alias=my-alias
+----
+
+Note that all of the standard truststore properties are supported via configuration: `path`, `password`, `alias`, `alias-password`, and `provider` (where `provider` is the name of the security provider and the second argument to `java.security.KeyStore.getInstance(type, provider)`).
 
 ==== Provided truststores
 If you need more control over the truststore used in a TLS configuration, you can provide a CDI bean implementing the `io.quarkus.tls.runtime.TrustStoreProvider` interface. Quarkus calls `TrustStoreProvider::getTrustStore` when the TLS configuration is <<startup-checks,initially created>> and any time the configuration is <<reloading-certificates,reloaded>>. The resulting truststore and options are then made available via `TlsConfiguration::getTrustStore` and `TlsConfiguration::getTrustStoreOptions`.

@@ -159,7 +159,6 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             Map properties) {
         log.tracef("Attempting to obtain correct EntityManagerFactoryBuilder for persistenceUnitName : %s",
                 persistenceUnitName);
-
         verifyProperties(properties);
 
         // These are pre-parsed during image generation:
@@ -209,7 +208,6 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                         "Attempting to boot a deactivated Hibernate ORM persistence unit");
             }
             RuntimeSettings runtimeSettings = buildRuntimeSettings(persistenceUnitName, recordedState, puConfig);
-
             StandardServiceRegistry standardServiceRegistry = rewireMetadataAndExtractServiceRegistry(persistenceUnitName,
                     recordedState, puConfig, runtimeSettings);
 
@@ -555,5 +553,4 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         runtimeSettingsBuilder.put(HibernateHints.HINT_FLUSH_MODE,
                 persistenceUnitConfig.flush().mode().getHibernateFlushMode());
     }
-
 }

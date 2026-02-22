@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -96,18 +97,15 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
     final class ResourceCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
         private final ApplicationConfig appConfig;
-        private final OTelBuildConfig oTelBuildConfig;
         private final OTelRuntimeConfig oTelRuntimeConfig;
         private final Instance<DelayedAttributes> delayedAttributes;
         private final List<Resource> resources;
 
         public ResourceCustomizer(ApplicationConfig appConfig,
-                OTelBuildConfig oTelBuildConfig,
                 OTelRuntimeConfig oTelRuntimeConfig,
                 @Any Instance<DelayedAttributes> delayedAttributes,
                 @All List<Resource> resources) {
             this.appConfig = appConfig;
-            this.oTelBuildConfig = oTelBuildConfig;
             this.oTelRuntimeConfig = oTelRuntimeConfig;
             this.delayedAttributes = delayedAttributes;
             this.resources = resources;
@@ -257,23 +255,21 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
         private final OTelBuildConfig oTelBuildConfig;
         private final OTelRuntimeConfig oTelRuntimeConfig;
         private final Instance<Clock> clock;
-        private final Instance<MetricExporter> metricExporter;
         private final Instance<ScheduledExecutorService> managedExecutor;
 
         public MetricProviderCustomizer(OTelBuildConfig oTelBuildConfig,
                 OTelRuntimeConfig runtimeConfig,
                 final Instance<Clock> clock,
-                final Instance<MetricExporter> metricExporter,
                 final Instance<ScheduledExecutorService> managedExecutor) {
             this.oTelBuildConfig = oTelBuildConfig;
             this.clock = clock;
-            this.metricExporter = metricExporter;
             this.managedExecutor = managedExecutor;
             this.oTelRuntimeConfig = runtimeConfig;
         }
 
         @Override
         public void customize(AutoConfiguredOpenTelemetrySdkBuilder builder) {
+            AtomicReference<MetricExporter> metricExporterRef = new AtomicReference<>();
             builder.addMeterProviderCustomizer(
                     new BiFunction<SdkMeterProviderBuilder, ConfigProperties, SdkMeterProviderBuilder>() {
                         @Override
@@ -302,15 +298,20 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                             return meterProviderBuilder;
                         }
                     })
+                    .addMetricExporterCustomizer(new BiFunction<MetricExporter, ConfigProperties, MetricExporter>() {
+                        @Override
+                        public MetricExporter apply(MetricExporter metricExporter, ConfigProperties configProperties) {
+                            metricExporterRef.set(metricExporter);
+                            return metricExporter;
+                        }
+                    })
                     .addMetricReaderCustomizer(new BiFunction<MetricReader, ConfigProperties, MetricReader>() {
                         @Override
                         public MetricReader apply(MetricReader metricReader, ConfigProperties configProperties) {
                             // Replace the provided metric reader because it uses an unmanaged executor
                             // with a null classloader
-                            if (metricReader instanceof PeriodicMetricReader &&
-                                    metricExporter.isResolvable() &&
-                                    managedExecutor.isResolvable()) {
-                                return PeriodicMetricReader.builder(metricExporter.get())
+                            if (metricReader instanceof PeriodicMetricReader && managedExecutor.isResolvable()) {
+                                return PeriodicMetricReader.builder(metricExporterRef.get())
                                         .setInterval(oTelRuntimeConfig.metric().exportInterval())
                                         .setExecutor(managedExecutor.get())
                                         .build();

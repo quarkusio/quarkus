@@ -22,7 +22,7 @@ public class ClientCalls {
         return Uni.createFrom().emitter(new Consumer<UniEmitter<? super O>>() { // NOSONAR
             @Override
             public void accept(UniEmitter<? super O> emitter) {
-                delegate.accept(request, new UniStreamObserver<>(emitter));
+                delegate.accept(request, new UniStreamObserver<>(emitter, null));
             }
         });
     }
@@ -31,7 +31,7 @@ public class ClientCalls {
         return Multi.createFrom().emitter(new Consumer<MultiEmitter<? super O>>() { // NOSONAR
             @Override
             public void accept(MultiEmitter<? super O> emitter) {
-                delegate.accept(request, new MultiStreamObserver<>(emitter));
+                delegate.accept(request, new MultiStreamObserver<>(emitter, null));
             }
         });
     }
@@ -41,12 +41,12 @@ public class ClientCalls {
             @Override
             public void accept(UniEmitter<? super O> emitter) {
                 AtomicReference<Flow.Subscription> cancellable = new AtomicReference<>();
-                UniStreamObserver<O> observer = new UniStreamObserver<>(emitter.onTermination(() -> {
+                StreamObserver<O> observer = new UniStreamObserver<>(emitter, () -> {
                     var subscription = cancellable.getAndSet(Subscriptions.CANCELLED);
                     if (subscription != null) {
                         subscription.cancel();
                     }
-                }));
+                });
                 StreamObserver<I> request = delegate.apply(observer);
                 subscribeToUpstreamAndForwardToStreamObserver(items, cancellable, request);
             }
@@ -96,12 +96,12 @@ public class ClientCalls {
             @Override
             public void accept(MultiEmitter<? super O> emitter) {
                 AtomicReference<Flow.Subscription> cancellable = new AtomicReference<>();
-                StreamObserver<I> request = delegate.apply(new MultiStreamObserver<>(emitter.onTermination(() -> {
+                StreamObserver<I> request = delegate.apply(new MultiStreamObserver<>(emitter, () -> {
                     var subscription = cancellable.getAndSet(Subscriptions.CANCELLED);
                     if (subscription != null) {
                         subscription.cancel();
                     }
-                })));
+                }));
                 subscribeToUpstreamAndForwardToStreamObserver(items, cancellable, request);
             }
         }));

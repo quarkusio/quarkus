@@ -649,7 +649,7 @@ public class SmallRyeOpenApiProcessor {
      *         {@link io.quarkus.smallrye.openapi.OpenApiFilter.RunStage#RUN}
      * @deprecated This will be removed once {@link OpenApiFilter#value()} is also removed.
      */
-    @Deprecated(since = "3.34", forRemoval = true)
+    @Deprecated(since = "3.32", forRemoval = true)
     @SuppressWarnings("removal")
     private Set<OpenApiFilter.RunStage> resolveStages(AnnotationInstance ai, IndexView index) {
 

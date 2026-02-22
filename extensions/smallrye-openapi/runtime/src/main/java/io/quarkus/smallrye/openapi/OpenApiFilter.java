@@ -45,7 +45,7 @@ public @interface OpenApiFilter {
      *
      * @deprecated Use {@link #stages()} instead.
      */
-    @Deprecated(since = "3.34", forRemoval = true)
+    @Deprecated(since = "3.32", forRemoval = true)
     RunStage value() default RunStage.RUN;
 
     /**
@@ -72,7 +72,7 @@ public @interface OpenApiFilter {
          * @deprecated Consider replacing with either {@link RunStage#RUNTIME_STARTUP} or {@link RunStage#RUNTIME_PER_REQUEST},
          *             depending on the value of the now also deprecated quarkus.smallrye-openapi.always-run-filter.
          */
-        @Deprecated(since = "3.34", forRemoval = true)
+        @Deprecated(since = "3.32", forRemoval = true)
         RUN,
 
         /**
@@ -81,7 +81,7 @@ public @interface OpenApiFilter {
          *             OpenApiFilter.RunStage.RUNTIME_PER_REQUEST}}, depending on the value of the now also deprecated
          *             quarkus.smallrye-openapi.always-run-filter.
          */
-        @Deprecated(since = "3.34", forRemoval = true)
+        @Deprecated(since = "3.32", forRemoval = true)
         BOTH,
 
         /**

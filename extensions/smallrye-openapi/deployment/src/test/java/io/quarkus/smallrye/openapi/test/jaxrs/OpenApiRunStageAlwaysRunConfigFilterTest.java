@@ -34,7 +34,7 @@ import io.quarkus.test.QuarkusUnitTest;
  *             io.quarkus.smallrye.openapi.runtime.OpenApiDocumentService#prepareDocument for a reference of the expected effect
  *             of always-run-filter
  */
-@Deprecated(since = "3.34", forRemoval = true)
+@Deprecated(since = "3.32", forRemoval = true)
 class OpenApiRunStageAlwaysRunConfigFilterTest {
 
     private static final String STORE_SCHEMA_DIRECTORY = "target/generated/OpenApiRunStageAlwaysRunConfigFilterTest/";

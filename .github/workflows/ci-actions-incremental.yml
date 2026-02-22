@@ -370,7 +370,12 @@ jobs:
         env:
           CAPTURE_BUILD_SCAN: true
         run: |
-          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-format -Dtcks -Prelocations clean install
+          MAVEN_PROFILES="-Prelocations"
+          if [[ "$GITHUB_REPOSITORY" != "quarkusio/quarkus" ]]; then
+            # Formatting is checked in job validate-formatting for forks
+            MAVEN_PROFILES="-Prelocations,!validate,!format"
+          fi
+          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dtcks $MAVEN_PROFILES clean install
       - name: Verify extension dependencies
         run: ./update-extension-dependencies.sh $COMMON_MAVEN_ARGS
       - name: Configure GIB
@@ -455,6 +460,40 @@ jobs:
           path: |
             build-reports.zip
           retention-days: 7
+
+  validate-formatting:
+    runs-on: ubuntu-latest
+    name: Validate Formatting
+    needs: [configure, build-jdk17]
+    if: ${{ always() && github.repository != 'quarkusio/quarkus' }}
+    env:
+      COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Restore Maven Repository
+        uses: actions/cache/restore@v5
+        with:
+          path: ~/.m2/repository
+          key: ${{ needs.configure.outputs.m2-cache-key }}
+          restore-keys: |
+            ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
+            ${{ needs.configure.outputs.m2-monthly-cache-key }}-
+      - name: Download previously uploaded .m2 content
+        uses: actions/download-artifact@v7
+        with:
+          name: m2-content
+          path: .
+      - name: Extract previously uploaded .m2 content
+        run: tar -xzf m2-content.tgz -C ~
+      - name: Validate Formatting
+        run: |
+          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipDocs -Dinvoker.skip -Djbang.skip -Dtruststore.skip -Dno-format -Dtcks -Prelocations process-sources
+
 
   calculate-test-jobs:
     name: Calculate Test Jobs

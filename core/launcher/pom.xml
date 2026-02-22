@@ -95,6 +95,11 @@
                     <excludes>
                         <exclude>**/LauncherShader.class</exclude>
                     </excludes>
+                    <archive>
+                        <manifestEntries>
+                            <Automatic-Module-Name>io.quarkus.launcher</Automatic-Module-Name>
+                        </manifestEntries>
+                    </archive>
                 </configuration>
             </plugin>
         </plugins>

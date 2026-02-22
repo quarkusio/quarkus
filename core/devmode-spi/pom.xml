@@ -24,5 +24,4 @@
             <artifactId>smallrye-common-os</artifactId>
         </dependency>
     </dependencies>
-
 </project>

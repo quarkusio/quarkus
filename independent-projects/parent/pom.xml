@@ -38,7 +38,7 @@
         <version.shade.plugin>3.6.1</version.shade.plugin>
         <version.source.plugin>3.4.0</version.source.plugin>
         <version.surefire.plugin>3.5.4</version.surefire.plugin>
-        <version.failsafe.plugin>${version.surefire.plugin}</version.failsafe.plugin>
+        <version.failsafe.plugin>3.5.5</version.failsafe.plugin>
         <version.versions.plugin>2.21.0</version.versions.plugin>
         <version.yaml-properties.plugin>1.1.3</version.yaml-properties.plugin>
         <!-- Forbidden API checks -->

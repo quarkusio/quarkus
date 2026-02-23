@@ -78,6 +78,15 @@ public class CustomTenantResolver implements TenantResolver {
             }
         }
 
+        if (path.endsWith("tenant-absolute-redirect") || path.endsWith("tenant-absolute-redirect/callback")) {
+            return "tenant-absolute-redirect";
+        }
+
+        if (path.endsWith("tenant-restore-path-absolute-redirect")
+                || path.endsWith("tenant-restore-path-absolute-redirect/callback")) {
+            return "tenant-restore-path-absolute-redirect";
+        }
+
         if (path.contains("tenant-xhr")) {
             return "tenant-xhr";
         }

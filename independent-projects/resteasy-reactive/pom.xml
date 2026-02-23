@@ -61,7 +61,7 @@
         <vertx.version>4.5.25</vertx.version>
         <rest-assured.version>5.5.6</rest-assured.version>
         <commons-logging-jboss-logging.version>2.0.0.Final</commons-logging-jboss-logging.version>
-        <jackson-bom.version>2.21.0</jackson-bom.version>
+        <jackson-bom.version>2.21.1</jackson-bom.version>
         <smallrye-stork.version>2.7.7</smallrye-stork.version>
         <jakarta.validation-api.version>3.1.1</jakarta.validation-api.version>
         <yasson.version>3.0.4</yasson.version>

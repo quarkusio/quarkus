@@ -6,12 +6,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import org.jboss.logging.Logger;
 
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -24,6 +22,7 @@ import io.quarkus.micrometer.runtime.HttpClientMetricsTagsContributor;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.binder.HttpCommonTags;
 import io.quarkus.micrometer.runtime.binder.RequestMetricInfo;
+import io.quarkus.micrometer.runtime.meters.Gauges;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.spi.metrics.ClientMetrics;
 import io.vertx.core.spi.metrics.HttpClientMetrics;
@@ -34,34 +33,23 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
         implements HttpClientMetrics<VertxHttpClientMetrics.RequestTracker, Void, LongTaskTimer.Sample> {
     static final Logger log = Logger.getLogger(VertxHttpClientMetrics.class);
 
-    private final Tags tags;
-
-    private final LongAdder pending = new LongAdder();
+    private final LongAdder pending;
 
     private final HttpBinderConfiguration config;
-
     private final Meter.MeterProvider<Timer> responseTimes;
-
     private final boolean restClient;
 
     private final List<HttpClientMetricsTagsContributor> httpClientMetricsTagsContributors;
 
     VertxHttpClientMetrics(MeterRegistry registry, String prefix, Tags tags, HttpBinderConfiguration httpBinderConfiguration,
-            boolean restClient) {
-        super(registry, prefix, tags);
-        this.tags = tags == null ? Tags.empty() : tags;
+            boolean restClient, Gauges<LongAdder> gauges) {
+        super(registry, prefix, tags, gauges);
         this.config = httpBinderConfiguration;
         this.restClient = restClient;
 
-        Gauge.builder("http.client.pending", new Supplier<Number>() {
-            @Override
-            public Number get() {
-                return pending.longValue();
-            }
-        })
+        pending = gauges.builder("http.client.pending", LongAdder::longValue)
                 .description("Number of requests waiting for a response")
                 .tags(tags)
-                .strongReference(true)
                 .register(registry);
 
         httpClientMetricsTagsContributors = resolveHttpClientMetricsTagsContributors();
@@ -149,8 +137,6 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
                     pending.decrement();
                 }
                 if (restClient) {
-                    // REST client request/response timing is handled by RestClientMetricsFilter
-                    // which has access to the URI template path. Skip here to avoid duplicate metrics.
                     return;
                 }
                 long duration = tracker.timer.end();

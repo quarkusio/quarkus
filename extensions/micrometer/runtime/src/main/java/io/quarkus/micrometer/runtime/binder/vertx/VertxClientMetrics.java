@@ -1,13 +1,12 @@
 package io.quarkus.micrometer.runtime.binder.vertx;
 
 import java.util.concurrent.atomic.LongAdder;
-import java.util.function.Supplier;
 
 import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
+import io.quarkus.micrometer.runtime.meters.Gauges;
 import io.vertx.core.spi.metrics.ClientMetrics;
 
 public class VertxClientMetrics
@@ -19,7 +18,7 @@ public class VertxClientMetrics
     private final Counter resetCount;
     private final Counter completed;
 
-    VertxClientMetrics(MeterRegistry registry, String type, Tags tags) {
+    VertxClientMetrics(MeterRegistry registry, String type, Tags tags, Gauges<LongAdder> gauges) {
         this.type = type;
 
         processing = Timer.builder(name("processing"))
@@ -27,15 +26,9 @@ public class VertxClientMetrics
                 .tags(tags)
                 .register(registry);
 
-        Gauge.builder(name("current"), new Supplier<Number>() {
-            @Override
-            public Number get() {
-                return current.doubleValue();
-            }
-        })
+        current = gauges.builder(name("current"), LongAdder::doubleValue)
                 .description("The number of requests currently handled by the client")
                 .tags(tags)
-                .strongReference(true)
                 .register(registry);
 
         completed = Counter.builder(name("completed"))

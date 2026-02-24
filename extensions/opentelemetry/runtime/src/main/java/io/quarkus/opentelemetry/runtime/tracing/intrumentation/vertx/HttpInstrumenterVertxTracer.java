@@ -542,7 +542,10 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
                     return result;
                 }
             };
-            return headers.addAll(httpRequest.headers());
+            if (httpRequest.headers() != null) {
+                headers.addAll(httpRequest.headers());
+            }
+            return headers;
         }
 
         @Override

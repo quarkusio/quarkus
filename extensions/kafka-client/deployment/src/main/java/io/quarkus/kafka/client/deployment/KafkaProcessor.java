@@ -26,6 +26,7 @@ import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.security.authenticator.AbstractLogin;
 import org.apache.kafka.common.security.authenticator.DefaultLogin;
 import org.apache.kafka.common.security.authenticator.SaslClientCallbackHandler;
+import org.apache.kafka.common.security.oauthbearer.JwtRetriever;
 import org.apache.kafka.common.security.oauthbearer.OAuthBearerToken;
 import org.apache.kafka.common.security.oauthbearer.internals.OAuthBearerRefreshingLogin;
 import org.apache.kafka.common.security.oauthbearer.internals.OAuthBearerSaslClient;
@@ -254,6 +255,7 @@ public class KafkaProcessor {
         collectImplementors(toRegister, indexBuildItem, ConsumerInterceptor.class);
         collectImplementors(toRegister, indexBuildItem, ProducerInterceptor.class);
         collectImplementors(toRegister, indexBuildItem, MetricsReporter.class);
+        collectImplementors(toRegister, indexBuildItem, JwtRetriever.class);
 
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(OAuthBearerSaslClient.class,
                 OAuthBearerSaslClient.OAuthBearerSaslClientFactory.class,
@@ -294,7 +296,7 @@ public class KafkaProcessor {
 
         for (DotName s : toRegister) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(s.toString())
-                    .reason(getClass().getName() + " Jackson and " + Capability.JSONB + " support")
+                    .reason(getClass().getName() + ": Kafka Client instantiation")
                     .build());
         }
 

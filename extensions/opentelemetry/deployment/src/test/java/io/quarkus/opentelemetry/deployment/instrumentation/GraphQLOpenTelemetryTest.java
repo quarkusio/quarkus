@@ -59,10 +59,14 @@ public class GraphQLOpenTelemetryTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(HelloResource.class, CustomCDIBean.class, TestSpanExporterProvider.class,
                             TestSpanExporter.class, SemconvResolver.class)
-                    .addAsResource(new StringAsset("smallrye.graphql.allowGet=true"), "application.properties")
-                    .addAsResource(new StringAsset("smallrye.graphql.printDataFetcherException=true"), "application.properties")
-                    .addAsResource(new StringAsset("smallrye.graphql.events.enabled=true"), "application.properties")
-                    .addAsResource(new StringAsset("quarkus.otel.metrics.exporter=none"), "application.properties")
+                    .addAsResource(new StringAsset("""
+                            smallrye.graphql.allowGet=true
+                            smallrye.graphql.printDataFetcherException=true
+                            smallrye.graphql.events.enabled=true
+                            quarkus.otel.metrics.exporter=none
+                            quarkus.otel.traces.exporter=test-span-exporter
+                            """),
+                            "application.properties")
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));

@@ -18,10 +18,12 @@ import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Singleton;
 
+import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.common.Clock;
+import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.logs.LogRecordProcessor;
 import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessor;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
@@ -34,13 +36,17 @@ import io.opentelemetry.sdk.metrics.internal.MeterConfig;
 import io.opentelemetry.sdk.metrics.internal.SdkMeterProviderUtil;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.IdGenerator;
+import io.opentelemetry.sdk.trace.ReadWriteSpan;
+import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder;
 import io.opentelemetry.sdk.trace.SpanProcessor;
+import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
+import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
+import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.quarkus.arc.All;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.RemoveableLateBoundSpanProcessor;
 import io.quarkus.opentelemetry.runtime.propagation.TextMapPropagatorCustomizer;
 import io.quarkus.opentelemetry.runtime.tracing.DropTargetsSampler;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
@@ -69,6 +75,56 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
             if (biFunction != null) {
                 builder.addLogRecordProcessorCustomizer(biFunction);
             }
+        }
+    }
+
+    final class SimpleSpanProcessorWithBatchShutdown implements SpanProcessor {
+        private final SpanProcessor delegate;
+        private final SpanProcessor replacedBatchProcessor;
+
+        SimpleSpanProcessorWithBatchShutdown(SpanExporter spanExporter, SpanProcessor replacedBatchProcessor) {
+            this.delegate = SimpleSpanProcessor.create(spanExporter);
+            this.replacedBatchProcessor = replacedBatchProcessor;
+        }
+
+        @Override
+        public void onStart(Context parentContext, ReadWriteSpan span) {
+            delegate.onStart(parentContext, span);
+        }
+
+        @Override
+        public boolean isStartRequired() {
+            return delegate.isStartRequired();
+        }
+
+        @Override
+        public void onEnd(ReadableSpan span) {
+            delegate.onEnd(span);
+        }
+
+        @Override
+        public boolean isEndRequired() {
+            return delegate.isEndRequired();
+        }
+
+        @Override
+        public CompletableResultCode forceFlush() {
+            return delegate.forceFlush();
+        }
+
+        @Override
+        public CompletableResultCode shutdown() {
+            return CompletableResultCode.ofAll(List.of(
+                    delegate.shutdown(),
+                    replacedBatchProcessor.shutdown()));
+        }
+
+        @Override
+        public String toString() {
+            return "SimpleSpanProcessorWithBatchShutdown{" +
+                    "delegate=" + delegate +
+                    ", replacedBatchProcessor=" + replacedBatchProcessor +
+                    '}';
         }
     }
 
@@ -215,6 +271,39 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
     }
 
     @Singleton
+    final class SpanProcessorCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+        private final OTelBuildConfig oTelBuildConfig;
+        private final List<SpanProcessor> spanProcessors;
+
+        public SpanProcessorCustomizer(OTelBuildConfig oTelBuildConfig,
+                @All List<SpanProcessor> spanProcessors) {
+            this.oTelBuildConfig = oTelBuildConfig;
+            this.spanProcessors = spanProcessors;
+        }
+
+        @Override
+        public void customize(AutoConfiguredOpenTelemetrySdkBuilder builder) {
+            builder.addSpanProcessorCustomizer(new BiFunction<SpanProcessor, ConfigProperties, SpanProcessor>() {
+                @Override
+                public SpanProcessor apply(SpanProcessor spanProcessor, ConfigProperties configProperties) {
+                    if (spanProcessors.isEmpty()) {
+                        if (spanProcessor instanceof BatchSpanProcessor batchSpanProcessor) {
+                            SpanExporter spanExporter = batchSpanProcessor.getSpanExporter();
+                            if (oTelBuildConfig.simple()) {
+                                return new SimpleSpanProcessorWithBatchShutdown(spanExporter, spanProcessor);
+                            }
+                            if ("NoopSpanExporter".equals(spanExporter.getClass().getSimpleName())) {
+                                return SpanProcessor.composite();
+                            }
+                        }
+                    }
+                    return spanProcessor;
+                }
+            });
+        }
+    }
+
+    @Singleton
     final class TracerProviderCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
         private final OTelBuildConfig oTelBuildConfig;
@@ -238,13 +327,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                                 ConfigProperties configProperties) {
                             if (oTelBuildConfig.traces().enabled().orElse(TRUE)) {
                                 idGenerator.stream().findFirst().ifPresent(tracerProviderBuilder::setIdGenerator); // from cdi
-                                spanProcessors.stream().filter(new Predicate<SpanProcessor>() {
-                                    @Override
-                                    public boolean test(SpanProcessor sp) {
-                                        return !(sp instanceof RemoveableLateBoundSpanProcessor);
-                                    }
-                                })
-                                        .forEach(tracerProviderBuilder::addSpanProcessor);
+                                spanProcessors.forEach(tracerProviderBuilder::addSpanProcessor);
                             }
                             return tracerProviderBuilder;
                         }

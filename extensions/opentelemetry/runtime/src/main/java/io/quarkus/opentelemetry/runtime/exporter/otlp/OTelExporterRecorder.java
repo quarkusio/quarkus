@@ -15,9 +15,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import jakarta.enterprise.inject.Instance;
-import jakarta.enterprise.util.TypeLiteral;
-
 import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.exporter.internal.ExporterBuilderUtil;
 import io.opentelemetry.exporter.internal.grpc.GrpcExporter;
@@ -37,14 +34,8 @@ import io.opentelemetry.sdk.metrics.export.AggregationTemporalitySelector;
 import io.opentelemetry.sdk.metrics.export.DefaultAggregationSelector;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.metrics.internal.aggregator.AggregationUtil;
-import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
-import io.opentelemetry.sdk.trace.export.BatchSpanProcessorBuilder;
-import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
-import io.opentelemetry.sdk.trace.export.SimpleSpanProcessorBuilder;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.quarkus.arc.SyntheticCreationalContext;
-import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
-import io.quarkus.opentelemetry.runtime.config.runtime.BatchSpanProcessorConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.CompressionType;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig;
@@ -60,8 +51,6 @@ import io.quarkus.opentelemetry.runtime.exporter.otlp.metrics.VertxGrpcMetricExp
 import io.quarkus.opentelemetry.runtime.exporter.otlp.metrics.VertxHttpMetricsExporter;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.sender.VertxGrpcSender;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.sender.VertxHttpSender;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.LateBoundSpanProcessor;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.RemoveableLateBoundSpanProcessor;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.VertxGrpcSpanExporter;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.VertxHttpSpanExporter;
 import io.quarkus.runtime.RuntimeValue;
@@ -80,58 +69,34 @@ public class OTelExporterRecorder {
     public static final String BASE2EXPONENTIAL_AGGREGATION_NAME = AggregationUtil
             .aggregationName(Aggregation.base2ExponentialBucketHistogram());
 
-    private final OTelBuildConfig buildConfig;
     private final RuntimeValue<OTelRuntimeConfig> runtimeConfig;
     private final RuntimeValue<OtlpExporterRuntimeConfig> exporterRuntimeConfig;
 
     public OTelExporterRecorder(
-            final OTelBuildConfig buildConfig,
             final RuntimeValue<OTelRuntimeConfig> runtimeConfig,
             final RuntimeValue<OtlpExporterRuntimeConfig> exporterRuntimeConfig) {
-        this.buildConfig = buildConfig;
         this.runtimeConfig = runtimeConfig;
         this.exporterRuntimeConfig = exporterRuntimeConfig;
     }
 
-    public Function<SyntheticCreationalContext<LateBoundSpanProcessor>, LateBoundSpanProcessor> spanProcessorForOtlp(
+    public Function<SyntheticCreationalContext<SpanExporter>, SpanExporter> spanExporterForOtlp(
             Supplier<Vertx> vertx) {
         URI baseUri = getTracesUri(exporterRuntimeConfig.getValue()); // do the creation and validation here in order to preserve backward compatibility
         return new Function<>() {
             @Override
-            public LateBoundSpanProcessor apply(
-                    SyntheticCreationalContext<LateBoundSpanProcessor> context) {
+            public SpanExporter apply(
+                    SyntheticCreationalContext<SpanExporter> context) {
                 if (runtimeConfig.getValue().sdkDisabled() || baseUri == null) {
-                    return RemoveableLateBoundSpanProcessor.INSTANCE;
-                }
-                // Only create the OtlpGrpcSpanExporter if an endpoint was set in runtime config and was properly validated at startup
-                Instance<SpanExporter> spanExporters = context.getInjectedReference(new TypeLiteral<>() {
-                });
-                if (!spanExporters.isUnsatisfied()) {
-                    return RemoveableLateBoundSpanProcessor.INSTANCE;
+                    return SpanExporter.composite();
                 }
 
                 try {
                     TlsConfigurationRegistry tlsConfigurationRegistry = context
                             .getInjectedReference(TlsConfigurationRegistry.class);
 
-                    var spanExporter = createSpanExporter(exporterRuntimeConfig.getValue(), vertx.get(), baseUri,
+                    return createSpanExporter(exporterRuntimeConfig.getValue(), vertx.get(), baseUri,
                             tlsConfigurationRegistry);
 
-                    if (buildConfig.simple()) {
-                        SimpleSpanProcessorBuilder processorBuilder = SimpleSpanProcessor.builder(spanExporter);
-                        return new LateBoundSpanProcessor(processorBuilder.build());
-                    } else {
-                        BatchSpanProcessorBuilder processorBuilder = BatchSpanProcessor.builder(spanExporter);
-
-                        BatchSpanProcessorConfig bspc = runtimeConfig.getValue().bsp();
-                        processorBuilder.setScheduleDelay(bspc.scheduleDelay());
-                        processorBuilder.setMaxQueueSize(bspc.maxQueueSize());
-                        processorBuilder.setMaxExportBatchSize(bspc.maxExportBatchSize());
-                        processorBuilder.setExporterTimeout(bspc.exportTimeout());
-                        // processorBuilder.setMeterProvider() // TODO add meter provider to span processor.
-
-                        return new LateBoundSpanProcessor(processorBuilder.build());
-                    }
                 } catch (IllegalArgumentException iae) {
                     throw new IllegalStateException("Unable to install OTLP Exporter", iae);
                 }

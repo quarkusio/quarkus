@@ -45,7 +45,7 @@
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>integration-test-extension-that-defines-junit-test-extensions</artifactId>
-      <version>\${project.version}</version>
+      <version>${quarkus.version}</version>
        <scope>test</scope> 
     </dependency>
 

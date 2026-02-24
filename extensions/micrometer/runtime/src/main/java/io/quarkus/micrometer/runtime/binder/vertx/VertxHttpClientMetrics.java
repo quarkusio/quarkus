@@ -7,13 +7,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import org.jboss.logging.Logger;
 
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -26,6 +23,7 @@ import io.quarkus.micrometer.runtime.HttpClientMetricsTagsContributor;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.binder.HttpCommonTags;
 import io.quarkus.micrometer.runtime.binder.RequestMetricInfo;
+import io.quarkus.micrometer.runtime.meters.Gauges;
 import io.vertx.core.http.WebSocket;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.spi.metrics.ClientMetrics;
@@ -37,43 +35,34 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
         implements HttpClientMetrics<VertxHttpClientMetrics.RequestTracker, String, LongTaskTimer.Sample, EventTiming> {
     static final Logger log = Logger.getLogger(VertxHttpClientMetrics.class);
 
-    private final LongAdder queue = new LongAdder();
-
-    private final LongAdder pending = new LongAdder();
-
+    private final LongAdder queue;
+    private final LongAdder pending;
     private final Timer queueDelay;
     private final Map<String, LongAdder> webSockets = new ConcurrentHashMap<>();
     private final HttpBinderConfiguration config;
-
     private final Meter.MeterProvider<Timer> responseTimes;
-
     private final List<HttpClientMetricsTagsContributor> httpClientMetricsTagsContributors;
+    private final Gauges<LongAdder> gauges;
 
-    VertxHttpClientMetrics(MeterRegistry registry, String prefix, Tags tags, HttpBinderConfiguration httpBinderConfiguration) {
-        super(registry, prefix, tags);
+    VertxHttpClientMetrics(MeterRegistry registry, String prefix, Tags tags,
+            HttpBinderConfiguration httpBinderConfiguration, Gauges<LongAdder> gauges) {
+        super(registry, prefix, tags, gauges);
         this.config = httpBinderConfiguration;
+        this.gauges = gauges;
         queueDelay = Timer.builder("http.client.queue.delay")
                 .description("Time spent in the waiting queue before being processed")
                 .tags(tags)
                 .register(registry);
 
-        Gauge.builder("http.client.queue.size", new Supplier<Number>() {
-            @Override
-            public Number get() {
-                return queue.doubleValue();
-            }
-        })
+        queue = gauges.builder("http.client.queue.size", LongAdder::doubleValue)
                 .description("Number of pending elements in the waiting queue")
                 .tags(tags)
-                .strongReference(true)
                 .register(registry);
 
-        Gauge.builder("http.client.pending", new Supplier<Number>() {
-            @Override
-            public Number get() {
-                return pending.longValue();
-            }
-        }).description("Number of requests waiting for a response");
+        pending = gauges.builder("http.client.pending", LongAdder::longValue)
+                .description("Number of requests waiting for a response")
+                .tags(tags)
+                .register(registry);
 
         httpClientMetricsTagsContributors = resolveHttpClientMetricsTagsContributors();
 
@@ -201,16 +190,11 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
     @Override
     public String connected(WebSocket webSocket) {
         String remote = webSocket.remoteAddress().toString();
-        webSockets.computeIfAbsent(remote, new Function<>() {
-            @Override
-            public LongAdder apply(String s) {
-                LongAdder count = new LongAdder();
-                Gauge.builder(config.getHttpClientWebSocketConnectionsName(), count::longValue)
-                        .description("The number of active web socket connections")
-                        .tags(tags.and("address", remote))
-                        .register(registry);
-                return count;
-            }
+        webSockets.computeIfAbsent(remote, s -> {
+            return gauges.builder(config.getHttpClientWebSocketConnectionsName(), LongAdder::longValue)
+                    .description("The number of active web socket connections")
+                    .tags(tags.and("address", remote))
+                    .register(registry);
         }).increment();
         return remote;
     }

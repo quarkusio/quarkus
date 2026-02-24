@@ -733,6 +733,21 @@ public class LocalWorkspaceDiscoveryTest {
         assertEquals(2, ws.getProjects().size());
     }
 
+    @Test
+    public void mavenModel401() throws Exception {
+        final Path moduleDir = getModuleDir("maven-model-4.1/integration-test/java/quarkus-app");
+
+        final LocalWorkspace ws = new BootstrapMavenContext(BootstrapMavenContext.config()
+                .setOffline(true)
+                .setCurrentProject(moduleDir.toString()))
+                .getWorkspace();
+
+        assertThat(ws.getProject("org.acme.integration", "integration-test-java-quarkus-app")).isNotNull();
+        assertThat(ws.getProject("org.acme.integration", "integration-test-parent")).isNotNull();
+        assertThat(ws.getProject("org.acme", "acme-parent")).isNotNull();
+        assertThat(ws.getProjects().size()).isEqualTo(3);
+    }
+
     private void testMavenCiFriendlyVersion(String placeholder, String testResourceDirName, String expectedResolvedVersion,
             boolean resolvesFromWorkspace) throws Exception {
         final Path module1Dir = getModuleDir(testResourceDirName + "/root/module1");

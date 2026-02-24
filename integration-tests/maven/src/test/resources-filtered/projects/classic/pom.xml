@@ -82,6 +82,33 @@
         <version>\${quarkus-plugin.version}</version>
         <extensions>true</extensions>
       </plugin>
+      <plugin>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>${version.surefire.plugin}</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <argLine>@{argLine}</argLine>
+          <systemPropertyVariables>
+            <native.image.path>\${project.build.directory}/\${project.build.finalName}-runner</native.image.path>
+            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+            <maven.home>\${maven.home}</maven.home>
+            <!--
+                This option is recommended (https://quarkus.io/guides/tests-with-coverage#coverage-for-integration-tests)
+                to run the integration tests as a jar with the JaCoCo agent.
+                Although we don't use JaCoCo in this project, this option is still configured to test that arguments are passed correctly to the JAR launcher for ITs,
+                since there was an issue related to quoting that was breaking the test application launch.
+            -->
+            <quarkus.test.arg-line>\${argLine}</quarkus.test.arg-line>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
   <profiles>

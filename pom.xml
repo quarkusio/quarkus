@@ -71,17 +71,17 @@
         <jacoco.version>0.8.14</jacoco.version>
         <kubernetes-client.version>7.5.2</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
         <rest-assured.version>5.5.6</rest-assured.version>
-        <hibernate-orm.version>7.2.4.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
+        <hibernate-orm.version>7.2.5.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
         <jakarta.persistence-api.version>3.2.0</jakarta.persistence-api.version> <!-- version controlled by Hibernate ORM's needs -->
         <jakarta.data-api.version>1.0.1</jakarta.data-api.version> <!-- version controlled by Hibernate ORM's needs -->
         <antlr.version>4.13.2</antlr.version> <!-- version controlled by Hibernate ORM's needs -->
         <bytebuddy.version>1.17.8</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs -->
         <geolatte.version>1.10</geolatte.version> <!-- version controlled by Hibernate ORM's needs -->
         <hibernate-models.version>1.0.1</hibernate-models.version> <!-- version controlled by Hibernate ORM's needs -->
-        <hibernate-reactive.version>3.2.2.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
+        <hibernate-reactive.version>3.2.4.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
         <hibernate-validator.version>9.1.0.Final</hibernate-validator.version>
-        <hibernate-search.version>8.2.1.Final</hibernate-search.version>
-        <hibernate-tools.version>7.2.4.Final</hibernate-tools.version>
+        <hibernate-search.version>8.2.2.Final</hibernate-search.version>
+        <hibernate-tools.version>7.2.5.Final</hibernate-tools.version>
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
         <grpc.version>1.79.0</grpc.version> <!-- when updating, verify if following versions should not be updated too: -->

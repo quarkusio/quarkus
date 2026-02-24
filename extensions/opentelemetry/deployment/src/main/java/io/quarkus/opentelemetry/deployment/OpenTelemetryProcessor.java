@@ -125,6 +125,7 @@ public class OpenTelemetryProcessor {
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.SimpleLogRecordProcessorCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.ResourceCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.SamplerCustomizer.class,
+                        AutoConfiguredOpenTelemetrySdkBuilderCustomizer.SpanProcessorCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.TracerProviderCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.MetricProviderCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.TextMapPropagatorCustomizers.class)

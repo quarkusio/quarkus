@@ -6,11 +6,11 @@
     <version>1.2.3</version>
 
     <properties>
+        <zebra>starts-with-z</zebra>
+        <prop2>prop-2-namespaced</prop2>
+        <prop1>proppp</prop1>
         <abc>123</abc>
         <fruit>pineapple</fruit>
-        <prop1>proppp</prop1>
-        <prop2>prop-2-namespaced</prop2>
-        <zebra>starts-with-z</zebra>
     </properties>
 
     <dependencies>

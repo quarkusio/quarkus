@@ -6,16 +6,16 @@
     <version>1.0.0-codestart</version>
 
     <properties>
-        <compiler-plugin.version>3.8.1-MOCK</compiler-plugin.version>
-        <kotlin.version>1.4.28-MOCK</kotlin.version>
         <maven.compiler.release>17</maven.compiler.release>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <quarkus.platform.artifact-id>quarkus-mock-bom</quarkus.platform.artifact-id>
-        <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
         <quarkus.platform.version>999-MOCK</quarkus.platform.version>
-        <skipITs>true</skipITs>
+        <kotlin.version>1.4.28-MOCK</kotlin.version>
+        <quarkus.platform.artifact-id>quarkus-mock-bom</quarkus.platform.artifact-id>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <compiler-plugin.version>3.8.1-MOCK</compiler-plugin.version>
         <surefire-plugin.version>3.0.0-MOCK</surefire-plugin.version>
+        <skipITs>true</skipITs>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
     </properties>
 
     <dependencyManagement>
@@ -173,9 +173,9 @@
                 </property>
             </activation>
             <properties>
+                <quarkus.native.enabled>true</quarkus.native.enabled>
                 <quarkus.package.jar.enabled>false</quarkus.package.jar.enabled>
                 <skipITs>false</skipITs>
-                <quarkus.native.enabled>true</quarkus.native.enabled>
             </properties>
         </profile>
     </profiles>

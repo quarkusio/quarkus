@@ -5,6 +5,8 @@ module io.quarkus.arc {
 
     requires java.logging;
 
+    requires jdk.jfr;
+
     requires jakarta.annotation;
     requires jakarta.cdi;
     requires jakarta.el;

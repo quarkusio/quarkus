@@ -179,6 +179,11 @@ class SharedArchivePathTree extends ArchivePathTree {
         }
 
         @Override
+        public void walkRaw(PathVisitor visitor) {
+            delegate.walkRaw(visitor);
+        }
+
+        @Override
         public void walkIfContains(String relativePath, PathVisitor visitor) {
             delegate.walkIfContains(relativePath, visitor);
         }

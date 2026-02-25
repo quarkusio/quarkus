@@ -71,6 +71,11 @@ class FilePathTree implements OpenPathTree {
     }
 
     @Override
+    public void walkRaw(PathVisitor visitor) {
+        walk(visitor);
+    }
+
+    @Override
     public void walkIfContains(String relativePath, PathVisitor visitor) {
         throw new UnsupportedOperationException();
     }

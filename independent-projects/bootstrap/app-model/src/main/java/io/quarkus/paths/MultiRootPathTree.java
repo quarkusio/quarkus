@@ -67,6 +67,16 @@ public class MultiRootPathTree implements OpenPathTree {
     }
 
     @Override
+    public void walkRaw(PathVisitor visitor) {
+        if (trees.length == 0) {
+            return;
+        }
+        for (PathTree t : trees) {
+            t.walkRaw(visitor);
+        }
+    }
+
+    @Override
     public void walkIfContains(String relativePath, PathVisitor visitor) {
         if (trees.length == 0) {
             return;

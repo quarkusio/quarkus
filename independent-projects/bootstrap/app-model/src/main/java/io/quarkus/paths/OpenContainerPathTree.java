@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -108,6 +109,16 @@ public abstract class OpenContainerPathTree extends PathTreeWithManifest impleme
         }
         PathTreeVisit.walk(rootPath, rootPath, rootPath, pathFilter, getMultiReleaseMapping(),
                 visitor);
+
+    }
+
+    @Override
+    public void walkRaw(PathVisitor visitor) {
+        final Path rootPath = getRootPath();
+        if (!Files.exists(rootPath)) {
+            return;
+        }
+        PathTreeVisit.walk(rootPath, rootPath, rootPath, pathFilter, Map.of(), visitor);
 
     }
 

@@ -115,10 +115,20 @@ public interface PathTree {
 
     /**
      * Walks the tree.
+     * <p/>
+     * This method will make sure the relevant multi release content
+     * is associated with the expected resource name paths for the current Java version.
      *
      * @param visitor path visitor
      */
     void walk(PathVisitor visitor);
+
+    /**
+     * Walks the tree without remapping multi release content to the paths expected for the current Java version.
+     *
+     * @param visitor path visitor
+     */
+    void walkRaw(PathVisitor visitor);
 
     /**
      * Walks a subtree of this tree that begins with a passed in {@code relativePath},

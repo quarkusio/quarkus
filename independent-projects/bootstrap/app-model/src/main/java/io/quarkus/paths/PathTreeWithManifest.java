@@ -156,7 +156,8 @@ public abstract class PathTreeWithManifest implements PathTree {
             if (!Files.isDirectory(versionsDir)) {
                 return Collections.emptyMap();
             }
-            final Path root = visit.getPath().getRoot();
+            // get the root of the tree
+            final Path root = versionsDir.getParent().getParent();
             final TreeMap<Integer, Consumer<Map<String, String>>> versionContentMap = new TreeMap<>();
             try (Stream<Path> versions = Files.list(versionsDir)) {
                 versions.forEach(versionDir -> {
@@ -179,9 +180,9 @@ public abstract class PathTreeWithManifest implements PathTree {
                         public void accept(Map<String, String> map) {
                             try (Stream<Path> versionContent = Files.walk(versionDir)) {
                                 versionContent.forEach(p -> {
-                                    final String relativePath = versionDir.relativize(p).toString();
+                                    final String relativePath = asSubpath(versionDir, p);
                                     if (!relativePath.isEmpty()) {
-                                        map.put(relativePath, root.relativize(p).toString());
+                                        map.put(relativePath, asSubpath(root, p));
                                     }
                                 });
                             } catch (IOException e) {
@@ -199,6 +200,11 @@ public abstract class PathTreeWithManifest implements PathTree {
                 c.accept(multiReleaseMapping);
             }
             return multiReleaseMapping;
+        }
+
+        private static String asSubpath(Path parentDir, Path childPath) {
+            return parentDir.getNameCount() == childPath.getNameCount() ? ""
+                    : childPath.subpath(parentDir.getNameCount(), childPath.getNameCount()).toString();
         }
     }
 

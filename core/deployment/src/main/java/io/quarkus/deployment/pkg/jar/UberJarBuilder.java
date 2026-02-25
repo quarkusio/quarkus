@@ -249,7 +249,7 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
         // the user count of the cached shared open path tree instance. This open path tree instance will remain open
         // until the last user called close() on it, which will be the Quarkus classloaders closing.
         try (OpenPathTree pathTree = appDep.getContentTree().open()) {
-            pathTree.walk(visit -> {
+            pathTree.walkRaw(visit -> {
                 try {
                     final String relativePath = visit.getRelativePath();
                     if (Files.isDirectory(visit.getPath())) {

@@ -1432,6 +1432,13 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         }
 
         @Override
+        public io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.CookieSameSite stateCookieSameSite() {
+            return stateCookieSameSite == null ? null
+                    : io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.CookieSameSite
+                            .valueOf(stateCookieSameSite.toString());
+        }
+
+        @Override
         public boolean allowMultipleCodeFlows() {
             return allowMultipleCodeFlows;
         }
@@ -1712,6 +1719,11 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
          * SameSite attribute for the session cookie.
          */
         public CookieSameSite cookieSameSite = CookieSameSite.LAX;
+
+        /**
+         * SameSite attribute for the state cookie.
+         */
+        public CookieSameSite stateCookieSameSite = CookieSameSite.LAX;
 
         /**
          * If a state cookie is present, a `state` query parameter must also be present and both the state
@@ -2137,6 +2149,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             cookiePathHeader = mapping.cookiePathHeader();
             cookieDomain = mapping.cookieDomain();
             cookieSameSite = CookieSameSite.valueOf(mapping.cookieSameSite().toString());
+            stateCookieSameSite = CookieSameSite.valueOf(mapping.stateCookieSameSite().toString());
             allowMultipleCodeFlows = mapping.allowMultipleCodeFlows();
             failOnMissingStateParam = mapping.failOnMissingStateParam();
             failOnUnresolvedKid = mapping.failOnUnresolvedKid();

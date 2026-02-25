@@ -18,9 +18,9 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
-import org.jboss.jandex.IndexView;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.smallrye.openapi.OpenApiFilter;
 import io.quarkus.smallrye.openapi.runtime.filter.AutoSecurityFilter;
 import io.quarkus.smallrye.openapi.runtime.filter.DisabledRestEndpointsFilter;
 import io.smallrye.openapi.api.SmallRyeOpenAPI;
@@ -39,7 +39,8 @@ public class OpenApiDocumentService {
     @Inject
     Config config;
 
-    void prepareDocument(AutoSecurityFilter autoSecurityFilter, List<String> runtimeFilters, String documentName) {
+    void prepareDocument(AutoSecurityFilter autoSecurityFilter,
+            Map<OpenApiFilter.RunStage, List<String>> filtersByStage, String documentName) {
         ClassLoader loader = Optional.ofNullable(OpenApiConstants.classLoader)
                 .orElseGet(Thread.currentThread()::getContextClassLoader);
 
@@ -49,9 +50,9 @@ public class OpenApiDocumentService {
         try (InputStream source = loader.getResourceAsStream(name + ".JSON")) {
             if (source != null) {
                 Config wrappedConfig = OpenApiConfigHelper.wrap(config, documentName);
-                Set<String> userFilters = new LinkedHashSet<>(runtimeFilters);
                 boolean dynamic = wrappedConfig.getOptionalValue("quarkus.smallrye-openapi.always-run-filter", boolean.class)
                         .orElse(false);
+
                 SmallRyeOpenAPI.Builder builder = new OpenAPIRuntimeBuilder()
                         .withConfig(wrappedConfig)
                         .withApplicationClassLoader(loader)
@@ -66,16 +67,27 @@ public class OpenApiDocumentService {
                         .ifPresent(builder::addFilter);
                 DisabledRestEndpointsFilter.maybeGetInstance()
                         .ifPresent(builder::addFilter);
-                var filterSetup = addFilters(userFilters, loader);
 
-                if (dynamic && !userFilters.isEmpty()) {
+                Set<String> startupFilters = new LinkedHashSet<>(filtersByStage.get(OpenApiFilter.RunStage.RUNTIME_STARTUP));
+                Set<String> requestFilters = new LinkedHashSet<>(
+                        filtersByStage.get(OpenApiFilter.RunStage.RUNTIME_PER_REQUEST));
+                if (!dynamic) {
+                    startupFilters.addAll(filtersByStage.get(OpenApiFilter.RunStage.RUN));
+                } else {
+                    requestFilters.addAll(filtersByStage.get(OpenApiFilter.RunStage.RUN));
+                }
+
+                var startupFilterSetup = addFilters(startupFilters, loader);
+                startupFilterSetup.accept(builder);
+                if (requestFilters.isEmpty()) {
+                    this.documentHolders.put(documentName, new StaticDocument(builder.build()));
+                } else {
+                    var perRequestFilterSetup = addFilters(requestFilters, loader);
                     // Only regenerate the OpenAPI document when configured and there are filters to run
                     this.documentHolders.put(documentName,
-                            new DynamicDocument(builder.build().model(), loader, wrappedConfig, filterSetup));
-                } else {
-                    filterSetup.accept(builder);
-                    this.documentHolders.put(documentName, new StaticDocument(builder.build()));
+                            new DynamicDocument(builder.build().model(), loader, wrappedConfig, perRequestFilterSetup));
                 }
+
             } else {
                 this.documentHolders.put(documentName, new EmptyDocument());
             }
@@ -102,7 +114,7 @@ public class OpenApiDocumentService {
                 if (filter != null) {
                     builder.addFilter(filter);
                 } else {
-                    builder.addFilter(filterClassName, loader, (IndexView) null);
+                    builder.addFilter(filterClassName, loader, null);
                 }
             }
         };

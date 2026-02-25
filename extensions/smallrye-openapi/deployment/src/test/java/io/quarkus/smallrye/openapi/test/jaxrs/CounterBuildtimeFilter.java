@@ -8,7 +8,7 @@ import org.eclipse.microprofile.openapi.models.OpenAPI;
 
 import io.quarkus.smallrye.openapi.OpenApiFilter;
 
-@OpenApiFilter(OpenApiFilter.RunStage.BUILD)
+@OpenApiFilter(stages = OpenApiFilter.RunStage.BUILD)
 public class CounterBuildtimeFilter implements OASFilter {
 
     private static final AtomicInteger TIMES = new AtomicInteger();

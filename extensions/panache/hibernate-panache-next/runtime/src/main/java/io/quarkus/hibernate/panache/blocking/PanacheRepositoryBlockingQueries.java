@@ -8,7 +8,6 @@ import java.util.stream.Stream;
 import jakarta.persistence.LockModeType;
 
 import io.quarkus.hibernate.panache.PanacheRepositoryQueries;
-import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 
 public interface PanacheRepositoryBlockingQueries<Entity, Id>
@@ -43,7 +42,6 @@ public interface PanacheRepositoryBlockingQueries<Entity, Id>
      * @return a {@link Stream} containing all results, without paging
      * @see #stream(String, Sort, Object...)
      * @see #stream(String, Map)
-     * @see #stream(String, Parameters)
      * @see #find(String, Object...)
      * @see #list(String, Object...)
      */
@@ -61,7 +59,6 @@ public interface PanacheRepositoryBlockingQueries<Entity, Id>
      * @return a {@link Stream} containing all results, without paging
      * @see #stream(String, Object...)
      * @see #stream(String, Sort, Map)
-     * @see #stream(String, Sort, Parameters)
      * @see #find(String, Sort, Object...)
      * @see #list(String, Sort, Object...)
      */
@@ -78,7 +75,6 @@ public interface PanacheRepositoryBlockingQueries<Entity, Id>
      * @return a {@link Stream} containing all results, without paging
      * @see #stream(String, Sort, Map)
      * @see #stream(String, Object...)
-     * @see #stream(String, Parameters)
      * @see #find(String, Map)
      * @see #list(String, Map)
      */
@@ -96,7 +92,6 @@ public interface PanacheRepositoryBlockingQueries<Entity, Id>
      * @return a {@link Stream} containing all results, without paging
      * @see #stream(String, Map)
      * @see #stream(String, Sort, Object...)
-     * @see #stream(String, Sort, Parameters)
      * @see #find(String, Sort, Map)
      * @see #list(String, Sort, Map)
      */

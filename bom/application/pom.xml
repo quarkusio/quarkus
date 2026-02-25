@@ -88,7 +88,7 @@
         <graal-sdk.version>23.1.2</graal-sdk.version>
         <gizmo.version>1.10.1</gizmo.version>
         <gizmo2.version>2.1.1</gizmo2.version>
-        <jackson-bom.version>2.21.0</jackson-bom.version>
+        <jackson-bom.version>2.21.1</jackson-bom.version>
         <commons-logging-jboss-logging.version>2.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.20.0</commons-lang3.version>
         <commons-codec.version>1.21.0</commons-codec.version>
@@ -107,7 +107,7 @@
         <slf4j-jboss-logmanager.version>2.0.2.Final</slf4j-jboss-logmanager.version>
         <wildfly-common.version>2.0.1</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
-        <wildfly-elytron.version>2.8.2.Final</wildfly-elytron.version>
+        <wildfly-elytron.version>2.8.3.Final</wildfly-elytron.version>
         <jboss-marshalling.version>2.3.0</jboss-marshalling.version>
         <jboss-threads.version>3.9.2</jboss-threads.version>
         <vertx.version>4.5.25</vertx.version>
@@ -128,8 +128,8 @@
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
         <junit.jupiter.version>6.0.3</junit.jupiter.version>
-        <infinispan.version>16.0.5</infinispan.version>
-        <infinispan.protostream.version>6.0.3</infinispan.protostream.version>
+        <infinispan.version>16.0.6</infinispan.version>
+        <infinispan.protostream.version>6.0.4</infinispan.protostream.version>
         <caffeine.version>3.2.3</caffeine.version>
         <netty.version>4.1.130.Final</netty.version>
         <brotli4j.version>1.16.0</brotli4j.version>
@@ -165,7 +165,7 @@
         <liquibase-mongodb.version>4.33.0.1</liquibase-mongodb.version>
         <snakeyaml.version>2.5</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
-        <mongo-client.version>5.6.2</mongo-client.version>
+        <mongo-client.version>5.6.4</mongo-client.version>
         <proton-j.version>0.34.1</proton-j.version>
         <javaparser.version>3.28.0</javaparser.version>
         <hibernate-quarkus-local-cache.version>0.5.0</hibernate-quarkus-local-cache.version>

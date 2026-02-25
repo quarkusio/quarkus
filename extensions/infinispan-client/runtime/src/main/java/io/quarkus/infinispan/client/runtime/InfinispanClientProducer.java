@@ -436,6 +436,14 @@ public class InfinispanClientProducer {
         remoteCacheManagers.values().forEach(rcm -> rcm.stop());
     }
 
+    /**
+     * This method is blocking when you call it for the first time and inits the
+     * connection to the RemoteCache
+     *
+     * @param clientName, the name of the client
+     * @param cacheName, the cache being requested
+     * @return RemoteCache
+     */
     public <K, V> RemoteCache<K, V> getRemoteCache(String clientName, String cacheName) {
         RemoteCacheManager cacheManager = getNamedRemoteCacheManager(clientName);
 

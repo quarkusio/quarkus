@@ -857,6 +857,12 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
         CookieSameSite cookieSameSite();
 
         /**
+         * SameSite attribute for the state cookie.
+         */
+        @WithDefault("lax")
+        CookieSameSite stateCookieSameSite();
+
+        /**
          * If a state cookie is present, a `state` query parameter must also be present and both the state
          * cookie name suffix and state cookie value must match the value of the `state` query parameter when
          * the redirect path matches the current path.

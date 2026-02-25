@@ -65,6 +65,7 @@ import io.quarkus.deployment.builditem.ConfigMappingBuildItem;
 import io.quarkus.deployment.builditem.ConfigPropertiesBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
@@ -451,15 +452,28 @@ public class ConfigBuildStep {
         toRegister.forEach(configProperties::produce);
     }
 
+    /**
+     * Registers the {@link org.eclipse.microprofile.config.inject.ConfigProperties} beans after
+     * the creation of {@link io.smallrye.config.SmallRyeConfig}. It should be possible to register these in the config
+     * builder during build time, but unfortunately the MP Config TCK requires to throw a
+     * {@link jakarta.enterprise.inject.spi.DeploymentException} when a
+     * {@link org.eclipse.microprofile.config.inject.ConfigProperties} bean cannot be initialized (due to missing
+     * configuration). When {@link io.smallrye.config.SmallRyeConfig} cannot map a config class, it throws a
+     * {@link io.smallrye.config.ConfigValidationException}. The recorder catches this exception and throws the
+     * expected {@link jakarta.enterprise.inject.spi.DeploymentException}.
+     */
     @BuildStep
     @Record(RUNTIME_INIT)
     void registerConfigClasses(
             RecorderContext context,
             ConfigRecorder recorder,
-            List<ConfigMappingBuildItem> configMappings,
-            List<ConfigPropertiesBuildItem> configProperties) throws Exception {
+            List<ConfigPropertiesBuildItem> configProperties,
+            BuildProducer<ServiceStartBuildItem> serviceStart) throws Exception {
 
-        // TODO - Register ConfigProperties during build time
+        if (configProperties.isEmpty()) {
+            return;
+        }
+
         context.registerNonDefaultConstructor(
                 ConfigClass.class.getDeclaredConstructor(Class.class, String.class),
                 configClass -> Stream.of(configClass.getType(), configClass.getPrefix())
@@ -469,6 +483,9 @@ public class ConfigBuildStep {
                 configProperties.stream()
                         .map(p -> configClass(p.getConfigClass(), p.getPrefix()))
                         .collect(toSet()));
+
+        // Ensure that @ConfigProperties are registered before Startup events
+        serviceStart.produce(new ServiceStartBuildItem("microprofile-config-properties"));
     }
 
     private static String getPropertyName(String name, ClassInfo declaringClass) {

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.Map;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.spi.CDI;
 import jakarta.inject.Inject;
@@ -14,6 +15,7 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.runtime.Startup;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
@@ -137,6 +139,17 @@ public class ConfigPropertiesTest {
         assertEquals(80, client.port());
     }
 
+    @Inject
+    StartupBean startupBean;
+
+    @Test
+    void startup() {
+        ServerConfigProperties server = startupBean.getServer();
+        assertNotNull(server);
+        assertEquals("localhost", server.host);
+        assertEquals(8080, server.port);
+    }
+
     @ConfigMapping(prefix = "server")
     public interface Server {
         String host();
@@ -181,6 +194,21 @@ public class ConfigPropertiesTest {
         @Inject
         public void setClient(@ConfigMapping(prefix = "client") final Server client) {
             this.client = client;
+        }
+    }
+
+    @ApplicationScoped
+    @Startup
+    static class StartupBean {
+        ServerConfigProperties server;
+
+        @Inject
+        public StartupBean(@ConfigProperties ServerConfigProperties server) {
+            this.server = server;
+        }
+
+        public ServerConfigProperties getServer() {
+            return server;
         }
     }
 }

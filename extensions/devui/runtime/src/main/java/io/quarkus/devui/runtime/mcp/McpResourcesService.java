@@ -85,6 +85,10 @@ public class McpResourcesService {
     public Map<String, List<Content>> read(
             @JsonRpcDescription("The uri of the resources as defined in resources/list") String uri) {
         if (mcpDevUIJsonRpcService.getMcpServerConfiguration().isEnabled()) {
+            if (uri == null || !uri.startsWith(URI_SCHEME)) {
+                throw new IllegalArgumentException(
+                        "Invalid resource URI: " + uri + ". Expected URI starting with: " + URI_SCHEME);
+            }
             String subUri = uri.substring(URI_SCHEME.length());
             if (subUri.startsWith(SUB_SCHEME_BUILD_TIME)) {
                 return readBuildTimeData(uri);
@@ -102,6 +106,11 @@ public class McpResourcesService {
 
         String method = uri.substring((URI_SCHEME + SUB_SCHEME_BUILD_TIME).length());
         String[] split = method.split(UNDERSCORE);
+        if (split.length < 2) {
+            throw new IllegalArgumentException(
+                    "Invalid build-time resource URI: " + uri + ". Expected format: " + URI_SCHEME + SUB_SCHEME_BUILD_TIME
+                            + "<namespace>_<name>");
+        }
         String ns = split[0];
         String constt = split[1];
         String filename = ns + DASH_DATA_DOT_JS;

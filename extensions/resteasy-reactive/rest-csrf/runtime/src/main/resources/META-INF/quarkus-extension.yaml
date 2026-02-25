@@ -6,7 +6,7 @@ metadata:
   - "csrf"
   categories:
   - "security"
-  status: "preview"
+  status: "stable"
   config:
   - "quarkus.rest-csrf."
   - "quarkus.csrf-reactive."

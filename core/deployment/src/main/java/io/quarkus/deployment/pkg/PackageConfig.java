@@ -8,9 +8,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import io.quarkus.deployment.pkg.PackageConfig.JarConfig.AotConfig;
+import io.quarkus.deployment.pkg.PackageConfig.JarConfig.AppcdsConfig;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -25,8 +28,9 @@ import io.smallrye.config.WithDefault;
 @ConfigRoot
 public interface PackageConfig {
     /**
-     * Configuration which applies to building a JAR file for the project.
+     * Building a jar.
      */
+    @ConfigDocSection
     JarConfig jar();
 
     /**
@@ -103,16 +107,34 @@ public interface PackageConfig {
         JarType type();
 
         /**
+         * The JAR's manifest.
+         */
+        @ConfigDocSection
+        ManifestConfig manifest();
+
+        /**
+         * AOT file sub-configuration.
+         * This configuration only applies to certain JAR types.
+         */
+        @ConfigDocSection(generated = true)
+        AotConfig aot();
+
+        /**
+         * AppCDS archive sub-configuration.
+         * This configuration only applies to certain JAR types.
+         *
+         * @deprecated use {@link PackageConfig#jar#aot()} instead
+         */
+        @Deprecated(forRemoval = true, since = "3.32")
+        @ConfigDocSection
+        AppcdsConfig appcds();
+
+        /**
          * Whether the created jar will be compressed. This setting is not used when building a native image
          */
         @ConfigDocDefault("true")
         @WithDefault("true")
         boolean compress();
-
-        /**
-         * The JAR's manifest sub-configuration.
-         */
-        ManifestConfig manifest();
 
         /**
          * Files that should not be copied to the output artifact.
@@ -180,21 +202,6 @@ public interface PackageConfig {
          */
         @WithDefault("com.sap.conn.jco:sapjco3::jar,com.sap.conn.idoc:sapidoc3::jar")
         Optional<Set<GACT>> forceUseArtifactIdOnlyAsName();
-
-        /**
-         * AppCDS archive sub-configuration.
-         * This configuration only applies to certain JAR types.
-         *
-         * @deprecated use {@link PackageConfig#jar#aot()} instead
-         */
-        @Deprecated(forRemoval = true, since = "3.32")
-        AppcdsConfig appcds();
-
-        /**
-         * AOT file sub-configuration.
-         * This configuration only applies to certain JAR types.
-         */
-        AotConfig aot();
 
         /**
          * Configuration for AppCDS generation.
@@ -265,17 +272,17 @@ public interface PackageConfig {
             /**
              * The type of AOT file to generate
              * <p>
-             * If {@link AotType#AUTO} is used, Quarkus will generate an AOT file for JDK 25+,
-             * otherwise it will generate an AppCDS file.
+             * If {@code auto} is used, Quarkus will generate an AOT file for JDK 25+,
+             * for older JDKs it will generate an AppCDS file.
              */
             Optional<AotType> type();
 
             /**
              * The phase in which the AOT file should be generated.
              * <p>
-             * For AppCDS, AUTO means BUILD (and an error will be thrown if set to INTEGRATION_TESTS).
+             * For Leyden AOT, {@code auto} means {@code integration-tests}.
              * <p>
-             * For Leyden AOT, AUTO means INTEGRATION_TESTS.
+             * For AppCDS, {@code auto} means {@code build} (and an error will be thrown if set to {@code integration-tests}).
              */
             Optional<AotPhase> phase();
 

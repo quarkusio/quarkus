@@ -46,4 +46,17 @@ class VerifyIT extends MojoTestBase {
         assertThat(log).contains("Tests run: 2, Failures: 0, Errors: 0, Skipped: 0");
     }
 
+    @Test
+    void testQuarkusTestArgLineForIT() throws Exception {
+        File testDir = initProject("projects/classic", "projects/classic-it");
+        running = new RunningInvoker(testDir, false);
+
+        MavenProcessInvocationResult result = running
+                .execute(List.of("clean", "verify"), Map.of());
+        assertThat(result.getProcess().waitFor()).isZero();
+        // Hardcode a check to make sure some tests ran
+        String log = running.log();
+        assertThat(log).contains("[INFO] Running org.acme.HelloResourceIT");
+        assertThat(log).contains("Tests run: 1, Failures: 0, Errors: 0, Skipped: 0");
+    }
 }

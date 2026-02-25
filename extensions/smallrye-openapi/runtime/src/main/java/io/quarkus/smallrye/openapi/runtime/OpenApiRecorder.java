@@ -1,12 +1,14 @@
 package io.quarkus.smallrye.openapi.runtime;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.smallrye.openapi.OpenApiFilter;
 import io.quarkus.smallrye.openapi.runtime.filter.AutoSecurityFilter;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.filters.Filter;
@@ -56,8 +58,9 @@ public class OpenApiRecorder {
         });
     }
 
-    public void prepareDocument(AutoSecurityFilter autoSecurityFilter, List<String> runtimeFilters, String documentName) {
+    public void prepareDocument(AutoSecurityFilter autoSecurityFilter,
+            Map<OpenApiFilter.RunStage, List<String>> filtersByStage, String documentName) {
         OpenApiDocumentService openApiDocumentService = Arc.container().select(OpenApiDocumentService.class).get();
-        openApiDocumentService.prepareDocument(autoSecurityFilter, runtimeFilters, documentName);
+        openApiDocumentService.prepareDocument(autoSecurityFilter, filtersByStage, documentName);
     }
 }

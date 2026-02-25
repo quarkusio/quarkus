@@ -149,8 +149,8 @@ public abstract class CommonProcessor<C extends CommonConfig> {
 
             Optional<String> baseImage = Optional.empty();
 
-            JsonObject labels = config.get("Labels");
-            if (labels != null) {
+            JsonValue labelsValue = config.get("Labels");
+            if (labelsValue instanceof JsonObject labels) {
                 JsonValue baseNameLabelObj = labels.get("org.opencontainers.image.base.name");
                 if (baseNameLabelObj instanceof JsonString s) {
                     baseImage = Optional.of(s.value());

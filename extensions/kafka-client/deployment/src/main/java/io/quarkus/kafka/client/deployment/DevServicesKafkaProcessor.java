@@ -21,6 +21,7 @@ import org.apache.kafka.clients.admin.TopicDescription;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
+import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.deployment.Feature;
@@ -131,6 +132,17 @@ public class DevServicesKafkaProcessor {
                     useSharedNetwork)
                     .withEnv(config.containerEnv())
                     .withSharedServiceLabel(launchMode.getLaunchMode(), config.serviceName());
+            case OFFICIAL_KAFKA -> {
+                KafkaContainer kafka = new KafkaContainer(DockerImageName.parse(config.effectiveImageName()));
+                ConfigureUtil.configureNetwork(kafka,
+                        composeProjectBuildItem.getDefaultNetworkId(), useSharedNetwork, "kafka");
+                if (config.port().isPresent() && config.port().get() != 0) {
+                    kafka.setPortBindings(List.of(config.port().get() + ":" + KAFKA_PORT));
+                }
+                kafka.withEnv(config.containerEnv());
+                configureSharedServiceLabel(kafka, launchMode.getLaunchMode(), DEV_SERVICE_LABEL, config.serviceName());
+                yield new StartableContainer<>(kafka, KafkaContainer::getBootstrapServers);
+            }
         };
         return startable;
     }

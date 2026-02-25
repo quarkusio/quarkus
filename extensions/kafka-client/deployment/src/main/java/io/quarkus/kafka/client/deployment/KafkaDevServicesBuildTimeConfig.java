@@ -27,7 +27,7 @@ public interface KafkaDevServicesBuildTimeConfig {
     /**
      * Kafka dev service container type.
      * <p>
-     * Redpanda, Strimzi and kafka-native container providers are supported. Default is redpanda.
+     * Redpanda, Strimzi, kafka-native and official-kafka container providers are supported. Default is redpanda.
      * <p>
      * For Redpanda:
      * See https://docs.redpanda.com/current/get-started/quick-start/ and https://hub.docker.com/r/redpandadata/redpanda
@@ -38,7 +38,10 @@ public interface KafkaDevServicesBuildTimeConfig {
      * For Kafka Native:
      * See https://github.com/ozangunalp/kafka-native and https://quay.io/repository/ogunalp/kafka-native
      * <p>
-     * Note that Strimzi and Kafka Native images are launched in Kraft mode.
+     * For Official Kafka:
+     * See https://kafka.apache.org/ and https://hub.docker.com/r/apache/kafka
+     * <p>
+     * Note that Strimzi, Kafka Native, and Official Kafka images are launched in Kraft mode.
      */
     @WithDefault("redpanda")
     Provider provider();
@@ -46,7 +49,8 @@ public interface KafkaDevServicesBuildTimeConfig {
     enum Provider {
         REDPANDA("docker.io/redpandadata/redpanda:v24.1.2"),
         STRIMZI("quay.io/strimzi-test-container/test-container:0.114.0-kafka-4.1.1"),
-        KAFKA_NATIVE("quay.io/ogunalp/kafka-native:latest");
+        KAFKA_NATIVE("quay.io/ogunalp/kafka-native:latest"),
+        OFFICIAL_KAFKA("apache/kafka:4.2.0");
 
         private final String defaultImageName;
 

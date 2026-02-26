@@ -301,7 +301,7 @@ public abstract class AbstractMethodsAdder {
             return verifyQueryResultType(t.asArrayType().constituent(), index);
         } else if (t.kind() == Type.Kind.PARAMETERIZED_TYPE) {
             final List<Type> types = t.asParameterizedType().arguments();
-            if (types.size() == 1) {
+            if (types.size() == 1 && isKnownContainerType(t.name())) {
                 return verifyQueryResultType(types.get(0), index);
             } else {
                 for (Type type : types) {
@@ -317,6 +317,17 @@ public abstract class AbstractMethodsAdder {
             }
         }
         return t;
+    }
+
+    private static boolean isKnownContainerType(DotName name) {
+        return DotNames.LIST.equals(name)
+                || DotNames.COLLECTION.equals(name)
+                || DotNames.SET.equals(name)
+                || DotNames.OPTIONAL.equals(name)
+                || DotNames.STREAM.equals(name)
+                || DotNames.ITERATOR.equals(name)
+                || DotNames.SPRING_DATA_PAGE.equals(name)
+                || DotNames.SPRING_DATA_SLICE.equals(name);
     }
 
     protected DotName createSimpleInterfaceImpl(DotName ifaceName, DotName entityName) {

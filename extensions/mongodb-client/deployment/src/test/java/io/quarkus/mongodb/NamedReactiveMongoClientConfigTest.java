@@ -77,7 +77,11 @@ public class NamedReactiveMongoClientConfigTest extends MongoWithReplicasTestBas
         org.eclipse.microprofile.health.HealthCheckResponse response = health.call();
         assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.UP);
         assertThat(response.getData()).isNotEmpty();
-        assertThat(response.getData().get()).hasSize(2).contains(entry("cluster1", "OK"), entry("cluster2", "OK"));
+        assertThat(response.getData().get()).hasSize(4).contains(
+                entry("cluster1", "OK"),
+                entry("cluster1-reactive", "OK"),
+                entry("cluster2", "OK"),
+                entry("cluster2-reactive", "OK"));
     }
 
     private void assertProperConnection(ReactiveMongoClient client, int expectedPort) {

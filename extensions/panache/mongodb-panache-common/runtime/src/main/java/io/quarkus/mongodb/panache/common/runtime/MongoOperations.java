@@ -37,6 +37,7 @@ import io.quarkus.mongodb.panache.common.MongoEntity;
 import io.quarkus.mongodb.panache.common.binder.NativeQueryBinder;
 import io.quarkus.mongodb.panache.common.binder.PanacheQlQueryBinder;
 import io.quarkus.mongodb.panache.common.transaction.MongoTransactionException;
+import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 
@@ -353,7 +354,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     private ClientSession registerClientSession(MongoEntity mongoEntity,
             TransactionSynchronizationRegistry registry) {
         TransactionManager transactionManager = Arc.container().instance(TransactionManager.class).get();
-        MongoClient client = BeanUtils.clientFromArc(mongoEntity, MongoClient.class, false);
+        MongoClient client = MongoClientBeanUtil.mongoClient(BeanUtils.beanName(mongoEntity));
         ClientSession clientSession = client.startSession();
         clientSession.startTransaction();//TODO add txoptions from annotation
         registry.putResource(SESSION_KEY, clientSession);
@@ -392,7 +393,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     }
 
     private MongoDatabase mongoDatabase(MongoEntity mongoEntity) {
-        MongoClient mongoClient = BeanUtils.clientFromArc(mongoEntity, MongoClient.class, false);
+        MongoClient mongoClient = MongoClientBeanUtil.mongoClient(BeanUtils.beanName(mongoEntity));
         if (mongoEntity != null && !mongoEntity.database().isEmpty()) {
             return mongoClient.getDatabase(mongoEntity.database());
         }

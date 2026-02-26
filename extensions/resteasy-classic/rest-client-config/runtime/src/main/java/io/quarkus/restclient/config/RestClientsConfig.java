@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
@@ -399,6 +400,16 @@ public interface RestClientsConfig {
          */
         @WithDefault("100")
         Integer bodyLimit();
+
+        /**
+         * Which request and response headers values to mask in logs.
+         * <p>
+         * The value of any matching header will be replaced with {@code "****"}.
+         * The header name itself remains visible. E.g. {@code Authorization=****}
+         * <p>
+         * This property is not applicable to the Quarkus RESTEasy client (provided by the quarkus-resteasy-client dependency).
+         */
+        Optional<Set<String>> maskedHeaders();
     }
 
     interface RestClientMultipartConfig {

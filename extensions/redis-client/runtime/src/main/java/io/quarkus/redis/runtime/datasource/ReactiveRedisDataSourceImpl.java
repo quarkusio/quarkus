@@ -111,15 +111,15 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
 
     @Override
     public Uni<TransactionResult> withTransaction(Function<ReactiveTransactionalRedisDataSource, Uni<Void>> tx,
-            String... keys) {
+            String... watchedKeys) {
         nonNull(tx, "tx");
-        notNullOrEmpty(keys, "keys");
-        doesNotContainNull(keys, "keys");
+        notNullOrEmpty(watchedKeys, "watchedKeys");
+        doesNotContainNull(watchedKeys, "watchedKeys");
         return redis.connect()
                 .onItem().transformToUni(connection -> {
                     ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection);
                     TransactionHolder th = new TransactionHolder();
-                    return watch(connection, keys) // WATCH keys
+                    return watch(connection, watchedKeys) // WATCH keys
                             .chain(() -> connection.send(Request.cmd(Command.MULTI))
                                     .chain(x -> tx
                                             .apply(new ReactiveTransactionalRedisDataSourceImpl(singleConnectionDS, th)))
@@ -159,10 +159,10 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     @Override
     public <I> Uni<OptimisticLockingTransactionResult<I>> withTransaction(Function<ReactiveRedisDataSource, Uni<I>> preTx,
             BiFunction<I, ReactiveTransactionalRedisDataSource, Uni<Void>> tx, String... watchedKeys) {
+        nonNull(preTx, "preTx");
         nonNull(tx, "tx");
         notNullOrEmpty(watchedKeys, "watchedKeys");
         doesNotContainNull(watchedKeys, "watchedKeys");
-        nonNull(preTx, "preTx");
 
         return redis.connect()
                 .onItem().transformToUni(connection -> {

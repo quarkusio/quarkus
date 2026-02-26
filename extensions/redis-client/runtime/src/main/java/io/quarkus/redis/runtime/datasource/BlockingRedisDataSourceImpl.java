@@ -1,6 +1,9 @@
 package io.quarkus.redis.runtime.datasource;
 
 import static io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl.toTransactionResult;
+import static io.quarkus.redis.runtime.datasource.Validation.notNullOrEmpty;
+import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
+import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
 import java.time.Duration;
 import java.util.function.BiConsumer;
@@ -63,7 +66,8 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
         this(new ReactiveRedisDataSourceImpl(vertx, redis, connection), timeout);
     }
 
-    public TransactionResult withTransaction(Consumer<TransactionalRedisDataSource> ds) {
+    public TransactionResult withTransaction(Consumer<TransactionalRedisDataSource> tx) {
+        nonNull(tx, "tx");
         RedisConnection connection = reactive.redis.connect().await().atMost(timeout);
         ReactiveRedisDataSourceImpl dataSource = new ReactiveRedisDataSourceImpl(reactive.getVertx(), reactive.redis,
                 connection);
@@ -74,7 +78,7 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
         try {
             connection.send(Request.cmd(Command.MULTI)).await().atMost(timeout);
             try {
-                ds.accept(source);
+                tx.accept(source);
             } catch (Exception e) {
                 if (!source.discarded()) {
                     try {
@@ -97,7 +101,10 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
     }
 
     @Override
-    public TransactionResult withTransaction(Consumer<TransactionalRedisDataSource> ds, String... watchedKeys) {
+    public TransactionResult withTransaction(Consumer<TransactionalRedisDataSource> tx, String... watchedKeys) {
+        nonNull(tx, "tx");
+        notNullOrEmpty(watchedKeys, "watchedKeys");
+        doesNotContainNull(watchedKeys, "watchedKeys");
         RedisConnection connection = reactive.redis.connect().await().atMost(timeout);
         ReactiveRedisDataSourceImpl dataSource = new ReactiveRedisDataSourceImpl(reactive.getVertx(), reactive.redis,
                 connection);
@@ -113,7 +120,7 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
             connection.send(cmd).await().atMost(timeout);
             connection.send(Request.cmd(Command.MULTI)).await().atMost(timeout);
             try {
-                ds.accept(source);
+                tx.accept(source);
             } catch (Exception e) {
                 if (!source.discarded()) {
                     try {
@@ -138,6 +145,10 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
     @Override
     public <I> OptimisticLockingTransactionResult<I> withTransaction(Function<RedisDataSource, I> preTx,
             BiConsumer<I, TransactionalRedisDataSource> tx, String... watchedKeys) {
+        nonNull(preTx, "preTx");
+        nonNull(tx, "tx");
+        notNullOrEmpty(watchedKeys, "watchedKeys");
+        doesNotContainNull(watchedKeys, "watchedKeys");
         RedisConnection connection = reactive.redis.connect().await().atMost(timeout);
         ReactiveRedisDataSourceImpl dataSource = new ReactiveRedisDataSourceImpl(reactive.getVertx(), reactive.redis,
                 connection);

@@ -42,14 +42,16 @@ public class TransactionalValueCommandsTest extends DatasourceTestBase {
             string.append(key, "-1");
             string.get(key);
             string.strlen("k2");
+            string.get("nonexisting_key");
         });
-        assertThat(result.size()).isEqualTo(5);
+        assertThat(result.size()).isEqualTo(6);
         assertThat(result.discarded()).isFalse();
         assertThat(result.<Void> get(0)).isNull();
         assertThat((boolean) result.get(1)).isTrue();
         assertThat((long) result.get(2)).isEqualTo(7L);
         assertThat((String) result.get(3)).isEqualTo("hello-1");
         assertThat((long) result.get(4)).isEqualTo(7L);
+        assertThat((Object) result.get(5)).isNull();
     }
 
     @Test
@@ -60,15 +62,17 @@ public class TransactionalValueCommandsTest extends DatasourceTestBase {
                     .chain(() -> string.setnx("k2", "bonjour"))
                     .chain(() -> string.append(key, "-1"))
                     .chain(() -> string.get(key))
-                    .chain(() -> string.strlen("k2"));
+                    .chain(() -> string.strlen("k2"))
+                    .chain(() -> string.get("nonexisting_key"));
         }).await().atMost(Duration.ofSeconds(5));
-        assertThat(result.size()).isEqualTo(5);
+        assertThat(result.size()).isEqualTo(6);
         assertThat(result.discarded()).isFalse();
         assertThat(result.<Void> get(0)).isNull();
         assertThat((boolean) result.get(1)).isTrue();
         assertThat((long) result.get(2)).isEqualTo(7L);
         assertThat((String) result.get(3)).isEqualTo("hello-1");
         assertThat((long) result.get(4)).isEqualTo(7L);
+        assertThat((Object) result.get(5)).isNull();
     }
 
 }

@@ -14,6 +14,7 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -98,6 +99,8 @@ public class RestClientCDIDelegateBuilder<T> {
             builder.property(QuarkusRestClientProperties.LOGGING_SCOPE,
                     loggingConfig.scope().isPresent() ? LoggingScope.forName(loggingConfig.scope().get()) : LoggingScope.NONE);
             builder.property(QuarkusRestClientProperties.LOGGING_BODY_LIMIT, loggingConfig.bodyLimit());
+            builder.property(QuarkusRestClientProperties.LOGGING_MASKED_HEADERS,
+                    loggingConfig.maskedHeaders().orElse(Collections.emptySet()));
         }
     }
 

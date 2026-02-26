@@ -5,6 +5,7 @@ import java.net.URL;
 import java.security.KeyStore;
 import java.time.Duration;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HostnameVerifier;
@@ -290,6 +291,14 @@ public interface QuarkusRestClientBuilder extends Configurable<QuarkusRestClient
      *
      */
     QuarkusRestClientBuilder loggingBodyLimit(Integer limit);
+
+    /**
+     * Which request and response headers values to mask in logs.
+     * <p>
+     * The value of any matching header will be replaced with {@code "****"}.
+     * The header name itself remains visible. E.g. {@code Authorization=****}
+     */
+    QuarkusRestClientBuilder loggingMaskedHeaders(Set<String> maskedHeaders);
 
     /**
      * Enable trusting all certificates. Disable by default.

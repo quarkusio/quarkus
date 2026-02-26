@@ -444,7 +444,7 @@ public AmqpClientOptions getNamedOptions() {
   PemKeyCertOptions keycert = new PemKeyCertOptions()
     .addCertPath("./tls/tls.crt")
     .addKeyPath("./tls/tls.key");
-  PemTrustOptions trust = new PemTrustOptions().addCertPath("./tlc/ca.crt");
+  PemTrustOptions trust = new PemTrustOptions().addCertPath("./tls/ca.crt");
   return new AmqpClientOptions()
         .setSsl(true)
         .setPemKeyCertOptions(keycert)

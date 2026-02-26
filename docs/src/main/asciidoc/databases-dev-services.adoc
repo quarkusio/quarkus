@@ -173,7 +173,7 @@ IMPORTANT: when using a classpath volume, the container will only be granted rea
 
 === Example of mapping volumes to persist the database data
 
-Let's see an example using PostgreSQL where we'll map a file system volume to keep the database data permantently and use it:
+Let's see an example using PostgreSQL where we'll map a file system volume to keep the database data permanently and use it:
 
 [source,properties]
 ----

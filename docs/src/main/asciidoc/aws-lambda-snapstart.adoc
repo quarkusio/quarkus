@@ -173,13 +173,13 @@ public class HelloPriming implements Resource {
 
     @Override
     public void beforeCheckpoint(Context<? extends Resource> context) throws Exception {
-        logger.info("before checkout hook");
+        logger.info("before checkpoint hook");
         // initialize your client here.
     }
 
     @Override
     public void afterRestore(Context<? extends Resource> context) throws Exception {
-        logger.info("after checkout hook");
+        logger.info("after restore hook");
         // if there is anything to do during the restoration, do it here.
     }
 }

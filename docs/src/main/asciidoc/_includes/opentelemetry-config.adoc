@@ -35,7 +35,7 @@ quarkus.otel.exporter.otlp.logs.endpoint=http://logs-uri:4317 // <3>
 <2> The endpoint for the metrics exporter.
 <3> The endpoint for the logs exporter.
 
-If you need that your spans and logs to be exported directly as they finish
+If you need your spans and logs to be exported directly as they finish
 (e.g. in a serverless environment / application), you can set this property to `true`.
 This replaces the default batching of data.
 [source,properties]

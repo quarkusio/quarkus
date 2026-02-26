@@ -6,7 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Using Hibernate ORM and Jakarta Persistence
 include::_attributes.adoc[]
 :categories: data
-:summary: Hibernate ORM is the de facto Jakarta Persistence implementation and offers you the full breath of an Object Relational Mapper. It works beautifully in Quarkus.
+:summary: Hibernate ORM is the de facto Jakarta Persistence implementation and offers you the full breadth of an Object Relational Mapper. It works beautifully in Quarkus.
 :config-file: application.properties
 :topics: data,hibernate-orm,sql,jdbc
 :extensions: io.quarkus:quarkus-hibernate-orm

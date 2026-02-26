@@ -124,7 +124,7 @@ public class KubernetesObjectMapperProducer {
 
 
 WARNING: The static `io.fabric8.kubernetes.client.utils.Serialization` utils class is deprecated and should not be used.
-Access to `Serialization.jsonMapper()` should be replaced by the usage of @KubernetesClientObjectMapperCustomizer` declared beans.
+Access to `Serialization.jsonMapper()` should be replaced by the usage of `@KubernetesClientObjectMapperCustomizer` declared beans.
 
 == Testing
 

@@ -9,7 +9,7 @@ include::_attributes.adoc[]
 :summary: Hardcoded values in your code is a no go (even if we all did it at some point ;-)). In this guide, we learn how to configure your application.
 :topics: configuration
 
-IMPORTANT: The content of this guide and been revised and split into additional topics. Please check the
+IMPORTANT: The content of this guide has been revised and split into additional topics. Please check the
 <<additional-information,Additional Information>> section.
 
 

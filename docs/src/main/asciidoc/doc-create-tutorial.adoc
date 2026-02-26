@@ -45,15 +45,19 @@ Copy `docs/src/main/diataxis/_templates/template-tutorial.adoc` from the Quarkus
 [id="acme-serve-http-requests-tutorial"] // <1>
 = Serve Http requests using the Acme extension // <2>
 include::_attributes.adoc[] // <3>
-:categories: web // <4>
-:extension-status: experimental // <5>
+:diataxis-type: tutorial // <4>
+:categories: web // <5>
+:nav-title: Acme Http requests // <6>
+:extension-status: experimental // <7>
 ----
 
 <1> Use the file name as a unique id for the section.
 <2> Add the title as a top-level heading.
 <3> Include additional attributes that help define consistent formatting and provide source portability.
-<4> Specify the `web` category, as our imaginary extension works with Http requests.
-<5> Our imaginary `acme` extension is experimental, so we include the extension status declaration in the header.
+<4> Specify the diataxis type. This tutorial uses `tutorial`.
+<5> Specify the `web` category, as our imaginary extension works with Http requests.
+<6> A short sidebar title (40 characters or fewer). Required here because the document title exceeds 40 characters.
+<7> Our imaginary `acme` extension is experimental, so we include the extension status declaration in the header.
 
 .Document Preview
 --

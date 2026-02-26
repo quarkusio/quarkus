@@ -84,6 +84,7 @@ public final class VertxGrpcSender implements GrpcSender {
                 .setReadIdleTimeout((int) timeout.getSeconds())
                 .setTracingPolicy(TracingPolicy.IGNORE); // needed to avoid tracing the calls from this gRPC client
         clientOptionsCustomizer.accept(httpClientOptions);
+        // FIXME No way to set the connection exception handler for the gRPC client, at the moment.
         this.client = GrpcClient.client(vertx, httpClientOptions);
     }
 

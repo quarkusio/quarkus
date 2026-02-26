@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -57,8 +58,11 @@ public class YamlMetadataGenerator {
 
     final static String INCL_ATTRIBUTES = "include::_attributes.adoc[]\n";
     final static String YAML_FRONTMATTER = "---\n";
+    static final int NAV_TITLE_MAX_LENGTH = 40;
 
     private static final String COMPATIBILITY_TOPIC = "compatibility";
+
+    private NavigationConfig navConfig;
 
     public static void main(String[] args) throws Exception {
         System.out.println("[INFO] Creating YAML metadata generator: " + List.of(args));
@@ -129,6 +133,177 @@ public class YamlMetadataGenerator {
 
         om.writeValue(targetDir.resolve("errorsByType.yaml").toFile(), messages);
         om.writeValue(targetDir.resolve("errorsByFile.yaml").toFile(), messages.allByFile());
+
+        // Generate navigation YAML if config is loaded
+        if (navConfig != null) {
+            writeNavigationYaml(om, metadata);
+        }
+    }
+
+    /**
+     * Generate the navigation YAML file by applying the placement rule
+     * to assign each guide to its position(s) in the navigation tree.
+     */
+    void writeNavigationYaml(ObjectMapper om, Map<String, DocMetadata> allDocs)
+            throws StreamWriteException, DatabindException, IOException {
+
+        // Build placement map: categoryId → (subcategoryId or null) → List<DocMetadata>
+        // null key = flat (no subcategory grouping)
+        Map<String, Map<String, List<DocMetadata>>> placements = new LinkedHashMap<>();
+
+        // Initialize all categories from config in order
+        for (NavigationConfig.CategoryEntry cat : navConfig.getCategories()) {
+            placements.put(cat.getCategory(), new LinkedHashMap<>());
+        }
+
+        // Apply placement rule for each guide
+        for (DocMetadata doc : allDocs.values()) {
+            Set<String> catsWithSubcatPlacement = new HashSet<>();
+
+            // Process subcategories first
+            for (String subcat : doc.subcategoryIds) {
+                Set<String> parents = navConfig.getParentCategories(subcat);
+                for (String parent : parents) {
+                    Map<String, List<DocMetadata>> catMap = placements.get(parent);
+                    if (catMap != null) {
+                        catMap.computeIfAbsent(subcat, k -> new ArrayList<>()).add(doc);
+                    }
+                    if (doc.categoryIds.contains(parent)) {
+                        catsWithSubcatPlacement.add(parent);
+                    }
+                }
+            }
+
+            // Place flat under categories that don't have a subcategory placement
+            for (String cat : doc.categoryIds) {
+                if (!catsWithSubcatPlacement.contains(cat)) {
+                    Map<String, List<DocMetadata>> catMap = placements.get(cat);
+                    if (catMap != null) {
+                        catMap.computeIfAbsent(null, k -> new ArrayList<>()).add(doc);
+                    }
+                }
+            }
+        }
+
+        // Validate featured files exist
+        for (NavigationConfig.FeaturedEntry f : navConfig.getFeatured()) {
+            if (!allDocs.containsKey(f.getFile())) {
+                System.err.println("[WARN] Featured file '" + f.getFile()
+                        + "' not found among processed guides.");
+            }
+        }
+
+        // Build output structure
+        List<Map<String, Object>> navigation = new ArrayList<>();
+
+        for (NavigationConfig.CategoryEntry cat : navConfig.getCategories()) {
+            Map<String, List<DocMetadata>> catPlacements = placements.get(cat.getCategory());
+            if (catPlacements == null || catPlacements.isEmpty()) {
+                continue; // Skip empty categories
+            }
+
+            Map<String, Object> navCategory = new LinkedHashMap<>();
+            navCategory.put("category", cat.getCategory());
+            navCategory.put("cat-title", cat.getCatTitle());
+            if (cat.getUseCase() != null && !cat.getUseCase().isBlank()) {
+                navCategory.put("use-case", cat.getUseCase());
+            }
+
+            List<Object> guides = new ArrayList<>();
+
+            // Flat guides first (sorted by nav-title)
+            List<DocMetadata> flatGuides = catPlacements.getOrDefault(null, List.of());
+            flatGuides.stream()
+                    .sorted(Comparator.comparing(
+                            d -> d.navTitle != null ? d.navTitle : d.title,
+                            String.CASE_INSENSITIVE_ORDER))
+                    .forEach(doc -> guides.add(buildGuideEntry(doc)));
+
+            // Subcategory groups in config order
+            for (NavigationConfig.SubcategoryEntry subcat : navConfig.getSubcategories(cat.getCategory())) {
+                List<DocMetadata> subcatGuides = catPlacements.get(subcat.getSubcategory());
+                if (subcatGuides != null && !subcatGuides.isEmpty()) {
+                    Map<String, Object> subcatEntry = new LinkedHashMap<>();
+                    subcatEntry.put("subcategory", subcat.getSubcategory());
+                    subcatEntry.put("subcat-title", subcat.getSubcatTitle());
+
+                    List<Map<String, Object>> subcatGuidesList = new ArrayList<>();
+                    subcatGuides.stream()
+                            .sorted(Comparator.comparing(
+                                    d -> d.navTitle != null ? d.navTitle : d.title,
+                                    String.CASE_INSENSITIVE_ORDER))
+                            .forEach(doc -> subcatGuidesList.add(buildGuideEntry(doc)));
+                    subcatEntry.put("guides", subcatGuidesList);
+
+                    guides.add(subcatEntry);
+                }
+            }
+
+            navCategory.put("guides", guides);
+            navigation.add(navCategory);
+        }
+
+        Map<String, Object> root = new LinkedHashMap<>();
+        root.put("navigation", navigation);
+
+        // Learning paths: ordered guide sequences
+        List<NavigationConfig.LearningPathEntry> learningPaths = navConfig.getLearningPaths();
+        if (!learningPaths.isEmpty()) {
+            List<Map<String, Object>> pathsList = new ArrayList<>();
+            for (NavigationConfig.LearningPathEntry lp : learningPaths) {
+                Map<String, Object> pathEntry = new LinkedHashMap<>();
+                pathEntry.put("path", lp.getPath());
+                pathEntry.put("path-title", lp.getPathTitle());
+                if (lp.getPathSummary() != null && !lp.getPathSummary().isBlank()) {
+                    pathEntry.put("path-summary", lp.getPathSummary());
+                }
+
+                List<Map<String, Object>> pathGuides = new ArrayList<>();
+                for (String filename : lp.getGuides()) {
+                    DocMetadata doc = allDocs.get(filename);
+                    if (doc != null) {
+                        pathGuides.add(buildGuideEntry(doc));
+                    } else {
+                        System.err.println("[WARN] Learning path '" + lp.getPath()
+                                + "' references '" + filename + "' which was not found among processed guides.");
+                    }
+                }
+                pathEntry.put("guides", pathGuides);
+                pathsList.add(pathEntry);
+            }
+            root.put("learning-paths", pathsList);
+        }
+
+        om.writeValue(targetDir.resolve("navigation.yaml").toFile(), root);
+        System.out.println("[INFO] Generated navigation.yaml with " + navigation.size() + " categories");
+    }
+
+    private Map<String, Object> buildGuideEntry(DocMetadata doc) {
+        Map<String, Object> entry = new LinkedHashMap<>();
+        entry.put("url", doc.getUrl());
+        entry.put("title", doc.title);
+        entry.put("diataxis-type", diataxisTypeString(doc.type));
+        entry.put("nav-title", doc.navTitle != null ? doc.navTitle : doc.title);
+
+        if (navConfig.isFeatured(doc.filename)) {
+            entry.put("featured", true);
+            String summary = navConfig.getFeaturedSummary(doc.filename);
+            if (summary != null) {
+                entry.put("featured-summary", summary);
+            }
+        }
+
+        return entry;
+    }
+
+    /**
+     * Map internal Type enum to the diataxis-type string used in navigation YAML.
+     */
+    private static String diataxisTypeString(Type type) {
+        if (type == Type.other) {
+            return "general";
+        }
+        return type.suffix;
     }
 
     public Index generateIndex() throws IOException {
@@ -141,6 +316,26 @@ public class YamlMetadataGenerator {
                     String.format("Target directory (%s) does not exist. Exiting.%n", targetDir.toAbsolutePath()));
         }
         messages.setRoot(srcDir);
+        messages.setLenient("lenient".equalsIgnoreCase(System.getProperty("validation")));
+
+        // Load navigation configuration
+        Path configPath = srcDir.resolve(NavigationConfig.CONFIG_FILENAME);
+        if (Files.exists(configPath)) {
+            navConfig = NavigationConfig.load(configPath);
+            List<String> configErrors = navConfig.validate();
+            if (!configErrors.isEmpty()) {
+                for (String error : configErrors) {
+                    System.err.println("[ERROR] " + NavigationConfig.CONFIG_FILENAME + ": " + error);
+                }
+                throw new IllegalStateException(
+                        "Invalid " + NavigationConfig.CONFIG_FILENAME + ": " + configErrors.size() + " issue(s)");
+            }
+        } else {
+            System.out.println("[WARN] " + NavigationConfig.CONFIG_FILENAME + " not found in "
+                    + srcDir + "; using built-in category list as fallback");
+            navConfig = NavigationConfig.createDefaultFromEnum();
+        }
+        index.setNavConfig(navConfig);
 
         Options options = Options.builder()
                 .docType("book")
@@ -194,6 +389,8 @@ public class YamlMetadataGenerator {
                             Object type = doc.getAttribute("diataxis-type");
                             Object topics = doc.getAttribute("topics");
                             Object extensions = doc.getAttribute("extensions");
+                            Object navTitle = doc.getAttribute("nav-title");
+                            Object subcategories = doc.getAttribute("subcategories");
                             Object status = doc.getAttribute("extension-status");
 
                             Optional<StructuralNode> preambleNode = doc.getBlocks().stream()
@@ -212,17 +409,17 @@ public class YamlMetadataGenerator {
 
                                 if (content.isPresent()) {
                                     index.add(new DocMetadata(title, path, summaryString, categories, keywords, topics,
-                                            extensions, type, status, id));
+                                            extensions, navTitle, subcategories, type, status, id, navConfig));
                                 } else {
                                     messages.record("empty-preamble", path);
                                     index.add(new DocMetadata(title, path, summaryString, categories, keywords, topics,
-                                            extensions, type, status, id));
+                                            extensions, navTitle, subcategories, type, status, id, navConfig));
                                 }
                             } else {
                                 messages.record("missing-preamble", path);
                                 summaryString = getSummary(summary, Optional.empty());
                                 index.add(new DocMetadata(title, path, summaryString, categories, keywords, topics, extensions,
-                                        type, status, id));
+                                        navTitle, subcategories, type, status, id, navConfig));
                             }
 
                             long spaceCount = summaryString.chars().filter(c -> c == (int) ' ').count();
@@ -393,12 +590,21 @@ public class YamlMetadataGenerator {
         Map<String, Collection<String>> errorsByFile = new TreeMap<>();
         Map<String, Collection<String>> warningsByFile = new TreeMap<>();
         public final Map<String, Collection<String>> errors = new TreeMap<>();
+        boolean lenient;
+
+        private static final Set<String> LENIENT_ERROR_KEYS = Set.of(
+                "unknown-category", "unknown-subcategory", "missing-categories",
+                "missing-nav-title", "nav-title-too-long");
 
         void setRoot(Path root) {
             this.root = root.toString();
             errors.clear();
             errorsByFile.clear();
             warningsByFile.clear();
+        }
+
+        void setLenient(boolean lenient) {
+            this.lenient = lenient;
         }
 
         void record(String errorKey, Path path) {
@@ -425,6 +631,9 @@ public class YamlMetadataGenerator {
                 case "not-diataxis-type":
                     return true;
             }
+            if (lenient && LENIENT_ERROR_KEYS.contains(errorKey)) {
+                return true;
+            }
             return false;
         }
 
@@ -448,6 +657,16 @@ public class YamlMetadataGenerator {
                     return "Document type not recognized. It either does not have a diataxis-type attribute or does not follow naming conventions. See https://quarkus.io/guides/doc-reference#document-header";
                 case "toc":
                     return "A :toc: attribute is present in the document header (remove it)";
+                case "missing-nav-title":
+                    return "Title exceeds " + NAV_TITLE_MAX_LENGTH
+                            + " characters and no :nav-title: attribute is set. Add :nav-title: with a short title (≤"
+                            + NAV_TITLE_MAX_LENGTH + " characters) for sidebar navigation.";
+                case "nav-title-too-long":
+                    return "The :nav-title: attribute exceeds " + NAV_TITLE_MAX_LENGTH
+                            + " characters. Shorten it by dropping filler words and favoring acronyms over their definitions.";
+                case "unknown-subcategory":
+                    return "Document specifies an unknown :subcategories: value. Update "
+                            + NavigationConfig.CONFIG_FILENAME + " to add the subcategory.";
             }
             return errorKey;
         }
@@ -469,8 +688,24 @@ public class YamlMetadataGenerator {
 
     public static class Index {
         Map<Type, IndexByType> types = new HashMap<>();
+        private NavigationConfig navConfig;
+
+        void setNavConfig(NavigationConfig navConfig) {
+            this.navConfig = navConfig;
+        }
 
         public List<Map<String, String>> getCategories() {
+            if (navConfig != null) {
+                return navConfig.getCategories().stream()
+                        .map(cat -> {
+                            Map<String, String> m = new HashMap<>();
+                            m.put("cat-id", cat.getCategory());
+                            m.put("category", cat.getCatTitle());
+                            return m;
+                        })
+                        .collect(Collectors.toList());
+            }
+            // Fallback to enum when config is not loaded
             return Stream.of(Category.values())
                     .map(c -> c.toMap())
                     .collect(Collectors.toList());
@@ -571,14 +806,18 @@ public class YamlMetadataGenerator {
         String summary;
         Set<String> keywords = new LinkedHashSet<>();
         Set<Category> categories = new TreeSet<>();
+        Set<String> categoryIds = new TreeSet<>();
+        Set<String> subcategoryIds = new TreeSet<>();
         Set<String> topics = new LinkedHashSet<>();
         Set<String> extensions = new LinkedHashSet<>();
+        String navTitle;
         String id;
         Type type;
         Status status;
 
         DocMetadata(String title, Path path, String summary, Object categories, Object keywords,
-                Object topics, Object extensions, Object diataxisType, Object status, String id) {
+                Object topics, Object extensions, Object navTitle, Object subcategories,
+                Object diataxisType, Object status, String id, NavigationConfig config) {
             this.id = id;
             this.title = title == null ? "" : title;
             this.filename = path.getFileName().toString();
@@ -586,12 +825,22 @@ public class YamlMetadataGenerator {
             this.keywords = toSet(keywords);
             this.topics = toSet(topics);
             this.extensions = toSet(extensions);
+            this.navTitle = navTitle != null ? navTitle.toString().trim() : null;
 
-            Category.addAll(this.categories, categories, path);
+            // Validate categories: use config when available, enum as fallback
+            if (config != null) {
+                addCategories(this.categoryIds, categories, path, config);
+            } else {
+                Category.addAll(this.categories, categories, path);
+                this.categories.forEach(c -> this.categoryIds.add(c.id));
+            }
+
+            // Validate subcategories against config
+            addSubcategories(this.subcategoryIds, subcategories, path, config);
 
             this.type = Type.fromObject(diataxisType);
             if (this.type == null) {
-                if (this.categories.contains(Category.getting_started)) {
+                if (this.categoryIds.contains("getting-started")) {
                     this.type = Type.tutorial;
                 } else if (filename.endsWith("-concept.adoc")) {
                     this.type = Type.concept;
@@ -611,8 +860,69 @@ public class YamlMetadataGenerator {
             if (id == null) {
                 messages.record("missing-id", path);
             }
-            if (this.categories.isEmpty()) {
+            if (this.categoryIds.isEmpty()) {
                 messages.record("missing-categories", path);
+            }
+
+            int titleLimit = config != null ? config.getTitleLimit() : NAV_TITLE_MAX_LENGTH;
+            if (this.navTitle == null || this.navTitle.isEmpty()) {
+                if (this.title.length() <= titleLimit) {
+                    // Title is short enough — use it as the nav-title automatically
+                    this.navTitle = this.title;
+                } else {
+                    messages.record("missing-nav-title", path,
+                            "Title exceeds " + titleLimit + " characters and no :nav-title: attribute is set. "
+                                    + "Add :nav-title: with a short title (≤" + titleLimit
+                                    + " characters) for sidebar navigation.");
+                }
+            } else if (this.navTitle.length() > titleLimit) {
+                messages.record("nav-title-too-long", path,
+                        "nav-title is " + this.navTitle.length() + " characters (max "
+                                + titleLimit + "): \"" + this.navTitle + "\"");
+            }
+        }
+
+        private static void addCategories(Set<String> set, Object source, Path path, NavigationConfig config) {
+            if (source == null) {
+                return;
+            }
+            for (String c : source.toString().split("\\s*,\\s*")) {
+                String lower = c.toLowerCase().trim();
+                if (lower.isEmpty()) {
+                    continue;
+                }
+                if (config != null && config.isValidCategory(lower)) {
+                    set.add(lower);
+                } else if (config == null) {
+                    // No config — accept all values (fallback)
+                    set.add(lower);
+                } else {
+                    messages.record("unknown-category", path,
+                            "Unknown category: '" + c + "'. Valid categories: "
+                                    + String.join(", ", config.getCategoryIds())
+                                    + ". To add a new category, update " + NavigationConfig.CONFIG_FILENAME);
+                }
+            }
+        }
+
+        private static void addSubcategories(Set<String> set, Object source, Path path, NavigationConfig config) {
+            if (source == null) {
+                return;
+            }
+            for (String s : source.toString().split("\\s*,\\s*")) {
+                String lower = s.toLowerCase().trim();
+                if (lower.isEmpty()) {
+                    continue;
+                }
+                if (config != null && config.isValidSubcategory(lower)) {
+                    set.add(lower);
+                } else if (config == null) {
+                    set.add(lower);
+                } else {
+                    messages.record("unknown-subcategory", path,
+                            "Unknown subcategory: '" + s + "'. To add a new subcategory, update "
+                                    + NavigationConfig.CONFIG_FILENAME);
+                }
             }
         }
 
@@ -641,9 +951,22 @@ public class YamlMetadataGenerator {
         }
 
         public String getCategories() {
+            if (!categoryIds.isEmpty()) {
+                return String.join(", ", categoryIds);
+            }
             return categories.stream()
                     .map(x -> x.id)
                     .collect(Collectors.joining(", "));
+        }
+
+        @JsonIgnore
+        public Set<String> getCategoryIds() {
+            return categoryIds;
+        }
+
+        @JsonIgnore
+        public Set<String> getSubcategoryIds() {
+            return subcategoryIds;
         }
 
         public Set<String> toSet(Object value) {
@@ -671,6 +994,10 @@ public class YamlMetadataGenerator {
 
         public Set<String> getTopics() {
             return topics;
+        }
+
+        public String getNavTitle() {
+            return navTitle;
         }
 
         public String getType() {

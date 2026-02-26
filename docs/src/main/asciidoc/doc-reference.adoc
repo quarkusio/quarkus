@@ -154,11 +154,13 @@ Minimally, each document should define and id and a title, and include common at
 
 [source,asciidoc]
 ----
-[id="doc-reference"] // <1>
-= Quarkus style and content guidelines // <2>
+[id="security-oidc-bearer-token-authentication"] // <1>
+= OpenID Connect (OIDC) Bearer token authentication // <2>
 \include::_attributes.adoc[] // <3>
 :diataxis-type: {type} // <4>
-:categories: contributing // <5>
+:categories: security // <5>
+:subcategories: oidc // <6>
+:nav-title: OIDC bearer authentication // <7>
 ----
 
 <1> Use the filename as the ID for the document.
@@ -166,10 +168,14 @@ Minimally, each document should define and id and a title, and include common at
 <3> Include common document attributes.
 <4> Specify the diataxis type: `concept`, `howto`, `reference`, or `tutorial`.
 <5> Specify the relevant <<categories>> (comma separated).
+<6> Optional: specify one or more <<subcategories>> (comma separated) to group the guide within a category.
+<7> Optional: a short sidebar title (40 characters or fewer). Required only when the document title exceeds 40 characters. When omitted, the document title is used automatically.
 
 [[doc-header-optional]]
 ==== Other common document header attributes
 
+`:nav-title: <short title>`:: A short sidebar title (40 characters or fewer). Required only when the document title exceeds 40 characters. When omitted, the document title is used automatically.
+`:subcategories: <ids>`:: Optional comma-separated list of subcategory IDs. Groups the guide under a subcategory heading within its parent category. Valid values are defined in `navigation-config.yaml`.
 `:extension-status: preview`:: Use this attribute to flag special types of content. Valid values: `experimental`, `preview`, `stable` (not usually used), and `deprecated`.
 `:summary: <text>`:: Use the summary to provide a concise (26 words or less) description of the document.
 The value of this attribute is used in tiles or other descriptions on the website and is not required in newer diataxis-styled docs, as outlined in <<abstracts-preamble>>.
@@ -413,40 +419,36 @@ examples:
 [[categories]]
 === Categories
 
-Quarkus documentation is grouped into the following categories.
+Quarkus documentation is grouped into categories defined in `docs/src/main/asciidoc/navigation-config.yaml`.
+The configuration file is the source of truth for valid category IDs, display titles, and display order on the landing page and sidebar.
 
-.Categories
-[cols="<m,<2",options="header"]
-|===
-|Category | Description
-| alt-languages | Support for other languages, namely Kotlin and Scala
-| architecture | Quarkus runtime and ecosystem architecture
-| business-automation | Business automation integrations
-| cloud | Integrations and support for cloud services
-| command-line | Command Line Applications
-| compatibility | Compatibility with other languages and frameworks
-| contributing | Guidance and references to help you contribute to Quarkus.
-| core | Information about how the Quarkus works
-| data | Topics related to using data sources with Quarkus
-| getting-started | Getting started materials
-| integration | Support for integration extensions (Camel)
-| messaging | Integrations with messaging systems like Kafka, AMQP, or RabbitMQ.
-| miscellaneous | Miscellaneous
-| native | Everything related to native executables
-| observability | Extensions and integrations for runtime and application observability
-| security | Security
-| serialization | Serialization
-| tooling | Tooling
-| web | Web
-| writing-extensions | Writing Extensions
-|===
-
-Tag your content to improve findability by adding at least one category to the categories attribute line in the <<document-header,document header>>. To add multiple categories, use comma-separated values. For example:
+Tag your content to improve findability by adding at least one category to the categories attribute line in the <<document-header,document header>>.
+Valid category IDs are listed in `navigation-config.yaml`.
+To add multiple categories, use comma-separated values. For example:
 
 [source,asciidoc]
 ----
-:categories: contributing, data
+:categories: security, web
 ----
+
+To add a new category, add an entry to `navigation-config.yaml` and update the relevant guides.
+
+[[subcategories]]
+=== Subcategories
+
+Categories can have subcategories that group related guides under a heading.
+Valid subcategories and their parent categories are defined in `navigation-config.yaml`.
+
+To assign a guide to a subcategory, add the `:subcategories:` attribute to the document header:
+
+[source,asciidoc]
+----
+:subcategories: oidc
+----
+
+A subcategory can appear under multiple categories.
+The build uses a placement rule to determine where a guide appears based on the relationship between its categories and subcategories.
+For details, see `docs/design/author-driven-navigation.md`.
 
 [[document-variables]]
 === Quarkus documentation variables

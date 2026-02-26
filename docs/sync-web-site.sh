@@ -139,6 +139,15 @@ if [ -f target/relations.yaml ]; then
   echo
 fi
 
+if [ -f target/navigation.yaml ]; then
+  echo
+  echo "Copying target/navigation.yaml to $TARGET_DIR/_data/navigation.yaml"
+  mkdir -p $TARGET_DIR/_data
+  echo "# Generated file. Do not edit" > $TARGET_DIR/_data/navigation.yaml
+  cat target/navigation.yaml >> $TARGET_DIR/_data/navigation.yaml
+  echo
+fi
+
 echo "Sync done!"
 echo "=========="
 

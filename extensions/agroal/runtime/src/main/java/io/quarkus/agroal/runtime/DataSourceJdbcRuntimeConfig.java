@@ -180,4 +180,16 @@ public interface DataSourceJdbcRuntimeConfig {
     @ConfigDocDefault("false if quarkus.datasource.jdbc.telemetry=false and true if quarkus.datasource.jdbc.telemetry=true")
     Optional<Boolean> telemetry();
 
+    /**
+     * Enable KeepAlive for this datasource. When enabled, the datasource will attempt to keep connections alive by sending
+     * periodic keep-alive messages to the database. Each JDBC driver has its own implementation of keep-alive, and the actual
+     * behavior may vary depending on the driver and database being used.
+     */
+    Optional<Boolean> enableKeepAlive();
+
+    /**
+     * The timeout value used for socket read operations. If reading from the server takes longer than this value, the
+     * connection is closed.
+     */
+    Optional<Duration> readTimeout();
 }

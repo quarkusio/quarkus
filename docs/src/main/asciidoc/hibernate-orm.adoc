@@ -962,7 +962,11 @@ You can also fine-tune dialect behavior for specific databases using additional 
 ----
 quarkus.hibernate-orm."offline".dialect.mariadb.bytes-per-character=1
 quarkus.hibernate-orm."offline".dialect.mariadb.no-backslash-escapes=true
+quarkus.hibernate-orm."offline".dialect.mariadb.storage-engine=InnoDB <1>
+quarkus.hibernate-orm."inventory".dialect.mysql.storage-engine=MyISAM <2>
 ----
+<1> Set the storage engine for the MariaDB dialect of the `offline` persistence unit.
+<2> Different persistence units can use different storage engines.
 
 Refer to the <<configuration-reference>> section for more details on the available properties.
 

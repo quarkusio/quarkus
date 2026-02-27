@@ -3,21 +3,19 @@
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
    <parent>
-      <artifactId>quarkus-schema-registry-parent</artifactId>
+      <artifactId>quarkus-confluent-registry-parent</artifactId>
       <groupId>io.quarkus</groupId>
       <version>999-SNAPSHOT</version>
       <relativePath>../pom.xml</relativePath>
    </parent>
 
    <modelVersion>4.0.0</modelVersion>
-   <artifactId>quarkus-apicurio-registry-parent</artifactId>
-   <name>Quarkus - Apicurio Registry</name>
+   <artifactId>quarkus-confluent-registry-protobuf-parent</artifactId>
+   <name>Quarkus - Confluent Schema Registry - Protobuf</name>
    <packaging>pom</packaging>
 
    <modules>
-      <module>common</module>
-      <module>avro</module>
-      <module>json-schema</module>
-      <module>protobuf</module>
+      <module>deployment</module>
+      <module>runtime</module>
    </modules>
 </project>

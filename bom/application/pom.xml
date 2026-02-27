@@ -1794,6 +1794,16 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-apicurio-registry-protobuf</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-apicurio-registry-protobuf-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-confluent-registry-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -1820,6 +1830,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-confluent-registry-avro-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-confluent-registry-protobuf</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-confluent-registry-protobuf-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -3937,6 +3957,11 @@
             <dependency>
                 <groupId>io.apicurio</groupId>
                 <artifactId>apicurio-registry-jsonschema-serde-kafka</artifactId>
+                <version>${apicurio-registry.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.apicurio</groupId>
+                <artifactId>apicurio-registry-protobuf-serde-kafka</artifactId>
                 <version>${apicurio-registry.version}</version>
             </dependency>
             <dependency>
@@ -6684,7 +6709,6 @@
                                 <!-- we don't want our BOM to enforce Okhttp dependencies -->
                                 <key>com.squareup.okhttp3:*</key>
                                 <key>com.squareup.okhttp:*</key>
-                                <key>com.squareup.okio:*</key>
 
                                 <!-- jboss-parent:40 still manages jdk-misc, but does not define version.jdk-misc anymore. -->
                                 <!-- We can just remove it because is not needed anyway. -->

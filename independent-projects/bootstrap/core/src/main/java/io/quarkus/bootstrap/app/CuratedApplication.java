@@ -45,11 +45,11 @@ public class CuratedApplication implements Serializable, AutoCloseable {
 
     /**
      * The class path elements for the various artifacts. These can be used in multiple class loaders
-     * so this map allows them to be shared.
+     * so this static map allows them to be shared, both across class loaders and across multiple CuratedApplications.
      *
      * This should not be used for hot reloadable elements
      */
-    private final Map<ArtifactKey, ClassPathElement> augmentationElements = new HashMap<>();
+    private static final Map<String, ClassPathElement> DEPENDENCY_CLASSPATH_ELEMENTS = new HashMap<>();
 
     /**
      * The augmentation class loader.
@@ -196,7 +196,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                 }
             };
         }
-        ClassPathElement cpe = useCpeCache ? augmentationElements.get(artifact.getKey()) : null;
+        ClassPathElement cpe = useCpeCache ? DEPENDENCY_CLASSPATH_ELEMENTS.get(artifact.toGACTVString()) : null;
         if (cpe != null) {
             consumer.accept(cpe);
             return;
@@ -209,7 +209,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         cpe = ClassPathElement.fromDependency(contentTree, artifact);
         consumer.accept(cpe);
         if (useCpeCache) {
-            augmentationElements.put(artifact.getKey(), cpe);
+            DEPENDENCY_CLASSPATH_ELEMENTS.put(artifact.toGACTVString(), cpe);
         }
     }
 
@@ -475,7 +475,10 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             baseRuntimeClassLoader.close();
             baseRuntimeClassLoader = null;
         }
-        augmentationElements.clear();
+        // we clear the elements when CuratedApplication is closed.
+        // in the case of tests with multiple profiles, we keep the CuratedApplications around until the end of the test run
+        // so all the ClassPathElements are shared
+        DEPENDENCY_CLASSPATH_ELEMENTS.clear();
     }
 
     public boolean isEligibleForReuse() {

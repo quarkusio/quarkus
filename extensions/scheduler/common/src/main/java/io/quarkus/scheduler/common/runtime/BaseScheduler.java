@@ -54,7 +54,7 @@ public class BaseScheduler {
         if (!skipOffloadingInvoker) {
             invoker = new OffloadingInvoker(invoker, vertx);
         }
-        if (delay.isPresent()) {
+        if (delay.isPresent() && delay.getAsLong() > 0) {
             invoker = new DelayedExecutionInvoker(invoker, delay.getAsLong(), blockingExecutor, events.delayedExecution);
         }
         return invoker;

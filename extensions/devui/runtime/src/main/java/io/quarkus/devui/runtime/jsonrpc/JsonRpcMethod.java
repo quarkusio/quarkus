@@ -15,6 +15,8 @@ import io.smallrye.mutiny.Uni;
 public final class JsonRpcMethod {
     private Class bean;
     private String methodName;
+    private String jsonRpcName;
+    private String effectiveJsonRpcNameCache;
     private String description;
     private Method javaMethod;
     private Map<String, Parameter> parameters;
@@ -51,6 +53,42 @@ public final class JsonRpcMethod {
 
     public void setMethodName(String methodName) {
         this.methodName = methodName;
+        this.effectiveJsonRpcNameCache = null; // Invalidate cache
+    }
+
+    public String getJsonRpcName() {
+        return jsonRpcName;
+    }
+
+    public void setJsonRpcName(String jsonRpcName) {
+        this.jsonRpcName = jsonRpcName;
+        this.effectiveJsonRpcNameCache = null; // Invalidate cache
+    }
+
+    /**
+     * Returns the effective JsonRPC name by combining the namespace (extracted from methodName)
+     * with the jsonRpcName if set, otherwise returns the full methodName.
+     * <p>
+     * The jsonRpcName only overrides the method name part, not the namespace.
+     * For example, if methodName is "devui-continuous-testing_getContinuousTestingResults"
+     * and jsonRpcName is "getResults", the effective name would be "devui-continuous-testing_getResults".
+     *
+     * @return the effective name to use
+     */
+    public String getEffectiveJsonRpcName() {
+        if (effectiveJsonRpcNameCache != null) {
+            return effectiveJsonRpcNameCache;
+        }
+        if (jsonRpcName != null && methodName != null) {
+            int underscoreIndex = methodName.indexOf(UNDERSCORE);
+            if (underscoreIndex > 0) {
+                String namespace = methodName.substring(0, underscoreIndex);
+                effectiveJsonRpcNameCache = namespace + UNDERSCORE + jsonRpcName;
+                return effectiveJsonRpcNameCache;
+            }
+        }
+        effectiveJsonRpcNameCache = methodName;
+        return effectiveJsonRpcNameCache;
     }
 
     public String getDescription() {

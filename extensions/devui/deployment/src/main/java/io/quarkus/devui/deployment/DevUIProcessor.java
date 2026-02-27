@@ -105,6 +105,7 @@ import io.quarkus.qute.Qute;
 import io.quarkus.runtime.annotations.DevMCPEnableByDefault;
 import io.quarkus.runtime.annotations.JsonRpcDescription;
 import io.quarkus.runtime.annotations.JsonRpcUsage;
+import io.quarkus.runtime.annotations.OperationName;
 import io.quarkus.runtime.annotations.Usage;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
@@ -483,6 +484,7 @@ public class DevUIProcessor {
 
         DotName descriptionAnnotation = DotName.createSimple(JsonRpcDescription.class);
         DotName devMCPEnableByDefaultAnnotation = DotName.createSimple(DevMCPEnableByDefault.class);
+        DotName operationNameAnnotation = DotName.createSimple(OperationName.class);
 
         // Let's use the Jandex index to find all methods
         for (JsonRPCProvidersBuildItem jsonRPCProvidersBuildItem : jsonRPCProvidersBuildItems) {
@@ -498,6 +500,16 @@ public class DevUIProcessor {
                             && method.returnType().kind() != Type.Kind.VOID) {
 
                         String methodName = extension + UNDERSCORE + method.name();
+
+                        // Look for @OperationName annotation
+                        String operationName = null;
+                        AnnotationInstance operationNameAnnotationInstance = method.annotation(operationNameAnnotation);
+                        if (operationNameAnnotationInstance != null) {
+                            AnnotationValue operationNameValue = operationNameAnnotationInstance.value();
+                            if (operationNameValue != null && !operationNameValue.asString().isBlank()) {
+                                operationName = operationNameValue.asString();
+                            }
+                        }
 
                         Map<String, AbstractJsonRpcMethod.Parameter> parameters = new LinkedHashMap<>(); // Keep the order
                         for (int i = 0; i < method.parametersCount(); i++) {
@@ -555,7 +567,20 @@ public class DevUIProcessor {
                             usage = Usage.onlyDevUI();
                         }
 
-                        RuntimeJsonRpcMethod runtimeJsonRpcMethod = new RuntimeJsonRpcMethod(methodName, description,
+                        // Warn if effective JsonRPC name exceeds 60 characters
+                        // The operationName only overrides the method part, namespace is preserved
+                        String effectiveJsonRpcName = operationName != null
+                                ? (extension + UNDERSCORE + operationName)
+                                : methodName;
+                        if (effectiveJsonRpcName.length() > 60) {
+                            log.warnf("JsonRPC method name '%s' exceeds 60 characters (length: %d). " +
+                                    "Consider adding @OperationName annotation with a shorter name. " +
+                                    "MCP clients may introduce a name size limit.",
+                                    effectiveJsonRpcName, effectiveJsonRpcName.length());
+                        }
+
+                        RuntimeJsonRpcMethod runtimeJsonRpcMethod = new RuntimeJsonRpcMethod(methodName, operationName,
+                                description,
                                 parameters,
                                 usage,
                                 mcpEnabledByDefault,
@@ -663,6 +688,7 @@ public class DevUIProcessor {
         JsonRpcMethod o = new JsonRpcMethod();
 
         o.setMethodName(i.getMethodName());
+        o.setJsonRpcName(i.getJsonRpcName());
         o.setDescription(i.getDescription());
         o.setUsage(List.copyOf(i.getUsage()));
         o.setMcpEnabledByDefault(i.isMcpEnabledByDefault());

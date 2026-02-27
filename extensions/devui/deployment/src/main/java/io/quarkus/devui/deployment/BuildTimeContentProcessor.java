@@ -270,6 +270,7 @@ public class BuildTimeContentProcessor {
             // Build time methods
             for (DeploymentJsonRpcMethod deploymentJsonRpcMethod : actions.getDeploymentActions()) {
                 String fullName = extensionPathName + UNDERSCORE + deploymentJsonRpcMethod.getMethodName();
+                warnIfJsonRpcNameTooLong(deploymentJsonRpcMethod.getEffectiveJsonRpcName(), fullName);
                 if (deploymentJsonRpcMethod.hasAction()) {
                     DevConsoleManager.register(fullName, deploymentJsonRpcMethod.getAction());
                 } else if (deploymentJsonRpcMethod.hasAssistantAction()) {
@@ -282,6 +283,7 @@ public class BuildTimeContentProcessor {
             // Build time recorded values
             for (RecordedJsonRpcMethod recordedJsonRpcMethod : actions.getRecordedActions()) {
                 String fullName = extensionPathName + UNDERSCORE + recordedJsonRpcMethod.getMethodName();
+                warnIfJsonRpcNameTooLong(recordedJsonRpcMethod.getEffectiveJsonRpcName(), fullName);
                 recordedJsonRpcMethod.setMethodName(fullName);
                 recordedMethods.put(fullName, recordedJsonRpcMethod);
             }
@@ -289,6 +291,7 @@ public class BuildTimeContentProcessor {
             // Build time subscriptions
             for (DeploymentJsonRpcMethod deploymentJsonRpcSubscription : actions.getDeploymentSubscriptions()) {
                 String fullName = extensionPathName + UNDERSCORE + deploymentJsonRpcSubscription.getMethodName();
+                warnIfJsonRpcNameTooLong(deploymentJsonRpcSubscription.getEffectiveJsonRpcName(), fullName);
                 if (deploymentJsonRpcSubscription.hasAction()) {
                     DevConsoleManager.register(fullName, deploymentJsonRpcSubscription.getAction());
                 } else if (deploymentJsonRpcSubscription.hasAssistantAction()) {
@@ -300,6 +303,7 @@ public class BuildTimeContentProcessor {
             // Build time recorded subscription
             for (RecordedJsonRpcMethod recordedJsonRpcSubscription : actions.getRecordedSubscriptions()) {
                 String fullName = extensionPathName + UNDERSCORE + recordedJsonRpcSubscription.getMethodName();
+                warnIfJsonRpcNameTooLong(recordedJsonRpcSubscription.getEffectiveJsonRpcName(), fullName);
                 recordedJsonRpcSubscription.setMethodName(fullName);
                 recordedSubscriptions.put(fullName, recordedJsonRpcSubscription);
             }
@@ -1366,6 +1370,30 @@ public class BuildTimeContentProcessor {
 
         static Color from(int hue, int saturation, int lightness, double alpha) {
             return new Color(hue, saturation, lightness, alpha);
+        }
+    }
+
+    private static final int MAX_MCP_NAME_LENGTH = 60;
+
+    private void warnIfJsonRpcNameTooLong(String jsonRpcName, String fullName) {
+        // The jsonRpcName only overrides the method part, namespace is preserved
+        String effectiveName;
+        if (jsonRpcName != null) {
+            int underscoreIndex = fullName.indexOf(UNDERSCORE);
+            if (underscoreIndex > 0) {
+                String namespace = fullName.substring(0, underscoreIndex);
+                effectiveName = namespace + UNDERSCORE + jsonRpcName;
+            } else {
+                effectiveName = fullName;
+            }
+        } else {
+            effectiveName = fullName;
+        }
+        if (effectiveName.length() > MAX_MCP_NAME_LENGTH) {
+            log.warnf("JsonRPC method name '%s' exceeds %d characters (length: %d). " +
+                    "Consider using a shorter .methodName() on the builder. " +
+                    "MCP clients may introduce a name size limit.",
+                    effectiveName, MAX_MCP_NAME_LENGTH, effectiveName.length());
         }
     }
 

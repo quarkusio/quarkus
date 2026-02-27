@@ -62,13 +62,22 @@ public abstract class AbstractDevUIBuildItem extends MultiBuildItem {
         return this.artifactKey;
     }
 
+    private String cachedExtensionPathName = null;
+
     public String getExtensionPathName(CurateOutcomeBuildItem curateOutcomeBuildItem) {
+        if (this.cachedExtensionPathName != null) {
+            return this.cachedExtensionPathName;
+        }
+
         if (this.extensionIdentifier == null) {
             ArtifactKey ak = getArtifactKey(curateOutcomeBuildItem);
             this.extensionIdentifier = ak.getArtifactId();
         }
 
-        return this.extensionIdentifier;
+        // Return full identifier without stripping prefixes
+        // Use @OperationName annotation for shorter names
+        this.cachedExtensionPathName = this.extensionIdentifier;
+        return this.cachedExtensionPathName;
     }
 
     public boolean isInternal() {

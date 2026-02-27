@@ -32,6 +32,21 @@ public final class RuntimeJsonRpcMethod extends AbstractJsonRpcMethod {
         this.nonBlocking = nonBlocking;
     }
 
+    public RuntimeJsonRpcMethod(String methodName,
+            String jsonRpcName,
+            String description,
+            Map<String, Parameter> parameters,
+            EnumSet<Usage> usage,
+            boolean mcpEnabledByDefault,
+            Class<?> bean,
+            boolean blocking,
+            boolean nonBlocking) {
+        super(methodName, jsonRpcName, description, parameters, usage, mcpEnabledByDefault);
+        this.bean = bean;
+        this.blocking = blocking;
+        this.nonBlocking = nonBlocking;
+    }
+
     public Class<?> getBean() {
         return bean;
     }

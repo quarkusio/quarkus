@@ -1,5 +1,6 @@
 package io.quarkus.devui.runtime.mcp;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import jakarta.enterprise.inject.spi.CDI;
@@ -7,6 +8,7 @@ import jakarta.enterprise.inject.spi.CDI;
 import io.quarkus.devui.runtime.comms.JsonRpcRouter;
 import io.quarkus.devui.runtime.comms.MessageType;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcCodec;
+import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcRequest;
 import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
 import io.quarkus.devui.runtime.mcp.model.InitializeResponse;
@@ -22,6 +24,9 @@ public class McpHttpHandler implements Handler<RoutingContext> {
     private final String quarkusVersion;
     private final JsonMapper jsonMapper;
     private final JsonRpcCodec codec;
+
+    // Lazily built mapping from mcpName -> jsonRpcMethodName
+    private volatile Map<String, String> mcpNameToJsonRpcName;
 
     public McpHttpHandler(String quarkusVersion, JsonMapper jsonMapper) {
         this.quarkusVersion = quarkusVersion;
@@ -120,6 +125,12 @@ public class McpHttpHandler implements Handler<RoutingContext> {
                 jsonRpcRequest.setParams(Map.of("uri", uri));
                 jsonRpcRouter.route(jsonRpcRequest, writer);
             } else {
+                // Translate MCP name to JsonRPC name if needed
+                String jsonRpcMethodName = translateMcpNameToJsonRpcName(jsonRpcRouter, methodName);
+                if (!jsonRpcMethodName.equals(methodName)) {
+                    jsonRpcRequest.setMethod(jsonRpcMethodName);
+                }
+
                 if (jsonRpcRouter.isEnabled(jsonRpcRequest)) {
                     jsonRpcRouter.route(jsonRpcRequest, writer);
                 } else {
@@ -146,6 +157,57 @@ public class McpHttpHandler implements Handler<RoutingContext> {
         // TODO: Do something with the notification ?
 
         writer.getResponse().setStatusCode(202).end();
+    }
+
+    private String translateMcpNameToJsonRpcName(JsonRpcRouter jsonRpcRouter, String mcpName) {
+        // Check if mcpName is already a valid JsonRPC method
+        if (isKnownJsonRpcMethod(jsonRpcRouter, mcpName)) {
+            return mcpName;
+        }
+
+        // Lazily build the mapping
+        if (mcpNameToJsonRpcName == null) {
+            synchronized (this) {
+                if (mcpNameToJsonRpcName == null) {
+                    mcpNameToJsonRpcName = buildMcpNameMapping(jsonRpcRouter);
+                }
+            }
+        }
+
+        return mcpNameToJsonRpcName.getOrDefault(mcpName, mcpName);
+    }
+
+    private boolean isKnownJsonRpcMethod(JsonRpcRouter router, String name) {
+        return router.getRuntimeMethodsMap().containsKey(name)
+                || router.getRuntimeSubscriptionMap().containsKey(name)
+                || router.getDeploymentMethodsMap().containsKey(name)
+                || router.getDeploymentSubscriptionsMap().containsKey(name)
+                || router.getRecordedMethodsMap().containsKey(name)
+                || router.getRecordedSubscriptionsMap().containsKey(name);
+    }
+
+    private Map<String, String> buildMcpNameMapping(JsonRpcRouter router) {
+        Map<String, String> mapping = new HashMap<>();
+
+        addMappings(mapping, router.getRuntimeMethodsMap());
+        addMappings(mapping, router.getRuntimeSubscriptionMap());
+        addMappings(mapping, router.getDeploymentMethodsMap());
+        addMappings(mapping, router.getDeploymentSubscriptionsMap());
+        addMappings(mapping, router.getRecordedMethodsMap());
+        addMappings(mapping, router.getRecordedSubscriptionsMap());
+
+        return mapping;
+    }
+
+    private void addMappings(Map<String, String> mapping, Map<String, JsonRpcMethod> methods) {
+        for (JsonRpcMethod method : methods.values()) {
+            if (method.getJsonRpcName() != null) {
+                String effectiveName = method.getEffectiveJsonRpcName();
+                if (!effectiveName.equals(method.getMethodName())) {
+                    mapping.put(effectiveName, method.getMethodName());
+                }
+            }
+        }
     }
 
     private static final String SLASH = "/";

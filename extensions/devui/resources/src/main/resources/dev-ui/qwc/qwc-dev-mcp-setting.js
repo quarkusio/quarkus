@@ -303,6 +303,13 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
         }
       },
       {
+        name: 'Claude Code',
+        icon: 'font-awesome-solid:terminal',
+        file: 'Run in terminal',
+        docsUrl: 'https://docs.anthropic.com/en/docs/claude-code',
+        configString: `claude mcp add --transport http devmcp ${this._mcpPath}`
+      },
+      {
         name: 'Cline',
         icon: 'font-awesome-solid:terminal',
         file: 'Cline MCP Settings (via UI)',

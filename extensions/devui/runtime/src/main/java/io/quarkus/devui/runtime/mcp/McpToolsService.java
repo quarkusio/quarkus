@@ -82,7 +82,8 @@ public class McpToolsService {
 
     private Tool toTool(JsonRpcMethod jsonRpcMethod) {
         Tool tool = new Tool();
-        tool.name = jsonRpcMethod.getMethodName();
+        // Use effective JsonRPC name (jsonRpcName if set, otherwise methodName)
+        tool.name = jsonRpcMethod.getEffectiveJsonRpcName();
         if (jsonRpcMethod.getDescription() != null && !jsonRpcMethod.getDescription().isBlank()) {
             tool.description = jsonRpcMethod.getDescription();
         }

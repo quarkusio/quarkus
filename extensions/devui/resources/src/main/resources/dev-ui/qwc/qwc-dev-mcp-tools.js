@@ -265,11 +265,11 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
     }
 
     _namespaceRenderer(prop) {
-        return html`${prop.name.split('_')[0]}`;
+        return html`<span title="${prop.name}">${prop.name.split('_')[0]}</span>`;
     }
-    
+
     _nameRenderer(prop) {
-        return html`${prop.name.split('_')[1]}`;
+        return html`<span title="${prop.name}">${prop.name.split('_')[1]}</span>`;
     }
 
     _noOfParameterRenderer(prop) {

@@ -161,7 +161,46 @@ The code in the `function` runs on the deployment classpath. The function can re
 
 By default this tool will be disabled, and the user has to enable it in Dev UI. You can change this default by adding `.enableMcpFuctionByDefault()` in the builder method.
 
+=== Method naming
+
+MCP tool names are constructed as `namespace_methodName`, where the namespace is typically derived from the extension's artifact ID (e.g., `quarkus-smallrye-health_getHealth`).
+
+Some MCP clients may introduce a name size limit. Since the client may also prepend its own server identifier prefix, it's recommended to keep method names under 60 characters.
+
+==== Shortening runtime method names
+
+For runtime classpath methods, use the `@OperationName` annotation to provide a shorter method name:
+
+[source,java]
+----
+public class MyExtensionRPCService {
+
+    @OperationName("getHealth")  // <1>
+    @JsonRpcDescription("Get the current health status")
+    public SmallRyeHealth getDetailedHealthCheckResults() { // <2>
+        // implementation…
+    }
+}
+----
+<1> The `@OperationName` annotation overrides the method name part. The full MCP name becomes `namespace_getHealth` instead of `namespace_getDetailedHealthCheckResults`.
+<2> The Java method name can remain descriptive for code readability.
+
+==== Shortening deployment method names
+
+For deployment classpath methods, simply use a shorter name in the `.methodName()` builder call:
+
+[source,java]
+----
+actions.actionBuilder()
+        .methodName("getResults")  // <1>
+        .description("Get the test results")
+        .enableMcpFuctionByDefault()
+        .function(ignored -> getTestResults())
+        .build();
+----
+<1> Use a concise method name directly. The full MCP name becomes `namespace_getResults`.
+
 === JSON‑RPC usage
 
-By default all JSON‑RPC methods are visible in the Dev UI. Only methods with descriptions are exposed via Dev MCP. 
+By default all JSON‑RPC methods are visible in the Dev UI. Only methods with descriptions are exposed via Dev MCP.
 You can override this behaviour with the `@JsonRpcUsage` annotation. Pass one or both of the `Usage` enums (`DEV_UI`, `DEV_MCP`) to control where a method is exposed.

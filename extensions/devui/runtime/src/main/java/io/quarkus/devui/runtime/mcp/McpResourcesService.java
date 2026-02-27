@@ -181,8 +181,10 @@ public class McpResourcesService {
         for (JsonRpcMethod recordedJsonRpcMethod : recordedMethodsMap.values()) {
             if (isEnabled(recordedJsonRpcMethod, filter)) {
                 Resource resource = new Resource();
+                // Keep URI using methodName for internal routing
                 resource.uri = URI_SCHEME + SUB_SCHEME_RECORDED + recordedJsonRpcMethod.getMethodName();
-                resource.name = recordedJsonRpcMethod.getMethodName();
+                // Use effective MCP name for display
+                resource.name = recordedJsonRpcMethod.getEffectiveJsonRpcName();
 
                 if (recordedJsonRpcMethod.getDescription() != null && !recordedJsonRpcMethod.getDescription().isBlank()) {
                     resource.description = recordedJsonRpcMethod.getDescription();

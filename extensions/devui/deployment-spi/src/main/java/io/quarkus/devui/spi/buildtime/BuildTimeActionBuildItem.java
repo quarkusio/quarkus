@@ -184,7 +184,8 @@ public final class BuildTimeActionBuildItem extends AbstractDevUIBuildItem {
                 parameters = null;
             if (function != null) {
                 return addAction(
-                        new DeploymentJsonRpcMethod(methodName, description, parameters, autoUsage(usage, description),
+                        new DeploymentJsonRpcMethod(methodName, description, parameters,
+                                autoUsage(usage, description),
                                 mcpEnabledByDefault,
                                 function));
             } else if (runtimeValue != null) {
@@ -194,7 +195,8 @@ public final class BuildTimeActionBuildItem extends AbstractDevUIBuildItem {
                                 runtimeValue));
             } else if (assistantFunction != null) {
                 return addAction(
-                        new DeploymentJsonRpcMethod(methodName, description, parameters, autoUsage(usage, description),
+                        new DeploymentJsonRpcMethod(methodName, description, parameters,
+                                autoUsage(usage, description),
                                 mcpEnabledByDefault,
                                 assistantFunction));
             } else {
@@ -266,12 +268,14 @@ public final class BuildTimeActionBuildItem extends AbstractDevUIBuildItem {
             if (parameters.isEmpty())
                 parameters = null;
             if (function != null) {
-                addSubscription(new DeploymentJsonRpcMethod(methodName, description, parameters, autoUsage(usage, description),
+                addSubscription(new DeploymentJsonRpcMethod(methodName, description, parameters,
+                        autoUsage(usage, description),
                         mcpEnabledByDefault,
                         function));
             } else if (runtimeValue != null) {
                 addSubscription(
-                        new RecordedJsonRpcMethod(methodName, description, autoUsage(usage, description), mcpEnabledByDefault,
+                        new RecordedJsonRpcMethod(methodName, description, autoUsage(usage, description),
+                                mcpEnabledByDefault,
                                 runtimeValue));
             } else {
                 throw new IllegalStateException("Either function or runtimeValue must be provided");

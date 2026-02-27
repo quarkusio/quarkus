@@ -266,6 +266,9 @@ public class ContinuousTestingProcessor {
                 .build();
     }
 
+    /**
+     * Internal method used by ContinuousTestingJsonRPCService.
+     */
     private void registerGetResultsMethod(LaunchModeBuildItem launchModeBuildItem, BuildTimeActionBuildItem actions) {
         actions.actionBuilder()
                 .methodName("getResults")
@@ -276,11 +279,11 @@ public class ContinuousTestingProcessor {
     }
 
     /**
-     * Duplicate of getResults but using a MCP friendly version of TestRunResults.
+     * MCP method returning trimmed TestRunResults.
      */
     private void registerGetResultsMCPMethod(LaunchModeBuildItem launchModeBuildItem, BuildTimeActionBuildItem actions) {
         actions.actionBuilder()
-                .methodName("getContinuousTestingResults")
+                .methodName("getTestResults")
                 .description("Get the results of a Continuous testing test run")
                 .enableMcpFuctionByDefault()
                 .function(ignored -> {

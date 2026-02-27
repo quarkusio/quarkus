@@ -185,10 +185,16 @@ public interface RestClientsConfig {
 
     /**
      * The time in ms for which a connection remains unused in the connection pool before being evicted and closed.
+     * <p>
+     * Although this is set in milliseconds, the underlying client can only be configured in seconds, meaning that
+     * for this value to actually take effect, it must be higher than {@code 1000}; any value less than or equal to {@code 999}
+     * is converted to 0 seconds.
+     * <p>
      * A timeout of {@code 0} means there is no timeout.
      * <p>
      * Can be overwritten by client-specific settings.
      */
+    @ConfigDocDefault("60000")
     OptionalInt connectionTTL();
 
     /**
@@ -636,8 +642,15 @@ public interface RestClientsConfig {
 
         /**
          * The time in ms for which a connection remains unused in the connection pool before being evicted and closed.
+         * <p>
+         * Although this is set in milliseconds, the underlying client can only be configured in seconds, meaning that
+         * for this value to actually take effect, it must be higher than {@code 1000}; any value less than or equal to
+         * {@code 999}
+         * is converted to 0 seconds.
+         * <p>
          * A timeout of {@code 0} means there is no timeout.
          */
+        @ConfigDocDefault("60000")
         OptionalInt connectionTTL();
 
         /**

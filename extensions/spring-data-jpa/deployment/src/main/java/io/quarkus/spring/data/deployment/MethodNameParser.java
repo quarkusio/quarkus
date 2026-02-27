@@ -237,6 +237,10 @@ public class MethodNameParser {
                     }
 
                 }
+            } else {
+                // Qualify simple field references with the entity alias to avoid JPQL ambiguity
+                // when a field name matches the entity alias (e.g. field 'category' on entity 'Category')
+                fieldName = entityAlias + "." + fieldName;
             }
             validateFieldWithOperation(operation, fieldInfo, fieldName, repositoryMethodDescription);
             if ((ignoreCase || allIgnoreCase) && !DotNames.STRING.equals(fieldInfo.type().name())) {

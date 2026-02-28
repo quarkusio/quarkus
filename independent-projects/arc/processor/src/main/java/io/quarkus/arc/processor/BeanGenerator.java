@@ -1,7 +1,9 @@
 package io.quarkus.arc.processor;
 
-import static io.quarkus.arc.processor.Annotations.uniqueAnnotations;
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
+import static io.quarkus.arc.processor.Reproducibility.orderedAnnotations;
+import static io.quarkus.arc.processor.Reproducibility.orderedStereotypes;
+import static io.quarkus.arc.processor.Reproducibility.orderedTypes;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.fieldDescOf;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
@@ -446,7 +448,7 @@ public class BeanGenerator extends AbstractGenerator {
 
                 // Bean types
                 RuntimeTypeCreator rttc = RuntimeTypeCreator.of(bc).withTCCL(tccl);
-                Expr typesSet = bc.setOf(bean.getTypes().stream().toList(), type -> {
+                Expr typesSet = bc.setOf(orderedTypes(bean.getTypes()), type -> {
                     try {
                         return rttc.create(type);
                     } catch (IllegalArgumentException e) {
@@ -457,7 +459,7 @@ public class BeanGenerator extends AbstractGenerator {
 
                 // Qualifiers
                 if (!bean.getQualifiers().isEmpty() && !bean.hasDefaultQualifiers()) {
-                    Expr qualifiersSet = bc.setOf(uniqueAnnotations(bean.getQualifiers()), qualifier -> {
+                    Expr qualifiersSet = bc.setOf(orderedAnnotations(bean.getQualifiers()), qualifier -> {
                         BuiltinQualifier builtinQualifier = BuiltinQualifier.of(qualifier);
                         if (builtinQualifier != null) {
                             return builtinQualifier.getLiteralInstance();
@@ -471,7 +473,7 @@ public class BeanGenerator extends AbstractGenerator {
 
                 // Stereotypes
                 if (!bean.getStereotypes().isEmpty()) {
-                    Expr stereotypesSet = bc.setOf(bean.getStereotypes(),
+                    Expr stereotypesSet = bc.setOf(orderedStereotypes(bean.getStereotypes()),
                             stereotype -> Const.of(classDescOf(stereotype.getTarget())));
                     bc.set(cc.this_().field(stereotypesField), stereotypesSet);
                 }
@@ -708,7 +710,7 @@ public class BeanGenerator extends AbstractGenerator {
             }));
 
             // Interceptor bindings
-            List<AnnotationInstance> bindings = uniqueAnnotations(aroundConstructInterception.bindings);
+            List<AnnotationInstance> bindings = orderedAnnotations(aroundConstructInterception.bindings);
             LocalVar bindingsSet = bc.localVar("bindings", bc.setOf(bindings, binding -> {
                 ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.name());
                 return annotationLiterals.create(bc, bindingClass, binding);
@@ -908,7 +910,7 @@ public class BeanGenerator extends AbstractGenerator {
             }));
 
             // Interceptor bindings
-            List<AnnotationInstance> bindings = uniqueAnnotations(postConstructInterception.bindings);
+            List<AnnotationInstance> bindings = orderedAnnotations(postConstructInterception.bindings);
             LocalVar bindingsSet = bc.localVar("bindings", bc.setOf(bindings, binding -> {
                 ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.name());
                 return annotationLiterals.create(bc, bindingClass, binding);

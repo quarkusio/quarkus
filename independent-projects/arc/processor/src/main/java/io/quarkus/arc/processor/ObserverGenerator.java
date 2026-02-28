@@ -1,7 +1,7 @@
 package io.quarkus.arc.processor;
 
-import static io.quarkus.arc.processor.Annotations.uniqueAnnotations;
 import static io.quarkus.arc.processor.ClientProxyGenerator.MOCK_FIELD;
+import static io.quarkus.arc.processor.Reproducibility.orderedAnnotations;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
 
@@ -303,7 +303,7 @@ public class ObserverGenerator extends AbstractGenerator {
                 bc.set(cc.this_().field(observedTypeField), RuntimeTypeCreator.of(bc).create(observer.getObservedType()));
 
                 if (observedQualifiersField != null) {
-                    Expr set = bc.setOf(uniqueAnnotations(observer.getQualifiers()), qualifier -> {
+                    Expr set = bc.setOf(orderedAnnotations(observer.getQualifiers()), qualifier -> {
                         BuiltinQualifier builtin = BuiltinQualifier.of(qualifier);
                         if (builtin != null) {
                             return builtin.getLiteralInstance();

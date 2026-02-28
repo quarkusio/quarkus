@@ -139,12 +139,13 @@ public class BeanInfo implements InjectionTargetInfo {
         this.beanDeployment = beanDeployment;
         this.scope = scope != null ? scope : BuiltinScope.DEPENDENT.getInfo();
         types.add(ClassType.OBJECT_TYPE);
+        types = Unique.types(types);
         this.types = types;
         for (Type type : types) {
             Beans.analyzeType(type, beanDeployment);
         }
-        this.unrestrictedTypes = unrestrictedTypes != null ? unrestrictedTypes : types;
-        this.qualifiers = Beans.addImplicitQualifiers(qualifiers);
+        this.unrestrictedTypes = unrestrictedTypes != null ? Unique.types(unrestrictedTypes) : types;
+        this.qualifiers = Unique.annotations(Beans.addImplicitQualifiers(qualifiers));
         // we have a fast path for all beans which didn't have a qualifier and for which we added them, which is the most common case
         this.hasDefaultQualifiers = (this.qualifiers == BuiltinQualifier.DEFAULT_QUALIFIERS) ||
                 (this.qualifiers.size() == 2 && this.qualifiers.contains(BuiltinQualifier.DEFAULT.getInstance())
@@ -154,7 +155,7 @@ public class BeanInfo implements InjectionTargetInfo {
         this.disposer = disposer;
         this.alternative = alternative;
         this.priority = priority;
-        this.stereotypes = stereotypes;
+        this.stereotypes = Unique.stereotypes(stereotypes);
         this.name = name;
         this.defaultBean = isDefaultBean;
         this.creatorConsumer = creatorConsumer;
@@ -917,12 +918,10 @@ public class BeanInfo implements InjectionTargetInfo {
     }
 
     private void putLifecycleInterceptors(Map<InterceptionType, InterceptionInfo> lifecycleInterceptors,
-            Set<AnnotationInstance> classLevelBindings,
-            InterceptionType interceptionType) {
-        List<InterceptorInfo> interceptors = beanDeployment.getInterceptorResolver().resolve(interceptionType,
-                classLevelBindings);
+            Set<AnnotationInstance> bindings, InterceptionType interceptionType) {
+        List<InterceptorInfo> interceptors = beanDeployment.getInterceptorResolver().resolve(interceptionType, bindings);
         if (!interceptors.isEmpty()) {
-            lifecycleInterceptors.put(interceptionType, new InterceptionInfo(interceptors, classLevelBindings));
+            lifecycleInterceptors.put(interceptionType, new InterceptionInfo(interceptors, bindings));
         }
     }
 
@@ -1062,7 +1061,7 @@ public class BeanInfo implements InjectionTargetInfo {
 
         InterceptionInfo(List<InterceptorInfo> interceptors, Set<AnnotationInstance> bindings) {
             this.interceptors = interceptors;
-            this.bindings = bindings;
+            this.bindings = Unique.annotations(bindings);
         }
 
         boolean isEmpty() {

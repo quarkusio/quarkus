@@ -206,7 +206,7 @@ public class ObserverInfo implements InjectionTargetInfo {
         this.reception = reception;
         this.transactionPhase = transactionPhase;
         this.observedType = observedType;
-        this.qualifiers = qualifiers;
+        this.qualifiers = Unique.annotations(qualifiers);
         this.notify = notify;
         this.params = params;
         this.forceApplicationClass = forceApplicationClass;

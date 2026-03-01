@@ -1,4 +1,4 @@
-package io.quarkus.test.junit;
+package io.quarkus.test.config;
 
 import static io.quarkus.value.registry.ValueRegistry.RuntimeKey.key;
 
@@ -9,12 +9,10 @@ import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
 
 /**
  * A field injector for JUnit to allow the resolution of {@link ValueRegistry} and {@link ValueRegistry.RuntimeInfo}
- * objects, available in {@link io.quarkus.test.junit.QuarkusTestExtension} and
- * {@link io.quarkus.test.junit.QuarkusIntegrationTestExtension}.
+ * objects in Quarkus Test Extensions.
  */
 public class ValueRegistryInjector {
-    public static void inject(Object testInstance, QuarkusTestExtensionState extensionContext) {
-        ValueRegistry valueRegistry = extensionContext.getValueRegistry();
+    public static void inject(Object testInstance, ValueRegistry valueRegistry) {
         Class<?> c = testInstance.getClass();
         while (c != Object.class) {
             for (Field f : c.getDeclaredFields()) {

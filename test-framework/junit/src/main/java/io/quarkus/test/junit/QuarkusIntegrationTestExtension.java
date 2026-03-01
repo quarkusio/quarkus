@@ -41,6 +41,7 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
@@ -61,6 +62,7 @@ import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestHostLauncher;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestScopeManager;
+import io.quarkus.test.config.ValueRegistryParameterResolver;
 import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 import io.quarkus.test.junit.launcher.ArtifactLauncherProvider;
 import io.quarkus.value.registry.ValueRegistry;
@@ -331,13 +333,14 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                             }).build())
                     .withRuntimeSource(config)
                     .build();
-            context.getStore(LAUNCHER_SESSION, CONFIG).put(ValueRegistry.class, valueRegistry);
             listeningAddress.ifPresent(address -> address.register(valueRegistry, config));
+            context.getStore(LAUNCHER_SESSION, CONFIG).put(ValueRegistry.class.getName(), valueRegistry);
+            context.getStore(Namespace.GLOBAL).put(ValueRegistry.class.getName(), valueRegistry);
 
             Closeable resource = new IntegrationTestExtensionStateResource(launcher,
                     devServicesLaunchResult.getCuratedApplication());
-            IntegrationTestExtensionState state = new IntegrationTestExtensionState(valueRegistry, testResourceManager,
-                    resource, AbstractTestWithCallbacksExtension::clearCallbacks, listeningAddress, sysPropRestore);
+            IntegrationTestExtensionState state = new IntegrationTestExtensionState(testResourceManager, resource,
+                    AbstractTestWithCallbacksExtension::clearCallbacks, listeningAddress, sysPropRestore);
             testHttpEndpointProviders = TestHttpEndpointProvider.load();
 
             return state;

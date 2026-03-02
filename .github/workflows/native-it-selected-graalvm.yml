@@ -242,7 +242,7 @@ jobs:
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: m2-io-quarkus
           path: .
@@ -347,7 +347,7 @@ jobs:
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: m2-io-quarkus
           path: .
@@ -408,7 +408,7 @@ jobs:
     needs: [build-jdk17,native-tests,virtual-thread-native-tests]
     if: always()
     steps:
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           path: build-reports-artifacts
       - name: Set up JDK 17

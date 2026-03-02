@@ -7,25 +7,26 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-import io.strimzi.test.container.StrimziKafkaContainer;
+import io.strimzi.test.container.StrimziKafkaCluster;
 
 public class KafkaSASLTestResource implements QuarkusTestResourceLifecycleManager {
 
-    private final StrimziKafkaContainer kafka = new StrimziKafkaContainer()
-            .withBrokerId(0)
+    private final StrimziKafkaCluster kafka = new StrimziKafkaCluster.StrimziKafkaClusterBuilder()
+            .withContainerCustomizer(c -> c
+                    .withKafkaConfigurationMap(Map.ofEntries(
+                            entry("listener.security.protocol.map",
+                                    "SASL_PLAINTEXT:SASL_PLAINTEXT,BROKER1:PLAINTEXT,PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"),
+                            entry("sasl.enabled.mechanisms", "PLAIN"),
+                            entry("sasl.mechanism.inter.broker.protocol", "PLAIN"),
+                            entry("listener.name.sasl_plaintext.plain.sasl.jaas.config",
+                                    "org.apache.kafka.common.security.plain.PlainLoginModule required " +
+                                            "username=\"broker\" " +
+                                            "password=\"broker-secret\" " +
+                                            "user_broker=\"broker-secret\" " +
+                                            "user_client=\"client-secret\";"))))
             .withBootstrapServers(c -> String.format("SASL_PLAINTEXT://%s:%s", c.getHost(),
                     c.getMappedPort(KAFKA_PORT)))
-            .withKafkaConfigurationMap(Map.ofEntries(
-                    entry("listener.security.protocol.map",
-                            "SASL_PLAINTEXT:SASL_PLAINTEXT,BROKER1:PLAINTEXT,PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"),
-                    entry("sasl.enabled.mechanisms", "PLAIN"),
-                    entry("sasl.mechanism.inter.broker.protocol", "PLAIN"),
-                    entry("listener.name.sasl_plaintext.plain.sasl.jaas.config",
-                            "org.apache.kafka.common.security.plain.PlainLoginModule required " +
-                                    "username=\"broker\" " +
-                                    "password=\"broker-secret\" " +
-                                    "user_broker=\"broker-secret\" " +
-                                    "user_client=\"client-secret\";")));
+            .build();
 
     @Override
     public Map<String, String> start() {

@@ -11,13 +11,13 @@ import org.testcontainers.utility.MountableFile;
 
 import io.quarkus.it.kafka.containers.KerberosContainer;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-import io.strimzi.test.container.StrimziKafkaContainer;
+import io.strimzi.test.container.StrimziKafkaCluster;
 
 public class KafkaSaslTestResource implements QuarkusTestResourceLifecycleManager {
 
     private final Logger log = Logger.getLogger(KafkaSaslTestResource.class);
 
-    private StrimziKafkaContainer kafka;
+    private StrimziKafkaCluster kafka;
     private KerberosContainer kerberos;
 
     @Override
@@ -34,31 +34,32 @@ public class KafkaSaslTestResource implements QuarkusTestResourceLifecycleManage
         properties.put("java.security.krb5.conf", "src/test/resources/krb5.conf");
 
         //Start kafka container
-        kafka = new StrimziKafkaContainer()
-                .withBrokerId(0)
+        kafka = new StrimziKafkaCluster.StrimziKafkaClusterBuilder()
+                .withSharedNetwork()
                 .withBootstrapServers(
                         c -> String.format("SASL_PLAINTEXT://%s:%s", c.getHost(), c.getMappedPort(KAFKA_PORT)))
-                .withKafkaConfigurationMap(Map.ofEntries(
-                        entry("listener.security.protocol.map",
-                                "SASL_PLAINTEXT:SASL_PLAINTEXT,BROKER1:PLAINTEXT,CONTROLLER:PLAINTEXT"),
-                        entry("inter.broker.listener.name", "SASL_PLAINTEXT"),
-                        entry("sasl.enabled.mechanisms", "GSSAPI"),
-                        entry("sasl.mechanism.inter.broker.protocol", "GSSAPI"),
-                        entry("listener.name.sasl_plaintext.gssapi.sasl.jaas.config",
-                                "com.sun.security.auth.module.Krb5LoginModule required " +
-                                        "useKeyTab=true storeKey=true debug=true serviceName=\"kafka\" " +
-                                        "keyTab=\"/opt/kafka/config/kafkabroker.keytab\" " +
-                                        "principal=\"kafka/localhost@EXAMPLE.COM\";"),
-                        entry("sasl.kerberos.service.name", "kafka"),
-                        entry("ssl.endpoint.identification.algorithm", "https"),
-                        entry("ssl.client.auth", "none")))
-                .withPort(KAFKA_PORT)
-                .withCopyFileToContainer(MountableFile.forClasspathResource("krb5KafkaBroker.conf"),
-                        "/etc/krb5.conf")
-                .withCopyFileToContainer(MountableFile.forHostPath("target/kafkabroker.keytab"),
-                        "/opt/kafka/config/kafkabroker.keytab");
+                .withContainerCustomizer(c -> c
+                        .withKafkaConfigurationMap(Map.ofEntries(
+                                entry("listener.security.protocol.map",
+                                        "SASL_PLAINTEXT:SASL_PLAINTEXT,BROKER1:PLAINTEXT,CONTROLLER:PLAINTEXT"),
+                                entry("inter.broker.listener.name", "SASL_PLAINTEXT"),
+                                entry("sasl.enabled.mechanisms", "GSSAPI"),
+                                entry("sasl.mechanism.inter.broker.protocol", "GSSAPI"),
+                                entry("listener.name.sasl_plaintext.gssapi.sasl.jaas.config",
+                                        "com.sun.security.auth.module.Krb5LoginModule required " +
+                                                "useKeyTab=true storeKey=true debug=true serviceName=\"kafka\" " +
+                                                "keyTab=\"/opt/kafka/config/kafkabroker.keytab\" " +
+                                                "principal=\"kafka/localhost@EXAMPLE.COM\";"),
+                                entry("sasl.kerberos.service.name", "kafka"),
+                                entry("ssl.endpoint.identification.algorithm", "https"),
+                                entry("ssl.client.auth", "none")))
+                        .withPort(KAFKA_PORT)
+                        .withCopyFileToContainer(MountableFile.forClasspathResource("krb5KafkaBroker.conf"),
+                                "/etc/krb5.conf")
+                        .withCopyFileToContainer(MountableFile.forHostPath("target/kafkabroker.keytab"),
+                                "/opt/kafka/config/kafkabroker.keytab"))
+                .build();
         kafka.start();
-        log.info(kafka.getLogs());
         properties.put("kafka.bootstrap.servers", kafka.getBootstrapServers());
 
         return properties;

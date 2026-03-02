@@ -16,11 +16,14 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.vertx.core.json.JsonObject;
 
 /**
  * Endpoint to test the Protobuf support with both Apicurio and Confluent registries
  */
+@RegisterForReflection(targets = { com.example.tutorial.PetOuterClass.Pet.class,
+        com.example.tutorial.PetOuterClass.Pet.Builder.class })
 @Path("/protobuf")
 public class ProtobufEndpoint {
 

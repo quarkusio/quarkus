@@ -30,6 +30,13 @@ public class ConfluentRegistryClientProcessor {
                         .build());
             }
 
+            String prefixSchemaIdSerializer = "io.confluent.kafka.serializers.schema.id.PrefixSchemaIdSerializer";
+            if (QuarkusClassLoader.isClassPresentAtRuntime(prefixSchemaIdSerializer)) {
+                // Class not present before v8.0.0
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(prefixSchemaIdSerializer)
+                        .build());
+            }
+
             reflectiveClass
                     .produce(ReflectiveClassBuildItem.builder("io.confluent.kafka.serializers.subject.TopicNameStrategy",
                             "io.confluent.kafka.serializers.subject.TopicRecordNameStrategy",

@@ -41,6 +41,13 @@
                     <artifactId>validation-api</artifactId>
                     <groupId>javax.validation</groupId>
                 </exclusion>
+                <!-- Excluded because it references javax.validation types that are not on the
+                     classpath, causing native image build failures. The JsonSchemaUtils.getSchema()
+                     method that uses this library is already substituted via ConfluentJsonSubstitutions. -->
+                <exclusion>
+                    <groupId>io.yokota</groupId>
+                    <artifactId>mbknor-jackson-jsonschema-java8</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <!-- TODO: remove this after upgrading to kafka-clients that already depends on the new lz4 groupId -->

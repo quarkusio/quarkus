@@ -5,6 +5,9 @@ metadata:
   keywords:
   - "confluent"
   - "protobuf"
+  - "kafka"
+  - "schema-registry"
+  guide: "https://quarkus.io/guides/kafka-schema-registry-protobuf"
   categories:
   - "serialization"
   status: "preview"

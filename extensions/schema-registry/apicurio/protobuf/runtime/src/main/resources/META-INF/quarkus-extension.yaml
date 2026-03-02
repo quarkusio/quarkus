@@ -6,7 +6,8 @@ metadata:
   - "apicurio"
   - "protobuf"
   - "kafka"
-  guide: "https://quarkus.io/guides/kafka-schema-registry-avro"
+  - "schema-registry"
+  guide: "https://quarkus.io/guides/kafka-schema-registry-protobuf"
   categories:
   - "serialization"
-  status: "experimental"
+  status: "preview"

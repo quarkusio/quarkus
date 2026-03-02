@@ -1986,6 +1986,8 @@ To enable logging, add the `quarkus.rest-client.logging.scope` property to your 
 
 As HTTP messages can have large bodies, we limit the amount of body characters logged. The default limit is `100`, you can change it by specifying `quarkus.rest-client.logging.body-limit`.
 
+Sensitive request and response header values can be masked using `quarkus.rest-client.logging.masked-headers`. The value of any configured headers will be replaced with `****` in the logs.
+
 These configuration properties work globally for all clients injected by CDI.
 If you want configure logging for a specific declarative client, you should do it by specifying named "client" properties, also known as `quarkus.rest-client."client".logging.*` properties.
 
@@ -1995,6 +1997,7 @@ An example logging configuration:
 ----
 quarkus.rest-client.logging.scope=request-response
 quarkus.rest-client.logging.body-limit=50
+quarkus.rest-client.logging.masked-headers=Authorization
 
 quarkus.rest-client.extensions-api.logging.scope=all
 ----

@@ -87,6 +87,9 @@ public class DevServicesKubernetesProcessor {
     private static final String KUBERNETES_CLIENT_MASTER_URL = "quarkus.kubernetes-client.api-server-url";
     private static final String DEFAULT_MASTER_URL_ENDING_WITH_SLASH = Config.DEFAULT_MASTER_URL + "/";
 
+    public static final String DEVSERVICES_METADATA_PREFIX = "quarkus.devservices.internal.";
+    public static final String KUBECONFIG_DOWNLOAD_KEY = DEVSERVICES_METADATA_PREFIX + "kubeconfig.yaml";
+
     static final String DEV_SERVICE_LABEL = "quarkus-dev-service-kubernetes";
     static final int KUBERNETES_PORT = 6443;
     private static final ContainerLocator KubernetesContainerLocator = locateContainerWithLabels(KUBERNETES_PORT,
@@ -402,15 +405,15 @@ public class DevServicesKubernetesProcessor {
 
         ClusterSpec cluster = kubeConfig.getClusters().get(0).getCluster();
         UserSpec user = kubeConfig.getUsers().get(0).getUser();
-        return Map.of(
-                KUBERNETES_CLIENT_MASTER_URL, cluster.getServer(),
-                "quarkus.kubernetes-client.ca-cert-data",
-                cluster.getCertificateAuthorityData(),
-                "quarkus.kubernetes-client.client-cert-data",
-                user.getClientCertificateData(),
-                "quarkus.kubernetes-client.client-key-data", user.getClientKeyData(),
-                "quarkus.kubernetes-client.client-key-algo", Config.getKeyAlgorithm(null, user.getClientKeyData()),
-                "quarkus.kubernetes-client.namespace", "default");
+
+        return Map.ofEntries(
+                Map.entry(KUBERNETES_CLIENT_MASTER_URL, cluster.getServer()),
+                Map.entry("quarkus.kubernetes-client.ca-cert-data", cluster.getCertificateAuthorityData()),
+                Map.entry("quarkus.kubernetes-client.client-cert-data", user.getClientCertificateData()),
+                Map.entry("quarkus.kubernetes-client.client-key-data", user.getClientKeyData()),
+                Map.entry("quarkus.kubernetes-client.client-key-algo", Config.getKeyAlgorithm(null, user.getClientKeyData())),
+                Map.entry("quarkus.kubernetes-client.namespace", "default"),
+                Map.entry(KUBECONFIG_DOWNLOAD_KEY, KubeConfigUtils.serializeKubeConfig(kubeConfig)));
     }
 
     private Map<String, String> resolveConfigurationFromRunningContainer(ContainerAddress containerAddress) {

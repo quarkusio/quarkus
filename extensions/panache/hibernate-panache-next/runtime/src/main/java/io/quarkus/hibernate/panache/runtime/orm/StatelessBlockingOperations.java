@@ -78,12 +78,12 @@ public class StatelessBlockingOperations implements PanacheBlockingOperations {
     }
 
     @Override
-    public Void persist(Iterable<Object> entities) {
+    public Void persist(Iterable<?> entities) {
         throw new UnsupportedOperationException("Managed operations not supported");
     }
 
     @Override
-    public Void persist(Stream<Object> entities) {
+    public Void persist(Stream<?> entities) {
         throw new UnsupportedOperationException("Managed operations not supported");
     }
 
@@ -93,13 +93,13 @@ public class StatelessBlockingOperations implements PanacheBlockingOperations {
     }
 
     @Override
-    public Void insert(Iterable<Object> entities) {
+    public Void insert(Iterable<?> entities) {
         DELEGATE.insert(entities);
         return null;
     }
 
     @Override
-    public Void insert(Stream<Object> entities) {
+    public Void insert(Stream<?> entities) {
         DELEGATE.insert(entities);
         return null;
     }

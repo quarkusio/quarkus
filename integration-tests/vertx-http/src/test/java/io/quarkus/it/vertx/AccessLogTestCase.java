@@ -55,13 +55,13 @@ public class AccessLogTestCase {
                                 "access log contains duplicated query params");
                         Assertions.assertTrue(line.contains("Accept: text/plain"),
                                 "access log doesn't contain the HTTP Accept header with a text/plain media type");
-                        Assertions.assertTrue(line.contains("Authorization: Bearer ..."),
+                        Assertions.assertTrue(line.contains("Authorization: Bearer <hidden>"),
                                 "access log must contain a masked value of the HTTP Authorizaton header's Bearer scheme");
-                        Assertions.assertTrue(line.contains("x-Token: ..."),
+                        Assertions.assertTrue(line.contains("x-Token: <hidden>"),
                                 "access log must contain a masked value of the HTTP X-Token header");
                         Assertions.assertTrue(line.contains("Cookie: visitcount=1"),
                                 "access log doesn't contain the HTTP Cookie visitorcount header with a value 1");
-                        Assertions.assertTrue(line.contains("Cookie: Session=..."),
+                        Assertions.assertTrue(line.contains("Cookie: Session=<hidden>"),
                                 "access log must contain a masked value of the HTTP Cookie session header");
                     }
                 });

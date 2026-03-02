@@ -410,11 +410,12 @@ public interface RestClientsConfig {
         /**
          * Which request and response headers values to mask in logs.
          * <p>
-         * The value of any matching header will be replaced with {@code "****"}.
-         * The header name itself remains visible. E.g. {@code Authorization=****}
+         * The value of any matching header will be replaced with {@code "<hidden>"}.
+         * The header name itself remains visible. E.g. {@code Authorization=<hidden>}
          * <p>
          * This property is not applicable to the Quarkus RESTEasy client (provided by the quarkus-resteasy-client dependency).
          */
+        @WithDefault("Authorization,Cookie")
         Optional<Set<String>> maskedHeaders();
     }
 

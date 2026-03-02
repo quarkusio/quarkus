@@ -16,7 +16,7 @@ import io.vertx.core.http.HttpClientResponse;
 
 public class DefaultClientLogger implements ClientLogger {
     private static final Logger log = Logger.getLogger(DefaultClientLogger.class);
-    private static final String MASKED_VALUE = "****";
+    private static final String MASKED_VALUE = "<hidden>";
 
     private int bodySize;
 

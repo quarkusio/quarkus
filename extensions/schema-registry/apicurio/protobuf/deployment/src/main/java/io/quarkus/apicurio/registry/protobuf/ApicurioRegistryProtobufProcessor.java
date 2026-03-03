@@ -41,6 +41,10 @@ public class ApicurioRegistryProtobufProcessor {
                 .produce(ReflectiveClassBuildItem.builder("io.apicurio.registry.serde.protobuf.ProtobufKafkaDeserializer",
                         "io.apicurio.registry.serde.protobuf.ProtobufKafkaSerializer").methods().build());
 
+        // Register sun.misc.Unsafe for reflection so that protobuf's UnsafeUtil.getUnsafe()
+        // can find the theUnsafe field via getDeclaredFields() in native image
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("sun.misc.Unsafe").fields().build());
+
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("io.apicurio.registry.serde.strategy.SimpleTopicIdStrategy",
                 "io.apicurio.registry.serde.strategy.TopicIdStrategy").methods().fields()
                 .build());

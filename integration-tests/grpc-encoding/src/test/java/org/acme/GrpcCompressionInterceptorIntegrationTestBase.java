@@ -4,10 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import jakarta.inject.Inject;
-
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import io.grpc.CallOptions;
@@ -23,8 +24,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
-import io.quarkus.grpc.GrpcClient;
-import io.quarkus.grpc.runtime.config.GrpcConfiguration;
+import io.quarkus.grpc.test.utils.GRPCTestUtils;
 
 /**
  * Integration test for GrpcCompressionInterceptor.
@@ -37,19 +37,25 @@ import io.quarkus.grpc.runtime.config.GrpcConfiguration;
  *
  * @author gigi
  */
-class GrpcCompressionInterceptorIntegrationTestBase {
-
-    @GrpcClient("hello-service")
-    Channel channel;
-
-    @Inject
-    GrpcConfiguration configuration;
+abstract class GrpcCompressionInterceptorIntegrationTestBase {
 
     private static final Metadata.Key<String> GRPC_ACCEPT_ENCODING_KEY = Metadata.Key.of("grpc-accept-encoding",
             Metadata.ASCII_STRING_MARSHALLER);
 
     private static final Metadata.Key<String> GRPC_ENCODING_KEY = Metadata.Key.of("grpc-encoding",
             Metadata.ASCII_STRING_MARSHALLER);
+
+    protected abstract Channel getChannel();
+
+    protected abstract int getPort();
+
+    protected final List<ManagedChannel> channels = new ArrayList<>();
+
+    @AfterEach
+    public void closeChannels() {
+        channels.forEach(GRPCTestUtils::close);
+        channels.clear();
+    }
 
     /**
      * Helper method to create a client interceptor that attaches request headers and captures
@@ -91,7 +97,7 @@ class GrpcCompressionInterceptorIntegrationTestBase {
     private HelloGrpcGrpc.HelloGrpcBlockingStub createStubWithHeaderCapture(
             Metadata requestMetadata, AtomicReference<String> responseEncoding) {
         Channel interceptedChannel = ClientInterceptors.intercept(
-                channel, createHeaderInterceptor(requestMetadata, responseEncoding));
+                getChannel(), createHeaderInterceptor(requestMetadata, responseEncoding));
         return HelloGrpcGrpc.newBlockingStub(interceptedChannel);
     }
 
@@ -102,13 +108,13 @@ class GrpcCompressionInterceptorIntegrationTestBase {
     private HelloGrpcGrpc.HelloGrpcBlockingStub createIdentityStub(
             Metadata requestMetadata, AtomicReference<String> responseEncoding,
             boolean gzip) {
-        int port = configuration.server().useSeparateServer() ? 9001 : 8081;
         DecompressorRegistry identityOnly = DecompressorRegistry.emptyInstance()
                 .with(Codec.Identity.NONE, true).with(new Codec.Gzip(), gzip); // only identity advertised
-        ManagedChannel customChannel = ManagedChannelBuilder.forAddress("localhost", port)
+        ManagedChannel customChannel = ManagedChannelBuilder.forAddress("localhost", getPort())
                 .usePlaintext()
                 .decompressorRegistry(identityOnly)
                 .build();
+        channels.add(customChannel);
         Channel interceptedChannel = ClientInterceptors.intercept(
                 customChannel, createHeaderInterceptor(requestMetadata, responseEncoding));
         return HelloGrpcGrpc.newBlockingStub(interceptedChannel);

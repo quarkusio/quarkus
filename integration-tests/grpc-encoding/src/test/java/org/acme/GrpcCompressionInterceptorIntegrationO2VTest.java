@@ -8,7 +8,7 @@ import io.quarkus.test.junit.TestProfile;
 
 @QuarkusTest
 @TestProfile(GrpcCompressionInterceptorIntegrationO2VTest.GzipCompressionProfile.class)
-class GrpcCompressionInterceptorIntegrationO2VTest extends GrpcCompressionInterceptorIntegrationTestBase {
+class GrpcCompressionInterceptorIntegrationO2VTest extends GrpcCompressionInterceptorIntegrationCdiTestBase {
 
     // Java client to Vertx server
     public static class GzipCompressionProfile implements QuarkusTestProfile {

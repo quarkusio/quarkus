@@ -55,6 +55,13 @@ public class RunMojo extends QuarkusBootstrapMojo {
     @Parameter(defaultValue = "${args}")
     String programArguments;
 
+    /**
+     * Additional JVM arguments to pass to the launched process, e.g. a JDWP debug agent string.
+     * To be specified as {@code -DjvmArgs=-agentlib:jdwp=transport=dt_socket,address=5005,server=y,suspend=n}
+     */
+    @Parameter(defaultValue = "${jvmArgs}")
+    String jvmArgs;
+
     @Override
     protected boolean beforeExecute() throws MojoExecutionException, MojoFailureException {
         return true;
@@ -116,6 +123,13 @@ public class RunMojo extends QuarkusBootstrapMojo {
                         throw new RuntimeException("Should never reach this!");
                     }
                     List<String> args = (List<String>) cmd.get(0);
+                    if (jvmArgs != null && !jvmArgs.isBlank()) {
+                        // Insert JVM args right after the java command (index 1)
+                        String[] jvmArgParts = jvmArgs.split("\\s+");
+                        for (int i = jvmArgParts.length - 1; i >= 0; i--) {
+                            args.add(1, jvmArgParts[i]);
+                        }
+                    }
                     if (additionalSystemProperties != null) {
                         String[] props = additionalSystemProperties.split(",");
                         for (int i = props.length - 1; i >= 0; i--) {

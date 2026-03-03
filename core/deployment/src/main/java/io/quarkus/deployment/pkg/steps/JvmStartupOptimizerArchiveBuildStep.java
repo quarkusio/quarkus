@@ -169,7 +169,8 @@ public class JvmStartupOptimizerArchiveBuildStep {
             archivePath = createAppCDSFromExit(jarResult, outputTarget, javaBinPath, containerImage,
                     isFastJar);
         } else if (archiveType == JvmStartupOptimizerArchiveType.AOT) {
-            archivePath = createAot(jarResult, outputTarget, javaBinPath, containerImage, isFastJar);
+            archivePath = createAot(jarResult, outputTarget, javaBinPath, containerImage, isFastJar,
+                    packageConfig.jar().aot().additionalRecordingArgs().orElse(List.of()));
         } else {
             throw new IllegalStateException("Unsupported archive type: " + archiveType);
         }
@@ -303,22 +304,24 @@ public class JvmStartupOptimizerArchiveBuildStep {
      */
     private Path createAot(JarBuildItem jarResult,
             OutputTargetBuildItem outputTarget, String javaBinPath, String containerImage,
-            boolean isFastJar) {
+            boolean isFastJar, List<String> additionalRecordingArgs) {
         if (Runtime.version().feature() < 25) {
             throw new IllegalStateException(
                     "AOT cache generation requires building with JDK 25 or newer (see JEP 514). ");
         }
         ArchivePathsContainer aotPathContainers = ArchivePathsContainer.aotFromQuarkusJar(jarResult.getPath());
         return launchArchiveCreateCommand(aotPathContainers.workingDirectory, aotPathContainers.resultingFile,
-                createAotCommand(jarResult, outputTarget, javaBinPath, containerImage, isFastJar, aotPathContainers));
+                createAotCommand(jarResult, outputTarget, javaBinPath, containerImage, isFastJar, additionalRecordingArgs,
+                        aotPathContainers));
 
     }
 
     private List<String> createAotCommand(JarBuildItem jarResult, OutputTargetBuildItem outputTarget, String javaBinPath,
-            String containerImage, boolean isFastJar,
+            String containerImage, boolean isFastJar, List<String> additionalRecordingArgs,
             ArchivePathsContainer aotPathContainers) {
         List<String> javaArgs = new ArrayList<>();
         javaArgs.add("-XX:AOTCacheOutput=" + aotPathContainers.resultingFile.getFileName().toString());
+        javaArgs.addAll(additionalRecordingArgs);
         javaArgs.add(String.format("-D%s=true", MainClassBuildStep.GENERATE_APP_CDS_SYSTEM_PROPERTY));
         javaArgs.add("-jar");
 

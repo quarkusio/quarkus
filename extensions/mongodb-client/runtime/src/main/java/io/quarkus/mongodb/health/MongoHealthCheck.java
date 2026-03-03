@@ -1,7 +1,6 @@
 package io.quarkus.mongodb.health;
 
-import static io.quarkus.mongodb.runtime.MongoConfig.DEFAULT_CLIENT_NAME;
-import static io.quarkus.mongodb.runtime.MongoConfig.isDefaultClient;
+import static io.quarkus.mongodb.runtime.MongoClientBeanUtil.mongoClientName;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -13,7 +12,6 @@ import java.util.function.Supplier;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Any;
-import jakarta.enterprise.inject.spi.Bean;
 import jakarta.inject.Inject;
 
 import org.bson.Document;
@@ -26,7 +24,6 @@ import com.mongodb.client.MongoClient;
 
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.mongodb.MongoClientName;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.mongodb.runtime.MongoClientConfig;
 import io.quarkus.mongodb.runtime.MongoConfig;
@@ -37,13 +34,21 @@ import io.smallrye.mutiny.tuples.Tuple2;
 @Readiness
 @ApplicationScoped
 public class MongoHealthCheck implements HealthCheck {
-    public static final String CLIENT_DEFAULT = "<default>";
-    public static final String CLIENT_DEFAULT_REACTIVE = "<default-reactive>";
+    /**
+     * @deprecated Use {@link MongoConfig#DEFAULT_CLIENT_NAME} instead.
+     */
+    @Deprecated(forRemoval = true, since = "3.33")
+    public static final String CLIENT_DEFAULT = MongoConfig.DEFAULT_CLIENT_NAME;
+    /**
+     * @deprecated Use {@link MongoConfig#DEFAULT_REACTIVE_CLIENT_NAME} instead.
+     */
+    @Deprecated(forRemoval = true, since = "3.33")
+    public static final String CLIENT_DEFAULT_REACTIVE = MongoConfig.DEFAULT_REACTIVE_CLIENT_NAME;
+
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
+    private static final Document COMMAND = new Document("ping", 1);
 
     private final List<Supplier<Uni<Tuple2<String, String>>>> checks = new ArrayList<>();
-
-    private static final Document COMMAND = new Document("ping", 1);
 
     @Inject
     MongoConfig mongoConfig;
@@ -58,30 +63,20 @@ public class MongoHealthCheck implements HealthCheck {
     void init() {
         for (InstanceHandle<MongoClient> handle : mongoClient.handles()) {
             if (handle.getBean().isActive()) {
-                String clientName = getClientName(handle.getBean());
+                String clientName = mongoClientName(handle.getBean());
                 MongoClientConfig clientConfig = mongoConfig.clients().get(clientName);
-                checks.add(new MongoClientCheck(isDefaultClient(clientName) ? CLIENT_DEFAULT : clientName, handle.get(),
-                        clientConfig));
+                checks.add(new MongoClientCheck(MongoConfig.nameOrDefault(clientName), handle.get(), clientConfig));
             }
         }
 
         for (InstanceHandle<ReactiveMongoClient> handle : reactiveMongoClients.handles()) {
             if (handle.getBean().isActive()) {
-                String clientName = getClientName(handle.getBean());
+                String clientName = mongoClientName(handle.getBean());
                 MongoClientConfig clientConfig = mongoConfig.clients().get(clientName);
-                checks.add(new ReactiveMongoClientCheck(isDefaultClient(clientName) ? CLIENT_DEFAULT_REACTIVE : clientName,
-                        handle.get(), clientConfig));
+                checks.add(new ReactiveMongoClientCheck(MongoConfig.reactiveNameOrDefault(clientName), handle.get(),
+                        clientConfig));
             }
         }
-    }
-
-    private static String getClientName(final Bean<?> bean) {
-        for (Object qualifier : bean.getQualifiers()) {
-            if (qualifier instanceof MongoClientName mongoClientName) {
-                return mongoClientName.value();
-            }
-        }
-        return DEFAULT_CLIENT_NAME;
     }
 
     private BiFunction<Document, Throwable, Tuple2<String, String>> toResult(String name) {

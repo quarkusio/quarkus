@@ -11,7 +11,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.mongodb.health.MongoHealthCheck;
+import io.quarkus.mongodb.runtime.MongoConfig;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.mongodb.MongoTestResource;
@@ -48,8 +48,8 @@ public class BookResourceTest {
         get("/books");
         RestAssured.when().get("/q/health/ready").then()
                 .body("status", is("UP"),
-                        "checks.data", containsInAnyOrder(hasKey(MongoHealthCheck.CLIENT_DEFAULT)),
-                        "checks.data", containsInAnyOrder(hasKey(MongoHealthCheck.CLIENT_DEFAULT_REACTIVE)),
+                        "checks.data", containsInAnyOrder(hasKey(MongoConfig.DEFAULT_CLIENT_NAME)),
+                        "checks.data", containsInAnyOrder(hasKey(MongoConfig.DEFAULT_REACTIVE_CLIENT_NAME)),
                         "checks.status", containsInAnyOrder("UP"),
                         "checks.name", containsInAnyOrder("MongoDB connection health check"));
     }

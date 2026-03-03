@@ -19,7 +19,9 @@ import io.smallrye.config.WithUnnamedKey;
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface MongoConfig {
     String CONFIG_NAME = "mongodb";
+
     String DEFAULT_CLIENT_NAME = "<default>";
+    String DEFAULT_REACTIVE_CLIENT_NAME = "<default-reactive>";
 
     /**
      * Configures the Mongo clients.
@@ -109,7 +111,15 @@ public interface MongoConfig {
     boolean dnsLookupLogActivity();
 
     static boolean isDefaultClient(final String name) {
-        return DEFAULT_CLIENT_NAME.equalsIgnoreCase(name);
+        return DEFAULT_CLIENT_NAME.equalsIgnoreCase(name) || DEFAULT_REACTIVE_CLIENT_NAME.equalsIgnoreCase(name);
+    }
+
+    static String nameOrDefault(final String name) {
+        return isDefaultClient(name) ? DEFAULT_CLIENT_NAME : name;
+    }
+
+    static String reactiveNameOrDefault(final String name) {
+        return isDefaultClient(name) ? DEFAULT_REACTIVE_CLIENT_NAME : name + "-reactive";
     }
 
     static String getPropertyName(final String name, final String attribute) {

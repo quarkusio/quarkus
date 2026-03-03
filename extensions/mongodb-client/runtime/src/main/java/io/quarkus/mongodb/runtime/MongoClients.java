@@ -8,6 +8,8 @@ import static com.mongodb.AuthenticationMechanism.SCRAM_SHA_1;
 import static com.mongodb.AuthenticationMechanism.SCRAM_SHA_256;
 import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
 import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
+import static io.quarkus.mongodb.runtime.MongoConfig.nameOrDefault;
+import static io.quarkus.mongodb.runtime.MongoConfig.reactiveNameOrDefault;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 
@@ -141,7 +143,7 @@ public class MongoClients {
         if (!clientConfig.active()) {
             throw new IllegalStateException(String.format("Mongo Client '%s' is not active", clientName));
         }
-        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, clientConfig, false);
+        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientConfig, clientName, false);
         return com.mongodb.client.MongoClients.create(mongoConfiguration, DRIVER_INFORMATION);
     }
 
@@ -153,7 +155,7 @@ public class MongoClients {
         return mongoClients.computeIfAbsent(clientName, new Function<String, MongoClient>() {
             @Override
             public MongoClient apply(String s) {
-                MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, clientConfig, false);
+                MongoClientSettings mongoConfiguration = createMongoConfiguration(clientConfig, clientName, false);
                 return com.mongodb.client.MongoClients.create(mongoConfiguration, DRIVER_INFORMATION);
             }
         });
@@ -168,7 +170,7 @@ public class MongoClients {
         return reactiveMongoClients.computeIfAbsent(clientName, new Function<String, ReactiveMongoClient>() {
             @Override
             public ReactiveMongoClient apply(String s) {
-                MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, clientConfig, true);
+                MongoClientSettings mongoConfiguration = createMongoConfiguration(clientConfig, clientName, true);
                 com.mongodb.reactivestreams.client.MongoClient client = com.mongodb.reactivestreams.client.MongoClients
                         .create(mongoConfiguration, DRIVER_INFORMATION);
                 return new ReactiveMongoClientImpl(client);
@@ -304,7 +306,8 @@ public class MongoClients {
         }
     }
 
-    private MongoClientSettings createMongoConfiguration(String name, MongoClientConfig config, boolean isReactive) {
+    private MongoClientSettings createMongoConfiguration(final MongoClientConfig config, final String name,
+            final boolean isReactive) {
         if (config == null) {
             throw new RuntimeException("mongo config is missing for creating mongo client.");
         }
@@ -379,10 +382,17 @@ public class MongoClients {
                     mongoClientSupport.isDisableSslSupport()));
         }
         settings.applyToClusterSettings(new ClusterSettingBuilder(config));
-        settings.applyToConnectionPoolSettings(
-                new ConnectionPoolSettingsBuilder(config, mongoClientSupport.getConnectionPoolListeners()));
         settings.applyToServerSettings(new ServerSettingsBuilder(config));
         settings.applyToSocketSettings(new SocketSettingsBuilder(config));
+
+        List<ConnectionPoolListener> connectionPoolListeners = new ArrayList<>();
+        for (Function<String, ConnectionPoolListener> connectionPoolListenerFactory : mongoClientSupport
+                .getConnectionPoolListenerFactories()) {
+            connectionPoolListeners
+                    .add(connectionPoolListenerFactory.apply(isReactive ? reactiveNameOrDefault(name) : nameOrDefault(name)));
+        }
+        connectionPoolListeners.addAll(mongoClientSupport.getConnectionPoolListeners());
+        settings.applyToConnectionPoolSettings(new ConnectionPoolSettingsBuilder(config, connectionPoolListeners));
 
         if (config.readPreference().isPresent()) {
             settings.readPreference(ReadPreference.valueOf(config.readPreference().get()));

@@ -48,8 +48,8 @@ import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.jackson.spi.JacksonModuleBuildItem;
 import io.quarkus.jsonb.spi.JsonbDeserializerBuildItem;
 import io.quarkus.jsonb.spi.JsonbSerializerBuildItem;
-import io.quarkus.mongodb.deployment.MongoClientNameBuildItem;
 import io.quarkus.mongodb.deployment.MongoUnremovableClientsBuildItem;
+import io.quarkus.mongodb.deployment.spi.MongoClientBuildItem;
 import io.quarkus.mongodb.panache.common.PanacheMongoRecorder;
 import io.quarkus.mongodb.panache.common.jackson.ObjectIdDeserializer;
 import io.quarkus.mongodb.panache.common.jackson.ObjectIdSerializer;
@@ -235,21 +235,19 @@ public abstract class BasePanacheMongoResourceProcessor {
 
     @BuildStep
     public void mongoClientNames(ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            BuildProducer<MongoClientNameBuildItem> mongoClientName) {
-        Set<String> values = new HashSet<>();
+            BuildProducer<MongoClientBuildItem> mongoClientName) {
+        // Unique names
+        Set<String> mongoClients = new HashSet<>();
         IndexView indexView = applicationArchivesBuildItem.getRootArchive().getIndex();
         Collection<AnnotationInstance> instances = indexView.getAnnotations(MONGO_ENTITY);
         for (AnnotationInstance annotation : instances) {
             AnnotationValue clientName = annotation.value("clientName");
             if ((clientName != null) && !clientName.asString().isEmpty()) {
-                values.add(clientName.asString());
+                mongoClients.add(clientName.asString());
             }
         }
-        for (String value : values) {
-            // we don't want the qualifier @MongoClientName qualifier added
-            // as these clients will only be looked up programmatically via name
-            // see MongoOperations#mongoClient
-            mongoClientName.produce(new MongoClientNameBuildItem(value, false));
+        for (String name : mongoClients) {
+            mongoClientName.produce(MongoClientBuildItem.ofUnremovable(name));
         }
     }
 

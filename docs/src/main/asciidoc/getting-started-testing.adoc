@@ -472,9 +472,13 @@ To reduce the amount of times Quarkus needs to restart, `io.quarkus.test.junit.u
 is registered as a global `ClassOrderer` as described in the
 link:https://docs.junit.org/current/user-guide/#writing-tests-test-execution-order-classes[JUnit User Guide].
 The behavior of this `ClassOrderer` is configurable via `application.properties` using the property
-`quarkus.test.class-orderer`. The property accepts the FQCN of the `ClassOrderer` to use. If the class cannot be found,
-it fallbacks to JUnit default behaviour which does not set a `ClassOrderer` at all. It can also be disabled entirely by
-setting another `ClassOrderer` that is provided by JUnit or even your own custom one.
+`quarkus.test.class-orderer`. The Quarkus orderer will attempt to sort according to the secondary orderer, with the constraint that tests which require the same application instance are grouped.
+The property accepts the FQCN of the `ClassOrderer` to use as a secondary orderer. It can be set to an orderer that is provided by JUnit or even your own custom one.
+If the class cannot be found,
+it fallbacks to JUnit default behaviour which does not set a `ClassOrderer` at all.
+
+The Quarkus orderer can also be disabled entirely by
+setting another `ClassOrderer` using the JUnit configuration. This is only permitted in cases where all Quarkus tests would run on the same application (that is, the use of test profiles and test resources is limited).
 
 === Writing a Profile
 

@@ -1,17 +1,10 @@
 package io.quarkus.test.junit;
 
-import static org.eclipse.microprofile.config.spi.ConfigSource.CONFIG_ORDINAL;
-
-import java.io.File;
-import java.io.FileOutputStream;
 import java.lang.annotation.Annotation;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -48,25 +41,6 @@ public final class TestProfileAndProperties {
         return testProfile().map(testProfile -> testProfile.getClass().getName());
     }
 
-    public TestProfileConfigSource toTestProfileConfigSource() throws Exception {
-        Properties properties = new Properties();
-        properties.put(CONFIG_ORDINAL, String.valueOf(Integer.MAX_VALUE - 1000));
-        properties.putAll(this.properties);
-
-        Path tempDirectory = Files.createTempDirectory("quarkus-test");
-        Path propertiesFile = tempDirectory.resolve("application.properties");
-        File file = Files.createFile(propertiesFile).toFile();
-
-        file.deleteOnExit();
-        tempDirectory.toFile().deleteOnExit();
-
-        try (FileOutputStream outputStream = new FileOutputStream(file)) {
-            properties.store(outputStream, "");
-        }
-
-        return new TestProfileConfigSource(tempDirectory, propertiesFile);
-    }
-
     public static TestProfileAndProperties of(Class<?> profileClass, LaunchMode launchMode) throws Exception {
         ClassCoercingTestProfile profileInstance = new ClassCoercingTestProfile(profileClass.getConstructor().newInstance());
         Map<String, String> properties = new HashMap<>(profileInstance.getConfigOverrides());
@@ -97,24 +71,6 @@ public final class TestProfileAndProperties {
             return new TestProfileAndProperties(null, null);
         } else {
             return of(profileClass, launchMode);
-        }
-    }
-
-    public final static class TestProfileConfigSource {
-        private final Path propertiesLocation;
-        private final Path propertiesFile;
-
-        TestProfileConfigSource(Path propertiesLocation, Path propertiesFile) {
-            this.propertiesLocation = propertiesLocation;
-            this.propertiesFile = propertiesFile;
-        }
-
-        public Path getPropertiesLocation() {
-            return propertiesLocation;
-        }
-
-        public Path getPropertiesFile() {
-            return propertiesFile;
         }
     }
 }

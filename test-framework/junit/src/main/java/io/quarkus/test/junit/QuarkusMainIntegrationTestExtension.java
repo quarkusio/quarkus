@@ -1,13 +1,13 @@
 package io.quarkus.test.junit;
 
 import static io.quarkus.runtime.LaunchMode.NORMAL;
+import static io.quarkus.runtime.configuration.ConfigSourceOrdinal.INTEGRATION_TEST;
 import static io.quarkus.test.junit.ArtifactTypeUtil.isContainer;
 import static io.quarkus.test.junit.ArtifactTypeUtil.isJar;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 import static io.quarkus.test.junit.IntegrationTestUtil.determineBuildOutputDirectory;
 import static io.quarkus.test.junit.IntegrationTestUtil.ensureNoInjectAnnotationIsUsed;
 import static io.quarkus.test.junit.IntegrationTestUtil.getEffectiveArtifactType;
-import static io.quarkus.test.junit.IntegrationTestUtil.getSysPropsToRestore;
 import static io.quarkus.test.junit.IntegrationTestUtil.handleDevServices;
 import static io.quarkus.test.junit.IntegrationTestUtil.readQuarkusArtifactProperties;
 import static io.quarkus.test.junit.TestResourceUtil.TestResourceManagerReflections.copyEntriesFromProfile;
@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.ServiceLoader;
 
-import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -31,21 +31,31 @@ import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
 import io.quarkus.deployment.dev.testing.TestConfig;
+import io.quarkus.deployment.dev.testing.TestConfigCustomizer;
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.ValueRegistryConfigSource;
+import io.quarkus.runtime.ValueRegistryImpl;
+import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.TestResourceManager;
+import io.quarkus.test.config.ConfigInjector;
+import io.quarkus.test.config.ThreadLocalConfigSourceProvider;
+import io.quarkus.test.config.ValueRegistryInjector;
 import io.quarkus.test.junit.launcher.ArtifactLauncherProvider;
 import io.quarkus.test.junit.main.Launch;
 import io.quarkus.test.junit.main.LaunchResult;
 import io.quarkus.test.junit.main.QuarkusMainLauncher;
+import io.quarkus.value.registry.ValueRegistry;
+import io.smallrye.config.Config;
+import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
 
 public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWithContextExtension
         implements BeforeEachCallback, AfterEachCallback, ParameterResolver {
 
     public static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace
             .create("io.quarkus.test.main.integration");
-
-    private static Map<String, String> devServicesProps;
 
     ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult;
     Properties quarkusArtifactProperties;
@@ -60,6 +70,14 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
             LaunchResult r = doLaunch(context, arguments);
             Assertions.assertEquals(launch.exitCode(), r.exitCode(), "Exit code did not match");
             this.result = r;
+
+            ValueRegistry valueRegistry = ValueRegistryInjector.get(context);
+            Config config = ConfigInjector.get(context);
+
+            Object testInstance = context.getRequiredTestInstance();
+            ValueRegistryInjector.inject(testInstance, valueRegistry);
+            ConfigInjector.inject(testInstance, config);
+            ThreadLocalConfigSourceProvider.set(ConfigInjector.get(context));
         }
     }
 
@@ -88,38 +106,39 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
         result = null;
+        ThreadLocalConfigSourceProvider.reset();
+        ConfigInjector.clear(context);
+        ValueRegistryInjector.clear(context);
     }
 
+    // TODO - Make this consistent with QuarkusIntegrationTestExtension
     private void prepare(ExtensionContext extensionContext, TestProfileAndProperties testProfileAndProperties)
             throws Exception {
         Class<?> testClass = extensionContext.getRequiredTestClass();
         ensureNoInjectAnnotationIsUsed(testClass, "@QuarkusMainIntegrationTest");
 
         quarkusArtifactProperties = readQuarkusArtifactProperties(extensionContext);
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        String artifactType = getEffectiveArtifactType(quarkusArtifactProperties, config);
-
+        Config config = Config.get();
         TestConfig testConfig = config.getConfigMapping(TestConfig.class);
-
+        String artifactType = getEffectiveArtifactType(testConfig, quarkusArtifactProperties);
         boolean isDockerLaunch = isContainer(artifactType)
                 || (isJar(artifactType) && "test-with-native-agent".equals(testConfig.integrationTestProfile()));
 
         devServicesLaunchResult = handleDevServices(extensionContext, isDockerLaunch, testProfileAndProperties);
-        devServicesProps = devServicesLaunchResult.properties();
 
         ExtensionContext root = extensionContext.getRoot();
         root.getStore(NAMESPACE).put("devServicesLaunchResult", devServicesLaunchResult);
     }
 
     private ArtifactLauncher.LaunchResult doProcessStart(ExtensionContext context, String[] args) {
+        Config config = Config.get();
+        TestConfig testConfig = config.getConfigMapping(TestConfig.class);
+
         try {
             Class<? extends QuarkusTestProfile> profile = IntegrationTestUtil.findProfile(context.getRequiredTestClass());
             TestResourceManager testResourceManager = null;
-            Map<String, String> old = new HashMap<>();
             try {
                 Class<?> requiredTestClass = context.getRequiredTestClass();
-
-                Map<String, String> sysPropRestore = getSysPropsToRestore();
                 TestProfileAndProperties testProfileAndProperties = TestProfileAndProperties.ofNullable(profile, NORMAL);
                 // prepare dev services after profile and properties have been determined
                 if (quarkusArtifactProperties == null) {
@@ -148,27 +167,30 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
                     }
                 }
 
+                // Properties set by @TestProfile
                 additionalProperties.putAll(testProfileAndProperties.properties());
-                //also make the dev services props accessible from the test
-                Map<String, String> resourceManagerProps = new HashMap<>(QuarkusMainIntegrationTestExtension.devServicesProps);
+                // Make the dev services config accessible from the test itself
+                additionalProperties.putAll(devServicesLaunchResult.properties());
                 // Allow override of dev services props by integration test extensions
-                resourceManagerProps.putAll(testResourceManager.start());
-                for (Map.Entry<String, String> i : resourceManagerProps.entrySet()) {
-                    old.put(i.getKey(), System.getProperty(i.getKey()));
-                    if (i.getValue() == null) {
-                        System.clearProperty(i.getKey());
-                    } else {
-                        System.setProperty(i.getKey(), i.getValue());
-                    }
-                }
-                additionalProperties.putAll(resourceManagerProps);
-                // recalculate the property names that may have changed with testProfileAndProperties.properties
-                ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getLatestPropertyNames();
+                additionalProperties.putAll(testResourceManager.start());
 
-                testResourceManager.inject(context.getRequiredTestInstance());
+                // Create the ValueRegistry with the current Config and test config
+                ConfigSource integrationTestSource = new PropertiesConfigSource(
+                        additionalProperties, INTEGRATION_TEST.getName(), INTEGRATION_TEST.getOrdinal());
+                ValueRegistry valueRegistry = ValueRegistryImpl.builder().addDiscoveredInfos()
+                        .withRuntimeSource(new SmallRyeConfigBuilder().withSources(integrationTestSource).build())
+                        .withRuntimeSource(config)
+                        .build();
+                ValueRegistryInjector.set(context, valueRegistry);
 
-                SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-                TestConfig testConfig = config.getConfigMapping(TestConfig.class);
+                // Create a new Config to add the configuration coming from test profiles, devservices and test resources
+                SmallRyeConfig newConfig = ConfigUtils.configBuilder(LaunchMode.TEST)
+                        .forClassLoader(Config.get().getClass().getClassLoader())
+                        .withCustomizers(new TestConfigCustomizer(LaunchMode.TEST))
+                        .withCustomizers(ValueRegistryConfigSource.customizer(valueRegistry))
+                        .withSources(integrationTestSource)
+                        .build();
+                ConfigInjector.set(context, newConfig);
 
                 ArtifactLauncher<?> launcher = null;
                 ServiceLoader<ArtifactLauncherProvider> loader = ServiceLoader.load(ArtifactLauncherProvider.class);
@@ -186,20 +208,14 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
                             "Artifact type + '" + artifactType + "' is not supported by @QuarkusMainIntegrationTest");
                 }
 
-                launcher.includeAsSysProps(additionalProperties);
+                testResourceManager.inject(context.getRequiredTestInstance());
+
                 activateLogging();
+
+                launcher.includeAsSysProps(additionalProperties);
                 return launcher.runToCompletion(args);
 
             } finally {
-                for (Map.Entry<String, String> i : old.entrySet()) {
-                    if (i.getValue() == null) {
-                        System.clearProperty(i.getKey());
-                    } else {
-                        System.setProperty(i.getKey(), i.getValue());
-                    }
-                }
-                // recalculate the property names that may have changed with the restore
-                ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getLatestPropertyNames();
                 try {
                     if (testResourceManager != null) {
                         testResourceManager.close();
@@ -216,6 +232,13 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
     @Override
     public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
             throws ParameterResolutionException {
+        if (ValueRegistryInjector.PARAMETER_RESOLVER.supportsParameter(parameterContext, extensionContext)) {
+            return true;
+        }
+        if (ConfigInjector.PARAMETER_RESOLVER.supportsParameter(parameterContext, extensionContext)) {
+            return true;
+        }
+
         Class<?> type = parameterContext.getParameter().getType();
         return type == LaunchResult.class || type == QuarkusMainLauncher.class;
     }
@@ -223,6 +246,13 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
     @Override
     public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
             throws ParameterResolutionException {
+        if (ValueRegistryInjector.PARAMETER_RESOLVER.supportsParameter(parameterContext, extensionContext)) {
+            return ValueRegistryInjector.PARAMETER_RESOLVER.resolveParameter(parameterContext, extensionContext);
+        }
+        if (ConfigInjector.PARAMETER_RESOLVER.supportsParameter(parameterContext, extensionContext)) {
+            return ConfigInjector.PARAMETER_RESOLVER.resolveParameter(parameterContext, extensionContext);
+        }
+
         Class<?> type = parameterContext.getParameter().getType();
         if (type == LaunchResult.class) {
             return result;
@@ -277,7 +307,7 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
 
         @Override
         public Class<? extends QuarkusTestProfile> profile() {
-            return null;
+            return profile;
         }
 
         @Override

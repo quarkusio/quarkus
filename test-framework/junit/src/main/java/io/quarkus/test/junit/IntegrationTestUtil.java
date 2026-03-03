@@ -28,7 +28,6 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.jandex.Index;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.platform.commons.JUnitException;
 
 import io.quarkus.bootstrap.BootstrapConstants;
@@ -43,8 +42,8 @@ import io.quarkus.deployment.builditem.DevServicesCustomizerBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesNetworkIdBuildItem;
 import io.quarkus.deployment.builditem.DevServicesRegistryBuildItem;
+import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.paths.PathList;
-import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.ListeningAddress;
@@ -52,9 +51,11 @@ import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.TestClassIndexer;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.quarkus.test.config.ConfigInjector;
+import io.quarkus.test.config.ThreadLocalConfigSourceProvider;
 import io.quarkus.test.config.ValueRegistryInjector;
 import io.quarkus.value.registry.ValueRegistry;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 
 public final class IntegrationTestUtil {
 
@@ -99,26 +100,23 @@ public final class IntegrationTestUtil {
     }
 
     static void doProcessTestInstance(Object testInstance, ExtensionContext context) {
-        ValueRegistry valueRegistry = context.getStore(Namespace.GLOBAL).get(ValueRegistry.class.getName(),
-                ValueRegistry.class);
-        ValueRegistryInjector.inject(testInstance, valueRegistry);
-        TestHTTPResourceManager.inject(testInstance, valueRegistry);
+        ValueRegistry valueRegistry = ValueRegistryInjector.get(context);
+        Config config = ConfigInjector.get(context);
 
-        ExtensionContext root = context.getRoot();
-        ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
+        ValueRegistryInjector.inject(testInstance, valueRegistry);
+        ConfigInjector.inject(testInstance, config);
+        ThreadLocalConfigSourceProvider.set(ConfigInjector.get(context));
+        TestHTTPResourceManager.inject(testInstance, valueRegistry, config);
+
+        ExtensionContext.Store store = context.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
         QuarkusTestExtensionState state = store.get(QuarkusTestExtensionState.class.getName(), QuarkusTestExtensionState.class);
-        Object testResourceManager = state.testResourceManager;
+        assert state != null;
+        Object testResourceManager = state.getTestResourceManager();
         if (!(testResourceManager instanceof TestResourceManager)) {
             throw new RuntimeException(
                     "An unexpected situation occurred while trying to instantiate the testing infrastructure. Have you perhaps mixed @QuarkusTest and @QuarkusIntegrationTest in the same test run?");
         }
-        ((TestResourceManager) state.testResourceManager).inject(testInstance);
-    }
-
-    static Map<String, String> getSysPropsToRestore() {
-        Map<String, String> sysPropRestore = new HashMap<>();
-        sysPropRestore.put(LaunchMode.DEVELOPMENT.getProfileKey(), System.getProperty(LaunchMode.TEST.getProfileKey()));
-        return sysPropRestore;
+        ((TestResourceManager) state.getTestResourceManager()).inject(testInstance);
     }
 
     static Optional<ListeningAddress> startLauncher(ArtifactLauncher<?> launcher, Map<String, String> additionalProperties)
@@ -336,8 +334,8 @@ public final class IntegrationTestUtil {
         }
     }
 
-    static String getEffectiveArtifactType(Properties quarkusArtifactProperties, SmallRyeConfig config) {
-        Optional<String> maybeType = config.getOptionalValue("quarkus.test.integration-test-artifact-type", String.class);
+    static String getEffectiveArtifactType(TestConfig testConfig, Properties quarkusArtifactProperties) {
+        Optional<String> maybeType = testConfig.integrationTestArtifactType();
         if (maybeType.isPresent()) {
             return maybeType.get();
         }

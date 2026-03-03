@@ -244,6 +244,16 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
             return;
         }
 
+        loadAndQueueChildren(module);
+    }
+
+    /**
+     * Registers a loaded model and then queues the modules it references, if its GAV hasn't been loaded yet.
+     *
+     * @param module module to load
+     */
+    private void loadAndQueueChildren(WorkspaceModulePom module) {
+        final Model model = module.getModel();
         final String version = module.getResolvedVersion();
         final Model existingModel = this.loadedModules.putIfAbsent(
                 new GAV(module.getResolvedGroupId(), model.getArtifactId(), version),
@@ -258,6 +268,12 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
 
         module.setLoaded();
 
+        // these may or may not be modules/subprojects of this POM
+        var thenLoad = module.getThenLoad();
+        while (!thenLoad.isEmpty()) {
+            loadAndQueueChildren(thenLoad.removeLast());
+        }
+
         for (String modulePath : model.getModules()) {
             queueModule(model.getProjectDirectory().toPath().resolve(modulePath));
         }
@@ -265,13 +281,6 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
             for (String modulePath : profile.getModules()) {
                 queueModule(model.getProjectDirectory().toPath().resolve(modulePath));
             }
-        }
-
-        // queue dependencies
-        // these may or may not be modules/subprojects of this POM
-        var thenLoad = module.getThenLoad();
-        while (!thenLoad.isEmpty()) {
-            loadQueue.add(thenLoad.removeLast());
         }
     }
 

@@ -1,0 +1,10 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubernetes-with-partial-deployment-metadata-only
+  annotations:
+    custom-annotation: "custom-value"
+    app.kubernetes.io/managed-by: "user"
+  labels:
+    custom-label: "from-user-manifest"
+    app-tier: "backend"

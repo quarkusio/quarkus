@@ -54,6 +54,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     private String containerImage;
     private boolean pullRequired;
     private boolean generateAotFile;
+    private List<String> additionalRecordingArgs;
     private Map<Integer, Integer> additionalExposedPorts;
 
     private Map<String, String> volumeMounts;
@@ -87,6 +88,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         this.containerWorkingDirectory = initContext.containerWorkingDirectory();
         this.programArgs = initContext.programArgs();
         this.generateAotFile = initContext.generateAotFile();
+        this.additionalRecordingArgs = initContext.additionalRecordingArgs();
         this.outputTargetDirectory = initContext.outputTargetDirectory();
     }
 
@@ -327,6 +329,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
             if (containerWorkingDirectory.isPresent()) {
                 args.addAll(toEnvVar("JAVA_TOOL_OPTIONS",
                         "-XX:AOTMode=record -XX:AOTConfiguration=%s/%s".formatted(AOT_DIR, AOT_CONF_FILE_NAME)));
+                args.addAll(additionalRecordingArgs);
                 Path containerAotDir = Path.of(outputTargetDirectory).resolve(AOT_DIR);
                 Files.createDirectories(containerAotDir);
                 containerAotDir.toFile().setReadable(true, false);

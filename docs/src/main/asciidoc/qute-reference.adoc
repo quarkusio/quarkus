@@ -2055,6 +2055,21 @@ public class HelloResource {
 <1> Declares a type-safe template with the Java record. The template is located at `/src/main/resources/templates/HelloResource/Hello.html`.
 <2> Instantiate the record and use it as an ordinary `TemplateInstance`.
 
+[TIP]
+====
+**Kotlin users** can use a data class annotated with `@JvmRecord` to achieve the same result:
+
+[source,kotlin]
+----
+@CheckedTemplate(basePath = "HelloResource")
+@JvmRecord
+data class Hello(val name: String) : TemplateInstance
+----
+
+The `@JvmRecord` annotation instructs the Kotlin compiler to generate a Java record in the bytecode, which Quarkus then recognizes as a type-safe template.
+Note that `@JvmRecord` requires Kotlin 1.5+ and JVM target 16+.
+====
+
 
 ==== Customized Template Path
 

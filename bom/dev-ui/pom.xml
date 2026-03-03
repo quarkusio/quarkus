@@ -33,7 +33,7 @@
         <vaadin-router.version>2.0.1</vaadin-router.version>
         <lit-state.version>1.7.0</lit-state.version>
         <echarts.version>6.0.0</echarts.version>
-        <es-module-shims.version>2.0.10</es-module-shims.version>
+        <es-module-shims.version>2.8.0</es-module-shims.version>
         <path-to-regexp.version>6.3.0</path-to-regexp.version>
         <type-fest.version>5.4.4</type-fest.version>
         <tagged-tag.version>1.0.0</tagged-tag.version>

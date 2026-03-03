@@ -1,6 +1,8 @@
 package io.quarkus.devui.tests;
 
-import static io.quarkus.runtime.LaunchMode.DEVELOPMENT;
+import static io.quarkus.devui.tests.DevUITestUtils.DOT;
+import static io.quarkus.devui.tests.DevUITestUtils.LOCAL_BASE_URI;
+import static io.quarkus.devui.tests.DevUITestUtils.managementRootPath;
 
 import java.io.IOException;
 import java.net.URI;
@@ -9,8 +11,8 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
+import org.junit.jupiter.api.BeforeEach;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
@@ -21,7 +23,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import io.quarkus.test.config.TestConfigProviderResolver;
+import io.quarkus.value.registry.ValueRegistry;
+import io.smallrye.config.Config;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
@@ -30,23 +33,17 @@ import io.vertx.core.http.WebSocket;
 import io.vertx.core.http.WebSocketConnectOptions;
 
 public class DevUIJsonRPCTest {
-
-    protected static final Logger log = Logger.getLogger(DevUIJsonRPCTest.class);
-
-    protected URI uri;
+    private static final Logger log = Logger.getLogger(DevUIJsonRPCTest.class);
 
     private final ObjectMapper mapper = new ObjectMapper();
     private final JsonFactory factory = mapper.getFactory();
     private final Random random = new Random();
-
     private final String namespace;
-    private final String testUrl;
 
-    private static final String DOT = ".";
+    private URI uri;
 
     public DevUIJsonRPCTest(String namespace) {
-        this(namespace, ((TestConfigProviderResolver) ConfigProviderResolver.instance()).getConfig(DEVELOPMENT)
-                .getValue("test.url", String.class));
+        this(namespace, null);
     }
 
     public DevUIJsonRPCTest(String namespace, String testUrl) {
@@ -54,15 +51,20 @@ public class DevUIJsonRPCTest {
         if (namespace.contains(DOT)) {
             namespace = namespace.substring(namespace.lastIndexOf(DOT) + 1);
         }
-
         this.namespace = namespace;
-        this.testUrl = testUrl;
-        String nonApplicationRoot = ((TestConfigProviderResolver) ConfigProviderResolver.instance()).getConfig(DEVELOPMENT)
-                .getOptionalValue("quarkus.http.non-application-root-path", String.class).orElse("q");
-        if (!nonApplicationRoot.startsWith("/")) {
-            nonApplicationRoot = "/" + nonApplicationRoot;
+
+        if (testUrl != null) {
+            this.uri = URI.create(testUrl + managementRootPath(Config.get(), "/dev-ui/json-rpc-ws"));
         }
-        this.uri = URI.create(testUrl + nonApplicationRoot + "/dev-ui/json-rpc-ws");
+    }
+
+    @SuppressWarnings("JUnitMalformedDeclaration")
+    @BeforeEach
+    public void beforeEach(ValueRegistry valueRegistry) {
+        if (valueRegistry.containsKey(LOCAL_BASE_URI)) {
+            URI localBaseUri = valueRegistry.get(LOCAL_BASE_URI);
+            this.uri = URI.create(localBaseUri.toString() + managementRootPath(Config.get(), "/dev-ui/json-rpc-ws"));
+        }
     }
 
     public <T> T executeJsonRPCMethod(TypeReference typeReference, String methodName) throws Exception {
@@ -198,6 +200,10 @@ public class DevUIJsonRPCTest {
     }
 
     private int sendRequest(String methodName, Map<String, Object> params) throws IOException {
+        if (uri == null) {
+            throw new IllegalStateException("No URI available. Did Quarkus start with HTTP support?");
+        }
+
         int id = random.nextInt(Integer.MAX_VALUE);
         String request = createJsonRPCRequest(id, methodName, params);
         log.debug("request = " + request);

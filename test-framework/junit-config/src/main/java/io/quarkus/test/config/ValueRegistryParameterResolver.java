@@ -1,4 +1,4 @@
-package io.quarkus.test.junit;
+package io.quarkus.test.config;
 
 import static io.quarkus.value.registry.ValueRegistry.RuntimeKey.key;
 
@@ -13,16 +13,15 @@ import io.quarkus.value.registry.ValueRegistry;
 
 /**
  * A parameter resolver for JUnit to allow the resolution of {@link ValueRegistry} and {@link ValueRegistry.RuntimeInfo}
- * objects, available in {@link io.quarkus.test.junit.QuarkusTestExtension} and
- * {@link io.quarkus.test.junit.QuarkusIntegrationTestExtension}.
+ * objects is Quarkus Test Extensions.
  */
 public class ValueRegistryParameterResolver implements ParameterResolver {
-    static final ValueRegistryParameterResolver INSTANCE = new ValueRegistryParameterResolver();
+    public static final ValueRegistryParameterResolver INSTANCE = new ValueRegistryParameterResolver();
 
     @Override
     public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
             throws ParameterResolutionException {
-        ValueRegistry valueRegistry = getValueRegistry(parameterContext, extensionContext);
+        ValueRegistry valueRegistry = getValueRegistry(extensionContext);
         if (parameterContext.getParameter().getType().equals(ValueRegistry.class)) {
             return true;
         }
@@ -32,7 +31,7 @@ public class ValueRegistryParameterResolver implements ParameterResolver {
     @Override
     public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
             throws ParameterResolutionException {
-        ValueRegistry valueRegistry = getValueRegistry(parameterContext, extensionContext);
+        ValueRegistry valueRegistry = getValueRegistry(extensionContext);
         if (parameterContext.getParameter().getType().equals(ValueRegistry.class)) {
             return valueRegistry;
         }
@@ -42,12 +41,8 @@ public class ValueRegistryParameterResolver implements ParameterResolver {
         return valueRegistry.get(key(parameterContext.getParameter().getType()));
     }
 
-    private static ValueRegistry getValueRegistry(ParameterContext parameterContext, ExtensionContext extensionContext) {
+    private static ValueRegistry getValueRegistry(ExtensionContext extensionContext) {
         Store store = extensionContext.getStore(Namespace.GLOBAL);
-        QuarkusTestExtensionState state = store.get(QuarkusTestExtensionState.class.getName(), QuarkusTestExtensionState.class);
-        if (state == null || state.getValueRegistry() == null) {
-            return null;
-        }
-        return state.getValueRegistry();
+        return store.get(ValueRegistry.class.getName(), ValueRegistry.class);
     }
 }

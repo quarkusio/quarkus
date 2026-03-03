@@ -31,6 +31,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.jandex.Index;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.platform.commons.JUnitException;
 
 import io.quarkus.bootstrap.BootstrapConstants;
@@ -55,6 +56,8 @@ import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.TestClassIndexer;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.quarkus.test.config.ValueRegistryInjector;
+import io.quarkus.value.registry.ValueRegistry;
 import io.smallrye.common.process.ProcessBuilder;
 import io.smallrye.config.SmallRyeConfig;
 
@@ -101,11 +104,14 @@ public final class IntegrationTestUtil {
     }
 
     static void doProcessTestInstance(Object testInstance, ExtensionContext context) {
+        ValueRegistry valueRegistry = context.getStore(Namespace.GLOBAL).get(ValueRegistry.class.getName(),
+                ValueRegistry.class);
+        ValueRegistryInjector.inject(testInstance, valueRegistry);
+        TestHTTPResourceManager.inject(testInstance, valueRegistry);
+
         ExtensionContext root = context.getRoot();
         ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
         QuarkusTestExtensionState state = store.get(QuarkusTestExtensionState.class.getName(), QuarkusTestExtensionState.class);
-        ValueRegistryInjector.inject(testInstance, state);
-        TestHTTPResourceManager.inject(testInstance, state.getValueRegistry());
         Object testResourceManager = state.testResourceManager;
         if (!(testResourceManager instanceof TestResourceManager)) {
             throw new RuntimeException(

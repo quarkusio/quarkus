@@ -10,6 +10,7 @@ import jakarta.enterprise.context.RequestScoped;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.AbstractManagedContext;
 import io.quarkus.arc.CurrentContext;
 import io.quarkus.arc.impl.EventImpl.Notifier;
 
@@ -18,7 +19,7 @@ import io.quarkus.arc.impl.EventImpl.Notifier;
  *
  * @author Martin Kouba
  */
-class RequestContext extends CurrentManagedContext {
+class RequestContext extends AbstractManagedContext {
 
     private static final Logger LOG = Logger.getLogger("io.quarkus.arc.requestContext");
 

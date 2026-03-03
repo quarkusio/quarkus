@@ -1,4 +1,4 @@
-package io.quarkus.arc.impl;
+package io.quarkus.arc;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
@@ -15,17 +15,20 @@ import jakarta.enterprise.context.spi.CreationalContext;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.ContextInstanceHandle;
-import io.quarkus.arc.CurrentContext;
-import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.ManagedContext;
+import io.quarkus.arc.impl.ContextInstanceHandleImpl;
+import io.quarkus.arc.impl.ContextInstances;
+import io.quarkus.arc.impl.CreationalContextImpl;
+import io.quarkus.arc.impl.Scopes;
 
 /**
- * A managed context backed by the {@link CurrentContext}.
+ * An implementation of managed context based on {@link CurrentContext} which allows getting/setting
+ * the context state.
+ * <p>
+ * While primarily used by Quarkus request and session contexts, it can also be leveraged by custom context impls.
  */
-public abstract class CurrentManagedContext implements ManagedContext {
+public abstract class AbstractManagedContext implements ManagedContext {
 
-    private static final Logger LOG = Logger.getLogger(CurrentManagedContext.class);
+    private static final Logger LOG = Logger.getLogger(AbstractManagedContext.class);
 
     private final CurrentContext<CurrentContextState> currentContext;
 
@@ -35,7 +38,7 @@ public abstract class CurrentManagedContext implements ManagedContext {
     private final Consumer<Object> beforeDestroyedNotifier;
     private final Consumer<Object> destroyedNotifier;
 
-    protected CurrentManagedContext(CurrentContext<CurrentContextState> currentContext,
+    protected AbstractManagedContext(CurrentContext<CurrentContextState> currentContext,
             Supplier<ContextInstances> contextInstances, Consumer<Object> initializedNotifier,
             Consumer<Object> beforeDestroyedNotifier, Consumer<Object> destroyedNotifier) {
         this.currentContext = currentContext;
@@ -145,7 +148,7 @@ public abstract class CurrentManagedContext implements ManagedContext {
     @Override
     public boolean isActive() {
         CurrentContextState contextState = currentState();
-        return contextState == null ? false : contextState.isValid();
+        return contextState != null && contextState.isValid();
     }
 
     @Override
@@ -200,6 +203,7 @@ public abstract class CurrentManagedContext implements ManagedContext {
         return state;
     }
 
+    // Trace logging - by default no-op
     protected Logger traceLog() {
         return LOG;
     }

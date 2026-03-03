@@ -6,13 +6,14 @@ import java.util.function.Supplier;
 import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.context.SessionScoped;
 
+import io.quarkus.arc.AbstractManagedContext;
 import io.quarkus.arc.CurrentContext;
 import io.quarkus.arc.impl.EventImpl.Notifier;
 
 /**
  * The built-in context for {@link SessionScoped}.
  */
-public class SessionContext extends CurrentManagedContext {
+public class SessionContext extends AbstractManagedContext {
 
     public SessionContext(CurrentContext<CurrentContextState> currentContext, Notifier<Object> initializedNotifier,
             Notifier<Object> beforeDestroyedNotifier, Notifier<Object> destroyedNotifier,

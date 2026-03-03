@@ -169,6 +169,30 @@ public class DirectoryPathTreeTest {
     }
 
     @Test
+    public void getResourceNames() {
+        final Path root = resolveTreeRoot("root");
+        final PathTree tree = PathTree.ofDirectoryOrArchive(root);
+        assertThat(tree.getResourceNames()).containsExactlyInAnyOrderElementsOf(getRawPaths().keySet());
+    }
+
+    @Test
+    public void getResourceNamesMultiReleaseEnabled() {
+        final Path root = resolveTreeRoot("root");
+        final PathTree tree = new DirectoryPathTree(root, null, true);
+        assertThat(tree.getResourceNames())
+                .containsExactlyInAnyOrderElementsOf(getMultiReleaseMappedPaths().keySet());
+    }
+
+    @Test
+    public void getResourceNamesIsCached() {
+        final Path root = resolveTreeRoot("root");
+        final PathTree tree = PathTree.ofDirectoryOrArchive(root);
+        var first = tree.getResourceNames();
+        var second = tree.getResourceNames();
+        assertThat(first).isSameAs(second);
+    }
+
+    @Test
     public void walk() throws Exception {
         final Path root = resolveTreeRoot("root");
         final PathTree tree = PathTree.ofDirectoryOrArchive(root);

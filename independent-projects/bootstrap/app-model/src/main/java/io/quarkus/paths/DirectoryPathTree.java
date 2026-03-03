@@ -7,6 +7,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public class DirectoryPathTree extends OpenContainerPathTree implements Serializable {
@@ -14,6 +15,7 @@ public class DirectoryPathTree extends OpenContainerPathTree implements Serializ
     private static final long serialVersionUID = 2255956884896445059L;
 
     private Path dir;
+    private transient volatile Set<String> resourceNames;
 
     /**
      * For deserialization
@@ -79,6 +81,11 @@ public class DirectoryPathTree extends OpenContainerPathTree implements Serializ
     @Override
     public PathTree getOriginalTree() {
         return this;
+    }
+
+    @Override
+    public Set<String> getResourceNames() {
+        return resourceNames == null ? resourceNames = super.getResourceNames() : resourceNames;
     }
 
     @Serial

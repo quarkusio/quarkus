@@ -26,6 +26,8 @@ public interface DockerContainerArtifactLauncher extends ArtifactLauncher<Docker
 
         boolean generateAotFile();
 
+        List<String> additionalRecordingArgs();
+
         String outputTargetDirectory();
     }
 }

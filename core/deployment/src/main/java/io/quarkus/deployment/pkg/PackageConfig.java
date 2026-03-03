@@ -278,6 +278,16 @@ public interface PackageConfig {
             Optional<AotType> type();
 
             /**
+             * Comma-separated list of additional recording arguments passed to the recording command line.
+             * <p>
+             * For instance, may be used to enable advanced logging with:
+             * {@code -Xlog:aot+map=trace,aot+map+oops=trace,aot=warning:file=aot-analysis.map:none:filesize=0 -Xlog:aot+resolve*=trace,aot+codecache+exit=debug:file=training.log:level,tags}
+             * <p>
+             * If an argument includes the {@code ,} symbol, it needs to be escaped, e.g. {@code \\,}
+             */
+            Optional<List<String>> additionalRecordingArgs();
+
+            /**
              * The phase in which the AOT file should be generated.
              * <p>
              * For Leyden AOT, {@code auto} means {@code integration-tests}.

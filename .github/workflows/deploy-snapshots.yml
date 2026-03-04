@@ -1,5 +1,10 @@
 name: Quarkus Deploy Snapshots
 
+permissions:
+  contents: read
+  issues: write
+  packages: read
+
 on:
   schedule:
     - cron: '0 0 * * *'

@@ -130,23 +130,24 @@ export class QwcDevServices extends QwcHotReloadElement {
     _renderConfigDetails(devService){
         if (devService.configs) {
             let properties = this._configToText(devService);
-            return html`<div class="configHeader">${msg('Config', { id: 'devservice-config' })}: 
+            return html`<div class="configHeader">${msg('Config', { id: 'devservice-config' })}:
                             <div class="copyButtons">
-                                ${msg('Make a copy for', { id: 'devservice-make-copy-for' })}: 
-                                <qui-badge 
+                                ${this._renderKubeconfigDownload(devService)}
+                                ${msg('Make a copy for', { id: 'devservice-make-copy-for' })}:
+                                <qui-badge
                                     title="${msg('Copy config for test environment', { id: 'devservice-copy-config-test' })}"
                                     @click="${() => this._copyForTest(devService)}">
                                         <span>${msg('Test', { id: 'devservice-test' })}</span>
                                 </qui-badge>
-                                <qui-badge 
+                                <qui-badge
                                     title="${msg('Copy config for prod environment', { id: 'devservice-copy-config-prod' })}"
                                     @click="${() => this._copyForProd(devService)}">
                                         <span>${msg('Prod', { id: 'devservice-prod' })}</span>
-                                </qui-badge> 
+                                </qui-badge>
                             </div>
                         </div>
                         <div class="config">
-                            <qui-themed-code-block 
+                            <qui-themed-code-block
                                 mode='properties'
                                 content='${properties}'>
                             </qui-themed-code-block>
@@ -203,12 +204,61 @@ export class QwcDevServices extends QwcHotReloadElement {
     }
 
     _configToText(devService, pre = ""){
+        /**
+         * This must match DEVSERVICES_METADATA_PREFIX in DevServicesKubernetesProcessor.java
+         */
+        const DEVSERVICES_METADATA_PREFIX = "quarkus.devservices.internal.";
+
         const list = [];
         for (const [key, value] of Object.entries(devService.configs)) {
-            list.push(pre + key + "=" + value + "\n");
+            if (!key.startsWith(DEVSERVICES_METADATA_PREFIX)) {
+                list.push(pre + key + "=" + value + "\n");
+            }
         }
-        
+
         return ''.concat(...list).trim();
+    }
+
+    _renderKubeconfigDownload(devService){
+
+        const KUBECONFIG_DOWNLOAD_KEY = "quarkus.devservices.internal.kubeconfig.yaml";
+
+        if (devService.configs && devService.configs[KUBECONFIG_DOWNLOAD_KEY]) {
+            return html`
+                <qui-badge
+                    title="${msg('Download kubeconfig file', { id: 'devservice-download-kubeconfig' })}"
+                    @click="${() => this._downloadKubeconfig(devService)}">
+                        <vaadin-icon icon="font-awesome-solid:download"></vaadin-icon>
+                        <span>${msg('Kubeconfig', { id: 'devservice-kubeconfig' })}</span>
+                </qui-badge>
+            `;
+        }
+        return '';
+    }
+
+    _downloadKubeconfig(devService){
+
+        const KUBECONFIG_DOWNLOAD_KEY = "quarkus.devservices.internal.kubeconfig.yaml";
+
+        const kubeconfigYaml = devService.configs[KUBECONFIG_DOWNLOAD_KEY];
+        if (!kubeconfigYaml) {
+            notifier.showErrorMessage(msg('Kubeconfig not available', { id: 'devservice-kubeconfig-not-available' }));
+            return;
+        }
+
+        const blob = new Blob([kubeconfigYaml], { type: 'text/yaml' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'kubeconfig.yaml';
+        document.body.appendChild(a);
+        a.click();
+
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        notifier.showInfoMessage(msg('Kubeconfig downloaded', { id: 'devservice-kubeconfig-downloaded' }));
     }
 
     _copyToClipboard(text) {

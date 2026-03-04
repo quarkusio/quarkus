@@ -96,7 +96,12 @@ public class QuartzProcessor {
     }
 
     @BuildStep
-    AdditionalBeanBuildItem beans() {
+    AdditionalBeanBuildItem beans(QuartzBuildTimeConfig config) {
+        checkExtensionPoints(config.instanceIdGenerators(), InstanceIdGenerator.class);
+        checkExtensionPoints(config.triggerListeners(), TriggerListener.class);
+        checkExtensionPoints(config.jobListeners(), JobListener.class);
+        checkExtensionPoints(config.plugins(), SchedulerPlugin.class);
+
         return new AdditionalBeanBuildItem(QuartzSchedulerImpl.class);
     }
 
@@ -301,15 +306,6 @@ public class QuartzProcessor {
             Map<String, QuartzExtensionPointConfig> config, Class<?> clazz) {
         List<ReflectiveClassBuildItem> reflectiveClasses = new ArrayList<>();
         for (QuartzExtensionPointConfig props : config.values()) {
-            try {
-                if (!clazz
-                        .isAssignableFrom(
-                                Class.forName(props.clazz(), false, Thread.currentThread().getContextClassLoader()))) {
-                    throw new IllegalArgumentException(String.format("%s does not implements %s", props.clazz(), clazz));
-                }
-            } catch (ClassNotFoundException e) {
-                throw new IllegalArgumentException(e);
-            }
             reflectiveClasses.add(ReflectiveClassBuildItem.builder(props.clazz())
                     .reason(getClass().getName())
                     .methods().build());
@@ -377,5 +373,19 @@ public class QuartzProcessor {
                 .supplier(recorder.quartzSupportSupplier(driverDialect.getDriver(), driverDialect.getDataSources(),
                         nonconcurrentMethods))
                 .done());
+    }
+
+    private static void checkExtensionPoints(Map<String, QuartzExtensionPointConfig> config, Class<?> clazz) {
+        for (QuartzExtensionPointConfig extensionPointConfig : config.values()) {
+            try {
+                if (!clazz.isAssignableFrom(
+                        Class.forName(extensionPointConfig.clazz(), false, Thread.currentThread().getContextClassLoader()))) {
+                    throw new IllegalArgumentException(
+                            String.format("%s does not implement %s", extensionPointConfig.clazz(), clazz));
+                }
+            } catch (ClassNotFoundException e) {
+                throw new IllegalArgumentException(e);
+            }
+        }
     }
 }

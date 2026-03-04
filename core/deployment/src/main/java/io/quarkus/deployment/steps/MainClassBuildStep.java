@@ -537,7 +537,9 @@ public class MainClassBuildStep {
             for (ObjectSubstitutionBuildItem sub : substitutions) {
                 sub.holder.registerTo(recorder);
             }
+            //noinspection removal
             for (BytecodeRecorderObjectLoaderBuildItem item : loaders) {
+                //noinspection removal
                 recorder.registerObjectLoader(item.getObjectLoader());
             }
             for (var item : recordableConstructorBuildItems) {

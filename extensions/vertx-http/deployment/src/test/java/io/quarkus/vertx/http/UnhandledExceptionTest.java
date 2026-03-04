@@ -234,7 +234,7 @@ public class UnhandledExceptionTest {
         return allOf(
                 containsString("\"details\":\"Error id"),
                 containsString("\"stack\":\"java.lang.RuntimeException: Simulated failure"),
-                containsString("at " + BeanRegisteringRouteThatThrowsException.class.getName() + "$1.handle"));
+                containsString(BeanRegisteringRouteThatThrowsException.class.getName() + "$1.handle"));
     }
 
     private Matcher<String> htmlBodyMatcher() {

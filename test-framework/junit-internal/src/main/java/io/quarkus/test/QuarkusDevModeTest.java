@@ -1,5 +1,8 @@
 package io.quarkus.test;
 
+import static io.quarkus.test.config.TestValueRegistryConfigSource.CONFIG;
+import static org.junit.jupiter.api.extension.ExtensionContext.StoreScope.LAUNCHER_SESSION;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -241,22 +244,22 @@ public class QuarkusDevModeTest
     }
 
     @Override
-    public void beforeEach(ExtensionContext extensionContext) {
+    public void beforeEach(ExtensionContext context) {
         if (archiveProducer == null) {
             throw new RuntimeException("QuarkusDevModeTest does not have archive producer set");
         }
-        ExclusivityChecker.checkTestType(extensionContext, QuarkusDevModeTest.class);
-        ExtensionContext.Store store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
+        ExclusivityChecker.checkTestType(context, QuarkusDevModeTest.class);
+        ExtensionContext.Store store = context.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
         if (store.get(TestResourceManager.class.getName()) == null) {
-            TestResourceManager testResourceManager = new TestResourceManager(extensionContext.getRequiredTestClass());
+            TestResourceManager testResourceManager = new TestResourceManager(context.getRequiredTestClass());
             testResourceManager.init(null);
-            Map<String, String> properties = testResourceManager.start();
-            TestResourceManager tm = testResourceManager;
-
+            testResourceManager.start();
             store.put(TestResourceManager.class.getName(), testResourceManager);
-            store.put(TestResourceManager.CLOSEABLE_NAME, tm);
+            store.put(TestResourceManager.CLOSEABLE_NAME, testResourceManager);
         }
         TestResourceManager tm = (TestResourceManager) store.get(TestResourceManager.class.getName());
+        assert tm != null;
+
         //dev mode tests just use system properties
         //we set them here and clear them in afterAll
         //so they don't interfere with other tests
@@ -268,7 +271,8 @@ public class QuarkusDevModeTest
                 System.setProperty(i.getKey(), i.getValue());
             }
         }
-        Class<?> testClass = extensionContext.getRequiredTestClass();
+        Class<?> testClass = context.getRequiredTestClass();
+        Object testInstance = context.getRequiredTestInstance();
         try {
             deploymentDir = Files.createTempDirectory("quarkus-dev-mode-test");
             testLocation = PathTestHelper.getTestClassesLocation(testClass);
@@ -284,25 +288,23 @@ public class QuarkusDevModeTest
             }
 
             InMemoryLogHandler startupLogHandler = new InMemoryLogHandler(
-                    logRecord -> logRecord.getMessage().contains("started in"));
+                    logRecord -> logRecord.getMessage().contains("powered by Quarkus"));
             rootLogger.addHandler(startupLogHandler);
-
-            devModeMain = newDevModeMain(extensionContext, deploymentDir, projectSourceRoot);
+            devModeMain = newDevModeMain(context, deploymentDir, projectSourceRoot);
             devModeMain.start();
             ApplicationStateNotification.waitForApplicationStart();
-
             rootLogger.removeHandler(startupLogHandler);
+
             Optional<ListeningAddress> listeningAddress = listeningAddress(startupLogHandler.getRecords());
-            if (listeningAddress.isPresent()) {
-                ValueRegistry valueRegistry = ValueRegistryImpl.builder().addDiscoveredInfos().build();
-                listeningAddress.get().register(valueRegistry, Config.get());
-                extensionContext.getTestInstance().ifPresent(
-                        testInstance -> {
-                            ValueRegistryInjector.inject(testInstance, valueRegistry);
-                            TestHTTPResourceManager.inject(testInstance, valueRegistry);
-                        });
-                extensionContext.getStore(Namespace.GLOBAL).put(ValueRegistry.class.getName(), valueRegistry);
-            }
+            ValueRegistry valueRegistry = ValueRegistryImpl.builder().addDiscoveredInfos()
+                    .withRuntimeSource(Config.get())
+                    .build();
+            listeningAddress.ifPresent(address -> address.register(valueRegistry, Config.get()));
+            context.getStore(LAUNCHER_SESSION, CONFIG).put(ValueRegistry.class.getName(), valueRegistry);
+            context.getStore(Namespace.GLOBAL).put(ValueRegistry.class.getName(), valueRegistry);
+
+            ValueRegistryInjector.inject(testInstance, valueRegistry);
+            TestHTTPResourceManager.inject(testInstance, valueRegistry);
 
         } catch (Exception e) {
             if (allowFailedStart) {

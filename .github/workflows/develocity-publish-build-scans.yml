@@ -17,6 +17,7 @@ jobs:
       actions: write
       pull-requests: write
       checks: write
+      packages: read
     steps:
       - name: Setup Build Scan link capture
         id: setup

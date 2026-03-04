@@ -1,6 +1,9 @@
 # Create the CI Sanity Check entry even when we only have ignored files
 name: Quarkus CI Sanity Check
 
+permissions:
+  contents: read
+
 on:
   push:
     paths:

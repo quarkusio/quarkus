@@ -1,4 +1,8 @@
 name: Sonarcloud Analysis
+
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
   schedule:

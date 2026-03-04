@@ -1,5 +1,9 @@
 name: "OWASP Dependency Check"
 
+permissions:
+  contents: read
+  actions: write
+
 on:
   workflow_dispatch:
   schedule:

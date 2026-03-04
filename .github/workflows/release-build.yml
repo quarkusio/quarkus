@@ -1,5 +1,10 @@
 name: Quarkus Release Test Build
 
+permissions:
+  contents: read
+  issues: write
+  packages: read
+
 on:
   schedule:
     - cron: '0 3 * * *'

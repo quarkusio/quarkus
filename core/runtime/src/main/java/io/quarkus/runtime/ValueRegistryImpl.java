@@ -6,14 +6,11 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.value.registry.RuntimeInfoProvider;
 import io.quarkus.value.registry.RuntimeInfoProvider.RuntimeSource;
 import io.quarkus.value.registry.ValueRegistry;
 import io.quarkus.value.registry.ValueRegistry.RuntimeInfo.SimpleRuntimeInfo;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 
 /**
  * Implementation of {@link ValueRegistry}.
@@ -96,7 +93,7 @@ public class ValueRegistryImpl implements ValueRegistry {
             return this;
         }
 
-        public Builder withRuntimeSource(final SmallRyeConfig config) {
+        public Builder withRuntimeSource(final Config config) {
             this.sources.add(new ConfigRuntimeSource(config));
             return this;
         }
@@ -142,7 +139,7 @@ public class ValueRegistryImpl implements ValueRegistry {
         }
 
         public static RuntimeSource runtimeSource() {
-            return new ConfigRuntimeSource(ConfigProvider.getConfig());
+            return new ConfigRuntimeSource(Config.get());
         }
     }
 }

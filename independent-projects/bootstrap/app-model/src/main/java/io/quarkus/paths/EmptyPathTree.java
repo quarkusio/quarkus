@@ -35,6 +35,10 @@ public class EmptyPathTree implements OpenPathTree {
     }
 
     @Override
+    public void walkRaw(PathVisitor visitor) {
+    }
+
+    @Override
     public void walkIfContains(String relativePath, PathVisitor visitor) {
     }
 

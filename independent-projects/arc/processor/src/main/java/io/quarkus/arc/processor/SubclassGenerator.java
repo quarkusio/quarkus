@@ -1,6 +1,8 @@
 package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.KotlinUtils.isKotlinMethod;
+import static io.quarkus.arc.processor.Reproducibility.orderedAnnotationProxies;
+import static io.quarkus.arc.processor.Reproducibility.orderedAnnotations;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
 
@@ -337,7 +339,7 @@ public class SubclassGenerator extends AbstractGenerator {
                     mc.body(b0 -> {
                         b0.try_(tc -> {
                             tc.body(b1 -> {
-                                Expr bindings = b1.setOf(preDestroyInterception.bindings
+                                Expr bindings = b1.setOf(orderedAnnotations(preDestroyInterception.bindings)
                                         .stream()
                                         .map(binding -> {
                                             ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.name());
@@ -537,7 +539,7 @@ public class SubclassGenerator extends AbstractGenerator {
 
         return bindings -> {
             String key = "b" + bindingIdx.i++;
-            Expr value = bc.setOf(bindings.stream().toList(),
+            Expr value = bc.setOf(orderedAnnotationProxies(bindings),
                     binding -> bindingsLiterals.computeIfAbsent(binding, bindingsLiteralFun));
             bc.withMap(bindingsMap).put(Const.of(key), value);
             return key;

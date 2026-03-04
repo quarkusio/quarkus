@@ -57,7 +57,9 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
                             .or(() -> config.getOptionalValue("quarkus.package.jar.appcds.use-aot", Boolean.class))
                             .orElse(Boolean.FALSE)
                             // only record AOT file for the default profile
-                            && (context.profile() == null)));
+                            && (context.profile() == null),
+                    config.getOptionalValues("quarkus.package.jar.aot.additional-recording-args", String.class)
+                            .orElse(List.of())));
             return launcher;
         } else {
             throw new IllegalStateException("The path of the native binary could not be determined");
@@ -68,15 +70,17 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
 
         private final Path jarPath;
         private final boolean generateAotFile;
+        private final List<String> additionalRecordingArgs;
 
         DefaultJarInitContext(int httpPort, int httpsPort, Duration waitTime, Duration shutdownTimeout,
                 String testProfile,
                 List<String> argLine, Map<String, String> env,
                 ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult, Path jarPath,
-                boolean generateAotFile) {
+                boolean generateAotFile, List<String> additionalRecordingArgs) {
             super(httpPort, httpsPort, waitTime, shutdownTimeout, testProfile, argLine, env, devServicesLaunchResult);
             this.jarPath = jarPath;
             this.generateAotFile = generateAotFile;
+            this.additionalRecordingArgs = additionalRecordingArgs;
         }
 
         @Override
@@ -87,6 +91,11 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
         @Override
         public boolean generateAotFile() {
             return generateAotFile;
+        }
+
+        @Override
+        public List<String> additionalRecordingArgs() {
+            return additionalRecordingArgs;
         }
     }
 }

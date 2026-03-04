@@ -65,7 +65,7 @@ Type: _boolean_ | false | `true`
 
 Type: _string_ | false |
 
-| [.no-hyphens]#*topics*# | A comma-separating list of topics to be consumed. Cannot be used with the `topic` or `pattern` properties
+| [.no-hyphens]#*topics*# | A comma-separated list of topics to be consumed. Cannot be used with the `topic` or `pattern` properties
 
 Type: _string_ | false |
 

@@ -7,6 +7,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -20,10 +21,10 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
 import org.wildfly.common.Assert;
 
+import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.gradle.BuildResult;
 import io.quarkus.gradle.QuarkusGradleWrapperTestBase;
 import io.quarkus.test.devmode.util.DevModeClient;
@@ -33,7 +34,11 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
     private Future<?> quarkusDev;
     protected File projectDir;
 
-    protected DevModeClient devModeClient = new DevModeClient();
+    protected int getPort() {
+        return 8080;
+    }
+
+    protected DevModeClient devModeClient = new DevModeClient(getPort());
 
     @Override
     protected void setupTestCommand() {
@@ -106,7 +111,7 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
             throw e;
         } finally {
             if (projectDir != null && projectDir.isDirectory()) {
-                FileUtils.deleteQuietly(projectDir);
+                IoUtils.recursiveDelete(projectDir.toPath());
             }
         }
     }
@@ -134,9 +139,9 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
         if (projectDir == null) {
             final String projectDirName = projectDirectoryName();
             try {
-                final File projectDir = Files.createTempDirectory(projectDirName).toFile();
-                FileUtils.copyDirectory(getProjectDir(projectDirName), projectDir);
-                this.projectDir = projectDir;
+                final Path projectDir = Files.createTempDirectory(projectDirName);
+                IoUtils.copy(getProjectDir(projectDirName).toPath(), projectDir);
+                this.projectDir = projectDir.toFile();
             } catch (Exception e) {
                 throw new IllegalStateException("Failed to create a project dir for " + projectDirName, e);
             }

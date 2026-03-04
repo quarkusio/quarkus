@@ -12,7 +12,6 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.stream.Collectors;
 
-import org.infinispan.client.hotrod.configuration.ClientIntelligence;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
 import org.infinispan.testcontainers.InfinispanContainer;
 import org.jboss.logging.Logger;
@@ -153,7 +152,6 @@ public class InfinispanDevServiceProcessor {
                                 .containerId(containerAddress.getId())
                                 .config(Map.of(
                                         configPrefix + "hosts", containerAddress.getUrl(),
-                                        configPrefix + "client-intelligence", ClientIntelligence.BASIC.name(),
                                         configPrefix + "username", username,
                                         configPrefix + "password", password))
                                 .build();
@@ -168,7 +166,6 @@ public class InfinispanDevServiceProcessor {
                             .postStartHook(s -> logStarted(s.getConnectionInfo()))
                             .configProvider(Map.of(
                                     configPrefix + "hosts", Startable::getConnectionInfo,
-                                    configPrefix + "client-intelligence", s -> ClientIntelligence.BASIC.name(),
                                     configPrefix + "username", s -> DEFAULT_USERNAME,
                                     configPrefix + "password", s -> DEFAULT_PASSWORD))
                             .build());

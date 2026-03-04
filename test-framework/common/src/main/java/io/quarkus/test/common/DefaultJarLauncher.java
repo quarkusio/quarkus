@@ -55,6 +55,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
     private Map<String, String> env;
     private Path jarPath;
     private boolean generateAotFile;
+    private List<String> additionalRecordingArgs;
 
     private final Map<String, String> systemProps = new HashMap<>();
     private Process quarkusProcess;
@@ -73,6 +74,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         this.env = initContext.env();
         this.jarPath = initContext.jarPath();
         this.generateAotFile = initContext.generateAotFile();
+        this.additionalRecordingArgs = initContext.additionalRecordingArgs();
     }
 
     @Override
@@ -121,6 +123,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         if (generateAotFile) {
             args.add("-XX:AOTMode=record");
             args.add("-XX:AOTConfiguration=%s".formatted(jarPath.resolveSibling(AOT_CONF_FILE_NAME)));
+            args.addAll(additionalRecordingArgs);
         }
         if (HTTP_PRESENT) {
             args.add("-Dquarkus.http.port=" + httpPort);

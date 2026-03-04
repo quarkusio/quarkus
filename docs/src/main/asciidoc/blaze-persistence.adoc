@@ -206,10 +206,10 @@ public class GiftResource {
     }
 
     @GET
-    @Path("{id"})
+    @Path("{id}")
     @Produces(MediaType.APPLICATION_JSON)
     public GiftView getGift(Long id) {
-        return return entityViewManager.find(entityManager, GiftView.class, view.getId());
+        return entityViewManager.find(entityManager, GiftView.class, id);
     }
 }
 ----

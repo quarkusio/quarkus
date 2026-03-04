@@ -9,8 +9,6 @@ import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -139,22 +137,8 @@ public class JarPathTreeTest {
     @Test
     public void walk() throws Exception {
         final PathTree tree = PathTree.ofDirectoryOrArchive(root);
-
-        final Set<String> visited = new HashSet<>();
-        final PathVisitor visitor = new PathVisitor() {
-            @Override
-            public void visitPath(PathVisit visit) {
-                visited.add(visit.getRelativePath("/"));
-            }
-        };
+        var visitor = new PathCollectingVisitor();
         tree.walk(visitor);
-
-        assertThat(visited).isEqualTo(Set.of(
-                "",
-                "README.md",
-                "src",
-                "src/main",
-                "src/main/java",
-                "src/main/java/Main.java"));
+        assertThat(visitor.visitedPaths).containsExactlyInAnyOrderEntriesOf(DirectoryPathTreeTest.getMultiReleaseMappedPaths());
     }
 }

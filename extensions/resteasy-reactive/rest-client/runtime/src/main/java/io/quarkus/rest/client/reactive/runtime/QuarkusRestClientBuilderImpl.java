@@ -5,6 +5,7 @@ import java.net.URL;
 import java.security.KeyStore;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -271,6 +272,12 @@ public class QuarkusRestClientBuilderImpl implements QuarkusRestClientBuilder {
     @Override
     public QuarkusRestClientBuilder loggingBodyLimit(Integer limit) {
         delegate.loggingBodyLimit(limit);
+        return this;
+    }
+
+    @Override
+    public QuarkusRestClientBuilder loggingMaskedHeaders(Set<String> maskedHeaders) {
+        delegate.loggingMaskedHeaders(maskedHeaders);
         return this;
     }
 

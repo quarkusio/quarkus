@@ -103,27 +103,27 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
     public <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
         Context context = Vertx.currentContext();
-        return Uni.createFrom()
-                .completionStage(new Supplier<CompletionStage<V>>() {
-                    @Override
-                    public CompletionStage<V> get() {
-                        // When stats are enabled we need to call statsCounter.recordHits(1)/statsCounter.recordMisses(1) accordingly
-                        StatsRecorder recorder = recordStats ? new OperationalStatsRecorder() : NoopStatsRecorder.INSTANCE;
-                        @SuppressWarnings("unchecked")
-                        CompletionStage<V> result = (CompletionStage<V>) cache.asMap().computeIfAbsent(key,
-                                new Function<Object, CompletableFuture<Object>>() {
-                                    @Override
-                                    public CompletableFuture<Object> apply(Object key) {
-                                        recorder.onValueAbsent();
-                                        return valueLoader.apply((K) key)
-                                                .map(TO_CACHE_VALUE)
-                                                .subscribeAsCompletionStage();
-                                    }
-                                });
-                        recorder.doRecord(key);
-                        return result;
-                    }
-                })
+        return Uni.createFrom().context(new Function<io.smallrye.mutiny.Context, Uni<? extends V>>() {
+            @Override
+            public Uni<? extends V> apply(io.smallrye.mutiny.Context mutinyContext) {
+                // When stats are enabled we need to call statsCounter.recordHits(1)/statsCounter.recordMisses(1) accordingly
+                StatsRecorder recorder = recordStats ? new OperationalStatsRecorder() : NoopStatsRecorder.INSTANCE;
+                @SuppressWarnings("unchecked")
+                CompletionStage<V> result = (CompletionStage<V>) cache.asMap().computeIfAbsent(key,
+                        new Function<Object, CompletableFuture<Object>>() {
+                            @Override
+                            @SuppressWarnings("unchecked")
+                            public CompletableFuture<Object> apply(Object key) {
+                                recorder.onValueAbsent();
+                                return valueLoader.apply((K) key)
+                                        .map(TO_CACHE_VALUE)
+                                        .subscribeAsCompletionStage(mutinyContext);
+                            }
+                        });
+                recorder.doRecord(key);
+                return Uni.createFrom().completionStage(result);
+            }
+        })
                 .map(fromCacheValue())
                 .emitOn(new Executor() {
                     // We need make sure we go back to the original context when the cache value is computed.

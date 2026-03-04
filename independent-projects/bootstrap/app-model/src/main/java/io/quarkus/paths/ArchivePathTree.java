@@ -107,6 +107,16 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
     }
 
     @Override
+    public void walkRaw(PathVisitor visitor) {
+        try (FileSystem fs = openFs()) {
+            final Path dir = fs.getPath("/");
+            PathTreeVisit.walk(archive, dir, dir, pathFilter, Map.of(), visitor);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read " + archive, e);
+        }
+    }
+
+    @Override
     public void walkIfContains(String relativePath, PathVisitor visitor) {
         ensureResourcePath(relativePath);
         if (!PathFilter.isVisible(pathFilter, relativePath)) {
@@ -336,6 +346,17 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
             try {
                 ensureOpen();
                 super.walk(visitor);
+            } finally {
+                lock.readLock().unlock();
+            }
+        }
+
+        @Override
+        public void walkRaw(PathVisitor visitor) {
+            lock.readLock().lock();
+            try {
+                ensureOpen();
+                super.walkRaw(visitor);
             } finally {
                 lock.readLock().unlock();
             }

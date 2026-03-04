@@ -38,7 +38,8 @@ public class IdeProcessor {
 
         IDE_PROCESSES.put(
                 (processInfo -> (processInfo.containInCommand("idea") || processInfo.containInCommand("IDEA"))
-                        && (processInfo.command.endsWith("java") || processInfo.command.endsWith("java.exe"))),
+                        && (processInfo.command.endsWith("java") || processInfo.command.endsWith("java.exe")
+                                || processInfo.command.endsWith("idea64.exe") || processInfo.command.endsWith("idea64"))),
                 Ide.IDEA);
         IDE_PROCESSES.put((processInfo -> processInfo.containInCommand("code")), Ide.VSCODE);
         IDE_PROCESSES.put((processInfo -> processInfo.containInCommand("eclipse")), Ide.ECLIPSE);

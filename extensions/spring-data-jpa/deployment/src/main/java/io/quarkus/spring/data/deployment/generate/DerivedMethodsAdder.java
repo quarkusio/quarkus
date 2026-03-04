@@ -300,7 +300,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
 
             int matchingIndex = -1;
             for (int i = 0; i < interfaceTypeVariables.size(); i++) {
-                if (interfaceTypeVariables.get(i).equals(resultTypeVariable)) {
+                if (interfaceTypeVariables.get(i).identifier().equals(resultTypeVariable.identifier())) {
                     matchingIndex = i;
                     break;
                 }

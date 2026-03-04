@@ -14,4 +14,24 @@ public class FatherBase<T extends ChildBase> {
     float test;
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     private List<T> children;
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDetail() {
+        return detail;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public float getTest() {
+        return test;
+    }
+
+    public List<T> getChildren() {
+        return children;
+    }
 }

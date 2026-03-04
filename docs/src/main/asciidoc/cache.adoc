@@ -724,7 +724,7 @@ import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.CaffeineCache;
 
 import java.time.Duration;
-import java.util.Optional;import javax.inject.Singleton;
+import java.util.Optional;
 
 @Singleton
 public class CacheConfigManager {

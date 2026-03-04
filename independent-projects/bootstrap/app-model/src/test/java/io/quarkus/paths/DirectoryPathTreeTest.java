@@ -9,8 +9,8 @@ import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -20,6 +20,35 @@ public class DirectoryPathTreeTest {
     private static final String BASE_DIR = "paths/directory-path-tree";
 
     private static volatile Path baseDir;
+
+    static Map<String, String> getRawPaths() {
+        final Map<String, String> expectedVisited = new HashMap<>();
+        expectedVisited.put("", "");
+        expectedVisited.put("README.md", "README.md");
+        expectedVisited.put("META-INF", "META-INF");
+        expectedVisited.put("META-INF/MANIFEST.MF", "META-INF/MANIFEST.MF");
+        expectedVisited.put("META-INF/versions", "META-INF/versions");
+        expectedVisited.put("META-INF/versions/9", "META-INF/versions/9");
+        expectedVisited.put("META-INF/versions/9/org", "META-INF/versions/9/org");
+        expectedVisited.put("META-INF/versions/9/org/acme", "META-INF/versions/9/org/acme");
+        expectedVisited.put("META-INF/versions/9/org/acme/resource.txt", "META-INF/versions/9/org/acme/resource.txt");
+        expectedVisited.put("org", "org");
+        expectedVisited.put("org/acme", "org/acme");
+        expectedVisited.put("org/acme/resource.txt", "org/acme/resource.txt");
+        expectedVisited.put("src", "src");
+        expectedVisited.put("src/main", "src/main");
+        expectedVisited.put("src/main/java", "src/main/java");
+        expectedVisited.put("src/main/java/Main.java", "src/main/java/Main.java");
+        return expectedVisited;
+    }
+
+    static Map<String, String> getMultiReleaseMappedPaths() {
+        final Map<String, String> expectedVisited = getRawPaths();
+        expectedVisited.put("org", "META-INF/versions/9/org");
+        expectedVisited.put("org/acme", "META-INF/versions/9/org/acme");
+        expectedVisited.put("org/acme/resource.txt", "META-INF/versions/9/org/acme/resource.txt");
+        return expectedVisited;
+    }
 
     @BeforeAll
     public static void staticInit() throws Exception {
@@ -143,23 +172,27 @@ public class DirectoryPathTreeTest {
     public void walk() throws Exception {
         final Path root = resolveTreeRoot("root");
         final PathTree tree = PathTree.ofDirectoryOrArchive(root);
-
-        final Set<String> visited = new HashSet<>();
-        final PathVisitor visitor = new PathVisitor() {
-            @Override
-            public void visitPath(PathVisit visit) {
-                visited.add(visit.getRelativePath("/"));
-            }
-        };
+        var visitor = new PathCollectingVisitor();
         tree.walk(visitor);
+        assertThat(visitor.visitedPaths).containsExactlyInAnyOrderEntriesOf(getRawPaths());
+    }
 
-        assertThat(visited).isEqualTo(Set.of(
-                "",
-                "README.md",
-                "src",
-                "src/main",
-                "src/main/java",
-                "src/main/java/Main.java"));
+    @Test
+    public void walkRaw() {
+        final Path root = resolveTreeRoot("root");
+        final PathTree tree = PathTree.ofDirectoryOrArchive(root);
+        var visitor = new PathCollectingVisitor();
+        tree.walkRaw(visitor);
+        assertThat(visitor.visitedPaths).containsExactlyInAnyOrderEntriesOf(getRawPaths());
+    }
+
+    @Test
+    public void walkMultiReleaseEnabledDirectory() {
+        final Path root = resolveTreeRoot("root");
+        final PathTree tree = new DirectoryPathTree(root, null, true);
+        var visitor = new PathCollectingVisitor();
+        tree.walk(visitor);
+        assertThat(visitor.visitedPaths).containsExactlyInAnyOrderEntriesOf(getMultiReleaseMappedPaths());
     }
 
     @Test

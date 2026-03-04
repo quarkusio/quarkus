@@ -332,6 +332,7 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
 
                     bw.write(line);
                     bw.newLine();
+                    bw.flush(); // Ensure log is written immediately for real-time reading
 
                     if (forwardToStdOut) {
                         System.out.println(line);

@@ -125,7 +125,7 @@ ok: [localhost]
 TASK [middleware_automation.quarkus.quarkus : Ensure Quarkus user exists on target system.] ***
 ok: [localhost]
 
-TASK [middleware_automation.quarkus.quarkus : Ensure deployement directory exits: /opt/quarkus_deploy.] ***
+TASK [middleware_automation.quarkus.quarkus : Ensure deployment directory exists: /opt/quarkus_deploy.] ***
 ok: [localhost]
 
 TASK [middleware_automation.quarkus.quarkus : Set Quarkus app source dir (if not defined).] ***

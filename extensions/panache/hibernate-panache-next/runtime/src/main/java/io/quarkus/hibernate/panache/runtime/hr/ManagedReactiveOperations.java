@@ -75,12 +75,12 @@ public class ManagedReactiveOperations implements PanacheReactiveOperations {
     }
 
     @Override
-    public Uni<Void> persist(Iterable<Object> entities) {
+    public Uni<Void> persist(Iterable<?> entities) {
         return DELEGATE.persist(entities);
     }
 
     @Override
-    public Uni<Void> persist(Stream<Object> entities) {
+    public Uni<Void> persist(Stream<?> entities) {
         return DELEGATE.persist(entities);
     }
 
@@ -90,12 +90,12 @@ public class ManagedReactiveOperations implements PanacheReactiveOperations {
     }
 
     @Override
-    public Uni<Void> insert(Iterable<Object> entities) {
+    public Uni<Void> insert(Iterable<?> entities) {
         throw new UnsupportedOperationException("Stateless operations not supported");
     }
 
     @Override
-    public Uni<Void> insert(Stream<Object> entities) {
+    public Uni<Void> insert(Stream<?> entities) {
         throw new UnsupportedOperationException("Stateless operations not supported");
     }
 

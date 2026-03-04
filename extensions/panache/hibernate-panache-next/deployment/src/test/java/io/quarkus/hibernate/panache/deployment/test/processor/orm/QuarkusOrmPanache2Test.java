@@ -38,12 +38,12 @@ public class QuarkusOrmPanache2Test {
         method = entityClass.getDeclaredMethod("managedBlocking");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
-        Assertions.assertEquals(entityClass.getName() + "$PanacheManagedBlockingRepository", method.getReturnType().getName());
+        Assertions.assertEquals(entityClass.getName() + "$PanacheManagedBlockingRepository_", method.getReturnType().getName());
 
         method = entityClass.getDeclaredMethod("statelessBlocking");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
-        Assertions.assertEquals(entityClass.getName() + "$PanacheStatelessBlockingRepository",
+        Assertions.assertEquals(entityClass.getName() + "$PanacheStatelessBlockingRepository_",
                 method.getReturnType().getName());
     }
 

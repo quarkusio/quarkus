@@ -882,7 +882,7 @@ __  ____  __  _____   ___  __ ____  ______
 --\___\_\____/_/ |_/_/|_/_/|_|\____/___/
 2022-11-20 04:25:36,885 INFO  [io.quarkus] (Quarkus Main Thread) greeting-app 1.0.0-SNAPSHOT on JVM (powered by Quarkus {quarkus-version}) started in 4.591s. Listening on: http://localhost:8080
 2022-11-20 04:25:36,911 INFO  [io.quarkus] (Quarkus Main Thread) Profile dev activated. Live Coding activated.
-2022-11-20 04:25:36,913 INFO  [io.quarkus] (Quarkus Main Thread) Installed features: [cdi, greetin-extension, resteasy-reactive, smallrye-context-propagation, vertx]
+2022-11-20 04:25:36,913 INFO  [io.quarkus] (Quarkus Main Thread) Installed features: [cdi, greeting-extension, resteasy-reactive, smallrye-context-propagation, vertx]
 ----
 
 From an extension developer standpoint, the Maven publication strategy is very handy and fast, but Quarkus wants to go one step further by also ensuring a reliability of the ecosystem for the people who will use the extensions.

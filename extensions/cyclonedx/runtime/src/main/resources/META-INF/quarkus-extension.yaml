@@ -4,5 +4,7 @@ metadata:
   keywords:
   - "cyclonedx"
   - "cdx"
-  status: "preview"
+  categories:
+  - "security"
+  status: "stable"
   guide: "https://quarkus.io/guides/cyclonedx"

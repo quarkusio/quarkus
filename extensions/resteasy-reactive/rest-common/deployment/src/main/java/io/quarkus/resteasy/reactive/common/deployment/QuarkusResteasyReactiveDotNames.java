@@ -34,6 +34,8 @@ public class QuarkusResteasyReactiveDotNames {
             "org.jboss.resteasy.reactive",
             // Vert.x JSON layer
             "io.vertx.core.json.",
+            // Vert.x web layer
+            "io.vertx.ext.web.",
             // Mutiny
             "io.smallrye.mutiny."
     };

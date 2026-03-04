@@ -735,7 +735,7 @@ class RestClientReactiveProcessor {
                     // }
                     cc.method(method.name(), mc -> {
                         mc.public_();
-                        mc.returning(genericTypeOf(method.returnType(), index));
+                        mc.returning(genericTypeOf(method.returnType()));
 
                         // Collect parameter annotations grouped by position
                         Map<Short, List<AnnotationInstance>> paramAnnotations = new HashMap<>();

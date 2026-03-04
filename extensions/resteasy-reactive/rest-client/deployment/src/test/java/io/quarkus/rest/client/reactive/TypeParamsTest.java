@@ -83,6 +83,10 @@ public class TypeParamsTest {
         @Path("/2")
         @POST
         void call2(@NotBody @Bar String p1, @NotBody Map<@Foo String, @Bar String> p2);
+
+        @POST
+        @SuppressWarnings("unused") // see https://github.com/quarkusio/quarkus/issues/52852
+        List<@Foo Pojo> unused();
     }
 
     public record Pojo(String field) {

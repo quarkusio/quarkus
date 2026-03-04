@@ -21,6 +21,7 @@ import io.vertx.ext.web.RoutingContext;
 public class CORSFilter implements Handler<RoutingContext> {
 
     private static final Logger LOG = Logger.getLogger(CORSFilter.class);
+    private static final Set<String> LOCAL_HOSTNAMES = Set.of("localhost", "127.0.0.1", "[::1]", "::1");
 
     private final CORSConfig corsConfig;
 
@@ -148,9 +149,9 @@ public class CORSFilter implements Handler<RoutingContext> {
                     (corsConfig.origins().get().contains(origin) || isOriginAllowedByRegex(allowedOriginsRegex, origin));
             if (!allowsOrigin) {
                 if (corsConfig.origins().isPresent()) {
-                    allowsOrigin = originMatches || isSameOrigin(request, origin);
+                    allowsOrigin = originMatches || isSameOrigin(request, origin, corsConfig.sameOriginLocalHost());
                 } else {
-                    allowsOrigin = isSameOrigin(request, origin);
+                    allowsOrigin = isSameOrigin(request, origin, corsConfig.sameOriginLocalHost());
                 }
             }
             if (!allowsOrigin) {
@@ -228,7 +229,21 @@ public class CORSFilter implements Handler<RoutingContext> {
 
     }
 
-    static boolean isSameOrigin(HttpServerRequest request, String origin) {
+    static boolean isSameOrigin(HttpServerRequest request, String origin, boolean sameOriginLocaHost) {
+        final boolean sameOrigin = verifySameOrigin(request, origin);
+        if (sameOrigin && sameOriginLocaHost) {
+            if (!LOCAL_HOSTNAMES.contains(request.authority().host())) {
+                LOG.debugf(
+                        "Same origin check has failed, HTTP Host header is not a local hostname: %s",
+                        request.authority().host());
+                return false;
+            }
+        }
+        return sameOrigin;
+    }
+
+    static boolean verifySameOrigin(HttpServerRequest request, String origin) {
+
         //fast path check, when everything is the same
         if (origin.startsWith(request.scheme())) {
             if (!substringMatch(origin, request.scheme().length(), "://", false)) {

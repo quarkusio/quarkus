@@ -21,6 +21,7 @@ import org.mockito.Mockito;
 
 import io.quarkus.vertx.http.security.CORS;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.net.HostAndPort;
 
 public class CORSFilterTest {
 
@@ -53,31 +54,66 @@ public class CORSFilterTest {
         Mockito.when(request.scheme()).thenReturn("http");
         Mockito.when(request.host()).thenReturn("localhost");
         Mockito.when(request.absoluteURI()).thenReturn("http://localhost");
-        Assertions.assertTrue(isSameOrigin(request, "http://localhost"));
-        Assertions.assertTrue(isSameOrigin(request, "http://localhost:80"));
-        Assertions.assertFalse(isSameOrigin(request, "http://localhost:8080"));
-        Assertions.assertFalse(isSameOrigin(request, "https://localhost"));
+        Assertions.assertTrue(isSameOrigin(request, "http://localhost", false));
+        Assertions.assertTrue(isSameOrigin(request, "http://localhost:80", false));
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost:8080", false));
+        Assertions.assertFalse(isSameOrigin(request, "https://localhost", false));
         Mockito.when(request.host()).thenReturn("localhost:8080");
         Mockito.when(request.absoluteURI()).thenReturn("http://localhost:8080");
-        Assertions.assertFalse(isSameOrigin(request, "http://localhost"));
-        Assertions.assertFalse(isSameOrigin(request, "http://localhost:80"));
-        Assertions.assertTrue(isSameOrigin(request, "http://localhost:8080"));
-        Assertions.assertFalse(isSameOrigin(request, "https://localhost:8080"));
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost", false));
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost:80", false));
+        Assertions.assertTrue(isSameOrigin(request, "http://localhost:8080", false));
+        Assertions.assertFalse(isSameOrigin(request, "https://localhost:8080", false));
         Mockito.when(request.scheme()).thenReturn("https");
         Mockito.when(request.host()).thenReturn("localhost");
         Mockito.when(request.absoluteURI()).thenReturn("http://localhost");
-        Assertions.assertFalse(isSameOrigin(request, "http://localhost"));
-        Assertions.assertFalse(isSameOrigin(request, "http://localhost:443"));
-        Assertions.assertFalse(isSameOrigin(request, "https://localhost:8080"));
-        Assertions.assertTrue(isSameOrigin(request, "https://localhost"));
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost", false));
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost:443", false));
+        Assertions.assertFalse(isSameOrigin(request, "https://localhost:8080", false));
+        Assertions.assertTrue(isSameOrigin(request, "https://localhost", false));
         Mockito.when(request.host()).thenReturn("localhost:8443");
         Mockito.when(request.absoluteURI()).thenReturn("https://localhost:8443");
-        Assertions.assertFalse(isSameOrigin(request, "http://localhost"));
-        Assertions.assertFalse(isSameOrigin(request, "http://localhost:80"));
-        Assertions.assertFalse(isSameOrigin(request, "http://localhost:8443"));
-        Assertions.assertTrue(isSameOrigin(request, "https://localhost:8443"));
-        Assertions.assertFalse(isSameOrigin(request, "http://%s"));
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost", false));
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost:80", false));
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost:8443", false));
+        Assertions.assertTrue(isSameOrigin(request, "https://localhost:8443", false));
+        Assertions.assertFalse(isSameOrigin(request, "http://%s", false));
+    }
 
+    @Test
+    public void sameOriginLocalHostTest() {
+        var request = Mockito.mock(HttpServerRequest.class);
+        Mockito.when(request.scheme()).thenReturn("http");
+        Mockito.when(request.host()).thenReturn("localhost");
+        Mockito.when(request.authority()).thenReturn(HostAndPort.authority("localhost"));
+        Mockito.when(request.absoluteURI()).thenReturn("http://localhost");
+        Assertions.assertTrue(isSameOrigin(request, "http://localhost", true));
+        Assertions.assertTrue(isSameOrigin(request, "http://localhost:80", true));
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost:8080", true));
+        Assertions.assertFalse(isSameOrigin(request, "https://localhost", true));
+        Mockito.when(request.host()).thenReturn("localhost:8080");
+        Mockito.when(request.authority()).thenReturn(HostAndPort.authority("localhost", 8080));
+        Mockito.when(request.absoluteURI()).thenReturn("http://localhost:8080");
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost", true));
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost:80", true));
+        Assertions.assertTrue(isSameOrigin(request, "http://localhost:8080", false));
+        Assertions.assertFalse(isSameOrigin(request, "https://localhost:8080", true));
+        Mockito.when(request.scheme()).thenReturn("https");
+        Mockito.when(request.host()).thenReturn("localhost");
+        Mockito.when(request.authority()).thenReturn(HostAndPort.authority("localhost"));
+        Mockito.when(request.absoluteURI()).thenReturn("http://localhost");
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost", true));
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost:443", true));
+        Assertions.assertFalse(isSameOrigin(request, "https://localhost:8080", true));
+        Assertions.assertTrue(isSameOrigin(request, "https://localhost", true));
+        Mockito.when(request.host()).thenReturn("localhost:8443");
+        Mockito.when(request.authority()).thenReturn(HostAndPort.authority("localhost", 8443));
+        Mockito.when(request.absoluteURI()).thenReturn("https://localhost:8443");
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost", true));
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost:80", true));
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost:8443", true));
+        Assertions.assertTrue(isSameOrigin(request, "https://localhost:8443", true));
+        Assertions.assertFalse(isSameOrigin(request, "http://%s", true));
     }
 
     @Test
@@ -86,9 +122,21 @@ public class CORSFilterTest {
         Mockito.when(request.scheme()).thenReturn("https");
         Mockito.when(request.host()).thenReturn("stage.code.quarkus.io");
         Mockito.when(request.absoluteURI()).thenReturn("https://stage.code.quarkus.io/api/project");
-        Assertions.assertFalse(isSameOrigin(request, "http://localhost"));
-        Assertions.assertFalse(isSameOrigin(request, "https://code.quarkus.io"));
-        Assertions.assertTrue(isSameOrigin(request, "https://stage.code.quarkus.io"));
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost", false));
+        Assertions.assertFalse(isSameOrigin(request, "https://code.quarkus.io", false));
+        Assertions.assertTrue(isSameOrigin(request, "https://stage.code.quarkus.io", false));
+    }
+
+    @Test
+    public void sameOriginLocalHostPublicWebAddressTest() {
+        var request = Mockito.mock(HttpServerRequest.class);
+        Mockito.when(request.scheme()).thenReturn("https");
+        Mockito.when(request.host()).thenReturn("stage.code.quarkus.io");
+        Mockito.when(request.authority()).thenReturn(HostAndPort.authority("stage.code.quarkus.io"));
+        Mockito.when(request.absoluteURI()).thenReturn("https://stage.code.quarkus.io/api/project");
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost", true));
+        Assertions.assertFalse(isSameOrigin(request, "https://code.quarkus.io", true));
+        Assertions.assertFalse(isSameOrigin(request, "https://stage.code.quarkus.io", true));
     }
 
     @Test
@@ -110,11 +158,17 @@ public class CORSFilterTest {
             public boolean enabled() {
                 return true;
             }
+
+            @Override
+            public boolean sameOriginLocalHost() {
+                return false;
+            }
         }
         var config = new CORSConfigImpl(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.empty(), Optional.empty());
         var emptyConfig = (CORSConfig) new CORS.Builder(config).build();
         Assertions.assertTrue(emptyConfig.enabled());
+        Assertions.assertFalse(emptyConfig.sameOriginLocalHost());
         Assertions.assertTrue(emptyConfig.origins().isEmpty());
         Assertions.assertTrue(emptyConfig.headers().isEmpty());
         Assertions.assertTrue(emptyConfig.exposedHeaders().isEmpty());
@@ -125,8 +179,10 @@ public class CORSFilterTest {
                 .origin("origin-1")
                 .origins(Set.of("origin-2", "origin-3"))
                 .origins(Set.of("origin-4", "origin-5"))
+                .sameOriginLocalHost(true)
                 .build();
         Assertions.assertTrue(configWithOriginsOnly.enabled());
+        Assertions.assertTrue(configWithOriginsOnly.sameOriginLocalHost());
         Assertions.assertTrue(configWithOriginsOnly.origins().isPresent());
         List<String> origins = configWithOriginsOnly.origins().get();
         assertThat(origins)

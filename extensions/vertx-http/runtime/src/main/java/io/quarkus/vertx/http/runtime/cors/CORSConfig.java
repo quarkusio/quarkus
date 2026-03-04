@@ -17,6 +17,13 @@ public interface CORSConfig {
     boolean enabled();
 
     /**
+     * Request that the same origin check passes only if HTTP Host header
+     * is one of the localhost representations: "localhost", "127.0.0.1", "[::1]" or "::1".
+     */
+    @WithDefault("false")
+    boolean sameOriginLocalHost();
+
+    /**
      * The origins allowed for CORS.
      * <p>
      * A comma-separated list of valid URLs, such as `http://www.quarkus.io,http://localhost:3000`.

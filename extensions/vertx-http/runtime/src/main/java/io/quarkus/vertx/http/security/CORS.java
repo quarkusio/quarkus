@@ -41,6 +41,7 @@ public sealed interface CORS permits CORS.Builder.CORSImpl {
      */
     final class Builder {
 
+        private boolean sameOriginLocalHost;
         private Optional<Boolean> accessControlAllowCredentials;
         private Optional<Duration> accessControlMaxAge;
         private Optional<List<String>> exposedHeaders;
@@ -53,12 +54,22 @@ public sealed interface CORS permits CORS.Builder.CORSImpl {
         }
 
         public Builder(CORSConfig corsConfig) {
+            this.sameOriginLocalHost = corsConfig.sameOriginLocalHost();
             this.accessControlAllowCredentials = corsConfig.accessControlAllowCredentials();
             this.accessControlMaxAge = corsConfig.accessControlMaxAge();
             this.exposedHeaders = corsConfig.exposedHeaders();
             this.headers = corsConfig.headers();
             this.methods = corsConfig.methods();
             this.origins = corsConfig.origins();
+        }
+
+        /**
+         * @param sameOriginLocalHost {@link CORSConfig#sameOriginLocalHost()}
+         * @return this builder
+         */
+        public Builder sameOriginLocalHost(boolean sameOriginLocalHost) {
+            this.sameOriginLocalHost = sameOriginLocalHost;
+            return this;
         }
 
         /**
@@ -179,7 +190,8 @@ public sealed interface CORS permits CORS.Builder.CORSImpl {
          * @return CORS instance, which should be passed to the {@link HttpSecurity} event
          */
         public CORS build() {
-            return new CORSImpl(accessControlAllowCredentials, accessControlMaxAge, exposedHeaders, headers, methods, origins);
+            return new CORSImpl(sameOriginLocalHost, accessControlAllowCredentials, accessControlMaxAge, exposedHeaders,
+                    headers, methods, origins);
         }
 
         private static Optional<List<String>> merge(Optional<List<String>> optionalOriginalList, Set<String> newSet,
@@ -199,7 +211,8 @@ public sealed interface CORS permits CORS.Builder.CORSImpl {
             return Optional.of(result);
         }
 
-        record CORSImpl(Optional<Boolean> accessControlAllowCredentials, Optional<Duration> accessControlMaxAge,
+        record CORSImpl(boolean sameOriginLocalHost, Optional<Boolean> accessControlAllowCredentials,
+                Optional<Duration> accessControlMaxAge,
                 Optional<List<String>> exposedHeaders, Optional<List<String>> headers,
                 Optional<List<String>> methods, Optional<List<String>> origins) implements CORS, CORSConfig {
             @Override

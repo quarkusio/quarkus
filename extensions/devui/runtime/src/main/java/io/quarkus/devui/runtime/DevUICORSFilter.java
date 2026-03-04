@@ -131,6 +131,11 @@ public class DevUICORSFilter implements Handler<RoutingContext> {
             }
 
             @Override
+            public boolean sameOriginLocalHost() {
+                return baseCorsconfig.sameOriginLocalHost();
+            }
+
+            @Override
             public Optional<List<String>> origins() {
                 return origins;
             }

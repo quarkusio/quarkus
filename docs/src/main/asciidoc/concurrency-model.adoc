@@ -1761,6 +1761,40 @@ In my personal opinion, this is a bug.
 
 For more information about Mutiny, see the https://smallrye.io/smallrye-mutiny/[documentation].
 
+== OpenTelemetry
+
+OpenTelemetry (OTel) tracing requires implicit parameters (context) in order to provide parent/child and link relationships.
+This can happen in process and across process boundaries. In this document we care about the first.
+
+A trace is defined by the first span of a particular execution flow (a request) and it's a span without a parent. A tree of child spans can be spawn from this original parentless span and each one of those spans has a particular immutable OTel Context.
+
+The OpenTelemetry specification defines the https://opentelemetry.io/docs/specs/otel/context/[`Context`] as a propagation mechanism carrying execution scoped values across API boundaries. These scoped values are usually key/value pairs stored in a `io.opentelemetry.context.ArrayBasedContext` implementing the `io.opentelemetry.context.Context` interface.
+
+This is how an OTel Context looks like, in the particular cade of an HTTP server inbound connection:
+
+image::otel-context-sample.png[alt=OTel Context example in Quarkus,role="center"]
+Values are retrieved with the following keys:
+
+- `opentelemetry-http-server-route-key`: HTTP instrumentation specific.
+- `opentelemetry-trace-span-key`: Contains the span that has just been created
+- `opentelemetry-traces-local-root-span`: Local root span. The first created span on this flow. Will remain unchanged.
+- `opentelemetry-traces-span-key-http-server`: HTTP instrumentation specific.
+
+These key/values pairs might differ because implementations of the `io.opentelemetry.instrumentation.api.instrumenter.ContextCustomizer` interface can be used.
+
+A Context MUST be immutable, and its write operations MUST result in the creation of a new Context containing the original values and the specified values updated.
+
+OpenTelemetry provides a `io.opentelemetry.context.ContextStorage` interface for frameworks to implement their own OTel Context persistence according to automatic scope switching. Meaning that each span must be bounded by a `Scope`.
+
+Scopes managed by OTel's `ContextStorage` will end up organized into a tree structure that mirrors the hierarchical relationship of parent and child spans.
+
+[NOTE]
+====
+Do not mix this with Context Propagation using the https://opentelemetry.io/docs/specs/otel/context/api-propagators/[Propagators API] used when crossing process boudaries. This is usually called distributed context and per spec requires serialization and ways to inject and extract the  context in a carrier, usually as metadata.
+
+As an example, OTel and Quarkus use the https://www.w3.org/TR/trace-context/[W3C `traceparent`] header as carrier by default, when HTTP communication is performed.
+====
+
 == Quarkus
 
 Vast majority of Quarkus applications use Vert.x and so the concurrency model is a mix of multithreading and event loops.
@@ -2090,6 +2124,209 @@ The parts of Quarkus code that treat safety as isolation are buggy.
 It is possible that all ``Context``s will be considered "safe" (or "non-concurrent") by default and application code will have to opt into concurrency explicitly.
 The opposite is also possible; once again, depending on outcomes of ongoing work.
 ====
+
+=== OpenTelemetry integration
+
+The bridge between frameworks and OpenTelemetry context management systems happens by implementing the `https://github.com/open-telemetry/opentelemetry-java/blob/0d2b7b03b760f3bc26e7db5de83f0c4cf5c17ffa/context/src/main/java/io/opentelemetry/context/ContextStorage.java#L63[io.opentelemetry.context.ContextStorage]` interface methods:
+
+- `Scope attach(Context toAttach);`
+- `Context current();`
+
+Quarkus contains 2 implementations of the `ContextStorage`:
+
+- `io.quarkus.opentelemetry.runtime.QuarkusContextStorage`
+- `io.quarkus.opentelemetry.runtime.MDCEnabledContextStorage`
+
+The contexts are stored in the `DuplicatedContext` if `io.vertx.core.Context` exists. If not, the `MDCEnabledContextStorage` is used and delegates persistence to the default `ThreadLocalContextStorage.INSTANCE`. This is rare but if you use Mutiny without Vert.x or coding a CLI app you will end up in this case.
+
+[NOTE]
+====
+`MDCEnabledContextStorage` is an unfortunate name because it is not the place where the MDC is stored, this is only a fallback Storage if a `DuplicatedContext` is not available and in that case it will store both the Otel `Context` and the `VertxMDC` context data. There will be more about MDC a few sections bellow.
+====
+
+==== QuarkusContextStorage usages
+
+- `io.quarkus.micrometer.runtime.export.exemplars.OpenTelemetryExemplarContextUnwrapper`: used to enrich Micrometer metrics with span data.
+- `io.quarkus.micrometer.runtime.export.exemplars.OpentelemetryExemplarSamplerProvider`: Used by the Prometheus exporter to obtain span data.
+- `io.quarkus.opentelemetry.runtime.propagation.OpenTelemetryMpContextPropagationProvider`: Used by the MicroProfile Context Propagation
+- `io.quarkus.opentelemetry.runtime.tracing.instrumentation.reactivemessaging.ReactiveMessagingTracingIncomingDecorator`: used to attach OTel context from incoming message to the duplicated message context. This is probably not the right way to do this. The Propagators API should have been used instead.
+- 'io.quarkus.opentelemetry.runtime.tracing.instrumentation.reactivemessaging.ReactiveMessagingTracingOutgoingDecorator': Add TracingMetadata to the outgoing message if it doesn't exist already.
+- `io.quarkus.opentelemetry.runtime.tracing.instrumentation.restclient.OpenTelemetryClientFilter`: Set span context in the request metadata
+- `io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx.InstrumenterVertxTracer`: provide OTel context persistence for Vert.x based servers and clients.
+- `io.quarkus.opentelemetry.runtime.tracing.mutiny.MutinyTracingHelper`: creates duplicate context, if the current context  is not a duplicated one and not null
+- `io.quarkus.opentelemetry.runtime.OpenTelemetryUtil`: to get span data for debugging purposes
+
+==== The OTel Context lifecycle with the OpenTelemetry API
+
+To create a `Span` the simplest way is to use the OpenTelemetry API for tracing
+
+[Source, Java]
+----
+public String hello() {
+    Span span = tracer.spanBuilder("something").startSpan(); <1>
+    try (Scope ignored = span.makeCurrent()) { <2>
+    } finally { <3>
+        span.end();
+    }
+    return "hello";
+}
+----
+<1> In Quarkus, the `Tracer` can be injected and used to create a started span that is still not persisted in the OTel Context storage. It's inactive!
+<2> The scope is created in the context storage by calling the `.makeCurrent()` which follows this procedure:
+- The OTel `ContextStorage` will be resolved to `QuarkusContextStorage`.
+- The `QuarkusContextStorage.attach(io.opentelemetry.context.Context otelToAttach)` method will be called
+- `attach` will resolve the current Vert.x `DuplicatedContext` or, if none was found will use `ThreadLocalContextStorage.INSTANCE`.
+- If a previous OTel `Context` is present in the `DuplicatedContext`, it is preserved for later.
+- If the `DuplicatedContext` is present, the current OTel `Context` is stored in it: `vertxContext.putLocal(OTEL_CONTEXT, otelToAttach);`
+- The `Scope` object is created and the `close()` method in implemented. The object is returned.
+<3> `Scope.close()` is implemented in a way that will restore into the `DuplicatedContext` a previous OTel `Context`, if present. If no restore is needed, the OTel `Context` is simply removed from the `DuplicatedContext`.
+
+[WARNING]
+====
+Scopes must always be closed at the end of a `Span`.
+====
+
+==== The OTel Context lifecycle with the OpenTelemetry instrumentation API
+
+Most Quarkus automatic tracing instrumentation is implemented using the OpenTelemetry Java https://github.com/open-telemetry/opentelemetry-java-instrumentation/tree/main/instrumentation-api/src/main/java/io/opentelemetry/instrumentation/api[Instrumentation API] (Java exclusive), a more elaborated and feature rich utility API.
+
+This can be used together with the `io.vertx.core.spi.tracing.VertxTracer` to provide tracing for servers and clients implemented with Vert.x:
+
+[source,java]
+----
+public interface VertxTracer<I, O> {
+  VertxTracer NOOP = new VertxTracer<Object, Object>() {
+  };
+
+  default <R> I receiveRequest(Context context,
+                               SpanKind kind,
+                               TracingPolicy policy,
+                               R request,
+                               String operation,
+                               Iterable<Map.Entry<String, String>> headers,
+                               TagExtractor<R> tagExtractor) {
+    return null;
+  }
+
+  default <R> void sendResponse(Context context,
+                                R response,
+                                I payload,
+                                Throwable failure,
+                                TagExtractor<R> tagExtractor) {
+  }
+
+  default <R> O sendRequest(Context context,
+                            SpanKind kind,
+                            TracingPolicy policy,
+                            R request,
+                            String operation,
+                            BiConsumer<String, String> headers,
+                            TagExtractor<R> tagExtractor) {
+    return null;
+  }
+
+  default <R> void receiveResponse(Context context,
+                                   R response,
+                                   O payload,
+                                   Throwable failure,
+                                   TagExtractor<R> tagExtractor) {
+  }
+
+  default void close() {
+  }
+}
+----
+
+Mixing the 3 frameworks, OTel, Quarkus and Vert.x together creates the `io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx.InstrumenterVertxTracer`.
+This is a simplified code sample of what happens when a request `REQ` is received:
+
+[source, java]
+----
+io.opentelemetry.context.Context parentContext = QuarkusContextStorage.getOtelContext(context);<1>
+if (parentContext == null) {
+    parentContext = io.opentelemetry.context.Context.current();
+}
+if (instrumenter.shouldStart(parentContext, (REQ) request)) {
+    io.opentelemetry.context.Context spanContext = instrumenter.start(parentContext, (REQ) request);
+    Scope scope = QuarkusContextStorage.INSTANCE.attach(context, spanContext); <2>
+    return spanOperation(context, (REQ) request, toMultiMap(headers), spanContext, scope);
+}
+----
+<1> Here, the `context` is an instance of `io.vertx.core.Context`, the `DuplicatedContext`.
+<2> on `attach()` the OpenTelemetry context `spanContext` object is stored in the Vert.x DuplicatedContext `context`, like we described above.
+
+The `SpanOperation` handled by Vert.x and later restored when a response is sent back to the instrumenter:
+[source, java]
+----
+Scope scope = spanOperation.getScope();
+Object request = spanOperation.getRequest();
+Instrumenter<REQ, RESP> instrumenter = getSendResponseInstrumenter();
+try (scope) { <1>
+    instrumenter.end(spanOperation.getSpanContext(), (REQ) request, (RESP) response, failure);
+}
+----
+<1> The scope is `Autocloseable` and on close will either remove the OTel context from the Vert.x duplicated context or restores the previous OTel context.
+
+==== OpenTelemetry Context and worker threads
+
+As mentioned above, HTTP requests are received on the event-loop but if not returning Uni, Multi, they will execute on a worker thread with a `DuplicatedContext` attached to it.
+
+The dispatching happens https://github.com/quarkusio/quarkus/blob/e943b4063b44727e8faf982385a576bc0029d0b2/extensions/vertx/runtime/src/main/java/io/quarkus/vertx/core/runtime/VertxCoreRecorder.java#L651-L684[happens here], in the `VertxCoreRecorder`:
+
+[source, java]
+----
+public ContextHandler<Object> executionContextHandler(List<RuntimeValue<List<String>>> ignoredKeysSuppliers) {
+// ... Omitted code
+            @Override
+            public void runWith(Runnable task, Object context) {
+                ContextInternal currentContext = (ContextInternal) Vertx.currentContext();
+                // Only do context handling if it's non-null
+                if (context != null && context != currentContext) {
+                    ContextInternal vertxContext = (ContextInternal) context;
+                    // The CDI contexts must not be propagated
+                    // First test if VertxCurrentContextFactory is actually used
+                    if (ignoredKeys != null) {
+                        ConcurrentMap<Object, Object> local = vertxContext.localContextData();
+                        if (containsIgnoredKey(ignoredKeys, local)) {
+                            // Duplicate the context, copy the data, remove the request context
+                            vertxContext = vertxContext.duplicate(); <1>
+                            vertxContext.localContextData().putAll(local); <2>
+                            ignoredKeys.forEach(vertxContext.localContextData()::remove);
+                            VertxContextSafetyToggle.setContextSafe(vertxContext, true); <3>
+                        }
+                    }
+                    vertxContext.beginDispatch();
+                    try {
+                        task.run();
+                    } finally {
+                        vertxContext.endDispatch(currentContext);
+                    }
+                } else {
+                    task.run();
+                }
+            }
+// ... Omitted code
+        };
+    }
+----
+<1> Vert.x Context is duplicated
+<2> Relevant local data is copied over maintaining the object references. This includes the OTel `Context` and the  'VertxMDC` data, among other things.
+<3> Vert.x Context is marked safe meaning that no multithreading will happen.
+
+This operation happens in the event loop, however, the `DuplicatedContext` will run in a worker thread where the user can very easily offload execution to other managed threads.
+
+Also, if any operation happens on the event-loop and affects the existing contents of the Vert.x context, the effects will propagate to the new `DuplicatedContext` because the objects references ate the same.
+
+[NOTE]
+====
+Crosstalk between threads is currently possible.
+====
+
+=== The MDC context
+
+
+=== Microprofile Context Propagation
+
 
 === References
 

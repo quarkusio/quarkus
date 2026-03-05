@@ -36,6 +36,12 @@ public interface InstrumentBuildTimeConfig {
     @WithDefault("true")
     boolean resteasy();
 
+    /**
+     * Enables instrumentation for Kafka Streams.
+     */
+    @WithDefault("true")
+    boolean kafkaStreams();
+
     // NOTE: agroal, graphql and scheduler have their own config properties
 
 }

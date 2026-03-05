@@ -36,6 +36,9 @@ import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
 
 @BuildSteps(onlyIf = TracerEnabled.class)
 public class InstrumentationProcessor {
+
+    static final String TRACING_KAFKA_CLIENT_SUPPLIER_CLASS_NAME = "io.quarkus.opentelemetry.runtime.tracing.instrumentation.kafka.TracingKafkaClientSupplier";
+
     static class MetricsExtensionAvailable implements BooleanSupplier {
         private static final boolean IS_MICROMETER_EXTENSION_AVAILABLE = isClassPresentAtRuntime(
                 "io.quarkus.micrometer.runtime.binder.vertx.VertxHttpServerMetrics");
@@ -65,6 +68,16 @@ public class InstrumentationProcessor {
         @Override
         public boolean getAsBoolean() {
             return IS_GRPC_EXTENSION_AVAILABLE;
+        }
+    }
+
+    static class KafkaStreamsExtensionAvailable implements BooleanSupplier {
+        private static final boolean IS_KAFKA_STREAMS_AVAILABLE = isClassPresentAtRuntime(
+                "org.apache.kafka.streams.KafkaStreams");
+
+        @Override
+        public boolean getAsBoolean() {
+            return IS_KAFKA_STREAMS_AVAILABLE;
         }
     }
 
@@ -107,6 +120,17 @@ public class InstrumentationProcessor {
         if (capabilities.isPresent(Capability.MESSAGING) && config.instrument().messaging()) {
             additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveMessagingTracingOutgoingDecorator.class));
             additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveMessagingTracingIncomingDecorator.class));
+        }
+    }
+
+    @BuildStep(onlyIf = KafkaStreamsExtensionAvailable.class)
+    void registerKafkaStreamsTracing(
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            OTelBuildConfig config) {
+        if (config.instrument().kafkaStreams()) {
+            additionalBeans.produce(AdditionalBeanBuildItem.builder()
+                    .addBeanClass(TRACING_KAFKA_CLIENT_SUPPLIER_CLASS_NAME)
+                    .setUnremovable().build());
         }
     }
 

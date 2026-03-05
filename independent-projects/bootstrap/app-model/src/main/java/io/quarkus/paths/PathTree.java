@@ -5,6 +5,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -112,6 +114,18 @@ public interface PathTree {
      * @return parsed {@code META-INF/MANIFEST.MF} if it's found, otherwise {@code null}
      */
     ManifestAttributes getManifestAttributes();
+
+    /**
+     * Returns a set of resource names provided by this path tree.
+     * The set may include both directories and files.
+     *
+     * @return a set of resource names provided by this path tree
+     */
+    default Set<String> getResourceNames() {
+        Set<String> names = new HashSet<>();
+        walk(visit -> names.add(visit.getRelativePath()));
+        return names;
+    }
 
     /**
      * Walks the tree.

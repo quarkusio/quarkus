@@ -13,7 +13,7 @@ import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -37,7 +37,6 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
     private final OpenPathTree pathTree;
     private final boolean runtime;
     private final ResolvedDependency resolvedDependency;
-    private volatile Set<String> resources;
 
     public PathTreeClassPathElement(PathTree pathTree, boolean runtime) {
         this(pathTree, runtime, null);
@@ -99,7 +98,7 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
     @Override
     public ClassPathResource getResource(String name) {
         final String sanitized = sanitize(name);
-        final Set<String> resources = this.resources;
+        final Collection<String> resources = pathTree.getResourceNames();
         if (resources != null && !resources.contains(sanitized)) {
             return null;
         }
@@ -113,7 +112,7 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
     @Override
     public List<ClassPathResource> getResources(String name) {
         final String sanitized = sanitize(name);
-        final Set<String> resources = this.resources;
+        final Collection<String> resources = pathTree.getResourceNames();
         if (resources != null && !resources.contains(sanitized)) {
             return List.of();
         }
@@ -154,23 +153,7 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
 
     @Override
     public Set<String> getProvidedResources() {
-        Set<String> resources = this.resources;
-        if (resources == null) {
-            resources = apply(PathTreeClassPathElement::collectResources);
-            this.resources = resources;
-        }
-        return resources;
-    }
-
-    private static Set<String> collectResources(OpenPathTree tree) {
-        final Set<String> relativePaths = new HashSet<>();
-        tree.walk(visit -> {
-            final String relativePath = visit.getRelativePath();
-            if (!relativePath.isEmpty()) {
-                relativePaths.add(relativePath);
-            }
-        });
-        return relativePaths;
+        return pathTree.getResourceNames();
     }
 
     @Override
@@ -179,7 +162,7 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
     }
 
     @Override
-    protected ManifestAttributes readManifest() {
+    public ManifestAttributes getManifestAttributes() {
         return apply(OpenPathTree::getManifestAttributes);
     }
 
@@ -199,7 +182,6 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
     @Override
     public void close() throws IOException {
         lock.writeLock().lock();
-        resources = null;
         try {
             pathTree.close();
         } finally {
@@ -216,7 +198,7 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
         }
         sb.append(pathTree.getOriginalTree().toString());
         sb.append(" runtime=").append(isRuntime());
-        final Set<String> resources = this.resources;
+        final Set<String> resources = pathTree.getResourceNames();
         sb.append(" resources=").append(resources == null ? "null" : resources.size());
         return sb.append(']').toString();
     }

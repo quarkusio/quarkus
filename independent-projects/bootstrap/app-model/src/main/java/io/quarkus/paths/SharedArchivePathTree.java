@@ -5,6 +5,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -186,6 +187,11 @@ class SharedArchivePathTree extends ArchivePathTree {
         @Override
         public void walkIfContains(String relativePath, PathVisitor visitor) {
             delegate.walkIfContains(relativePath, visitor);
+        }
+
+        @Override
+        public Set<String> getResourceNames() {
+            return delegate.getResourceNames();
         }
 
         @Override

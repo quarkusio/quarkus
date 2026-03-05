@@ -135,6 +135,21 @@ public class JarPathTreeTest {
     }
 
     @Test
+    public void getResourceNames() {
+        final PathTree tree = PathTree.ofDirectoryOrArchive(root);
+        assertThat(tree.getResourceNames())
+                .containsExactlyInAnyOrderElementsOf(DirectoryPathTreeTest.getMultiReleaseMappedPaths().keySet());
+    }
+
+    @Test
+    public void getResourceNamesIsCached() {
+        final PathTree tree = PathTree.ofDirectoryOrArchive(root);
+        var first = tree.getResourceNames();
+        var second = tree.getResourceNames();
+        assertThat(first).isSameAs(second);
+    }
+
+    @Test
     public void walk() throws Exception {
         final PathTree tree = PathTree.ofDirectoryOrArchive(root);
         var visitor = new PathCollectingVisitor();

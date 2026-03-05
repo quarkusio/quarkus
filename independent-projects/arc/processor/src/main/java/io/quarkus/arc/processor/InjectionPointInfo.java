@@ -133,7 +133,7 @@ public class InjectionPointInfo {
     InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, InjectionPointKind kind,
             AnnotationTarget target, AnnotationTarget methodParameterTarget, boolean isTransientReference, boolean isDelegate) {
         this(new TypeAndQualifiers(requiredType, requiredQualifiers.isEmpty()
-                ? Set.of(AnnotationInstance.create(DotNames.DEFAULT, null, List.of()))
+                ? Set.of(BuiltinQualifier.DEFAULT.getInstance())
                 : requiredQualifiers),
                 kind, target, methodParameterTarget, isTransientReference, isDelegate);
     }

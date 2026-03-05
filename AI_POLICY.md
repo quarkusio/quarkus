@@ -4,15 +4,15 @@ At Quarkus, we welcome tools that help developers become more productive — inc
 
 However, recent patterns of use have led to increased moderation burden, low-value contributions, and reduced community signal. To ensure a healthy and productive community, the following expectations apply to all contributions (issues, pull requests, comments, discussions, and other project interactions).
 
-## Acceptable Use of LLMs
+## Acceptable Use of AI
 
-- LLMs may be used to **assist your development** — for example drafting code, writing documentation, or proposing fixes — as long as **you understand, validate**, and **take responsibility for the results**.
-- You should only submit contributions (PRs, comments, discussions, issues) that reflect your **own understanding** and **intent**, not what an agent/LLM "spit out."
 - You may use agents/LLMs to help you **write better**, but not to **post more**.
+- AI may be used to **assist your development** — for example drafting code, writing documentation, or proposing fixes — as long as **you understand, validate**, and **take responsibility for the results**.
+- You should only submit contributions (PRs, comments, discussions, issues) that reflect your **own understanding** and **intent**, not what an agent/LLM "spit out."
 
-## Unacceptable Use
+## Unacceptable Use of AI
 
-- Submitting code, tests, comments, discussions or issues that appear to be **copied directly from an LLM with little or no human oversight** is **not acceptable**.
+- Submitting code, tests, comments, discussions or issues that appear to be **copied directly from an AI with little or no human oversight** is **not acceptable**.  
 - Posting **large volumes of low-effort suggestions, vague issues, or links with no context** — even if technically accurate — is considered spam.
 - Submitting **AI-generated tests that do not validate actual behavior** or meaningfully cover functionality is not helpful and will be rejected.
 - Using bots, agents, or automated tools to open PRs, file issues, or post content **without human authorship and responsibility** is not allowed.

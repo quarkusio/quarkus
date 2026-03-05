@@ -12,11 +12,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.PersistenceUnit;
-import io.quarkus.hibernate.orm.multiplepersistenceunits.model.annotation.shared.SharedEntity;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class MultiplePersistenceUnitsAutoModeReactiveOnlyDatasourceTest {
+public class MultiplePersistenceUnitsJdbcDisabledSkipsBlockingPuTest {
 
     static final String QUARKUS_VERSION = System.getProperty("project.version", "999-SNAPSHOT");
 
@@ -25,13 +24,11 @@ public class MultiplePersistenceUnitsAutoModeReactiveOnlyDatasourceTest {
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-reactive-pg-client", QUARKUS_VERSION)))
             .withApplicationRoot((jar) -> jar
-                    .addClass(SharedEntity.class)
-                    .addAsResource("application-multiple-persistence-units-mode-auto-reactive-only.properties",
+                    .addAsResource("application-multiple-persistence-units-jdbc-disabled-skips-blocking-pu.properties",
                             "application.properties"));
 
     @Test
-    public void autoModeReactiveOnlyShouldSkipBlockingUsersPu() {
-        assertTrue(CDI.current().select(EntityManager.class).isResolvable());
+    public void jdbcDisabledShouldSkipBlockingUsersPu() {
         assertTrue(CDI.current().select(EntityManager.class, new PersistenceUnitLiteral("users")).isUnsatisfied());
     }
 

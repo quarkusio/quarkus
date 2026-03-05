@@ -10,7 +10,7 @@ import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class MultiplePersistenceUnitsBlockingModeReactiveOnlyDatasourceTest {
+public class MultiplePersistenceUnitsFlagsJdbcEnabledReactiveOnlyDatasourceTest {
 
     static final String QUARKUS_VERSION = System.getProperty("project.version", "999-SNAPSHOT");
 
@@ -22,13 +22,14 @@ public class MultiplePersistenceUnitsBlockingModeReactiveOnlyDatasourceTest {
                 Assertions.assertInstanceOf(ConfigurationException.class, t);
                 String msg = t.getMessage();
                 Assertions.assertTrue(
-                        msg.contains("mode=BLOCKING")
-                                && msg.contains("no JDBC datasource")
-                                && msg.contains("set mode="),
+                        msg.contains("requires JDBC (blocking)")
+                                && msg.contains("reactive-only")
+                                && msg.contains("no JDBC datasource found")
+                                && msg.contains("quarkus.hibernate-orm.users.jdbc.enabled"),
                         "Unexpected exception message: " + msg);
             })
             .withApplicationRoot((jar) -> jar
-                    .addAsResource("application-multiple-persistence-units-mode-blocking-reactive-only.properties",
+                    .addAsResource("application-multiple-persistence-units-flags-jdbc-enabled-reactive-only.properties",
                             "application.properties"));
 
     @Test

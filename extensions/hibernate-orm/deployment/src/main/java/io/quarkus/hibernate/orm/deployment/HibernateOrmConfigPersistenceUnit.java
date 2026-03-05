@@ -35,17 +35,6 @@ public interface HibernateOrmConfigPersistenceUnit {
     Optional<@WithConverter(TrimmedStringConverter.class) String> datasource();
 
     /**
-     * Defines how this persistence unit should behave regarding blocking (Hibernate ORM) vs reactive-only datasources.
-     *
-     * - auto: decide based on datasource capabilities (skip blocking PU if no JDBC datasource is available)
-     * - blocking: require JDBC datasource (fail fast if missing)
-     * - reactive: never build a blocking PU
-     * - both: require JDBC datasource and also allow reactive usage (if applicable)
-     */
-    @WithDefault("auto")
-    PersistenceUnitMode mode();
-
-    /**
      * The packages in which the entities affected to this persistence unit are located.
      */
     Optional<Set<@WithConverter(TrimmedStringConverter.class) String>> packages();
@@ -206,6 +195,12 @@ public interface HibernateOrmConfigPersistenceUnit {
     HibernateOrmConfigPersistenceUnitDiscriminator discriminator();
 
     /**
+     * Reactive settings for this persistence unit.
+     */
+    @ConfigDocSection
+    HibernateOrmConfigPersistenceUnitReactive reactive();
+
+    /**
      * Config related to identifier quoting.
      */
     HibernateOrmConfigPersistenceUnitQuoteIdentifiers quoteIdentifiers();
@@ -259,7 +254,6 @@ public interface HibernateOrmConfigPersistenceUnit {
 
     default boolean isAnyPropertySet() {
         return datasource().isPresent() ||
-                mode() != PersistenceUnitMode.AUTO ||
                 packages().isPresent() ||
                 dialect().isAnyPropertySet() ||
                 sqlLoadScript().isPresent() ||
@@ -272,6 +266,7 @@ public interface HibernateOrmConfigPersistenceUnit {
                 query().isAnyPropertySet() ||
                 database().isAnyPropertySet() ||
                 jdbc().isAnyPropertySet() ||
+                reactive().isAnyPropertySet() ||
                 !cache().isEmpty() ||
                 !secondLevelCachingEnabled() ||
                 multitenant().isPresent() ||
@@ -705,8 +700,28 @@ public interface HibernateOrmConfigPersistenceUnit {
          */
         OptionalInt statementBatchSize();
 
+        /**
+         * Enable/disable JDBC (blocking) bootstrapping for this PU.
+         * If unset, it is inferred from datasource configuration (AUTO behavior).
+         */
+        Optional<Boolean> enabled();
+
         default boolean isAnyPropertySet() {
-            return timezone().isPresent() || statementFetchSize().isPresent() || statementBatchSize().isPresent();
+            return timezone().isPresent() || statementFetchSize().isPresent() || enabled().isPresent()
+                    || statementBatchSize().isPresent();
+        }
+    }
+
+    @ConfigGroup
+    interface HibernateOrmConfigPersistenceUnitReactive {
+        /**
+         * Enable/disable reactive bootstrapping for this PU.
+         * If unset, it is inferred from datasource configuration (AUTO behavior).
+         */
+        Optional<Boolean> enabled();
+
+        default boolean isAnyPropertySet() {
+            return enabled().isPresent();
         }
     }
 
@@ -832,61 +847,6 @@ public interface HibernateOrmConfigPersistenceUnit {
          * @asciidoclet
          */
         ONLY_KEYWORDS
-    }
-
-    enum PersistenceUnitMode {
-        /**
-         * Automatically decide whether the persistence unit should be considered blocking, reactive, or both.
-         * <p>
-         * Quarkus will infer the appropriate behavior based on the datasource capabilities whenever possible:
-         * <ul>
-         * <li>If the datasource is reactive-only (no JDBC datasource is available), blocking Hibernate ORM bootstrapping
-         * will be skipped for this persistence unit.</li>
-         * <li>If a JDBC datasource is available, blocking Hibernate ORM bootstrapping is enabled (subject to other
-         * configuration).</li>
-         * </ul>
-         * <p>
-         * This mode is recommended for most applications, as it provides sensible defaults while allowing mixed setups.
-         *
-         * @asciidoclet
-         */
-        AUTO,
-
-        /**
-         * Force this persistence unit to be treated as blocking.
-         * <p>
-         * If Quarkus can resolve a datasource for this persistence unit at build time and no JDBC datasource is available,
-         * bootstrap will fail fast with a clear configuration error.
-         * <p>
-         * This mode is useful when you want to explicitly opt into blocking Hibernate ORM behavior per persistence unit.
-         *
-         * @asciidoclet
-         */
-        BLOCKING,
-
-        /**
-         * Force this persistence unit to be treated as reactive-only.
-         * <p>
-         * Blocking Hibernate ORM bootstrapping will be skipped for this persistence unit,
-         * even if a JDBC datasource is available.
-         * <p>
-         * This mode is useful for applications that rely exclusively on reactive persistence for a given persistence unit.
-         *
-         * @asciidoclet
-         */
-        REACTIVE,
-
-        /**
-         * Force this persistence unit to support both blocking and reactive behavior.
-         * <p>
-         * If Quarkus can resolve a datasource for this persistence unit at build time and no JDBC datasource is available,
-         * bootstrap will fail fast with a clear configuration error.
-         * <p>
-         * This mode is useful for mixed applications that want both stacks available for the same persistence unit.
-         *
-         * @asciidoclet
-         */
-        BOTH
     }
 
     @ConfigGroup

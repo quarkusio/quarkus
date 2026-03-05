@@ -2,6 +2,8 @@ package io.quarkus.hibernate.orm.multiplepersistenceunits;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+
 import jakarta.enterprise.inject.spi.CDI;
 import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.persistence.EntityManager;
@@ -10,19 +12,26 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.PersistenceUnit;
+import io.quarkus.hibernate.orm.multiplepersistenceunits.model.annotation.shared.SharedEntity;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class MultiplePersistenceUnitsReactiveModeSkipsBlockingPuTest {
+public class MultiplePersistenceUnitsFlagsUnsetReactiveOnlyDatasourceTest {
+
+    static final String QUARKUS_VERSION = System.getProperty("project.version", "999-SNAPSHOT");
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
+            .setForcedDependencies(List.of(
+                    Dependency.of("io.quarkus", "quarkus-reactive-pg-client", QUARKUS_VERSION)))
             .withApplicationRoot((jar) -> jar
-                    .addAsResource("application-multiple-persistence-units-mode-reactive-skip.properties",
+                    .addClass(SharedEntity.class)
+                    .addAsResource("application-multiple-persistence-units-flags-unset-reactive-only.properties",
                             "application.properties"));
 
     @Test
-    public void reactiveModeShouldAlwaysSkipBlockingUsersPu() {
-        // Even if JDBC is configured for users, mode=REACTIVE must prevent creating a blocking PU.
+    public void autoModeReactiveOnlyShouldSkipBlockingUsersPu() {
+        assertTrue(CDI.current().select(EntityManager.class).isResolvable());
         assertTrue(CDI.current().select(EntityManager.class, new PersistenceUnitLiteral("users")).isUnsatisfied());
     }
 

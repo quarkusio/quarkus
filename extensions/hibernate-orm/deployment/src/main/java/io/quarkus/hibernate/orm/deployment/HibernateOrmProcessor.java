@@ -1092,74 +1092,55 @@ public final class HibernateOrmProcessor {
         final boolean hasKnownReactiveDataSource = reactiveDataSource.isPresent();
         final boolean hasKnownDataSource = hasKnownJdbcDataSource || hasKnownReactiveDataSource;
         final boolean explicitDataSource = persistenceUnitConfig.datasource().isPresent();
+        final boolean knownAtBuildTime = !explicitDataSource || hasKnownDataSource;
+        final boolean inferredWantJdbc = !(!hasKnownJdbcDataSource && hasKnownReactiveDataSource);
+        final boolean inferredWantReactive = hasKnownReactiveDataSource;
+        final boolean wantJdbc = persistenceUnitConfig.jdbc().enabled().orElse(inferredWantJdbc);
+        final boolean wantReactive = persistenceUnitConfig.reactive().enabled().orElse(inferredWantReactive);
 
-        final var mode = persistenceUnitConfig.mode();
-
-        /*
-         * Decide early whether this PU should result in a *blocking* Hibernate ORM persistence unit.
-         *
-         * - REACTIVE: never bootstrap a blocking PU, even if JDBC is available.
-         * - BLOCKING/BOTH: require JDBC; fail fast with a clear error if missing.
-         * - AUTO: if the datasource is reactive-only (no JDBC) then skip bootstrapping the blocking PU (Route A).
-         */
-        switch (mode) {
-            case REACTIVE:
-                LOG.debugf("Persistence unit '%s' is configured with mode=REACTIVE; skipping blocking Hibernate ORM PU",
-                        persistenceUnitName);
-                return;
-            case BLOCKING:
-            case BOTH:
-                // Only require JDBC if Quarkus actually knows a datasource for this PU.
-                // Some advanced setups rely on custom connection providers (e.g. certain multitenancy configurations),
-                // in which case Quarkus cannot infer datasource capabilities at build time.
-                if (hasKnownDataSource && !hasKnownJdbcDataSource) {
-                    throw new ConfigurationException(String.format(Locale.ROOT,
-                            "Persistence unit '%s' is configured with mode=%s, but its datasource '%s' has no JDBC datasource. "
-                                    + "Either configure a JDBC datasource for it, or set mode=REACTIVE/AUTO as appropriate.",
-                            persistenceUnitName, mode,
-                            persistenceUnitConfig.datasource().orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME)));
-                }
-                break;
-            case AUTO:
-                // AUTO + reactive-only datasource -> do not create a blocking PU.
-                if (!hasKnownJdbcDataSource && hasKnownReactiveDataSource) {
-                    LOG.debugf("The datasource '%s' is only reactive, do not create this PU '%s' as blocking (mode=%s)",
-                            persistenceUnitConfig.datasource().orElse(DEFAULT_PERSISTENCE_UNIT_NAME),
-                            persistenceUnitName,
-                            mode);
-                    return;
-                }
-                break;
-            default:
-                // Defensive: if new modes are introduced later, do not silently change behavior.
-                throw new ConfigurationException(String.format(Locale.ROOT,
-                        "Unsupported persistence unit mode '%s' for persistence unit '%s'.",
-                        mode, persistenceUnitName));
+        if (!wantJdbc && !wantReactive) {
+            throw new ConfigurationException(String.format(Locale.ROOT,
+                    "Persistence unit '%s' disables both JDBC and reactive bootstrapping. "
+                            + "At least one of '%s' or '%s' must be enabled.",
+                    persistenceUnitName,
+                    "quarkus.hibernate-orm." + persistenceUnitName + ".jdbc.enabled",
+                    "quarkus.hibernate-orm." + persistenceUnitName + ".reactive.enabled"));
         }
 
-        // If a datasource is explicitly referenced but Quarkus cannot find it at build time,
-        // the idea is to only fail when the mode requires JDBC.
-        // This allows advanced setups relying on custom connection providers, and also avoids
-        // false negatives when reactive datasource metadata is not available at build time.
-        if (explicitDataSource && !hasKnownDataSource) {
-            switch (mode) {
-                case BLOCKING:
-                case BOTH:
-                    String dataSourceName = persistenceUnitConfig.datasource().get();
-                    throw PersistenceUnitUtil.unableToFindDataSource(persistenceUnitName, dataSourceName,
-                            DataSourceUtil.dataSourceNotConfigured(dataSourceName));
-                case AUTO:
-                case REACTIVE:
-                    LOG.debugf("Datasource '%s' for persistence unit '%s' is not known at build time; "
-                            + "mode=%s allows proceeding without a known datasource",
-                            persistenceUnitConfig.datasource().orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
-                            persistenceUnitName, mode);
-                    break;
-                default:
-                    throw new ConfigurationException(String.format(Locale.ROOT,
-                            "Unsupported persistence unit mode '%s' for persistence unit '%s'.",
-                            mode, persistenceUnitName));
+        if (knownAtBuildTime) {
+            if (wantJdbc && hasKnownReactiveDataSource && !hasKnownJdbcDataSource) {
+                throw new ConfigurationException(String.format(Locale.ROOT,
+                        "Persistence unit '%s' requires JDBC (blocking) but datasource '%s' is reactive-only (no JDBC datasource found). "
+                                + "Either configure a JDBC datasource for it, or set '%s' to false.",
+                        persistenceUnitName,
+                        persistenceUnitConfig.datasource().orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
+                        "quarkus.hibernate-orm." + persistenceUnitName + ".jdbc.enabled"));
             }
+            if (wantReactive && hasKnownJdbcDataSource && !hasKnownReactiveDataSource) {
+                throw new ConfigurationException(String.format(Locale.ROOT,
+                        "Persistence unit '%s' requires reactive but datasource '%s' has no reactive datasource. "
+                                + "Either configure a reactive datasource for it, or set '%s' to false.",
+                        persistenceUnitName,
+                        persistenceUnitConfig.datasource().orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
+                        "quarkus.hibernate-orm." + persistenceUnitName + ".reactive.enabled"));
+            }
+        }
+
+        // Decision: if final wantsJdbc is false, skip creating the blocking Hibernate ORM PU.
+        if (!wantJdbc) {
+            LOG.debugf("Persistence unit '%s' has JDBC disabled (jdbc.enabled=%s); skipping blocking Hibernate ORM PU",
+                    persistenceUnitName,
+                    persistenceUnitConfig.jdbc().enabled().map(String::valueOf).orElse("<inferred>"));
+            return;
+        }
+
+        // If datasource is explicitly referenced but not known at build time:
+        // proceed without failing (advanced setups/custom providers).
+        if (explicitDataSource && !hasKnownDataSource) {
+            LOG.debugf("Datasource '%s' for persistence unit '%s' is not known at build time; "
+                    + "proceeding because jdbc.enabled does not require build-time datasource metadata.",
+                    persistenceUnitConfig.datasource().orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
+                    persistenceUnitName);
         }
 
         Optional<String> dataSourceName = jdbcDataSource.map(JdbcDataSourceBuildItem::getName);

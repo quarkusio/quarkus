@@ -16,4 +16,17 @@ public interface KafkaStreamsBuildTimeConfig {
     @WithName("health.enabled")
     @WithDefault("true")
     boolean healthEnabled();
+
+    /**
+     * Whether RocksDB state store support is enabled.
+     * Set to {@code false} to use in-memory state stores only, which removes the RocksDB native
+     * library dependency. This is useful for ARM native builds where RocksDB native libraries
+     * may not be available.
+     * When disabled, you must configure Kafka Streams to use in-memory stores, e.g. by setting
+     * {@code quarkus.kafka-streams.dsl.store.suppliers.class} to
+     * {@code org.apache.kafka.streams.state.BuiltInDslStoreSuppliers$InMemoryDslStoreSuppliers}.
+     */
+    @WithName("rocksdb.enabled")
+    @WithDefault("true")
+    boolean rocksDbEnabled();
 }

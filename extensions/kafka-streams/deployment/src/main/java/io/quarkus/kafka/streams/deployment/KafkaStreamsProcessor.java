@@ -50,13 +50,16 @@ class KafkaStreamsProcessor {
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+    void build(KafkaStreamsBuildTimeConfig buildTimeConfig,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<JniRuntimeAccessBuildItem> jniRuntimeAccessibleClasses,
             BuildProducer<RuntimeInitializedClassBuildItem> reinitialized,
             LaunchModeBuildItem launchMode) {
         registerClassesThatAreLoadedThroughReflection(reflectiveClasses, launchMode);
-        registerClassesThatAreAccessedViaJni(jniRuntimeAccessibleClasses);
-        enableLoadOfNativeLibs(reinitialized);
+        if (buildTimeConfig.rocksDbEnabled()) {
+            registerClassesThatAreAccessedViaJni(jniRuntimeAccessibleClasses);
+            enableLoadOfNativeLibs(reinitialized);
+        }
     }
 
     private void registerClassesThatAreLoadedThroughReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
@@ -249,10 +252,12 @@ class KafkaStreamsProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void loadRocksDb(KafkaStreamsRecorder recorder) {
-        // Explicitly loading RocksDB native libs, as that's normally done from within
-        // static initializers which already ran during build
-        recorder.loadRocksDb();
+    void loadRocksDb(KafkaStreamsBuildTimeConfig buildTimeConfig, KafkaStreamsRecorder recorder) {
+        if (buildTimeConfig.rocksDbEnabled()) {
+            // Explicitly loading RocksDB native libs, as that's normally done from within
+            // static initializers which already ran during build
+            recorder.loadRocksDb();
+        }
     }
 
     @BuildStep
@@ -268,15 +273,18 @@ class KafkaStreamsProcessor {
     }
 
     @BuildStep
-    NativeImageFeatureBuildItem kafkaStreamsFeature() {
-        return new NativeImageFeatureBuildItem(KafkaStreamsFeature.class.getName());
+    void kafkaStreamsFeature(KafkaStreamsBuildTimeConfig buildTimeConfig,
+            BuildProducer<NativeImageFeatureBuildItem> nativeImageFeatures) {
+        if (buildTimeConfig.rocksDbEnabled()) {
+            nativeImageFeatures.produce(new NativeImageFeatureBuildItem(KafkaStreamsFeature.class.getName()));
+        }
     }
 
     @BuildStep
-    ModuleEnableNativeAccessBuildItem rocksDbEnableNativeAccess() {
-        // RocksDB is the default state store for Kafka Streams and uses JNI.
-        // TODO: This could potentially be made conditional if a build-time config option
-        // is added to allow users to disable RocksDB in favor of in-memory stores only.
-        return new ModuleEnableNativeAccessBuildItem("rocksdbjni");
+    void rocksDbEnableNativeAccess(KafkaStreamsBuildTimeConfig buildTimeConfig,
+            BuildProducer<ModuleEnableNativeAccessBuildItem> nativeAccess) {
+        if (buildTimeConfig.rocksDbEnabled()) {
+            nativeAccess.produce(new ModuleEnableNativeAccessBuildItem("rocksdbjni"));
+        }
     }
 }

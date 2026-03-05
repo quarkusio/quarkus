@@ -142,7 +142,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     private final List<ClassPathElement> bannedElements;
     private final List<ClassPathElement> parentFirstElements;
     private final ConcurrentMap<ClassPathElement, ProtectionDomain> protectionDomains = new ConcurrentHashMap<>();
-    private final ClassLoader parent;
+
     /**
      * If this is true it will attempt to load from the parent first
      */
@@ -192,7 +192,6 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         this.bannedElements = builder.bannedElements;
         this.parentFirstElements = builder.parentFirstElements;
         this.lesserPriorityElements = builder.lesserPriorityElements;
-        this.parent = builder.parent;
         this.parentFirst = builder.parentFirst;
         this.resettableElement = builder.resettableElement;
         this.transformedClasses = new MemoryClassPathElement(builder.transformedClasses, true);
@@ -310,10 +309,10 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         if (!banned) {
             if ((resources.isEmpty() && !parentAlreadyFoundResources) || aggregateParentResources) {
                 Enumeration<URL> res;
-                if (parent instanceof QuarkusClassLoader) {
-                    res = ((QuarkusClassLoader) parent).getResources(unsanitisedName, !resources.isEmpty());
+                if (getParent() instanceof QuarkusClassLoader parentQcl) {
+                    res = parentQcl.getResources(unsanitisedName, !resources.isEmpty());
                 } else {
-                    res = parent.getResources(unsanitisedName);
+                    res = getParent().getResources(unsanitisedName);
                 }
                 while (res.hasMoreElements()) {
                     resources.add(res.nextElement());
@@ -400,7 +399,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                 return url;
             }
         }
-        return parent.getResource(unsanitisedName);
+        return getParent().getResource(unsanitisedName);
     }
 
     private static URL getClassPathElementResourceUrl(List<ClassPathElement> classPathElements, String name,
@@ -462,7 +461,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                 return inputStream;
             }
         }
-        return parent.getResourceAsStream(unsanitisedName);
+        return getParent().getResourceAsStream(unsanitisedName);
     }
 
     private static InputStream getClassPathElementResourceInputStream(List<ClassPathElement> classPathElements, String name) {
@@ -534,7 +533,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             l.loadClass(name, this.name);
         }
         if (isInJdkPackage(name)) {
-            return parent.loadClass(name);
+            return getParent().loadClass(name);
         }
 
         //even if the thread is interrupted we still want to be able to load classes
@@ -554,9 +553,9 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                 boolean parentFirst = parentFirst(resourceName, classPathResourceIndex);
                 if (parentFirst) {
                     try {
-                        return parent.loadClass(name);
+                        return getParent().loadClass(name);
                     } catch (ClassNotFoundException ignore) {
-                        log.tracef("Class %s not found in parent first load from %s", name, parent);
+                        log.tracef("Class %s not found in parent first load from %s", name, getParent());
                     }
                 }
                 ClassPathElement classPathElement = classPathResourceIndex.getFirstClassPathElement(resourceName);
@@ -576,7 +575,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                 }
 
                 if (!parentFirst) {
-                    return parent.loadClass(name);
+                    return getParent().loadClass(name);
                 }
 
                 throw new ClassNotFoundException(name);
@@ -644,13 +643,13 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
         List<ClassPathElement> result = List.of();
 
-        if (parentFirst && !localOnly && parent instanceof QuarkusClassLoader parentQcl) {
+        if (parentFirst && !localOnly && getParent() instanceof QuarkusClassLoader parentQcl) {
             result = parentQcl.getElementsWithResource(name);
         }
 
         result = joinAndDedupe(result, getClassPathResourceIndex().getClassPathElements(name));
 
-        if (!parentFirst && !localOnly && parent instanceof QuarkusClassLoader parentQcl) {
+        if (!parentFirst && !localOnly && getParent() instanceof QuarkusClassLoader parentQcl) {
             result = joinAndDedupe(result, parentQcl.getElementsWithResource(name));
         }
 
@@ -994,10 +993,6 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         public String toString() {
             return "QuarkusClassLoader.Builder:" + name + "@" + Integer.toHexString(hashCode());
         }
-    }
-
-    public ClassLoader parent() {
-        return parent;
     }
 
     @Override

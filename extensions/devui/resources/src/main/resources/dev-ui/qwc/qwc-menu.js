@@ -61,22 +61,28 @@ export class QwcMenu extends observeState(LitElement) {
                 padding-left: 5px;
                 gap: 10px;
                 cursor: pointer;
-                border-left: 5px solid transparent;
-                color: var(--lumo-contrast-90pct);
+                border-left: 3px solid transparent;
+                color: var(--lumo-contrast-70pct);
                 height:30px;
                 text-decoration: none;
                 justify-content: space-between;
+                margin: 2px 6px 2px 0;
+                border-radius: 0 8px 8px 0;
+                transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
             }
-            
+
             .item:hover{
-                border-left: 5px solid var(--lumo-primary-color);
+                border-left: 3px solid var(--lumo-primary-color-50pct);
                 background-color: var(--lumo-primary-color-10pct);
+                color: var(--lumo-contrast-90pct);
             }
 
             .selected {
-                border-left: 5px solid var(--lumo-primary-color);
+                border-left: 3px solid var(--lumo-primary-color);
                 cursor: default;
                 background-color: var(--lumo-primary-color-10pct);
+                color: var(--lumo-primary-text-color);
+                font-weight: 500;
             }
 
             .itemref{

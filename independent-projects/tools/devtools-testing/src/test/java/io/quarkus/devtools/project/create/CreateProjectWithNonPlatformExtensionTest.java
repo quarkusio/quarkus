@@ -52,7 +52,7 @@ public class CreateProjectWithNonPlatformExtensionTest extends MultiplePlatformB
 
         assertModel(projectDir,
                 List.of(mainPlatformBom()),
-                List.of(ArtifactCoords.jar("org.bla", "bla-magic", "${bla-magic.version}")),
+                List.of(ArtifactCoords.jar("org.bla", "bla-magic", "5.5.5")),
                 Map.of("quarkus.platform.version", "1.1.1",
                         "bla-magic.version", "5.5.5"));
     }

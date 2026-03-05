@@ -30,6 +30,10 @@ public final class RouteConstants {
      */
     public static final int ROUTE_ORDER_HEADERS = Integer.MIN_VALUE;
     /**
+     * Order value ({@value #ROUTE_ORDER_HOST_VALIDATION_MANAGEMENT}) for the Host header validation of the management router.
+     */
+    public static final int ROUTE_ORDER_HOST_VALIDATION_MANAGEMENT = Integer.MIN_VALUE;
+    /**
      * Order value ({@value #ROUTE_ORDER_CORS_MANAGEMENT}) for the CORS-Origin handler of the management router.
      */
     public static final int ROUTE_ORDER_CORS_MANAGEMENT = Integer.MIN_VALUE;

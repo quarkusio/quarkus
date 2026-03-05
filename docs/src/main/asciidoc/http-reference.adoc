@@ -440,6 +440,38 @@ port.
 To make your Quarkus application accessible to another application running on a different domain, you need to configure cross-origin resource sharing (CORS).
 For more information about the CORS filter that Quarkus provides, see the Quarkus xref:security-cors.adoc#cors-filter[CORS filter] section of the "Cross-origin resource sharing" guide.
 
+== HTTP Host header validation
+
+You can enable HTTP `Host` header validation with a `quarkus.http.host-validation.allowed-hosts` property.
+
+For example:
+
+[source, properties]
+----
+quarkus.http.host-validation.allowed-hosts=myservice.com,www.my-service.com,localhost
+----
+
+Alternatively, you can request that an HTTP `Host` header must contain only a valid localhost name:
+
+[source, properties]
+----
+quarkus.http.host-validation.require-localhost=true
+----
+
+In production and dev modes, when the `quarkus.http.host` property has a valid localhost name, and neither `quarkus.http.host-validation.allowed-hosts` nor `quarkus.http.host-validation.require-localhost` properties are enabled, HTTP `Host` header is expected to contain only a valid localhost name. Set `quarkus.http.host-validation.require-localhost=false` to avoid this restriction.
+
+[NOTE]
+====
+HTTP `Host` header contains a request URL authority and therefore may also include ports, for example, `localhost:8081`.
+
+The authority ports are not verified during the HTTP `Host` header verification. The port verification is more relevant for the same origin checks done by the xref:security-cors.adoc#cors-filter[CORS filter]. For example, if the server is launched at `localhost:8080` then the same origin CORS check passes only if the HTTP `Host` header is `localhost:8080` and fails if it is `localhost:8081`.
+====
+
+[NOTE]
+====
+When the Quarkus application runs behind a proxy that does not rewrite a `Host` header with a host value from either `Forwarded: host` or `X-Forwarded-Host` headers, you can get the Quarkus proxy handler do it instead, please see the <<reverse-proxy>> section for more details.
+====
+
 == HTTP Limits Configuration
 
 include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.limits.adoc[leveloffset=+1, opts=optional]

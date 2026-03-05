@@ -41,4 +41,13 @@ public class KafkaStreamsHealthCheckTest {
         assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.DOWN);
     }
 
+    @Test
+    public void shouldBeDownIfKafkaStreamsIsNull() {
+        KafkaStreamsStateHealthCheck check = new KafkaStreamsStateHealthCheck();
+        HealthCheckResponse response = check.call();
+        assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.DOWN);
+        assertThat(response.getData().get().get("technical_error"))
+                .isEqualTo("KafkaStreams instance not available");
+    }
+
 }

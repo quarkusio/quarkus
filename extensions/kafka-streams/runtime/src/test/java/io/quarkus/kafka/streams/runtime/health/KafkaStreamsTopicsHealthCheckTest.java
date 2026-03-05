@@ -38,4 +38,13 @@ public class KafkaStreamsTopicsHealthCheckTest {
         HealthCheckResponse response = healthCheck.call();
         assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.DOWN);
     }
+
+    @Test
+    public void shouldBeDownIfManagerIsNull() {
+        KafkaStreamsTopicsHealthCheck check = new KafkaStreamsTopicsHealthCheck(null);
+        HealthCheckResponse response = check.call();
+        assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.DOWN);
+        assertThat(response.getData().get().get("technical_error"))
+                .isEqualTo("KafkaStreamsTopologyManager not available");
+    }
 }

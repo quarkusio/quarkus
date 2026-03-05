@@ -19,6 +19,10 @@ public class KafkaStreamsStateHealthCheck implements HealthCheck {
     @Override
     public HealthCheckResponse call() {
         HealthCheckResponseBuilder responseBuilder = HealthCheckResponse.named("Kafka Streams state health check");
+        if (kafkaStreams == null) {
+            responseBuilder.down().withData("technical_error", "KafkaStreams instance not available");
+            return responseBuilder.build();
+        }
         try {
             KafkaStreams.State state = kafkaStreams.state();
             responseBuilder.status(state.isRunningOrRebalancing())

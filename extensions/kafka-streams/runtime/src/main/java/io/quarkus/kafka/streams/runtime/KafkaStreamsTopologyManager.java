@@ -117,22 +117,21 @@ public class KafkaStreamsTopologyManager {
             return Collections.emptySet();
         }
 
-        Set<String> missing = new LinkedHashSet<>(sourceTopics);
-
         try {
             ListTopicsResult topics = adminClient.listTopics();
             Set<String> existingTopics = topics.names().get(topicsTimeout.toMillis(), TimeUnit.MILLISECONDS);
 
+            Set<String> missing = new LinkedHashSet<>(sourceTopics);
             missing.removeAll(existingTopics);
             missing.addAll(sourcePatterns.stream()
                     .filter(p -> existingTopics.stream().noneMatch(p.asPredicate()))
                     .map(Pattern::pattern)
                     .toList());
+            return missing;
         } catch (ExecutionException | TimeoutException e) {
             LOGGER.error("Failed to get topic names from broker", e);
+            return Collections.emptySet();
         }
-
-        return missing;
     }
 
     public void waitForTopicsToBeCreated() throws InterruptedException {

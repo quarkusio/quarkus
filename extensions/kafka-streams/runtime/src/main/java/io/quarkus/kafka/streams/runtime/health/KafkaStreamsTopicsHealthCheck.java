@@ -31,7 +31,7 @@ public class KafkaStreamsTopicsHealthCheck implements HealthCheck {
     public KafkaStreamsTopicsHealthCheck(KafkaStreamsTopologyManager manager) {
         this.manager = manager;
         this.checkedTopics = new ArrayList<>();
-        if (manager.isTopicsCheckEnabled()) {
+        if (manager != null && manager.isTopicsCheckEnabled()) {
             checkedTopics.addAll(manager.getSourceTopics());
             checkedTopics.addAll(manager.getSourcePatterns().stream().map(Pattern::pattern).toList());
         }
@@ -40,6 +40,10 @@ public class KafkaStreamsTopicsHealthCheck implements HealthCheck {
     @Override
     public HealthCheckResponse call() {
         HealthCheckResponseBuilder builder = HealthCheckResponse.named("Kafka Streams topics health check").up();
+        if (manager == null) {
+            builder.down().withData("technical_error", "KafkaStreamsTopologyManager not available");
+            return builder.build();
+        }
         if (manager.isTopicsCheckEnabled()) {
             try {
                 Set<String> missingTopics = manager.getMissingTopics();

@@ -1,7 +1,5 @@
 package io.quarkus.paths;
 
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -10,40 +8,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.regex.Pattern;
 
 public abstract class OpenContainerPathTree extends PathTreeWithManifest implements OpenPathTree {
-
-    private static final boolean USE_WINDOWS_ABSOLUTE_PATH_PATTERN = !FileSystems.getDefault().getSeparator().equals("/");
-
-    private static volatile Pattern windowsAbsolutePathPattern;
-
-    private static Pattern windowsAbsolutePathPattern() {
-        return windowsAbsolutePathPattern == null ? windowsAbsolutePathPattern = Pattern.compile("[a-zA-Z]:\\\\.*")
-                : windowsAbsolutePathPattern;
-    }
-
-    static boolean isAbsolutePath(String path) {
-        return path != null && !path.isEmpty()
-                && (path.charAt(0) == '/' // we want to check for '/' on every OS
-                        || USE_WINDOWS_ABSOLUTE_PATH_PATTERN
-                                && (windowsAbsolutePathPattern().matcher(path).matches())
-                        || path.startsWith(FileSystems.getDefault().getSeparator()));
-    }
-
-    static void ensureResourcePath(FileSystem fs, String path) {
-        if (isAbsolutePath(path)) {
-            throw new IllegalArgumentException("Expected a path relative to the root of the path tree but got " + path);
-        }
-        // this is to disallow reading outside the path tree root
-        if (path != null && path.contains("..")) {
-            for (Path pathElement : fs.getPath(path)) {
-                if (pathElement.toString().equals("..")) {
-                    throw new IllegalArgumentException("'..' cannot be used in resource paths, but got " + path);
-                }
-            }
-        }
-    }
 
     protected PathFilter pathFilter;
 
@@ -123,68 +89,78 @@ public abstract class OpenContainerPathTree extends PathTreeWithManifest impleme
     }
 
     @Override
-    public void walkIfContains(String relativePath, PathVisitor visitor) {
-        ensureResourcePath(relativePath);
-        if (!PathFilter.isVisible(pathFilter, relativePath)) {
+    public void walkIfContains(String resourceDirName, PathVisitor visitor) {
+        ensureResourcePath(resourceDirName);
+        if (!PathFilter.isVisible(pathFilter, resourceDirName)) {
             return;
         }
-        final Path walkDir = getRootPath()
-                .resolve(manifestEnabled ? toMultiReleaseRelativePath(relativePath) : relativePath);
+        final Path walkDir = resolveResource(resourceDirName, manifestEnabled);
         if (!Files.exists(walkDir)) {
             return;
         }
-        PathTreeVisit.walk(getRootPath(), getRootPath(), walkDir, pathFilter, getMultiReleaseMapping(), visitor);
+        final Path root = getRootPath();
+        PathTreeVisit.walk(root, root, walkDir, pathFilter, getMultiReleaseMapping(), visitor);
     }
 
     private void ensureResourcePath(String path) {
-        ensureResourcePath(getRootPath().getFileSystem(), path);
+        PathTreeVisit.ensureResourcePath(getRootPath().getFileSystem(), path);
+    }
+
+    private Path resolveResource(String resourceName, boolean manifestEnabled) {
+        if (manifestEnabled) {
+            resourceName = toMultiReleaseResourceName(resourceName);
+        }
+        final Path root = getRootPath();
+        final String relativePath = PathTreeVisit.resourceNameToFsPath(resourceName, root.getFileSystem());
+        return root.resolve(relativePath);
     }
 
     @Override
-    protected <T> T apply(String relativePath, Function<PathVisit, T> func, boolean manifestEnabled) {
-        ensureResourcePath(relativePath);
-        if (!PathFilter.isVisible(pathFilter, relativePath)) {
+    protected <T> T apply(String resourceName, Function<PathVisit, T> func, boolean manifestEnabled) {
+        ensureResourcePath(resourceName);
+        if (!PathFilter.isVisible(pathFilter, resourceName)) {
             return func.apply(null);
         }
-        final Path path = getRootPath().resolve(manifestEnabled ? toMultiReleaseRelativePath(relativePath) : relativePath);
+        final Path path = resolveResource(resourceName, manifestEnabled);
         if (!Files.exists(path)) {
             return func.apply(null);
         }
-        return PathTreeVisit.process(getRootPath(), getRootPath(), path, pathFilter, func);
+        final Path root = getRootPath();
+        return PathTreeVisit.process(root, root, path, pathFilter, func);
     }
 
     @Override
-    public void accept(String relativePath, Consumer<PathVisit> consumer) {
-        ensureResourcePath(relativePath);
-        if (!PathFilter.isVisible(pathFilter, relativePath)) {
+    public void accept(String resourceName, Consumer<PathVisit> consumer) {
+        ensureResourcePath(resourceName);
+        if (!PathFilter.isVisible(pathFilter, resourceName)) {
             consumer.accept(null);
             return;
         }
-        final Path path = getRootPath().resolve(manifestEnabled ? toMultiReleaseRelativePath(relativePath) : relativePath);
+        final Path path = resolveResource(resourceName, manifestEnabled);
         if (!Files.exists(path)) {
             consumer.accept(null);
             return;
         }
-        PathTreeVisit.consume(getRootPath(), getRootPath(), path, pathFilter, consumer);
+        final Path root = getRootPath();
+        PathTreeVisit.consume(root, root, path, pathFilter, consumer);
     }
 
     @Override
-    public boolean contains(String relativePath) {
-        ensureResourcePath(relativePath);
-        if (!PathFilter.isVisible(pathFilter, relativePath)) {
+    public boolean contains(String resourceName) {
+        ensureResourcePath(resourceName);
+        if (!PathFilter.isVisible(pathFilter, resourceName)) {
             return false;
         }
-        final Path path = getRootPath().resolve(manifestEnabled ? toMultiReleaseRelativePath(relativePath) : relativePath);
-        return Files.exists(path);
+        return Files.exists(resolveResource(resourceName, manifestEnabled));
     }
 
     @Override
-    public Path getPath(String relativePath) {
-        ensureResourcePath(relativePath);
-        if (!PathFilter.isVisible(pathFilter, relativePath)) {
+    public Path getPath(String resourceName) {
+        ensureResourcePath(resourceName);
+        if (!PathFilter.isVisible(pathFilter, resourceName)) {
             return null;
         }
-        final Path path = getRootPath().resolve(manifestEnabled ? toMultiReleaseRelativePath(relativePath) : relativePath);
+        final Path path = resolveResource(resourceName, manifestEnabled);
         return Files.exists(path) ? path : null;
     }
 

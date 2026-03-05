@@ -55,11 +55,11 @@ public class PathFilter implements Mappable, Serializable {
         this.excludes = excludes;
     }
 
-    public boolean isVisible(String pathStr) {
+    public boolean isVisible(String resourceName) {
         if (includes != null && !includes.isEmpty()) {
             int i = 0;
             while (i < includes.size()) {
-                if (includes.get(i).matcher(pathStr).matches()) {
+                if (includes.get(i).matcher(resourceName).matches()) {
                     break;
                 }
                 ++i;
@@ -70,7 +70,7 @@ public class PathFilter implements Mappable, Serializable {
         }
         if (excludes != null) {
             for (Pattern pattern : excludes) {
-                if (pattern.matcher(pathStr).matches()) {
+                if (pattern.matcher(resourceName).matches()) {
                     return false;
                 }
             }

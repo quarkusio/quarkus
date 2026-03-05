@@ -87,7 +87,7 @@ public class GrafanaUtils {
                         tree.walkIfContains(META_INF_GRAFANA, visit -> {
                             Path visitPath = visit.getPath();
                             if (!Files.isDirectory(visitPath)) {
-                                String rel = visit.getRelativePath();
+                                String rel = visit.getResourceName();
                                 // Ensure that the relative path starts with the right prefix and suffix before calling substring
                                 if (rel.startsWith(META_INF_GRAFANA + "/grafana-dashboard-") && rel.endsWith(".json")) {
                                     // Strip the "META-INF/grafana/" prefix

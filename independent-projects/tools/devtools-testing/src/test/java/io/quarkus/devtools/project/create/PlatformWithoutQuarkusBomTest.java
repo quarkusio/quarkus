@@ -107,12 +107,12 @@ public class PlatformWithoutQuarkusBomTest extends MultiplePlatformBomsTestBase 
             var codestartsDir = fs.getPath("codestarts");
             Files.createDirectories(codestartsDir);
             PathTree.ofDirectoryOrArchive(dir).walk(visit -> {
-                final String relativePath = visit.getRelativePath();
+                final String relativePath = visit.getResourceName();
                 if (relativePath.isEmpty()) {
                     return;
                 }
                 try {
-                    Files.copy(visit.getPath(), codestartsDir.resolve(visit.getRelativePath()));
+                    Files.copy(visit.getPath(), codestartsDir.resolve(visit.getResourceName()));
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }

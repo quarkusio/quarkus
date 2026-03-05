@@ -38,7 +38,7 @@
         <type-fest.version>5.4.4</type-fest.version>
         <tagged-tag.version>1.0.0</tagged-tag.version>
         <codeblock.version>1.1.2</codeblock.version>
-        <qomponent.version>1.0.4</qomponent.version>
+        <qomponent.version>1.0.6</qomponent.version>
         <ldrs.version>1.1.7</ldrs.version>
         <directory-tree.version>1.0.4</directory-tree.version>
         <hpcc-js-wasm.version>2.15.3</hpcc-js-wasm.version>

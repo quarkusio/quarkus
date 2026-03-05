@@ -281,9 +281,10 @@ public class ReflectiveHierarchyStep {
         if (!reflectiveHierarchyBuildItem.isIgnoreNested()
                 || (capabilities.isPresent(Capability.KOTLIN) && isKotlinClass(info))) {
             for (DotName memberClassName : info.memberClasses()) {
-                addClassTypeHierarchy(nativeConfig, combinedIndexBuildItem, capabilities, reflectiveHierarchyBuildItem, source,
+                visits.addLast(() -> addClassTypeHierarchy(nativeConfig, combinedIndexBuildItem, capabilities,
+                        reflectiveHierarchyBuildItem, source,
                         memberClassName, memberClassName, processedReflectiveHierarchies, unindexedClasses,
-                        reflectiveClass, visits);
+                        reflectiveClass, visits));
             }
         }
     }

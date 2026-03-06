@@ -196,24 +196,12 @@ public abstract class MultiplePlatformBomsTestBase {
         //assertThat(model.getDependencyManagement().getDependencies().size()).isEqualTo(expectedBoms.size());
 
         // TODO the order should be predictable
-        final Properties props = model.getProperties();
         assertThat(model.getDependencies().stream()
                 .map(d -> ArtifactCoords.of(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(),
-                        resolveProperty(d.getVersion(), props)))
+                        d.getVersion()))
                 .collect(Collectors.toSet())).containsAll(expectedExtensions);
 
         assertThat(model.getProperties()).containsAllEntriesOf(expectedProperties);
-    }
-
-    private static String resolveProperty(String value, Properties props) {
-        if (value != null && value.startsWith("${") && value.endsWith("}")) {
-            String propName = value.substring(2, value.length() - 1);
-            String resolved = props.getProperty(propName);
-            if (resolved != null) {
-                return resolved;
-            }
-        }
-        return value;
     }
 
     ArtifactCoords platformExtensionCoords(String artifactId) {

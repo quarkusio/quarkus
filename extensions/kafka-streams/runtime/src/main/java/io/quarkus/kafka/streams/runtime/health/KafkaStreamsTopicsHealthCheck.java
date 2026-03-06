@@ -8,27 +8,32 @@ import java.util.regex.Pattern;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
 import org.eclipse.microprofile.health.Readiness;
 import org.jboss.logging.Logger;
 
+import io.quarkus.kafka.streams.runtime.KafkaStreamsRuntimeConfig;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsTopologyManager;
+import io.smallrye.health.api.AsyncHealthCheck;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 
 @Readiness
 @ApplicationScoped
-public class KafkaStreamsTopicsHealthCheck implements HealthCheck {
+public class KafkaStreamsTopicsHealthCheck implements AsyncHealthCheck {
 
     private static final Logger LOGGER = Logger.getLogger(KafkaStreamsTopicsHealthCheck.class.getName());
 
     private final KafkaStreamsTopologyManager manager;
+    private final KafkaStreamsRuntimeConfig runtimeConfig;
 
     private final List<String> checkedTopics;
 
     @Inject
-    public KafkaStreamsTopicsHealthCheck(KafkaStreamsTopologyManager manager) {
+    public KafkaStreamsTopicsHealthCheck(KafkaStreamsTopologyManager manager, KafkaStreamsRuntimeConfig runtimeConfig) {
         this.manager = manager;
+        this.runtimeConfig = runtimeConfig;
         this.checkedTopics = new ArrayList<>();
         if (manager != null && manager.isTopicsCheckEnabled()) {
             checkedTopics.addAll(manager.getSourceTopics());
@@ -37,13 +42,21 @@ public class KafkaStreamsTopicsHealthCheck implements HealthCheck {
     }
 
     @Override
-    public HealthCheckResponse call() {
+    public Uni<HealthCheckResponse> call() {
         HealthCheckResponseBuilder builder = HealthCheckResponse.named("Kafka Streams topics health check").up();
+        if (!runtimeConfig.healthRuntimeEnabled()) {
+            return Uni.createFrom().item(builder.build());
+        }
         if (manager == null) {
             builder.down().withData("technical_error", "KafkaStreamsTopologyManager not available");
-            return builder.build();
+            return Uni.createFrom().item(builder.build());
         }
-        if (manager.isTopicsCheckEnabled()) {
+        if (!manager.isTopicsCheckEnabled()) {
+            return Uni.createFrom().item(builder.build());
+        }
+        // Run the blocking admin client call on a worker thread to avoid
+        // blocking the event loop and causing health probe timeouts (GH-42882)
+        return Uni.createFrom().item(() -> {
             try {
                 Set<String> missingTopics = manager.getMissingTopics();
                 List<String> availableTopics = new ArrayList<>(checkedTopics);
@@ -59,7 +72,7 @@ public class KafkaStreamsTopicsHealthCheck implements HealthCheck {
                 LOGGER.error("error when retrieving missing topics", e);
                 builder.down().withData("technical_error", e.getMessage());
             }
-        }
-        return builder.build();
+            return builder.build();
+        }).runSubscriptionOn(Infrastructure.getDefaultWorkerPool());
     }
 }

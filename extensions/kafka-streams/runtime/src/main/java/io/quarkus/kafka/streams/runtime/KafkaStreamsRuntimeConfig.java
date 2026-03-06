@@ -101,4 +101,16 @@ public interface KafkaStreamsRuntimeConfig {
      */
     SslConfig ssl();
 
+    /**
+     * Whether Kafka Streams health checks are enabled at runtime.
+     * <p>
+     * This provides a runtime toggle for health checks, complementing the build-time
+     * {@code quarkus.kafka-streams.health.enabled} option. When disabled at runtime,
+     * health checks will always report UP, which is useful when deploying the same
+     * image across environments where some may not use Kafka Streams topologies.
+     */
+    @WithName("health.runtime-enabled")
+    @WithDefault("true")
+    boolean healthRuntimeEnabled();
+
 }

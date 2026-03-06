@@ -310,11 +310,26 @@ public class KafkaStreamsProducer {
         return inetSocketAddress.getHostString() + ":" + inetSocketAddress.getPort();
     }
 
-    private static Properties getAdminClientConfig(Properties properties) {
+    // visible for testing
+    static Properties getAdminClientConfig(Properties properties) {
         Properties adminClientConfig = new Properties(properties);
         // include TLS config name if it has been configured
         if (properties.containsKey(TLS_CONFIG_NAME_KEY)) {
             adminClientConfig.put(TLS_CONFIG_NAME_KEY, properties.get(TLS_CONFIG_NAME_KEY));
+        }
+        // copy config provider properties so that providers like Strimzi Kubernetes Secret
+        // Config Provider work for the admin client (see GH-46448)
+        for (String name : properties.stringPropertyNames()) {
+            if (name.startsWith("config.providers")) {
+                // admin-prefixed config providers take precedence
+                if (!properties.containsKey(StreamsConfig.ADMIN_CLIENT_PREFIX + name)) {
+                    adminClientConfig.put(name, properties.get(name));
+                }
+            } else if (name.startsWith(StreamsConfig.ADMIN_CLIENT_PREFIX + "config.providers")) {
+                adminClientConfig.put(
+                        name.substring(StreamsConfig.ADMIN_CLIENT_PREFIX.length()),
+                        properties.get(name));
+            }
         }
         // include other AdminClientConfig(s) that have been configured
         for (final String knownAdminClientConfig : AdminClientConfig.configNames()) {

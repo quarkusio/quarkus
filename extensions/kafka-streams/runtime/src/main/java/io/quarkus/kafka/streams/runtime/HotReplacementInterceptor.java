@@ -15,8 +15,9 @@ public class HotReplacementInterceptor implements ConsumerInterceptor {
 
     @Override
     public ConsumerRecords onConsume(ConsumerRecords records) {
-        if (onMessage != null) {
-            onMessage.run();
+        Runnable handler = onMessage;
+        if (handler != null) {
+            handler.run();
         }
 
         return records;

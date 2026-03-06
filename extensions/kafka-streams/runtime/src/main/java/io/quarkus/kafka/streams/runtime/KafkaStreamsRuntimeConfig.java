@@ -61,6 +61,13 @@ public interface KafkaStreamsRuntimeConfig {
     Duration topicsTimeout();
 
     /**
+     * Interval between polls when waiting for topics to be created.
+     * Only used when {@code topics-timeout} is greater than 0.
+     */
+    @WithDefault("1S")
+    Duration topicsPollInterval();
+
+    /**
      * The schema registry key.
      *
      * Different schema registry libraries expect a registry URL

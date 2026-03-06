@@ -96,9 +96,10 @@ public class KafkaStreamsProducer {
 
         this.executorService = executorService;
         this.streamsConfig = new StreamsConfig(kafkaStreamsProperties);
-        this.kafkaStreams = initializeKafkaStreams(streamsConfig, topology.get(),
+        Topology resolvedTopology = topology.get();
+        this.kafkaStreams = initializeKafkaStreams(streamsConfig, resolvedTopology,
                 kafkaClientSupplier, stateListener, globalStateRestoreListener, uncaughtExceptionHandlerListener);
-        this.topologyManager = new KafkaStreamsTopologyManager(kafkaAdminClient, topology.get(), runtimeConfig);
+        this.topologyManager = new KafkaStreamsTopologyManager(kafkaAdminClient, resolvedTopology, runtimeConfig);
     }
 
     public void onStartup(@Observes StartupEvent event, Event<KafkaStreams> kafkaStreamsEvent) {
@@ -149,7 +150,7 @@ public class KafkaStreamsProducer {
             kafkaStreams.close();
         }
         if (kafkaAdminClient != null) {
-            kafkaAdminClient.close(Duration.ZERO);
+            kafkaAdminClient.close(Duration.ofSeconds(10));
         }
     }
 

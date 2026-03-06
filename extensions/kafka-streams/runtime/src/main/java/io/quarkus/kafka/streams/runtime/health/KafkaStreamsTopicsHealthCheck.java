@@ -22,8 +22,7 @@ public class KafkaStreamsTopicsHealthCheck implements HealthCheck {
 
     private static final Logger LOGGER = Logger.getLogger(KafkaStreamsTopicsHealthCheck.class.getName());
 
-    @Inject
-    KafkaStreamsTopologyManager manager;
+    private final KafkaStreamsTopologyManager manager;
 
     private final List<String> checkedTopics;
 

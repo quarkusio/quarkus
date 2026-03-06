@@ -26,12 +26,14 @@ public class KafkaStreamsTopologyManager {
     private final List<String> sourceTopics;
     private final List<Pattern> sourcePatterns;
     private final Duration topicsTimeout;
+    private final Duration topicsPollInterval;
 
     private volatile boolean closed = false;
 
     public KafkaStreamsTopologyManager(Admin adminClient, Topology topology, KafkaStreamsRuntimeConfig runtimeConfig) {
         this.adminClient = adminClient;
         this.topicsTimeout = runtimeConfig.topicsTimeout();
+        this.topicsPollInterval = runtimeConfig.topicsPollInterval();
         if (isTopicsCheckEnabled()) {
             if (runtimeConfig.topics().isEmpty() && runtimeConfig.topicPatterns().isEmpty()) {
                 Set<String> topics = new HashSet<>();
@@ -100,7 +102,7 @@ public class KafkaStreamsTopologyManager {
                 }
             }
         }
-        // remove topics used both in sinks ans sources
+        // remove topics used both in sinks and sources
         topics.removeAll(sinkTopics);
     }
 
@@ -163,7 +165,7 @@ public class KafkaStreamsTopologyManager {
             } catch (ExecutionException | TimeoutException e) {
                 LOGGER.error("Failed to get topic names from broker", e);
             } finally {
-                Thread.sleep(1_000);
+                Thread.sleep(topicsPollInterval.toMillis());
             }
         }
     }

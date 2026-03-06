@@ -13,6 +13,8 @@ import org.apache.kafka.streams.errors.LogAndContinueProcessingExceptionHandler;
 import org.apache.kafka.streams.errors.LogAndFailExceptionHandler;
 import org.apache.kafka.streams.errors.LogAndFailProcessingExceptionHandler;
 import org.apache.kafka.streams.processor.FailOnInvalidTimestamp;
+import org.apache.kafka.streams.processor.api.FixedKeyProcessor;
+import org.apache.kafka.streams.processor.api.Processor;
 import org.apache.kafka.streams.processor.internals.DefaultKafkaClientSupplier;
 import org.apache.kafka.streams.processor.internals.StreamsPartitionAssignor;
 import org.rocksdb.RocksDBException;
@@ -20,6 +22,7 @@ import org.rocksdb.Status;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -55,20 +58,22 @@ class KafkaStreamsProcessor {
             BuildProducer<JniRuntimeAccessBuildItem> jniRuntimeAccessibleClasses,
             BuildProducer<RuntimeInitializedClassBuildItem> reinitialized,
             LaunchModeBuildItem launchMode) {
-        registerClassesThatAreLoadedThroughReflection(reflectiveClasses, launchMode);
+        registerClassesThatAreLoadedThroughReflection(buildTimeConfig, reflectiveClasses, launchMode);
         if (buildTimeConfig.rocksDbEnabled()) {
             registerClassesThatAreAccessedViaJni(jniRuntimeAccessibleClasses);
             enableLoadOfNativeLibs(reinitialized);
         }
     }
 
-    private void registerClassesThatAreLoadedThroughReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+    private void registerClassesThatAreLoadedThroughReflection(KafkaStreamsBuildTimeConfig buildTimeConfig,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             LaunchModeBuildItem launchMode) {
-        registerCompulsoryClasses(reflectiveClasses);
+        registerCompulsoryClasses(buildTimeConfig, reflectiveClasses);
         registerClassesThatClientMaySpecify(reflectiveClasses, launchMode);
     }
 
-    private void registerCompulsoryClasses(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+    private void registerCompulsoryClasses(KafkaStreamsBuildTimeConfig buildTimeConfig,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(StreamsPartitionAssignor.class)
                 .reason(getClass().getName())
                 .build());
@@ -104,10 +109,15 @@ class KafkaStreamsProcessor {
 
         // Listed in BuiltInDslStoreSuppliers
         reflectiveClasses.produce(ReflectiveClassBuildItem
-                .builder(org.apache.kafka.streams.state.BuiltInDslStoreSuppliers.RocksDBDslStoreSuppliers.class,
-                        org.apache.kafka.streams.state.BuiltInDslStoreSuppliers.InMemoryDslStoreSuppliers.class)
+                .builder(org.apache.kafka.streams.state.BuiltInDslStoreSuppliers.InMemoryDslStoreSuppliers.class)
                 .reason(getClass().getName())
                 .build());
+        if (buildTimeConfig.rocksDbEnabled()) {
+            reflectiveClasses.produce(ReflectiveClassBuildItem
+                    .builder(org.apache.kafka.streams.state.BuiltInDslStoreSuppliers.RocksDBDslStoreSuppliers.class)
+                    .reason(getClass().getName())
+                    .build());
+        }
         reflectiveClasses.produce(ReflectiveClassBuildItem
                 .builder(org.apache.kafka.streams.errors.LogAndFailProcessingExceptionHandler.class,
                         org.apache.kafka.streams.errors.LogAndContinueProcessingExceptionHandler.class)
@@ -258,6 +268,11 @@ class KafkaStreamsProcessor {
             // static initializers which already ran during build
             recorder.loadRocksDb();
         }
+    }
+
+    @BuildStep
+    UnremovableBeanBuildItem markProcessorBeansUnremovable() {
+        return UnremovableBeanBuildItem.beanTypes(Processor.class, FixedKeyProcessor.class);
     }
 
     @BuildStep

@@ -56,33 +56,36 @@ public class KafkaStreamsJsonRPCService {
 
     private static final RawTopologyItemParser SUB_TOPOLOGY = new RawTopologyItemParser() {
         private final Pattern subTopologyPattern = Pattern.compile("Sub-topology: (?<subTopology>[0-9]*).*");
-        private Matcher matcher;
+        private final ThreadLocal<Matcher> matcherHolder = new ThreadLocal<>();
 
         @Override
         public boolean test(String line) {
-            matcher = subTopologyPattern.matcher(line);
+            Matcher matcher = subTopologyPattern.matcher(line);
+            matcherHolder.set(matcher);
             return matcher.matches();
         }
 
         @Override
         public void accept(TopologyParserContext context) {
-            context.addSubTopology(matcher.group("subTopology"));
+            context.addSubTopology(matcherHolder.get().group("subTopology"));
         }
     };
 
     private static final RawTopologyItemParser SOURCE = new RawTopologyItemParser() {
         private final Pattern sourcePattern = Pattern
                 .compile("Source:\\s+(?<source>\\S+)\\s+\\(topics:\\s+((\\[(?<topics>.*)\\])|(?<regex>.*)\\)).*");
-        private Matcher matcher;
+        private final ThreadLocal<Matcher> matcherHolder = new ThreadLocal<>();
 
         @Override
         public boolean test(String line) {
-            matcher = sourcePattern.matcher(line);
+            Matcher matcher = sourcePattern.matcher(line);
+            matcherHolder.set(matcher);
             return matcher.matches();
         }
 
         @Override
         public void accept(TopologyParserContext context) {
+            Matcher matcher = matcherHolder.get();
             if (matcher.group("topics") != null) {
                 context.addSources(matcher.group("source"), matcher.group("topics").split(","));
             } else if (matcher.group("regex") != null) {
@@ -94,51 +97,57 @@ public class KafkaStreamsJsonRPCService {
     private static final RawTopologyItemParser PROCESSOR = new RawTopologyItemParser() {
         private final Pattern processorPattern = Pattern
                 .compile("Processor:\\s+(?<processor>\\S+)\\s+\\(stores:\\s+\\[(?<stores>.*)\\]\\).*");
-        private Matcher matcher;
-        private String line;
+        private final ThreadLocal<Matcher> matcherHolder = new ThreadLocal<>();
+        private final ThreadLocal<String> lineHolder = new ThreadLocal<>();
 
         @Override
         public boolean test(String line) {
-            this.line = line;
-            matcher = processorPattern.matcher(line);
+            lineHolder.set(line);
+            Matcher matcher = processorPattern.matcher(line);
+            matcherHolder.set(matcher);
             return matcher.matches();
         }
 
         @Override
         public void accept(TopologyParserContext context) {
-            context.addStores(matcher.group("stores").split(","), matcher.group("processor"), line.contains("JOIN"));
+            Matcher matcher = matcherHolder.get();
+            context.addStores(matcher.group("stores").split(","), matcher.group("processor"),
+                    lineHolder.get().contains("JOIN"));
         }
     };
 
     private static final RawTopologyItemParser SINK = new RawTopologyItemParser() {
         private final Pattern sinkPattern = Pattern.compile("Sink:\\s+(?<sink>\\S+)\\s+\\(topic:\\s+(?<topic>.*)\\).*");
-        private Matcher matcher;
+        private final ThreadLocal<Matcher> matcherHolder = new ThreadLocal<>();
 
         @Override
         public boolean test(String line) {
-            matcher = sinkPattern.matcher(line);
+            Matcher matcher = sinkPattern.matcher(line);
+            matcherHolder.set(matcher);
             return matcher.matches();
         }
 
         @Override
         public void accept(TopologyParserContext context) {
+            Matcher matcher = matcherHolder.get();
             context.addSink(matcher.group("sink"), matcher.group("topic"));
         }
     };
 
     private static final RawTopologyItemParser RIGHT_ARROW = new RawTopologyItemParser() {
         private final Pattern rightArrowPattern = Pattern.compile("\\s*-->\\s+(?<targets>.*)");
-        private Matcher matcher;
+        private final ThreadLocal<Matcher> matcherHolder = new ThreadLocal<>();
 
         @Override
         public boolean test(String line) {
-            matcher = rightArrowPattern.matcher(line);
+            Matcher matcher = rightArrowPattern.matcher(line);
+            matcherHolder.set(matcher);
             return matcher.matches();
         }
 
         @Override
         public void accept(TopologyParserContext context) {
-            context.addTargets(matcher.group("targets").split(","));
+            context.addTargets(matcherHolder.get().group("targets").split(","));
         }
     };
 }

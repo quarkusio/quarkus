@@ -29,6 +29,7 @@ class KafkaStreamsTopologyManagerTest {
 
         // GIVEN a KafkaStreamsTopologyManager with topics check disabled
         when(config.topicsTimeout()).thenReturn(Duration.ZERO);
+        when(config.topicsPollInterval()).thenReturn(Duration.ofSeconds(1));
         KafkaStreamsTopologyManager manager = new KafkaStreamsTopologyManager(
                 adminClient,
                 topology,
@@ -53,6 +54,7 @@ class KafkaStreamsTopologyManagerTest {
         // AND an admin client that returns `topic1` immediately
         String expectedTopic = "topic1";
         when(config.topicsTimeout()).thenReturn(Duration.ofSeconds(30));
+        when(config.topicsPollInterval()).thenReturn(Duration.ofSeconds(1));
         when(config.topics()).thenReturn(Optional.of(List.of(expectedTopic)));
 
         when(adminClient.listTopics()).thenReturn(listTopicsResult);

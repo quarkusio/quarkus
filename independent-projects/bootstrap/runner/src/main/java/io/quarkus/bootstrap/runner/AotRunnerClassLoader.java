@@ -92,8 +92,9 @@ public class AotRunnerClassLoader extends ClassLoader {
             return null;
         }
 
-        // if it exists, and is not cached, then delegate to the parent
-        return super.getResource(name);
+        // if it exists, and is not cached, then delegate to the parent directly
+        // (bypassing super.getResource which would redundantly call this.findResource)
+        return getParent().getResource(name);
     }
 
     @Override
@@ -168,7 +169,9 @@ public class AotRunnerClassLoader extends ClassLoader {
             return Collections.emptyEnumeration();
         }
 
-        return super.getResources(name);
+        // Delegate to parent directly; super.getResources would redundantly call this.findResources
+        // and wrap results in a CompoundEnumeration for no benefit
+        return getParent().getResources(name);
     }
 
     /**

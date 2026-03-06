@@ -87,8 +87,7 @@ public class AotRunnerClassLoader extends ClassLoader {
             return createCachedResourceURL(name, data);
         }
 
-        if (!fullyIndexedResources.contains(name)
-                && fullyIndexedDirectories.contains(getDirNameFromResourceName(name))) {
+        if (isKnownAbsentResource(name)) {
             return null;
         }
 
@@ -160,8 +159,7 @@ public class AotRunnerClassLoader extends ClassLoader {
             return Collections.emptyEnumeration();
         }
 
-        if (!fullyIndexedResources.contains(name)
-                && fullyIndexedDirectories.contains(getDirNameFromResourceName(name))) {
+        if (isKnownAbsentResource(name)) {
             return Collections.emptyEnumeration();
         }
 
@@ -203,8 +201,7 @@ public class AotRunnerClassLoader extends ClassLoader {
             return new ByteArrayInputStream(data);
         }
 
-        if (!fullyIndexedResources.contains(name)
-                && fullyIndexedDirectories.contains(getDirNameFromResourceName(name))) {
+        if (isKnownAbsentResource(name)) {
             return null;
         }
 
@@ -260,6 +257,16 @@ public class AotRunnerClassLoader extends ClassLoader {
         public int getContentLength() {
             return data.length;
         }
+    }
+
+    /**
+     * Returns true if the resource's directory is fully indexed and the resource is not in the index,
+     * meaning we know for certain it doesn't exist.
+     */
+    private boolean isKnownAbsentResource(final String name) {
+        return !fullyIndexedResources.contains(name)
+                //We intentionally check in this order to possibly avoid invoking getDirNameFromResourceName(String):
+                && fullyIndexedDirectories.contains(getDirNameFromResourceName(name));
     }
 
     private static String sanitizeName(String name) {

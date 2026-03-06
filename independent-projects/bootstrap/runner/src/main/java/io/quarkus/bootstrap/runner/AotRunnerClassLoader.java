@@ -107,12 +107,8 @@ public class AotRunnerClassLoader extends ClassLoader {
             return createCachedResourceURL(name, data);
         }
 
-        if (!fullyIndexedResources.contains(name)
-                && fullyIndexedDirectories.contains(getDirNameFromResourceName(name))) {
-            return null;
-        }
-
-        return super.findResource(name);
+        // No need to check fullyIndexedDirectories: either way, if it's not cached we don't have it.
+        return null;
     }
 
     /**
@@ -183,7 +179,7 @@ public class AotRunnerClassLoader extends ClassLoader {
      * @throws IOException if I/O errors occur
      */
     @Override
-    public Enumeration<URL> findResources(String name) throws IOException {
+    protected Enumeration<URL> findResources(String name) throws IOException {
         name = sanitizeName(name);
 
         // The cached version already contains the concatenated content from all jars
@@ -193,13 +189,8 @@ public class AotRunnerClassLoader extends ClassLoader {
                     createCachedResourceURL(name, data)));
         }
 
-        if (!fullyIndexedResources.contains(name)
-                && fullyIndexedDirectories.contains(getDirNameFromResourceName(name))) {
-            return Collections.emptyEnumeration();
-        }
-
-        // Not cached - delegate to parent implementation (will scan jars)
-        return super.findResources(name);
+        // No need to check fullyIndexedDirectories: either way, if it's not cached we don't have it.
+        return Collections.emptyEnumeration();
     }
 
     @Override

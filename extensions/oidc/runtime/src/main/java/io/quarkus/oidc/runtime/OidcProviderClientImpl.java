@@ -9,6 +9,7 @@ import java.security.Key;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import org.jboss.logging.Logger;
@@ -82,6 +83,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     private final Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters;
     private final Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters;
     private final boolean clientSecretQueryAuthentication;
+    private final Map<String, Uni<AuthorizationCodeTokens>> refreshTokenToTokensUni;
     private final String jwtSecret;
     private volatile String clientSecret;
     private volatile String clientSecretBasicAuthScheme;
@@ -107,6 +109,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         this.clientSecretQueryAuthentication = oidcConfig.credentials().clientSecret().method().orElse(null) == Method.QUERY;
         this.clientSecret = clientCredentials.clientSecret;
         this.jwtSecret = clientCredentials.jwtSecret;
+        this.refreshTokenToTokensUni = new ConcurrentHashMap<>();
     }
 
     void setOidcProvider(OidcProvider oidcProvider) {
@@ -278,13 +281,22 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     }
 
     Uni<AuthorizationCodeTokens> refreshAuthorizationCodeTokens(String refreshToken) {
-        final MultiMap refreshGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
-        refreshGrantParams.add(OidcConstants.GRANT_TYPE, OidcConstants.REFRESH_TOKEN_GRANT);
-        refreshGrantParams.add(OidcConstants.REFRESH_TOKEN_VALUE, refreshToken);
-        final OidcRequestContextProperties requestProps = getRequestProps(OidcConstants.REFRESH_TOKEN_GRANT);
-        return getHttpResponse(requestProps, metadata.getTokenUri(), refreshGrantParams, TokenOperation.REFRESH,
-                OidcEndpoint.Type.TOKEN)
-                .transformToUni(resp -> getAuthorizationCodeTokens(requestProps, resp));
+        return refreshTokenToTokensUni.computeIfAbsent(refreshToken, rt -> {
+            final MultiMap refreshGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+            refreshGrantParams.add(OidcConstants.GRANT_TYPE, OidcConstants.REFRESH_TOKEN_GRANT);
+            refreshGrantParams.add(OidcConstants.REFRESH_TOKEN_VALUE, rt);
+            final OidcRequestContextProperties requestProps = getRequestProps(OidcConstants.REFRESH_TOKEN_GRANT);
+            try {
+                return getHttpResponse(requestProps, metadata.getTokenUri(), refreshGrantParams, TokenOperation.REFRESH,
+                        OidcEndpoint.Type.TOKEN)
+                        .transformToUni(resp -> getAuthorizationCodeTokens(requestProps, resp))
+                        .onTermination().invoke(() -> refreshTokenToTokensUni.remove(rt))
+                        .memoize().indefinitely();
+            } catch (Throwable t) {
+                refreshTokenToTokensUni.remove(rt);
+                throw t;
+            }
+        });
     }
 
     public Uni<Boolean> revokeAccessToken(String accessToken) {
@@ -293,6 +305,10 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
 
     public Uni<Boolean> revokeRefreshToken(String refreshToken) {
         return revokeToken(refreshToken, OidcConstants.REFRESH_TOKEN_VALUE);
+    }
+
+    public Uni<AuthorizationCodeTokens> getRefreshTokenRequest(String refreshToken) {
+        return refreshTokenToTokensUni.get(refreshToken);
     }
 
     private Uni<Boolean> revokeToken(String token, String tokenTypeHint) {

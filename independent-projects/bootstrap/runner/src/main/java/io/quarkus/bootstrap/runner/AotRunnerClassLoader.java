@@ -202,6 +202,24 @@ public class AotRunnerClassLoader extends ClassLoader {
         return super.findResources(name);
     }
 
+    @Override
+    public InputStream getResourceAsStream(String name) {
+        name = sanitizeName(name);
+
+        // For cached resources, return the stream directly without URL/URLConnection overhead
+        final byte[] data = serviceFiles.get(name);
+        if (data != null) {
+            return new ByteArrayInputStream(data);
+        }
+
+        String dirName = getDirNameFromResourceName(name);
+        if (fullyIndexedDirectories.contains(dirName) && !fullyIndexedResources.contains(name)) {
+            return null;
+        }
+
+        return getParent().getResourceAsStream(name);
+    }
+
     private URL createCachedResourceURL(String name, byte[] data) {
         try {
             return new URL(null, "cached:".concat(name), new CachedResourceURLStreamHandler(data));

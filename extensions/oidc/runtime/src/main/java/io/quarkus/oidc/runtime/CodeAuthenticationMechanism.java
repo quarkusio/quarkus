@@ -209,7 +209,6 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         .transformToUni(new Function<TenantConfigContext, Uni<? extends SecurityIdentity>>() {
                             @Override
                             public Uni<SecurityIdentity> apply(TenantConfigContext tenantContext) {
-                                URI absoluteUri = URI.create(context.request().absoluteURI());
 
                                 String userQuery = null;
 
@@ -224,12 +223,11 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                     }
                                 }
 
-                                StringBuilder errorUri = new StringBuilder(buildUri(context,
-                                        isForceHttps(oidcTenantConfig),
-                                        absoluteUri.getAuthority(),
-                                        oidcTenantConfig.authentication().errorPath().get()));
+                                StringBuilder errorUri = prepareRedirectPathBuilder(context, oidcTenantConfig,
+                                        oidcTenantConfig.authentication().errorPath().get());
+
                                 errorUri.append('?')
-                                        .append(getRequestParametersAsQuery(absoluteUri, requestParams, oidcTenantConfig));
+                                        .append(getRequestParametersAsQuery(context, requestParams, oidcTenantConfig));
                                 if (userQuery != null) {
                                     errorUri.append('&').append(userQuery);
                                 }
@@ -257,6 +255,17 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             return Uni.createFrom().failure(new AuthenticationCompletionException(error));
         }
 
+    }
+
+    protected StringBuilder prepareRedirectPathBuilder(RoutingContext context, OidcTenantConfig oidcTenantConfig, String path) {
+        StringBuilder sb = new StringBuilder();
+
+        if (path.startsWith(HTTP_SCHEME)) {
+            sb.append(path);
+        } else {
+            sb.append(buildUri(context, isForceHttps(oidcTenantConfig), context.request().authority().toString(), path));
+        }
+        return sb;
     }
 
     private static String filterRedirect(RoutingContext context,
@@ -323,11 +332,11 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     }
 
-    private String getRequestParametersAsQuery(URI requestUri, MultiMap requestParams, OidcTenantConfig oidcConfig) {
+    private String getRequestParametersAsQuery(RoutingContext context, MultiMap requestParams, OidcTenantConfig oidcConfig) {
         if (ResponseMode.FORM_POST == oidcConfig.authentication().responseMode().orElse(ResponseMode.QUERY)) {
             return OidcCommonUtils.encodeForm(new io.vertx.mutiny.core.MultiMap(requestParams)).toString();
         } else {
-            return requestUri.getRawQuery();
+            return context.request().query();
         }
     }
 
@@ -495,11 +504,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private Uni<SecurityIdentity> redirectToSessionExpiredPage(RoutingContext context, TenantConfigContext configContext) {
-        URI absoluteUri = URI.create(context.request().absoluteURI());
-        StringBuilder sessionExpired = new StringBuilder(buildUri(context,
-                isForceHttps(configContext.oidcConfig()),
-                absoluteUri.getAuthority(),
-                configContext.oidcConfig().authentication().sessionExpiredPath().get()));
+        StringBuilder sessionExpired = prepareRedirectPathBuilder(context, configContext.oidcConfig(),
+                configContext.oidcConfig().authentication().sessionExpiredPath().get());
+
         String sessionExpiredUri = sessionExpired.toString();
         LOG.debugf("Session Expired URI: %s", sessionExpiredUri);
         return removeSessionCookie(context, configContext.oidcConfig())
@@ -897,17 +904,32 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                         if (removeRedirectParams || finalUserPath != null
                                                 || finalUserQuery != null) {
 
-                                            URI absoluteUri = URI.create(context.request().absoluteURI());
+                                            StringBuilder finalUriWithoutQuery = new StringBuilder();
 
-                                            StringBuilder finalUriWithoutQuery = new StringBuilder(buildUri(context,
-                                                    isForceHttps(configContext.oidcConfig()),
-                                                    absoluteUri.getAuthority(),
-                                                    (finalUserPath != null ? finalUserPath
-                                                            : absoluteUri.getRawPath())));
+                                            String redirectPath = configContext.oidcConfig().authentication()
+                                                    .redirectPath().orElse(null);
+                                            if (redirectPath != null && redirectPath.startsWith(HTTP_SCHEME)) {
+                                                // This is the actual URI that OIDC provider used to redirect the user back to Quarkus
+                                                if (finalUserPath == null) {
+                                                    // No need to restore the original request path
+                                                    finalUriWithoutQuery.append(redirectPath);
+                                                } else {
+                                                    URI redirectUri = URI.create(redirectPath);
+                                                    finalUriWithoutQuery.append(
+                                                            buildUri(redirectUri.getScheme(), redirectUri.getAuthority(), "",
+                                                                    finalUserPath));
+                                                }
+                                            } else {
+                                                finalUriWithoutQuery.append(
+                                                        buildUri(context, isForceHttps(configContext.oidcConfig()),
+                                                                context.request().authority().toString(),
+                                                                (finalUserPath != null ? finalUserPath
+                                                                        : context.request().path())));
+                                            }
 
                                             if (!removeRedirectParams) {
                                                 finalUriWithoutQuery.append('?')
-                                                        .append(getRequestParametersAsQuery(absoluteUri, requestParams,
+                                                        .append(getRequestParametersAsQuery(context, requestParams,
                                                                 configContext.oidcConfig()));
                                             }
                                             if (finalUserQuery != null) {
@@ -1301,6 +1323,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 }
             }
         }
+        return buildUri(scheme, authority, forwardedPrefix, path);
+    }
+
+    private static String buildUri(String scheme, String authority, String forwardedPrefix, String path) {
         return new StringBuilder(scheme).append("://")
                 .append(authority)
                 .append(forwardedPrefix)

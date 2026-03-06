@@ -21,12 +21,15 @@ import io.quarkus.arc.ManagedContext;
  * </ul>
  * <p>
  * The processor class should be a {@code @Dependent} scoped CDI bean so that each
- * stream task gets its own instance.
+ * stream task gets its own instance. It must also be annotated with
+ * {@code @io.quarkus.arc.Unremovable} since ArC would otherwise remove it as an
+ * unused bean (it has no injection points, only programmatic lookup).
  * <p>
  * Usage:
  *
  * <pre>
  * &#64;Dependent
+ * &#64;Unremovable
  * public class MyProcessor implements Processor&lt;String, String, String, String&gt; {
  *     &#64;Inject
  *     SomeService service;

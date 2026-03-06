@@ -1,6 +1,7 @@
 package io.quarkus.it.kafka.streams;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItems;
 
 import java.io.File;
 import java.time.Duration;
@@ -133,11 +134,24 @@ public class KafkaStreamsTest {
         testKafkaStreamsAliveAndReady();
         RestAssured.when().get("/kafkastreams/state").then().body(CoreMatchers.is("RUNNING"));
 
+        testCdiAwareProcessor();
         testMetricsPresent();
 
         // explicitly stopping the pipeline *before* the broker is shut down, as it
         // otherwise will time out
         RestAssured.post("/kafkastreams/stop");
+    }
+
+    private void testCdiAwareProcessor() {
+        // Verify CdiAwareProcessorSupplier created a processor with @Inject working
+        // The TrackingProcessor uses @Inject CdiProcessorTracker, proving CDI works on Kafka Streams threads
+        RestAssured.when().get("/kafkastreams/cdi-processor/count").then()
+                .statusCode(200)
+                .body(CoreMatchers.is("4"));
+
+        RestAssured.when().get("/kafkastreams/cdi-processor/values").then()
+                .statusCode(200)
+                .body("$", hasItems("Bob", "Becky", "Bruce", "Bert"));
     }
 
     private void testMetricsPresent() {

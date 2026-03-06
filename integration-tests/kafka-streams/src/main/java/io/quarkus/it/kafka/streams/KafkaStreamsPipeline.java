@@ -19,6 +19,7 @@ import org.apache.kafka.streams.state.KeyValueBytesStoreSupplier;
 import org.apache.kafka.streams.state.Stores;
 
 import io.quarkus.kafka.client.serialization.ObjectMapperSerde;
+import io.quarkus.kafka.streams.runtime.CdiAwareProcessorSupplier;
 
 @ApplicationScoped
 public class KafkaStreamsPipeline {
@@ -51,6 +52,9 @@ public class KafkaStreamsPipeline {
 
         customers.selectKey((categoryId, customer) -> customer.id)
                 .to("streams-test-customers-processed", Produced.with(Serdes.Integer(), enrichedCustomerSerde));
+
+        // CDI-aware processor: verifies @Inject works on Kafka Streams threads
+        customers.process(CdiAwareProcessorSupplier.of(TrackingProcessor.class));
 
         return builder.build();
     }

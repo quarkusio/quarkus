@@ -20,6 +20,7 @@ import io.quarkus.arc.ManagedContext;
  *
  * <pre>
  * &#64;Dependent
+ * &#64;Unremovable
  * public class MyProcessor implements FixedKeyProcessor&lt;String, String, String&gt; {
  *     &#64;Inject
  *     SomeService service;

@@ -1,5 +1,7 @@
 package io.quarkus.it.kafka.streams;
 
+import java.util.List;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -24,6 +26,9 @@ public class KafkaStreamsEndpoint {
 
     @Inject
     CurrentStateListener stateListener;
+
+    @Inject
+    CdiProcessorTracker cdiProcessorTracker;
 
     private ReadOnlyKeyValueStore<Integer, Long> getCountstore() {
         while (true) {
@@ -51,5 +56,17 @@ public class KafkaStreamsEndpoint {
     @Path("/state")
     public String state() {
         return stateListener.currentState.name();
+    }
+
+    @GET
+    @Path("/cdi-processor/count")
+    public int cdiProcessorCount() {
+        return cdiProcessorTracker.getProcessedCount();
+    }
+
+    @GET
+    @Path("/cdi-processor/values")
+    public List<String> cdiProcessorValues() {
+        return cdiProcessorTracker.getProcessedValues();
     }
 }

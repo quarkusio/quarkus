@@ -3,6 +3,7 @@ package io.quarkus.it.keycloak;
 import java.net.URI;
 import java.security.PublicKey;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashSet;
@@ -53,6 +54,7 @@ public class OidcResource {
     private volatile int userInfoEndpointCallCount;
     private volatile boolean enableDiscovery = true;
     private volatile int refreshEndpointCallCount;
+    volatile boolean refreshEndpointWait = false;
 
     @PostConstruct
     public void init() throws Exception {
@@ -255,6 +257,20 @@ public class OidcResource {
         } else if ("refresh_token".equals(grantType)) {
             // Emulate the case where the provider returns the refresh token only once
             // and does not recycle refresh tokens during  the refresh token grant request.
+
+            if (refreshEndpointWait) {
+                while (refreshEndpointWait) {
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                return "{\"access_token\": \"" + largeJwt(clientId, Long.toString(Instant.now().toEpochMilli()))
+                        + "\"," +
+                        "   \"token_type\": \"Bearer\"," +
+                        "   \"expires_in\": 300 }";
+            }
 
             if (refreshEndpointCallCount++ == 0) {
                 // first refresh token request, check the original ID token is used

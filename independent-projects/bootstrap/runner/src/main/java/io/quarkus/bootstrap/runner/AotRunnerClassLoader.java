@@ -87,8 +87,8 @@ public class AotRunnerClassLoader extends ClassLoader {
             return createCachedResourceURL(name, data);
         }
 
-        String dirName = getDirNameFromResourceName(name);
-        if (fullyIndexedDirectories.contains(dirName) && !fullyIndexedResources.contains(name)) {
+        if (!fullyIndexedResources.contains(name)
+                && fullyIndexedDirectories.contains(getDirNameFromResourceName(name))) {
             return null;
         }
 
@@ -107,8 +107,8 @@ public class AotRunnerClassLoader extends ClassLoader {
             return createCachedResourceURL(name, data);
         }
 
-        String dirName = getDirNameFromResourceName(name);
-        if (fullyIndexedDirectories.contains(dirName) && !fullyIndexedResources.contains(name)) {
+        if (!fullyIndexedResources.contains(name)
+                && fullyIndexedDirectories.contains(getDirNameFromResourceName(name))) {
             return null;
         }
 
@@ -164,8 +164,8 @@ public class AotRunnerClassLoader extends ClassLoader {
             return Collections.emptyEnumeration();
         }
 
-        String dirName = getDirNameFromResourceName(name);
-        if (fullyIndexedDirectories.contains(dirName) && !fullyIndexedResources.contains(name)) {
+        if (!fullyIndexedResources.contains(name)
+                && fullyIndexedDirectories.contains(getDirNameFromResourceName(name))) {
             return Collections.emptyEnumeration();
         }
 
@@ -193,8 +193,8 @@ public class AotRunnerClassLoader extends ClassLoader {
                     createCachedResourceURL(name, data)));
         }
 
-        String dirName = getDirNameFromResourceName(name);
-        if (fullyIndexedDirectories.contains(dirName) && !fullyIndexedResources.contains(name)) {
+        if (!fullyIndexedResources.contains(name)
+                && fullyIndexedDirectories.contains(getDirNameFromResourceName(name))) {
             return Collections.emptyEnumeration();
         }
 
@@ -212,8 +212,8 @@ public class AotRunnerClassLoader extends ClassLoader {
             return new ByteArrayInputStream(data);
         }
 
-        String dirName = getDirNameFromResourceName(name);
-        if (fullyIndexedDirectories.contains(dirName) && !fullyIndexedResources.contains(name)) {
+        if (!fullyIndexedResources.contains(name)
+                && fullyIndexedDirectories.contains(getDirNameFromResourceName(name))) {
             return null;
         }
 

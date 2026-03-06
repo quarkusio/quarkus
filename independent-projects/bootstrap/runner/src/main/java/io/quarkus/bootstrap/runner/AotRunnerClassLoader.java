@@ -1,7 +1,5 @@
 package io.quarkus.bootstrap.runner;
 
-import static io.quarkus.commons.classloading.ClassLoaderHelper.isInJdkPackage;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,7 +42,7 @@ public class AotRunnerClassLoader extends ClassLoader {
     private final Set<String> fullyIndexedDirectories;
     private final Set<String> fullyIndexedResources;
 
-    private final Map<String, byte[]> serviceFiles;
+    private final Map<String, byte[]> serviceFiles; // We never store null values in this map
     private final Map<String, List<ApplicationConfigEntry>> applicationConfigFiles;
 
     AotRunnerClassLoader(ClassLoader parent, Set<String> fullyIndexedDirectories, Set<String> fullyIndexedResources,
@@ -63,11 +61,6 @@ public class AotRunnerClassLoader extends ClassLoader {
 
     @Override
     public Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        // fast path for JDK classes
-        if (isInJdkPackage(name)) {
-            return getParent().loadClass(name);
-        }
-
         return getParent().loadClass(name);
     }
 
@@ -89,11 +82,9 @@ public class AotRunnerClassLoader extends ClassLoader {
         name = sanitizeName(name);
 
         // If cached, return it immediately, no need to scan the jars
-        if (serviceFiles.containsKey(name)) {
-            byte[] data = serviceFiles.get(name);
-            if (data != null) {
-                return createCachedResourceURL(name, data);
-            }
+        final byte[] data = serviceFiles.get(name);
+        if (data != null) {
+            return createCachedResourceURL(name, data);
         }
 
         String dirName = getDirNameFromResourceName(name);
@@ -110,11 +101,9 @@ public class AotRunnerClassLoader extends ClassLoader {
         name = sanitizeName(name);
 
         // If cached, return it immediately, no need to scan the jars
-        if (serviceFiles.containsKey(name)) {
-            byte[] data = serviceFiles.get(name);
-            if (data != null) {
-                return createCachedResourceURL(name, data);
-            }
+        final byte[] data = serviceFiles.get(name);
+        if (data != null) {
+            return createCachedResourceURL(name, data);
         }
 
         String dirName = getDirNameFromResourceName(name);
@@ -141,13 +130,10 @@ public class AotRunnerClassLoader extends ClassLoader {
         name = sanitizeName(name);
 
         // The cached version already contains the concatenated content from all jars
-        if (serviceFiles.containsKey(name)) {
-            byte[] data = serviceFiles.get(name);
-            if (data != null) {
-                return Collections.enumeration(Collections.singletonList(
-                        createCachedResourceURL(name, data)));
-            }
-            return Collections.emptyEnumeration();
+        final byte[] data = serviceFiles.get(name);
+        if (data != null) {
+            return Collections.enumeration(Collections.singletonList(
+                    createCachedResourceURL(name, data)));
         }
 
         // Check application config files - return all matches in order
@@ -198,13 +184,10 @@ public class AotRunnerClassLoader extends ClassLoader {
         name = sanitizeName(name);
 
         // The cached version already contains the concatenated content from all jars
-        if (serviceFiles.containsKey(name)) {
-            byte[] data = serviceFiles.get(name);
-            if (data != null) {
-                return Collections.enumeration(Collections.singletonList(
-                        createCachedResourceURL(name, data)));
-            }
-            return Collections.emptyEnumeration();
+        final byte[] data = serviceFiles.get(name);
+        if (data != null) {
+            return Collections.enumeration(Collections.singletonList(
+                    createCachedResourceURL(name, data)));
         }
 
         String dirName = getDirNameFromResourceName(name);

@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.spi.Contextual;
 import jakarta.enterprise.context.spi.CreationalContext;
@@ -2152,29 +2153,60 @@ public class BeanGenerator extends AbstractGenerator {
 
     public static Var collectInjectionPointQualifiers(BeanDeployment beanDeployment, BlockCreator bc,
             InjectionPointInfo injectionPoint, AnnotationLiteralProcessor annotationLiterals) {
+        return collectInjectionPointQualifiers(beanDeployment, bc, injectionPoint, annotationLiterals, Set.of());
+    }
+
+    public static Var collectInjectionPointQualifiers(BeanDeployment beanDeployment, BlockCreator bc,
+            InjectionPointInfo injectionPoint, AnnotationLiteralProcessor annotationLiterals, Set<DotName> excludeQualifiers) {
         return collectQualifiers(beanDeployment, bc, annotationLiterals,
-                injectionPoint.hasDefaultedQualifier() ? Collections.emptySet() : injectionPoint.getRequiredQualifiers());
+                injectionPoint.hasDefaultedQualifier() ? Set.of() : injectionPoint.getRequiredQualifiers(),
+                excludeQualifiers);
     }
 
     public static Var collectQualifiers(BeanDeployment beanDeployment, BlockCreator bc,
             AnnotationLiteralProcessor annotationLiterals, Set<AnnotationInstance> qualifiers) {
+        return collectQualifiers(beanDeployment, bc, annotationLiterals, qualifiers, Set.of());
+    }
+
+    public static Var collectQualifiers(BeanDeployment beanDeployment, BlockCreator bc,
+            AnnotationLiteralProcessor annotationLiterals, Set<AnnotationInstance> qualifiers,
+            Set<DotName> excludeQualifiers) {
         if (qualifiers.isEmpty()) {
             return Expr.staticField(FieldDescs.QUALIFIERS_IP_QUALIFIERS);
-        } else {
-            LocalVar qualifiersVar = bc.localVar("qualifiers", bc.new_(HashSet.class));
-            for (AnnotationInstance qualifier : qualifiers) {
-                BuiltinQualifier builtinQualifier = BuiltinQualifier.of(qualifier);
-                Expr qualifierExpr;
-                if (builtinQualifier != null) {
-                    qualifierExpr = builtinQualifier.getLiteralInstance();
-                } else {
-                    // Create annotation literal if needed
-                    qualifierExpr = annotationLiterals.create(bc, beanDeployment.getQualifier(qualifier.name()), qualifier);
-                }
-                bc.withSet(qualifiersVar).add(qualifierExpr);
-            }
-            return qualifiersVar;
         }
+
+        Set<AnnotationInstance> filteredQualifiers = qualifiers;
+        if (!excludeQualifiers.isEmpty()) {
+            // let's avoid creating a stream and a new set as the typical case for exclusion is @All and it won't be around in most cases
+            boolean needsFiltering = false;
+            for (AnnotationInstance qualifier : qualifiers) {
+                if (excludeQualifiers.contains(qualifier.name())) {
+                    needsFiltering = true;
+                    break;
+                }
+            }
+            if (needsFiltering) {
+                filteredQualifiers = qualifiers.stream()
+                        .filter(q -> !excludeQualifiers.contains(q.name()))
+                        .collect(Collectors.toSet());
+            }
+        }
+
+        LocalVar qualifiersVar = bc.localVar("qualifiers",
+                bc.setOf(Reproducibility.orderedAnnotations(filteredQualifiers), qualifier -> {
+                    BuiltinQualifier builtinQualifier = BuiltinQualifier.of(qualifier);
+                    Expr qualifierExpr;
+                    if (builtinQualifier != null) {
+                        qualifierExpr = builtinQualifier.getLiteralInstance();
+                    } else {
+                        // Create annotation literal if needed
+                        qualifierExpr = annotationLiterals.create(bc, beanDeployment.getQualifier(qualifier.name()),
+                                qualifier);
+                    }
+                    return qualifierExpr;
+                }));
+
+        return qualifiersVar;
     }
 
     static void destroyTransientReferences(BlockCreator bc, Iterable<TransientReference> transientReferences) {

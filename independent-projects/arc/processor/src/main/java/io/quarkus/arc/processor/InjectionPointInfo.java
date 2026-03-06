@@ -411,7 +411,7 @@ public class InjectionPointInfo {
 
         public TypeAndQualifiers(Type type, Set<AnnotationInstance> qualifiers) {
             this.type = type;
-            this.qualifiers = qualifiers;
+            this.qualifiers = Unique.annotations(qualifiers);
         }
 
         @Override

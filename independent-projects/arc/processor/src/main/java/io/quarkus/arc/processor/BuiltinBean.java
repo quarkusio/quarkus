@@ -348,7 +348,9 @@ public enum BuiltinBean {
             usesInstance = Const.of(false);
         }
         Var qualifiers = BeanGenerator.collectInjectionPointQualifiers(ctx.beanDeployment, ctx.constructor,
-                ctx.injectionPoint, ctx.annotationLiterals);
+                ctx.injectionPoint, ctx.annotationLiterals,
+                // the @All annotation is not a qualifier of the instances we need to resolve
+                Set.of(DotNames.ALL));
 
         // Note that we only collect the injection point metadata if needed, i.e. if any of the resolved beans is dependent,
         // and requires InjectionPoint metadata

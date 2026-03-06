@@ -24,26 +24,27 @@ To deploy {project-name} applications compiled to native executables, use the Do
 ====
 endif::no-S2I-support[]
 
-You can deploy project-name} applications to {openshift} with Java {jdk-version-all} versions.
+You can deploy {project-name} applications to {openshift} with Java {jdk-version-all} versions.
 
 == Prerequisites
 
-* You have a Quarkus application built with either Java {jdk-version-all}.
+* You have a Quarkus application built with Java {jdk-version-all}.
 * Optional: You have a Quarkus project that includes the `quarkus-openshift` extension.
 * You are working in the correct OpenShift project namespace.
 * Your project is hosted in a Git repository.
 
 == Procedure
 
-. Open the `pom.xml` file, and set the Java version, where the Java version is {jdk-version-all}.
+. Open the `pom.xml` file, and set the Java version.
 +
 [source,xml,subs=attributes+]
 ----
-<maven.compiler.source><java-version></maven.compiler.source>
-<maven.compiler.target><java-version></maven.compiler.target>
+<maven.compiler.source>${java.version}</maven.compiler.source>
+<maven.compiler.target>${java.version}</maven.compiler.target>
 ----
+where ${java.version} is {jdk-version-all}.
 +
-. Package your Java {jdk-version-all} application, by entering the following command:
+. Package your application, by entering the following command:
 +
 [source,shell]
 ----

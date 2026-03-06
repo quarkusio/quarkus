@@ -81,23 +81,24 @@ Incorrectly escaped patterns can lead to unintended behavior or security vulnera
 Always verify regular expression syntax before deployment.
 ====
 
-== Allowing all origins in dev mode
+== When to accept all origins
 
-Configuring origins during development can be challenging.
-To simplify development, consider allowing all origins in development mode only:
+[WARNING]
+====
+Allowing unrestricted origins with `quarkus.http.cors.origins=*` in production environments poses severe security risks, such as unauthorized data access or resource abuse.
+For production, define explicit origins in the `quarkus.http.cors.origins` property.
+====
+
+The only exception where accepting all origins might be appropriate in production is for read-only public API applications that have no side effects of any kind, such as managing cookies, saving request data on the disk, or similar operations.
+In such cases, to improve the HTTP cache performance, you might want to return a literal `*` origin by setting `quarkus.http.cors.return-exact-origins=false` to avoid the `Vary: Origin` response header.
+
+Also, since configuring origins during development can be challenging, consider allowing all origins in development mode:
 
 [source, properties]
 ----
 quarkus.http.cors.enabled=true
 %dev.quarkus.http.cors.origins=/.*/
 ----
-
-[WARNING]
-====
-Only allow all origins in the development profile (`%dev`).
-Allowing unrestricted origins in production environments poses severe security risks, such as unauthorized data access or resource abuse.
-For production, define explicit origins in the `quarkus.http.cors.origins` property.
-====
 
 [[cors-filter-programmatic-set-up]]
 == Configuring the CORS filter programmatically

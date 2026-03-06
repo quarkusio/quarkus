@@ -159,6 +159,11 @@ public class DevUICORSFilter implements Handler<RoutingContext> {
             public Optional<Boolean> accessControlAllowCredentials() {
                 return baseCorsConfig.accessControlAllowCredentials();
             }
+
+            @Override
+            public boolean returnExactOrigins() {
+                return true;
+            }
         };
     }
 }

@@ -80,7 +80,7 @@ public class CORSFilter implements Handler<RoutingContext> {
         return list.isEmpty() || (list.size() == 1 && "*".equals(list.get(0)));
     }
 
-    private static boolean isOriginConfiguredWithWildcard(Optional<List<String>> origins) {
+    static boolean isOriginConfiguredWithWildcard(Optional<List<String>> origins) {
         if (origins.isEmpty() || origins.get().size() != 1) {
             return false;
         }
@@ -158,9 +158,19 @@ public class CORSFilter implements Handler<RoutingContext> {
                 response.setStatusCode(403);
                 response.setStatusMessage("CORS Rejected - Invalid origin");
             } else {
-                boolean allowCredentials = corsConfig.accessControlAllowCredentials().orElse(originMatches);
-                response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, String.valueOf(allowCredentials));
-                response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
+                if (wildcardOrigin && !corsConfig.returnExactOrigins()) {
+                    // Return literal * for public APIs where caching matters.
+                    // Incompatible configurations (credentials=true, security extensions)
+                    // are rejected at startup by CORSRecorder; the browser CORS engine
+                    // enforces that credentials cannot be used with a wildcard origin.
+                    response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*");
+                    response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "false");
+                } else {
+                    boolean allowCredentials = corsConfig.accessControlAllowCredentials().orElse(originMatches);
+                    response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS,
+                            String.valueOf(allowCredentials));
+                    response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
+                }
             }
 
             if (request.method().equals(HttpMethod.OPTIONS)) {

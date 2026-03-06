@@ -22,8 +22,13 @@ public class TracingKafkaClientSupplier implements KafkaClientSupplier {
 
     @Inject
     public TracingKafkaClientSupplier(OpenTelemetry openTelemetry) {
-        this.kafkaTelemetry = KafkaTelemetry.create(openTelemetry);
-        this.delegate = new DefaultKafkaClientSupplier();
+        this(KafkaTelemetry.create(openTelemetry), new DefaultKafkaClientSupplier());
+    }
+
+    // visible for testing
+    TracingKafkaClientSupplier(KafkaTelemetry kafkaTelemetry, KafkaClientSupplier delegate) {
+        this.kafkaTelemetry = kafkaTelemetry;
+        this.delegate = delegate;
     }
 
     @Override

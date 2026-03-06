@@ -59,12 +59,12 @@ import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
-import io.quarkus.deployment.builditem.Startable;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.StartableContainer;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.runtime.LaunchMode;
@@ -111,15 +111,6 @@ public class KeycloakDevServicesProcessor {
             + "--spi-user-profile-declarative-user-profile-config-file=/opt/keycloak/upconfig.json";
 
     private static final String JAVA_OPTS = "JAVA_OPTS";
-
-    /**
-     * This is a container label we use to mark the Keycloak container we started, as opposite to the ones we discovered.
-     * This value must be different to the {@link KeycloakDevServicesConfig#serviceName()}, because we don't want to
-     * confuse the discovered and the owned container. This is important because if the configuration for the owned
-     * container changes (e.g. user configured additional realms, or users, or changed the realm file), we need to
-     * restart the container. However, we do not restart the discovered container because we do not own it.
-     */
-    private static final String OWNED_KEYCLOAK_SERVER_LABEL_VALUE = "quarkus-dev-service-keycloak";
 
     /**
      * Label to add to shared Dev Service for Keycloak running in containers.
@@ -171,26 +162,24 @@ public class KeycloakDevServicesProcessor {
                             .containerId(containerAddress.getId())
                             .config(configs)
                             .build();
-                }).orElseGet(() -> {
-
-                    return DevServicesResultBuildItem.owned().feature(feature)
-                            .serviceName(feature.getName())
-                            .serviceConfig(serviceConfigHashCode)
-                            .startable(
-                                    () -> new KeycloakServer(useSharedNetwork, config, devServicesConfig,
-                                            devServicesConfigurator,
-                                            composeProjectBuildItem, imageName))
-                            .postStartHook(keycloakServer -> {
-                                for (String error : keycloakServer.errors) {
-                                    // these errors would be hidden by the 'StartupLogCompressor' if the capture was not dumped
-                                    // hence, we log them here, as by now, the compressor will surely be closed
-                                    LOG.trace(error);
-                                }
-                                LOG.info("Dev Services for Keycloak started.");
-                            })
-                            .configProvider(createLazyConfigMap(devServicesConfigurator))
-                            .build();
-                });
+                }).orElseGet(() -> DevServicesResultBuildItem.owned().feature(feature)
+                        .serviceName(feature.getName())
+                        .serviceConfig(serviceConfigHashCode)
+                        .startable(() -> {
+                            QuarkusOidcContainer oidcContainer = createContainer(config, useSharedNetwork,
+                                    devServicesConfig.timeout(), composeProjectBuildItem, imageName, devServicesConfigurator);
+                            return new StartableContainer<>(oidcContainer, c -> c.getHost() + ":" + c.getPort());
+                        })
+                        .postStartHook(containerWrapper -> {
+                            for (String error : containerWrapper.getContainer().errors) {
+                                // these errors would be hidden by the 'StartupLogCompressor' if the capture was not dumped
+                                // hence, we log them here, as by now, the compressor will surely be closed
+                                LOG.trace(error);
+                            }
+                            LOG.info("Dev Services for Keycloak started.");
+                        })
+                        .configProvider(createLazyConfigMap(devServicesConfigurator))
+                        .build());
         devServicesResultProducer.produce(devServicesResultBuildItem);
 
         // now we know that Keycloak Dev Services will start
@@ -243,13 +232,13 @@ public class KeycloakDevServicesProcessor {
         return map.entrySet().stream().mapToInt(e -> Objects.hash(e.getKey(), e.getValue())).sum();
     }
 
-    private static Map<String, Function<KeycloakServer, String>> createLazyConfigMap(
+    private static Map<String, Function<StartableContainer<QuarkusOidcContainer>, String>> createLazyConfigMap(
             KeycloakDevServicesConfigurator devServicesConfigurator) {
         return devServicesConfigurator
                 .getLazyConfigKeys()
                 .stream()
-                .map(configKey -> Map.<String, Function<KeycloakServer, String>> entry(configKey,
-                        keycloakServer -> keycloakServer.getConfigValue(configKey)))
+                .map(configKey -> Map.<String, Function<StartableContainer<QuarkusOidcContainer>, String>> entry(configKey,
+                        wrapper -> wrapper.getContainer().getConfigValue(configKey)))
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
@@ -398,101 +387,30 @@ public class KeycloakDevServicesProcessor {
         }
     }
 
-    // Wrap the vertx instance and the container, since both need to be started and closed
-    private static class KeycloakServer implements Startable {
-        private final boolean useSharedNetwork;
-        private final KeycloakDevServicesConfig config;
-        private final DevServicesConfig devServicesConfig;
-        private final String imageName;
-        private final KeycloakDevServicesConfigurator devServicesConfigurator;
-        private final DevServicesComposeProjectBuildItem composeProjectBuildItem;
-        private KeycloakDevServicesConfigurator.ConfigPropertiesContext configPropertiesContext;
-        private QuarkusOidcContainer oidcContainer;
-        private final List<String> errors;
+    private static QuarkusOidcContainer createContainer(KeycloakDevServicesConfig config, boolean useSharedNetwork,
+            Optional<Duration> timeout, DevServicesComposeProjectBuildItem composeProjectBuildItem, String imageName,
+            KeycloakDevServicesConfigurator devServicesConfigurator) {
+        DockerImageName dockerImageName = DockerImageName.parse(imageName).asCompatibleSubstituteFor(imageName);
 
-        private KeycloakServer(boolean useSharedNetwork, KeycloakDevServicesConfig config, DevServicesConfig devServicesConfig,
-                KeycloakDevServicesConfigurator devServicesConfigurator,
-                DevServicesComposeProjectBuildItem composeProjectBuildItem, String imageName) {
-            this.useSharedNetwork = useSharedNetwork;
-            this.config = config;
-            this.devServicesConfig = devServicesConfig;
-            this.devServicesConfigurator = devServicesConfigurator;
-            this.composeProjectBuildItem = composeProjectBuildItem;
-            this.imageName = imageName;
-            this.errors = new ArrayList<>();
-        }
+        var errors = new ArrayList<String>();
+        var oidcContainer = new QuarkusOidcContainer(config, dockerImageName,
+                config.port(),
+                composeProjectBuildItem.getDefaultNetworkId(),
+                useSharedNetwork,
+                config.realmPath().orElse(List.of()),
+                resourcesMap(config, errors),
+                config.serviceName(),
+                config.shared(),
+                config.javaOpts(),
+                config.startCommand(),
+                config.features(),
+                config.showLogs(),
+                config.containerMemoryLimit(), errors, devServicesConfigurator);
 
-        @Override
-        public void start() {
-            startContainer(config,
-                    useSharedNetwork,
-                    devServicesConfig.timeout(),
-                    errors, composeProjectBuildItem);
-        }
+        timeout.ifPresent(oidcContainer::withStartupTimeout);
+        oidcContainer.withEnv(config.containerEnv());
 
-        @Override
-        public String getConnectionInfo() {
-            return oidcContainer.getHost() + ":" + oidcContainer.getPort();
-        }
-
-        @Override
-        public String getContainerId() {
-            return oidcContainer.getContainerId();
-        }
-
-        @Override
-        public void close() {
-            if (oidcContainer != null) {
-                oidcContainer.stop();
-            }
-        }
-
-        private void startContainer(KeycloakDevServicesConfig config,
-                boolean useSharedNetwork, Optional<Duration> timeout, List<String> errors,
-                DevServicesComposeProjectBuildItem composeProjectBuildItem) {
-            DockerImageName dockerImageName = DockerImageName.parse(imageName).asCompatibleSubstituteFor(imageName);
-
-            oidcContainer = new QuarkusOidcContainer(config, dockerImageName,
-                    config.port(),
-                    composeProjectBuildItem.getDefaultNetworkId(),
-                    useSharedNetwork,
-                    config.realmPath().orElse(List.of()),
-                    resourcesMap(config, errors),
-                    OWNED_KEYCLOAK_SERVER_LABEL_VALUE,
-                    config.shared(),
-                    config.javaOpts(),
-                    config.startCommand(),
-                    config.features(),
-                    config.showLogs(),
-                    config.containerMemoryLimit(),
-                    errors);
-
-            timeout.ifPresent(oidcContainer::withStartupTimeout);
-            oidcContainer.withEnv(config.containerEnv());
-            oidcContainer.start();
-
-            configPropertiesContext = createConfigPropertiesContext();
-        }
-
-        private KeycloakDevServicesConfigurator.ConfigPropertiesContext createConfigPropertiesContext() {
-            List<String> errors = new ArrayList<>();
-            String internalBaseUrl = getBaseURL((oidcContainer.isHttps() ? "https://" : "http://"), oidcContainer.getHost(),
-                    oidcContainer.getPort());
-            String internalUrl = startURL(internalBaseUrl, oidcContainer.keycloakX);
-            String hostUrl = oidcContainer.useSharedNetwork
-                    // we need to use auto-detected host and port, so it works when docker host != localhost
-                    ? startURL("http://", oidcContainer.getSharedNetworkExternalHost(),
-                            oidcContainer.getSharedNetworkExternalPort(),
-                            oidcContainer.keycloakX)
-                    : null;
-
-            return createRealmsAndReturnPropertiesContext(config, internalUrl, hostUrl,
-                    oidcContainer.realmReps, errors, devServicesConfigurator, internalBaseUrl);
-        }
-
-        private String getConfigValue(String configKey) {
-            return devServicesConfigurator.getLazyConfigValue(configKey, configPropertiesContext);
-        }
+        return oidcContainer;
     }
 
     private static Map<String, String> prepareConfiguration(KeycloakDevServicesConfig config,
@@ -532,7 +450,7 @@ public class KeycloakDevServicesProcessor {
                 + ":" + containerAddress.getPort();
     }
 
-    private static class QuarkusOidcContainer extends GenericContainer<QuarkusOidcContainer> {
+    private static final class QuarkusOidcContainer extends GenericContainer<QuarkusOidcContainer> {
         private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
         private final List<String> realmPaths;
@@ -548,15 +466,18 @@ public class KeycloakDevServicesProcessor {
         private final boolean showLogs;
         private final MemorySize containerMemoryLimit;
         private final List<String> errors;
+        private final KeycloakDevServicesConfig config;
+        private final KeycloakDevServicesConfigurator devServicesConfigurator;
+        private KeycloakDevServicesConfigurator.ConfigPropertiesContext configPropertiesContext;
 
-        public QuarkusOidcContainer(KeycloakDevServicesConfig config, DockerImageName dockerImageName,
+        private QuarkusOidcContainer(KeycloakDevServicesConfig config, DockerImageName dockerImageName,
                 OptionalInt fixedExposedPort,
                 String defaultNetworkId,
                 boolean useSharedNetwork,
                 List<String> realmPaths, Map<String, String> resources, String containerLabelValue,
                 boolean sharedContainer, Optional<String> javaOpts, Optional<String> startCommand,
-                Optional<Set<String>> features, boolean showLogs, MemorySize containerMemoryLimit,
-                List<String> errors) {
+                Optional<Set<String>> features, boolean showLogs, MemorySize containerMemoryLimit, List<String> errors,
+                KeycloakDevServicesConfigurator devServicesConfigurator) {
             super(dockerImageName);
 
             this.useSharedNetwork = useSharedNetwork;
@@ -583,6 +504,14 @@ public class KeycloakDevServicesProcessor {
 
             super.setWaitStrategy(Wait.forLogMessage(".*Keycloak.*started.*", 1));
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "keycloak");
+            this.config = config;
+            this.devServicesConfigurator = devServicesConfigurator;
+        }
+
+        @Override
+        public void start() {
+            super.start();
+            configPropertiesContext = createConfigPropertiesContext();
         }
 
         @Override
@@ -764,6 +693,23 @@ public class KeycloakDevServicesProcessor {
 
         public boolean isHttps() {
             return startCommand.isPresent() && startCommand.get().contains("--https");
+        }
+
+        private KeycloakDevServicesConfigurator.ConfigPropertiesContext createConfigPropertiesContext() {
+            List<String> errors = new ArrayList<>();
+            String internalBaseUrl = getBaseURL((isHttps() ? "https://" : "http://"), getHost(), getPort());
+            String internalUrl = startURL(internalBaseUrl, keycloakX);
+            String hostUrl = useSharedNetwork
+                    // we need to use auto-detected host and port, so it works when docker host != localhost
+                    ? startURL("http://", getSharedNetworkExternalHost(), getSharedNetworkExternalPort(), keycloakX)
+                    : null;
+
+            return createRealmsAndReturnPropertiesContext(config, internalUrl, hostUrl,
+                    realmReps, errors, devServicesConfigurator, internalBaseUrl);
+        }
+
+        private String getConfigValue(String configKey) {
+            return devServicesConfigurator.getLazyConfigValue(configKey, configPropertiesContext);
         }
     }
 

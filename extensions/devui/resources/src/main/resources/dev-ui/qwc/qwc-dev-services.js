@@ -20,45 +20,67 @@ export class QwcDevServices extends QwcHotReloadElement {
             padding-right: 10px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 15px;
         }
-    
+
         .configHeader {
-            padding: 10px;
+            padding: 10px 16px;
             display: flex;
             justify-content: space-between;
+            align-items: center;
+            color: var(--lumo-contrast-60pct);
+            font-size: var(--lumo-font-size-s);
         }
         .copyButtons {
             display: flex;
-            gap:5px;
+            gap: 5px;
             color: var(--lumo-contrast-40pct);
+            align-items: center;
         }
         qui-badge{
             cursor: pointer;
         }
-    
-        .containerDetails{
-            padding: 15px;
+
+        .containerDetails {
+            padding: 8px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
         }
 
         .row {
-            padding: 3px;
+            padding: 5px 10px;
             display: flex;
             align-items: center;
             gap: 10px;
+            border-radius: 6px;
+            font-size: var(--lumo-font-size-s);
+            color: var(--lumo-contrast-80pct);
+        }
+
+        .row:hover {
+            background-color: var(--lumo-contrast-5pct);
+        }
+
+        .row vaadin-icon {
+            color: var(--lumo-contrast-50pct);
+            --vaadin-icon-size: var(--lumo-font-size-m);
+            flex-shrink: 0;
         }
 
         .config {
-            padding-left: 10px;
+            padding: 4px 16px 12px 16px;
+            margin: 0 12px 12px 12px;
             background: var(--lumo-contrast-5pct);
+            border-radius: 8px;
         }
-    
+
         .content {
-            padding: 15px;
+            padding: 12px 0;
         }
-    
+
         .description {
-            padding-bottom: 10px;
+            padding: 0 16px 10px 16px;
             color: var(--lumo-contrast-50pct);
         }
     `;
@@ -88,10 +110,10 @@ export class QwcDevServices extends QwcHotReloadElement {
     render() {
         if (this._services && this._services.length>0) {
             return html`<div class="cards">
-                            ${this._services.map(devService => this._renderCard(devService))}  
+                            ${this._services.map(devService => this._renderCard(devService))}
                         </div>`;
         } else {
-            return html`<qwc-no-data message="${msg('You do not have any Dev Services running.', { id: 'devservice-no-services' })}" 
+            return html`<qwc-no-data message="${msg('You do not have any Dev Services running.', { id: 'devservice-no-services' })}"
                                     link="https://quarkus.io/guides/dev-services"
                                     linkText="${msg('Read more about Dev Services', { id: 'devservice-read-more' })}">
                 </qwc-no-data>
@@ -118,35 +140,35 @@ export class QwcDevServices extends QwcHotReloadElement {
     _renderContainerDetails(devService){
         if (devService.containerInfo) {
             return html`
-                <table class="containerDetails">
-                    <tr><td>${this._getContainerName(devService)}</td></tr>
-                    <tr><td>${this._getContainerImage(devService)}</td></tr>
-                    <tr><td>${this._getNetwork(devService)}</td></tr>
-                    <tr><td>${this._getExposedPorts(devService)}</td></tr>
-                </table>`;
+                <div class="containerDetails">
+                    ${this._getContainerName(devService)}
+                    ${this._getContainerImage(devService)}
+                    ${this._getNetwork(devService)}
+                    ${this._getExposedPorts(devService)}
+                </div>`;
         }
     }
 
     _renderConfigDetails(devService){
         if (devService.configs) {
             let properties = this._configToText(devService);
-            return html`<div class="configHeader">${msg('Config', { id: 'devservice-config' })}: 
+            return html`<div class="configHeader">${msg('Config', { id: 'devservice-config' })}:
                             <div class="copyButtons">
-                                ${msg('Make a copy for', { id: 'devservice-make-copy-for' })}: 
-                                <qui-badge 
+                                ${msg('Make a copy for', { id: 'devservice-make-copy-for' })}:
+                                <qui-badge
                                     title="${msg('Copy config for test environment', { id: 'devservice-copy-config-test' })}"
                                     @click="${() => this._copyForTest(devService)}">
                                         <span>${msg('Test', { id: 'devservice-test' })}</span>
                                 </qui-badge>
-                                <qui-badge 
+                                <qui-badge
                                     title="${msg('Copy config for prod environment', { id: 'devservice-copy-config-prod' })}"
                                     @click="${() => this._copyForProd(devService)}">
                                         <span>${msg('Prod', { id: 'devservice-prod' })}</span>
-                                </qui-badge> 
+                                </qui-badge>
                             </div>
                         </div>
                         <div class="config">
-                            <qui-themed-code-block 
+                            <qui-themed-code-block
                                 mode='properties'
                                 content='${properties}'>
                             </qui-themed-code-block>
@@ -155,13 +177,13 @@ export class QwcDevServices extends QwcHotReloadElement {
     }
 
     _getContainerName(devService) {
-        return html`<span class="row"><vaadin-icon
-                    icon="font-awesome-solid:box-open"></vaadin-icon>${devService.containerInfo.names[0]} (${devService.containerInfo.shortId})</span>`;
+        return html`<div class="row"><vaadin-icon
+                    icon="font-awesome-solid:box-open"></vaadin-icon>${devService.containerInfo.names[0]} (${devService.containerInfo.shortId})</div>`;
     }
 
     _getContainerImage(devService) {
-        return html`<span class="row"><vaadin-icon
-                    icon="font-awesome-solid:layer-group"></vaadin-icon>${devService.containerInfo.imageName}</span>`;
+        return html`<div class="row"><vaadin-icon
+                    icon="font-awesome-solid:layer-group"></vaadin-icon>${devService.containerInfo.imageName}</div>`;
     }
 
     _getNetwork(devService) {
@@ -174,21 +196,21 @@ export class QwcDevServices extends QwcHotReloadElement {
                     return `${key} (${aliases.join(", ")})`;
                 })
                 .join(", ");
-            return html`<span class="row"><vaadin-icon
-                    icon="font-awesome-solid:network-wired"></vaadin-icon>${networks}</span>`;
+            return html`<div class="row"><vaadin-icon
+                    icon="font-awesome-solid:network-wired"></vaadin-icon>${networks}</div>`;
         }
     }
 
     _getExposedPorts(devService) {
         if (devService.containerInfo.exposedPorts) {
             let ports = devService.containerInfo.exposedPorts;
-            
+
             const p = ports
                 .filter(p => p.publicPort !== null)
                 .map(p => p.ip + ":" + p.publicPort + "->" + p.privatePort + "/" + p.type)
                 .join(', ');
 
-            return html`<span class="row"><vaadin-icon icon="font-awesome-solid:diagram-project"></vaadin-icon>${p}</span>`;
+            return html`<div class="row"><vaadin-icon icon="font-awesome-solid:diagram-project"></vaadin-icon>${p}</div>`;
         }
     }
 
@@ -196,7 +218,7 @@ export class QwcDevServices extends QwcHotReloadElement {
         let properties = this._configToText(devService, "%test.");
         this._copyToClipboard(properties);
     }
-    
+
     _copyForProd(devService){
         let properties = this._configToText(devService, "%prod.");
         this._copyToClipboard(properties);
@@ -207,7 +229,7 @@ export class QwcDevServices extends QwcHotReloadElement {
         for (const [key, value] of Object.entries(devService.configs)) {
             list.push(pre + key + "=" + value + "\n");
         }
-        
+
         return ''.concat(...list).trim();
     }
 

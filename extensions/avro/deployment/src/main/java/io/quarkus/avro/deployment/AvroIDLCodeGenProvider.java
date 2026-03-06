@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.apache.avro.Protocol;
-import org.apache.avro.compiler.idl.Idl;
-import org.apache.avro.compiler.idl.ParseException;
 import org.apache.avro.compiler.specific.SpecificCompiler;
+import org.apache.avro.idl.IdlFile;
+import org.apache.avro.idl.IdlReader;
 
 import io.quarkus.bootstrap.prebuild.CodeGenException;
 import io.quarkus.deployment.CodeGenProvider;
@@ -29,11 +29,18 @@ public class AvroIDLCodeGenProvider extends AvroCodeGenProviderBase implements C
 
     @Override
     void compileSingleFile(Path filePath, Path outputDir, AvroOptions options) throws CodeGenException {
-        try (Idl parser = new Idl(filePath.toFile())) {
-            Protocol idlProtocol = parser.CompilationUnit();
-            String json = idlProtocol.toString(false);
-            Protocol protocol = Protocol.parse(json);
-            final SpecificCompiler compiler = new SpecificCompiler(protocol);
+        try {
+            IdlReader reader = new IdlReader();
+            IdlFile idlFile = reader.parse(filePath);
+
+            final SpecificCompiler compiler;
+            Protocol protocol = idlFile.getProtocol();
+            if (protocol != null) {
+                compiler = new SpecificCompiler(protocol);
+            } else {
+                compiler = new SpecificCompiler(idlFile.getNamedSchemas().values());
+            }
+
             compiler.setTemplateDir(templateDirectory);
             compiler.setStringType(options.stringType);
             compiler.setFieldVisibility(SpecificCompiler.FieldVisibility.PRIVATE);
@@ -45,7 +52,7 @@ public class AvroIDLCodeGenProvider extends AvroCodeGenProviderBase implements C
 
             compiler.setOutputCharacterEncoding("UTF-8");
             compiler.compileToDestination(filePath.toFile(), outputDir.toFile());
-        } catch (IOException | ParseException e) {
+        } catch (IOException e) {
             throw new CodeGenException("Failed to compile avro IDL file: " + filePath.toString() + " to Java", e);
         }
     }

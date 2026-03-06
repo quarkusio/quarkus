@@ -1795,6 +1795,38 @@ Do not mix this with Context Propagation using the https://opentelemetry.io/docs
 As an example, OTel and Quarkus use the https://www.w3.org/TR/trace-context/[W3C `traceparent`] header as carrier by default, when HTTP communication is performed.
 ====
 
+== The MDC context
+
+The Mapped Diagnostic Context (MDC) is a map structure used by logging frameworks to provide contextual information to log lines automatically.
+
+Tracing data is usually included in the MDC contexts to allow log lines correlation. Some organizations generate a request id header that is propagated and later used in the MDC. Since the rise of distributed tracing with OpenTracing and it's successor, OpenTelemetry, trace and span data are usually added to the MDC.
+
+MDC data is not automatically added to log lines. This is an example of a formater used for that purpose:
+
+[source, properties]
+----
+quarkus.log.console.format=%d{HH:mm:ss} %-5p traceId=%X{traceId}, parentId=%X{parentId}, spanId=%X{spanId}, sampled=%X{sampled} [%c{2.}] (%t) %s%e%n
+----
+Where this semantic is used to include attributes from the MDC: `%X{mdc_attribute_key}`
+
+Quarkus uses https://github.com/jboss-logging/jboss-logging[JBoss Logging], a logging facade that enables applications to be log-manager agnostic. The supported managers are:
+
+- JBoss Log Manager
+- Log4j 2
+- SLF4J and Logback
+- log4j (note this log manager is EOL’d)
+- Java Util Logging
+
+Each one of these will have their own MDC implementation, therefore, `org.jboss.logging.MDC` is a facade for the log provider's MDC, resolved in the https://github.com/jboss-logging/jboss-logging/blob/e800ea9d7a63d76e1cad0ba6abb39dce4e550cf6/src/main/java/org/jboss/logging/LoggerProviders.java#L35[`LoggerProviders`] class.
+
+There's an SPI to load a custom MDC provider as a service:
+
+`org.jboss.logmanager.MDCProvider`
+
+Quarkus does exactly that with the `LateBoundMDCProvider` which delegates operations to the `VertxMDC`.
+
+`VertxMDC` is implemented according to the https://github.com/reactiverse/reactiverse-contextual-logging[`reactiverse-contextual-logging`] project, built to provide MDC that works with the Vert.x event-loop model. It mimics the https://github.com/reactiverse/reactiverse-contextual-logging/blob/release/1.2.1/src/main/java/io/reactiverse/contextual/logging/impl/ContextualDataImpl.java[`ContextualDataImpl`] class.
+
 == Quarkus
 
 Vast majority of Quarkus applications use Vert.x and so the concurrency model is a mix of multithreading and event loops.
@@ -2160,7 +2192,7 @@ The contexts are stored in the `DuplicatedContext` if `io.vertx.core.Context` ex
 
 To create a `Span` the simplest way is to use the OpenTelemetry API for tracing
 
-[Source, Java]
+[source, Java]
 ----
 public String hello() {
     Span span = tracer.spanBuilder("something").startSpan(); <1>
@@ -2171,6 +2203,7 @@ public String hello() {
     return "hello";
 }
 ----
+
 <1> In Quarkus, the `Tracer` can be injected and used to create a started span that is still not persisted in the OTel Context storage. It's inactive!
 <2> The scope is created in the context storage by calling the `.makeCurrent()` which follows this procedure:
 - The OTel `ContextStorage` will be resolved to `QuarkusContextStorage`.
@@ -2252,6 +2285,7 @@ if (instrumenter.shouldStart(parentContext, (REQ) request)) {
     return spanOperation(context, (REQ) request, toMultiMap(headers), spanContext, scope);
 }
 ----
+
 <1> Here, the `context` is an instance of `io.vertx.core.Context`, the `DuplicatedContext`.
 <2> on `attach()` the OpenTelemetry context `spanContext` object is stored in the Vert.x DuplicatedContext `context`, like we described above.
 
@@ -2265,6 +2299,7 @@ try (scope) { <1>
     instrumenter.end(spanOperation.getSpanContext(), (REQ) request, (RESP) response, failure);
 }
 ----
+
 <1> The scope is `Autocloseable` and on close will either remove the OTel context from the Vert.x duplicated context or restores the previous OTel context.
 
 ==== OpenTelemetry Context and worker threads
@@ -2322,8 +2357,35 @@ Also, if any operation happens on the event-loop and affects the existing conten
 Crosstalk between threads is currently possible.
 ====
 
-=== The MDC context
+=== Quarkus's VertxMDC
 
+As mentioned before in the section about the xref:the-mdc-context[], the https://github.com/quarkusio/quarkus/blob/fcd73b2c0fa3bdd2a4c89176315067629432c07f/extensions/vertx/runtime/src/main/java/io/quarkus/vertx/core/runtime/VertxMDC.java#L20[`VertxMDC`] is implemented according to the https://github.com/reactiverse/reactiverse-contextual-logging[`reactiverse-contextual-logging`] project, built to provide MDC that works with the Vert.x event-loop model. It mimics the https://github.com/reactiverse/reactiverse-contextual-logging/blob/release/1.2.1/src/main/java/io/reactiverse/contextual/logging/impl/ContextualDataImpl.java[`ContextualDataImpl`] class.
+
+It will store data in the Vert.x `DuplicatedContext`, if present, or it will fall back to a `InheritableThreadLocal`.
+
+The entry in the `DuplicatedContext` is initialized like this, in the local context data map:
+
+[source,java]
+----
+lcd.computeIfAbsent(VertxMDC.class.getName(),
+                k -> new ConcurrentHashMap<String, Object>());
+----
+
+==== Tracing in the MDC
+
+Tracing data with the `traceId`, `spanId`, `parentId` and if the span was `sampled` (if was sent out) is stored in the MDC and each time a span is activated, the MDC must be updated. Most certainly, this data doesn't last the same as the request. It is in fact quite frequently updated.
+
+Two classes trigger MCD tracing modifications:
+
+- `QuarkusContextStorage`
+- `MDCEnabledContextStorage`
+
+These classes were discussed before in relation to the OpenTelemetry `Context`. Each time a Scope is created on `attach()` the MDC is set with the current span. On `scope.close()` if previous OTel `Context` exists, the related data is restored to the MDC, otherwise, the MDC is cleared.
+
+This causes a few problems:
+
+- MDC tracing data is not available after spans end or the request is returned. This is not always obvious to the users.
+- If a `DuplicatedContext` is duplicated, the reference storing the MDC map in memory must be recreated in order not to leak changes between threads. The `VertxMDC.reinitializeVertxMdc()` is used for this purpose when attaching spans.
 
 === Microprofile Context Propagation
 

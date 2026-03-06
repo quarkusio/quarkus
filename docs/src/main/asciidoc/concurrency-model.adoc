@@ -1761,6 +1761,125 @@ In my personal opinion, this is a bug.
 
 For more information about Mutiny, see the https://smallrye.io/smallrye-mutiny/[documentation].
 
+== Contexts and Dependency Injection
+
+Contexts and Dependency Injection, or CDI for short, is a core part of Quarkus, similarly to Vert.x.
+It does not introduce a new concurrency model, but it deserves detailed treatment, because CDI contexts are one of the most important implicit parameters in Quarkus.
+
+[NOTE]
+====
+Indeed, we've just introduced a _third_ meaning of the term "context":
+
+* implicit parameter
+* Vert.x `Context`
+* CDI context
+
+In this document, we try to qualify every usage of the term "context" so that it is immediately obvious which one we mean.
+Other documents are not as precise, but it is usually obvious from the surrounding text (context...) what is the intended meaning.
+====
+
+This document doesn't introduce the entire CDI; refer to xref:cdi.adoc[Introduction to Contexts and Dependency Injection (CDI)] for that.
+However, we do introduce scopes and contexts as the most important parts of CDI for the concurrency model discussion.
+
+Each CDI bean has a _scope_, which determines its lifecycle.
+Each scope is associated with a _context object_.
+There may be multiple context objects associated with a single scope, but not the opposite: each context object is associated with exactly one scope.
+
+There are two kinds of scopes in CDI: pseudo-scopes and normal scopes.
+Normal scoped beans have a well-defined notion of _current instance_; pseudo-scoped beans do not.
+
+There are just 2 pseudo-scopes: `@Singleton` and `@Dependent`.
+For `@Singleton` beans, there's always exactly one instance that is used everywhere.
+For `@Dependent` beans, a new instance is created for each usage.
+
+The most common normal scopes in Quarkus are `@ApplicationScoped` and `@RequestScoped`.
+`@ApplicationScoped` beans are close to `@Singleton` beans in that there's always exactly one instance that is used everywhere.
+`@RequestScoped` beans have a dedicated instance for each "request" (see the _Quarkus_ chapter below for what request is and what its boundaries are).
+`@SessionScoped` and `@TransactionScoped` beans are also occasionally used.
+(`@SessionScoped` is in fact the only scope in Quarkus for which multiple context objects exist.)
+
+It is possible to introduce new scopes and new context objects, but this is relatively rare.
+A vast majority of newly created scopes are normal scopes.
+
+Pseudo-scoped beans are injected directly.
+For normal scoped beans, a _client proxy_ is injected instead.
+Client proxies is what allows injecting beans of "narrower" scopes into beans with "wider" scopes.
+
+Imagine we have the following beans:
+
+[source,java]
+----
+@RequestScoped
+public class MyRequest {
+    public String hello() {
+        ...
+    }
+}
+
+@ApplicationScoped
+public class MyService {
+    @Inject
+    MyRequest request;
+
+    ...
+}
+----
+
+Naively, this cannot work: how can an application-wide bean inject a bean that exists for the duration of a request, and there's an independent instance for each request?
+Client proxy is the answer.
+
+In the example above, the `MyService.request` is not injected a valid instance of `MyRequest`; it gets injected the client proxy.
+If the code in `MyService` invokes `request.hello()`, the client proxy does two things:
+
+. Finds the current instance of the bean
+. Forwards the invocation to it
+
+NOTE: _This only applies to method invocations_.
+If you try to access fields from the outside, you will only get to the client proxy and _not_ to the current instance.
+
+Forwarding an invocation is not a terribly interesting thing, but how does the client proxy find the current instance?
+
+=== Current context and current instance
+
+This is where it gets interesting.
+
+CDI is squarely based on the Jakarta EE concurrency model, multithreading.
+It doesn't know anything about event loops and Vert.x.
+What is "current" in CDI is very much tied to the _current thread_.
+
+At any given point in time on any given thread, a context object is either active or inactive.
+On a thread, if there is exactly one active context object for a scope, it is called _current context_ for the scope and for the thread.
+
+Context objects are not typically activated/deactivated by application code; it is the job of Quarkus frameworks to do that.
+
+The current context may include at most one instance of a bean for all beans with the context's scope.
+If the current context contains an instance of a bean, this instance is called the _current instance_.
+
+So to find the current instance of a bean, the client proxy:
+
+. Finds the current thread.
+. Finds the current context for the bean's scope and for the current thread.
++
+If current context does not exist, an exception is thrown.
+. Finds the current instance, which is the instance present in the current context.
++
+If current instance does not exist, a new instance is created and put into the current context.
+
+When possible, Quarkus simplifies this process to improve performance, but conceptually, these steps are followed on all method invocations.
+
+// TODO maybe we need a description of all scopes?
+
+=== Context propagation
+
+As we've seen in the Vert.x chapter, requests are often processed on an event loop thread, interleaved with other requests, and sometimes, part of request processing is offloaded to a worker thread.
+This directly contradicts the notion of "current instance" of a bean, which is based on the current thread.
+
+Quarkus includes features to associate and disassociate the context to/from a thread that currently executes request processing.
+This is called _context propagation_.
+See the _Quarkus_ chapter below for more details.
+
+// TODO we probably need more details
+
 == OpenTelemetry
 
 OpenTelemetry (OTel) tracing requires implicit parameters (context) in order to provide parent/child and link relationships.
@@ -1902,25 +2021,10 @@ In code, Quarkus has 2 mechanisms to store request-local data:
 
 * the Vert.x duplicated `Context`
 * the CDI request context
-+
-[NOTE]
-====
-In this document, we didn't mention CDI yet.
-It is a core part of Quarkus, just like Vert.x is, and _contexts_ are a big part of CDI.
-Unfortunately, this means there is a _third_ meaning of the term "context":
-
-* implicit parameters
-* Vert.x `Context`
-* CDI context
-
-It doesn't help that CDI contexts are one of the most important implicit parameters Quarkus has.
-
-// TODO we need a deeper explanation of how CDI contexts work and how the fit into Quarkus
-====
 
 The Vert.x duplicated `Context` is created at the request start, but it is not destroyed anywhere.
 It may even outlive the request, under certain conditions.
-It remains isolated from other requests, though.
+It remains isolated from other requests.
 Sometimes, the duplicated `Context` is created by Vert.x; if not, the entrypoint has to create one on its own.
 
 The CDI request context is activated when the request starts and terminated when the request finishes.
@@ -1995,6 +2099,7 @@ Serverless (Funqy, AWS Lambda, Azure Functions)::
 
 Request handlers may need to perform work _outside_ the request boundaries.
 For example, an HTTP request handler might want to queue work for later execution and immediately respond with status code 202.
+The work queued for later execution clearly has to execute outside the request boundaries.
 
 These are the ways how to break out of the request boundary.
 

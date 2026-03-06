@@ -1,7 +1,5 @@
 package io.quarkus.bootstrap.runner;
 
-import static io.quarkus.commons.classloading.ClassLoaderHelper.isInJdkPackage;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -63,11 +61,6 @@ public class AotRunnerClassLoader extends ClassLoader {
 
     @Override
     public Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        // fast path for JDK classes
-        if (isInJdkPackage(name)) {
-            return getParent().loadClass(name);
-        }
-
         return getParent().loadClass(name);
     }
 

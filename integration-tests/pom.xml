@@ -192,6 +192,7 @@
                 <module>kafka-avro-apicurio2</module>
                 <module>kafka-json-schema-apicurio2</module>
                 <module>kafka-streams</module>
+                <module>kafka-streams-no-rocksdb</module>
                 <module>kafka-devservices</module>
                 <module>jpa</module>
                 <module>jpa-mapping-xml</module>

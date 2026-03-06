@@ -143,13 +143,25 @@ public class KafkaStreamsTest {
     }
 
     private void testCdiAwareProcessor() {
-        // Verify CdiAwareProcessorSupplier created a processor with @Inject working
-        // The TrackingProcessor uses @Inject CdiProcessorTracker, proving CDI works on Kafka Streams threads
+        // CdiAwareProcessorSupplier: TrackingProcessor uses @Inject on a @RequestScoped bean.
+        // If request context was not activated, ContextNotActiveException would have been thrown
+        // and no values would be tracked.
         RestAssured.when().get("/kafkastreams/cdi-processor/count").then()
                 .statusCode(200)
                 .body(CoreMatchers.is("4"));
 
         RestAssured.when().get("/kafkastreams/cdi-processor/values").then()
+                .statusCode(200)
+                .body("$", hasItems("Bob", "Becky", "Bruce", "Bert"));
+
+        // CdiAwareFixedKeyProcessorSupplier: TrackingFixedKeyProcessor is a pass-through
+        // wired via processValues(). It tracks values AND forwards records downstream,
+        // so the output topic still receives all records (verified above in the consumer poll).
+        RestAssured.when().get("/kafkastreams/fixed-key-processor/count").then()
+                .statusCode(200)
+                .body(CoreMatchers.is("4"));
+
+        RestAssured.when().get("/kafkastreams/fixed-key-processor/values").then()
                 .statusCode(200)
                 .body("$", hasItems("Bob", "Becky", "Bruce", "Bert"));
     }

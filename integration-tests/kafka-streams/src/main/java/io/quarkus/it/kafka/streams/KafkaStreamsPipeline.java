@@ -19,6 +19,7 @@ import org.apache.kafka.streams.state.KeyValueBytesStoreSupplier;
 import org.apache.kafka.streams.state.Stores;
 
 import io.quarkus.kafka.client.serialization.ObjectMapperSerde;
+import io.quarkus.kafka.streams.runtime.CdiAwareFixedKeyProcessorSupplier;
 import io.quarkus.kafka.streams.runtime.CdiAwareProcessorSupplier;
 
 @ApplicationScoped
@@ -50,10 +51,14 @@ public class KafkaStreamsPipeline {
         customers.groupByKey()
                 .count(Materialized.<Integer, Long> as(storeSupplier));
 
+        // CdiAwareFixedKeyProcessorSupplier: pass-through that tracks via @Inject, proves
+        // FixedKeyProcessor CDI integration works and records flow through unchanged
         customers.selectKey((categoryId, customer) -> customer.id)
+                .processValues(CdiAwareFixedKeyProcessorSupplier.of(TrackingFixedKeyProcessor.class))
                 .to("streams-test-customers-processed", Produced.with(Serdes.Integer(), enrichedCustomerSerde));
 
-        // CDI-aware processor: verifies @Inject works on Kafka Streams threads
+        // CdiAwareProcessorSupplier: terminal processor that verifies @RequestScoped
+        // injection works on Kafka Streams threads (would throw ContextNotActiveException otherwise)
         customers.process(CdiAwareProcessorSupplier.of(TrackingProcessor.class));
 
         return builder.build();

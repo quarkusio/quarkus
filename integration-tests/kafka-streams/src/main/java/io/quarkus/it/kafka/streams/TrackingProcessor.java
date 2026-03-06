@@ -14,7 +14,7 @@ import io.quarkus.arc.Unremovable;
 public class TrackingProcessor implements Processor<Integer, EnrichedCustomer, Void, Void> {
 
     @Inject
-    CdiProcessorTracker tracker;
+    RequestScopedHandler handler;
 
     @Override
     public void init(ProcessorContext<Void, Void> context) {
@@ -22,7 +22,10 @@ public class TrackingProcessor implements Processor<Integer, EnrichedCustomer, V
 
     @Override
     public void process(Record<Integer, EnrichedCustomer> record) {
-        tracker.track(record.value().name);
+        // This call goes through a @RequestScoped proxy.
+        // If CdiAwareProcessorSupplier did NOT activate request context,
+        // this would throw ContextNotActiveException.
+        handler.handle(record.value().name);
     }
 
     @Override

@@ -30,6 +30,9 @@ public class KafkaStreamsEndpoint {
     @Inject
     CdiProcessorTracker cdiProcessorTracker;
 
+    @Inject
+    FixedKeyProcessorTracker fixedKeyProcessorTracker;
+
     private ReadOnlyKeyValueStore<Integer, Long> getCountstore() {
         while (true) {
             try {
@@ -68,5 +71,17 @@ public class KafkaStreamsEndpoint {
     @Path("/cdi-processor/values")
     public List<String> cdiProcessorValues() {
         return cdiProcessorTracker.getProcessedValues();
+    }
+
+    @GET
+    @Path("/fixed-key-processor/count")
+    public int fixedKeyProcessorCount() {
+        return fixedKeyProcessorTracker.getProcessedCount();
+    }
+
+    @GET
+    @Path("/fixed-key-processor/values")
+    public List<String> fixedKeyProcessorValues() {
+        return fixedKeyProcessorTracker.getProcessedValues();
     }
 }

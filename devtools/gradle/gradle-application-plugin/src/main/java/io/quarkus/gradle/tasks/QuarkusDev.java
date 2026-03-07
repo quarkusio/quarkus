@@ -58,6 +58,7 @@ import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.jvm.toolchain.JavaToolchainSpec;
 import org.gradle.process.ExecOperations;
 import org.gradle.util.GradleVersion;
+import org.gradle.work.DisableCachingByDefault;
 
 import io.quarkus.analytics.AnalyticsService;
 import io.quarkus.analytics.config.FileLocationsImpl;
@@ -85,6 +86,7 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 
+@DisableCachingByDefault(because = "Not cacheable")
 public abstract class QuarkusDev extends QuarkusTask {
 
     public static final String IO_QUARKUS_DEVMODE_ARGS = "io.quarkus.devmode-args";

@@ -17,6 +17,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.tasks.TaskCollection;
 import org.gradle.api.tasks.compile.JavaCompile;
+import org.gradle.work.DisableCachingByDefault;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.devtools.messagewriter.MessageWriter;
@@ -33,6 +34,7 @@ import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 
+@DisableCachingByDefault(because = "Not cacheable")
 public abstract class QuarkusPlatformTask extends QuarkusTask {
 
     private volatile ExtensionCatalogResolver catalogResolver;

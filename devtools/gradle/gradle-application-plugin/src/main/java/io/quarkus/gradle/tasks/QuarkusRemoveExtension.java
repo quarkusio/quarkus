@@ -7,12 +7,14 @@ import java.util.List;
 import java.util.Set;
 
 import org.gradle.api.GradleException;
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
 import io.quarkus.devtools.commands.RemoveExtensions;
 
+@CacheableTask
 public abstract class QuarkusRemoveExtension extends QuarkusPlatformTask {
 
     public QuarkusRemoveExtension() {

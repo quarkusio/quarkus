@@ -1,6 +1,7 @@
 package io.quarkus.gradle.tasks;
 
 import org.gradle.api.GradleException;
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
@@ -8,6 +9,7 @@ import org.gradle.api.tasks.options.Option;
 import io.quarkus.devtools.commands.ListPlatforms;
 import io.quarkus.registry.Constants;
 
+@CacheableTask
 public abstract class QuarkusListPlatforms extends QuarkusPlatformTask {
 
     private boolean installed = false;

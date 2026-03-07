@@ -3,6 +3,7 @@ package io.quarkus.gradle.tasks;
 import java.util.List;
 
 import org.gradle.api.GradleException;
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
@@ -15,6 +16,7 @@ import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.PlatformStreamCoords;
 
+@CacheableTask
 public abstract class QuarkusUpdate extends QuarkusPlatformTask {
 
     private Boolean noRewrite;

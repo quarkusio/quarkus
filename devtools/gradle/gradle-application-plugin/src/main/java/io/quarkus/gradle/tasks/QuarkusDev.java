@@ -41,6 +41,7 @@ import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
@@ -85,6 +86,7 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 
+@CacheableTask
 public abstract class QuarkusDev extends QuarkusTask {
 
     public static final String IO_QUARKUS_DEVMODE_ARGS = "io.quarkus.devmode-args";

@@ -3,6 +3,7 @@ package io.quarkus.gradle.tasks;
 import javax.inject.Inject;
 
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Internal;
 
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
@@ -12,6 +13,7 @@ import io.quarkus.deployment.dev.IsolatedTestModeMain;
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
 import io.quarkus.runtime.LaunchMode;
 
+@CacheableTask
 public abstract class QuarkusTest extends QuarkusDev {
 
     @Inject

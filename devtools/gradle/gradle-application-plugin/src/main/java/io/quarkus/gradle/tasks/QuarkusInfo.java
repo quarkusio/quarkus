@@ -1,6 +1,7 @@
 package io.quarkus.gradle.tasks;
 
 import org.gradle.api.GradleException;
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
@@ -9,6 +10,7 @@ import io.quarkus.devtools.commands.ProjectInfo;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.QuarkusProject;
 
+@CacheableTask
 public abstract class QuarkusInfo extends QuarkusPlatformTask {
 
     private boolean perModule = false;

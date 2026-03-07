@@ -7,8 +7,10 @@ import java.util.Map;
 
 import javax.inject.Inject;
 
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.TaskAction;
 
+@CacheableTask
 public abstract class ImagePush extends ImageTask {
 
     @Inject

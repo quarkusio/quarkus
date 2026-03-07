@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.PathSensitive;
@@ -24,6 +25,7 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
 
+@CacheableTask
 public abstract class ImageCheckRequirementsTask extends DefaultTask {
 
     @OutputFile

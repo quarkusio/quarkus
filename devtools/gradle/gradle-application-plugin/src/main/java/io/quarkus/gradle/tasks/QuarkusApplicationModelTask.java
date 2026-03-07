@@ -42,6 +42,7 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
@@ -76,6 +77,7 @@ import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.HashUtil;
 
+@CacheableTask
 public abstract class QuarkusApplicationModelTask extends DefaultTask {
 
     /* @formatter:off */

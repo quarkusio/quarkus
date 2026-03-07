@@ -18,6 +18,7 @@ public class AllRequestHeadersAttribute implements ExchangeAttribute {
 
     private static final String AUTHORIZATION_HEADER = String.valueOf(HttpHeaders.AUTHORIZATION).toLowerCase();
     private static final String COOKIE_HEADER = String.valueOf(HttpHeaders.COOKIE).toLowerCase();
+    private static final String MASKED_VALUE = "<hidden>";
 
     private final Set<String> maskedHeaders;
     private final Set<String> maskedCookies;
@@ -74,7 +75,7 @@ public class AllRequestHeadersAttribute implements ExchangeAttribute {
         }
 
         if (maskedHeaders.contains(headerNameLowerCase)) {
-            return "...";
+            return MASKED_VALUE;
         }
 
         return headerValue;
@@ -85,9 +86,9 @@ public class AllRequestHeadersAttribute implements ExchangeAttribute {
         final String scheme = idx > 0 ? headerValue.substring(0, idx) : null;
 
         if (scheme != null) {
-            return scheme + " ...";
+            return scheme + " " + MASKED_VALUE;
         } else {
-            return "...";
+            return MASKED_VALUE;
         }
     }
 
@@ -97,7 +98,7 @@ public class AllRequestHeadersAttribute implements ExchangeAttribute {
         final String cookieName = idx > 0 ? headerValue.substring(0, idx) : null;
 
         if (cookieName != null && maskedCookies.contains(cookieName.toLowerCase())) {
-            return cookieName + "=...";
+            return cookieName + "=" + MASKED_VALUE;
         }
 
         return headerValue;

@@ -21,7 +21,7 @@ class AllRequestHeadersAttributeTest {
         MultiMap headers = MultiMap.caseInsensitiveMultiMap();
         headers.add("Authorization", "Bearer token");
         String attribute = new AllRequestHeadersAttribute().readAttribute(headers);
-        assertEquals("Authorization: Bearer ...", attribute);
+        assertEquals("Authorization: Bearer <hidden>", attribute);
     }
 
     @Test
@@ -29,7 +29,7 @@ class AllRequestHeadersAttributeTest {
         MultiMap headers = MultiMap.caseInsensitiveMultiMap();
         headers.add("Authorization", "DPoP token");
         String attribute = new AllRequestHeadersAttribute().readAttribute(headers);
-        assertEquals("Authorization: DPoP ...", attribute);
+        assertEquals("Authorization: DPoP <hidden>", attribute);
     }
 
     @Test
@@ -37,7 +37,7 @@ class AllRequestHeadersAttributeTest {
         MultiMap headers = MultiMap.caseInsensitiveMultiMap();
         headers.add("authorization", "token");
         String attribute = new AllRequestHeadersAttribute().readAttribute(headers);
-        assertEquals("authorization: ...", attribute);
+        assertEquals("authorization: <hidden>", attribute);
     }
 
 }

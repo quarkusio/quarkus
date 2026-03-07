@@ -295,8 +295,8 @@ public interface QuarkusRestClientBuilder extends Configurable<QuarkusRestClient
     /**
      * Which request and response headers values to mask in logs.
      * <p>
-     * The value of any matching header will be replaced with {@code "****"}.
-     * The header name itself remains visible. E.g. {@code Authorization=****}
+     * The value of any matching header will be replaced with {@code "<hidden>"}.
+     * The header name itself remains visible. E.g. {@code Authorization=<hidden>}
      */
     QuarkusRestClientBuilder loggingMaskedHeaders(Set<String> maskedHeaders);
 

@@ -54,6 +54,11 @@ public interface KubernetesConfig extends PlatformConfiguration {
     OptionalInt nodePort();
 
     /**
+     * Service configuration
+     */
+    ServiceConfig service();
+
+    /**
      * Ingress configuration
      */
     IngressConfig ingress();

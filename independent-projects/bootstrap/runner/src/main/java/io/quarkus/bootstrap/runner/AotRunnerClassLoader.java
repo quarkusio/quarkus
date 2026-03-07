@@ -87,13 +87,13 @@ public class AotRunnerClassLoader extends ClassLoader {
             return createCachedResourceURL(name, data);
         }
 
-        String dirName = getDirNameFromResourceName(name);
-        if (fullyIndexedDirectories.contains(dirName) && !fullyIndexedResources.contains(name)) {
+        if (isKnownAbsentResource(name)) {
             return null;
         }
 
-        // if it exists, and is not cached, then delegate to the parent
-        return super.getResource(name);
+        // if it exists, and is not cached, then delegate to the parent directly
+        // (bypassing super.getResource which would redundantly call this.findResource)
+        return getParent().getResource(name);
     }
 
     @Override
@@ -106,12 +106,8 @@ public class AotRunnerClassLoader extends ClassLoader {
             return createCachedResourceURL(name, data);
         }
 
-        String dirName = getDirNameFromResourceName(name);
-        if (fullyIndexedDirectories.contains(dirName) && !fullyIndexedResources.contains(name)) {
-            return null;
-        }
-
-        return super.findResource(name);
+        // No need to check fullyIndexedDirectories: either way, if it's not cached we don't have it.
+        return null;
     }
 
     /**
@@ -163,12 +159,13 @@ public class AotRunnerClassLoader extends ClassLoader {
             return Collections.emptyEnumeration();
         }
 
-        String dirName = getDirNameFromResourceName(name);
-        if (fullyIndexedDirectories.contains(dirName) && !fullyIndexedResources.contains(name)) {
+        if (isKnownAbsentResource(name)) {
             return Collections.emptyEnumeration();
         }
 
-        return super.getResources(name);
+        // Delegate to parent directly; super.getResources would redundantly call this.findResources
+        // and wrap results in a CompoundEnumeration for no benefit
+        return getParent().getResources(name);
     }
 
     /**
@@ -180,7 +177,7 @@ public class AotRunnerClassLoader extends ClassLoader {
      * @throws IOException if I/O errors occur
      */
     @Override
-    public Enumeration<URL> findResources(String name) throws IOException {
+    protected Enumeration<URL> findResources(String name) throws IOException {
         name = sanitizeName(name);
 
         // The cached version already contains the concatenated content from all jars
@@ -190,13 +187,25 @@ public class AotRunnerClassLoader extends ClassLoader {
                     createCachedResourceURL(name, data)));
         }
 
-        String dirName = getDirNameFromResourceName(name);
-        if (fullyIndexedDirectories.contains(dirName) && !fullyIndexedResources.contains(name)) {
-            return Collections.emptyEnumeration();
+        // No need to check fullyIndexedDirectories: either way, if it's not cached we don't have it.
+        return Collections.emptyEnumeration();
+    }
+
+    @Override
+    public InputStream getResourceAsStream(String name) {
+        name = sanitizeName(name);
+
+        // For cached resources, return the stream directly without URL/URLConnection overhead
+        final byte[] data = serviceFiles.get(name);
+        if (data != null) {
+            return new ByteArrayInputStream(data);
         }
 
-        // Not cached - delegate to parent implementation (will scan jars)
-        return super.findResources(name);
+        if (isKnownAbsentResource(name)) {
+            return null;
+        }
+
+        return getParent().getResourceAsStream(name);
     }
 
     private URL createCachedResourceURL(String name, byte[] data) {
@@ -248,6 +257,16 @@ public class AotRunnerClassLoader extends ClassLoader {
         public int getContentLength() {
             return data.length;
         }
+    }
+
+    /**
+     * Returns true if the resource's directory is fully indexed and the resource is not in the index,
+     * meaning we know for certain it doesn't exist.
+     */
+    private boolean isKnownAbsentResource(final String name) {
+        return !fullyIndexedResources.contains(name)
+                //We intentionally check in this order to possibly avoid invoking getDirNameFromResourceName(String):
+                && fullyIndexedDirectories.contains(getDirNameFromResourceName(name));
     }
 
     private static String sanitizeName(String name) {

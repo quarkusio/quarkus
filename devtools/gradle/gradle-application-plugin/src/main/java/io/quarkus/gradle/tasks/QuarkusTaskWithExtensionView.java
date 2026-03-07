@@ -5,6 +5,7 @@ import org.gradle.api.provider.MapProperty;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
+import org.gradle.work.DisableCachingByDefault;
 
 /**
  * Quarkus task providing inputs compatible with the configuration cache, used by the {@link QuarkusGenerateCode}
@@ -18,6 +19,7 @@ import org.gradle.api.tasks.Optional;
  * to access the inputs defined in this task.
  * </p>
  */
+@DisableCachingByDefault(because = "Not cacheable")
 public abstract class QuarkusTaskWithExtensionView extends QuarkusTask {
 
     private final QuarkusPluginExtensionView extensionView;

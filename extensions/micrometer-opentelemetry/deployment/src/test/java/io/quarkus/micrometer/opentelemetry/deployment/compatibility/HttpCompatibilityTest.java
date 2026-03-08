@@ -144,7 +144,7 @@ public class HttpCompatibilityTest {
                     assertThat(clientMetricData)
                             .hasName("http.client.requests") // in OTel it should be "http.server.request.duration"
                             .hasDescription("") // in OTel it should be "Duration of HTTP client requests."
-                            .hasUnit("ms") // OTel has seconds
+                            .hasUnit("s")
                             .hasHistogramSatisfying(histogram -> histogram.isCumulative()
                                     .hasPointsSatisfying(
                                             // valid entries
@@ -174,7 +174,7 @@ public class HttpCompatibilityTest {
         assertThat(metricData)
                 .hasName("http.server.requests") // in OTel it should be "http.server.request.duration"
                 .hasDescription("HTTP server request processing time") // in OTel it should be "Duration of HTTP server requests."
-                .hasUnit("ms") // OTel has seconds
+                .hasUnit("s")
                 .hasHistogramSatisfying(histogram -> histogram.isCumulative()
                         .hasPointsSatisfying(
                                 // valid entries

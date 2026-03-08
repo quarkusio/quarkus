@@ -4,8 +4,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.devtools.commands.CreateProjectHelper;
-import picocli.CommandLine.TypeConversionException;
+import io.quarkus.quickcli.CommandLine.TypeConversionException;
+import io.quarkus.test.junit.main.QuarkusMainLauncher;
+import io.quarkus.test.junit.main.QuarkusMainTest;
 
+@QuarkusMainTest
 public class TargetGAVGroupTest {
 
     TargetGAVGroup gav = new TargetGAVGroup();
@@ -21,7 +24,7 @@ public class TargetGAVGroupTest {
     //     my-group:: -- use defaults for artifact id and version (rare)
 
     @Test
-    void testArtifactId() {
+    void testArtifactId(QuarkusMainLauncher launcher) {
         gav.gav = "a";
 
         Assertions.assertEquals(CreateProjectHelper.DEFAULT_GROUP_ID, gav.getGroupId());
@@ -30,7 +33,7 @@ public class TargetGAVGroupTest {
     }
 
     @Test
-    void testArtifactIdLonger() {
+    void testArtifactIdLonger(QuarkusMainLauncher launcher) {
         gav.gav = ":a:";
 
         Assertions.assertEquals(CreateProjectHelper.DEFAULT_GROUP_ID, gav.getGroupId());
@@ -39,7 +42,7 @@ public class TargetGAVGroupTest {
     }
 
     @Test
-    void testGroupIdArtifactId() {
+    void testGroupIdArtifactId(QuarkusMainLauncher launcher) {
         gav.gav = "g:a";
 
         Assertions.assertEquals("g", gav.getGroupId());
@@ -48,7 +51,7 @@ public class TargetGAVGroupTest {
     }
 
     @Test
-    void testGroupIdArtifactIdLonger() {
+    void testGroupIdArtifactIdLonger(QuarkusMainLauncher launcher) {
         gav.gav = "g:a:";
 
         Assertions.assertEquals("g", gav.getGroupId());
@@ -57,7 +60,7 @@ public class TargetGAVGroupTest {
     }
 
     @Test
-    void testGroupIdArtifactIdVersion() {
+    void testGroupIdArtifactIdVersion(QuarkusMainLauncher launcher) {
         gav.gav = "g:a:v";
 
         Assertions.assertEquals("g", gav.getGroupId());
@@ -66,7 +69,7 @@ public class TargetGAVGroupTest {
     }
 
     @Test
-    void testArtifactIdVersion() {
+    void testArtifactIdVersion(QuarkusMainLauncher launcher) {
         gav.gav = ":a:v";
 
         Assertions.assertEquals(CreateProjectHelper.DEFAULT_GROUP_ID, gav.getGroupId());
@@ -75,7 +78,7 @@ public class TargetGAVGroupTest {
     }
 
     @Test
-    void testGroupId() {
+    void testGroupId(QuarkusMainLauncher launcher) {
         gav.gav = "g::";
 
         Assertions.assertEquals("g", gav.getGroupId());
@@ -84,7 +87,7 @@ public class TargetGAVGroupTest {
     }
 
     @Test
-    void testOldParameters() {
+    void testOldParameters(QuarkusMainLauncher launcher) {
         gav.groupId = "g";
         gav.artifactId = "a";
         gav.version = "v";
@@ -95,13 +98,13 @@ public class TargetGAVGroupTest {
     }
 
     @Test
-    void testBadArtifactId() {
+    void testBadArtifactId(QuarkusMainLauncher launcher) {
         gav.gav = "g:a/x:v";
         Assertions.assertThrows(TypeConversionException.class, () -> gav.getArtifactId());
     }
 
     @Test
-    void testBadGroupId() {
+    void testBadGroupId(QuarkusMainLauncher launcher) {
         gav.gav = "g,x:a:v";
         Assertions.assertThrows(TypeConversionException.class, () -> gav.getGroupId());
     }

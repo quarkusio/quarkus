@@ -1,19 +1,21 @@
 package io.quarkus.cli;
 
 import io.quarkus.cli.registry.BaseRegistryCommand;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.quickcli.annotations.Command;
+import io.quarkus.quickcli.annotations.Option;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.catalog.Platform;
 import io.quarkus.registry.catalog.PlatformCatalog;
 import io.quarkus.registry.catalog.PlatformStream;
 import io.quarkus.registry.config.RegistriesConfig;
 import io.quarkus.registry.config.RegistryConfig;
-import picocli.CommandLine;
 
-@CommandLine.Command(name = "list", header = "List enabled Quarkus registries", description = "%n"
+@Command(name = "list", header = "List enabled Quarkus registries", description = "%n"
         + "This command will list currently enabled Quarkus extension registries.")
 public class RegistryListCommand extends BaseRegistryCommand {
 
-    @CommandLine.Option(names = {
+    @Option(names = {
             "--streams" }, description = "List currently recommended platform streams", defaultValue = "false")
     boolean streams;
 
@@ -50,6 +52,6 @@ public class RegistryListCommand extends BaseRegistryCommand {
 
         output.info("(Config source: " + config.getSource().describe() + ")");
 
-        return CommandLine.ExitCode.OK;
+        return ExitCode.OK;
     }
 }

@@ -8,12 +8,14 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.quickcli.annotations.Command;
+import io.quarkus.quickcli.annotations.Parameters;
 import io.smallrye.config.ConfigValue;
-import picocli.CommandLine;
 
-@CommandLine.Command(name = "remove", header = "Removes a configuration from application.properties")
+@Command(name = "remove", header = "Removes a configuration from application.properties")
 public class RemoveConfig extends BaseConfigCommand implements Callable<Integer> {
-    @CommandLine.Parameters(index = "0", arity = "1", paramLabel = "NAME", description = "Configuration name")
+    @Parameters(index = "0", arity = "1", paramLabel = "NAME", description = "Configuration name")
     String name;
 
     @Override
@@ -42,6 +44,6 @@ public class RemoveConfig extends BaseConfigCommand implements Callable<Integer>
             }
         }
 
-        return CommandLine.ExitCode.OK;
+        return ExitCode.OK;
     }
 }

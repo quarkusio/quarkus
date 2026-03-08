@@ -7,18 +7,20 @@ import java.util.List;
 
 import io.quarkus.cli.common.HelpOption;
 import io.quarkus.cli.common.OutputOptionMixin;
+import io.quarkus.quickcli.CommandSpec;
+import io.quarkus.quickcli.annotations.Mixin;
+import io.quarkus.quickcli.annotations.Spec;
 import io.smallrye.config.ConfigValue;
-import picocli.CommandLine;
 
 public class BaseConfigCommand {
-    @CommandLine.Mixin(name = "output")
+    @Mixin(name = "output")
     protected OutputOptionMixin output;
 
-    @CommandLine.Mixin
+    @Mixin
     protected HelpOption helpOption;
 
-    @CommandLine.Spec
-    protected CommandLine.Model.CommandSpec spec;
+    @Spec
+    protected CommandSpec spec;
 
     Path projectRoot;
 

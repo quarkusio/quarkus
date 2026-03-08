@@ -14,10 +14,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.quarkus.cli.CliDriver;
+import io.quarkus.test.junit.main.QuarkusMainLauncher;
+import io.quarkus.test.junit.main.QuarkusMainTest;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
+@QuarkusMainTest
 public class RemoveConfigTest {
     @TempDir
     Path tempDir;
@@ -30,7 +33,8 @@ public class RemoveConfigTest {
     }
 
     @Test
-    void removeConfiguration() throws Exception {
+    void removeConfiguration(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         Path propertiesFile = tempDir.resolve("src/main/resources/application.properties");
         Properties properties = new Properties();
         try (InputStream inputStream = propertiesFile.toUri().toURL().openStream()) {

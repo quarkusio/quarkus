@@ -3,8 +3,8 @@ package io.quarkus.cli.create;
 import java.util.regex.Pattern;
 
 import io.quarkus.devtools.commands.CreateProjectHelper;
-import picocli.CommandLine;
-import picocli.CommandLine.TypeConversionException;
+import io.quarkus.quickcli.CommandLine.TypeConversionException;
+import io.quarkus.quickcli.annotations.Parameters;
 
 public class TargetGAVGroup {
     static final String BAD_IDENTIFIER = "The specified %s identifier (%s) contains invalid characters. Valid characters are alphanumeric characters (A-Za-z0-9), underscores, dashes and dots.";
@@ -18,7 +18,7 @@ public class TargetGAVGroup {
     String artifactId = CreateProjectHelper.DEFAULT_ARTIFACT_ID;
     String version = CreateProjectHelper.DEFAULT_VERSION;
 
-    @CommandLine.Parameters(arity = "0..1", paramLabel = "[GROUP-ID:]ARTIFACT-ID[:VERSION]", description = "Java project identifiers%n"
+    @Parameters(arity = "0..1", paramLabel = "[GROUP-ID:]ARTIFACT-ID[:VERSION]", description = "Java project identifiers%n"
             + "  default: " + DEFAULT_GAV + "%n"
             + "  Examples:%n"
             + "     my-project%n"

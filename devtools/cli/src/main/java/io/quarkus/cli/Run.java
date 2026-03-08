@@ -5,15 +5,16 @@ import java.util.Map;
 import io.quarkus.cli.common.BuildToolContext;
 import io.quarkus.cli.common.BuildToolDelegatingCommand;
 import io.quarkus.devtools.project.BuildTool;
-import picocli.CommandLine;
+import io.quarkus.quickcli.annotations.Command;
+import io.quarkus.quickcli.annotations.Option;
 
-@CommandLine.Command(name = "run", sortOptions = false, mixinStandardHelpOptions = false, header = "Run application.")
+@Command(name = "run", sortOptions = false, mixinStandardHelpOptions = false, header = "Run application.")
 public class Run extends BuildToolDelegatingCommand {
 
     private static final Map<BuildTool, String> ACTION_MAPPING = Map.of(BuildTool.MAVEN, "quarkus:run",
             BuildTool.GRADLE, "quarkusRun", BuildTool.GRADLE_KOTLIN_DSL, "quarkusRun");
 
-    @CommandLine.Option(names = { "--target" }, description = "Run target.")
+    @Option(names = { "--target" }, description = "Run target.")
     String target;
 
     @Override

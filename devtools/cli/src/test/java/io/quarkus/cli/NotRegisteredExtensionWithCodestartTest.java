@@ -8,8 +8,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
-import picocli.CommandLine;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.test.junit.main.QuarkusMainLauncher;
+import io.quarkus.test.junit.main.QuarkusMainTest;
 
+@QuarkusMainTest
 public class NotRegisteredExtensionWithCodestartTest extends RegistryClientBuilderTestBase {
 
     @BeforeAll
@@ -32,10 +35,11 @@ public class NotRegisteredExtensionWithCodestartTest extends RegistryClientBuild
     }
 
     @Test
-    void test() throws Exception {
+    void test(QuarkusMainLauncher launcher) throws Exception {
+        this.currentLauncher = launcher;
         final CliDriver.Result createResult = run(workDir(), "create", "app", "acme-outlaw-codestart",
                 "-x org.acme.quarkus:acme-outlaw:6.6.6");
-        assertThat(createResult.exitCode).isEqualTo(CommandLine.ExitCode.OK)
+        assertThat(createResult.exitCode).isEqualTo(ExitCode.OK)
                 .as(() -> "Expected OK return code." + createResult);
         assertThat(createResult.stdout).contains("SUCCESS")
                 .as(() -> "Expected confirmation that the project has been created." + createResult);

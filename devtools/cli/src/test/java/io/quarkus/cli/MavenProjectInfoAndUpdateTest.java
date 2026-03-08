@@ -13,8 +13,11 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
 import io.quarkus.maven.dependency.ArtifactCoords;
-import picocli.CommandLine;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.test.junit.main.QuarkusMainLauncher;
+import io.quarkus.test.junit.main.QuarkusMainTest;
 
+@QuarkusMainTest
 public class MavenProjectInfoAndUpdateTest extends RegistryClientBuilderTestBase {
 
     @BeforeAll
@@ -49,11 +52,12 @@ public class MavenProjectInfoAndUpdateTest extends RegistryClientBuilderTestBase
     }
 
     @Test
-    void testClean() throws Exception {
+    void testClean(QuarkusMainLauncher launcher) throws Exception {
+        this.currentLauncher = launcher;
 
         final CliDriver.Result createResult = run(workDir(), "create", "app", "acme-clean",
                 "-x supersonic,acme-quarkiverse-extension");
-        assertThat(createResult.exitCode).isEqualTo(CommandLine.ExitCode.OK)
+        assertThat(createResult.exitCode).isEqualTo(ExitCode.OK)
                 .as(() -> "Expected OK return code." + createResult);
         assertThat(createResult.stdout).contains("SUCCESS")
                 .as(() -> "Expected confirmation that the project has been created." + createResult);
@@ -81,11 +85,12 @@ public class MavenProjectInfoAndUpdateTest extends RegistryClientBuilderTestBase
     }
 
     @Test
-    void testMisalignedPlatformExtensionVersion() throws Exception {
+    void testMisalignedPlatformExtensionVersion(QuarkusMainLauncher launcher) throws Exception {
+        this.currentLauncher = launcher;
 
         final CliDriver.Result createResult = run(workDir(), "create", "app", "acme-misaligned-ext-version",
                 "-x supersonic,acme-quarkiverse-extension,org.acme.quarkus.platform:acme-quarkus-subatomic:1.0.0");
-        assertThat(createResult.exitCode).isEqualTo(CommandLine.ExitCode.OK)
+        assertThat(createResult.exitCode).isEqualTo(ExitCode.OK)
                 .as(() -> "Expected OK return code." + createResult);
         assertThat(createResult.stdout).contains("SUCCESS")
                 .as(() -> "Expected confirmation that the project has been created." + createResult);

@@ -8,8 +8,9 @@ import java.util.concurrent.Callable;
 
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.build.ExecuteUtil;
+import io.quarkus.quickcli.UsesArguments;
 
-public interface PluginCommand extends Callable<Integer> {
+public interface PluginCommand extends Callable<Integer>, UsesArguments {
 
     List<String> getCommand();
 

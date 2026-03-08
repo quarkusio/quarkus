@@ -1,6 +1,6 @@
 package io.quarkus.cli;
 
-import static picocli.CommandLine.Model.UsageMessageSpec.SECTION_KEY_COMMAND_LIST;
+import static io.quarkus.quickcli.UsageMessageSpec.SECTION_KEY_COMMAND_LIST;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -34,21 +34,21 @@ import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.utils.Prompt;
+import io.quarkus.quickcli.CommandLine;
+import io.quarkus.quickcli.CommandSpec;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.quickcli.Help;
+import io.quarkus.quickcli.ParseResult;
+import io.quarkus.quickcli.ScopeType;
+import io.quarkus.quickcli.UsageMessageSpec;
+import io.quarkus.quickcli.annotations.ArgGroup;
+import io.quarkus.quickcli.annotations.Command;
+import io.quarkus.quickcli.annotations.Mixin;
+import io.quarkus.quickcli.annotations.Option;
+import io.quarkus.quickcli.annotations.Spec;
 import io.quarkus.runtime.QuarkusApplication;
-import picocli.CommandLine;
-import picocli.CommandLine.ExitCode;
-import picocli.CommandLine.Help;
-import picocli.CommandLine.IHelpSectionRenderer;
-import picocli.CommandLine.IParameterExceptionHandler;
-import picocli.CommandLine.Model.CommandSpec;
-import picocli.CommandLine.Model.UsageMessageSpec;
-import picocli.CommandLine.MutuallyExclusiveArgsException;
-import picocli.CommandLine.ParameterException;
-import picocli.CommandLine.ParseResult;
-import picocli.CommandLine.ScopeType;
-import picocli.CommandLine.UnmatchedArgumentException;
 
-@CommandLine.Command(name = "quarkus", subcommands = {
+@Command(name = "quarkus", subcommands = {
         Create.class,
         Build.class,
         Dev.class,
@@ -72,25 +72,25 @@ public class QuarkusCli implements QuarkusApplication, OutputProvider, Callable<
     private static final Set<String> CATCH_ALL_COMMANDS = Set.of("create", "image", "extension", "ext", "plugin", "plug");
 
     @Inject
-    CommandLine.IFactory factory;
+    CommandLine.Factory factory;
 
-    @CommandLine.Mixin
+    @Mixin
     protected RegistryClientMixin registryClient;
 
-    @CommandLine.Mixin
+    @Mixin
     protected HelpOption helpOption;
 
-    @CommandLine.Option(names = { "-v",
+    @Option(names = { "-v",
             "--version" }, versionHelp = true, description = "Print CLI version information and exit.")
     public boolean showVersion;
 
-    @CommandLine.Mixin(name = "output")
+    @Mixin(name = "output")
     OutputOptionMixin output;
 
-    @CommandLine.Spec
-    protected CommandLine.Model.CommandSpec spec;
+    @Spec
+    protected CommandSpec spec;
 
-    @CommandLine.ArgGroup(exclusive = false, validate = false)
+    @ArgGroup(exclusive = false, validate = false)
     protected PropertiesOptions propertiesOptions = new PropertiesOptions();
 
     public OutputOptionMixin getOutput() {
@@ -151,7 +151,7 @@ public class QuarkusCli implements QuarkusApplication, OutputProvider, Callable<
                     output.error("Unable to match command `%s` and a corresponding plugin couldn't be installed.", m);
                 }
             });
-        } catch (MutuallyExclusiveArgsException e) {
+        } catch (CommandLine.MutuallyExclusiveArgsException e) {
             return ExitCode.USAGE;
         }
         return cmd.execute(args);
@@ -198,7 +198,7 @@ public class QuarkusCli implements QuarkusApplication, OutputProvider, Callable<
             } while (currentParseResult != null);
 
             return Optional.empty();
-        } catch (UnmatchedArgumentException e) {
+        } catch (CommandLine.UnmatchedArgumentException e) {
             // the first element was matched so it's not missing
             if (e.getCommandLine() != root) {
                 return Optional.empty();
@@ -243,15 +243,15 @@ public class QuarkusCli implements QuarkusApplication, OutputProvider, Callable<
         return spec.exitCodeOnUsageHelp();
     }
 
-    class ShortErrorMessageHandler implements IParameterExceptionHandler {
-        public int handleParseException(ParameterException ex, String[] args) {
+    class ShortErrorMessageHandler implements CommandLine.ParameterExceptionHandler {
+        public int handleParseException(CommandLine.ParameterException ex, String[] args) {
             CommandLine cmd = ex.getCommandLine();
             CommandSpec spec = cmd.getCommandSpec();
 
             output.error(ex.getMessage()); // bold red
             output.printStackTrace(ex);
 
-            UnmatchedArgumentException.printSuggestions(ex, output.err());
+            CommandLine.UnmatchedArgumentException.printSuggestions(ex, System.err);
             output.err().println(cmd.getHelp().fullSynopsis()); // normal text to error stream
 
             if (spec.equals(spec.root())) {
@@ -265,7 +265,7 @@ public class QuarkusCli implements QuarkusApplication, OutputProvider, Callable<
         }
     }
 
-    class SubCommandListRenderer implements IHelpSectionRenderer {
+    class SubCommandListRenderer implements CommandLine.HelpSectionRenderer {
         // @Override
         public String render(Help help) {
             CommandSpec spec = help.commandSpec();
@@ -273,27 +273,22 @@ public class QuarkusCli implements QuarkusApplication, OutputProvider, Callable<
                 return "";
             }
 
-            Help.Column commands = new Help.Column(24, 2, CommandLine.Help.Column.Overflow.SPAN);
-            Help.Column descriptions = new Help.Column(spec.usageMessage().width() - 24, 2,
-                    CommandLine.Help.Column.Overflow.WRAP);
-            Help.TextTable textTable = Help.TextTable.forColumns(help.colorScheme(), commands, descriptions);
-            textTable.setAdjustLineBreaksForWideCJKCharacters(spec.usageMessage().adjustLineBreaksForWideCJKCharacters());
-
-            addHierarchy(spec.subcommands().values(), textTable, "");
-            return textTable.toString();
+            StringBuilder sb = new StringBuilder();
+            addHierarchy(spec.subcommands().values(), sb, "");
+            return sb.toString();
         }
 
-        private void addHierarchy(Collection<CommandLine> collection, Help.TextTable textTable,
+        private void addHierarchy(Collection<CommandSpec> collection, StringBuilder sb,
                 String indent) {
-            collection.stream().distinct().forEach(subcommand -> {
+            collection.stream().distinct().forEach(subSpec -> {
                 // create comma-separated list of command name and aliases
-                String names = String.join(", ", subcommand.getCommandSpec().names());
-                String description = description(subcommand.getCommandSpec().usageMessage());
-                textTable.addRowValues(indent + names, description);
+                String names = String.join(", ", subSpec.names());
+                String description = description(subSpec.usageMessage());
+                sb.append(String.format("  %s%-24s %s%n", indent, names, description));
 
-                Map<String, CommandLine> subcommands = subcommand.getSubcommands();
+                Map<String, CommandSpec> subcommands = subSpec.subcommands();
                 if (!subcommands.isEmpty()) {
-                    addHierarchy(subcommands.values(), textTable, indent + "  ");
+                    addHierarchy(subcommands.values(), sb, indent + "  ");
                 }
             });
         }

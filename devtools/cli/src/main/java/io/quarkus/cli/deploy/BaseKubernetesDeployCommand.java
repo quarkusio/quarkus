@@ -9,8 +9,8 @@ import java.util.stream.Collectors;
 import io.quarkus.cli.Deploy;
 import io.quarkus.cli.common.BuildToolContext;
 import io.quarkus.cli.common.BuildToolDelegatingCommand;
-import picocli.CommandLine;
-import picocli.CommandLine.ParentCommand;
+import io.quarkus.quickcli.annotations.ArgGroup;
+import io.quarkus.quickcli.annotations.ParentCommand;
 
 public class BaseKubernetesDeployCommand extends BuildToolDelegatingCommand {
 
@@ -19,7 +19,7 @@ public class BaseKubernetesDeployCommand extends BuildToolDelegatingCommand {
     static final String QUARKUS_CONTAINER_IMAGE_BUILDER = "quarkus.container-image.builder";
     static final String DEFAULT_IMAGE_BUILDER = "docker";
 
-    @CommandLine.ArgGroup(order = 2, exclusive = false, validate = false, heading = "%nKubernetes options:%n")
+    @ArgGroup(order = 2, exclusive = false, validate = false, heading = "%nKubernetes options:%n")
     KubernetesOptions kubernetesOptions = new KubernetesOptions();
 
     @ParentCommand

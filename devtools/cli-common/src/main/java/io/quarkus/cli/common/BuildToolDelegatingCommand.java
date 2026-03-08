@@ -13,9 +13,12 @@ import io.quarkus.cli.common.build.BuildSystemRunner;
 import io.quarkus.cli.common.gradle.GradleInitScript;
 import io.quarkus.cli.common.registry.ToggleRegistryClientMixin;
 import io.quarkus.devtools.project.BuildTool;
-import picocli.CommandLine;
-import picocli.CommandLine.ExitCode;
-import picocli.CommandLine.Parameters;
+import io.quarkus.quickcli.CommandSpec;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.quickcli.annotations.ArgGroup;
+import io.quarkus.quickcli.annotations.Mixin;
+import io.quarkus.quickcli.annotations.Parameters;
+import io.quarkus.quickcli.annotations.Spec;
 
 /**
  * A cli command that delegates to the quarkus build system.
@@ -25,25 +28,25 @@ public class BuildToolDelegatingCommand implements Callable<Integer> {
     private static final String GRADLE_NO_BUILD_CACHE = "--no-build-cache";
     private static final String GRADLE_NO_DAEMON = "--no-daemon";
 
-    @CommandLine.Spec
-    protected CommandLine.Model.CommandSpec spec;
+    @Spec
+    protected CommandSpec spec;
 
-    @CommandLine.Mixin(name = "output")
+    @Mixin(name = "output")
     protected OutputOptionMixin output;
 
-    @CommandLine.Mixin
+    @Mixin
     protected ToggleRegistryClientMixin registryClient;
 
-    @CommandLine.Mixin
+    @Mixin
     protected HelpOption helpOption;
 
-    @CommandLine.ArgGroup(exclusive = false, validate = false)
+    @ArgGroup(exclusive = false, validate = false)
     protected PropertiesOptions propertiesOptions = new PropertiesOptions();
 
-    @CommandLine.Mixin
+    @Mixin
     private RunModeOption runMode;
 
-    @CommandLine.ArgGroup(order = 1, exclusive = false, validate = false, heading = "%nBuild options:%n")
+    @ArgGroup(order = 1, exclusive = false, validate = false, heading = "%nBuild options:%n")
     private BuildOptions buildOptions = new BuildOptions();
 
     @Parameters(description = "Additional parameters passed to the build system")

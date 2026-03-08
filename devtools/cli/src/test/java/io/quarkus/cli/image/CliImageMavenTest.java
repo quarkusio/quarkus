@@ -14,14 +14,17 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.cli.CliDriver;
 import io.quarkus.devtools.testing.RegistryClientTestHelper;
-import picocli.CommandLine;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.test.junit.main.QuarkusMainLauncher;
+import io.quarkus.test.junit.main.QuarkusMainTest;
 
 /**
  * Similar to CliProjecMavenTest ..
  */
+@QuarkusMainTest
 public class CliImageMavenTest {
     static Path workspaceRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
-            .resolve("target/test-classes/test-project/CliImageMavenTest");
+            .resolve("target/test-project/CliImageMavenTest");
     Path project;
 
     @BeforeAll
@@ -41,13 +44,14 @@ public class CliImageMavenTest {
     }
 
     @Test
-    public void testUsage() throws Exception {
+    public void testUsage(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "-e", "-B", "--verbose");
-        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertEquals(ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
 
         // 1 image --dry-run
         result = CliDriver.execute(project, "image", "--dry-run");
-        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertEquals(ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
         assertTrue(result.getStdout().contains("quarkus:image-build"));
         assertFalse(result.getStdout().contains("-Dnative"));
         result = CliDriver.execute(project, "image", "--native", "--dry-run");
@@ -55,10 +59,10 @@ public class CliImageMavenTest {
 
         // 2 image build --dry-run
         result = CliDriver.execute(project, "image", "build", "--dry-run");
-        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertEquals(ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
         result = CliDriver.execute(project, "image", "build", "--group=mygroup", "--name=myname", "--tag=1.0", "--native",
                 "--dry-run");
-        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertEquals(ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
         assertTrue(result.getStdout().contains("-Dquarkus.container-image.group=mygroup"));
         assertTrue(result.getStdout().contains("-Dquarkus.container-image.name=myname"));
         assertTrue(result.getStdout().contains("-Dquarkus.container-image.tag=1.0"));
@@ -66,12 +70,12 @@ public class CliImageMavenTest {
 
         // 3 image push --dry-run
         result = CliDriver.execute(project, "image", "push", "--dry-run");
-        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertEquals(ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
         assertTrue(result.getStdout().contains("-Dquarkus.container-image.build=false"));
 
         // 4 image push --also-build --dry-run --registry=quay.io
         result = CliDriver.execute(project, "image", "push", "--also-build", "--dry-run", "--registry=quay.io");
-        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertEquals(ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
         assertTrue(result.getStdout().contains("-Dquarkus.container-image.build=true"));
         assertTrue(result.getStdout().contains("-Dquarkus.container-image.registry=quay.io"));
 

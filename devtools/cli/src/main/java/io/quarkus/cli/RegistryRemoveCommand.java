@@ -6,15 +6,17 @@ import java.nio.file.Paths;
 import java.util.List;
 
 import io.quarkus.cli.registry.BaseRegistryCommand;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.quickcli.annotations.Command;
+import io.quarkus.quickcli.annotations.Parameters;
 import io.quarkus.registry.config.RegistriesConfig;
 import io.quarkus.registry.config.RegistryConfig;
-import picocli.CommandLine;
 
-@CommandLine.Command(name = "remove", aliases = "rm", header = "Remove a Quarkus extension registry", description = "%n"
+@Command(name = "remove", aliases = "rm", header = "Remove a Quarkus extension registry", description = "%n"
         + "This command will remove a Quarkus extension registry from the registry client configuration.")
 public class RegistryRemoveCommand extends BaseRegistryCommand {
 
-    @CommandLine.Parameters(arity = "1..*", split = ",", paramLabel = "REGISTRY-ID[,REGISTRY-ID]", description = "Registry ID to remove from the registry client configuration%n"
+    @Parameters(arity = "1..*", split = ",", paramLabel = "REGISTRY-ID[,REGISTRY-ID]", description = "Registry ID to remove from the registry client configuration%n"
             + "  Example:%n"
             + "    registry.quarkus.io%n"
             + "    registry.quarkus.acme.com,registry.quarkus.io%n")
@@ -56,6 +58,6 @@ public class RegistryRemoveCommand extends BaseRegistryCommand {
                 config.persist();
             }
         }
-        return CommandLine.ExitCode.OK;
+        return ExitCode.OK;
     }
 }

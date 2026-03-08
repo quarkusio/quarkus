@@ -5,13 +5,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import picocli.CommandLine;
+import io.quarkus.quickcli.annotations.Option;
 
 public class PropertiesOptions {
     public Map<String, String> properties = new HashMap<>();
 
-    @CommandLine.Option(names = "-D", mapFallbackValue = "", description = "Java properties")
-    void setProperty(Map<String, String> props) {
+    @Option(names = "-D", mapFallbackValue = "", description = "Java properties")
+    public void setProperty(Map<String, String> props) {
         this.properties = props;
     }
 

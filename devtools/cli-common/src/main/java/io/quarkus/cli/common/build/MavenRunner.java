@@ -35,9 +35,9 @@ import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.buildfile.MavenProjectBuildFile;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
+import io.quarkus.quickcli.ExitCode;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.config.RegistriesConfigLocator;
-import picocli.CommandLine;
 
 public class MavenRunner implements BuildSystemRunner {
     public static String MAVEN_SETTINGS = "maven.settings";
@@ -100,7 +100,7 @@ public class MavenRunner implements BuildSystemRunner {
                 .batchMode(runMode.isBatchMode())
                 .execute();
 
-        return outcome.isSuccess() ? CommandLine.ExitCode.OK : CommandLine.ExitCode.SOFTWARE;
+        return outcome.isSuccess() ? ExitCode.OK : ExitCode.SOFTWARE;
     }
 
     @Override
@@ -119,21 +119,21 @@ public class MavenRunner implements BuildSystemRunner {
                 .batchMode(runMode.isBatchMode())
                 .execute();
 
-        return outcome.isSuccess() ? CommandLine.ExitCode.OK : CommandLine.ExitCode.SOFTWARE;
+        return outcome.isSuccess() ? ExitCode.OK : ExitCode.SOFTWARE;
     }
 
     @Override
     public Integer addExtension(RunModeOption runMode, Set<String> extensions) throws Exception {
         AddExtensions invoker = new AddExtensions(quarkusProject());
         invoker.extensions(extensions);
-        return invoker.execute().isSuccess() ? CommandLine.ExitCode.OK : CommandLine.ExitCode.SOFTWARE;
+        return invoker.execute().isSuccess() ? ExitCode.OK : ExitCode.SOFTWARE;
     }
 
     @Override
     public Integer removeExtension(RunModeOption runMode, Set<String> extensions) throws Exception {
         RemoveExtensions invoker = new RemoveExtensions(quarkusProject());
         invoker.extensions(extensions);
-        return invoker.execute().isSuccess() ? CommandLine.ExitCode.OK : CommandLine.ExitCode.SOFTWARE;
+        return invoker.execute().isSuccess() ? ExitCode.OK : ExitCode.SOFTWARE;
     }
 
     @Override

@@ -3,14 +3,14 @@ package io.quarkus.cli.common;
 import java.util.HashMap;
 import java.util.Map;
 
-import picocli.CommandLine;
+import io.quarkus.quickcli.annotations.Option;
 
 public class DataOptions {
 
     public Map<String, String> data = new HashMap<>();
 
-    @CommandLine.Option(names = "--data", mapFallbackValue = "", description = "Additional data")
-    void setData(Map<String, String> data) {
+    @Option(names = "--data", mapFallbackValue = "", description = "Additional data")
+    public void setData(Map<String, String> data) {
         this.data = data;
     }
 

@@ -9,12 +9,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import io.quarkus.quickcli.CommandLine;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.quickcli.annotations.Command;
+import io.quarkus.quickcli.annotations.Option;
+import io.quarkus.quickcli.annotations.Parameters;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.Converters;
-import picocli.CommandLine;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
-import picocli.CommandLine.Parameters;
 
 @Command(name = "set", header = "Sets a configuration in application.properties")
 public class SetConfig extends BaseConfigCommand implements Callable<Integer> {
@@ -89,6 +90,6 @@ public class SetConfig extends BaseConfigCommand implements Callable<Integer> {
             }
         }
 
-        return CommandLine.ExitCode.OK;
+        return ExitCode.OK;
     }
 }

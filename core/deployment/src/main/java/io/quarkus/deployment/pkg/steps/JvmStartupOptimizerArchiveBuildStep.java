@@ -24,6 +24,7 @@ import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
+import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerAdditionalArgsBuildItem;
 import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveContainerImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveRequestedBuildItem;
 import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveResultBuildItem;
@@ -140,6 +141,7 @@ public class JvmStartupOptimizerArchiveBuildStep {
             JarBuildItem jarResult, OutputTargetBuildItem outputTarget, PackageConfig packageConfig,
             CompiledJavaVersionBuildItem compiledJavaVersion,
             Optional<JvmStartupOptimizerArchiveContainerImageBuildItem> jvmStartupOptimizerArchiveContainerImage,
+            Optional<JvmStartupOptimizerAdditionalArgsBuildItem> jvmStartupOptimizerAdditionalArgs,
             BuildProducer<JvmStartupOptimizerArchiveResultBuildItem> jvmStartupOptimizerArchive,
             BuildProducer<ArtifactResultBuildItem> artifactResult) throws Exception {
         if (requested.isEmpty()) {
@@ -169,8 +171,12 @@ public class JvmStartupOptimizerArchiveBuildStep {
             archivePath = createAppCDSFromExit(jarResult, outputTarget, javaBinPath, containerImage,
                     isFastJar);
         } else if (archiveType == JvmStartupOptimizerArchiveType.AOT) {
-            archivePath = createAot(jarResult, outputTarget, javaBinPath, containerImage, isFastJar,
+            List<String> additionalArgs = new ArrayList<>(
                     packageConfig.jar().aot().additionalRecordingArgs().orElse(List.of()));
+            jvmStartupOptimizerAdditionalArgs
+                    .ifPresent(buildItem -> additionalArgs.addAll(buildItem.getAdditionalArgs()));
+            archivePath = createAot(jarResult, outputTarget, javaBinPath, containerImage, isFastJar,
+                    additionalArgs);
         } else {
             throw new IllegalStateException("Unsupported archive type: " + archiveType);
         }

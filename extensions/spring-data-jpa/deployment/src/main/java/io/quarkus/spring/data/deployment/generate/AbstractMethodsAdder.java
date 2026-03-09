@@ -309,12 +309,8 @@ public abstract class AbstractMethodsAdder {
                 }
             }
         } else {
-            final ClassInfo typeClass = index.getClassByName(t.name());
-            if (typeClass == null) {
-                throw new IllegalStateException(
-                        t.name() + " is not in the Quarkus Jandex index and cannot be used as a query return type. " +
-                                "Consider using a simpler type or ensure this class is properly indexed. ");
-            }
+            // Don't fail if the type is not in the index — let ORM decide
+            // if it can handle the type at runtime (e.g. via AttributeConverter)
         }
         return t;
     }

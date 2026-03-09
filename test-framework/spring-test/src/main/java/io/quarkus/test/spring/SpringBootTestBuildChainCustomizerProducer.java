@@ -3,6 +3,7 @@ package io.quarkus.test.spring;
 import java.util.function.Consumer;
 
 import org.jboss.jandex.Index;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.deployment.builditem.TestAnnotationBuildItem;

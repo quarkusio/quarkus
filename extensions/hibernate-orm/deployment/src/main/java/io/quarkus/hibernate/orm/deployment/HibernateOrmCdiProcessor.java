@@ -90,6 +90,8 @@ public class HibernateOrmCdiProcessor {
 
     private static final Set<DotName> PERSISTENCE_UNIT_EXTENSION_VALID_TYPES = Set.of(
             ClassNames.TENANT_RESOLVER,
+            ClassNames.TENANT_RESOLVER_MARKER,
+            ClassNames.TYPED_TENANT_RESOLVER,
             ClassNames.TENANT_CONNECTION_RESOLVER,
             ClassNames.INTERCEPTOR,
             ClassNames.STATEMENT_INSPECTOR,

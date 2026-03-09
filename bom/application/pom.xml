@@ -207,7 +207,7 @@
         <jose4j.version>0.9.6</jose4j.version>
         <java-buildpack-client.version>0.0.14</java-buildpack-client.version>
         <crac.version>1.5.0</crac.version>
-        <sshd-common.version>2.12.1</sshd-common.version>
+        <sshd-common.version>2.17.1</sshd-common.version>
         <mime4j.version>0.8.12</mime4j.version>
         <mutiny-zero.version>1.1.1</mutiny-zero.version>
         <pulsar-client.version>3.3.0</pulsar-client.version>

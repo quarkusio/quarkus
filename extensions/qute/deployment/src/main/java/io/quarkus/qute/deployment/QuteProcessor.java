@@ -1786,6 +1786,15 @@ public class QuteProcessor {
         // Method-level annotations
         for (Entry<MethodInfo, AnnotationInstance> entry : methods.entrySet()) {
             MethodInfo method = entry.getKey();
+            // Skip non-static methods from Kotlin companion objects.
+            // Kotlin generates both a static method on the outer class and a non-static
+            // delegate on the companion class, both annotated with @TemplateExtension.
+            // The static method on the outer class is the one we want to process.
+            if (!Modifier.isStatic(method.flags()) && method.declaringClass().enclosingClass() != null) {
+                LOGGER.debugf("Skipping non-static method %s declared on inner class %s", method,
+                        method.declaringClass().name());
+                continue;
+            }
             AnnotationValue namespaceValue = entry.getValue().value(ExtensionMethodGenerator.NAMESPACE);
             ExtensionMethodGenerator.validate(method, namespaceValue != null ? namespaceValue.asString() : null);
             produceExtensionMethod(index, extensionMethods, method, entry.getValue());

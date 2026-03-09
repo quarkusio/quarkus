@@ -45,10 +45,11 @@ public class GaugeCdiTest {
                                     "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
                             .add(new StringAsset(
                                     "quarkus.otel.metrics.enabled=true\n" +
+                                            "quarkus.otel.logs.enabled=true\n" +
                                             "quarkus.datasource.db-kind=h2\n" +
                                             "quarkus.datasource.jdbc.telemetry=true\n" +
                                             "quarkus.otel.traces.exporter=test-span-exporter\n" +
-                                            "quarkus.otel.metrics.exporter=in-memory\n" +
+                                            "quarkus.otel.metrics.exporter=in-memory,logging\n" +
                                             "quarkus.otel.metric.export.interval=300ms\n" +
                                             "quarkus.otel.bsp.export.timeout=1s\n" +
                                             "quarkus.otel.bsp.schedule.delay=50\n"),

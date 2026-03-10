@@ -36,7 +36,7 @@ final class BaseConfig {
         manifest.attributes(manifestConfig.attributes());
         manifestConfig.sections().forEach((section, attribs) -> manifest.attributes(attribs, section));
 
-        values = config.getValues();
+        values = config.getCachingValues();
     }
 
     PackageConfig packageConfig() {
@@ -58,22 +58,26 @@ final class BaseConfig {
     Map<String, String> cachingRelevantProperties(List<String> propertyPatterns) {
         List<Pattern> patterns = propertyPatterns.stream().map(s -> "^(" + s + ")$").map(Pattern::compile)
                 .collect(Collectors.toList());
-        readMissingEnvVariables(propertyPatterns);
-        Predicate<Map.Entry<String, ?>> keyPredicate = e -> patterns.stream().anyMatch(p -> p.matcher(e.getKey()).matches());
-        return values.entrySet().stream()
-                .filter(keyPredicate)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (s, s2) -> {
-                    throw new IllegalArgumentException("Duplicate key");
-                }, TreeMap::new));
-    }
+        TreeMap<String, String> result = new TreeMap<>();
 
-    /**
-     * Reads missing environment variables that have been defined as `cachingRelevantProperties`.
-     * This ensures that the configuration cache tracks these variables as inputs and detects changes in them.
-     */
-    private void readMissingEnvVariables(List<String> cachingRelevantProperties) {
-        cachingRelevantProperties.stream()
-                .filter(name -> !values.containsKey(name))
-                .forEach(name -> System.getenv(name));
+        // Include matching properties from the caching values (PackageConfig/NativeConfig)
+        Predicate<Map.Entry<String, ?>> keyPredicate = e -> patterns.stream().anyMatch(p -> p.matcher(e.getKey()).matches());
+        values.entrySet().stream()
+                .filter(keyPredicate)
+                .forEach(e -> result.put(e.getKey(), e.getValue()));
+
+        // For caching-relevant properties not found in the values map, check environment variables.
+        // This ensures that user-declared caching properties (like env vars) are still tracked as task inputs
+        // and cause rebuilds when their values change.
+        for (String name : propertyPatterns) {
+            if (!values.containsKey(name)) {
+                String envValue = System.getenv(name);
+                if (envValue != null) {
+                    result.put(name, envValue);
+                }
+            }
+        }
+
+        return result;
     }
 }

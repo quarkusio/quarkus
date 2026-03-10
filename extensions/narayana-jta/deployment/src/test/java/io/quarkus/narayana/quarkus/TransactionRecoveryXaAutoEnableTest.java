@@ -27,7 +27,8 @@ public class TransactionRecoveryXaAutoEnableTest {
 
     @Test
     public void testRecoveryAutoEnabledWithXaDatasource() {
-        assertTrue(TransactionRecoveryNotEnabledWithoutXaTest.isPeriodicRecoveryRunning(),
+        assertTrue(Thread.getAllStackTraces().keySet().stream()
+                .anyMatch(t -> t.getName().equals("Periodic Recovery")),
                 "Periodic Recovery thread should be running when XA datasources are configured");
     }
 }

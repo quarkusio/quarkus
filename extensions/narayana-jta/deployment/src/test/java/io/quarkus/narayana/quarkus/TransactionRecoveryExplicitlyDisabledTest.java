@@ -28,7 +28,8 @@ public class TransactionRecoveryExplicitlyDisabledTest {
 
     @Test
     public void testRecoveryNotStartedWhenExplicitlyDisabled() {
-        assertFalse(TransactionRecoveryNotEnabledWithoutXaTest.isPeriodicRecoveryRunning(),
+        assertFalse(Thread.getAllStackTraces().keySet().stream()
+                .anyMatch(t -> t.getName().equals("Periodic Recovery")),
                 "Periodic Recovery thread should not be running when recovery is explicitly disabled");
     }
 }

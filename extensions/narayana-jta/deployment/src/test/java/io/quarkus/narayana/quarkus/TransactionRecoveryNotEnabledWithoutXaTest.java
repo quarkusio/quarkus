@@ -21,12 +21,8 @@ public class TransactionRecoveryNotEnabledWithoutXaTest {
 
     @Test
     public void testRecoveryNotStartedWithoutXaDatasources() {
-        assertFalse(isPeriodicRecoveryRunning(),
+        assertFalse(Thread.getAllStackTraces().keySet().stream()
+                .anyMatch(t -> t.getName().equals("Periodic Recovery")),
                 "Periodic Recovery thread should not be running when no XA datasources are configured");
-    }
-
-    static boolean isPeriodicRecoveryRunning() {
-        return Thread.getAllStackTraces().keySet().stream()
-                .anyMatch(t -> t.getName().equals("Periodic Recovery"));
     }
 }

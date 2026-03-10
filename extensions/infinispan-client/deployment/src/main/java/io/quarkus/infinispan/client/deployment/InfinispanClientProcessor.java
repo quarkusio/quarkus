@@ -81,6 +81,7 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -571,11 +572,15 @@ class InfinispanClientProcessor {
 
     @Record(RUNTIME_INIT)
     @BuildStep
-    void eagerInitInfinispanCaches(InfinispanRecorder recorder,
-            @SuppressWarnings("unused") BeanContainerBuildItem beanContainer) {
+    ServiceStartBuildItem eagerInitInfinispanCaches(InfinispanRecorder recorder,
+            @SuppressWarnings("unused") BeanContainerBuildItem beanContainer,
+            @SuppressWarnings("unused") List<InfinispanClientBuildItem> infinispanClients) {
         // There could be some blocking code when getting a cache for the first time.
-        // Needs to be eager to avoid blocking the vert.x loop
+        // Needs to be eager to avoid blocking the vert.x loop.
+        // Consuming InfinispanClientBuildItem ensures RemoteCacheManager is initialized first.
+        // Producing ServiceStartBuildItem ensures this completes before serving requests.
         recorder.eagerInitAllCaches();
+        return new ServiceStartBuildItem("infinispan");
     }
 
     static <T> SyntheticBeanBuildItem configureAndCreateSyntheticBean(String name,

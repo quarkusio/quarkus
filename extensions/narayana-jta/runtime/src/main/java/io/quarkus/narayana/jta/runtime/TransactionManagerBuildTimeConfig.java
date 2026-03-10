@@ -10,6 +10,15 @@ import io.smallrye.config.ConfigMapping;
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 @ConfigMapping(prefix = "quarkus.transaction-manager")
 public interface TransactionManagerBuildTimeConfig {
+
+    /**
+     * Start the recovery service on startup.
+     * <p>
+     * If not set, the recovery service will be started automatically if XA datasources are configured.
+     * Set to {@code true} to always enable recovery, or {@code false} to explicitly disable it.
+     */
+    Optional<Boolean> enableRecovery();
+
     /**
      * Define the behavior when using multiple XA unaware resources in the same transactional demarcation.
      * <p>

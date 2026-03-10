@@ -65,6 +65,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.narayana.jta.deployment.NarayanaInitBuildItem;
+import io.quarkus.narayana.jta.runtime.TransactionManagerBuildTimeConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
@@ -196,7 +197,7 @@ class AgroalProcessor {
 
     private AgroalDataSourceSupport getDataSourceSupport(
             List<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedBuildTimeConfigBuildItems,
-            SslNativeConfigBuildItem sslNativeConfig, Capabilities capabilities) {
+            SslNativeConfigBuildItem sslNativeConfig, Capabilities capabilities, boolean recoveryEnabled) {
         Map<String, AgroalDataSourceSupport.Entry> dataSourceSupportEntries = new HashMap<>();
         for (AggregatedDataSourceBuildTimeConfigBuildItem aggregatedDataSourceBuildTimeConfig : aggregatedBuildTimeConfigBuildItems) {
             String dataSourceName = aggregatedDataSourceBuildTimeConfig.getName();
@@ -208,7 +209,7 @@ class AgroalProcessor {
         }
 
         return new AgroalDataSourceSupport(sslNativeConfig.isExplicitlyDisabled(),
-                capabilities.isPresent(Capability.METRICS), dataSourceSupportEntries);
+                capabilities.isPresent(Capability.METRICS), recoveryEnabled, dataSourceSupportEntries);
     }
 
     @Record(ExecutionTime.STATIC_INIT)
@@ -217,6 +218,7 @@ class AgroalProcessor {
             List<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedBuildTimeConfigBuildItems,
             SslNativeConfigBuildItem sslNativeConfig,
             Capabilities capabilities,
+            TransactionManagerBuildTimeConfig transactionManagerBuildTimeConfig,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
@@ -237,9 +239,12 @@ class AgroalProcessor {
         unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(AgroalPoolInterceptor.class));
 
         // create the AgroalDataSourceSupport bean that DataSources/DataSourceHealthCheck use as a dependency
+        boolean xaResourcesPresent = aggregatedBuildTimeConfigBuildItems.stream()
+                .anyMatch(a -> a.getJdbcConfig().transactions() == TransactionIntegration.XA);
+        boolean recoveryEnabled = transactionManagerBuildTimeConfig.enableRecovery().orElse(xaResourcesPresent);
         AgroalDataSourceSupport agroalDataSourceSupport = getDataSourceSupport(aggregatedBuildTimeConfigBuildItems,
                 sslNativeConfig,
-                capabilities);
+                capabilities, recoveryEnabled);
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(AgroalDataSourceSupport.class)
                 .supplier(recorder.dataSourceSupportSupplier(agroalDataSourceSupport))
                 .scope(Singleton.class)
@@ -300,6 +305,7 @@ class AgroalProcessor {
                     aggregatedBuildTimeConfigBuildItem.getDbKind(),
                     aggregatedBuildTimeConfigBuildItem.getDataSourceConfig().dbVersion(),
                     aggregatedBuildTimeConfigBuildItem.getJdbcConfig().transactions() != TransactionIntegration.DISABLED,
+                    aggregatedBuildTimeConfigBuildItem.getJdbcConfig().transactions() == TransactionIntegration.XA,
                     aggregatedBuildTimeConfigBuildItem.isDefault()));
         }
     }

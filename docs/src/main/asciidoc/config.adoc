@@ -88,7 +88,7 @@ public class GreetingResource {
 
 == Inject the configuration
 
-Quarkus uses https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config] annotations to inject the
+Quarkus uses https://microprofile.io/specifications/config/[MicroProfile Config] annotations to inject the
 configuration properties in the application.
 
 [source,java]

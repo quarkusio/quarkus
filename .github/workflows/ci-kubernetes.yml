@@ -1,5 +1,10 @@
 name: Quarkus CI - Kubernetes
 
+permissions:
+  contents: read
+  issues: write
+  packages: read
+
 on:
   workflow_dispatch:
   schedule:

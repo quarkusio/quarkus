@@ -1,5 +1,10 @@
 name: Quarkus CI - OpenShift
 
+permissions:
+  contents: read
+  issues: write
+  packages: read
+
 on:
   workflow_dispatch:
   schedule:

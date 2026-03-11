@@ -1,5 +1,10 @@
 name: Quarkus Early Access JDK Build
 
+permissions:
+  contents: read
+  issues: write
+  packages: read
+
 on:
   schedule:
     # midnight every weekday + saturday

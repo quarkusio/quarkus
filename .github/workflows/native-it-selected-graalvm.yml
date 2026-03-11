@@ -1,5 +1,9 @@
 name: Quarkus CI - Native IT on selected GraalVM
 
+permissions:
+  contents: read
+  packages: read
+
 on:
   workflow_dispatch:
     inputs:

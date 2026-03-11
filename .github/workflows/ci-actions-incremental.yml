@@ -1,5 +1,10 @@
 name: Quarkus CI
 
+permissions:
+  contents: read
+  actions: read
+  packages: read
+
 on:
   # the build for main is run periodically and cancelled if there are no changes since the last run
   schedule:

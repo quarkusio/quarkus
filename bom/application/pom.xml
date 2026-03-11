@@ -128,8 +128,8 @@
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
         <junit.jupiter.version>6.0.3</junit.jupiter.version>
-        <infinispan.version>16.0.7</infinispan.version>
-        <infinispan.protostream.version>6.0.4</infinispan.protostream.version>
+        <infinispan.version>16.0.8</infinispan.version>
+        <infinispan.protostream.version>6.0.6</infinispan.protostream.version>
         <caffeine.version>3.2.3</caffeine.version>
         <netty.version>4.1.130.Final</netty.version>
         <brotli4j.version>1.16.0</brotli4j.version>
@@ -207,7 +207,7 @@
         <jose4j.version>0.9.6</jose4j.version>
         <java-buildpack-client.version>0.0.14</java-buildpack-client.version>
         <crac.version>1.5.0</crac.version>
-        <sshd-common.version>2.12.1</sshd-common.version>
+        <sshd-common.version>2.17.1</sshd-common.version>
         <mime4j.version>0.8.12</mime4j.version>
         <mutiny-zero.version>1.1.1</mutiny-zero.version>
         <pulsar-client.version>3.3.0</pulsar-client.version>

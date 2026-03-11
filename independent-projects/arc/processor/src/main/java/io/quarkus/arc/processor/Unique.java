@@ -23,8 +23,12 @@ final class Unique {
     }
 
     private static <C extends Collection<Type>> C types(C types, Supplier<C> creator) {
+        if (types.size() <= 1) {
+            return types;
+        }
+
         C result = creator.get();
-        Set<EquivalenceKey> seen = new HashSet<>();
+        Set<EquivalenceKey> seen = new HashSet<>((int) (types.size() / 0.75f) + 1);
         for (Type type : types) {
             if (seen.add(EquivalenceKey.of(type))) {
                 result.add(type);
@@ -42,8 +46,12 @@ final class Unique {
     }
 
     private static <C extends Collection<AnnotationInstance>> C annotations(C annotations, Supplier<C> creator) {
+        if (annotations.size() <= 1) {
+            return annotations;
+        }
+
         C result = creator.get();
-        Set<AnnotationInstanceEquivalenceProxy> seen = new HashSet<>();
+        Set<AnnotationInstanceEquivalenceProxy> seen = new HashSet<>((int) (annotations.size() / 0.75f) + 1);
         for (AnnotationInstance annotation : annotations) {
             if (seen.add(annotation.createEquivalenceProxy())) {
                 result.add(annotation);
@@ -61,8 +69,12 @@ final class Unique {
     }
 
     private static <C extends Collection<StereotypeInfo>> C stereotypes(C stereotypes, Supplier<C> creator) {
+        if (stereotypes.size() <= 1) {
+            return stereotypes;
+        }
+
         C result = creator.get();
-        Set<DotName> seen = new HashSet<>();
+        Set<DotName> seen = new HashSet<>((int) (stereotypes.size() / 0.75f) + 1);
         for (StereotypeInfo stereotype : stereotypes) {
             if (seen.add(stereotype.getName())) {
                 result.add(stereotype);

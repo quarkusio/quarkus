@@ -1,5 +1,9 @@
 name: Quarkus Documentation CI
 
+permissions:
+  contents: read
+  actions: write
+
 on:
   push:
     branches-ignore:

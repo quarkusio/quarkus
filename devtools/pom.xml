@@ -26,6 +26,7 @@
         <module>maven</module>
         <module>gradle</module>
         <module>cli-common</module>
+        <module>mcp-server</module>
         <module>cli</module>
         <module>config-doc-maven-plugin</module>
     </modules>

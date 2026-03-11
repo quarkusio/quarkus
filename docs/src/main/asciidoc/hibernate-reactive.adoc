@@ -507,6 +507,14 @@ When using declarative transaction management with Vert.x context-based intercep
 
 For this reason, **avoid using declarative transactional management with those methods**.
 
+[[transactional-others]]
+=== Other Declarative Transactional Management limitations
+
+Reactive transactions are local only and do not support XA transactions. Only a single datasource can participate in a transaction.
+
+Reactive transactions also work exclusively within the reactive pipeline.
+If blocking code is executed (for example on a worker thread) as part of that pipeline, it will not be able to participate in the transaction.
+
 == Simplifying Hibernate Reactive with Panache
 
 The xref:hibernate-reactive-panache.adoc[Hibernate Reactive with Panache] extension facilitates the usage of Hibernate Reactive

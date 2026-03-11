@@ -186,10 +186,23 @@ class NarayanaJtaProcessor {
     }
 
     @BuildStep
+    TransactionRecoveryEnabledBuildItem resolveRecoveryEnabled(
+            TransactionManagerBuildTimeConfig buildTimeConfig,
+            List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems) {
+        boolean xaResourcesPresent = jdbcDataSourceBuildItems.stream()
+                .anyMatch(JdbcDataSourceBuildItem::isXaEnabled);
+        boolean recoveryEnabled = buildTimeConfig.enableRecovery().orElse(xaResourcesPresent);
+        return new TransactionRecoveryEnabledBuildItem(recoveryEnabled);
+    }
+
+    @BuildStep
     @Record(RUNTIME_INIT)
     @Consume(NarayanaInitBuildItem.class)
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
-    public void startRecoveryService(NarayanaJtaRecorder recorder, List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems) {
+    public void startRecoveryService(NarayanaJtaRecorder recorder,
+            TransactionRecoveryEnabledBuildItem recoveryEnabledBuildItem,
+            List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
+            ShutdownContextBuildItem shutdownContextBuildItem) {
         Map<String, String> configuredDataSourcesConfigKeys = jdbcDataSourceBuildItems.stream()
                 .map(j -> j.getName())
                 .collect(Collectors.toMap(Function.identity(),
@@ -199,7 +212,11 @@ class NarayanaJtaProcessor {
                 .map(j -> j.getName())
                 .collect(Collectors.toSet());
 
-        recorder.startRecoveryService(configuredDataSourcesConfigKeys, dataSourcesWithTransactionIntegration);
+        recorder.validateObjectStoreConfiguration(configuredDataSourcesConfigKeys, dataSourcesWithTransactionIntegration);
+
+        if (recoveryEnabledBuildItem.isEnabled()) {
+            recorder.startRecoveryService(shutdownContextBuildItem);
+        }
     }
 
     @BuildStep(onlyIf = IsTest.class)

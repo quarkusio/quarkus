@@ -40,12 +40,6 @@ public interface TransactionManagerConfiguration {
     Duration defaultTransactionTimeout();
 
     /**
-     * Start the recovery service on startup.
-     */
-    @WithDefault("false")
-    boolean enableRecovery();
-
-    /**
      * The list of recovery modules.
      */
     @WithDefault("com.arjuna.ats.internal.arjuna.recovery.AtomicActionRecoveryModule," +

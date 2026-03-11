@@ -995,6 +995,14 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         }
     }
 
+    /**
+     * @deprecated use {@link #getParent()} instead.
+     */
+    @Deprecated(since = "3.34", forRemoval = true)
+    public ClassLoader parent() {
+        return getParent();
+    }
+
     @Override
     public String getName() {
         return name;

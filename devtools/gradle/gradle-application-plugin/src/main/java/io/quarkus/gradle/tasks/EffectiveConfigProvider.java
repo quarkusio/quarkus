@@ -22,7 +22,7 @@ public class EffectiveConfigProvider {
     final ListProperty<String> ignoredEntries;
     final ConfigurableFileCollection mainResources;
     final MapProperty<String, String> forcedProperties;
-    final MapProperty<String, Object> projectProperties;
+    final MapProperty<String, String> projectProperties;
     final MapProperty<String, String> quarkusBuildProperties;
     final MapProperty<String, Object> manifestAttributes;
     final MapProperty<String, Attributes> manifestSections;
@@ -33,7 +33,7 @@ public class EffectiveConfigProvider {
     public EffectiveConfigProvider(ListProperty<String> ignoredEntries,
             ConfigurableFileCollection mainResources,
             MapProperty<String, String> forcedProperties,
-            MapProperty<String, Object> projectProperties,
+            MapProperty<String, String> projectProperties,
             MapProperty<String, String> quarkusBuildProperties,
             MapProperty<String, Object> manifestAttributes,
             MapProperty<String, Attributes> manifestSections,
@@ -110,10 +110,7 @@ public class EffectiveConfigProvider {
             profile = quarkusBuildProperties.get().get(QUARKUS_PROFILE);
         }
         if (profile == null) {
-            Object p = projectProperties.get().get(QUARKUS_PROFILE);
-            if (p != null) {
-                profile = p.toString();
-            }
+            profile = projectProperties.get().get(QUARKUS_PROFILE);
         }
         if (profile == null) {
             profile = "prod";

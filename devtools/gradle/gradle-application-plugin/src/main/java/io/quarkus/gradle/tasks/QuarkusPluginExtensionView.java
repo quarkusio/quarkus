@@ -58,13 +58,7 @@ public abstract class QuarkusPluginExtensionView {
         getQuarkusProfileEnvVariable().set(getProviderFactory().environmentVariable("QUARKUS_PROFILE"));
         getCachingRelevantProperties().set(extension.getCachingRelevantProperties());
         getForcedProperties().set(extension.forcedPropertiesProperty());
-        Map<String, Object> projectProperties = new HashMap<>();
-        for (Map.Entry<String, ?> entry : project.getProperties().entrySet()) {
-            if ((entry.getKey().startsWith("quarkus.") || entry.getKey().startsWith("platform.quarkus."))) {
-                projectProperties.put(entry.getKey(), entry.getValue());
-            }
-        }
-        getProjectProperties().set(projectProperties);
+        getProjectProperties().set(getQuarkusAndPlatformProjectProperties(project));
     }
 
     private Provider<Map<String, String>> getQuarkusRelevantProjectProperties(Project project) {
@@ -76,6 +70,24 @@ public abstract class QuarkusPluginExtensionView {
                     .filter(e -> e.getValue() != null)
                     .map(e -> Map.entry(e.getKey(), e.getValue().toString()))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+        }
+    }
+
+    private Provider<Map<String, String>> getQuarkusAndPlatformProjectProperties(Project project) {
+        if (GradleVersion.current().compareTo(GradleVersion.version("8.0")) >= 0) {
+            Provider<Map<String, String>> quarkusProps = getProviderFactory().gradlePropertiesPrefixedBy("quarkus.");
+            Provider<Map<String, String>> platformProps = getProviderFactory()
+                    .gradlePropertiesPrefixedBy("platform.quarkus.");
+            return quarkusProps.zip(platformProps, (q, p) -> {
+                Map<String, String> merged = new HashMap<>(q);
+                merged.putAll(p);
+                return merged;
+            });
+        } else {
+            return getProviderFactory().provider(() -> project.getProperties().entrySet().stream()
+                    .filter(e -> e.getValue() != null)
+                    .filter(e -> e.getKey().startsWith("quarkus.") || e.getKey().startsWith("platform.quarkus."))
+                    .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString())));
         }
     }
 
@@ -99,7 +111,7 @@ public abstract class QuarkusPluginExtensionView {
     public abstract Property<String> getFinalName();
 
     @Input
-    public abstract MapProperty<String, Object> getProjectProperties();
+    public abstract MapProperty<String, String> getProjectProperties();
 
     @Nested
     public abstract ListProperty<Action<? super JavaForkOptions>> getCodeGenForkOptions();

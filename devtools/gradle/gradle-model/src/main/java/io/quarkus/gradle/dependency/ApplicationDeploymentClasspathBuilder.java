@@ -58,8 +58,8 @@ public class ApplicationDeploymentClasspathBuilder {
     private static final String DISABLE_QUARKUS_COMPONENT_VARIANTS = "disableQuarkusComponentVariants";
 
     public static boolean isDisableComponentVariants(Project project) {
-        final Object value = project.getProperties().get(DISABLE_QUARKUS_COMPONENT_VARIANTS);
-        return value != null && Boolean.parseBoolean(String.valueOf(value));
+        final String value = project.getProviders().gradleProperty(DISABLE_QUARKUS_COMPONENT_VARIANTS).getOrNull();
+        return value != null && Boolean.parseBoolean(value);
     }
 
     public static String getLaunchModeAlias(LaunchMode mode) {

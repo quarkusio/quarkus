@@ -375,10 +375,9 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
                 buildSystemProperties.put(entry.getKey(), entry.getValue());
             }
         }
-        for (Map.Entry<String, ?> entry : getExtensionView().getProjectProperties().get().entrySet()) {
-            if ((entry.getKey().startsWith("quarkus.") || entry.getKey().startsWith("platform.quarkus."))
-                    && entry.getValue() != null) {
-                buildSystemProperties.put(entry.getKey(), entry.getValue().toString());
+        for (Map.Entry<String, String> entry : getExtensionView().getProjectProperties().get().entrySet()) {
+            if (entry.getValue() != null) {
+                buildSystemProperties.put(entry.getKey(), entry.getValue());
             }
         }
 
@@ -395,7 +394,7 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
                     continue;
                 }
 
-                expanded = (String) getExtensionView().getProjectProperties().get().get(reference);
+                expanded = getExtensionView().getProjectProperties().get().get(reference);
                 if (expanded != null) {
                     buildSystemProperties.put(reference, expanded);
                 }

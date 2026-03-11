@@ -15,11 +15,14 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -28,6 +31,13 @@ public class TasksConfigurationCacheCompatibilityTest {
 
     @TempDir
     Path testProjectDir;
+
+    @BeforeEach
+    void setUp() throws IOException, URISyntaxException {
+        URL url = getClass().getClassLoader().getResource("io/quarkus/gradle/tasks/configurationcache/main");
+        FileUtils.copyDirectory(new File(url.toURI()), testProjectDir.toFile());
+        FileUtils.copyFile(new File("../gradle.properties"), testProjectDir.resolve("gradle.properties").toFile());
+    }
 
     private static Stream<String> compatibleTasks() {
         return Stream.of(
@@ -47,76 +57,69 @@ public class TasksConfigurationCacheCompatibilityTest {
 
     @ParameterizedTest
     @MethodSource("compatibleTasks")
-    public void configurationCacheIsReusedTest(String taskName) throws IOException, URISyntaxException {
-        URL url = getClass().getClassLoader().getResource("io/quarkus/gradle/tasks/configurationcache/main");
-        FileUtils.copyDirectory(new File(url.toURI()), testProjectDir.toFile());
-        FileUtils.copyFile(new File("../gradle.properties"), testProjectDir.resolve("gradle.properties").toFile());
-
-        buildResult(":help", "--configuration-cache");
-
-        BuildResult firstBuild = buildResult(taskName, "--configuration-cache");
+    public void configurationCacheIsReusedTest(String taskName) throws IOException {
+        BuildResult firstBuild = runBuildWithConfigurationCache(taskName);
         assertTrue(firstBuild.getOutput().contains("Configuration cache entry stored"));
 
-        BuildResult secondBuild = buildResult(taskName, "--configuration-cache");
+        BuildResult secondBuild = runBuildWithConfigurationCache(taskName);
         assertTrue(secondBuild.getOutput().contains("Reusing configuration cache."));
     }
 
     @ParameterizedTest
     @MethodSource("compatibleTasks")
-    public void configurationCacheIsReusedWhenProjectIsolationIsUsedTest(String taskName)
-            throws IOException, URISyntaxException {
-        URL url = getClass().getClassLoader().getResource("io/quarkus/gradle/tasks/configurationcache/main");
-        FileUtils.copyDirectory(new File(url.toURI()), testProjectDir.toFile());
-        FileUtils.copyFile(new File("../gradle.properties"), testProjectDir.resolve("gradle.properties").toFile());
-
-        buildResult(":help", "--configuration-cache");
-
-        BuildResult firstBuild = buildResult(taskName, "-Dorg.gradle.unsafe.isolated-projects=true");
+    public void configurationCacheIsReusedWhenProjectIsolationIsUsedTest(String taskName) throws IOException {
+        BuildResult firstBuild = runBuildWithConfigurationCache(taskName,
+                "-Dorg.gradle.unsafe.isolated-projects=true");
         assertTrue(firstBuild.getOutput().contains("Configuration cache entry stored"));
 
-        BuildResult secondBuild = buildResult(taskName, "-Dorg.gradle.unsafe.isolated-projects=true");
+        BuildResult secondBuild = runBuildWithConfigurationCache(taskName,
+                "-Dorg.gradle.unsafe.isolated-projects=true");
+        assertTrue(secondBuild.getOutput().contains("Reusing configuration cache."));
+    }
+
+    @ParameterizedTest
+    @MethodSource("compatibleTasks")
+    public void configurationCacheIsReusedWhenNonQuarkusSystemPropertyChanges(String taskName) throws IOException {
+        BuildResult firstBuild = runBuildWithConfigurationCache(taskName, "-Da=1");
+        assertTrue(firstBuild.getOutput().contains("Configuration cache entry stored"));
+
+        BuildResult secondBuild = runBuildWithConfigurationCache(taskName, "-Da=2");
         assertTrue(secondBuild.getOutput().contains("Reusing configuration cache."));
     }
 
     @ParameterizedTest
     @MethodSource("nonCompatibleQuarkusBuildTasks")
-    public void quarkusBuildTasksNonCompatibleWithConfigurationCacheNotFail(String taskName)
-            throws IOException, URISyntaxException {
-        URL url = getClass().getClassLoader().getResource("io/quarkus/gradle/tasks/configurationcache/main");
-        FileUtils.copyDirectory(new File(url.toURI()), testProjectDir.toFile());
-        FileUtils.copyFile(new File("../gradle.properties"), testProjectDir.resolve("gradle.properties").toFile());
-
-        BuildResult build = buildResult(taskName);
+    public void quarkusBuildTasksNonCompatibleWithConfigurationCacheNotFail(String taskName) throws IOException {
+        BuildResult build = runBuildWithoutConfigurationCache(taskName);
         assertTrue(build.getOutput().contains("BUILD SUCCESSFUL"));
-
     }
 
     @ParameterizedTest
     @MethodSource("nonCompatibleQuarkusBuildTasks")
-    public void quarkusBuildTasksNonCompatibleWithConfigurationCacheNotFailWhenUsingConfigurationCache(String taskName)
-            throws IOException, URISyntaxException {
-        URL url = getClass().getClassLoader().getResource("io/quarkus/gradle/tasks/configurationcache/main");
-        FileUtils.copyDirectory(new File(url.toURI()), testProjectDir.toFile());
-        FileUtils.copyFile(new File("../gradle.properties"), testProjectDir.resolve("gradle.properties").toFile());
-
-        BuildResult build = buildResult(taskName, "--no-configuration-cache");
+    public void quarkusBuildTasksNonCompatibleWithConfigurationCacheNotFailWhenUsingConfigurationCache(
+            String taskName) throws IOException {
+        BuildResult build = runBuildWithoutConfigurationCache(taskName);
         assertTrue(build.getOutput().contains("BUILD SUCCESSFUL"));
-
     }
 
-    private BuildResult buildResult(String task, String configurationCacheCommand) {
+    private BuildResult runBuildWithConfigurationCache(String task, String... extraArgs) {
+        List<String> args = new ArrayList<>(
+                List.of(task, "--info", "--stacktrace", "--build-cache", "--configuration-cache"));
+        for (String arg : extraArgs) {
+            args.add(arg);
+        }
         return GradleRunner.create()
                 .withPluginClasspath()
                 .withProjectDir(testProjectDir.toFile())
-                .withArguments(task, "--info", "--stacktrace", "--build-cache", configurationCacheCommand)
+                .withArguments(args)
                 .build();
     }
 
-    private BuildResult buildResult(String task) {
+    private BuildResult runBuildWithoutConfigurationCache(String task) {
         return GradleRunner.create()
                 .withPluginClasspath()
                 .withProjectDir(testProjectDir.toFile())
-                .withArguments(task, "--info", "--stacktrace", "--build-cache")
+                .withArguments(task, "--info", "--stacktrace", "--build-cache", "--no-configuration-cache")
                 .build();
     }
 }

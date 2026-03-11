@@ -1,0 +1,317 @@
+////
+This document is maintained in the main Quarkus repository, and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="security-email-authentication"]
+= Email authentication
+include::_attributes.adoc[]
+:summary: A complete reference guide for the Email authentication mechanism
+:diataxis-type: reference
+:categories: security
+:extension-status: "experimental"
+:topics: security,authentication,mail,mailer
+:extensions: io.quarkus:quarkus-email-authentication
+
+Email authentication is an authentication mechanism that authenticates users based on their access to their email.
+
+== Learn how Email authentication works
+
+If an anonymous user tries to access a secured page, Quarkus redirects them to the login page (configured by the `quarkus.email-authentication.login-page` configuration property).
+That means you need to create a login page, for example, a Jakarta REST endpoint that returns a login page with a form.
+The login form can look like this:
+
+[source,html]
+----
+<form action="/generate-email-authentication-code" method="post">  <1>
+    <label>Email address</label>
+    <input type="email" placeholder="Email address" name="email" required>   <2> <3>
+    <button type="submit">Send code</button>    <4>
+</form>
+----
+<1> The post location configured by the `quarkus.email-authentication.code-generation-location` configuration property.
+<2> The email address where the authentication code will be sent.
+<3> The `email` parameter name can be configured with the `quarkus.email-authentication.email-parameter` configuration property.
+<4> A submit button that requests the email authentication code.
+
+Once you request the email authentication code using the form shown above, Quarkus redirects you to the page where you can enter the code.
+The page where Quarkus redirects you is determined by the `quarkus.email-authentication.code-page` configuration property.
+Quarkus generates an email authentication code and sends it to the provided email address.
+If authentication fails, Quarkus fires a security event that you can observe.
+The page where you can insert the received email authentication code can look like this:
+
+[source,html]
+----
+<form action="/j_security_check" method="post">  <1>
+    <label>Email authentication code</label>
+    <input type="text" placeholder="Code" name="code" required>   <2> <3>
+    <button type="submit">Login</button>    <4>
+</form>
+----
+<1> The post location is configured by the `quarkus.email-authentication.post-location` configuration property.
+<2> Here you can insert the email authentication code.
+<3> The `code` form parameter name is configured by the `quarkus.email-authentication.code-parameter` configuration property.
+<4> It is important that you log in from the same device and browser, from which you requested the email authentication code, because the default implementation relies on cookies.
+
+The cookie storing the code request is automatically removed after the authentication attempt, whether it succeeds or fails.
+
+Once you are logged in, Quarkus redirects you to the original location.
+For example, if you went to the `/secured` page and were redirected to the login page, you will be redirected back to the `/secured` page.
+On the other hand, if you entered the application directly on the login page, you will be redirected to the landing page (configured by the `quarkus.email-authentication.landing-page` configuration property).
+
+Your user credentials are stored in a session cookie, by default, the cookie name is `quarkus-credential`.
+The session cookie name can be changed with the `quarkus.email-authentication.session-cookie` configuration property.
+Credentials are valid as long as a valid cookie is present.
+The cookie is renewed automatically according to the new session cookie interval (see the `quarkus.email-authentication.new-session-cookie-interval` configuration property).
+If the cookie is not renewed within the idle timeout (see the `quarkus.email-authentication.timeout` configuration property), for example due to the user inactivity, the session cookie is not valid and user is redirected to the login page.
+
+By default, the logout happens simply because the user closed the browser.
+This is due to the session cookie max age, which is by default `-1`.
+You can change the session cookie max age with the `quarkus.email-authentication.session-cookie-max-age` configuration property.
+
+Manual logout is possible as well, simply remove the session cookie.
+
+== Enable Email authentication in your Quarkus project
+
+Enable the email authentication by adding the `quarkus-email-authentication` extension into your project:
+
+:add-extension-extensions: email-authentication
+include::{includes}/devtools/extension-add.adoc[]
+
+=== Configure Quarkus Mailer extension
+
+This email authentication mechanism sends emails using the xref:mailer-reference.adoc[Quarkus Mailer extension].
+You don't need any special configuration for this email authentication mechanism, therefore you can follow the Mailer reference.
+For example, configure the default mailer `from` field.
+
+[source,properties]
+----
+quarkus.mailer.from=${sender.email.address} <1>
+----
+<1> Email authentication token will be sent from the sender email address configured with the `$sender.email.address` property.
+
+The Mailer extension can be configured to send emails with Gmail, Amazon SES and other xref:mailer-reference.adoc#popular[popular email services].
+For more information how to configure the Mailer extension, please refer to its xref:mailer-reference.adoc[reference].
+
+=== Identity provider
+
+The default identity provider creates a `SecurityIdentity` for any email address that passes code verification, using the email address as the principal name.
+This means any user who proves access to their email address is authenticated, regardless of whether they are a known user in your system.
+
+To restrict authentication to known users, add roles, or handle user registration, provide a custom `IdentityProvider` for `io.quarkus.email.authentication.EmailAuthenticationRequest`.
+Alternatively, to enrich the identity without replacing the provider, you can implement a xref:security-customization.adoc#security-identity-customization[SecurityIdentityAugmentor].
+
+Here's an example that only authenticates known users:
+
+[source,java]
+----
+package org.acme.email.authentication;
+
+import java.util.Set;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkus.email.authentication.EmailAuthenticationRequest;
+import io.quarkus.security.identity.AuthenticationRequestContext;
+import io.quarkus.security.identity.IdentityProvider;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.runtime.QuarkusPrincipal;
+import io.quarkus.security.runtime.QuarkusSecurityIdentity;
+import io.smallrye.mutiny.Uni;
+
+@ApplicationScoped
+class CustomEmailIdentityProvider implements IdentityProvider<EmailAuthenticationRequest> {
+
+    @Override
+    public Class<EmailAuthenticationRequest> getRequestType() {
+        return EmailAuthenticationRequest.class;
+    }
+
+    @Override
+    public Uni<SecurityIdentity> authenticate(EmailAuthenticationRequest request,
+                                              AuthenticationRequestContext context) {
+        String emailAddress = request.getEmailAddress();
+        UserDetails user = findUserByEmail(emailAddress);
+
+        if (user != null) {
+            return Uni.createFrom().item(
+                QuarkusSecurityIdentity.builder()
+                    .setPrincipal(new QuarkusPrincipal(emailAddress))
+                    .addRoles(user.getRoles())
+                    .build());
+        }
+
+        // user not found - return null to reject authentication,
+        // or create a new user here if your application supports registration
+        return Uni.createFrom().nullItem();
+    }
+
+    private UserDetails findUserByEmail(String email) {
+        // Implement your user lookup logic here
+        return null;
+    }
+}
+----
+
+== Customize sending or storing of Email authentication codes
+
+=== Provide custom sender of the email authentication codes
+
+You may want to customize sent emails, for example to leverage Qute templates and so on.
+In that case, register a custom `io.quarkus.email.authentication.EmailAuthenticationCodeSender` implementation as a CDI bean:
+
+[source,java]
+----
+package org.acme.email.authentication;
+
+import io.quarkus.email.authentication.EmailAuthenticationCodeSender;
+import io.quarkus.mailer.Mail;
+import io.quarkus.mailer.reactive.ReactiveMailer;
+import io.quarkus.qute.Qute;
+import io.smallrye.mutiny.Uni;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+@ApplicationScoped
+class CustomEmailAuthenticationCodeSender implements EmailAuthenticationCodeSender {
+
+    @Inject
+    ReactiveMailer mailer;
+
+    @Override
+    public Uni<Void> sendCode(char[] code, String emailAddress) {
+        String emailBody = Qute.fmt("<html><body><p><span>Your verification code is {}</span></p></body></html>")
+                .contentType("text/html").dataArray(String.valueOf(code)).render(); <1>
+        Mail email = Mail.withHtml(emailAddress, "Your code", emailBody);
+        return mailer.send(email);
+    }
+}
+----
+<1> You can use the xref:qute.adoc[Qute templating engine] in your custom sender.
+
+[[custom-code-storage]]
+=== Provide custom email authentication code storage
+
+Default email authentication code storage relies solely on cookies, which comes with certain limitations.
+More about that in the <<security-hardening,Security hardening>> section.
+You may decide to store codes in memory, cache etc.
+It can be done by registering a custom `io.quarkus.email.authentication.EmailAuthenticationCodeStorage` as a CDI bean:
+
+[source,java]
+----
+package org.acme.email.authentication;
+
+import io.quarkus.email.authentication.EmailAuthenticationCodeStorage;
+import io.quarkus.security.AuthenticationFailedException;
+import io.smallrye.mutiny.Uni;
+import io.vertx.ext.web.RoutingContext;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+class CustomEmailAuthenticationCodeStorage implements EmailAuthenticationCodeStorage {
+
+    private final EmailAuthenticationCodeStorage delegate; <1>
+
+    CustomEmailAuthenticationCodeStorage(DefaultEmailAuthenticationCodeStorage delegate) {
+        this.delegate = delegate;
+    }
+
+    @Override
+    public Uni<Void> storeCode(EmailAuthenticationCodeRequest codeRequest, String emailAddress, RoutingContext routingContext) {
+        if (exceededNumberOfRequests(emailAddress) || isBlacklistedIpAddress(routingContext)) {
+            return Uni.createFrom().failure(new AuthenticationFailedException("..."));
+        }
+        return delegate.storeCode(codeRequest, emailAddress, routingContext);
+    }
+
+    @Override
+    public Uni<String> findEmailAddressByCode(String code, RoutingContext routingContext) {
+        if (isCodeAlreadyUsed(code)) {
+            return Uni.createFrom().failure(new AuthenticationFailedException("..."));
+        }
+        return delegate.findEmailAddressByCode(code, routingContext);
+    }
+
+    // here comes your implementation
+
+}
+----
+<1> Optionally, you can delegate to the default storage implementation.
+
+NOTE: The `storeCode` method is called for every code generation request, even if no user with the given email address exists.
+This allows you to implement rate limiting and other protections before any email is sent.
+
+[[security-hardening]]
+== Security hardening
+
+Email authentication sends emails on every code generation request.
+Carefully consider under which conditions your application allows sending emails and use the customization options described below to enforce appropriate protections.
+
+=== Risks
+
+* *Email cost and abuse*: Each code generation request sends an email.
+Without rate limiting, an attacker could trigger a large volume of unwanted emails at your expense.
+* *Sender reputation*: If an attacker triggers emails to email addresses of unrelated people, those emails may be marked as spam, which can lead your mailing service provider to restrict your ability to send emails.
+* *Code reuse and brute-force attacks*: The default cookie-based code storage does not detect code reuse or limit the number of login attempts.
+
+=== Application-level mitigations
+
+All of the above can be mitigated by implementing a custom `EmailAuthenticationCodeStorage` as shown in the <<custom-code-storage>> section:
+
+* *Rate limiting*: Limit the number of code generation requests per email address, per IP address, or globally within a time window.
+* *IP-based restrictions*: Block or throttle requests from suspicious IP addresses.
+* *Code reuse detection*: Track used codes and reject attempts to reuse them.
+* *Temporary account lockout*: Lock out an email address after a number of failed login attempts.
+* *CAPTCHA verification*: Verify a CAPTCHA response in the `storeCode` method using the `RoutingContext` to prevent automated abuse.
+
+=== Infrastructure-level mitigations
+
+These mitigations can be used in addition to or instead of application-level mitigations:
+
+* Reverse proxy rate limiting
+* Web Application Firewall (WAF) rules
+
+== Debug and test Email authentication
+
+=== Security events
+
+Email authentication fires `io.quarkus.email.authentication.EmailAuthenticationEvent` for code generation and login operations.
+Observe these events to track authentication attempts, failures, or sent codes.
+See xref:security-customization.adoc#observe-security-events[Security events].
+
+=== Mock mailbox for testing
+
+Use `MockMailbox` to test code delivery without sending real emails:
+
+[source,java]
+----
+@Inject
+MockMailbox mailbox;
+
+@Test
+void testCodeDelivery() {
+    await().untilAsserted(() -> assertThat(mailbox.getMessagesSentTo("user@quarkus.io")).hasSize(1));
+}
+----
+
+See xref:mailer-reference.adoc#testing[Testing emails] for more information.
+
+=== Enable logging
+
+[source,properties]
+----
+quarkus.log.category."io.quarkus.email.authentication".level=DEBUG
+----
+
+Set log level to `TRACE` for detailed cookie and code operations.
+
+== Configure Email authentication
+
+The following properties can be used to configure the email authentication:
+
+include::{generated-dir}/config/quarkus-email-authentication_quarkus.email-authentication.adoc[opts=optional, leveloffset=+1]
+
+== References
+
+* xref:mailer-reference.adoc[Quarkus Mailer Reference documentation]
+* xref:security-authentication-mechanisms.adoc[Authentication mechanisms in Quarkus]
+* xref:security-identity-providers.adoc[Identity providers]

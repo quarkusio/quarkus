@@ -1,0 +1,15 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Email Authentication"
+metadata:
+  keywords:
+  - "mail"
+  - "mailer"
+  - "security"
+  - "authentication"
+  guide: "https://quarkus.io/guides/security-email-authentication"
+  categories:
+  - "security"
+  status: "experimental"
+  config:
+  - "quarkus.email-authentication."

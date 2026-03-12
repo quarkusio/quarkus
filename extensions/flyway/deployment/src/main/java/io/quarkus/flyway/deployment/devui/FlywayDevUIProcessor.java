@@ -13,10 +13,12 @@ import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.devshell.spi.ShellPageBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
+import io.quarkus.flyway.runtime.dev.shell.FlywayShellPage;
 import io.quarkus.flyway.runtime.dev.ui.FlywayDevUIRecorder;
 import io.quarkus.flyway.runtime.dev.ui.FlywayJsonRpcService;
 
@@ -55,5 +57,13 @@ public class FlywayDevUIProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem registerJsonRpcBackend() {
         return new JsonRPCProvidersBuildItem(FlywayJsonRpcService.class);
+    }
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    ShellPageBuildItem createShellPage() {
+        return ShellPageBuildItem.withCustomPage(
+                "Flyway",
+                'f',
+                FlywayShellPage.class);
     }
 }

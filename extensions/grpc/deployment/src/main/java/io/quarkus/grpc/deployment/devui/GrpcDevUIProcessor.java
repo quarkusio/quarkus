@@ -40,6 +40,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.dev.console.DevConsoleManager;
+import io.quarkus.devshell.spi.ShellPageBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
@@ -48,6 +49,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.grpc.deployment.DelegatingGrpcBeanBuildItem;
 import io.quarkus.grpc.deployment.GrpcDotNames;
 import io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator;
+import io.quarkus.grpc.runtime.dev.shell.GrpcShellPage;
 import io.quarkus.grpc.runtime.dev.ui.GrpcJsonRPCService;
 import io.quarkus.grpc.runtime.devmode.CollectStreams;
 import io.quarkus.grpc.runtime.devmode.DelegatingGrpcBeansStorage;
@@ -231,6 +233,14 @@ public class GrpcDevUIProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem createJsonRPCServiceForCache() {
         return new JsonRPCProvidersBuildItem(GrpcJsonRPCService.class);
+    }
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    ShellPageBuildItem createShellPage() {
+        return ShellPageBuildItem.withCustomPage(
+                "gRPC",
+                'G',
+                GrpcShellPage.class);
     }
 
     private Collection<Class<?>> getGrpcServices(IndexView index) throws ClassNotFoundException {

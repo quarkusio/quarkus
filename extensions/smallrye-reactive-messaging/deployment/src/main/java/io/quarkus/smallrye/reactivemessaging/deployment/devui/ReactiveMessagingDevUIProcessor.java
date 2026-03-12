@@ -12,10 +12,12 @@ import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.devshell.spi.ShellPageBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames;
+import io.quarkus.smallrye.reactivemessaging.runtime.dev.shell.ReactiveMessagingShellPage;
 import io.quarkus.smallrye.reactivemessaging.runtime.dev.ui.Connectors;
 import io.quarkus.smallrye.reactivemessaging.runtime.dev.ui.DevConsoleRecorder;
 import io.quarkus.smallrye.reactivemessaging.runtime.dev.ui.ReactiveMessagingJsonRpcService;
@@ -67,5 +69,13 @@ public class ReactiveMessagingDevUIProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem createJsonRPCServiceForCache() {
         return new JsonRPCProvidersBuildItem(ReactiveMessagingJsonRpcService.class);
+    }
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    ShellPageBuildItem createShellPage() {
+        return ShellPageBuildItem.withCustomPage(
+                "Messaging",
+                'm',
+                ReactiveMessagingShellPage.class);
     }
 }

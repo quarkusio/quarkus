@@ -24,6 +24,7 @@ import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -38,6 +39,8 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
+import io.quarkus.devshell.spi.ShellPageBuildItem;
+import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.micrometer.deployment.export.PrometheusRegistryProcessor;
@@ -54,6 +57,8 @@ import io.quarkus.micrometer.runtime.MicrometerCountedInterceptor;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.MicrometerTimedInterceptor;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
+import io.quarkus.micrometer.runtime.dev.MicrometerJsonRpcService;
+import io.quarkus.micrometer.runtime.dev.shell.MicrometerShellPage;
 import io.quarkus.micrometer.runtime.export.exemplars.NoopOpenTelemetryExemplarContextUnwrapper;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.metrics.MetricsFactory;
@@ -276,6 +281,19 @@ public class MicrometerProcessor {
         });
 
         return card;
+    }
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    JsonRPCProvidersBuildItem registerJsonRpcBackend() {
+        return new JsonRPCProvidersBuildItem(MicrometerJsonRpcService.class);
+    }
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    ShellPageBuildItem createShellPage() {
+        return ShellPageBuildItem.withCustomPage(
+                "Micrometer",
+                'M',
+                MicrometerShellPage.class);
     }
 
 }

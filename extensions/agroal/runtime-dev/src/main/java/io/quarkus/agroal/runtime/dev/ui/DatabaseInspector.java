@@ -23,12 +23,9 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.agroal.api.AgroalDataSource;
@@ -55,31 +52,50 @@ public final class DatabaseInspector {
 
     private final Map<String, AgroalDataSource> checkedDataSources = new HashMap<>();
 
-    private boolean isDev = false;
-    private boolean allowSql = false;
-    private String allowedHost = null;
+    private volatile boolean initialized = false;
 
-    public DatabaseInspector() {
-        LaunchMode currentMode = LaunchMode.current();
-        this.isDev = currentMode.isDev() && !currentMode.isRemoteDev();
+    // Config values are set via recorder from deployment time to avoid classloader issues
+    private static volatile boolean allowSql = false;
+    private static volatile String allowedHost = null;
 
-        Config config = ConfigProvider.getConfig();
-        this.allowSql = config.getOptionalValue("quarkus.datasource.dev-ui.allow-sql", Boolean.class)
-                .orElse(false);
-
-        this.allowedHost = config.getOptionalValue("quarkus.datasource.dev-ui.allowed-db-host", String.class)
-                .orElse(null);
-
+    /**
+     * Called from deployment to set config values that can't be read at runtime
+     * due to classloader isolation in dev mode.
+     */
+    public static void setDevConfig(boolean allowSqlConfig, String allowedHostConfig) {
+        allowSql = allowSqlConfig;
+        allowedHost = allowedHostConfig;
     }
 
-    @PostConstruct
-    protected void init() {
+    /**
+     * Lazily initialize datasources on first access.
+     * This avoids initialization order issues and classloader problems.
+     */
+    private void ensureInitialized() {
+        if (initialized) {
+            return;
+        }
+        initialized = true;
+
+        // Check if we're in dev mode - since this class is in runtime-dev,
+        // it should only be loaded in dev mode, but verify anyway
+        try {
+            LaunchMode currentMode = LaunchMode.current();
+            if (!currentMode.isDev() || currentMode.isRemoteDev()) {
+                LOG.debug("Not in local dev mode, skipping datasource initialization");
+                return;
+            }
+        } catch (Exception e) {
+            // If LaunchMode check fails, assume dev mode since this is runtime-dev
+            LOG.debug("LaunchMode check failed, assuming dev mode: " + e.getMessage());
+        }
+
         if (!agroalDataSourceSupports.isResolvable()) {
-            // No configured Agroal datasource at build time.
+            LOG.debug("No Agroal datasource support available");
             return;
         }
 
-        if (isDev) {
+        try {
             AgroalDataSourceSupport agroalSupport = agroalDataSourceSupports.get();
             for (String name : agroalSupport.entries.keySet()) {
                 AgroalDataSourceSupport.Entry entry = agroalSupport.entries.get(name);
@@ -89,41 +105,42 @@ public final class DatabaseInspector {
                         AgroalDataSource ads = dataSourceInstance.get();
                         if (isAllowedDatabase(ads)) {
                             checkedDataSources.put(name, ads);
+                            LOG.debugf("Added datasource: %s", name);
+                        } else {
+                            LOG.debugf("Datasource %s not allowed (not local)", name);
                         }
                     }
                 }
             }
+        } catch (Exception e) {
+            LOG.warn("Failed to initialize datasources: " + e.getMessage());
         }
     }
 
     @JsonRpcDescription("Get all available datasources for the Database")
     @DevMCPEnableByDefault
     public List<Datasource> getDataSources() {
-        if (isDev) {
-            List<Datasource> datasources = new ArrayList<>();
+        ensureInitialized();
 
-            for (String ds : checkedDataSources.keySet()) {
-                datasources.add(getDatasource(ds));
-            }
-
-            return datasources;
+        List<Datasource> datasources = new ArrayList<>();
+        for (String ds : checkedDataSources.keySet()) {
+            datasources.add(getDatasource(ds));
         }
-        return List.of();
+        return datasources;
     }
 
     @JsonRpcDescription("Get a spesific datasource for the Database by name")
     @DevMCPEnableByDefault
     private Datasource getDatasource(@JsonRpcDescription("Datasource name") String datasource) {
-        if (isDev) {
-            AgroalDataSource ads = checkedDataSources.get(datasource);
-            if (isAllowedDatabase(ads)) {
-                AgroalDataSourceConfiguration configuration = ads.getConfiguration();
+        ensureInitialized();
+        AgroalDataSource ads = checkedDataSources.get(datasource);
+        if (ads != null && isAllowedDatabase(ads)) {
+            AgroalDataSourceConfiguration configuration = ads.getConfiguration();
 
-                String jdbcUrl = configuration.connectionPoolConfiguration().connectionFactoryConfiguration().jdbcUrl();
-                boolean isDefault = DataSourceUtil.isDefault(datasource);
+            String jdbcUrl = configuration.connectionPoolConfiguration().connectionFactoryConfiguration().jdbcUrl();
+            boolean isDefault = DataSourceUtil.isDefault(datasource);
 
-                return new Datasource(datasource, jdbcUrl, isDefault);
-            }
+            return new Datasource(datasource, jdbcUrl, isDefault);
         }
         return null;
     }
@@ -131,114 +148,113 @@ public final class DatabaseInspector {
     @JsonRpcDescription("Get all the tables for a certain datasource")
     @DevMCPEnableByDefault
     public List<Table> getTables(@JsonRpcDescription("Datasource name") String datasource) {
-        if (isDev) {
-            List<Table> tableList = new ArrayList<>();
-            try {
-                AgroalDataSource ads = checkedDataSources.get(datasource);
-                if (isAllowedDatabase(ads)) {
-                    try (Connection connection = ads.getConnection()) {
-                        DatabaseMetaData metaData = connection.getMetaData();
+        ensureInitialized();
+        List<Table> tableList = new ArrayList<>();
+        try {
+            AgroalDataSource ads = checkedDataSources.get(datasource);
+            if (ads != null && isAllowedDatabase(ads)) {
+                try (Connection connection = ads.getConnection()) {
+                    DatabaseMetaData metaData = connection.getMetaData();
 
-                        // Get all tables
-                        try (ResultSet tables = metaData.getTables(null, null, "%", new String[] { "TABLE" })) {
-                            while (tables.next()) {
-                                String tableName = tables.getString("TABLE_NAME");
-                                String tableSchema = tables.getString("TABLE_SCHEM");
-                                if (tableSchema == null) {
-                                    tableSchema = tables.getString("TABLE_CAT"); // fallback for MySQL
-                                }
-
-                                // Get the Primary Keys
-                                List<String> primaryKeyList = getPrimaryKeys(metaData, tableSchema, tableName);
-
-                                // Get columns for each table
-                                List<Column> columnList = new ArrayList<>();
-                                try (ResultSet columns = metaData.getColumns(null, tableSchema, tableName, "%")) {
-                                    while (columns.next()) {
-                                        String columnName = columns.getString("COLUMN_NAME");
-                                        String columnType = columns.getString("TYPE_NAME");
-                                        int columnSize = columns.getInt("COLUMN_SIZE");
-                                        String nullable = columns.getString("IS_NULLABLE");
-                                        int dataType = columns.getInt("DATA_TYPE");
-                                        columnList
-                                                .add(new Column(columnName, columnType, columnSize, nullable,
-                                                        isBinary(dataType)));
-
-                                    }
-                                }
-                                List<ForeignKey> foreignKeyList = new ArrayList<>();
-                                try (ResultSet fks = metaData.getImportedKeys(null, tableSchema, tableName)) {
-                                    while (fks.next()) {
-                                        String fkColumn = fks.getString("FKCOLUMN_NAME");
-                                        String pkTable = fks.getString("PKTABLE_NAME");
-                                        String pkColumn = fks.getString("PKCOLUMN_NAME");
-                                        foreignKeyList.add(new ForeignKey(fkColumn, pkTable, pkColumn));
-                                    }
-                                }
-
-                                tableList.add(new Table(tableSchema, tableName, primaryKeyList, columnList, foreignKeyList));
+                    // Get all tables
+                    try (ResultSet tables = metaData.getTables(null, null, "%", new String[] { "TABLE" })) {
+                        while (tables.next()) {
+                            String tableName = tables.getString("TABLE_NAME");
+                            String tableSchema = tables.getString("TABLE_SCHEM");
+                            if (tableSchema == null) {
+                                tableSchema = tables.getString("TABLE_CAT"); // fallback for MySQL
                             }
+
+                            // Get the Primary Keys
+                            List<String> primaryKeyList = getPrimaryKeys(metaData, tableSchema, tableName);
+
+                            // Get columns for each table
+                            List<Column> columnList = new ArrayList<>();
+                            try (ResultSet columns = metaData.getColumns(null, tableSchema, tableName, "%")) {
+                                while (columns.next()) {
+                                    String columnName = columns.getString("COLUMN_NAME");
+                                    String columnType = columns.getString("TYPE_NAME");
+                                    int columnSize = columns.getInt("COLUMN_SIZE");
+                                    String nullable = columns.getString("IS_NULLABLE");
+                                    int dataType = columns.getInt("DATA_TYPE");
+                                    columnList
+                                            .add(new Column(columnName, columnType, columnSize, nullable,
+                                                    isBinary(dataType)));
+
+                                }
+                            }
+                            List<ForeignKey> foreignKeyList = new ArrayList<>();
+                            try (ResultSet fks = metaData.getImportedKeys(null, tableSchema, tableName)) {
+                                while (fks.next()) {
+                                    String fkColumn = fks.getString("FKCOLUMN_NAME");
+                                    String pkTable = fks.getString("PKTABLE_NAME");
+                                    String pkColumn = fks.getString("PKCOLUMN_NAME");
+                                    foreignKeyList.add(new ForeignKey(fkColumn, pkTable, pkColumn));
+                                }
+                            }
+
+                            tableList.add(new Table(tableSchema, tableName, primaryKeyList, columnList, foreignKeyList));
                         }
                     }
                 }
-            } catch (SQLException ex) {
-                throw new RuntimeException(ex);
             }
-
-            return tableList;
+        } catch (SQLException ex) {
+            throw new RuntimeException(ex);
         }
-        return null;
+
+        return tableList;
     }
 
     @JsonRpcDescription("Generate an ER Diagram in dot (graphviz) format for a certain datasource")
     public String generateDot(@JsonRpcDescription("Datasource name") String datasource) {
-        if (isDev) {
-            List<Table> tables = getTables(datasource);
+        ensureInitialized();
+        List<Table> tables = getTables(datasource);
+        if (tables == null || tables.isEmpty()) {
+            return null;
+        }
 
-            StringBuilder dot = new StringBuilder();
-            dot.append("digraph ER {\n");
-            dot.append("  graph [splines=ortho, nodesep=1, ranksep=2];\n");
-            dot.append("  node [shape=record, fontname=Helvetica];\n\n");
+        StringBuilder dot = new StringBuilder();
+        dot.append("digraph ER {\n");
+        dot.append("  graph [splines=ortho, nodesep=1, ranksep=2];\n");
+        dot.append("  node [shape=record, fontname=Helvetica];\n\n");
 
-            for (Table table : tables) {
-                StringBuilder fields = new StringBuilder();
-                for (Column col : table.columns()) {
-                    boolean isPK = table.primaryKeys().contains(col.columnName());
-                    fields.append(col.columnName())
-                            .append(": ")
-                            .append(col.columnType())
-                            .append(" (")
-                            .append(col.columnSize())
-                            .append(")")
-                            .append(isPK ? " (PK)" : "")
-                            .append("\\l");
-                }
-
-                dot.append("  ")
-                        .append(escape(table.tableName()))
-                        .append(" [label=\"{")
-                        .append(table.tableName())
-                        .append("|")
-                        .append(fields)
-                        .append("}\"];\n");
-
-                for (ForeignKey fk : table.foreignKeys()) {
-                    dot.append("  ")
-                            .append(escape(table.tableName()))
-                            .append(" -> ")
-                            .append(escape(fk.referencedTable()))
-                            .append(" [label=\"")
-                            .append(fk.columnName())
-                            .append(" → ")
-                            .append(fk.referencedColumn())
-                            .append("\"];\n");
-                }
+        for (Table table : tables) {
+            StringBuilder fields = new StringBuilder();
+            for (Column col : table.columns()) {
+                boolean isPK = table.primaryKeys().contains(col.columnName());
+                fields.append(col.columnName())
+                        .append(": ")
+                        .append(col.columnType())
+                        .append(" (")
+                        .append(col.columnSize())
+                        .append(")")
+                        .append(isPK ? " (PK)" : "")
+                        .append("\\l");
             }
 
-            dot.append("}\n");
-            return dot.toString();
+            dot.append("  ")
+                    .append(escape(table.tableName()))
+                    .append(" [label=\"{")
+                    .append(table.tableName())
+                    .append("|")
+                    .append(fields)
+                    .append("}\"];\n");
+
+            for (ForeignKey fk : table.foreignKeys()) {
+                dot.append("  ")
+                        .append(escape(table.tableName()))
+                        .append(" -> ")
+                        .append(escape(fk.referencedTable()))
+                        .append(" [label=\"")
+                        .append(fk.columnName())
+                        .append(" → ")
+                        .append(fk.referencedColumn())
+                        .append("\"];\n");
+            }
         }
-        return null;
+
+        dot.append("}\n");
+        return dot.toString();
     }
 
     @JsonRpcDescription("Execute SQL against a certain datasource")
@@ -247,7 +263,8 @@ public final class DatabaseInspector {
             @JsonRpcDescription("Valid SQL to execute") String sql,
             @JsonRpcDescription("Page number for pagable rusults, starting at 1") Integer pageNumber,
             @JsonRpcDescription("Number of rows in a page, example 10") Integer pageSize) {
-        if (isDev && sqlIsValid(sql)) {
+        ensureInitialized();
+        if (sqlIsValid(sql)) {
             try {
                 AgroalDataSource ads = checkedDataSources.get(datasource);
                 if (isAllowedDatabase(ads)) {
@@ -329,34 +346,34 @@ public final class DatabaseInspector {
 
     @JsonRpcDescription("Get the import.sql script for a certain datasource")
     public String getInsertScript(@JsonRpcDescription("Datasource name") String datasource) {
-        if (isDev) {
-            try {
-                AgroalDataSource ads = checkedDataSources.get(datasource);
-                if (isAllowedDatabase(ads)) {
-                    try (Connection connection = ads.getConnection();
-                            StringWriter writer = new StringWriter()) {
-                        DatabaseMetaData metaData = connection.getMetaData();
-                        try (ResultSet tables = metaData.getTables(null, null, "%", new String[] { "TABLE" })) {
-                            while (tables.next()) {
-                                String tableName = tables.getString("TABLE_NAME");
-                                exportTable(connection, writer, tableName);
-                            }
+        ensureInitialized();
+        try {
+            AgroalDataSource ads = checkedDataSources.get(datasource);
+            if (ads != null && isAllowedDatabase(ads)) {
+                try (Connection connection = ads.getConnection();
+                        StringWriter writer = new StringWriter()) {
+                    DatabaseMetaData metaData = connection.getMetaData();
+                    try (ResultSet tables = metaData.getTables(null, null, "%", new String[] { "TABLE" })) {
+                        while (tables.next()) {
+                            String tableName = tables.getString("TABLE_NAME");
+                            exportTable(connection, writer, tableName);
                         }
-
-                        return writer.toString();
-                    } catch (IOException ex) {
-                        throw new UncheckedIOException(ex);
                     }
+
+                    return writer.toString();
+                } catch (IOException ex) {
+                    throw new UncheckedIOException(ex);
                 }
-            } catch (SQLException ex) {
-                throw new RuntimeException(ex);
             }
+        } catch (SQLException ex) {
+            throw new RuntimeException(ex);
         }
         return null;
     }
 
     public CompletionStage<Map<String, String>> generateTableData(String datasource, String schema, String name, int rowCount) {
-        if (isDev && assistant.isPresent()) {
+        ensureInitialized();
+        if (assistant.isPresent()) {
             List<Table> tables = getTables(datasource);
             Optional<Table> matchingTable = tables.stream()
                     .filter(t -> t.tableSchema().equals(schema) && t.tableName().equals(name))
@@ -373,7 +390,8 @@ public final class DatabaseInspector {
     }
 
     public CompletionStage<Map<String, String>> englishToSQL(String datasource, String schema, String name, String english) {
-        if (isDev && assistant.isPresent()) {
+        ensureInitialized();
+        if (assistant.isPresent()) {
             List<Table> tables = getTables(datasource);
 
             return assistant.get().assistBuilder()
@@ -591,20 +609,20 @@ public final class DatabaseInspector {
         return sb.toString();
     }
 
-    private static record Column(String columnName, String columnType, int columnSize, String nullable, boolean binary) {
+    public static record Column(String columnName, String columnType, int columnSize, String nullable, boolean binary) {
     }
 
-    private static record ForeignKey(String columnName, String referencedTable, String referencedColumn) {
+    public static record ForeignKey(String columnName, String referencedTable, String referencedColumn) {
     }
 
-    private static record Table(String tableSchema, String tableName, List<String> primaryKeys, List<Column> columns,
+    public static record Table(String tableSchema, String tableName, List<String> primaryKeys, List<Column> columns,
             List<ForeignKey> foreignKeys) {
     }
 
-    private static record Datasource(String name, String jdbcUrl, boolean isDefault) {
+    public static record Datasource(String name, String jdbcUrl, boolean isDefault) {
     }
 
-    private static record DataSet(List<String> cols, List<Map<String, String>> data, String error, String message,
+    public static record DataSet(List<String> cols, List<Map<String, String>> data, String error, String message,
             int totalNumberOfElements) {
     }
 

@@ -1,6 +1,7 @@
 package io.quarkus.kubernetes.deployment;
 
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
+import static io.quarkus.kubernetes.deployment.Constants.SERVICE;
 import static io.quarkus.kubernetes.deployment.KubernetesCommonHelper.printMessageAboutPortsThatCantChange;
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.VANILLA_KUBERNETES_PRIORITY;
 
@@ -13,6 +14,7 @@ import io.dekorate.kubernetes.config.DeploymentStrategy;
 import io.dekorate.kubernetes.config.IngressBuilder;
 import io.dekorate.kubernetes.config.Port;
 import io.dekorate.kubernetes.config.RollingUpdateBuilder;
+import io.dekorate.kubernetes.decorator.AddAnnotationDecorator;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddIngressTlsDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
@@ -213,6 +215,12 @@ public class VanillaKubernetesProcessor extends BaseVanillaKubernetesProcessor {
                 }
             } else if (config.nodePort().isPresent()) {
                 context.add(new AddNodePortDecorator(name, config.nodePort().getAsInt(), config.ingress().targetPort()));
+            }
+        }
+
+        if (config.service() != null) {
+            for (Map.Entry<String, String> annotation : config.service().annotations().entrySet()) {
+                context.add(new AddAnnotationDecorator(name, annotation.getKey(), annotation.getValue(), SERVICE));
             }
         }
     }

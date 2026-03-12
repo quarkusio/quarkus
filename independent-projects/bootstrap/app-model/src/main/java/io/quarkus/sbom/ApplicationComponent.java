@@ -26,6 +26,11 @@ public class ApplicationComponent {
             super(component);
         }
 
+        public Builder setVersion(String version) {
+            this.version = version;
+            return this;
+        }
+
         public Builder setPath(Path componentPath) {
             path = componentPath;
             return this;
@@ -73,6 +78,7 @@ public class ApplicationComponent {
         }
     }
 
+    protected String version;
     protected Path path;
     protected String distributionPath;
     protected ResolvedDependency dep;
@@ -84,12 +90,17 @@ public class ApplicationComponent {
     }
 
     private ApplicationComponent(ApplicationComponent builder) {
+        this.version = builder.version;
         this.path = builder.path;
         this.distributionPath = builder.distributionPath;
         this.dep = builder.dep;
         this.pedigree = builder.pedigree;
         this.scope = builder.scope;
         this.dependencies = List.copyOf(builder.dependencies);
+    }
+
+    public String getVersion() {
+        return version == null ? (dep == null ? null : dep.getVersion()) : version;
     }
 
     public Path getPath() {

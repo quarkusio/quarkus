@@ -2117,16 +2117,16 @@ See xref:extension-writing-dev-service.adoc[how to write a Dev Service] for more
 [[testing-extensions]]
 === Testing Extensions
 
-Testing of Quarkus extensions should be done with the `io.quarkus.test.QuarkusUnitTest` JUnit extension.
+Testing of Quarkus extensions should be done with the `io.quarkus.test.QuarkusExtensionTest` JUnit extension.
 This extension allows for Arquillian-style tests that test specific functionalities.
 It is not intended for testing user applications, as this should be done via `io.quarkus.test.junit.QuarkusTest`.
-The main difference is that `QuarkusTest` simply boots the application once at the start of the run, while `QuarkusUnitTest` deploys a custom
+The main difference is that `QuarkusTest` simply boots the application once at the start of the run, while `QuarkusExtensionTest` deploys a custom
 Quarkus application for each test class.
 
 These tests should be placed in the deployment module, if additional Quarkus modules are required for testing
 their deployment modules should also be added as test scoped dependencies.
 
-Note that `QuarkusUnitTest` is in the `quarkus-junit-internal` module.
+Note that `QuarkusExtensionTest` is in the `quarkus-junit-internal` module.
 
 An example test class may look like:
 
@@ -2145,7 +2145,7 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.health.Liveness;
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -2157,7 +2157,7 @@ import io.restassured.RestAssured;
 public class FailingUnitTest {
 
     @RegisterExtension                                                                  // <1>
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setArchiveProducer(() ->
                     ShrinkWrap.create(JavaArchive.class)                                // <2>
                             .addClasses(FailingHealthCheck.class)
@@ -2185,7 +2185,7 @@ public class FailingUnitTest {
 }
 ----
 
-<1> The `QuarkusUnitTest` extension must be used with a static field. If used with a non-static field, the test application is not started.
+<1> The `QuarkusExtensionTest` extension must be used with a static field. If used with a non-static field, the test application is not started.
 <2> This producer is used to build the application to be tested. It uses Shrinkwrap to create a JavaArchive to test
 <3> It is possible to inject beans from our test deployment directly into the test case
 <4> This method directly invokes the health check Servlet and verifies the response
@@ -2199,7 +2199,7 @@ If you want to test that an extension properly fails at build time, use the `set
 package io.quarkus.hibernate.orm;
 
 import io.quarkus.runtime.configuration.ConfigurationException;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
@@ -2209,7 +2209,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class PersistenceAndQuarkusConfigTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .setExpectedException(ConfigurationException.class)                     <1>
             .withApplicationRoot((jar) -> jar
                     .addAsManifestResource("META-INF/some-persistence.xml", "persistence.xml")
@@ -2230,7 +2230,7 @@ public class PersistenceAndQuarkusConfigTest {
 
 
 [TIP]
-.Test coverage and `QuarkusUnitTest`
+.Test coverage and `QuarkusExtensionTest`
 ====
 If you want to measure the test coverage of the runtime submodule, then a specific JaCoCo configuration is needed in the deployment module:
 
@@ -2476,19 +2476,19 @@ The property is also honored when running tests:
 
 Analogously, you can use the `quarkus.debug.transformed-classes-dir` and `quarkus.debug.generated-sources-dir` properties to dump the relevant output.
 
-[[dump-generated-transformed-classes-with-quarkusunittest]]
-==== Inspecting Generated/Transformed Classes in `QuarkusUnitTest`
+[[dump-generated-transformed-classes-with-QuarkusExtensionTest]]
+==== Inspecting Generated/Transformed Classes in `QuarkusExtensionTest`
 
-When <<testing-extensions,using `QuarkusUnitTest`>>,
+When <<testing-extensions,using `QuarkusExtensionTest`>>,
 as an alternative to <<dump-the-generated-classes-to-the-file-system,setting `quarkus.debug.*-dir` manually>>,
-you may simply call `QuarkusUnitTest#debugBytecode`:
+you may simply call `QuarkusExtensionTest#debugBytecode`:
 
 [source,java]
 ----
 public class MyTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(MyEntity.class))
             .debugBytecode(true);
@@ -2501,7 +2501,7 @@ public class MyTest {
 This will automatically set up these configuration properties so that classes/sources
 are dumped to `target/debug`, for that test class only,
 in a subdirectory that is unique to each test execution.
-See the javadoc of `QuarkusUnitTest#debugBytecode` for details.
+See the javadoc of `QuarkusExtensionTest#debugBytecode` for details.
 
 This is handy to debug flaky tests that happen only in the CI environment, in particular;
 for example the GitHub Actions CI at https://github.com/quarkusio/quarkus/
@@ -2511,16 +2511,16 @@ collected into build artifacts available for download after each CI run.
 [[troubleshooting-trace-logs]]
 ==== Enabling trace logs for a particular test only
 
-When <<testing-extensions,using `QuarkusUnitTest`>>,
+When <<testing-extensions,using `QuarkusExtensionTest`>>,
 if you need to enable trace logs for a particular test class,
-you may simply call `QuarkusUnitTest#traceCategories` and pass the logging categories in argument:
+you may simply call `QuarkusExtensionTest#traceCategories` and pass the logging categories in argument:
 
 [source,java]
 ----
 public class MyTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(MyEntity.class))
             .traceCategories("org.hibernate", "io.quarkus.hibernate", "io.quarkus.panache");
@@ -2530,7 +2530,7 @@ public class MyTest {
 }
 ----
 
-See the javadoc of `QuarkusUnitTest#traceCategories` for details.
+See the javadoc of `QuarkusExtensionTest#traceCategories` for details.
 
 This is handy to debug flaky tests that happen only in the CI environment, in particular,
 as this will only increase the verbosity of logs in the particular test where the option is enabled.

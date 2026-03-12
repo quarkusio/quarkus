@@ -184,21 +184,26 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
 
             if (missingDependency == null) {
                 startable.start();
+
+                Map<String, String> config = request.getConfig(startable);
+                Map<String, String> overrideConfig = request.getOverrideConfig(startable);
+                configs.putAll(config);
+                configs.putAll(overrideConfig);
+
                 // We do not "copy" the config map here since it is created within the request.getConfig:
-                Map<String, String> combinedConfig = request.getConfig(startable);
                 // Some extensions may rely on adding/overriding config properties
                 //  depending on the results of the started dev services,
                 //  e.g. Hibernate Search/ORM may change the default schema management
                 //  if it detects that it runs over a dev service datasource/Elasticsearch distribution.
                 for (DevServicesAdditionalConfigBuildItem additionalConfigBuildItem : additionalConfigBuildItems) {
                     Map<String, String> extraFromBuildItem = additionalConfigBuildItem.getConfigProvider()
-                            .provide(combinedConfig);
+                            .provide(configs);
                     if (!extraFromBuildItem.isEmpty()) {
-                        combinedConfig.putAll(extraFromBuildItem);
+                        configs.putAll(extraFromBuildItem);
                     }
                 }
                 RunningService service = new RunningService(request.getName(), request.getDescription(),
-                        combinedConfig, request.getOverrideConfig(startable), startable.getContainerId(), startable);
+                        configs, request.getOverrideConfig(startable), startable.getContainerId(), startable);
                 this.addRunningService(request.getName(), request.getServiceName(), request.getServiceConfig(), service);
                 compressor.close();
 

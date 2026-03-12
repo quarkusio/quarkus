@@ -50,6 +50,7 @@ public class ApplicationManifestMutableJarTest extends ApplicationManifestTestBa
     public void initExpectedComponents() {
         expectMavenComponent(artifactCoords("app"), comp -> {
             assertDistributionPath(comp, "app/quarkus-application.jar");
+            assertVersion(comp, TsArtifact.DEFAULT_VERSION);
             assertDependencies(comp,
                     artifactCoords("acme-lib"),
                     artifactCoords("other-lib"),
@@ -60,67 +61,79 @@ public class ApplicationManifestMutableJarTest extends ApplicationManifestTestBa
 
         expectMavenComponent(artifactCoords("acme-lib"), comp -> {
             assertDistributionPath(comp, "lib/main/io.quarkus.bootstrap.test.acme-lib-1.jar");
+            assertVersion(comp, TsArtifact.DEFAULT_VERSION);
             assertDependencies(comp, artifactCoords("acme-common"));
             assertDependencyScope(comp, ApplicationComponent.SCOPE_RUNTIME);
         });
 
         expectMavenComponent(artifactCoords("acme-common"), comp -> {
             assertDistributionPath(comp, "lib/main/io.quarkus.bootstrap.test.acme-common-1.jar");
+            assertVersion(comp, TsArtifact.DEFAULT_VERSION);
             assertDependencies(comp, artifactCoords("acme-transitive"));
             assertDependencyScope(comp, ApplicationComponent.SCOPE_RUNTIME);
         });
 
         expectMavenComponent(artifactCoords("acme-transitive"), comp -> {
             assertDistributionPath(comp, "lib/main/io.quarkus.bootstrap.test.acme-transitive-1.jar");
+            assertVersion(comp, TsArtifact.DEFAULT_VERSION);
             assertDependencies(comp);
             assertDependencyScope(comp, ApplicationComponent.SCOPE_RUNTIME);
         });
 
         expectMavenComponent(artifactCoords("other-lib"), comp -> {
             assertDistributionPath(comp, "lib/main/io.quarkus.bootstrap.test.other-lib-1.jar");
+            assertVersion(comp, TsArtifact.DEFAULT_VERSION);
             assertDependencies(comp, artifactCoords("acme-common"));
             assertDependencyScope(comp, ApplicationComponent.SCOPE_RUNTIME);
         });
 
         expectMavenComponent(artifactCoords("my-lib"), comp -> {
             assertDistributionPath(comp, "lib/main/io.quarkus.bootstrap.test.my-lib-1.jar");
+            assertVersion(comp, TsArtifact.DEFAULT_VERSION);
             assertDependencies(comp, artifactCoords("acme-common"));
             assertDependencyScope(comp, ApplicationComponent.SCOPE_RUNTIME);
         });
 
         expectMavenComponent(artifactCoords("my-ext"), comp -> {
             assertDistributionPath(comp, "lib/main/io.quarkus.bootstrap.test.my-ext-1.jar");
+            assertVersion(comp, TsArtifact.DEFAULT_VERSION);
             assertDependencies(comp, artifactCoords("my-lib"));
             assertDependencyScope(comp, ApplicationComponent.SCOPE_RUNTIME);
         });
 
         expectFileComponent("quarkus-run.jar", comp -> {
+            assertVersion(comp, TsArtifact.DEFAULT_VERSION);
             assertDependencies(comp, artifactCoords("app"));
             assertDependencyScope(comp, ApplicationComponent.SCOPE_RUNTIME);
         });
 
         expectFileComponent("quarkus/generated-bytecode.jar", comp -> {
+            assertVersion(comp, TsArtifact.DEFAULT_VERSION);
             assertDependencies(comp);
             assertDependencyScope(comp, ApplicationComponent.SCOPE_RUNTIME);
         });
 
         expectFileComponent("quarkus/quarkus-application.dat", comp -> {
+            assertVersion(comp, TsArtifact.DEFAULT_VERSION);
             assertDependencies(comp);
             assertDependencyScope(comp, ApplicationComponent.SCOPE_RUNTIME);
         });
 
         expectFileComponent("quarkus-app-dependencies.txt", comp -> {
+            assertVersion(comp, TsArtifact.DEFAULT_VERSION);
             assertDependencies(comp);
             assertDependencyScope(comp, ApplicationComponent.SCOPE_RUNTIME);
         });
 
         expectFileComponent("quarkus/build-system.properties", comp -> {
+            assertVersion(comp, TsArtifact.DEFAULT_VERSION);
             assertDependencies(comp);
             assertDependencyScope(comp, ApplicationComponent.SCOPE_RUNTIME);
         });
 
         expectMavenComponent(artifactCoords("my-ext-deployment"), comp -> {
             assertDistributionPath(comp, "lib/deployment/io.quarkus.bootstrap.test.my-ext-deployment-1.jar");
+            assertVersion(comp, TsArtifact.DEFAULT_VERSION);
             assertDependencyScope(comp, ApplicationComponent.SCOPE_DEVELOPMENT);
             assertDependencies(comp,
                     artifactCoords("my-ext"),
@@ -128,11 +141,13 @@ public class ApplicationManifestMutableJarTest extends ApplicationManifestTestBa
         });
 
         expectFileComponent("lib/deployment/appmodel.dat", comp -> {
+            assertVersion(comp, TsArtifact.DEFAULT_VERSION);
             assertDependencies(comp);
             assertDependencyScope(comp, ApplicationComponent.SCOPE_RUNTIME);
         });
 
         expectFileComponent("lib/deployment/deployment-class-path.dat", comp -> {
+            assertVersion(comp, TsArtifact.DEFAULT_VERSION);
             assertDependencies(comp);
             assertDependencyScope(comp, ApplicationComponent.SCOPE_RUNTIME);
         });

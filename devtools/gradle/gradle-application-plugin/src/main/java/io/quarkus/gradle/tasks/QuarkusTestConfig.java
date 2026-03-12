@@ -1,7 +1,9 @@
 package io.quarkus.gradle.tasks;
 
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.TaskAction;
 
+@CacheableTask
 public abstract class QuarkusTestConfig extends QuarkusTask {
 
     public QuarkusTestConfig() {

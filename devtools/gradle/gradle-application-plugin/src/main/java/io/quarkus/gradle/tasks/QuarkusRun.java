@@ -17,6 +17,7 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
@@ -38,6 +39,7 @@ import io.quarkus.deployment.cmd.RunCommandActionResultBuildItem;
 import io.quarkus.deployment.cmd.StartDevServicesAndRunCommandHandler;
 import io.smallrye.common.process.ProcessBuilder;
 
+@CacheableTask
 public abstract class QuarkusRun extends QuarkusBuildTask {
     private final Property<File> workingDirectory;
     private final SourceSet mainSourceSet;

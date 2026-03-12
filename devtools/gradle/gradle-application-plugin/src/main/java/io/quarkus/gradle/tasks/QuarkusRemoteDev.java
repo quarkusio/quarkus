@@ -3,10 +3,12 @@ package io.quarkus.gradle.tasks;
 import javax.inject.Inject;
 
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.tasks.CacheableTask;
 
 import io.quarkus.deployment.dev.DevModeCommandLineBuilder;
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
 
+@CacheableTask
 public abstract class QuarkusRemoteDev extends QuarkusDev {
 
     @Inject

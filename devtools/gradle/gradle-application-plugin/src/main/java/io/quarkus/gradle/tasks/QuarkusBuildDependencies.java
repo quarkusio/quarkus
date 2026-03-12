@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 
 import org.gradle.api.GradleException;
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.OutputDirectories;
 import org.gradle.api.tasks.TaskAction;
 
@@ -35,6 +36,7 @@ import io.smallrye.config.SmallRyeConfig;
  * <p>
  * Caching dependency jars is wasted effort and unnecessarily pollutes the Gradle build cache.
  */
+@CacheableTask
 public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
     static final String CLASS_LOADING_REMOVED_ARTIFACTS = "quarkus.class-loading.removed-artifacts";
     static final String CLASS_LOADING_PARENT_FIRST_ARTIFACTS = "quarkus.class-loading.parent-first-artifacts";

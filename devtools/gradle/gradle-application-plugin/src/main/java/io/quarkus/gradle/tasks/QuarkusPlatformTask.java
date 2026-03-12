@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.gradle.api.GradleException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.TaskCollection;
 import org.gradle.api.tasks.compile.JavaCompile;
 
@@ -33,6 +34,7 @@ import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 
+@CacheableTask
 public abstract class QuarkusPlatformTask extends QuarkusTask {
 
     private volatile ExtensionCatalogResolver catalogResolver;

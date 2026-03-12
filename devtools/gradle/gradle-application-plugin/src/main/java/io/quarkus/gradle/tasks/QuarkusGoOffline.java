@@ -3,11 +3,13 @@ package io.quarkus.gradle.tasks;
 import javax.inject.Inject;
 
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.TaskAction;
 
 import io.quarkus.runtime.LaunchMode;
 
+@CacheableTask
 public abstract class QuarkusGoOffline extends QuarkusTask {
 
     private Configuration compileClasspath;

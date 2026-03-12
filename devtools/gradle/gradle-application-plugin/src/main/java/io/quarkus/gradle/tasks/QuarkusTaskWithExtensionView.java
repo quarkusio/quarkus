@@ -2,6 +2,7 @@ package io.quarkus.gradle.tasks;
 
 import org.gradle.api.java.archives.Attributes;
 import org.gradle.api.provider.MapProperty;
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
@@ -18,6 +19,7 @@ import org.gradle.api.tasks.Optional;
  * to access the inputs defined in this task.
  * </p>
  */
+@CacheableTask
 public abstract class QuarkusTaskWithExtensionView extends QuarkusTask {
 
     private final QuarkusPluginExtensionView extensionView;

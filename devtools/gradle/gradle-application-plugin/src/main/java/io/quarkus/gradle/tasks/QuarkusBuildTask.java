@@ -22,6 +22,7 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
@@ -45,6 +46,7 @@ import io.smallrye.common.expression.Expression;
 /**
  * Base class for the {@link QuarkusBuildDependencies}, {@link QuarkusBuildCacheableAppParts}, {@link QuarkusBuild} tasks
  */
+@CacheableTask
 public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
     private static final String QUARKUS_BUILD_DIR = "quarkus-build";
     private static final String QUARKUS_BUILD_GEN_DIR = QUARKUS_BUILD_DIR + "/gen";

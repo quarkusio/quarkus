@@ -36,6 +36,7 @@ import org.jboss.logging.Logger;
 
 import com.github.packageurl.MalformedPackageURLException;
 import com.github.packageurl.PackageURL;
+import com.github.packageurl.PackageURLBuilder;
 
 import io.quarkus.bootstrap.app.SbomResult;
 import io.quarkus.bootstrap.resolver.maven.EffectiveModelResolver;
@@ -179,7 +180,7 @@ public class CycloneDxSbomGenerator {
         if (!component.getDependencies().isEmpty()) {
             final Dependency d = new Dependency(c.getBomRef());
             for (var depCoords : sortAlphabetically(component.getDependencies())) {
-                d.addDependency(new Dependency(getPackageURL(depCoords).toString()));
+                d.addDependency(new Dependency(getPurl(depCoords).toString()));
             }
             bom.addDependency(d);
         }
@@ -198,15 +199,8 @@ public class CycloneDxSbomGenerator {
         var dep = component.getResolvedDependency();
         if (dep != null) {
             initMavenComponent(dep, c);
-        } else if (component.getDistributionPath() != null) {
-            c.setBomRef(component.getDistributionPath());
-            c.setType(org.cyclonedx.model.Component.Type.FILE);
-            c.setName(component.getPath().getFileName().toString());
-        } else if (component.getPath() != null) {
-            final String fileName = component.getPath().getFileName().toString();
-            c.setName(fileName);
-            c.setBomRef(fileName);
-            c.setType(org.cyclonedx.model.Component.Type.FILE);
+        } else if (component.getDistributionPath() != null || component.getPath() != null) {
+            initGenericComponent(component, c);
         } else {
             throw new RuntimeException("Component is not associated with any file system path");
         }
@@ -247,12 +241,21 @@ public class CycloneDxSbomGenerator {
         return c;
     }
 
+    private static void initGenericComponent(ApplicationComponent component, Component c) {
+        c.setName(component.getPath().getFileName().toString());
+        c.setVersion(component.getVersion());
+        c.setType(Component.Type.FILE);
+        PackageURL purl = getGenericPurl(c.getName(), component.getVersion());
+        c.setPurl(purl);
+        c.setBomRef(purl.toString());
+    }
+
     private void initMavenComponent(ArtifactCoords coords, Component c) {
         addPomMetadata(coords, c);
         c.setGroup(coords.getGroupId());
         c.setName(coords.getArtifactId());
         c.setVersion(coords.getVersion());
-        final PackageURL purl = getPackageURL(coords);
+        final PackageURL purl = getPurl(coords);
         c.setPurl(purl);
         c.setBomRef(purl.toString());
         c.setType(Component.Type.LIBRARY);
@@ -388,7 +391,24 @@ public class CycloneDxSbomGenerator {
         }
     }
 
-    private static PackageURL getPackageURL(ArtifactCoords dep) {
+    private static PackageURL getGenericPurl(String name, String version) {
+        Objects.requireNonNull(name, "name must not be null");
+        if (version == null) {
+            log.warn("Component " + name + " does not have a version. Please report this issue for quarkus-cyclonedx.");
+        }
+        try {
+            return PackageURLBuilder.aPackageURL()
+                    .withType(PackageURL.StandardTypes.GENERIC)
+                    .withName(name)
+                    .withVersion(version)
+                    .build();
+        } catch (MalformedPackageURLException e) {
+            throw new RuntimeException(
+                    "Failed to create a generic PURL for component with name " + name + " and version " + version, e);
+        }
+    }
+
+    private static PackageURL getPurl(ArtifactCoords dep) {
         final TreeMap<String, String> qualifiers = new TreeMap<>();
         qualifiers.put("type", dep.getType());
         if (!dep.getClassifier().isEmpty()) {
@@ -402,7 +422,7 @@ public class CycloneDxSbomGenerator {
                     dep.getVersion(),
                     qualifiers, null);
         } catch (MalformedPackageURLException e) {
-            throw new RuntimeException("Failed to generate Purl for " + dep.toCompactCoords(), e);
+            throw new RuntimeException("Failed to generate PURL for " + dep.toCompactCoords(), e);
         }
         return purl;
     }

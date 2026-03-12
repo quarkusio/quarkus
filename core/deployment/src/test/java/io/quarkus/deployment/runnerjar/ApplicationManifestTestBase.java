@@ -75,6 +75,12 @@ public abstract class ApplicationManifestTestBase extends BootstrapFromOriginalJ
                 .as(() -> ApplicationManifestTestBase.getComponentKey(comp) + " is not found in the distribution").isNull();
     }
 
+    protected static void assertVersion(ApplicationComponent comp, String expectedVersion) {
+        assertThat(comp.getVersion())
+                .as(() -> ApplicationManifestTestBase.getComponentKey(comp) + " has version")
+                .isEqualTo(expectedVersion);
+    }
+
     protected static void assertDependencies(ApplicationComponent comp, ArtifactCoords... expectedDeps) {
         assertThat(toArtifactCoordsList(comp.getDependencies()))
                 .as(() -> ApplicationManifestTestBase.getComponentKey(comp) + " has dependencies")

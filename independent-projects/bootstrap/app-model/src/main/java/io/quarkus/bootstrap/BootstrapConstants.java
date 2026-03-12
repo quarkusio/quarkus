@@ -12,6 +12,7 @@ public interface BootstrapConstants {
     String CONDITIONAL_DEPENDENCIES = "conditional-dependencies";
     String CONDITIONAL_DEV_DEPENDENCIES = "conditional-dev-dependencies";
     String DEPENDENCY_CONDITION = "dependency-condition";
+    String DEPENDENCY_CONDITION_ABSENT = "dependency-condition-absent";
 
     /**
      * Constant for sharing the additional mappings between test-sources and the corresponding application-sources.

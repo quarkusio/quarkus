@@ -122,6 +122,11 @@
             <artifactId>quarkus-jaxb</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-h2</artifactId>
+            <optional>true</optional>  <!-- conditional dependency -->
+        </dependency>
     </dependencies>
 
     <build>
@@ -137,6 +142,9 @@
                         <excludedArtifact>javax.persistence:javax.persistence-api</excludedArtifact>
                         <excludedArtifact>javax.persistence:persistence-api</excludedArtifact>
                     </excludedArtifacts>
+                    <conditionalDependencies>
+                        <artifact>${project.groupId}:quarkus-jdbc-h2:${project.version}</artifact>
+                    </conditionalDependencies>
                     <conditionalDevDependencies>
                         <artifact>${project.groupId}:${project.artifactId}-dev:${project.version}</artifact>
                     </conditionalDevDependencies>

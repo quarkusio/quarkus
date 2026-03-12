@@ -124,6 +124,12 @@ public class ExtensionDescriptorTask extends DefaultTask {
             props.setProperty(BootstrapConstants.DEPENDENCY_CONDITION, buf.toString());
         }
 
+        List<String> dependencyConditionsAbsent = quarkusExtensionConfiguration.getDependencyConditionsAbsent().get();
+        if (dependencyConditionsAbsent != null && !dependencyConditionsAbsent.isEmpty()) {
+            props.setProperty(BootstrapConstants.DEPENDENCY_CONDITION_ABSENT,
+                    String.join(" ", dependencyConditionsAbsent));
+        }
+
         List<String> parentFirstArtifacts = quarkusExtensionConfiguration.getParentFirstArtifacts().get();
         if (parentFirstArtifacts != null && !parentFirstArtifacts.isEmpty()) {
             String val = String.join(",", parentFirstArtifacts);

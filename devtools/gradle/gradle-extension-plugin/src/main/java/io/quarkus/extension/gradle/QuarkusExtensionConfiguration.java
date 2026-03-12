@@ -24,6 +24,7 @@ public class QuarkusExtensionConfiguration {
     private ListProperty<String> conditionalDependencies;
     private ListProperty<String> conditionalDevDependencies;
     private ListProperty<String> dependencyCondition;
+    private ListProperty<String> dependencyConditionAbsent;
     private RemovedResources removedResources = new RemovedResources();
     private Capabilities capabilities = new Capabilities();
 
@@ -44,6 +45,7 @@ public class QuarkusExtensionConfiguration {
         conditionalDependencies = project.getObjects().listProperty(String.class);
         conditionalDevDependencies = project.getObjects().listProperty(String.class);
         dependencyCondition = project.getObjects().listProperty(String.class);
+        dependencyConditionAbsent = project.getObjects().listProperty(String.class);
     }
 
     public void setDisableValidation(boolean disableValidation) {
@@ -124,6 +126,14 @@ public class QuarkusExtensionConfiguration {
 
     public void setDependencyConditions(List<String> dependencyCondition) {
         this.dependencyCondition.addAll(dependencyCondition);
+    }
+
+    public ListProperty<String> getDependencyConditionsAbsent() {
+        return dependencyConditionAbsent;
+    }
+
+    public void setDependencyConditionsAbsent(List<String> dependencyConditionAbsent) {
+        this.dependencyConditionAbsent.addAll(dependencyConditionAbsent);
     }
 
     public List<Capability> getProvidedCapabilities() {

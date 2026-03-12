@@ -51,6 +51,18 @@ public class BootstrapUtils {
         return keys;
     }
 
+    public static ArtifactCoordsPattern[] parseAbsenceDependencyCondition(String s) {
+        final String[] strArr = splitByWhitespace(s);
+        if (strArr == null) {
+            return null;
+        }
+        final ArtifactCoordsPattern[] patterns = new ArtifactCoordsPattern[strArr.length];
+        for (int i = 0; i < strArr.length; ++i) {
+            patterns[i] = ArtifactCoordsPattern.of(strArr[i]);
+        }
+        return patterns;
+    }
+
     /**
      * @deprecated for removal since 3.31.0 in favor of ApplicationModelSerializer methods
      */

@@ -243,6 +243,14 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     private List<String> dependencyCondition = new ArrayList<>(0);
 
     /**
+     * <a href="https://quarkus.io/guides/conditional-extension-dependencies">Extension absence dependency condition</a>:
+     * artifacts listed here must NOT be present for this extension to be enabled
+     * in case it is added as a conditional dependency of another extension.
+     */
+    @Parameter
+    private List<String> dependencyConditionAbsent = new ArrayList<>(0);
+
+    /**
      * Whether to skip validation of the codestart artifact, in case its configured
      */
     @Parameter(property = "skipCodestartValidation")
@@ -494,6 +502,10 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             }
             props.setProperty(BootstrapConstants.DEPENDENCY_CONDITION, buf.toString());
         }
+        if (!dependencyConditionAbsent.isEmpty()) {
+            props.setProperty(BootstrapConstants.DEPENDENCY_CONDITION_ABSENT,
+                    String.join(" ", dependencyConditionAbsent));
+        }
     }
 
     private void setConditionalDepsProperty(Properties props, String propertyName, List<String> list) {
@@ -529,7 +541,8 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             final Properties props = getExtensionDescriptor(
                     new DefaultArtifact(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(), d.getVersion()),
                     false);
-            if (props == null || !props.containsKey(BootstrapConstants.DEPENDENCY_CONDITION)) {
+            if (props == null || (!props.containsKey(BootstrapConstants.DEPENDENCY_CONDITION)
+                    && !props.containsKey(BootstrapConstants.DEPENDENCY_CONDITION_ABSENT))) {
                 continue;
             }
             if (buf == null) {

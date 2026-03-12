@@ -74,6 +74,10 @@ public class TsQuarkusExt {
         return setDescriptorProp(BootstrapConstants.DEPENDENCY_CONDITION, buf.toString());
     }
 
+    public TsQuarkusExt setDependencyConditionAbsent(String... patterns) {
+        return setDescriptorProp(BootstrapConstants.DEPENDENCY_CONDITION_ABSENT, String.join(" ", patterns));
+    }
+
     public TsQuarkusExt setDescriptorProp(String name, String value) {
         rtDescr.set(name, value);
         return this;

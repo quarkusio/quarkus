@@ -182,6 +182,20 @@ public class ExtensionDescriptorTaskTest {
                 "sunshine?org.acme:ext-b:0.1.0");
     }
 
+    @Test
+    public void shouldPreserveWildcardPatternsInDependencyConditionAbsent() throws IOException {
+        String buildFileContent = TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(),
+                "dependencyConditionAbsent = ['*:quarkus-jdbc-*']");
+        TestUtils.writeFile(buildFile, buildFileContent);
+        TestUtils.runExtensionDescriptorTask(testProjectDir);
+
+        File extensionPropertiesFile = new File(testProjectDir, "build/resources/main/META-INF/quarkus-extension.properties");
+        assertThat(extensionPropertiesFile).exists();
+
+        Properties extensionProperty = TestUtils.readPropertyFile(extensionPropertiesFile.toPath());
+        assertThat(extensionProperty).containsEntry("dependency-condition-absent", "*:quarkus-jdbc-*");
+    }
+
     /*
      * This test will fail if run in an IDE without extra config - it needs an environment variable, and
      * that is increasingly hard to do on Java 17+; see https://github.com/junit-pioneer/junit-pioneer/issues/509

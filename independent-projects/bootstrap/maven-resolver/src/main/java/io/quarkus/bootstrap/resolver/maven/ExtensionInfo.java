@@ -14,6 +14,7 @@ import io.quarkus.bootstrap.model.ApplicationModelBuilder;
 import io.quarkus.bootstrap.model.CapabilityContract;
 import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoordsPattern;
 import io.quarkus.maven.dependency.ArtifactKey;
 
 /**
@@ -26,6 +27,7 @@ class ExtensionInfo {
     final Artifact deploymentArtifact;
     final Artifact[] conditionalDeps;
     final ArtifactKey[] dependencyCondition;
+    final ArtifactCoordsPattern[] dependencyConditionAbsent;
     boolean activated;
 
     ExtensionInfo() {
@@ -34,6 +36,7 @@ class ExtensionInfo {
         deploymentArtifact = null;
         conditionalDeps = null;
         dependencyCondition = null;
+        dependencyConditionAbsent = null;
     }
 
     ExtensionInfo(Artifact runtimeArtifact, Properties props, boolean devMode) throws BootstrapDependencyProcessingException {
@@ -44,6 +47,8 @@ class ExtensionInfo {
         this.conditionalDeps = initConditionalDeps(devMode);
         dependencyCondition = BootstrapUtils
                 .parseDependencyCondition(props.getProperty(BootstrapConstants.DEPENDENCY_CONDITION));
+        dependencyConditionAbsent = BootstrapUtils
+                .parseAbsenceDependencyCondition(props.getProperty(BootstrapConstants.DEPENDENCY_CONDITION_ABSENT));
     }
 
     void ensureActivated(ApplicationModelBuilder appBuilder) {

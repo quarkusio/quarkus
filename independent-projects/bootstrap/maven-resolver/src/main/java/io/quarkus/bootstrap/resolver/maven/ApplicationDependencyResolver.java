@@ -535,6 +535,15 @@ public class ApplicationDependencyResolver {
         return dep != null && dep.isFlagSet(DependencyFlags.RUNTIME_CP);
     }
 
+    private boolean isAnyRuntimeArtifactMatching(ArtifactCoordsPattern pattern) {
+        for (ResolvedDependencyBuilder dep : appBuilder.getDependencies()) {
+            if (dep.isFlagSet(DependencyFlags.RUNTIME_CP) && pattern.matches(dep)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void processRuntimeDeps(DependencyNode root) {
         final AppDep appRoot = new AppDep(root);
         visitRuntimeDeps(appRoot);
@@ -1127,12 +1136,21 @@ public class ApplicationDependencyResolver {
 
         boolean isSatisfied() {
             var extInfo = conditionalDep.ext == null ? null : conditionalDep.ext.info;
-            if (extInfo == null || extInfo.dependencyCondition == null) {
+            if (extInfo == null) {
                 return true;
             }
-            for (ArtifactKey key : extInfo.dependencyCondition) {
-                if (!isRuntimeArtifact(key)) {
-                    return false;
+            if (extInfo.dependencyCondition != null) {
+                for (ArtifactKey key : extInfo.dependencyCondition) {
+                    if (!isRuntimeArtifact(key)) {
+                        return false;
+                    }
+                }
+            }
+            if (extInfo.dependencyConditionAbsent != null) {
+                for (ArtifactCoordsPattern pattern : extInfo.dependencyConditionAbsent) {
+                    if (isAnyRuntimeArtifactMatching(pattern)) {
+                        return false;
+                    }
                 }
             }
             return true;

@@ -48,6 +48,24 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-extension-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>extension-descriptor</goal>
+                        </goals>
+                        <configuration>
+                            <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}</deployment>
+                            <dependencyCondition>
+                                <artifact>io.quarkus:quarkus-hibernate-orm</artifact>
+                            </dependencyCondition>
+                            <dependencyConditionAbsent>
+                                <artifact>*:quarkus-jdbc-*</artifact>
+                                <artifact>io.quarkus:quarkus-hibernate-reactive</artifact>
+                            </dependencyConditionAbsent>
+                        </configuration>
+                    </execution>
+                </executions>
                 <configuration>
                     <parentFirstArtifacts>
                         <parentFirstArtifact>com.h2database:h2</parentFirstArtifact>

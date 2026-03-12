@@ -20,7 +20,7 @@ import io.grpc.testing.integration.TestServiceGrpc;
 import io.quarkus.grpc.server.services.AssertHelper;
 import io.quarkus.grpc.server.services.MutinyHelloService;
 import io.quarkus.grpc.server.services.MutinyTestService;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Test services exposed by the gRPC server implemented using the Mutiny gRPC model.
@@ -29,7 +29,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MutinyGrpcServiceWithPlainTextTest extends GrpcServiceTestBase {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setFlatClassPath(true).setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .addClasses(MutinyHelloService.class, MutinyTestService.class, AssertHelper.class,

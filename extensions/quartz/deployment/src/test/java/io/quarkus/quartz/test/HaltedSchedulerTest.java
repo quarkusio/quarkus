@@ -10,12 +10,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.quartz.SchedulerException;
 
 import io.quarkus.scheduler.Scheduler;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public final class HaltedSchedulerTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset("quarkus.scheduler.start-mode=halted"),
                             "application.properties"));

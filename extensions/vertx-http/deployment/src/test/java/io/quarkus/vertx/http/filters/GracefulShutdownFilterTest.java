@@ -22,7 +22,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.quarkus.runtime.shutdown.ShutdownRecorder;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -38,7 +38,7 @@ import io.vertx.ext.web.Router;
 public class GracefulShutdownFilterTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyBean.class, GracefulShutdownFilterTest.class))
             .overrideConfigKey("quarkus.shutdown.timeout", "10");

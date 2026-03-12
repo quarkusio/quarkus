@@ -17,14 +17,14 @@ import org.keycloak.representations.idm.RoleRepresentation;
 
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 
 public class KeycloakAdminClientInjectionDevServicesTest {
 
     @RegisterExtension
-    final static QuarkusUnitTest app = new QuarkusUnitTest()
+    final static QuarkusExtensionTest app = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar
                     .addClasses(AdminResource.class)
                     .addAsResource("app-dev-mode-config.properties", "application.properties"))

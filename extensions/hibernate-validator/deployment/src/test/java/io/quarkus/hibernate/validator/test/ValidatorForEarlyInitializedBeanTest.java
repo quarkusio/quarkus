@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests that validation can be used for early initialized beans that observe {@code @Initialized(ApplicationScoped.class)}
@@ -21,7 +21,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ValidatorForEarlyInitializedBeanTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest().setArchiveProducer(() -> ShrinkWrap
             .create(JavaArchive.class)
             .addClasses(EagerInitBean.class, ValidatorForEarlyInitializedBeanTest.class));
     @Inject

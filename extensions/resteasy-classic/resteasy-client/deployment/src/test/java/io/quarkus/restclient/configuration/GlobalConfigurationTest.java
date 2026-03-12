@@ -17,12 +17,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.restclient.config.RestClientsConfig;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class GlobalConfigurationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(EchoClient.class, EchoResource.class, MyResponseFilter.class,
                     MyHostnameVerifier.class))
             .withConfigurationResource("global-configuration-test-application.properties");

@@ -17,14 +17,14 @@ import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.vertx.web.Route;
 import io.vertx.ext.web.RoutingContext;
 
 public class BasicAuthTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Resource.class)
                     .addAsResource("application-basic-auth.properties", "application.properties")

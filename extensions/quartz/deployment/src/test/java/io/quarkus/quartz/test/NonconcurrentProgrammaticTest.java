@@ -24,12 +24,12 @@ import org.quartz.TriggerBuilder;
 import io.quarkus.quartz.QuartzScheduler;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.Scheduler;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class NonconcurrentProgrammaticTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addClasses(Jobs.class))
             .overrideConfigKey("quarkus.scheduler.start-mode", "halted");

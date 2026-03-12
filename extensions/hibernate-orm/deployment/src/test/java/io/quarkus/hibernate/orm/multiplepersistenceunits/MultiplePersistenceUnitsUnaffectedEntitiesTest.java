@@ -18,14 +18,14 @@ import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.DefaultEntity;
 import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.inventory.Plane;
 import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.user.User;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class MultiplePersistenceUnitsUnaffectedEntitiesTest {
 
     private static final Formatter LOG_FORMATTER = new PatternFormatter("%s");
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(DefaultEntity.class)
                     .addClass(User.class)

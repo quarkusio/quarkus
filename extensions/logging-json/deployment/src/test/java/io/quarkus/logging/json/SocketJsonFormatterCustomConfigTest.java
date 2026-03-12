@@ -17,12 +17,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.logging.json.runtime.JsonFormatter;
 import io.quarkus.logging.json.runtime.JsonLogConfig.AdditionalFieldConfig;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class SocketJsonFormatterCustomConfigTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(SocketJsonFormatterDefaultConfigTest.class))
             .withConfigurationResource("application-socket-json-formatter-custom.properties");
 

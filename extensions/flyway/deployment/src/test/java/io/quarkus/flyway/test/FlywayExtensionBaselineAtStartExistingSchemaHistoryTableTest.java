@@ -10,7 +10,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class FlywayExtensionBaselineAtStartExistingSchemaHistoryTableTest {
     @Inject
@@ -22,7 +22,7 @@ public class FlywayExtensionBaselineAtStartExistingSchemaHistoryTableTest {
             .withInitSqlFile("src/test/resources/h2-init-schema-history-table.sql");
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setBeforeAllCustomizer(customizer::startH2)
             .setAfterAllCustomizer(customizer::stopH2)
             .withApplicationRoot((jar) -> jar

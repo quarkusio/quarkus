@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.netty.handler.codec.http.websocketx.CorruptedWebSocketFrameException;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.OnError;
 import io.quarkus.websockets.next.OnTextMessage;
@@ -26,7 +26,7 @@ import io.vertx.core.http.WebSocketFrame;
 public class MaxFrameSizeTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
+    public static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(root -> {
                 root.addClasses(Echo.class, WSClient.class);
             })

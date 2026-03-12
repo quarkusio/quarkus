@@ -19,12 +19,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.opentelemetry.sdk.logs.data.LogRecordData;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryLogRecordExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryLogRecordExporterProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class LoggingFrameworkTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .addClasses(JBossLoggingBean.class, SLF4JBean.class, JulBean.class, Log4j2Bean.class)

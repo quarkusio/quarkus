@@ -12,7 +12,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.quarkus.hibernate.reactive.panache.common.WithSessionOnDemand;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 import io.smallrye.mutiny.Uni;
@@ -20,7 +20,7 @@ import io.smallrye.mutiny.Uni;
 public class WithSessionOnDemandTest {
 
     @RegisterExtension
-    static QuarkusUnitTest config = new QuarkusUnitTest()
+    static QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root.addClasses(MrBean.class, MyEntity.class));
 
     @Inject

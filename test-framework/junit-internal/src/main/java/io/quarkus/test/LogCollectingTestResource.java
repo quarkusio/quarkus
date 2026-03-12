@@ -62,7 +62,7 @@ public class LogCollectingTestResource implements QuarkusTestResourceLifecycleMa
         assertTrue(logHandlerDidHandleLogs,
                 "The log handler didn't handle even one log record (ignoring filters); something is wrong with the setup."
                         + " Note this test resource will only work correctly with @QuarkusTest:"
-                        + " QuarkusDevModeTest, QuarkusProdModeTest and QuarkusUnitTest expose their own log assertion features,"
+                        + " QuarkusDevModeTest, QuarkusProdModeTest and QuarkusExtensionTest expose their own log assertion features,"
                         + " and @QuarkusIntegrationTest simply cannot support this feature in its current form.");
         return inMemoryLogHandler.getRecords();
     }

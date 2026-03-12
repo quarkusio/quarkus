@@ -25,14 +25,14 @@ import io.quarkus.arc.test.supplement.SomeInterfaceInExternalLibrary;
 import io.quarkus.arc.test.supplement.SomeProducedDependencyInExternalLibrary;
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class DecoratorOfExternalBeanTest {
     // the test includes an _application_ decorator (in the Runtime CL) that applies
     // to a bean that is _outside_ of the application (in the Base Runtime CL)
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClass(MyDecorator.class))
             // we need a non-application archive, so cannot use `withAdditionalDependency()`
             .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-arc-test-supplement", Version.getVersion())));

@@ -14,7 +14,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
@@ -27,7 +27,7 @@ class PemTrustStoreFromDirectoryTest {
     private static final String TESTED_CERT_DIR = "target/certs/test-ts-from-dir";
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().withEmptyApplication()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().withEmptyApplication()
             .withConfiguration("quarkus.tls.trust-store.pem.cert-dirs=" + TESTED_CERT_DIR)
             .setBeforeAllCustomizer(() -> {
                 var caCertPath = Path.of("target/certs/test-ts-from-dir-ca.crt");

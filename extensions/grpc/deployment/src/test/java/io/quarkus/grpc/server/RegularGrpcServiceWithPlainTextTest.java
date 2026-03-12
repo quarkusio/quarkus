@@ -18,7 +18,7 @@ import io.grpc.testing.integration.TestServiceGrpc;
 import io.quarkus.grpc.server.services.AssertHelper;
 import io.quarkus.grpc.server.services.HelloService;
 import io.quarkus.grpc.server.services.TestService;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Test services exposed by the gRPC server implemented using the regular gRPC model.
@@ -27,7 +27,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class RegularGrpcServiceWithPlainTextTest extends GrpcServiceTestBase {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setFlatClassPath(true).setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .addClasses(HelloService.class, TestService.class, AssertHelper.class,

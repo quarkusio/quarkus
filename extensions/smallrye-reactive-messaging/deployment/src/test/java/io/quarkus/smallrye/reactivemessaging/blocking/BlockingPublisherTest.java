@@ -14,12 +14,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.smallrye.reactivemessaging.blocking.beans.BeanReturningMessages;
 import io.quarkus.smallrye.reactivemessaging.blocking.beans.BeanReturningPayloads;
 import io.quarkus.smallrye.reactivemessaging.blocking.beans.InfiniteSubscriber;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class BlockingPublisherTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(BeanReturningPayloads.class, BeanReturningMessages.class, InfiniteSubscriber.class));
 

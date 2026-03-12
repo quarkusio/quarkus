@@ -12,12 +12,12 @@ import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineConfiguration;
 import io.quarkus.qute.ParserHelper;
 import io.quarkus.qute.ParserHook;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class CustomParserHookRuntimeTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(
                     root -> root.addClasses(CustomParserHook.class)
                             .addAsResource(new StringAsset("{foo}"), "templates/foo.html"));

@@ -8,13 +8,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.security.StringPermission;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.restassured.response.ValidatableResponse;
 
 public class PermissionsAllowedTest {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(PermissionsAllowedResource.class, TestIdentityProvider.class, TestIdentityController.class,
                             StringPermissionsAllowedMetaAnnotation.class, CustomPermissionWithExtraArgs.class,

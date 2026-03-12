@@ -6,13 +6,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.http.security.CSRF;
 
 public class ProgrammaticCsrfValidationFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().withEmptyApplication();
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().withEmptyApplication();
 
     @Test
     public void testQuarkusSecurityExtensionRequired() {

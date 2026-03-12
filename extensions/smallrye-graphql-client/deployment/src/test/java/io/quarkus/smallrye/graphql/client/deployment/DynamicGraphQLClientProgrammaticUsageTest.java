@@ -15,7 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.smallrye.graphql.client.deployment.model.Person;
 import io.quarkus.smallrye.graphql.client.deployment.model.PersonDto;
 import io.quarkus.smallrye.graphql.client.deployment.model.TestingGraphQLApi;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.smallrye.graphql.client.core.Document;
 import io.smallrye.graphql.client.core.Operation;
@@ -25,7 +25,7 @@ import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClientBuilder;
 public class DynamicGraphQLClientProgrammaticUsageTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestingGraphQLApi.class, Person.class, PersonDto.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));

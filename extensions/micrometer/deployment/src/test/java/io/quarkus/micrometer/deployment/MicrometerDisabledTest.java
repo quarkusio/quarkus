@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Should not have any registered MeterRegistry objects when micrometer is disabled
@@ -17,7 +17,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MicrometerDisabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset("quarkus.micrometer.enabled=false"), "application.properties"))
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")

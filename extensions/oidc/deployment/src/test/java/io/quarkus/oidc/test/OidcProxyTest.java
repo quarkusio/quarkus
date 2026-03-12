@@ -23,7 +23,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import com.dd.plist.Base64;
 
 import io.quarkus.security.Authenticated;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
@@ -36,7 +36,7 @@ import io.vertx.ext.web.RoutingContext;
 class OidcProxyTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(BearerResource.class)
                     .addAsResource(

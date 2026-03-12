@@ -2,7 +2,7 @@ package io.quarkus.smallrye.reactivemessaging
 
 import io.quarkus.arc.Arc
 import io.quarkus.smallrye.reactivemessaging.runtime.ContextualEmitter
-import io.quarkus.test.QuarkusUnitTest
+import io.quarkus.test.QuarkusExtensionTest
 import io.smallrye.common.vertx.VertxContext
 import io.vertx.core.Vertx
 import jakarta.enterprise.context.ApplicationScoped
@@ -28,7 +28,7 @@ class KotlinSubscriberTest {
     companion object {
         @RegisterExtension
         @JvmStatic
-        val config: QuarkusUnitTest? = QuarkusUnitTest()
+        val config: QuarkusExtensionTest? = QuarkusExtensionTest()
             .withApplicationRoot(Consumer { jar: JavaArchive? ->
                 jar!!
                     .addClasses(

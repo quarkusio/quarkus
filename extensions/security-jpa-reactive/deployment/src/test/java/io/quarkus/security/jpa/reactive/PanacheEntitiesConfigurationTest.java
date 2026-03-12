@@ -17,7 +17,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.spi.runtime.AuthenticationFailureEvent;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.restassured.response.ValidatableResponse;
 
@@ -26,7 +26,7 @@ public class PanacheEntitiesConfigurationTest extends JpaSecurityRealmTest {
     private static final String DUPLICATE_USERNAME = "merlin";
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(testClasses)
                     .addClass(PanacheUserEntity.class)

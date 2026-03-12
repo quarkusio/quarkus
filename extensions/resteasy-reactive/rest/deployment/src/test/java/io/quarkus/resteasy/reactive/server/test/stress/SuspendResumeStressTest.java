@@ -27,7 +27,7 @@ import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 /**
@@ -38,7 +38,7 @@ public class SuspendResumeStressTest {
     private static volatile ExecutorService executorService;
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .addBuildChainCustomizer(new Consumer<BuildChainBuilder>() {
                 @Override
                 public void accept(BuildChainBuilder buildChainBuilder) {

@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.orm.panache.kotlin.deployment.test
 
-import io.quarkus.test.QuarkusUnitTest
+import io.quarkus.test.QuarkusExtensionTest
 import org.jboss.shrinkwrap.api.ShrinkWrap
 import org.jboss.shrinkwrap.api.spec.JavaArchive
 import org.junit.jupiter.api.Test
@@ -15,6 +15,6 @@ class NoConfigTest {
     companion object {
         @RegisterExtension
         @JvmField
-        val config = QuarkusUnitTest().setArchiveProducer { ShrinkWrap.create(JavaArchive::class.java) }
+        val config = QuarkusExtensionTest().setArchiveProducer { ShrinkWrap.create(JavaArchive::class.java) }
     }
 }

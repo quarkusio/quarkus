@@ -1,6 +1,6 @@
 package io.quarkus.websockets.next.test.telemetry;
 
-import static io.quarkus.websockets.next.test.telemetry.AbstractWebSocketsOnMessageTest.createQuarkusUnitTest;
+import static io.quarkus.websockets.next.test.telemetry.AbstractWebSocketsOnMessageTest.createQuarkusExtensionTest;
 import static io.quarkus.websockets.next.test.telemetry.AbstractWebSocketsOnMessageTest.getMetrics;
 import static io.quarkus.websockets.next.test.telemetry.ExpectedServerEndpointResponse.ECHO_RESPONSE;
 import static io.quarkus.websockets.next.test.telemetry.ExpectedServerEndpointResponse.NO_RESPONSE;
@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.WebSocketConnector;
 import io.quarkus.websockets.next.test.telemetry.endpoints.onerror.ErroneousClient_NoOnError;
@@ -34,7 +34,7 @@ import io.vertx.core.Vertx;
 public class MicrometerWebSocketsOnErrorTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = createQuarkusUnitTest(
+    public static final QuarkusExtensionTest test = createQuarkusExtensionTest(
             "io.quarkus.websockets.next.test.telemetry.endpoints.onerror");
 
     @Inject

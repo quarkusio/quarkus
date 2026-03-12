@@ -25,14 +25,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.smallrye.openapi.OpenApiFilter;
 import io.quarkus.smallrye.openapi.OpenApiFilter.RunStage;
 import io.quarkus.smallrye.openapi.runtime.OpenApiConstants;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 class OpenApiRunStageFilterTest {
 
     private static final String STORE_SCHEMA_DIRECTORY = "target/generated/OpenApiRunStageFilterTest/";
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(BuildFilter.class)
                     .addClass(RuntimeStartupFilter.class)

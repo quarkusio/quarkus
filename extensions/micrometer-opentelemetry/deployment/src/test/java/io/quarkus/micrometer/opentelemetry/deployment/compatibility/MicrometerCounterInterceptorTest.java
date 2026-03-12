@@ -22,7 +22,7 @@ import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.quarkus.micrometer.opentelemetry.deployment.common.InMemoryMetricExporter;
 import io.quarkus.micrometer.opentelemetry.deployment.common.InMemoryMetricExporterProvider;
 import io.quarkus.micrometer.opentelemetry.deployment.common.Util;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Copy of io.quarkus.micrometer.runtime.MicrometerCounterInterceptorTest
@@ -30,7 +30,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MicrometerCounterInterceptorTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .addClasses(Util.class, CountedBean.class, TestValueResolver.class)

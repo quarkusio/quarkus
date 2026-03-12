@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 @Disabled("Reproduces https://github.com/quarkusio/quarkus/issues/20377, not yet fixed")
 public class NestedContainerTypeCustomValueExtractorTest {
@@ -24,7 +24,7 @@ public class NestedContainerTypeCustomValueExtractorTest {
     ValidatorFactory validatorFactory;
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest().setArchiveProducer(() -> ShrinkWrap
             .create(JavaArchive.class)
             .addClasses(TestBean.class, NestedContainerType.class, NestedContainerClassValueExtractor.class));
 

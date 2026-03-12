@@ -18,14 +18,14 @@ import org.htmlunit.html.HtmlPage;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.restassured.RestAssured;
 
 public abstract class AbstractRedisTokenStateManagerTest {
 
-    protected static QuarkusUnitTest createQuarkusUnitTest(String... extraProps) {
-        return new QuarkusUnitTest()
+    protected static QuarkusExtensionTest createQuarkusExtensionTest(String... extraProps) {
+        return new QuarkusExtensionTest()
                 .withApplicationRoot((jar) -> jar
                         .addClasses(ProtectedResource.class, UnprotectedResource.class, PublicResource.class)
                         .addAsResource(new StringAsset("""

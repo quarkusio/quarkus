@@ -15,7 +15,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.config.common.AbstractConfigSource;
 
 /**
@@ -28,7 +28,7 @@ import io.smallrye.config.common.AbstractConfigSource;
 public class VaultScenarioRestClientConfigTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(EchoResource.class, EchoClient.class, VaultLikeConfigSource.class)
                     .addAsServiceProvider("org.eclipse.microprofile.config.spi.ConfigSource",

@@ -34,7 +34,7 @@ import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.security.UnauthorizedException;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.CloseReason;
 import io.quarkus.websockets.next.HandshakeRequest;
@@ -59,7 +59,7 @@ public class OpenTelemetryAnnotationsWebSocketsTest {
     private static final String CUSTOM_SPAN_ON_ERROR = "custom.end.error";
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
+    public static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addClasses(OtelBounceEndpoint.class, WSClient.class, InMemorySpanExporterProducer.class,
                             OtelBounceClient.class, Endpoint.class)

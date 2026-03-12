@@ -15,7 +15,7 @@ import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
 import io.agroal.api.transaction.TransactionIntegration;
 import io.agroal.narayana.NarayanaTransactionIntegration;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class DisabledTransactionDataSourceConfigTest {
 
@@ -23,7 +23,7 @@ public class DisabledTransactionDataSourceConfigTest {
     AgroalDataSource defaultDataSource;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("base.properties")
             .overrideConfigKey("quarkus.datasource.jdbc.transactions", "DISABLED")
             .overrideConfigKey("quarkus.datasource.jdbc.detect-statement-leaks", "false");

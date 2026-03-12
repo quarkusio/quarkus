@@ -17,7 +17,7 @@ import io.quarkus.builder.Version;
 import io.quarkus.hibernate.orm.MyEntity;
 import io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Test Maria DB storage engine with MySql dialect
@@ -28,7 +28,7 @@ public class StorageSpecificMariaDBTest {
     EntityManagerFactory entityManagerFactory;
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(MyEntity.class)
                     .addAsResource("application-start-offline-mysql-dialect.properties", "application.properties"))

@@ -17,7 +17,7 @@ import io.quarkus.runtime.StartupEvent;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.Router;
@@ -33,7 +33,7 @@ public class IdentityProviderTestCase {
     private static final String AUTHENTICATION_FAILED_EXCEPTION = "AuthenticationFailedException";
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+    static QuarkusExtensionTest test = new QuarkusExtensionTest().setArchiveProducer(new Supplier<>() {
         @Override
         public JavaArchive get() {
             return ShrinkWrap.create(JavaArchive.class)

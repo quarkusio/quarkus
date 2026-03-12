@@ -6,20 +6,20 @@ import static org.junit.jupiter.api.Assertions.fail;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class BadBinaryArrayTest {
     @RegisterExtension
-    static QuarkusUnitTest test1 = assertException(BadBinaryOutputCE.class);
+    static QuarkusExtensionTest test1 = assertException(BadBinaryOutputCE.class);
     @RegisterExtension
-    static QuarkusUnitTest test2 = assertException(BadBinaryOutputRaw.class);
+    static QuarkusExtensionTest test2 = assertException(BadBinaryOutputRaw.class);
     @RegisterExtension
-    static QuarkusUnitTest test3 = assertException(BadBinaryInputCE.class);
+    static QuarkusExtensionTest test3 = assertException(BadBinaryInputCE.class);
     @RegisterExtension
-    static QuarkusUnitTest test4 = assertException(BadBinaryInputRaw.class);
+    static QuarkusExtensionTest test4 = assertException(BadBinaryInputRaw.class);
 
-    private static QuarkusUnitTest assertException(Class<?> clazz) {
-        return new QuarkusUnitTest()
+    private static QuarkusExtensionTest assertException(Class<?> clazz) {
+        return new QuarkusExtensionTest()
                 .withApplicationRoot(jar -> jar.addClass(clazz))
                 .assertException(throwable -> {
                     // Traverse the cause chain to find the IllegalStateException

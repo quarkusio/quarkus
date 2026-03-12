@@ -29,7 +29,7 @@ import io.netty.handler.ssl.SslContext;
 import io.quarkus.grpc.server.services.AssertHelper;
 import io.quarkus.grpc.server.services.HelloService;
 import io.quarkus.grpc.server.services.TestService;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
@@ -43,7 +43,7 @@ import io.smallrye.certs.junit5.Certificates;
 public class RegularGrpcServiceWithSSLTest extends GrpcServiceTestBase {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setFlatClassPath(true)
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)

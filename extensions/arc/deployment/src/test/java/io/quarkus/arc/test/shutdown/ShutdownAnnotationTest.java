@@ -11,12 +11,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.runtime.Shutdown;
 import io.quarkus.runtime.ShutdownDelayInitiated;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ShutdownAnnotationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addClasses(ShutdownMethods.class, ShutdownDelayInitializedMethods.class)
                     .addAsResource(new StringAsset("quarkus.shutdown.delay-enabled=true"),

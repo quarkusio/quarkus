@@ -14,12 +14,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateException;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class InjectionFailedTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addClass(Client.class)
                     .addAsResource(new StringAsset("{this}"), "templates/bar.txt")

@@ -14,7 +14,7 @@ import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.resteasy.reactive.server.spi.AllowNotRestParametersBuildItem;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.MixedParameterResource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * @tpSubChapter Resources
@@ -25,7 +25,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class AllowNotResteasyParametersTest {
 
     @RegisterExtension
-    static QuarkusUnitTest quarkusUnitTest = new QuarkusUnitTest()
+    static QuarkusExtensionTest quarkusExtensionTest = new QuarkusExtensionTest()
             .addBuildChainCustomizer(new Consumer<BuildChainBuilder>() {
                 @Override
                 public void accept(BuildChainBuilder buildChainBuilder) {

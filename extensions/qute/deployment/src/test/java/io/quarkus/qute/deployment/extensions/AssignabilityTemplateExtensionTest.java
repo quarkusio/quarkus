@@ -14,7 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateExtension;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * https://github.com/quarkusio/quarkus/issues/26306
@@ -22,7 +22,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class AssignabilityTemplateExtensionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClass(Extensions.class)
                     .addAsResource(new StringAsset(
                             "{@java.time.LocalDateTime foo} {datetime:formatDate(foo)}"),

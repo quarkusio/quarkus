@@ -12,7 +12,7 @@ import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.restassured.config.RestAssuredConfig;
 import io.vertx.core.Handler;
@@ -30,7 +30,7 @@ public class UnhandledExceptionTest {
     private static final String APPLICATION_OCTET_STREAM = "application/octet-stream";
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(BeanRegisteringRouteThatThrowsException.class));
 

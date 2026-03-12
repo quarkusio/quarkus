@@ -12,14 +12,14 @@ import org.jboss.logmanager.handlers.PeriodicSizeRotatingFileHandler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class PeriodicSizeRotatingLoggingRotateOnBootTest {
 
     private static final String FILE_NAME = PeriodicSizeRotatingLoggingRotateOnBootTest.class.getSimpleName() + ".log";
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("application-periodic-size-file-log-rotating-rotate-on-boot.properties")
             .withApplicationRoot((jar) -> jar
                     .addClass(LoggingTestsHelper.class)

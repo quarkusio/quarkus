@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Since we decided that we're no longer supporting to read an hibernate.properties resource,
@@ -18,7 +18,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class NoHibernatePropertiesTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .assertException(t -> {
                 assertThat(t)
                         .isInstanceOf(IllegalStateException.class)

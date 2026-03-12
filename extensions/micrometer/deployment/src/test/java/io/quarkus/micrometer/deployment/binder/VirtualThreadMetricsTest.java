@@ -12,7 +12,7 @@ import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.micrometer.runtime.binder.virtualthreads.VirtualThreadCollector;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.junit.common.DisabledOnSemeru;
 
 @EnabledForJreRange(min = JRE.JAVA_21)
@@ -20,7 +20,7 @@ import io.quarkus.test.junit.common.DisabledOnSemeru;
 public class VirtualThreadMetricsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withEmptyApplication();

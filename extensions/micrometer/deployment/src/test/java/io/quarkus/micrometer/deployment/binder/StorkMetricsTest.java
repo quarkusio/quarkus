@@ -22,14 +22,14 @@ import io.quarkus.micrometer.runtime.binder.stork.StorkObservationCollectorBean;
 import io.quarkus.micrometer.test.GreetingResource;
 import io.quarkus.micrometer.test.PingPongResource;
 import io.quarkus.micrometer.test.Util;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.stork.api.observability.StorkObservation;
 
 @DisabledOnOs(OS.WINDOWS)
 public class StorkMetricsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("pingpong/mp-rest/url", "stork://pingpong-service")
             .overrideConfigKey("quarkus.stork.pingpong-service.service-discovery.type", "static")

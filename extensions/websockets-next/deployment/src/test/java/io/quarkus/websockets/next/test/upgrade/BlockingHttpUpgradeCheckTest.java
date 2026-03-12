@@ -15,7 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.runtime.BlockingOperationControl;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.vertx.VertxContextSupport;
 import io.quarkus.websockets.next.HttpUpgradeCheck;
@@ -29,7 +29,7 @@ import io.vertx.core.Vertx;
 public class BlockingHttpUpgradeCheckTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
+    public static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addClasses(BlockingHttpUpgradeCheck.class, Endpoint.class, WSClient.class));
 

@@ -14,7 +14,7 @@ import jakarta.xml.bind.Unmarshaller;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Make sure that the default JAXBContext passes the validation thanks to
@@ -24,7 +24,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class InjectJaxbContextTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(
                             io.quarkus.jaxb.deployment.one.Model.class,

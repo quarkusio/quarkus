@@ -21,7 +21,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.WebSocketConnector;
 import io.quarkus.websockets.next.test.telemetry.endpoints.ontextmessage.BounceClient;
@@ -35,7 +35,7 @@ import io.vertx.core.buffer.Buffer;
 public class MicrometerWebSocketsOnTextMessageTest extends AbstractWebSocketsOnMessageTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = createQuarkusUnitTest(
+    public static final QuarkusExtensionTest test = createQuarkusExtensionTest(
             "io.quarkus.websockets.next.test.telemetry.endpoints.ontextmessage");
 
     @Inject

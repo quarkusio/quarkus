@@ -9,14 +9,14 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.graphql.client.typesafe.api.GraphQLClientApi;
 
 public class TypesafeGraphQLRecursionTest {
     private final static String EXPECTED_THROWN_MESSAGE = "field recursion found";
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(RecursiveApi.class, Team.class, Hero.class))
             .assertException(t -> {

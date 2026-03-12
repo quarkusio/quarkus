@@ -15,14 +15,14 @@ import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.deployment.client.RedisTestResource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
 
 @QuarkusTestResource(RedisTestResource.class)
 public class DataSourceInjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
+    static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(MyRedisApp.class))
             .overrideConfigKey("quarkus.redis.hosts", "${quarkus.redis.tr}")
             .overrideConfigKey("quarkus.redis.my-redis.hosts", "${quarkus.redis.tr}");;

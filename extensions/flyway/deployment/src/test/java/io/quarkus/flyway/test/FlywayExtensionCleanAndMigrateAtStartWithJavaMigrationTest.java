@@ -21,7 +21,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import db.migration.V1_0_1__Update;
 import db.migration.V1_0_2__Update;
 import io.agroal.api.AgroalDataSource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class FlywayExtensionCleanAndMigrateAtStartWithJavaMigrationTest {
 
@@ -32,7 +32,7 @@ public class FlywayExtensionCleanAndMigrateAtStartWithJavaMigrationTest {
     AgroalDataSource defaultDataSource;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(V1_0_1__Update.class, V1_0_2__Update.class, V9_9_9__Update.class)
                     .addAsResource("db/migration/V1.0.0__Quarkus.sql")

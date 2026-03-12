@@ -11,7 +11,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class MultipleDataSourcesErroneousButWorkingConfigTest {
 
@@ -27,7 +27,7 @@ public class MultipleDataSourcesErroneousButWorkingConfigTest {
     AgroalDataSource dataSource2;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(MultipleDataSourcesTestUtil.class))
             .withConfigurationResource("application-multiple-datasources-erroneous-but-working.properties");

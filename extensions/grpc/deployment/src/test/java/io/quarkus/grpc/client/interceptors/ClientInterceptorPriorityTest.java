@@ -19,12 +19,12 @@ import io.grpc.examples.helloworld.MutinyGreeterGrpc;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.RegisterClientInterceptor;
 import io.quarkus.grpc.server.services.MutinyHelloService;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ClientInterceptorPriorityTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().withApplicationRoot(
             root -> root
                     .addClasses(MutinyHelloService.class, MyFirstClientInterceptor.class,
                             MySecondClientInterceptor.class, MyThirdClientInterceptor.class, Calls.class,

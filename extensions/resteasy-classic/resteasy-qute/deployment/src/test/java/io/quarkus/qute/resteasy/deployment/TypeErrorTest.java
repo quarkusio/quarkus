@@ -6,12 +6,12 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class TypeErrorTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest configError = new QuarkusUnitTest()
+    static final QuarkusExtensionTest configError = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(HelloResource.class)
                     .addAsResource("templates/HelloResource/hello.txt")

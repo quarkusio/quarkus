@@ -21,13 +21,13 @@ import io.quarkus.gizmo2.Const;
 import io.quarkus.qute.Qute;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.deployment.Hello;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.common.annotation.Identifier;
 
 public class InjectNamespaceResolverTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addClasses(SimpleBean.class, Hello.class)
                     .addAsResource(

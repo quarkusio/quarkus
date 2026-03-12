@@ -9,13 +9,13 @@ import io.quarkus.hibernate.orm.envers.AbstractEnversResource;
 import io.quarkus.hibernate.orm.envers.MyAuditedEntity;
 import io.quarkus.hibernate.orm.envers.MyListenerlessRevisionEntity;
 import io.quarkus.hibernate.orm.envers.MyListenerlessRevisionListener;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class EnversRevisionListenerTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyAuditedEntity.class, MyListenerlessRevisionEntity.class,
                             MyListenerlessRevisionListener.class, EnversTestRevisionListenerResource.class,

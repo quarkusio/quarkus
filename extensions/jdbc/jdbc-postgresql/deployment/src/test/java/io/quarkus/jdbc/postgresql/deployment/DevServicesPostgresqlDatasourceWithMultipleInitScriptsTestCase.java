@@ -14,12 +14,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class DevServicesPostgresqlDatasourceWithMultipleInitScriptsTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(javaArchive -> javaArchive.addAsResource("init-db.sql"))
             .withApplicationRoot(javaArchive -> javaArchive.addAsResource("init-db-2.sql"))
             .overrideConfigKey("quarkus.datasource.db-kind", "postgresql")

@@ -17,12 +17,12 @@ import io.quarkus.arc.Unremovable;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.TemplateExtension;
 import io.quarkus.qute.deployment.Foo;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ExtensionMethodCompletionStageTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Foo.class, Extensions.class, FooParentService.class));
 

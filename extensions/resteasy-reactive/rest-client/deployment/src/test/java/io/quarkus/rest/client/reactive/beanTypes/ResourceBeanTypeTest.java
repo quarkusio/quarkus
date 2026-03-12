@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests that resources processed by RR have bean types equivalent to that of the impl class plus all interfaces in
@@ -23,7 +23,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ResourceBeanTypeTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Client.class, ClientMock.class, MyBean.class, Alpha.class, Beta.class,
                             Charlie.class, Delta.class));

@@ -283,7 +283,7 @@ public abstract class AbstractLazyBasicTest {
      * An interface for delegate classes,
      * classes whose bytecode is transformed by Quarkus to replace public field access with getter/setter access.
      * <p>
-     * (Test bytecode was not transformed by Quarkus when using QuarkusUnitTest last time I checked).
+     * (Test bytecode was not transformed by Quarkus when using QuarkusExtensionTest last time I checked).
      */
     interface AccessDelegate {
 

@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.rest.client.reactive.ClientQueryParam;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 
 public class ClientQueryParamFromPropertyTest {
@@ -26,7 +26,7 @@ public class ClientQueryParamFromPropertyTest {
     URI baseUri;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(Client.class, Resource.class)
                     .addAsResource(
                             new StringAsset("my.property-value=" + QUERY_VALUE),

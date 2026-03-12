@@ -16,14 +16,14 @@ import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 
 // TODO: pull out RuntimeDelegateImpl to common and move the tests to client's deployment
 class ContentTypeHeaderTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(SomeClient.class, Endpoint.class));
 

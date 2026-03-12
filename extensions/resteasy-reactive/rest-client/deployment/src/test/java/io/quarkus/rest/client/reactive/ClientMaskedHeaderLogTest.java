@@ -23,13 +23,13 @@ import org.jboss.resteasy.reactive.client.api.LoggingScope;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ClientMaskedHeaderLogTest {
 
     public static class NoMaskedHeadersConfigTest {
         @RegisterExtension
-        static final QuarkusUnitTest config = new QuarkusUnitTest()
+        static final QuarkusExtensionTest config = new QuarkusExtensionTest()
                 .withApplicationRoot((jar) -> jar
                         .addClass(ClientMaskedHeaderLogTest.Resource.class)
                         .addClass(ClientMaskedHeaderLogTest.class))
@@ -58,7 +58,7 @@ public class ClientMaskedHeaderLogTest {
 
     public static class GlobalConfigMaskedHeadersTest {
         @RegisterExtension
-        static final QuarkusUnitTest config = new QuarkusUnitTest()
+        static final QuarkusExtensionTest config = new QuarkusExtensionTest()
                 .withApplicationRoot((jar) -> jar
                         .addClass(ClientMaskedHeaderLogTest.Resource.class)
                         .addClass(ClientMaskedHeaderLogTest.class))
@@ -88,7 +88,7 @@ public class ClientMaskedHeaderLogTest {
 
     public static class ClientBuilderConfigMaskedHeadersTest {
         @RegisterExtension
-        static final QuarkusUnitTest config = new QuarkusUnitTest()
+        static final QuarkusExtensionTest config = new QuarkusExtensionTest()
                 .withApplicationRoot((jar) -> jar
                         .addClass(ClientMaskedHeaderLogTest.Resource.class)
                         .addClass(ClientMaskedHeaderLogTest.class))
@@ -120,7 +120,7 @@ public class ClientMaskedHeaderLogTest {
 
     public static class RestClientConfigMaskedHeadersTest {
         @RegisterExtension
-        static final QuarkusUnitTest config = new QuarkusUnitTest()
+        static final QuarkusExtensionTest config = new QuarkusExtensionTest()
                 .withApplicationRoot((jar) -> jar
                         .addClass(ClientMaskedHeaderLogTest.Resource.class)
                         .addClass(ClientMaskedHeaderLogTest.class))

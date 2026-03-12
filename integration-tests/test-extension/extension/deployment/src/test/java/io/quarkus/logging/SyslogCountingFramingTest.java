@@ -7,12 +7,12 @@ import org.jboss.logmanager.handlers.SyslogHandler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class SyslogCountingFramingTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("application-syslog-output.properties")
             .overrideConfigKey("quarkus.log.syslog.protocol", "UDP")
             .withApplicationRoot((jar) -> jar.addClass(LoggingTestsHelper.class));

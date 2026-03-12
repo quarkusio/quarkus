@@ -27,7 +27,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.arc.Arc;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Check transaction lifecycle, including session flushes, the closing of the session,
@@ -39,7 +39,7 @@ public abstract class AbstractTransactionLifecycleTest {
     private static final String UPDATED_NAME = "Updated name";
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(SimpleEntity.class)
                     .addAsResource("application.properties"))

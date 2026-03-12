@@ -14,7 +14,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.reactive.config.MyEntity;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 
@@ -29,7 +29,7 @@ public abstract class MultiplePUAsAlternativesWithBeanProducerTest {
 
     public static class Pu1ActiveTest extends MultiplePUAsAlternativesWithBeanProducerTest {
         @RegisterExtension
-        static QuarkusUnitTest runner = runner("pu-1", "ds-1");
+        static QuarkusExtensionTest runner = runner("pu-1", "ds-1");
 
         public Pu1ActiveTest() {
             super("pu-1", "pu-2", "ds-2");
@@ -38,15 +38,15 @@ public abstract class MultiplePUAsAlternativesWithBeanProducerTest {
 
     public static class Pu2ActiveTest extends MultiplePUAsAlternativesWithBeanProducerTest {
         @RegisterExtension
-        static QuarkusUnitTest runner = runner("pu-2", "ds-2");
+        static QuarkusExtensionTest runner = runner("pu-2", "ds-2");
 
         public Pu2ActiveTest() {
             super("pu-2", "pu-1", "ds-1");
         }
     }
 
-    static QuarkusUnitTest runner(String activePuName, String activeDsName) {
-        return new QuarkusUnitTest()
+    static QuarkusExtensionTest runner(String activePuName, String activeDsName) {
+        return new QuarkusExtensionTest()
                 .withApplicationRoot((jar) -> jar
                         .addPackage(MyEntity.class.getPackage().getName())
                         .addClass(MyProducer.class))

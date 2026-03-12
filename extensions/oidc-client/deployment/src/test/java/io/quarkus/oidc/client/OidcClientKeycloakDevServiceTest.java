@@ -2,7 +2,7 @@ package io.quarkus.oidc.client;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Test Keycloak Dev Service is started when OIDC extension is disabled (or not present, though indirectly).
@@ -12,6 +12,6 @@ import io.quarkus.test.QuarkusUnitTest;
 public class OidcClientKeycloakDevServiceTest extends AbstractOidcClientDevServiceTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = createQuarkusUnitTest("oidc-client-dev-service-test.properties");
+    static final QuarkusExtensionTest test = createQuarkusExtensionTest("oidc-client-dev-service-test.properties");
 
 }

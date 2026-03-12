@@ -9,15 +9,15 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.rest.client.reactive.runtime.RestClientBuilderImpl;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * client1 and client2 are configured to use 8181 as a proxy, global configuration says to use 8182
  */
 public abstract class AbstractProxyTest extends ProxyTestBase {
 
-    protected static QuarkusUnitTest config(String applicationProperties) {
-        return new QuarkusUnitTest()
+    protected static QuarkusExtensionTest config(String applicationProperties) {
+        return new QuarkusExtensionTest()
                 .withApplicationRoot(
                         jar -> jar.addClasses(Client1.class, Client2.class, Client3.class, Client4.class, Client5.class,
                                 Client6.class, ViaHeaderReturningResource.class))

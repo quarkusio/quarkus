@@ -17,13 +17,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.smallrye.reactivemessaging.blocking.beans.IncomingCustomTwoBlockingBean;
 import io.quarkus.smallrye.reactivemessaging.blocking.beans.IncomingCustomUnorderedBlockingBean;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 
 public class BlockingSubscriberTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(ProduceIn.class, IncomingCustomUnorderedBlockingBean.class, IncomingCustomTwoBlockingBean.class)
                     .addAsResource(

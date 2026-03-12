@@ -17,7 +17,7 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 /**
@@ -27,7 +27,7 @@ import io.restassured.RestAssured;
 public class AutoSecurityRolesAllowedUnsupportedScopesTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(ResourceBean.class, OpenApiResourceSecuredAtClassLevel.class,
                             OpenApiResourceSecuredAtClassLevel2.class, OpenApiResourceSecuredAtMethodLevel.class,

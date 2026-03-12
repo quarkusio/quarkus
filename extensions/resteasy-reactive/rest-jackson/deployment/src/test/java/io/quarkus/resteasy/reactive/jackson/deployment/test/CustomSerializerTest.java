@@ -26,7 +26,7 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import io.quarkus.arc.Unremovable;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.restassured.internal.mapping.Jackson2Mapper;
 import io.restassured.response.Response;
@@ -40,7 +40,7 @@ public class CustomSerializerTest {
     });
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().withEmptyApplication();
+    static QuarkusExtensionTest test = new QuarkusExtensionTest().withEmptyApplication();
 
     @Test
     void shouldUseModulesInCustomSerializer() {

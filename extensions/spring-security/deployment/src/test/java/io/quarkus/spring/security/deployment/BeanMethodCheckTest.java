@@ -24,12 +24,12 @@ import io.quarkus.spring.security.deployment.springapp.PrincipalChecker;
 import io.quarkus.spring.security.deployment.springapp.SomeInterface;
 import io.quarkus.spring.security.deployment.springapp.SomeInterfaceImpl;
 import io.quarkus.spring.security.deployment.springapp.SpringConfiguration;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class BeanMethodCheckTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(
                             Person.class,

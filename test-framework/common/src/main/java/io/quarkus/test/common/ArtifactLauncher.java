@@ -48,6 +48,7 @@ public interface ArtifactLauncher<T extends ArtifactLauncher.InitContext> extend
 
             String networkId();
 
+            @Deprecated
             boolean manageNetwork();
 
             CuratedApplication getCuratedApplication();

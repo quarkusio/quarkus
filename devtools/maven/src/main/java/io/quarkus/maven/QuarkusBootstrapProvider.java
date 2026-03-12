@@ -373,9 +373,17 @@ public class QuarkusBootstrapProvider implements Closeable {
             effectiveProperties.putIfAbsent("quarkus.application.name", mojo.mavenProject().getArtifactId());
             effectiveProperties.putIfAbsent("quarkus.application.version", mojo.mavenProject().getVersion());
             // pass the project.build.outputTimestamp to Quarkus packaging subsystem
-            if (mojo.mavenProject().getProperties().containsKey("project.build.outputTimestamp")) {
-                effectiveProperties.putIfAbsent("quarkus.package.output-timestamp",
-                        mojo.mavenProject().getProperties().getProperty("project.build.outputTimestamp"));
+            // check project properties from POM, then user properties (from -D on command line),
+            // then system properties, matching Maven's own property resolution order
+            String outputTimestamp = mojo.mavenProject().getProperties().getProperty("project.build.outputTimestamp");
+            if (outputTimestamp == null) {
+                outputTimestamp = mojo.mavenSession().getUserProperties().getProperty("project.build.outputTimestamp");
+            }
+            if (outputTimestamp == null) {
+                outputTimestamp = mojo.mavenSession().getSystemProperties().getProperty("project.build.outputTimestamp");
+            }
+            if (outputTimestamp != null) {
+                effectiveProperties.putIfAbsent("quarkus.package.output-timestamp", outputTimestamp);
             }
 
             for (Map.Entry<String, String> attribute : mojo.manifestEntries().entrySet()) {

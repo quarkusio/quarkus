@@ -464,6 +464,8 @@ public class QuarkusPlugin implements Plugin<Project> {
                         t.jvmArgs(
                                 "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED",
                                 "--add-opens=java.base/java.lang=ALL-UNNAMED",
+                                // we need to access com.sun.naming.internal.ResourceManager to reset a cache
+                                "--add-opens=java.naming/com.sun.naming.internal=ALL-UNNAMED",
                                 "--add-exports=java.base/jdk.internal.module=ALL-UNNAMED");
 
                         t.getInputs().files(quarkusGenerateTestAppModelTask);

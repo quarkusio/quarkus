@@ -213,7 +213,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
         if (!rebuild) {
             manifestConfig.addComponent(ApplicationComponent.builder()
-                    .setResolvedDependency(applicationArchives.getRootArchive().getResolvedDependency())
+                    .setResolvedDependency(appArtifact)
                     .setPath(runnerJar));
             Predicate<String> ignoredEntriesPredicate = getThinJarIgnoredEntriesPredicate(packageConfig);
             try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(runnerJar,
@@ -271,6 +271,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
         runnerJar.toFile().setReadable(true, false);
         Path initJar = buildDir.resolve(FastJarFormat.QUARKUS_RUN_JAR);
         manifestConfig.setMainComponent(ApplicationComponent.builder()
+                .setVersion(appArtifact.getVersion())
                 .setPath(initJar)
                 .setDependencies(List.of(curateOutcome.getApplicationModel().getAppArtifact())))
                 .setRunnerPath(initJar);
@@ -285,7 +286,10 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             List<String> lines = Arrays.stream(out.toString(StandardCharsets.UTF_8).split("\n"))
                     .filter(s -> !s.startsWith("#")).sorted().collect(Collectors.toList());
             Path buildSystemProps = quarkus.resolve(FastJarFormat.BUILD_SYSTEM_PROPERTIES);
-            manifestConfig.addComponent(ApplicationComponent.builder().setPath(buildSystemProps).setDevelopmentScope());
+            manifestConfig.addComponent(ApplicationComponent.builder()
+                    .setVersion(appArtifact.getVersion())
+                    .setPath(buildSystemProps)
+                    .setDevelopmentScope());
             try (OutputStream fileOutput = Files.newOutputStream(buildSystemProps)) {
                 fileOutput.write(String.join("\n", lines).getBytes(StandardCharsets.UTF_8));
             }
@@ -323,7 +327,10 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                         curateOutcome.getApplicationModel(),
                         packageConfig.jar().userProvidersDirectory().orElse(null), buildDir.relativize(runnerJar).toString());
                 Path appmodelDat = deploymentLib.resolve(FastJarFormat.APPMODEL_DAT);
-                manifestConfig.addComponent(ApplicationComponent.builder().setPath(appmodelDat).setDevelopmentScope());
+                manifestConfig.addComponent(ApplicationComponent.builder()
+                        .setVersion(appArtifact.getVersion())
+                        .setPath(appmodelDat)
+                        .setDevelopmentScope());
                 try (OutputStream out = Files.newOutputStream(appmodelDat)) {
                     ObjectOutputStream obj = new ObjectOutputStream(out);
                     obj.writeObject(model);
@@ -334,7 +341,10 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 //as we don't really have a resolved bootstrap CP
                 //once we have the app model it will all be done in QuarkusClassLoader anyway
                 Path deploymentCp = deploymentLib.resolve(FastJarFormat.DEPLOYMENT_CLASS_PATH_DAT);
-                manifestConfig.addComponent(ApplicationComponent.builder().setPath(deploymentCp).setDevelopmentScope());
+                manifestConfig.addComponent(ApplicationComponent.builder()
+                        .setVersion(appArtifact.getVersion())
+                        .setPath(deploymentCp)
+                        .setDevelopmentScope());
                 try (OutputStream out = Files.newOutputStream(deploymentCp)) {
                     ObjectOutputStream obj = new ObjectOutputStream(out);
                     List<String> paths = new ArrayList<>();

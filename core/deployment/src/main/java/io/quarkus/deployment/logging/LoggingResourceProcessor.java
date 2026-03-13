@@ -154,7 +154,6 @@ public final class LoggingResourceProcessor {
     private static final String ILLEGAL_LOGGING_FILTER_USE_MESSAGE = "'@" + LoggingFilter.class.getName()
             + "' can only be used on classes that implement '"
             + Filter.class.getName() + "' and that are marked as final.";
-    private static final String[] EMPTY_STRING_ARRAY = new String[0];
 
     @BuildStep
     void setupLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
@@ -309,8 +308,8 @@ public final class LoggingResourceProcessor {
             DiscoveredLogComponents discoveredLogComponents = discoverLogComponents(combinedIndexBuildItem.getIndex());
             if (!discoveredLogComponents.getNameToFilterClass().isEmpty()) {
                 reflectiveClassBuildItemBuildProducer.produce(
-                        ReflectiveClassBuildItem.builder(discoveredLogComponents.getNameToFilterClass().values().toArray(
-                                EMPTY_STRING_ARRAY)).reason(getClass().getName()).build());
+                        ReflectiveClassBuildItem.builder(discoveredLogComponents.getNameToFilterClass().values())
+                                .reason(getClass().getName()).build());
                 serviceProviderBuildItemBuildProducer
                         .produce(ServiceProviderBuildItem.allProvidersFromClassPath(LogFilterFactory.class.getName()));
             }

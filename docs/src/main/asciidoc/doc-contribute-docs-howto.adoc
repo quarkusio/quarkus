@@ -55,14 +55,16 @@ For example, `telemetry-micrometer.adoc` is a reference, and `telemetry-micromet
 include::_attributes.adoc[] <3>
 :diataxis-type: howto <4>
 :categories: security,web <5>
-<6>
+:nav-title: Basic authentication <6>
+<7>
 ----
 <1> Set the `id` value to be the same as the file name but without the extension.
 <2> For information about how to create a good title for each content type, see xref:doc-reference.adoc#titles-and-headings[Titles and headings] on the "Quarkus style and content guidelines" page.
 <3> The `_attributes.adoc` include is required to ensure that attributes get resolved and the table of contents is generated.
 <4> Specify the diataxis type: `concept`, `howto`, `reference`, or `tutorial`.
-<5> Set at least one category to ensure that the content is findable on the link:https://quarkus.io/guides/[Quarkus documentation home page]. For a list of Quarkus categories, see xref:doc-reference.adoc#document-attributes-and-variables[Document attributes and variables] on the "Quarkus style and content guidelines" page.
-<6> Insert a blank line after all document attributes and before the abstract.
+<5> Set at least one category to ensure that the content is findable on the link:https://quarkus.io/guides/[Quarkus documentation home page]. Valid category IDs are defined in `docs/src/main/asciidoc/navigation-config.yaml`.
+<6> A short sidebar title (40 characters or fewer). Required only when the document title exceeds 40 characters. When omitted, the document title is used automatically.
+<7> Insert a blank line after all document attributes and before the abstract.
 +
 [IMPORTANT]
 ====

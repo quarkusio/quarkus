@@ -1,0 +1,94 @@
+# Navigation configuration for the Quarkus guides landing page and sidebar.
+# Defines valid categories, subcategories, featured guides, and validation limits.
+#
+# Category order determines display order on the landing page and sidebar.
+# Within each category/subcategory, guides are sorted alphabetically by nav-title.
+#
+# To add a new category: append a new entry under 'categories' with 'category' (ID)
+# and 'cat-title' (required display name). Then use the ID in :categories: attributes
+# in your adoc files.
+#
+# To add a new subcategory: add a 'subcategories' list under the parent category
+# with 'subcategory' (ID) and 'subcat-title' (required display name). A subcategory
+# can appear under multiple categories — the subcat-title must be identical in each.
+
+title-limit: 40
+featured-limit: 4
+
+categories:
+  - category: getting-started
+    cat-title: Getting Started
+
+  - category: web
+    cat-title: Web
+
+  - category: data
+    cat-title: Data
+
+  - category: messaging
+    cat-title: Messaging
+
+  - category: security
+    cat-title: Security
+
+  - category: cloud
+    cat-title: Cloud
+
+  - category: native
+    cat-title: Native
+
+  - category: observability
+    cat-title: Observability
+
+  - category: core
+    cat-title: Core
+
+  - category: tooling
+    cat-title: Tooling
+
+  - category: serialization
+    cat-title: Serialization
+
+  - category: command-line
+    cat-title: Command Line Applications
+
+  - category: integration
+    cat-title: Integration
+
+  - category: compatibility
+    cat-title: Compatibility
+
+  - category: writing-extensions
+    cat-title: Writing Extensions
+
+  - category: contributing
+    cat-title: Contributing
+
+  - category: architecture
+    cat-title: Architecture
+
+  - category: alt-languages
+    cat-title: Alternative Languages
+
+  - category: miscellaneous
+    cat-title: Miscellaneous
+
+  - category: business-automation
+    cat-title: Business Automation
+
+featured:
+  - file: getting-started.adoc
+    featured-summary: Build a hello-world app in 10 minutes
+  - file: rest.adoc
+    featured-summary: Expose HTTP endpoints with JSON serialization
+  - file: deploying-to-kubernetes.adoc
+    featured-summary: Package and deploy your app to Kubernetes
+
+# Learning paths: curated, ordered sequences of guides for a specific goal.
+# Unlike categories (alphabetical by nav-title), guides appear in the order
+# listed here.
+#
+# To add a learning path: append a new entry with 'path' (unique ID),
+# 'path-title' (display heading), 'path-summary' (optional one-liner),
+# and 'guides' (ordered list of adoc filenames).
+learning-paths: []

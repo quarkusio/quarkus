@@ -1,5 +1,6 @@
 package io.quarkus.qute.debug.frames;
 
+import static io.quarkus.qute.debug.adapter.RegisterDebugServerAdapter.findAvailableSocketPort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
@@ -13,7 +14,6 @@ import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.debug.adapter.RegisterDebugServerAdapter;
 import io.quarkus.qute.debug.client.DAPClient;
-import io.quarkus.qute.debug.client.DebuggerUtils;
 
 /**
  * Test class validating Qute debugger behavior for nested sections (#for / #if).
@@ -60,7 +60,7 @@ public class NestedLoopIfBreakpointTest {
 
     @Test
     public void testNestedLoopsAndIfFrames() throws Exception {
-        int port = DebuggerUtils.findAvailableSocketPort();
+        int port = findAvailableSocketPort();
 
         Engine engine = Engine.builder()
                 .enableTracing(true)

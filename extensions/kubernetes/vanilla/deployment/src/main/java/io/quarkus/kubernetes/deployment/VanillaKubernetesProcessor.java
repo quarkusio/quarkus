@@ -242,7 +242,9 @@ public class VanillaKubernetesProcessor extends BaseVanillaKubernetesProcessor {
         if (deploymentKind != DeploymentResourceKind.Deployment) {
             context.add(new RemoveDeploymentResourceDecorator(name));
         }
-        if (deploymentKind == DeploymentResourceKind.StatefulSet) {
+        if (deploymentKind == DeploymentResourceKind.Deployment) {
+            context.add(new AddDeploymentResourceDecorator(name, config));
+        } else if (deploymentKind == DeploymentResourceKind.StatefulSet) {
             context.add(new AddStatefulSetResourceDecorator(name, config));
         } else if (deploymentKind == DeploymentResourceKind.Job) {
             context.add(new AddJobResourceDecorator(name, config.job()));

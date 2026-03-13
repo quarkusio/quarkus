@@ -416,6 +416,14 @@ public class ApplicationDeploymentClasspathBuilder {
     }
 
     /**
+     * Returns the compile-only configuration without eagerly resolving the deployment configuration.
+     * This is used by {@code QuarkusApplicationModelTask} which resolves lazily.
+     */
+    public Configuration getCompileOnlyWithoutResolvingDeployment() {
+        return project.getConfigurations().getByName(compileOnlyConfigurationName);
+    }
+
+    /**
      * Forces the platform configuration to resolve and then uses that to populate platform imports.
      */
     public PlatformImports getPlatformImports() {

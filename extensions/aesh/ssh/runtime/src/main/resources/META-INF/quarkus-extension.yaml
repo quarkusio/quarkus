@@ -1,0 +1,14 @@
+name: "Aesh SSH"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+  - "aesh"
+  - "ssh"
+  - "terminal"
+  - "cli"
+  categories:
+  - "miscellaneous"
+  status: "preview"
+  guide: "https://quarkus.io/guides/aesh"
+  config:
+  - "quarkus.aesh.ssh."

@@ -363,6 +363,10 @@
                 <module>rest-client-reactive-stork</module>
                 <module>packaging</module>
                 <module>simple with space</module>
+                <module>aesh</module>
+                <module>aesh-native</module>
+                <module>aesh-ssh-native</module>
+                <module>aesh-websocket-native</module>
                 <module>picocli</module>
                 <module>picocli-native</module>
                 <module>web-dependency-locator</module>

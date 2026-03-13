@@ -37,9 +37,9 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import org.aesh.readline.terminal.impl.ExecPty;
-import org.aesh.readline.terminal.impl.Pty;
 import org.aesh.terminal.Attributes;
+import org.aesh.terminal.tty.impl.ExecPty;
+import org.aesh.terminal.tty.impl.Pty;
 import org.aesh.terminal.utils.ANSI;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.Artifact;
@@ -88,7 +88,7 @@ import org.eclipse.aether.resolution.DependencyRequest;
 import org.eclipse.aether.resolution.DependencyResolutionException;
 import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
-import org.fusesource.jansi.internal.Kernel32;
+import org.jline.nativ.Kernel32;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.app.ApplicationModelSerializer;

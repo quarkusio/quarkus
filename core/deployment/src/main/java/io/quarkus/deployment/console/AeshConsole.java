@@ -19,7 +19,7 @@ import org.aesh.command.invocation.CommandInvocation;
 import org.aesh.command.registry.CommandRegistry;
 import org.aesh.command.settings.Settings;
 import org.aesh.command.settings.SettingsBuilder;
-import org.aesh.readline.ReadlineConsole;
+import org.aesh.console.ReadlineConsole;
 import org.aesh.readline.alias.AliasManager;
 import org.aesh.terminal.Attributes;
 import org.aesh.terminal.Connection;

@@ -1,5 +1,6 @@
 package io.quarkus.test.junit;
 
+import static io.quarkus.deployment.dev.testing.ApplicationPropertiesUtils.createTempApplicationProperties;
 import static io.quarkus.runtime.LaunchMode.TEST;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 import static io.quarkus.test.junit.TestResourceUtil.TestResourceManagerReflections.copyEntriesFromProfile;
@@ -41,8 +42,8 @@ import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 import io.quarkus.deployment.dev.testing.LogCapturingOutputFilter;
 import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.dev.testing.TracingHandler;
+import io.quarkus.runtime.configuration.ConfigSourceOrdinal;
 import io.quarkus.test.common.TestResourceManager;
-import io.quarkus.test.junit.TestProfileAndProperties.TestProfileConfigSource;
 import io.quarkus.test.junit.main.Launch;
 import io.quarkus.test.junit.main.LaunchResult;
 import io.quarkus.test.junit.main.QuarkusMainIntegrationTest;
@@ -104,8 +105,10 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         List<Path> additionalPaths = new ArrayList<>();
         if (testProfile.isPresent()) {
             TestProfileAndProperties testProfileAndProperties = TestProfileAndProperties.of(testProfile.get(), TEST);
-            TestProfileConfigSource testProfileConfigSource = testProfileAndProperties.toTestProfileConfigSource();
-            additionalPaths.add(testProfileConfigSource.getPropertiesLocation());
+            additionalPaths.add(createTempApplicationProperties(
+                    ConfigSourceOrdinal.TEST_PROFILE.getName(),
+                    testProfileAndProperties.properties(),
+                    ConfigSourceOrdinal.TEST_PROFILE));
         }
 
         CuratedApplication curatedApplication = AppMakerHelper.makeCuratedApplication(requiredTestClass, additionalPaths,

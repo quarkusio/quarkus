@@ -13,7 +13,6 @@ import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -77,7 +76,6 @@ import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
@@ -97,8 +95,6 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.DisableableConfigSource;
 import io.quarkus.runtime.configuration.QuarkusConfigValue;
 import io.quarkus.runtime.configuration.RuntimeConfigBuilder;
-import io.quarkus.runtime.configuration.RuntimeOverrideConfigSource;
-import io.quarkus.runtime.configuration.RuntimeOverrideConfigSourceBuilder;
 import io.quarkus.runtime.configuration.StaticInitConfigBuilder;
 import io.smallrye.config.ConfigMappingInterface;
 import io.smallrye.config.ConfigMappingLoader;
@@ -183,15 +179,6 @@ public class ConfigGenerationBuildStep {
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(builderClassName).reason(getClass().getName()).build());
         staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(builderClassName));
         runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(builderClassName));
-    }
-
-    @BuildStep(onlyIfNot = { IsProduction.class }) // for dev or test
-    void runtimeOverrideConfig(
-            BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
-            BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
-        staticInitConfigBuilder
-                .produce(new StaticInitConfigBuilderBuildItem(RuntimeOverrideConfigSourceBuilder.class.getName()));
-        runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(RuntimeOverrideConfigSourceBuilder.class.getName()));
     }
 
     @BuildStep
@@ -422,19 +409,6 @@ public class ConfigGenerationBuildStep {
         }
 
         recorder.handleConfigChange(values);
-    }
-
-    @BuildStep(onlyIfNot = { IsProduction.class })
-    public void setupConfigOverride(
-            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer) {
-
-        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true);
-
-        try (ClassCreator clazz = ClassCreator.builder().classOutput(classOutput)
-                .className(RuntimeOverrideConfigSource.GENERATED_CLASS_NAME).build()) {
-            clazz.getFieldCreator(RuntimeOverrideConfigSource.FIELD_NAME, Map.class)
-                    .setModifiers(Modifier.STATIC | Modifier.PUBLIC | Modifier.VOLATILE);
-        }
     }
 
     @BuildStep

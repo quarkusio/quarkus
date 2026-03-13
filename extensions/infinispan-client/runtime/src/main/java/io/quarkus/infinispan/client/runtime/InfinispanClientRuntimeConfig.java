@@ -54,10 +54,9 @@ public interface InfinispanClientRuntimeConfig {
      *              remote TLS host.
      * * `HASH_DISTRIBUTION_AWARE` - Like `TOPOLOGY_AWARE` but with the additional advantage that each request
      *              involving keys will be routed to the server who is the primary owner which improves performance
-     *              greatly. This is the default.
+     *              greatly. This is the default mode in Infinispan.
      */
     // @formatter:on
-    @WithDefault("HASH_DISTRIBUTION_AWARE")
     Optional<String> clientIntelligence();
 
     // @formatter:off

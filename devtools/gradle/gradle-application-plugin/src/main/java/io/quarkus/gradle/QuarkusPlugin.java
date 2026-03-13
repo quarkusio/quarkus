@@ -3,6 +3,7 @@ package io.quarkus.gradle;
 import static io.quarkus.gradle.GradleUtils.composeDevFiles;
 import static io.quarkus.gradle.extension.QuarkusPluginExtension.combinedOutputSourceDirs;
 import static io.quarkus.gradle.tasks.QuarkusGradleUtils.getSourceSet;
+import static io.quarkus.gradle.tooling.dependency.DependencyDataCollector.isDisableDeclaredDependencyCollector;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -76,6 +77,7 @@ import io.quarkus.gradle.tooling.DefaultProjectDescriptor;
 import io.quarkus.gradle.tooling.GradleApplicationModelBuilder;
 import io.quarkus.gradle.tooling.ProjectDescriptorBuilder;
 import io.quarkus.gradle.tooling.ToolingUtils;
+import io.quarkus.gradle.tooling.dependency.DependencyDataCollector;
 import io.quarkus.gradle.tooling.dependency.DependencyUtils;
 import io.quarkus.gradle.tooling.dependency.ExtensionDependency;
 import io.quarkus.gradle.tooling.dependency.ProjectExtensionDependency;
@@ -201,21 +203,25 @@ public class QuarkusPlugin implements Plugin<Project> {
                 LaunchMode.DEVELOPMENT);
 
         Provider<DefaultProjectDescriptor> projectDescriptor = ProjectDescriptorBuilder.buildForApp(project);
+        DependencyDataCollector depDataCollector = new DependencyDataCollector(project);
+
         TaskProvider<QuarkusApplicationModelTask> quarkusGenerateTestAppModelTask = tasks.register(
                 "quarkusGenerateTestAppModel",
                 QuarkusApplicationModelTask.class, task -> {
-                    configureApplicationModelTask(project, task, projectDescriptor, testClasspath, LaunchMode.TEST,
+                    configureApplicationModelTask(project, task, projectDescriptor,
+                            testClasspath, depDataCollector, LaunchMode.TEST,
                             "quarkus/application-model/quarkus-app-test-model.dat");
                 });
         TaskProvider<QuarkusApplicationModelTask> quarkusGenerateDevAppModelTask = tasks.register("quarkusGenerateDevAppModel",
                 QuarkusApplicationModelTask.class, task -> {
-                    configureApplicationModelTask(project, task, projectDescriptor, devClasspath, LaunchMode.DEVELOPMENT,
+                    configureApplicationModelTask(project, task, projectDescriptor,
+                            devClasspath, depDataCollector, LaunchMode.DEVELOPMENT,
                             "quarkus/application-model/quarkus-app-dev-model.dat");
                 });
         TaskProvider<QuarkusApplicationModelTask> quarkusGenerateAppModelTask = tasks.register("quarkusGenerateAppModel",
                 QuarkusApplicationModelTask.class, task -> {
                     configureApplicationModelTask(project, task, projectDescriptor,
-                            normalClasspath, LaunchMode.NORMAL,
+                            normalClasspath, depDataCollector, LaunchMode.NORMAL,
                             "quarkus/application-model/quarkus-app-model.dat");
                 });
 
@@ -248,7 +254,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                 QuarkusApplicationModelTask.class, task -> {
                     task.dependsOn(tasks.named(JavaPlugin.CLASSES_TASK_NAME));
                     configureApplicationModelTask(project, task, projectDescriptor,
-                            normalClasspath, LaunchMode.NORMAL,
+                            normalClasspath, depDataCollector, LaunchMode.NORMAL,
                             "quarkus/application-model/quarkus-app-model-build.dat");
                 });
         tasks.register(QUARKUS_SHOW_EFFECTIVE_CONFIG_TASK_NAME,
@@ -580,9 +586,16 @@ public class QuarkusPlugin implements Plugin<Project> {
     private static void configureApplicationModelTask(Project project, QuarkusApplicationModelTask task,
             Provider<DefaultProjectDescriptor> projectDescriptor,
             ApplicationDeploymentClasspathBuilder classpath,
+            DependencyDataCollector dependencyDataCollector,
             LaunchMode launchMode, String quarkusModelFile) {
+        var declaredDepsProvider = project.getProviders()
+                .provider(() -> dependencyDataCollector.collectDeclaredDependencies(
+                        project, classpath.getDeploymentConfiguration()));
         task.getProjectDescriptor().set(projectDescriptor);
+        task.getDisableDeclaredDependencyCollector().set(isDisableDeclaredDependencyCollector(project));
         task.getLaunchMode().set(launchMode);
+        task.getDeclaredDependencies().set(declaredDepsProvider);
+        task.getDeclaredDependenciesSnapshot().set(declaredDepsProvider.map(DependencyDataCollector::toSnapshot));
         task.getTypeModel().set(task.getPath());
         task.getOriginalClasspath().setFrom(classpath.getOriginalRuntimeClasspathAsInput());
         task.getAppClasspath().configureFrom(classpath.getRuntimeConfigurationWithoutResolvingDeployment());

@@ -634,6 +634,66 @@ implementation("io.fabric8:kubernetes-model-apps")
 // ...
 ----
 
+== Proxy Configuration
+
+The Kubernetes Client supports sending requests through a proxy. You can configure a default proxy as well as multiple named proxy configurations, which can then be referenced by the Kubernetes Client.
+
+=== Registering a proxy configuration
+
+First, define a proxy configuration in your application configuration. Each proxy is identified by a unique name:
+
+[source,properties]
+----
+quarkus.proxy.my-proxy.host=http://localhost <1>
+quarkus.proxy.my-proxy.port=8162
+quarkus.proxy.my-proxy.username=username
+quarkus.proxy.my-proxy.password=password
+quarkus.proxy.my-proxy.non-proxy-hosts=my.company.com
+
+quarkus.proxy.host=http://localhost <2>
+quarkus.proxy.port=8888
+----
+
+1. Named proxy `my-proxy` configuration
+2. Default proxy configuration
+
+=== Referencing the proxy configuration
+
+Next, instruct the Kubernetes Client to use the registered proxy configuration by referencing its name:
+
+[source,properties]
+----
+quarkus.kubernetes-client.proxy-configuration-name=my-proxy
+----
+
+At runtime, the Kubernetes Client will be automatically configured using the `my-proxy` proxy settings.
+
+[NOTE]
+====
+When no named proxy configuration is provided, the Kubernetes Client falls back to the default proxy configuration, if available.
+====
+
+=== HTTPS and HTTP proxy configurations
+
+HTTPS and HTTP proxy considerations
+
+The Kubernetes Client also supports HTTP and HTTPS proxies via deprecated properties such as:
+
+* `quarkus.kubernetes-client.http-proxy`
+* `quarkus.kubernetes-client.https-proxy`
+
+If you want to use the Proxy Registry for HTTP or HTTPS proxies, ensure that the host property includes the appropriate scheme:
+
+* `http://` for HTTP proxies
+
+* `https://` for HTTPS proxies
+
+
+[NOTE]
+====
+If either `quarkus.kubernetes-client.http-proxy` or `quarkus.kubernetes-client.https-proxy` is configured, the Proxy Registry mechanism is disabled and will not be used.
+====
+
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-kubernetes-client.adoc[opts=optional, leveloffset=+1]

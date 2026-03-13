@@ -1078,25 +1078,69 @@ public final class HibernateOrmProcessor {
                 persistenceUnitName,
                 jdbcDataSources,
                 JdbcDataSourceBuildItem::getName,
-                JdbcDataSourceBuildItem::isDefault, persistenceUnitConfig.datasource());
+                JdbcDataSourceBuildItem::isDefault,
+                persistenceUnitConfig.datasource());
 
         Optional<ReactiveDataSourceBuildItem> reactiveDataSource = HibernateDataSourceUtil.findDataSourceWithNameDefault(
                 persistenceUnitName,
                 reactiveDataSources,
                 ReactiveDataSourceBuildItem::getName,
-                ReactiveDataSourceBuildItem::isDefault, persistenceUnitConfig.datasource());
+                ReactiveDataSourceBuildItem::isDefault,
+                persistenceUnitConfig.datasource());
 
-        if (jdbcDataSource.isEmpty() && reactiveDataSource.isPresent()) {
-            LOG.debugf("The datasource '%s' is only reactive, do not create this PU '%s' as blocking",
-                    persistenceUnitConfig.datasource().orElse(DEFAULT_PERSISTENCE_UNIT_NAME), persistenceUnitName);
+        final boolean hasKnownJdbcDataSource = jdbcDataSource.isPresent();
+        final boolean hasKnownReactiveDataSource = reactiveDataSource.isPresent();
+        final boolean hasKnownDataSource = hasKnownJdbcDataSource || hasKnownReactiveDataSource;
+        final boolean explicitDataSource = persistenceUnitConfig.datasource().isPresent();
+        final boolean knownAtBuildTime = !explicitDataSource || hasKnownDataSource;
+        final boolean inferredWantJdbc = !(!hasKnownJdbcDataSource && hasKnownReactiveDataSource);
+        final boolean inferredWantReactive = hasKnownReactiveDataSource;
+        final boolean wantJdbc = persistenceUnitConfig.jdbc().enabled().orElse(inferredWantJdbc);
+        final boolean wantReactive = persistenceUnitConfig.reactive().enabled().orElse(inferredWantReactive);
+
+        if (!wantJdbc && !wantReactive) {
+            throw new ConfigurationException(String.format(Locale.ROOT,
+                    "Persistence unit '%s' disables both JDBC and reactive bootstrapping. "
+                            + "At least one of '%s' or '%s' must be enabled.",
+                    persistenceUnitName,
+                    "quarkus.hibernate-orm." + persistenceUnitName + ".jdbc.enabled",
+                    "quarkus.hibernate-orm." + persistenceUnitName + ".reactive.enabled"));
+        }
+
+        if (knownAtBuildTime) {
+            if (wantJdbc && hasKnownReactiveDataSource && !hasKnownJdbcDataSource) {
+                throw new ConfigurationException(String.format(Locale.ROOT,
+                        "Persistence unit '%s' requires JDBC (blocking) but datasource '%s' is reactive-only (no JDBC datasource found). "
+                                + "Either configure a JDBC datasource for it, or set '%s' to false.",
+                        persistenceUnitName,
+                        persistenceUnitConfig.datasource().orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
+                        "quarkus.hibernate-orm." + persistenceUnitName + ".jdbc.enabled"));
+            }
+            if (wantReactive && hasKnownJdbcDataSource && !hasKnownReactiveDataSource) {
+                throw new ConfigurationException(String.format(Locale.ROOT,
+                        "Persistence unit '%s' requires reactive but datasource '%s' has no reactive datasource. "
+                                + "Either configure a reactive datasource for it, or set '%s' to false.",
+                        persistenceUnitName,
+                        persistenceUnitConfig.datasource().orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
+                        "quarkus.hibernate-orm." + persistenceUnitName + ".reactive.enabled"));
+            }
+        }
+
+        // Decision: if final wantsJdbc is false, skip creating the blocking Hibernate ORM PU.
+        if (!wantJdbc) {
+            LOG.debugf("Persistence unit '%s' has JDBC disabled (jdbc.enabled=%s); skipping blocking Hibernate ORM PU",
+                    persistenceUnitName,
+                    persistenceUnitConfig.jdbc().enabled().map(String::valueOf).orElse("<inferred>"));
             return;
         }
 
-        boolean explicitDataSource = persistenceUnitConfig.datasource().isPresent();
-        if (jdbcDataSource.isEmpty() && explicitDataSource) {
-            String dataSourceName = persistenceUnitConfig.datasource().get();
-            throw PersistenceUnitUtil.unableToFindDataSource(persistenceUnitName, dataSourceName,
-                    DataSourceUtil.dataSourceNotConfigured(dataSourceName));
+        // If datasource is explicitly referenced but not known at build time:
+        // proceed without failing (advanced setups/custom providers).
+        if (explicitDataSource && !hasKnownDataSource) {
+            LOG.debugf("Datasource '%s' for persistence unit '%s' is not known at build time; "
+                    + "proceeding because jdbc.enabled does not require build-time datasource metadata.",
+                    persistenceUnitConfig.datasource().orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
+                    persistenceUnitName);
         }
 
         Optional<String> dataSourceName = jdbcDataSource.map(JdbcDataSourceBuildItem::getName);
@@ -1105,28 +1149,24 @@ public final class HibernateOrmProcessor {
                 persistenceUnitName,
                 new HibernateOrmPersistenceUnitProviderHelper(),
                 PersistenceUnitTransactionType.JTA,
-                // That's right, we're pushing both class names and package names
-                // to a method called "addClasses".
-                // It's a misnomer: while the method populates the set that backs getManagedClasses(),
-                // that method is also poorly named because it can actually return both class names
-                // and package names.
-                // See for proof:
-                // - how org.hibernate.boot.archive.scan.internal.ScanResultCollector.isListedOrDetectable
-                //   is used for packages too, even though it relies (indirectly) on getManagedClassNames().
-                // - the comment at org/hibernate/boot/model/process/internal/ScanningCoordinator.java:246:
-                //   "IMPL NOTE : "explicitlyListedClassNames" can contain class or package names..."
                 new ArrayList<>(modelClassesAndPackages),
                 new Properties(),
                 false);
+
         Set<String> entityClassNames = new HashSet<>(descriptor.getManagedClassNames());
         entityClassNames.retainAll(jpaModel.getEntityClassNames());
 
         MultiTenancyStrategy multiTenancyStrategy = getMultiTenancyStrategy(persistenceUnitConfig.multitenant());
 
-        Optional<DatabaseKind.SupportedDatabaseKind> supportedDatabaseKind = collectDialectConfig(persistenceUnitName,
+        Optional<DatabaseKind.SupportedDatabaseKind> supportedDatabaseKind = collectDialectConfig(
+                persistenceUnitName,
                 persistenceUnitConfig,
-                dbKindMetadataBuildItems, jdbcDataSource, multiTenancyStrategy,
-                systemProperties, reflectiveMethods, descriptor.getProperties()::setProperty);
+                dbKindMetadataBuildItems,
+                jdbcDataSource,
+                multiTenancyStrategy,
+                systemProperties,
+                reflectiveMethods,
+                descriptor.getProperties()::setProperty);
 
         configureProperties(descriptor, persistenceUnitConfig, hibernateOrmConfig, false);
 
@@ -1136,12 +1176,15 @@ public final class HibernateOrmProcessor {
 
         Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
         Optional<FormatMapperKind> xmlMapper = xmlMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
+
         jsonMapper.flatMap(FormatMapperKind::requiredBeanType)
                 .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
         xmlMapper.flatMap(FormatMapperKind::requiredBeanType)
                 .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
-        JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck = jsonFormatterCustomizationCheck(
-                capabilities, jsonMapper);
+
+        JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck = jsonFormatterCustomizationCheck(capabilities,
+                jsonMapper);
+
         persistenceUnitDescriptors.produce(
                 new PersistenceUnitDescriptorBuildItem(descriptor,
                         new RecordedConfig(

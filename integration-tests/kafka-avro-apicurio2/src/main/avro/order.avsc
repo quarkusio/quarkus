@@ -1,0 +1,28 @@
+{
+  "namespace": "io.quarkus.it.kafka.avro",
+  "type": "record",
+  "name": "Order",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string"
+    },
+    {
+      "name": "product",
+      "type": "string"
+    },
+    {
+      "name": "quantity",
+      "type": "int"
+    },
+    {
+      "name": "status",
+      "type": {
+        "type": "enum",
+        "name": "OrderStatus",
+        "namespace": "io.quarkus.it.kafka.avro",
+        "symbols": ["PENDING", "SHIPPED", "DELIVERED"]
+      }
+    }
+  ]
+}

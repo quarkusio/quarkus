@@ -7,8 +7,8 @@ import org.reactivestreams.Publisher;
 
 import com.mongodb.reactivestreams.client.ClientSession;
 
-import io.quarkus.mongodb.panache.common.runtime.BeanUtils;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
+import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
@@ -84,7 +84,7 @@ public class Panache {
     }
 
     private static Uni<ClientSession> startSession() {
-        ReactiveMongoClient client = BeanUtils.clientFromArc(null, ReactiveMongoClient.class, true);
+        ReactiveMongoClient client = MongoClientBeanUtil.reactiveMongoClient();
         return client.startSession();
     }
 

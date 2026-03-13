@@ -15,7 +15,8 @@ include::_attributes.adoc[]
 :extensions: io.quarkus:quarkus-tls-registry
 
 The TLS Registry is a Quarkus extension that centralizes TLS configuration, making it easier to manage and maintain secure connections across your application.
-When defining TLS configurations in a single centralized location, you can use the TLS Registry to reference these configurations from multiple components within the application, which ensures consistency and reduces the potential for configuration errors.
+
+When defining TLS configurations in a single centralized location, you can use the TLS Registry to reference them from multiple components within the application, ensuring consistency and reducing the risk of configuration errors.
 
 The TLS Registry consolidates settings and supports multiple named configurations.
 Therefore, you can tailor TLS settings for different application parts.
@@ -44,15 +45,15 @@ and compatibility with various keystore formats, such as PKCS12, PEM, and JKS.
 To configure a TLS connection, including key and truststores, use the `+quarkus.tls.*+` properties.
 These properties are required for:
 
- * Setting up the default TLS configuration, defined directly under `+quarkus.tls.*+`
- * Creating separate, named configurations by using `+quarkus.tls.<name>.*+`.
+* Setting up the default TLS configuration, defined directly under `+quarkus.tls.*+`
+* Creating separate, named configurations by using `+quarkus.tls.<name>.*+`.
 By specifying the `+quarkus.tls.<name>.*+` properties, you can adapt the TLS settings for a specific component.
 
 [IMPORTANT]
 ====
 The default TLS configuration is not a fallback or global configuration.
 Each named TLS configuration, or "TLS bucket," must provide its own properties.
-For instance, `quarkus.tls.reload-period` will only be applied to the default TLS configuration.
+For instance, `quarkus.tls.reload-period` applies only to the default TLS configuration.
 ====
 
 [IMPORTANT]
@@ -61,7 +62,7 @@ As described in detail link:https://github.com/quarkusio/quarkus/blob/main/adr/0
 The `quarkus.tls.trust-all` property is the only exception.
 ====
 
-=== Configuring HTTPS for a HTTP server
+=== Configuring HTTPS for an HTTP server
 
 To ensure secure client-server communication, the client is often required to verify the server's authenticity.
 
@@ -72,7 +73,7 @@ During the TLS handshake, the server presents its certificate, which the client 
 This prevents man-in-the-middle attacks and secures data transmission.
 
 The following sections guide you through setting up HTTPS by using PEM or PKCS12 keystore types.
-In addition, they provide information on how to use named configurations to specify and manage multiple TLS setups at once, which makes it possible for you to define distinct settings for each.
+In addition, they provide guidance on named configurations to specify and manage multiple TLS configurations simultaneously, allowing you to define distinct settings for each.
 
 Use one of the following configuration examples based on your keystore type:
 
@@ -150,7 +151,7 @@ quarkus.grpc.server.use-separate-server=false
 quarkus.grpc.server.plain-text=false
 ----
 +
-This configuration enables mTLS by ensuring that both the server and client validate each other's certificates, which provides an additional layer of security.
+This configuration enables mTLS by ensuring that both the server and the client validate each other's certificates, which provides an additional layer of security.
 
 [[referencing-a-tls-configuration]]
 == Referencing a TLS configuration
@@ -178,17 +179,22 @@ quarkus.smallrye-graphql-client.my-client.tls-configuration-name=MY_TLS_CONFIGUR
 
 [NOTE]
 ====
-When using the Typesafe GraphQL client with a certificate reloading mechanism, as described in the <<reloading-certificates>> section, it is essential to override the bean's scope to `RequestScoped` or another similar scope shorter than the application.
-This is because, by default, the Typesafe client is an application-scoped bean.
-Shortening the scope guarantees that new instances of the bean created after a certificate reload will be configured with the latest certificate.
-Dynamic clients are `@Dependent` scoped; inject them into components with an appropriate scope.
+When you configure the Typesafe GraphQL client with certificate reloading, as described in the <<reloading-certificates>> section, override the bean scope to `RequestScoped` or another scope shorter than the application scope.
+The Typesafe client is an application-scoped bean by default.
+
+A shorter scope ensures that instances created after a certificate reload use the latest certificate.
+
+Dynamic clients are `@Dependent` scoped.
+Inject dynamic clients into components with an appropriate scope.
 ====
 
 === Referencing the default truststore of SunJSSE
 
 JDK distributions typically contain a truststore in the `$JAVA_HOME/lib/security/cacerts` file.
-This truststore is used as a default truststore by SunJSSE, the default implementation of the Java Secure Socket Extension (JSSE).
-SSL/TLS capabilities provided by SunJSSE are leveraged by various Java Runtime components, such as `javax.net.ssl.HttpsURLConnection` and others.
+SunJSSE uses this truststore as the default truststore.
+SunJSSE is the default implementation of the Java Secure Socket Extension (JSSE).
+
+Java runtime components, such as `javax.net.ssl.HttpsURLConnection`, rely on JSSE for SSL and TLS.
 
 Although Quarkus extensions typically do not honor the default truststore of SunJSSE, it is still practical to use it in some situations.
 This applies when migrating from legacy technologies or running on a Linux distribution where the SunJSSE truststore is synchronized with the operating system (OS).
@@ -199,7 +205,7 @@ To simplify the use of the SunJSSE truststore, Quarkus TLS Registry provides a T
 * Otherwise, the paths `$JAVA_HOME/lib/security/jssecacerts` and `$JAVA_HOME/lib/security/cacerts` are checked, and the first existing file is used as a truststore.
 * If neither condition is met, an `IllegalStateException` is thrown.
 
-The password for opening the truststore is taken from the `javax.net.ssl.trustStorePassword` system property.
+The password to open the truststore is obtained from the `javax.net.ssl.trustStorePassword` system property.
 If this property is not set, the default password `changeit` is used.
 
 The `javax.net.ssl` configuration can be used as a value for various `*.tls-configuration-name` properties, as shown below:
@@ -212,7 +218,7 @@ quarkus.grpc.clients.hello.tls-configuration-name=javax.net.ssl
 
 [WARNING]
 ====
-The `javax.net.ssl` TLS configuration can be neither customized nor overridden.
+The `javax.net.ssl` TLS configuration can not be customized or overridden.
 ====
 
 == Configuring TLS
@@ -220,12 +226,12 @@ The `javax.net.ssl` TLS configuration can be neither customized nor overridden.
 TLS configuration primarily involves managing keystores and truststores.
 The specific setup depends on the format used, such as PEM, P12, or JKS.
 
-The following sections outline the various properties available for configuring TLS.
+The following sections outline the available TLS configuration properties.
 
 === Key stores
 
 Key stores store private keys and certificates.
-They are mainly used on the server side but can also be used on the client side when mTLS is used.
+They are mainly used on the server side, but can also be used on the client side when mTLS is used.
 
 ==== PEM keystores
 
@@ -260,13 +266,13 @@ For example, `quarkus.tls.key-store.pem.order=b,c,a`.
 This setting is important when using SNI, because it uses the first specified pair as the default.
 ====
 
-When using PEM keystore, the following formats are supported:
+When using a PEM keystore, the following formats are supported:
 
 * PKCS#8 private key (unencrypted)
 * PKCS#1 RSA private key (unencrypted)
 * Encrypted PKCS#8 private key (encrypted with AES-128-CBC)
 
-In the later case, the `quarkus.tls.key-store.pem.password` or `quarkus.tls.key-store.pem.<name>.password` property must be set to the password used to decrypt the private key.
+For an encrypted PKCS#8 private key, set the `quarkus.tls.key-store.pem.password` or `quarkus.tls.key-store.pem.<name>.password` property to the password that decrypts the private key.
 
 .An encrypted PEM keystore configuration example:
 [source,properties]
@@ -291,7 +297,7 @@ quarkus.tls.key-store.p12.password=secret
 
 `.p12` files are password-protected, so you need to provide the password to open the keystore.
 
-These files can include more than one certificate and private key.
+These files can contain multiple certificates and private keys.
 If this is the case, take either of the following actions:
 
 * Provide and configure the alias of the certificate and the private key you want to use:
@@ -309,7 +315,7 @@ Note that all keys must use the same password.
 
 ==== JKS keystores
 
-JKS keystores are single files that contain the certificate and the private key for the server or client, used to authenticate and establish secure communications in TLS/SSL connections.
+JKS keystores are single files that contain the server or client certificate and its private key, used to authenticate and establish secure TLS/SSL connections.
 
 [IMPORTANT]
 ====
@@ -328,7 +334,7 @@ quarkus.tls.key-store.jks.password=secret
 ----
 
 `.jks` files are password-protected, so you need to provide the password to open the keystore.
-Also, they can include more than one certificate and private key.
+Also, they can include multiple certificates and private keys.
 If this is the case:
 
 * Provide and configure the alias of the certificate and the private key you want to use:
@@ -345,7 +351,10 @@ quarkus.tls.key-store.jks.alias-password=my-alias-password
 Note that all keys must use the same password.
 
 ==== Provided keystores
-If you need more control over the keystore used in a TLS configuration, you can provide a CDI bean implementing the `io.quarkus.tls.runtime.KeyStoreProvider` interface. Quarkus calls `KeyStoreProvider::getKeyStore` when the TLS configuration is <<startup-checks,initially created>> and any time the configuration is <<reloading-certificates,reloaded>>. The resulting keystore and options are then made available via `TlsConfiguration::getKeyStore` and `TlsConfiguration::getKeyStoreOptions`.
+If you need more control over the keystore used in a TLS configuration, you can provide a CDI bean implementing the `io.quarkus.tls.runtime.KeyStoreProvider` interface.
+
+Quarkus calls `KeyStoreProvider::getKeyStore` when the TLS configuration is <<startup-checks,initially created>> and any time the configuration is <<reloading-certificates,reloaded>>.
+The resulting keystore and options are then made available via `TlsConfiguration::getKeyStore` and `TlsConfiguration::getKeyStoreOptions`.
 
 .Example KeyStoreProvider
 [source, java]
@@ -381,15 +390,18 @@ public class ExampleKeyStoreProvider implements KeyStoreProvider {
     }
 }
 ----
-<1> The CDI bean implementing the `KeyStoreProvider` interface can be `@ApplicationScoped`, `@Singleton` or `@Dependent`.
-<2> Use the `@Identifier` qualifier to indicate a named TLS configuration for which to provide keystore options. Omit the qualifier (or use `@Default` explicitly) to indicate the default TLS configuration. See <<referencing-a-tls-configuration>> for more details.
-<3> Other CDI beans can be injected for runtime access to keystore material.
+<1> The CDI bean implementing the `KeyStoreProvider` interface can be `@ApplicationScoped`, `@Singleton`, or `@Dependent`.
+<2> Use the `@Identifier` qualifier to indicate the named TLS configuration that provides the keystore options.
+Omit the qualifier to indicate the default TLS configuration.
+You can also use `@Default` explicitly to indicate the default TLS configuration.
+For more information, see <<referencing-a-tls-configuration>>.
+<3> You can inject other CDI beans to access keystore material at runtime.
 
 [[sni]]
 ==== SNI
 
-Server Name Indication (SNI) is a TLS extension that makes it possible for a client to specify the host name to which it attempts to connect during the TLS handshake.
-SNI enables a server to present different TLS certificates for multiple domains on a single IP address, which facilitates secure communication for virtual hosting scenarios.
+Server Name Indication (SNI) is a TLS extension that makes it possible for a client to specify the hostname to which it attempts to connect during the TLS handshake.
+SNI enables a server to present multiple TLS certificates for different domains on a single IP address, facilitating secure communication in virtual hosting scenarios.
 
 To enable SNI:
 
@@ -404,16 +416,16 @@ With SNI enabled, the client indicates the server name during the TLS handshake,
 CRT is a common file extension for X.509 certificate files, typically in PEM (Privacy-Enhanced Mail) format.
 These files contain the public certificate.
 
-* When configuring the keystore with a JKS or P12 file, the server selects the appropriate certificate based on the SNI host name provided by the client during the TLS handshake.
+* When configuring the keystore with a JKS or P12 file, the server selects the appropriate certificate based on the SNI hostname provided by the client during the TLS handshake.
 The server matches the SNI hostname with the common name (CN) or subject alternative names (SAN) configured in the certificates stored in the keystore.
 All keystore and alias passwords must be identical.
 
 ==== Credential providers
 
-You can use a credential provider instead of passing the keystore password and alias password in the configuration.
+You can use a credential provider instead of specifying the keystore and alias passwords in the configuration.
 
 A credential provider offers a way to retrieve the keystore and alias password.
-Note that the credential provider is only used if the password or alias password is not set in the configuration.
+Quarkus uses the credential provider only when the configuration does not set the keystore password or alias password.
 
 To configure a credential provider:
 
@@ -454,7 +466,7 @@ quarkus.tls.trust-store.pem.certs=ca.crt,ca2.pem
 
 ==== PKCS12 truststores
 
-PKCS12 truststores are a single file containing the certificates.
+PKCS12 truststores are single-file containers for certificates.
 You can use the alias to select the appropriate certificate when multiple certificates are included.
 
 To configure a PKCS12 truststore:
@@ -523,9 +535,12 @@ public class ExampleTrustStoreProvider implements TrustStoreProvider {
     }
 }
 ----
-<1> The CDI bean implementing the `TrustStoreProvider` interface can be `@ApplicationScoped`, `@Singleton` or `@Dependent`.
-<2> Use the `@Identifier` qualifier to indicate a named TLS configuration for which to provide truststore options. Omit the qualifier (or use `@Default` explicitly) to indicate the default TLS configuration. See <<referencing-a-tls-configuration>> for more details.
-<3> Other CDI beans can be injected for runtime access to truststore material.
+<1> The CDI bean that implements the `TrustStoreProvider` interface can be `@ApplicationScoped`, `@Singleton`, or `@Dependent`.
+<2> Use the `@Identifier` qualifier to indicate the named TLS configuration that provides the truststore options.
+Omit the qualifier to indicate the default TLS configuration.
+You can also use `@Default` explicitly to indicate the default TLS configuration.
+For more information, see <<referencing-a-tls-configuration>>.
+<3> You can inject other CDI beans to access truststore material at runtime.
 
 
 ==== Credential providers
@@ -575,7 +590,7 @@ quarkus.tls.cipher-suites=TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384
 The TLS protocol versions are the list of protocols that can be used during the TLS handshake.
 Enabled TLS protocol versions are specified as an ordered list separated by commas.
 The relevant configuration property is `quarkus.tls.protocols` or `quarkus.tls.<name>.protocols` for named TLS configurations.
-For improved security, it defaults to `TLSv1.3` only if not configured.
+For improved security, it defaults to `TLSv1.3` unless configured otherwise.
 
 The available options are `TLSv1`, `TLSv1.1`, `TLSv1.2`, and `TLSv1.3`.
 
@@ -610,7 +625,7 @@ quarkus.tls.handshake-timeout=10S # Default.
 Application-Layer Protocol Negotiation (ALPN) is a TLS extension that allows the client and server to negotiate which protocol they will use for communication during the TLS handshake.
 ALPN enables more efficient communication by allowing the client to indicate its preferred application protocol to the server before establishing the TLS connection.
 
-This helps in scenarios like HTTP/2, where multiple protocols might be available, allowing for faster protocol selection.
+This helps in scenarios such as HTTP/2, where multiple protocols can be available, enabling faster protocol selection.
 
 ALPN is enabled by default.
 
@@ -632,7 +647,7 @@ However, disabling ALPN can be useful for diagnosing native inconsistencies or t
 A Certificate Revocation List (CRL) is a list of certificates that the issuing Certificate Authority (CA) revoked before their scheduled expiration date.
 When a certificate is compromised, no longer needed, or deemed invalid, the CA adds it to the CRL to inform relying parties not to trust it anymore.
 
-You can configure the CRL with the list of certificate files you no longer trust by using the DER or PKCS#7 (P7B) formats.
+You can configure the CRL to include the list of certificate files you no longer trust in DER or PKCS#7 (P7B) format.
 
 * For the DER format, pass DER-encoded CRLs.
 * For the PKCS#7 format, pass the `SignedData` object, where the only significant field is `crls`.
@@ -646,11 +661,11 @@ quarkus.tls.certificate-revocation-list=ca.crl, ca2.crl
 
 ==== Trusting all certificates and hostname verification
 
-You can configure your TLS connection to trust all certificates and disable the hostname verification.
+You can configure your TLS connection to trust all certificates and disable hostname verification.
 Note that these are two different processes:
 
-* Trusting all certificates ignores the certificate validation, so all certificates are trusted.
-This method is useful for testing with self-signed certificates, but it should not be used in production.
+* Trusting all certificates ignores certificate validation, so the client trusts all certificates.
+This method is useful for testing with self-signed certificates, but do not use it in production.
 
 * Hostname verification is the process of verifying the server's identity.
 
@@ -733,9 +748,9 @@ You can also use the `TlsConfiguration` object to configure the Vert.x client or
 
 == Registering a certificate from an extension
 
-This section is only for extension developers.
+The following section is only for extension developers.
 An extension can register a certificate in the TLS registry.
-This is useful when an extension needs to provide a certificate to the application or provides a different format.
+This is useful when an extension provides a certificate to the application or provides the certificate in a different format.
 
 To register a certificate in the TLS registry by using the extension, the _processor_ extension must produce a `TlsCertificateBuildItem` composed of a name and a `CertificateSupplier`.
 
@@ -838,7 +853,7 @@ public void onCertificateUpdate(@Observes CertificateUpdatedEvent reload) {
 
 === Periodic reloading
 
-The TLS registry includes a built-in mechanism for periodically checking the file system for changes and reloading certificates.
+The TLS registry includes a built-in mechanism that periodically checks the file system for changes and reloads certificates.
 The `reload-period` property specifies the interval for reloading certificates and emits a `CertificateUpdatedEvent` each time certificates are reloaded.
 
 . To configure periodic certificate reloading:
@@ -866,7 +881,7 @@ This is automatically handled for the Quarkus HTTP, REST, gRPC, and WebSocket se
 On the client side, Quarkus REST Client automatically handles certificate update events.
 ====
 
-NOTE: In Quarkus dev mode, when files are touched, it will trigger the `CertificateUpdatedEvent` much more frequently.
+NOTE: In Quarkus dev mode, when files are touched, the `CertificateUpdatedEvent` is triggered much more frequently.
 
 ifndef::no-kubernetes-secrets-or-cert-manager[]
 == Using Kubernetes secrets or cert-manager
@@ -933,7 +948,7 @@ spec:
       volumes:
         - name: my-volume
           secret:
-            defaultMode: 0666 # Set the permissions, otherwise the pod may not be able to read the files
+            defaultMode: 0666 # Set the permissions; otherwise, the pod may not be able to read the files
             optional: false
             secretName: my-certs # Reference the secret
 ----
@@ -986,7 +1001,7 @@ endif::no-kubernetes-secrets-or-cert-manager[]
 == Working with OpenShift serving certificates
 
 When running your application in OpenShift, you can use the link:https://docs.openshift.com/container-platform/4.16/security/certificates/service-serving-certificate.html[OpenShift serving certificates] to generate and renew TLS certificates automatically.
-The Quarkus TLS registry can use these certificates and Certificate Authority (CA) files to handle HTTPS traffic and validate certificates securely.
+The Quarkus TLS registry can use these certificates and Certificate Authority (CA) files to handle HTTPS traffic and securely validate certificates.
 
 [[acquiring-a-certificate]]
 === Acquiring a certificate
@@ -1020,7 +1035,7 @@ spec:
   type: ClusterIP
 ----
 
-. To generate a certificate, add his annotation to your already created OpenShift `service`:
+. To generate a certificate, add this annotation to your existing OpenShift `service`:
 +
 [source,shell]
 ----
@@ -1081,8 +1096,7 @@ spec:
 ----
 <1> Define a volume to mount the secret.
 Use the same name as the secret declared above.
-<2> Set up the keystore with the paths to the certificate and private key.
-This can be configured by using environment variables or configuration files.
+<2>  By using environment variables or configuration files, set up the keystore with the paths to the certificate and private key.
 This example uses environment variables.
 OpenShift serving certificates always create the `tls.crt` and `tls.key` files.
 <3> Mount the secret in the container.
@@ -1163,8 +1177,9 @@ spec:
           configMap:
             name: client-tls-config
 ----
-<1> Mount the ConfigMap in the container.
-Ensure that the path matches the one used in the configuration (in this example `/deployments/tls`).
+<1> Mount the ConfigMap volume in the container.
+Ensure that the mount path matches the path referenced in the configuration.
+In this example, `/deployments/tls`.
 <2> Define a volume to mount the ConfigMap and reference the ConfigMap that receives the CA certificate.
 
 . Configure the REST client to use this CA certificate.
@@ -1194,7 +1209,7 @@ public interface HeroClient {
 <1> Configure the base URI and the configuration key.
 The name must be in the format `<service-name>.<namespace>.svc`.
 Otherwise, the certificate will not be trusted.
-Ensure that the `configKey` is also configured.
+Ensure that the `configKey` is configured as well.
 
 . Configure the REST client to trust the CA certificate generated by OpenShift:
 +
@@ -1245,33 +1260,34 @@ Commands:
 
 In most cases, you generate the Quarkus Development CA once and then generate certificates signed by this CA.
 The Quarkus Development CA is a Certificate Authority that can be used to sign certificates locally.
-It is only valid for development purposes and only trusted on the local machine.
+It is valid only for development purposes and is trusted only on the local machine.
+
 The generated CA is located in `$HOME/.quarkus/quarkus-dev-root-ca.pem`, and installed in the system truststore.
 
 === Understanding self-signed versus CA-signed certificates
 
 When developing with TLS, you can use two types of certificates:
 
-* **Self-signed certificate**: The certificate is signed by the same entity that uses it.
-It is not trusted by default.
-This type of certificate is typically used when a Certificate Authority (CA) is unavailable or when a simple setup is needed.
+* **Self-signed certificate**: The owner signs the certificate with their own key.
+Clients do not trust this certificate by default.
+Use this certificate when a Certificate Authority (CA) is not available or when you need a simple setup.
 It is not suitable for production and is intended only for development.
 
-* **CA-signed certificate**: The certificate is signed by a Certificate CA, a trusted entity.
-This certificate is trusted by default and is the standard choice for production environments.
+* **CA-signed certificate**: CA, a trusted entity, signs the certificate.
+Clients trust this certificate by default, and it is the standard choice for production environments.
 
 While you can use a self-signed certificate for local development, it has limitations.
-Browsers and tools like `curl`, `wget`, and `httpie` typically do not trust self-signed certificates, requiring manual import of the CA in your operating system.
+Browsers and tools like `curl`, `wget`, and `httpie` typically do not trust self-signed certificates, so you need to import the CA into your operating system manually.
 
 To avoid this issue, use a development CA to sign certificates and install the CA in the system truststore.
 This ensures that the system trusts all certificates signed by the CA.
-Quarkus simplifies the generation of a development CA and the certificates that are signed by this CA.
+Quarkus simplifies the generation of a development CA and the certificates it signs.
 
 [[generate-a-development-ca]]
 === Generate a development CA
 
 The development CA is a Certificate Authority that can be used to sign certificates locally.
-Note that the generated CA is only valid for development purposes and can only be trusted on the local machine.
+Note that the generated CA is valid only for development purposes and can be trusted only on the local machine.
 
 To generate a development CA:
 [source,shell]
@@ -1290,7 +1306,7 @@ When this option is used, the private key is changed, so you need to regenerate 
 If the CA expires, it will automatically renew without requiring the `--renew` option.
 <3> `--truststore` also generates a PKCS12 truststore containing the CA certificate.
 
-WARNING: When installing the certificate, your system might ask for your password to install the certificate in the system truststore or ask for confirmation in a dialog on Windows.
+WARNING: When installing the certificate, your system might prompt for your password to add it to the system truststore, or display a confirmation dialog on Windows.
 
 IMPORTANT: On Windows, run as administrator from an elevated terminal to install the CA in the system truststore.
 
@@ -1327,14 +1343,14 @@ Generate a TLS certificate with the Quarkus Dev CA if available.
   -d, --directory=<directory>
                       The directory in which the certificates will be created.
                         Default is `.certs`
-  -n, --name=<name>   Name of the certificate. It will be used as file name and
+  -n, --name=<name>   Name of the certificate. It will be used as a file name and
                         alias in the keystore
   -p, --password=<password>
                       The password of the keystore. Default is 'password'
   -r, --renew         Whether existing certificates will need to be replaced
 ----
 +
-A `.env` file is also generated when generating the certificate, making the Quarkus dev mode aware of these certificates.
+The command also generates a `.env` file alongside the certificate so Quarkus dev mode can detect these certificates.
 
 . Run your application in dev mode to use these certificates:
 +
@@ -1368,7 +1384,7 @@ This generates a self-signed certificate that the Quarkus Development CA does no
 
 === Uninstalling the Quarkus Development CA
 
-Uninstalling the Quarkus Development CA from your system depends on your OS.
+Uninstalling the Quarkus Development CA depends on your OS.
 
 ==== Deleting the CA certificate on Windows
 
@@ -1433,13 +1449,13 @@ ifndef::no-lets-encrypt[]
 
 link:https://letsencrypt.org[Let's Encrypt] is a free, automated certificate authority provided by link:https://www.abetterinternet.org/[Internet Security Research Group].
 
-Let's Encrypt uses link:https://datatracker.ietf.org/doc/html/rfc8555[Automated certificate management environment (ACME) protocol] to support automatic certificate issuance and renewal.
+Let's Encrypt uses the link:https://datatracker.ietf.org/doc/html/rfc8555[Automated Certificate Management Environment (ACME)] protocol to support automatic certificate issuance and renewal.
 To learn more about Let's Encrypt and ACME, see link:https://letsencrypt.org/docs/[Let's Encrypt documentation].
 
 The TLS registry extension allows a CLI ACME client to issue and renew Let's Encrypt certificates.
 Your application uses this TLS registry extension to resolve ACME protocol challenges.
 
-Follow the steps below to have your Quarkus application prepared and automatically updated with new and renewed Let's Encrypt certificates.
+Follow the steps below to prepare your Quarkus application and automatically update it with new and renewed Let's Encrypt certificates.
 
 [[lets-encrypt-prerequisites]]
 === Prerequisites
@@ -1456,7 +1472,7 @@ quarkus.tls.lets-encrypt.enabled=true
 ----
 +
 The TLS registry can manage the challenge process from either the main HTTP interface or the management interface.
-Using a management interface is **strongly** recommended to let Quarkus deal with ACME challenge configuration separately from the main application's deployment and security requirements:
+Using a management interface is **strongly** recommended to let Quarkus deal with the ACME challenge configuration separately from the main application's deployment and security requirements:
 +
 [source,properties]
 ----
@@ -1480,10 +1496,9 @@ quarkus.tls.lets-encrypt.enabled=true
 quarkus.management.enabled=true
 quarkus.http.insecure-requests=redirect
 ----
-
 ====
 
-The challenge is served from the primary HTTP interface, which is accessible from your DNS domain name.
+The primary HTTP interface serves the challenge and is accessible from your DNS domain name.
 
 IMPORTANT: Do not start your application yet.
 
@@ -1555,15 +1570,15 @@ Use `https://localhost:8443/` if you choose not to enable a management router in
 +
 [NOTE]
 ====
-When the Let's Encrypt certificate chain and private key have been successfully acquired, they are converted to PEM format and copied to your application's `.letsencrypt` folder.
-The TLS registry is informed that a new certificate and private key are ready and reloads them automatically.
+After the `issue-certificate` command acquires the Let's Encrypt certificate chain and private key, the TLS registry CLI converts them to PEM format and copies them to the `.letsencrypt` folder.
+The TLS registry detects the new certificate and private key and reloads them automatically.
 ====
 +
-. Access your application's endpoint using `https://your-domain-name:8443/` again.
-Confirm in the browser that the Let's Encrypt certificate authority is now signing your domain certificate.
+. Access your application's endpoint again at `https://your-domain-name:8443/`.
+Confirm that the browser shows Let's Encrypt as the certificate issuer.
 +
-Note that currently, the `issue-certificate` command implicitly creates a Let's Encrypt account to make it easy for users to get started with the ACME protocol.
-Support for the Let's Encrypt account management will evolve further.
+The `issue-certificate` command currently creates a Let's Encrypt account automatically to simplify initial ACME setup.
+The TLS registry CLI continues to add more support for Let's Encrypt account management.
 
 === Renewing a certificate
 
@@ -1577,23 +1592,24 @@ quarkus tls lets-encrypt renew-certificate \
   --domain=<domain-dns-name>
 ----
 
-During this command, TLS registry CLI reads a Let's Encrypt account information recorded during the <<lets-encrypt-issue-certificate,Issue certificates with Let's Encrypt>> step, issues a Let's Encrypt certificate request, and communicates with a Quarkus application to have ACME challenges resolved.
+During this command, the TLS registry CLI reads the Let's Encrypt account information recorded during the <<lets-encrypt-issue-certificate,Issue certificates with Let's Encrypt>> step, issues a Let's Encrypt certificate request, and communicates with the Quarkus application to resolve ACME challenges.
 
-Once the Let's Encrypt certificate chain and private key have been successfully renewed, they are converted to PEM format and copied to your application's `.letsencrypt` folder.
-The TLS registry is notified when a new certificate and private key are ready, and it automatically reloads them.
+After the `renew-certificate` command renews the Let's Encrypt certificate chain and private key, the TLS registry CLI converts them to PEM format and copies them to the `.letsencrypt` folder.
+The TLS registry detects the new certificate and private key and reloads them automatically.
 
 [[lets-encrypt-ngrok]]
 === Testing with ngrok
 
-link:https://ngrok.com/[ngrok] can be used to provide a secure HTTPS tunnel to your application running on localhost, and make it easy to test HTTPS based applications.
+link:https://ngrok.com/[ngrok] provides a secure HTTPS tunnel to an application running on localhost and helps you test HTTPS-based applications.
 
-ngrok provides a simplified way of getting started with the Quarkus Let's Encrypt ACME feature.
+ngrok provides a simple way to get started with the Quarkus Let's Encrypt ACME feature.
 
-. Initiate testing by asking ngrok to reserve a domain:
+. Start testing by reserving a domain in ngrok:
 +
-You can use link:https://github.com/quarkiverse/quarkus-ngrok[Quarkiverse ngrok] in dev mode or reserve it directly in the ngrok dashboard.
-Unfortunately, you cannot use your ngrok domain to test the Quarkus Let's Encrypt ACME feature immediately.
-This is because ngrok itself uses Let's Encrypt and intercepts ACME challenges that are meant to be handled by the Quarkus application instead.
+You can reserve the domain by using link:https://github.com/quarkiverse/quarkus-ngrok[Quarkiverse ngrok] in dev mode or by reserving it directly in the ngrok dashboard.
+You cannot use the ngrok domain to test the Quarkus Let's Encrypt ACME feature immediately.
++
+ngrok uses Let's Encrypt and intercepts ACME challenges that the Quarkus application would otherwise handle.
 
 . Therefore, remove the ngrok Let's Encrypt certificate policy from your ngrok domain:
 +
@@ -1602,9 +1618,9 @@ This is because ngrok itself uses Let's Encrypt and intercepts ACME challenges t
 ngrok api --api-key <YOUR-API-KEY> reserved-domains delete-certificate-management-policy <YOUR-RESERVED-DOMAIN-ID>
 ----
 +
-`YOUR-RESERVED-DOMAIN-ID` is your reserved domain's id which starts from `rd_`, you can find it in the link:https://dashboard.ngrok.com/cloud-edge/domains[ngrok dashboard domains section].
+`YOUR-RESERVED-DOMAIN-ID` is your reserved domain's ID, which starts from `rd_`; you can find it in the link:https://dashboard.ngrok.com/cloud-edge/domains[ngrok dashboard domains section].
 
-. Because ngrok only forwards ACME challenges over HTTP, start ngrok by using the following command:
+. Because ngrok only forwards ACME challenges over HTTP, start ngrok with the following command:
 +
 [source,shell]
 ----

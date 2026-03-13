@@ -27,7 +27,7 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class ClientMaskedHeaderLogTest {
 
-    public static class NoMaskedHeadersTest {
+    public static class NoMaskedHeadersConfigTest {
         @RegisterExtension
         static final QuarkusUnitTest config = new QuarkusUnitTest()
                 .withApplicationRoot((jar) -> jar
@@ -43,7 +43,7 @@ public class ClientMaskedHeaderLogTest {
                     List<String> lines = records.stream().map(formatter::format).map(String::trim).collect(Collectors.toList());
 
                     assertThat(lines).containsExactly(
-                            "[INFO] Request: GET http://localhost:8081/resource/hello Headers[Accept=text/plain;charset=UTF-8 Authorization=123 User-Agent=Quarkus REST Client x-requested-locale=en-US], Empty body",
+                            "[INFO] Request: GET http://localhost:8081/resource/hello Headers[Accept=text/plain;charset=UTF-8 Authorization=<hidden> User-Agent=Quarkus REST Client x-requested-locale=en-US], Empty body",
                             "[INFO] Response: GET http://localhost:8081/resource/hello, Status[200 OK], Headers[x-locale=de-DE x-secret=super-sensitive-value content-length=0], Body:");
                 });
 
@@ -73,8 +73,8 @@ public class ClientMaskedHeaderLogTest {
                     List<String> lines = records.stream().map(formatter::format).map(String::trim).collect(Collectors.toList());
 
                     assertThat(lines).containsExactly(
-                            "[INFO] Request: GET http://localhost:8081/resource/hello Headers[Accept=text/plain;charset=UTF-8 Authorization=**** User-Agent=Quarkus REST Client x-requested-locale=en-US], Empty body",
-                            "[INFO] Response: GET http://localhost:8081/resource/hello, Status[200 OK], Headers[x-locale=de-DE x-secret=**** content-length=0], Body:");
+                            "[INFO] Request: GET http://localhost:8081/resource/hello Headers[Accept=text/plain;charset=UTF-8 Authorization=<hidden> User-Agent=Quarkus REST Client x-requested-locale=en-US], Empty body",
+                            "[INFO] Response: GET http://localhost:8081/resource/hello, Status[200 OK], Headers[x-locale=de-DE x-secret=<hidden> content-length=0], Body:");
                 });
 
         @RestClient
@@ -101,8 +101,8 @@ public class ClientMaskedHeaderLogTest {
                     List<String> lines = records.stream().map(formatter::format).map(String::trim).collect(Collectors.toList());
 
                     assertThat(lines).containsExactly(
-                            "[INFO] Request: GET http://localhost:8081/resource/hello Headers[Accept=text/plain;charset=UTF-8 Authorization=**** User-Agent=Quarkus REST Client x-requested-locale=en-US], Empty body",
-                            "[INFO] Response: GET http://localhost:8081/resource/hello, Status[200 OK], Headers[x-locale=de-DE x-secret=**** content-length=0], Body:");
+                            "[INFO] Request: GET http://localhost:8081/resource/hello Headers[Accept=text/plain;charset=UTF-8 Authorization=<hidden> User-Agent=Quarkus REST Client x-requested-locale=en-US], Empty body",
+                            "[INFO] Response: GET http://localhost:8081/resource/hello, Status[200 OK], Headers[x-locale=de-DE x-secret=<hidden> content-length=0], Body:");
                 });
 
         @ConfigProperty(name = "quarkus.http.test-port", defaultValue = "8081")
@@ -135,8 +135,8 @@ public class ClientMaskedHeaderLogTest {
                     List<String> lines = records.stream().map(formatter::format).map(String::trim).collect(Collectors.toList());
 
                     assertThat(lines).containsExactly(
-                            "[INFO] Request: GET http://localhost:8081/resource/hello Headers[Accept=text/plain;charset=UTF-8 Authorization=**** User-Agent=Quarkus REST Client x-requested-locale=en-US], Empty body",
-                            "[INFO] Response: GET http://localhost:8081/resource/hello, Status[200 OK], Headers[x-locale=de-DE x-secret=**** content-length=0], Body:");
+                            "[INFO] Request: GET http://localhost:8081/resource/hello Headers[Accept=text/plain;charset=UTF-8 Authorization=<hidden> User-Agent=Quarkus REST Client x-requested-locale=en-US], Empty body",
+                            "[INFO] Response: GET http://localhost:8081/resource/hello, Status[200 OK], Headers[x-locale=de-DE x-secret=<hidden> content-length=0], Body:");
                 });
 
         @RestClient

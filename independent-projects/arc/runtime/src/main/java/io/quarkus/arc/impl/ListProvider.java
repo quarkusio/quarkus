@@ -8,7 +8,6 @@ import java.util.Set;
 
 import jakarta.enterprise.context.spi.CreationalContext;
 
-import io.quarkus.arc.All;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableReferenceProvider;
 
@@ -30,8 +29,6 @@ public class ListProvider implements InjectableReferenceProvider<List<?>> {
         this.requiredType = requiredType;
         this.injectionPointType = injectionPointType;
         this.qualifiers = qualifiers;
-        // the @All annotation is not a qualifier of the instances we need to resolve
-        this.qualifiers.remove(All.Literal.INSTANCE);
         this.targetBean = targetBean;
         this.annotations = annotations;
         this.javaMember = javaMember;

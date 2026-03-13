@@ -158,10 +158,13 @@ class VertxHttpProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     FilterBuildItem cors(CORSRecorder recorder,
-            Optional<HttpSecurityConfigSetupCompleteBuildItem> httpSecurityConfigSetupCompleteBuildItem) {
+            Optional<HttpSecurityConfigSetupCompleteBuildItem> httpSecurityConfigSetupCompleteBuildItem,
+            Capabilities capabilities) {
         RuntimeValue<CORSConfig> programmaticCorsConfig = httpSecurityConfigSetupCompleteBuildItem
                 .map(i -> i.programmaticCorsConfig).orElse(null);
-        return new FilterBuildItem(recorder.corsHandler(programmaticCorsConfig), SecurityHandlerPriorities.CORS);
+        return new FilterBuildItem(
+                recorder.corsHandler(programmaticCorsConfig, capabilities.isPresent(Capability.SECURITY)),
+                SecurityHandlerPriorities.CORS);
     }
 
     @BuildStep

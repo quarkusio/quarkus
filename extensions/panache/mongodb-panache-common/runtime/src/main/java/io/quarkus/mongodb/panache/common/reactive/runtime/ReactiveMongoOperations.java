@@ -2,7 +2,6 @@ package io.quarkus.mongodb.panache.common.reactive.runtime;
 
 import static com.mongodb.client.model.Filters.in;
 import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.beanName;
-import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.clientFromArc;
 import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.getDatabaseName;
 import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.getDatabaseNameFromResolver;
 
@@ -32,6 +31,7 @@ import io.quarkus.mongodb.panache.common.reactive.Panache;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.mongodb.reactive.ReactiveMongoDatabase;
+import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 import io.smallrye.mutiny.Multi;
@@ -345,7 +345,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     }
 
     private ReactiveMongoDatabase mongoDatabase(MongoEntity mongoEntity) {
-        ReactiveMongoClient mongoClient = clientFromArc(mongoEntity, ReactiveMongoClient.class, true);
+        ReactiveMongoClient mongoClient = MongoClientBeanUtil.reactiveMongoClient(beanName(mongoEntity));
         if (mongoEntity != null && !mongoEntity.database().isEmpty()) {
             return mongoClient.getDatabase(mongoEntity.database());
         }

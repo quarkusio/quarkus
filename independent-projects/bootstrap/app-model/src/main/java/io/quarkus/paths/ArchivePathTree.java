@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -71,6 +72,7 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 
     protected final Path archive;
     private final PathFilter pathFilter;
+    private transient volatile Set<String> resourceNames;
 
     ArchivePathTree(Path archive) {
         this(archive, null);
@@ -135,7 +137,12 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
     }
 
     private void ensureResourcePath(String path) {
-        DirectoryPathTree.ensureResourcePath(archive.getFileSystem(), path);
+        OpenContainerPathTree.ensureResourcePath(archive.getFileSystem(), path);
+    }
+
+    @Override
+    public Set<String> getResourceNames() {
+        return resourceNames == null ? resourceNames = super.getResourceNames() : resourceNames;
     }
 
     @Override
@@ -371,6 +378,11 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
             } finally {
                 lock.readLock().unlock();
             }
+        }
+
+        @Override
+        public Set<String> getResourceNames() {
+            return resourceNames == null ? resourceNames = super.getResourceNames() : resourceNames;
         }
 
         @Override

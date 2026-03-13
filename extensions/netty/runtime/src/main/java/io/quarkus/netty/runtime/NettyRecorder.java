@@ -10,7 +10,7 @@ import io.quarkus.runtime.annotations.Recorder;
 public class NettyRecorder {
 
     public Supplier<EventLoopGroup> createEventLoop(int nThreads) {
-        return new Supplier<EventLoopGroup>() {
+        return new Supplier<>() {
 
             volatile EventLoopGroup val;
 
@@ -23,6 +23,7 @@ public class NettyRecorder {
                         }
                     }
                 }
+
                 return val;
             }
         };

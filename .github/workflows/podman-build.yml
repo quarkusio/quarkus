@@ -1,5 +1,8 @@
 name: Podman Test Build (Linux)
 
+permissions:
+  contents: read
+  actions: write
 
 on:
   workflow_dispatch:

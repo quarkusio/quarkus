@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -29,7 +30,7 @@ class FilePathTree implements OpenPathTree {
 
     @Override
     public Collection<Path> getRoots() {
-        return Collections.singletonList(file);
+        return Collections.singletonList(file.getParent());
     }
 
     @Override
@@ -51,7 +52,7 @@ class FilePathTree implements OpenPathTree {
 
             @Override
             public Path getRoot() {
-                return file;
+                return file.getParent();
             }
 
             @Override
@@ -65,7 +66,7 @@ class FilePathTree implements OpenPathTree {
 
             @Override
             public String getRelativePath(String separator) {
-                return "";
+                return file.getFileName().toString();
             }
         });
     }
@@ -81,9 +82,15 @@ class FilePathTree implements OpenPathTree {
     }
 
     @Override
+    public Set<String> getResourceNames() {
+        return Set.of(file.getFileName().toString());
+    }
+
+    @Override
     public <T> T apply(String relativePath, Function<PathVisit, T> func) {
         if (relativePath.isEmpty()) {
-            return PathTreeVisit.process(file, file, file, pathFilter, func);
+            Path parent = file.getParent();
+            return PathTreeVisit.process(parent, parent, file, pathFilter, func);
         }
         return func.apply(null);
     }
@@ -91,7 +98,8 @@ class FilePathTree implements OpenPathTree {
     @Override
     public void accept(String relativePath, Consumer<PathVisit> func) {
         if (relativePath.isEmpty()) {
-            PathTreeVisit.consume(file, file, file, pathFilter, func);
+            Path parent = file.getParent();
+            PathTreeVisit.consume(parent, parent, file, pathFilter, func);
             return;
         }
         func.accept(null);

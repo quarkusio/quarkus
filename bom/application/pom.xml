@@ -45,7 +45,7 @@
         <microprofile-jwt.version>2.1</microprofile-jwt.version>
         <microprofile-lra.version>2.0.2</microprofile-lra.version>
         <microprofile-openapi.version>4.1.1</microprofile-openapi.version>
-        <smallrye-common.version>2.16.0</smallrye-common.version>
+        <smallrye-common.version>2.17.0</smallrye-common.version>
         <smallrye-config.version>3.16.0</smallrye-config.version>
         <smallrye-health.version>4.3.0</smallrye-health.version>
         <smallrye-open-api.version>4.2.4</smallrye-open-api.version>
@@ -128,8 +128,8 @@
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
         <junit.jupiter.version>6.0.3</junit.jupiter.version>
-        <infinispan.version>16.0.7</infinispan.version>
-        <infinispan.protostream.version>6.0.4</infinispan.protostream.version>
+        <infinispan.version>16.0.8</infinispan.version>
+        <infinispan.protostream.version>6.0.6</infinispan.protostream.version>
         <caffeine.version>3.2.3</caffeine.version>
         <netty.version>4.1.130.Final</netty.version>
         <brotli4j.version>1.16.0</brotli4j.version>
@@ -179,7 +179,7 @@
         <quarkus-security.version>2.3.2</quarkus-security.version>
         <keycloak-client.version>26.0.8</keycloak-client.version>
         <logstash-gelf.version>1.15.1</logstash-gelf.version>
-        <checker-qual.version>3.53.1</checker-qual.version>
+        <checker-qual.version>3.54.0</checker-qual.version>
         <error-prone-annotations.version>2.48.0</error-prone-annotations.version>
         <jib-core.version>0.28.1</jib-core.version>
         <google-http-client.version>1.47.1</google-http-client.version>
@@ -207,7 +207,7 @@
         <jose4j.version>0.9.6</jose4j.version>
         <java-buildpack-client.version>0.0.14</java-buildpack-client.version>
         <crac.version>1.5.0</crac.version>
-        <sshd-common.version>2.12.1</sshd-common.version>
+        <sshd-common.version>2.17.1</sshd-common.version>
         <mime4j.version>0.8.12</mime4j.version>
         <mutiny-zero.version>1.1.1</mutiny-zero.version>
         <pulsar-client.version>3.3.0</pulsar-client.version>
@@ -2393,6 +2393,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-mongodb-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-mongodb-client-deployment-spi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

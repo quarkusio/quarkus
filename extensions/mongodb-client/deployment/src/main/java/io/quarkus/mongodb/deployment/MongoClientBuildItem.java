@@ -9,6 +9,7 @@ import io.quarkus.runtime.RuntimeValue;
 /**
  * Provide the MongoDB clients as RuntimeValue's.
  */
+@Deprecated(forRemoval = true, since = "3.33")
 public final class MongoClientBuildItem extends MultiBuildItem {
     private final RuntimeValue<MongoClient> client;
     private final RuntimeValue<ReactiveMongoClient> reactive;

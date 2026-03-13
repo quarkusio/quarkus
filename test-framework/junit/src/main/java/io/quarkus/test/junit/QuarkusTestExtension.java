@@ -50,6 +50,7 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.DynamicTestInvocationContext;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.InvocationInterceptor;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
@@ -76,6 +77,8 @@ import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestScopeManager;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.quarkus.test.config.ValueRegistryInjector;
+import io.quarkus.test.config.ValueRegistryParameterResolver;
 import io.quarkus.test.junit.callback.QuarkusTestContext;
 import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 import io.quarkus.test.junit.common.ClearCache;
@@ -249,6 +252,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             }
 
             ValueRegistry valueRegistry = runningQuarkusApplication.valueRegistry();
+            context.getStore(Namespace.GLOBAL).put(ValueRegistry.class.getName(), valueRegistry);
 
             Closeable shutdownTask = new Closeable() {
                 @Override
@@ -278,8 +282,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 }
             };
 
-            return new ExtensionState(valueRegistry, testResourceManager, shutdownTask,
-                    AbstractTestWithCallbacksExtension::clearCallbacks);
+            return new ExtensionState(testResourceManager, shutdownTask, AbstractTestWithCallbacksExtension::clearCallbacks);
         } catch (Throwable e) {
             if (!InitialConfigurator.DELAYED_HANDLER.isActivated()) {
                 activateLogging();
@@ -807,9 +810,10 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
     private Object createActualTestInstance(Class<?> testClass, QuarkusTestExtensionState state)
             throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+        ValueRegistry valueRegistry = runningQuarkusApplication.valueRegistry();
         Object testInstance = runningQuarkusApplication.instance(testClass);
-        ValueRegistryInjector.inject(testInstance, state);
-        TestHTTPResourceManager.inject(testInstance, runningQuarkusApplication.valueRegistry(), testHttpEndpointProviders);
+        ValueRegistryInjector.inject(testInstance, valueRegistry);
+        TestHTTPResourceManager.inject(testInstance, valueRegistry, testHttpEndpointProviders);
         state.testResourceManager.getClass().getMethod("inject", Object.class).invoke(state.testResourceManager, testInstance);
         return testInstance;
     }
@@ -1166,9 +1170,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
     public static class ExtensionState extends QuarkusTestExtensionState {
 
-        public ExtensionState(ValueRegistry valueRegistry, Closeable testResourceManager, Closeable resource,
-                Runnable clearCallbacks) {
-            super(valueRegistry, testResourceManager, resource, clearCallbacks);
+        public ExtensionState(Closeable testResourceManager, Closeable resource, Runnable clearCallbacks) {
+            super(testResourceManager, resource, clearCallbacks);
         }
 
         public ExtensionState(Closeable trm, Closeable resource, Runnable clearCallbacks, Thread shutdownHook) {

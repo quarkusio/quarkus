@@ -9,6 +9,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 /**
  * Register additional {@link ConnectionPoolListener}s.
  */
+@Deprecated(forRemoval = true, since = "3.33")
 public final class MongoConnectionPoolListenerBuildItem extends MultiBuildItem {
 
     private Supplier<ConnectionPoolListener> connectionPoolListener;

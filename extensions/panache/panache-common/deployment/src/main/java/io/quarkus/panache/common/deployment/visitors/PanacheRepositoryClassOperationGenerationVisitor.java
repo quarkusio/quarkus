@@ -6,6 +6,7 @@ import static io.quarkus.panache.common.deployment.visitors.KotlinPanacheClassOp
 import static org.objectweb.asm.Opcodes.CHECKCAST;
 import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
 
+import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -81,6 +82,12 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
 
         this.panacheRepositoryBaseClassInfo = indexView.getClassByName(baseType);
 
+        // Collect non-abstract methods from superclasses and superinterfaces between
+        // the repository class and PanacheRepositoryBase, so that user-defined overrides
+        // (default interface methods or concrete superclass methods) are not overwritten
+        // by generated bridge methods.
+        collectInheritedUserMethods();
+
         argMapper = type -> {
             ByteCodeType byteCodeType = typeArguments.get(type);
             return byteCodeType != null
@@ -116,6 +123,44 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
             String[] exceptions) {
         userMethods.add(methodName + "/" + descriptor);
         return super.visitMethod(access, methodName, descriptor, signature, exceptions);
+    }
+
+    private void collectInheritedUserMethods() {
+        Set<DotName> visited = new HashSet<>();
+        visited.add(daoClassInfo.name());
+        visited.add(panacheRepositoryBaseClassInfo.name());
+        collectInheritedUserMethods(daoClassInfo, visited);
+    }
+
+    private void collectInheritedUserMethods(ClassInfo classInfo, Set<DotName> visited) {
+        // Walk superclass
+        DotName superClassName = classInfo.superName();
+        if (superClassName != null && visited.add(superClassName)) {
+            ClassInfo superClassInfo = indexView.getClassByName(superClassName);
+            if (superClassInfo != null) {
+                addNonAbstractMethods(superClassInfo);
+                collectInheritedUserMethods(superClassInfo, visited);
+            }
+        }
+        // Walk interfaces
+        for (DotName ifaceName : classInfo.interfaceNames()) {
+            if (visited.add(ifaceName)) {
+                ClassInfo ifaceInfo = indexView.getClassByName(ifaceName);
+                if (ifaceInfo != null) {
+                    addNonAbstractMethods(ifaceInfo);
+                    collectInheritedUserMethods(ifaceInfo, visited);
+                }
+            }
+        }
+    }
+
+    private void addNonAbstractMethods(ClassInfo classInfo) {
+        for (MethodInfo method : classInfo.methods()) {
+            if (!Modifier.isAbstract(method.flags()) && !Modifier.isStatic(method.flags())
+                    && !method.name().startsWith("<")) {
+                userMethods.add(method.name() + "/" + method.descriptor());
+            }
+        }
     }
 
     @Override

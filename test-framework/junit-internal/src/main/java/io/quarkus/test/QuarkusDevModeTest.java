@@ -1,9 +1,11 @@
 package io.quarkus.test;
 
+import static io.quarkus.test.config.TestValueRegistryConfigSource.CONFIG;
+import static org.junit.jupiter.api.extension.ExtensionContext.StoreScope.LAUNCHER_SESSION;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.lang.reflect.Constructor;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
@@ -18,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -27,6 +30,8 @@ import java.util.function.Supplier;
 import java.util.logging.Handler;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.jboss.logmanager.Logger;
@@ -38,8 +43,10 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.InvocationInterceptor;
-import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
+import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
+import org.junit.jupiter.api.extension.ParameterContext;
+import org.junit.jupiter.api.extension.ParameterResolutionException;
+import org.junit.jupiter.api.extension.ParameterResolver;
 
 import io.quarkus.bootstrap.BootstrapAppModelFactory;
 import io.quarkus.bootstrap.BootstrapException;
@@ -64,8 +71,11 @@ import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.quarkus.test.config.ValueRegistryInjector;
+import io.quarkus.test.config.ValueRegistryParameterResolver;
 import io.quarkus.test.junit.common.ClearCache;
 import io.quarkus.value.registry.ValueRegistry;
+import io.smallrye.config.Config;
 
 /**
  * A test extension for <strong>black-box</strong> testing of Quarkus development mode in extensions.
@@ -89,7 +99,7 @@ import io.quarkus.value.registry.ValueRegistry;
  * </ul>
  */
 public class QuarkusDevModeTest
-        implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback, InvocationInterceptor {
+        implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback, ParameterResolver {
 
     private static final Logger rootLogger;
     public static final OpenOption[] OPEN_OPTIONS = { StandardOpenOption.SYNC, StandardOpenOption.CREATE,
@@ -226,18 +236,6 @@ public class QuarkusDevModeTest
     }
 
     @Override
-    public <T> T interceptTestClassConstructor(Invocation<T> invocation,
-            ReflectiveInvocationContext<Constructor<T>> invocationContext,
-            ExtensionContext extensionContext) throws Throwable {
-        T actualTestInstance = invocation.proceed();
-        // TODO - QuarkusDevModeTest does not read the actual port from the logs. We need to implement it
-        ValueRegistry valueRegistry = ValueRegistryImpl.builder().build();
-        valueRegistry.register(ListeningAddress.HTTP_TEST_PORT, 8080);
-        TestHTTPResourceManager.inject(actualTestInstance, valueRegistry);
-        return actualTestInstance;
-    }
-
-    @Override
     public void beforeAll(ExtensionContext context) {
         TestConfigUtil.cleanUp();
         GroovyClassValue.disable();
@@ -246,22 +244,22 @@ public class QuarkusDevModeTest
     }
 
     @Override
-    public void beforeEach(ExtensionContext extensionContext) throws Exception {
+    public void beforeEach(ExtensionContext context) {
         if (archiveProducer == null) {
             throw new RuntimeException("QuarkusDevModeTest does not have archive producer set");
         }
-        ExclusivityChecker.checkTestType(extensionContext, QuarkusDevModeTest.class);
-        ExtensionContext.Store store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
+        ExclusivityChecker.checkTestType(context, QuarkusDevModeTest.class);
+        ExtensionContext.Store store = context.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
         if (store.get(TestResourceManager.class.getName()) == null) {
-            TestResourceManager testResourceManager = new TestResourceManager(extensionContext.getRequiredTestClass());
+            TestResourceManager testResourceManager = new TestResourceManager(context.getRequiredTestClass());
             testResourceManager.init(null);
-            Map<String, String> properties = testResourceManager.start();
-            TestResourceManager tm = testResourceManager;
-
+            testResourceManager.start();
             store.put(TestResourceManager.class.getName(), testResourceManager);
-            store.put(TestResourceManager.CLOSEABLE_NAME, tm);
+            store.put(TestResourceManager.CLOSEABLE_NAME, testResourceManager);
         }
         TestResourceManager tm = (TestResourceManager) store.get(TestResourceManager.class.getName());
+        assert tm != null;
+
         //dev mode tests just use system properties
         //we set them here and clear them in afterAll
         //so they don't interfere with other tests
@@ -273,7 +271,8 @@ public class QuarkusDevModeTest
                 System.setProperty(i.getKey(), i.getValue());
             }
         }
-        Class<?> testClass = extensionContext.getRequiredTestClass();
+        Class<?> testClass = context.getRequiredTestClass();
+        Object testInstance = context.getRequiredTestInstance();
         try {
             deploymentDir = Files.createTempDirectory("quarkus-dev-mode-test");
             testLocation = PathTestHelper.getTestClassesLocation(testClass);
@@ -288,9 +287,25 @@ public class QuarkusDevModeTest
                 projectSourceRoot = Paths.get(sourcePath);
             }
 
-            devModeMain = newDevModeMain(extensionContext, deploymentDir, projectSourceRoot);
+            InMemoryLogHandler startupLogHandler = new InMemoryLogHandler(
+                    logRecord -> logRecord.getMessage().contains("powered by Quarkus"));
+            rootLogger.addHandler(startupLogHandler);
+            devModeMain = newDevModeMain(context, deploymentDir, projectSourceRoot);
             devModeMain.start();
             ApplicationStateNotification.waitForApplicationStart();
+            rootLogger.removeHandler(startupLogHandler);
+
+            Optional<ListeningAddress> listeningAddress = listeningAddress(startupLogHandler.getRecords());
+            ValueRegistry valueRegistry = ValueRegistryImpl.builder().addDiscoveredInfos()
+                    .withRuntimeSource(Config.get())
+                    .build();
+            listeningAddress.ifPresent(address -> address.register(valueRegistry, Config.get()));
+            context.getStore(LAUNCHER_SESSION, CONFIG).put(ValueRegistry.class.getName(), valueRegistry);
+            context.getStore(Namespace.GLOBAL).put(ValueRegistry.class.getName(), valueRegistry);
+
+            ValueRegistryInjector.inject(testInstance, valueRegistry);
+            TestHTTPResourceManager.inject(testInstance, valueRegistry);
+
         } catch (Exception e) {
             if (allowFailedStart) {
                 e.printStackTrace();
@@ -298,6 +313,33 @@ public class QuarkusDevModeTest
                 throw (e instanceof RuntimeException ? (RuntimeException) e : new RuntimeException(e));
             }
         }
+    }
+
+    private static final Pattern listeningRegex = Pattern.compile("Listening on:\\s+(https?)://[^:]*:(\\d+)");
+
+    private static Optional<ListeningAddress> listeningAddress(List<LogRecord> records) {
+        if (records.size() == 1) {
+            LogRecord logRecord = records.get(0);
+            Matcher regexMatcher = listeningRegex.matcher((String) logRecord.getParameters()[4]);
+            if (regexMatcher.find()) {
+                ListeningAddress listeningAddress = new ListeningAddress(Integer.parseInt(regexMatcher.group(2)),
+                        regexMatcher.group(1));
+                return Optional.of(listeningAddress);
+            }
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
+            throws ParameterResolutionException {
+        return ValueRegistryParameterResolver.INSTANCE.supportsParameter(parameterContext, extensionContext);
+    }
+
+    @Override
+    public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
+            throws ParameterResolutionException {
+        return ValueRegistryParameterResolver.INSTANCE.resolveParameter(parameterContext, extensionContext);
     }
 
     @Override
@@ -328,6 +370,7 @@ public class QuarkusDevModeTest
                 FileUtil.deleteDirectory(deploymentDir);
             }
         }
+        extensionContext.getStore(Namespace.GLOBAL).remove(ValueRegistry.class.getName());
         inMemoryLogHandler.clearRecords();
     }
 

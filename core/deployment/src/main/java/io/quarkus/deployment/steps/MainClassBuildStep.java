@@ -535,10 +535,11 @@ public class MainClassBuildStep {
 
         if ((recorder != null) && !recorder.isEmpty()) {
             for (ObjectSubstitutionBuildItem sub : substitutions) {
-                ObjectSubstitutionBuildItem.Holder holder1 = sub.holder;
-                recorder.registerSubstitution(holder1.from, holder1.to, holder1.substitution);
+                sub.holder.registerTo(recorder);
             }
+            //noinspection removal
             for (BytecodeRecorderObjectLoaderBuildItem item : loaders) {
+                //noinspection removal
                 recorder.registerObjectLoader(item.getObjectLoader());
             }
             for (var item : recordableConstructorBuildItems) {

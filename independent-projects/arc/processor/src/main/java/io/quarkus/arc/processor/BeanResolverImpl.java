@@ -43,7 +43,7 @@ class BeanResolverImpl implements BeanResolver {
     public Set<BeanInfo> resolveBeans(Type requiredType, Set<AnnotationInstance> requiredQualifiers) {
         Objects.requireNonNull(requiredType, "Required type must not be null");
         TypeAndQualifiers typeAndQualifiers = new TypeAndQualifiers(requiredType, requiredQualifiers);
-        // Note that this method must not cache the results beacause it can be used before synthetic components are registered
+        // Note that this method must not cache the results because it can be used before synthetic components are registered
         List<BeanInfo> beans = findMatching(typeAndQualifiers);
         Set<BeanInfo> ret;
         if (beans.isEmpty()) {

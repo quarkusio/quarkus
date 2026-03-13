@@ -25,6 +25,7 @@ import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
+import org.hamcrest.Matchers;
 import org.htmlunit.FailingHttpStatusCodeException;
 import org.htmlunit.SilentCssErrorHandler;
 import org.htmlunit.WebClient;
@@ -1179,6 +1180,18 @@ public class BearerTokenAuthorizationTest {
         RestAssured.when().post("/oidc/enable-introspection").then().body(equalTo("true"));
         RestAssured.when().post("/oidc/opaque-token-call-count").then().body(equalTo("0"));
         RestAssured.when().post("/oidc/opaque-token-3-call-count").then().body(equalTo("0"));
+    }
+
+    @Test
+    public void testConcurrentTokenRefresh() {
+        var result = RestAssured.given().auth().oauth2(getAccessTokenWithAcr(Set.of()))
+                .queryParam("refresh_token", "refresh_token_1")
+                .when().get("/tenant-refresh/concurrent-token-refresh")
+                .then()
+                .statusCode(200)
+                .body(Matchers.notNullValue())
+                .extract().as(TenantRefreshTokenResource.ConcurrentRefreshResult.class);
+        assertEquals(result.accessToken1(), result.accessToken2());
     }
 
     private String getAccessToken(String userName, String clientId) {

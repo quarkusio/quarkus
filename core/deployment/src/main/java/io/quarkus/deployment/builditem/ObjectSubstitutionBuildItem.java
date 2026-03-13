@@ -1,6 +1,7 @@
 package io.quarkus.deployment.builditem;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.runtime.ObjectSubstitution;
 
 /**
@@ -25,6 +26,10 @@ public final class ObjectSubstitutionBuildItem extends MultiBuildItem {
             this.to = to;
             this.substitution = substitution;
 
+        }
+
+        public void registerTo(final BytecodeRecorderImpl recorder) {
+            recorder.registerSubstitution(from, to, substitution);
         }
     }
 

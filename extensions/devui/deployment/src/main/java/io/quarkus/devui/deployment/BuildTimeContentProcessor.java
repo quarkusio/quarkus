@@ -361,7 +361,7 @@ public class BuildTimeContentProcessor {
 
         InternalImportMapBuildItem internalImportMapBuildItem = new InternalImportMapBuildItem();
 
-        var mapper = DatabindCodec.mapper().writerWithDefaultPrettyPrinter();
+        var mapper = DatabindCodec.mapper().writer();
         Map<String, String> descriptions = new HashMap<>();
         Map<String, String> mcpDefaultEnabled = new HashMap<>();
         Map<String, String> contentTypes = new HashMap<>();

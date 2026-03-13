@@ -25,9 +25,6 @@ public class DevUIOidcNoDiscoveryJsonRPCTest extends DevUIJsonRPCTest {
     public void testGetProperties() throws Exception {
         JsonNode properties = super.executeJsonRPCMethod("getProperties");
         Assertions.assertNotNull(properties);
-        log.debug(properties.toPrettyString());
-        // TODO: Add some more checks ?
-
     }
 
     private static StringAsset createApplicationProperties() {

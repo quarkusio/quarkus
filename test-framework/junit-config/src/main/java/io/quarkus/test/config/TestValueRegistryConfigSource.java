@@ -43,7 +43,7 @@ public class TestValueRegistryConfigSource extends AbstractConfigSource {
 
     @Override
     public String getValue(String propertyName) {
-        ValueRegistry valueRegistry = store.get(LAUNCHER_CONFIG, ValueRegistry.class, ValueRegistry.class);
+        ValueRegistry valueRegistry = store.get(LAUNCHER_CONFIG, ValueRegistry.class.getName(), ValueRegistry.class);
         if (valueRegistry != null) {
             RuntimeInfo<?> value = valueRegistry.get(propertyName);
             // TODO - We may be required to convert this to the expected config string in Config

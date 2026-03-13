@@ -7,10 +7,6 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import jakarta.enterprise.inject.Default;
-import jakarta.enterprise.inject.literal.NamedLiteral;
-import jakarta.enterprise.util.AnnotationLiteral;
-
 import com.mongodb.ConnectionString;
 import com.mongodb.client.MongoClient;
 import com.mongodb.event.ConnectionPoolListener;
@@ -32,8 +28,11 @@ public class MongoClientRecorder {
         this.runtimeConfig = runtimeConfig;
     }
 
-    public Supplier<MongoClientSupport> mongoClientSupportSupplier(List<String> bsonDiscriminators,
-            List<Supplier<ConnectionPoolListener>> connectionPoolListenerSuppliers, boolean disableSslSupport) {
+    public Supplier<MongoClientSupport> mongoClientSupportSupplier(
+            List<String> bsonDiscriminators,
+            List<Function<String, ConnectionPoolListener>> connectionPoolListenerFactories,
+            List<Supplier<ConnectionPoolListener>> connectionPoolListenerSuppliers,
+            boolean disableSslSupport) {
 
         return new Supplier<MongoClientSupport>() {
             @Override
@@ -44,8 +43,8 @@ public class MongoClientRecorder {
                     connectionPoolListeners.add(item.get());
                 }
 
-                return new MongoClientSupport(bsonDiscriminators,
-                        connectionPoolListeners, disableSslSupport);
+                return new MongoClientSupport(bsonDiscriminators, connectionPoolListenerFactories, connectionPoolListeners,
+                        disableSslSupport);
             }
         };
     }
@@ -77,29 +76,18 @@ public class MongoClientRecorder {
     }
 
     public RuntimeValue<MongoClient> getClient(String name) {
-        return new RuntimeValue<>(Arc.container().instance(MongoClient.class, literal(name)).get());
+        return new RuntimeValue<>(MongoClientBeanUtil.mongoClient(name));
     }
 
     public RuntimeValue<ReactiveMongoClient> getReactiveClient(String name) {
-        return new RuntimeValue<>(
-                Arc.container()
-                        .instance(ReactiveMongoClient.class, literal(name + MongoClientBeanUtil.REACTIVE_CLIENT_NAME_SUFFIX))
-                        .get());
+        return new RuntimeValue<>(MongoClientBeanUtil.reactiveMongoClient(name));
     }
 
-    @SuppressWarnings("rawtypes")
-    private AnnotationLiteral literal(String name) {
-        if (name.startsWith(MongoConfig.DEFAULT_CLIENT_NAME)) {
-            return Default.Literal.INSTANCE;
-        }
-        return NamedLiteral.of(name);
-    }
-
-    public Supplier<ConnectionPoolListener> createMicrometerConnectionPoolListener() {
-        return new Supplier<ConnectionPoolListener>() {
+    public Function<String, ConnectionPoolListener> createMicrometerConnectionPoolListener() {
+        return new Function<String, ConnectionPoolListener>() {
             @Override
-            public ConnectionPoolListener get() {
-                return MicrometerConnectionPoolListener.createMicrometerConnectionPool();
+            public ConnectionPoolListener apply(String clientName) {
+                return MicrometerConnectionPoolListener.createMicrometerConnectionPool(clientName);
             }
         };
     }

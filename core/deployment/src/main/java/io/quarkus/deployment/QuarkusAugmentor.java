@@ -35,6 +35,7 @@ import io.quarkus.deployment.builditem.RawCommandLineArgumentsBuildItem;
 import io.quarkus.deployment.builditem.RuntimeApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
+import io.quarkus.deployment.logging.StaticInitLoggingSetupBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.paths.PathCollection;
@@ -119,6 +120,7 @@ public class QuarkusAugmentor {
             chainBuilder.loadProviders(classLoader);
 
             chainBuilder.addPriorityItem(LoggingSetupBuildItem.class);
+            chainBuilder.addPriorityItem(StaticInitLoggingSetupBuildItem.class);
 
             chainBuilder
                     .addInitial(QuarkusBuildCloseablesBuildItem.class)

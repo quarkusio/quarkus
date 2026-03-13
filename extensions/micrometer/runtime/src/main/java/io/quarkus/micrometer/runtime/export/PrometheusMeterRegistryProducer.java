@@ -25,7 +25,8 @@ public class PrometheusMeterRegistryProducer {
     @Priority(Interceptor.Priority.APPLICATION + 100)
     public PrometheusMeterRegistry registry(PrometheusConfig config, CollectorRegistry collectorRegistry,
             Optional<ExemplarSampler> exemplarSampler, Clock clock) {
-        return new PrometheusMeterRegistry(config, collectorRegistry, clock, exemplarSampler.orElse(null));
+        return new PrometheusMeterRegistry(config, collectorRegistry, clock, exemplarSampler.orElse(null))
+                .throwExceptionOnRegistrationFailure();
     }
 
 }

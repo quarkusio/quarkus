@@ -16,6 +16,7 @@ import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.ListeningAddress;
 import io.quarkus.value.registry.ValueRegistry;
 import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
+import io.smallrye.config.Config;
 import io.smallrye.config.SmallRyeConfig;
 
 public class TestHTTPResourceManager {
@@ -154,35 +155,35 @@ public class TestHTTPResourceManager {
                         + " to inject " + field);
     }
 
-    public static String testUrl(ValueRegistry valueRegistry, SmallRyeConfig config, String... paths) {
+    public static String testUrl(ValueRegistry valueRegistry, Config config, String... paths) {
         String host = host(config, "quarkus.http.host");
         int port = valueRegistry.getOrDefault(ListeningAddress.HTTP_TEST_PORT, 8081);
         String rootPath = rootPath(config, paths);
         return "http://" + host + ":" + port + rootPath;
     }
 
-    public static String testManagementUrl(ValueRegistry valueRegistry, SmallRyeConfig config, String... paths) {
+    public static String testManagementUrl(ValueRegistry valueRegistry, Config config, String... paths) {
         String host = host(config, "quarkus.management.host");
         int port = valueRegistry.getOrDefault(RuntimeKey.intKey("quarkus.management.test-port"), 9001);
         String managementRootPath = managementRootPath(config, paths);
         return "http://" + host + ":" + port + managementRootPath;
     }
 
-    public static String testUrlSsl(ValueRegistry valueRegistry, SmallRyeConfig config, String... paths) {
+    public static String testUrlSsl(ValueRegistry valueRegistry, Config config, String... paths) {
         String host = host(config, "quarkus.http.host");
         int port = valueRegistry.getOrDefault(ListeningAddress.HTTPS_TEST_PORT, 8444);
         String rootPath = rootPath(config, paths);
         return "https://" + host + ":" + port + rootPath;
     }
 
-    public static String testManagementUrlSsl(ValueRegistry valueRegistry, SmallRyeConfig config, String... paths) {
+    public static String testManagementUrlSsl(ValueRegistry valueRegistry, Config config, String... paths) {
         String host = host(config, "quarkus.management.host");
         int port = valueRegistry.getOrDefault(RuntimeKey.intKey("quarkus.management.test-port"), 9001);
         String managementRootPath = managementRootPath(config, paths);
         return "https://" + host + ":" + port + managementRootPath;
     }
 
-    public static String host(SmallRyeConfig config, String name) {
+    public static String host(Config config, String name) {
         String host = config.getOptionalValue(name, String.class).orElse("localhost");
         // for test, the host default is localhost, but if using WSL is 0.0.0.0 which shouldn't be used when determining the test url
         if (host.equals("0.0.0.0")) {
@@ -191,7 +192,7 @@ public class TestHTTPResourceManager {
         return host;
     }
 
-    public static String rootPath(SmallRyeConfig config, String... paths) {
+    public static String rootPath(Config config, String... paths) {
         String rootPath = config.getOptionalValue("quarkus.http.root-path", String.class).orElse("/");
         Optional<String> contextPath = config.getOptionalValue("quarkus.servlet.context-path", String.class);
         StringBuilder path = new StringBuilder(rootPath);
@@ -215,7 +216,7 @@ public class TestHTTPResourceManager {
         return path.toString();
     }
 
-    public static String managementRootPath(SmallRyeConfig config, String... paths) {
+    public static String managementRootPath(Config config, String... paths) {
         String rootPath = config.getOptionalValue("quarkus.management.root-path", String.class).orElse("/q");
         StringBuilder path = new StringBuilder(rootPath);
         if (!rootPath.startsWith("/")) {

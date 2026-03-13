@@ -41,6 +41,8 @@ import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.devservices.common.Labels;
+import io.quarkus.mongodb.deployment.spi.MongoClientBuildItem;
+import io.quarkus.mongodb.deployment.spi.MongoClientsBuildItem;
 import io.quarkus.mongodb.runtime.MongoConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
@@ -68,7 +70,8 @@ public class DevServicesMongoProcessor {
             DEV_SERVICE_LABEL);
 
     @BuildStep
-    public List<DevServicesResultBuildItem> startMongo(List<MongoConnectionNameBuildItem> mongoConnections,
+    public List<DevServicesResultBuildItem> startMongo(
+            MongoClientsBuildItem mongoClients,
             DockerStatusBuildItem dockerStatusBuildItem,
             DevServicesComposeProjectBuildItem composeProjectBuildItem,
             MongoClientBuildTimeConfig mongoClientBuildTimeConfig,
@@ -79,9 +82,9 @@ public class DevServicesMongoProcessor {
             LoggingSetupBuildItem loggingSetupBuildItem,
             DevServicesConfig devServicesConfig) {
 
-        List<String> connectionNames = new ArrayList<>(mongoConnections.size());
-        for (MongoConnectionNameBuildItem mongoConnection : mongoConnections) {
-            connectionNames.add(mongoConnection.getName());
+        List<String> connectionNames = new ArrayList<>(mongoClients.getMongoClients().size());
+        for (MongoClientBuildItem mongoClient : mongoClients.getMongoClients()) {
+            connectionNames.add(mongoClient.getName());
         }
 
         Map<String, CapturedProperties> currentCapturedProperties = captureProperties(connectionNames,
@@ -105,7 +108,7 @@ public class DevServicesMongoProcessor {
             capturedProperties = null;
         }
 
-        List<RunningDevService> newDevServices = new ArrayList<>(mongoConnections.size());
+        List<RunningDevService> newDevServices = new ArrayList<>(connectionNames.size());
 
         for (String connectionName : connectionNames) {
             RunningDevService devService;
@@ -249,7 +252,8 @@ public class DevServicesMongoProcessor {
         return configPrefix;
     }
 
-    private Map<String, CapturedProperties> captureProperties(List<String> connectionNames,
+    private Map<String, CapturedProperties> captureProperties(
+            List<String> connectionNames,
             MongoClientBuildTimeConfig mongoClientBuildTimeConfig) {
         Map<String, CapturedProperties> result = new HashMap<>();
         for (String connectionName : connectionNames) {

@@ -4,7 +4,7 @@ import {JsonRpc} from 'jsonrpc';
 import '@vaadin/details';
 import '@vaadin/horizontal-layout';
 import 'echarts-gauge-grade';
-import 'qui-badge';
+import '@qomponent/qui-badge';
 import 'qwc-no-data';
 import { msg, updateWhenLocaleChanges } from 'localization';
 
@@ -15,19 +15,23 @@ export class QwcResteasyReactiveEndpointScores extends QwcHotReloadElement {
     jsonRpc = new JsonRpc(this);
 
     static styles = css`
-        
+
         .heading{
             display: flex;
             gap: 20px;
-            width: 100em;
-            padding: 20px;
+            align-items: center;
+            width: 100%;
+            padding: 12px 20px;
+            box-sizing: border-box;
             background: var(--lumo-contrast-5pct);
             border-bottom: 1px solid var(--lumo-contrast-10pct);
+            border-radius: 8px 8px 0 0;
         }
         .details {
             display: flex;
             flex-direction: column;
             gap: 20px;
+            padding: 10px 0;
         }
         .diagnostics {
             display: flex;
@@ -53,18 +57,21 @@ export class QwcResteasyReactiveEndpointScores extends QwcHotReloadElement {
             width: 33%;
             overflow-wrap: break-word;
         }
-    
+
         .information {
             border-top: 1px solid var(--lumo-contrast-10pct);
             display: flex;
             flex-direction: column;
             gap: 10px;
+            padding: 10px 0;
         }
         .message {
             text-align: center;
-            padding-left: 20px;
-            padding-right: 20px;
+            padding: 10px 20px;
             color: var(--lumo-contrast-70pct);
+            background: var(--lumo-contrast-5pct);
+            border-radius: 6px;
+            font-size: var(--lumo-font-size-s);
         }
         .infoTable {
             border: none;
@@ -74,9 +81,49 @@ export class QwcResteasyReactiveEndpointScores extends QwcHotReloadElement {
             width: 200px;
             font-weight: bolder;
         }
-        
-        .httpMethod{
-            color: var(--lumo-primary-text-color);
+
+        .httpMethod {
+            font-weight: 600;
+            font-family: monospace;
+        }
+
+        .method-GET { color: hsl(142, 70%, 35%); }
+        .method-POST { color: hsl(214, 90%, 40%); }
+        .method-PUT { color: hsl(35, 90%, 35%); }
+        .method-DELETE { color: hsl(0, 75%, 40%); }
+        .method-PATCH { color: hsl(280, 65%, 40%); }
+        .method-OPTIONS { color: hsl(190, 60%, 35%); }
+        .method-HEAD { color: hsl(50, 60%, 35%); }
+
+        .path {
+            color: var(--lumo-contrast-70pct);
+            font-family: monospace;
+        }
+
+        vaadin-details {
+            margin-bottom: 10px;
+            border: 1px solid var(--lumo-contrast-10pct);
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+            overflow: hidden;
+        }
+
+        .infoRow {
+            display: flex;
+            gap: 10px;
+            padding: 6px 10px;
+            border-radius: 6px;
+        }
+
+        .infoRow:hover {
+            background-color: var(--lumo-contrast-5pct);
+        }
+
+        .infoLabel {
+            font-weight: 600;
+            min-width: 150px;
+            text-align: right;
+            color: var(--lumo-contrast-60pct);
         }
     `;
 
@@ -113,18 +160,20 @@ export class QwcResteasyReactiveEndpointScores extends QwcHotReloadElement {
 
     _renderEndpoint(endpoint){
         let level = this._getLevel(endpoint.score);
-        
+        let methodClass = `httpMethod method-${endpoint.httpMethod}`;
+
         return html`
             <vaadin-details opened theme="reverse">
-                
+
                 <div class="heading" slot="summary">
                     <qui-badge level='${level}'><span>${endpoint.score}/100</span></qui-badge>
                     <div>
-                        <code class="httpMethod">${endpoint.httpMethod}</code> <code>${endpoint.fullPath}</code>
+                        <span class="${methodClass}">${endpoint.httpMethod}</span>
+                        <span class="path">${endpoint.fullPath}</span>
                     </div>
-                    
+
                 </div>
-                
+
                 <div class="details">
                     ${this._renderDiagnostics(endpoint.diagnostics)}
                     ${this._renderInformation(endpoint)}
@@ -152,44 +201,41 @@ export class QwcResteasyReactiveEndpointScores extends QwcHotReloadElement {
     _renderDiagnosticGraph(diagnostic, heading){
         let score = diagnostic[0].score;
         let level = this._getLevel(score);
-        
+
         return html`<div class="diagnostic">
-                        <echarts-gauge-grade 
-                            title="${heading}" 
+                        <echarts-gauge-grade
+                            title="${heading}"
                             percentage="${score}"
                             sectionColors="--lumo-${level}-color">
-                        </echarts-gauge-grade>    
+                        </echarts-gauge-grade>
                     </div>`;
     }
-    
+
     _renderDiagnosticText(diagnostic){
         return html`<div class="diagnosticText">
                         <div class="message">${diagnostic[0].message}</div>
                     </div>`;
     }
-    
+
     _renderInformation(endpoint){
         return html`<div class="information">
-                        <table class="infoTable">
-                            ${this._renderMediaType(msg('Produces', { id: 'quarkus-rest-produces' }), endpoint.producesHeaders)}
-                            ${this._renderMediaType(msg('Consumes', { id: 'quarkus-rest-consumes' }), endpoint.consumesHeaders)}
-                    
-                            <tr>
-                                <td class="col1">${msg('Resource Class', { id: 'quarkus-rest-resource-class' })}:</td>
-                                <td>${endpoint.className}</td>
-                            </tr>
-                        </table>
+                        ${this._renderMediaType(msg('Produces', { id: 'quarkus-rest-produces' }), endpoint.producesHeaders)}
+                        ${this._renderMediaType(msg('Consumes', { id: 'quarkus-rest-consumes' }), endpoint.consumesHeaders)}
+                        <div class="infoRow">
+                            <span class="infoLabel">${msg('Resource Class', { id: 'quarkus-rest-resource-class' })}:</span>
+                            <span>${endpoint.className}</span>
+                        </div>
                     </div>`;
     }
 
     _renderMediaType(type,mediaType) {
         if(mediaType && mediaType.length>0){
-            return html`<tr>
-                            <td class="col1">${type}:</td>
-                            <td>${mediaType.map(mt=>
+            return html`<div class="infoRow">
+                            <span class="infoLabel">${type}:</span>
+                            <span>${mediaType.map(mt=>
                                 html`<qui-badge><span>${mt}</span></qui-badge>`
-                            )}</td>
-                        </tr>`;
+                            )}</span>
+                        </div>`;
         }
     }
 

@@ -72,4 +72,19 @@ public interface CORSConfig {
      * and matches the precise `Origin` header value.
      */
     Optional<Boolean> accessControlAllowCredentials();
+
+    /**
+     * Whether to return the exact request origin in the `Access-Control-Allow-Origin` response header.
+     * <p>
+     * When set to `true` (the default), the filter echoes back the request's `Origin` header value.
+     * When set to `false` and `origins` is configured as `*`, the response will contain the literal
+     * `Access-Control-Allow-Origin: *` instead of echoing the request origin. This is useful for public
+     * APIs where HTTP caching is important, as echoing the origin requires `Vary: Origin` and defeats
+     * shared caches.
+     * <p>
+     * Note: When `*` is returned as the origin, `Access-Control-Allow-Credentials` is forced to `false`
+     * per the CORS specification.
+     */
+    @WithDefault("true")
+    boolean returnExactOrigins();
 }

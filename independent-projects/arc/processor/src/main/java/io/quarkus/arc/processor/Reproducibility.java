@@ -30,51 +30,47 @@ public class Reproducibility {
     static final Comparator<StereotypeInfo> STEREOTYPE_COMPARATOR = Comparator.comparing(StereotypeInfo::getName);
 
     static List<BeanInfo> orderedBeans(Collection<BeanInfo> beans) {
-        List<BeanInfo> list = new ArrayList<>(beans);
-        list.sort(BEAN_COMPARATOR);
-        return list;
+        return ordered(beans, BEAN_COMPARATOR);
     }
 
     static List<InterceptorInfo> orderedInterceptors(Collection<InterceptorInfo> interceptors) {
-        List<InterceptorInfo> list = new ArrayList<>(interceptors);
-        list.sort(BEAN_COMPARATOR);
-        return list;
+        return ordered(interceptors, BEAN_COMPARATOR);
     }
 
     static List<DecoratorInfo> orderedDecorators(Collection<DecoratorInfo> decorators) {
-        List<DecoratorInfo> list = new ArrayList<>(decorators);
-        list.sort(BEAN_COMPARATOR);
-        return list;
+        return ordered(decorators, BEAN_COMPARATOR);
     }
 
     static List<ObserverInfo> orderedObservers(Collection<ObserverInfo> observers) {
-        List<ObserverInfo> list = new ArrayList<>(observers);
-        list.sort(OBSERVER_COMPARATOR);
-        return list;
+        return ordered(observers, OBSERVER_COMPARATOR);
     }
 
     static List<Type> orderedTypes(Collection<Type> types) {
-        List<Type> list = new ArrayList<>(types);
-        list.sort(TYPE_COMPARATOR);
-        return list;
+        return ordered(types, TYPE_COMPARATOR);
     }
 
     static List<AnnotationInstance> orderedAnnotations(Collection<AnnotationInstance> annotations) {
-        List<AnnotationInstance> list = new ArrayList<>(annotations);
-        list.sort(ANNOTATION_COMPARATOR);
-        return list;
+        return ordered(annotations, ANNOTATION_COMPARATOR);
     }
 
     static List<AnnotationInstanceEquivalenceProxy> orderedAnnotationProxies(
             Collection<AnnotationInstanceEquivalenceProxy> annotationProxies) {
-        List<AnnotationInstanceEquivalenceProxy> list = new ArrayList<>(annotationProxies);
-        list.sort(ANNOTATION_PROXY_COMPARATOR);
-        return list;
+        return ordered(annotationProxies, ANNOTATION_PROXY_COMPARATOR);
     }
 
     static List<StereotypeInfo> orderedStereotypes(Collection<StereotypeInfo> stereotypes) {
-        List<StereotypeInfo> list = new ArrayList<>(stereotypes);
-        list.sort(STEREOTYPE_COMPARATOR);
+        return ordered(stereotypes, STEREOTYPE_COMPARATOR);
+    }
+
+    private static <T> List<T> ordered(Collection<T> collection, Comparator<? super T> comparator) {
+        if (collection.isEmpty()) {
+            return List.of();
+        }
+        if (collection.size() == 1) {
+            return List.of(collection.iterator().next());
+        }
+        List<T> list = new ArrayList<>(collection);
+        list.sort(comparator);
         return list;
     }
 }

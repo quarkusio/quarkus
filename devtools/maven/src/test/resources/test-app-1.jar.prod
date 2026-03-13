@@ -1,5 +1,6 @@
 [info] Quarkus application PROD mode build dependency tree:
 [info] io.quarkus.bootstrap.test:test-app:pom:1
+[info] ├─ io.quarkus:quarkus-core:1.0.0 (compile)
 [info] ├─ io.quarkus.bootstrap.test:artifact-with-classifier:classifier:1 (compile)
 [info] ├─ io.quarkus.bootstrap.test:test-ext2-deployment:1 (compile)
 [info] │  ├─ io.quarkus.bootstrap.test:test-ext2:1 (compile)

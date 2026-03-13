@@ -72,14 +72,18 @@ public class TestHTTPResourceManager {
             ValueRegistry valueRegistry,
             List<Function<Class<?>, String>> endpointProviders) {
 
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        Map<Class<?>, TestHTTPResourceProvider<?>> providers = getProviders();
+        SmallRyeConfig config = null;
+        Map<Class<?>, TestHTTPResourceProvider<?>> providers = null;
         Class<?> c = testCase.getClass();
         while (c != Object.class) {
             TestHTTPEndpoint classEndpointAnnotation = c.getAnnotation(TestHTTPEndpoint.class);
             for (Field f : c.getDeclaredFields()) {
                 TestHTTPResource resource = f.getAnnotation(TestHTTPResource.class);
                 if (resource != null) {
+                    if (config == null) {
+                        config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+                        providers = getProviders();
+                    }
                     TestHTTPResourceProvider<?> provider = providers.get(f.getType());
                     if (provider == null) {
                         throw new RuntimeException(

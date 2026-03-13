@@ -113,7 +113,8 @@ public class QuarkusBootstrapProvider implements Closeable {
             return;
         }
         MavenProject parent = project.getParent();
-        if (parent != null) {
+        // apparently it can happen that a parent could have not file https://github.com/quarkusio/quarkus/issues/52863
+        if (parent != null && parent.getFile() != null) {
             addAfterParent(parent, added, sorted);
         }
         sorted.add(project);

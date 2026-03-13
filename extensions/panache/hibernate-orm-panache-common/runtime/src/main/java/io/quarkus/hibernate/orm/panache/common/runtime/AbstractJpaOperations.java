@@ -17,6 +17,7 @@ import org.hibernate.query.SelectionQuery;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.Subclass;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.panache.common.Parameters;
@@ -55,7 +56,13 @@ public abstract class AbstractJpaOperations<PanacheQueryType, SessionType extend
     public static <Entity> Class<? extends Entity> getRepositoryEntityClass(
             // FIXME: if we move this to JpaOperations we can add a type constraint on the repo class
             Class<?> repositoryImplementationClass) {
-        Class<?> ret = repositoryClassToEntityClass.get(repositoryImplementationClass);
+        // When a repository has intercepted methods (@Transactional, @Retry, etc.),
+        // Arc generates a subclass. We need to unwrap it to find the original class
+        // that was registered in the map at build time.
+        Class<?> repoClass = Subclass.class.isAssignableFrom(repositoryImplementationClass)
+                ? repositoryImplementationClass.getSuperclass()
+                : repositoryImplementationClass;
+        Class<?> ret = repositoryClassToEntityClass.get(repoClass);
         if (ret == null) {
             throw new RuntimeException("Your repository class " + repositoryImplementationClass
                     + " was not properly detected and assigned an entity type");

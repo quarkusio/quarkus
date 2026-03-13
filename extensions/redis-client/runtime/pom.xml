@@ -175,5 +175,12 @@
                 <redis.base.image>redis/redis-stack:7.0.6-RC9</redis.base.image>
             </properties>
         </profile>
+
+        <profile>
+            <id>redis-8.4</id>
+            <properties>
+                <redis.base.image>redis:8</redis.base.image>
+            </properties>
+        </profile>
     </profiles>
 </project>

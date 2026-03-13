@@ -26,6 +26,7 @@ public class MethodParameter {
     public String mimeType;
     public String partFileName;
     public String separator;
+    public boolean triParameter;
 
     public MethodParameter() {
     }
@@ -34,7 +35,7 @@ public class MethodParameter {
             ParameterType parameterType,
             boolean single,
             String defaultValue, boolean isObtainedAsCollection, boolean optional, boolean encoded,
-            String mimeType, String partFileName, String separator) {
+            String mimeType, String partFileName, String separator, boolean triParameter) {
         this.name = name;
         this.type = type;
         this.declaredType = declaredType;
@@ -49,6 +50,7 @@ public class MethodParameter {
         this.mimeType = mimeType;
         this.partFileName = partFileName;
         this.separator = separator;
+        this.triParameter = triParameter;
     }
 
     public String getName() {
@@ -114,6 +116,14 @@ public class MethodParameter {
         this.optional = optional;
     }
 
+    public boolean isTriParameter() {
+        return triParameter;
+    }
+
+    public void setTriParameter(boolean triParameter) {
+        this.triParameter = triParameter;
+    }
+
     public MethodParameter setObtainedAsCollection(boolean isObtainedAsCollection) {
         this.isObtainedAsCollection = isObtainedAsCollection;
         return this;
@@ -135,6 +145,7 @@ public class MethodParameter {
             return false;
         MethodParameter that = (MethodParameter) o;
         return encoded == that.encoded && single == that.single && optional == that.optional
+                && triParameter == that.triParameter
                 && isObtainedAsCollection == that.isObtainedAsCollection && Objects.equals(name, that.name)
                 && Objects.equals(type, that.type) && Objects.equals(declaredType, that.declaredType)
                 && Objects.equals(declaredUnresolvedType, that.declaredUnresolvedType)
@@ -147,6 +158,6 @@ public class MethodParameter {
     @Override
     public int hashCode() {
         return Objects.hash(name, type, declaredType, declaredUnresolvedType, signature, parameterType, encoded, single,
-                defaultValue, optional, isObtainedAsCollection, mimeType, partFileName);
+                defaultValue, optional, isObtainedAsCollection, mimeType, partFileName, triParameter);
     }
 }

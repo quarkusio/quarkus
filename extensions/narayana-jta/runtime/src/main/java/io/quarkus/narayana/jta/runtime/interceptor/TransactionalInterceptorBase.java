@@ -2,6 +2,9 @@ package io.quarkus.narayana.jta.runtime.interceptor;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Optional;
@@ -40,13 +43,28 @@ import mutiny.zero.flow.adapters.AdaptersToReactiveStreams;
 public abstract class TransactionalInterceptorBase implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    private static final Logger log = Logger.getLogger(TransactionalInterceptorBase.class);
+    protected static final Logger log = Logger.getLogger(TransactionalInterceptorBase.class);
     private final Map<Method, Integer> methodTransactionTimeoutDefinedByPropertyCache = new ConcurrentHashMap<>();
 
     @Inject
     TransactionManager transactionManager;
 
     private final boolean userTransactionAvailable;
+
+    // Test whether both Vertx and reactive-transactions modules are in the class path
+    private static final MethodHandle REACTIVE_INTERCEPTOR_SHOULD_RUN = reactiveInterceptorShouldRun();
+
+    private static MethodHandle reactiveInterceptorShouldRun() {
+        try {
+            Class<?> vertxContext = Class.forName("io.quarkus.reactive.transaction.TransactionalInterceptorBase", true,
+                    Thread.currentThread().getContextClassLoader());
+            return MethodHandles.publicLookup().findStatic(vertxContext, "reactiveInterceptorShouldRun",
+                    MethodType.methodType(boolean.class));
+        } catch (NoClassDefFoundError | NoSuchMethodException | IllegalAccessException | ClassNotFoundException e) {
+            // This means Vert.x is not on the classpath
+            return null;
+        }
+    }
 
     protected TransactionalInterceptorBase(boolean userTransactionAvailable) {
         this.userTransactionAvailable = userTransactionAvailable;
@@ -432,5 +450,13 @@ public abstract class TransactionalInterceptorBase implements Serializable {
     @SuppressWarnings("unchecked")
     private static <E extends Throwable> void sneakyThrow(Throwable e) throws E {
         throw (E) e;
+    }
+
+    protected boolean willReactiveTransactionalInterceptorRun() throws Exception {
+        try {
+            return REACTIVE_INTERCEPTOR_SHOULD_RUN == null ? false : (boolean) REACTIVE_INTERCEPTOR_SHOULD_RUN.invokeExact();
+        } catch (Throwable e) {
+            return false;
+        }
     }
 }

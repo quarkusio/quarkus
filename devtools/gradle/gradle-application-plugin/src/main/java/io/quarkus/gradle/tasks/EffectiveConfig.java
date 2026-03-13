@@ -27,10 +27,12 @@ import io.quarkus.deployment.configuration.ConfigCompatibility;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.quarkus.runtime.configuration.QuarkusConfigBuilderCustomizer;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.Expressions;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.source.yaml.YamlConfigSourceLoader;
 
 /**
@@ -44,8 +46,9 @@ import io.smallrye.config.source.yaml.YamlConfigSourceLoader;
  */
 public final class EffectiveConfig {
     private final SmallRyeConfig config;
-    private final Map<String, String> values;
-    private final Map<String, String> quarkusValues;
+    private volatile Map<String, String> values;
+    private volatile Map<String, String> quarkusValues;
+    private final Map<String, String> cachingValues;
 
     private EffectiveConfig(Builder builder) {
         // Effective "ordinals" for the config sources:
@@ -73,11 +76,32 @@ public final class EffectiveConfig {
             platformPropertiesConfigSource = new PropertiesConfigSource(builder.platformProperties, "platformProperties", 0);
         }
 
-        this.config = ConfigUtils.emptyConfigBuilder()
+        SmallRyeConfigBuilder configBuilder;
+        if (builder.useSystemSources) {
+            // Full builder with all default sources (including System.getProperties() and System.getenv()).
+            // Used during task execution where reading all system properties is fine.
+            configBuilder = ConfigUtils.emptyConfigBuilder()
+                    .addSystemSources();
+        } else {
+            // Minimal builder WITHOUT addDefaultSources() to avoid reading System.getProperties()/System.getenv(),
+            // which would cause Gradle's configuration cache to track all system properties as inputs.
+            // Used during configuration phase with only quarkus-prefixed properties passed explicitly.
+            configBuilder = new SmallRyeConfigBuilder()
+                    .withCustomizers(new QuarkusConfigBuilderCustomizer())
+                    .addDiscoveredConverters()
+                    .addDefaultInterceptors()
+                    .addDiscoveredInterceptors()
+                    .addDiscoveredSecretKeysHandlers();
+            if (builder.filteredSystemProperties != null) {
+                configBuilder.withSources(
+                        new PropertiesConfigSource(builder.filteredSystemProperties, "filteredSystemProperties", 400));
+            }
+        }
+        configBuilder
                 .forClassLoader(toUrlClassloader(builder.sourceDirectories))
                 .withSources(new PropertiesConfigSource(builder.forcedProperties, "forcedProperties", 600))
-                .withSources(new PropertiesConfigSource(asStringMap(builder.taskProperties), "taskProperties", 500))
-                .addSystemSources()
+                .withSources(new PropertiesConfigSource(asStringMap(builder.taskProperties), "taskProperties", 500));
+        this.config = configBuilder
                 .withSources(new PropertiesConfigSource(builder.buildProperties, "quarkusBuildProperties", 290))
                 .withSources(new PropertiesConfigSource(asStringMap(builder.projectProperties), "projectProperties", 280))
                 .withSources(new YamlConfigSourceLoader.InFileSystem())
@@ -90,20 +114,50 @@ public final class EffectiveConfig {
                 .withMapping(NativeConfig.class)
                 .withInterceptors(ConfigCompatibility.FrontEnd.instance(), ConfigCompatibility.BackEnd.instance())
                 .build();
-        this.values = generateFullConfigMap(config);
-        this.quarkusValues = generateQuarkusConfigMap(config);
+        this.cachingValues = generateCachingConfigMap(config);
     }
 
     public SmallRyeConfig getConfig() {
         return config;
     }
 
+    /**
+     * Returns the full configuration map including all property names from all sources.
+     * <p>
+     * This method is lazily computed because it calls {@link SmallRyeConfig#getPropertyNames()} which reads
+     * all system properties. It should only be called during task execution, not during Gradle's configuration phase,
+     * to avoid unnecessary configuration cache invalidation.
+     */
     public Map<String, String> getValues() {
+        if (values == null) {
+            values = generateFullConfigMap(config);
+        }
         return values;
     }
 
+    /**
+     * Returns a configuration map containing only quarkus.* and platform.quarkus.* properties.
+     * <p>
+     * This method is lazily computed because it calls {@link SmallRyeConfig#getPropertyNames()} which reads
+     * all system properties. It should only be called during task execution, not during Gradle's configuration phase,
+     * to avoid unnecessary configuration cache invalidation.
+     */
     public Map<String, String> getQuarkusValues() {
+        if (quarkusValues == null) {
+            quarkusValues = generateQuarkusConfigMap(config);
+        }
         return quarkusValues;
+    }
+
+    /**
+     * Returns a configuration map containing only properties from {@link PackageConfig} and {@link NativeConfig}.
+     * <p>
+     * Unlike {@link #getValues()}, this method does not iterate all property names from all config sources,
+     * which avoids reading all system properties. This makes it safe to call during Gradle's configuration phase
+     * without causing unnecessary configuration cache invalidation when unrelated system properties change.
+     */
+    public Map<String, String> getCachingValues() {
+        return cachingValues;
     }
 
     private Map<String, String> asStringMap(Map<String, ?> map) {
@@ -165,6 +219,34 @@ public final class EffectiveConfig {
         });
     }
 
+    /**
+     * Generates a configuration map containing only properties defined by {@link PackageConfig} and {@link NativeConfig}
+     * mapping classes. This avoids calling {@link SmallRyeConfig#getPropertyNames()} which would read all system
+     * properties and cause Gradle configuration cache invalidation when unrelated system properties change.
+     * <p>
+     * Instead, only the known property names from the mapping metadata are looked up individually in the config,
+     * so only those specific properties are tracked by Gradle's configuration cache.
+     */
+    @VisibleForTesting
+    static Map<String, String> generateCachingConfigMap(SmallRyeConfig config) {
+        Set<String> mappingPropertyNames = new HashSet<>();
+        mappingPropertyNames.addAll(configClass(PackageConfig.class).getProperties().keySet());
+        mappingPropertyNames.addAll(configClass(NativeConfig.class).getProperties().keySet());
+        return Expressions.withoutExpansion(new Supplier<Map<String, String>>() {
+            @Override
+            public Map<String, String> get() {
+                Map<String, String> properties = new HashMap<>();
+                for (String propertyName : mappingPropertyNames) {
+                    ConfigValue configValue = config.getConfigValue(propertyName);
+                    if (configValue.getValue() != null && !configValue.isDefault()) {
+                        properties.put(propertyName, configValue.getValue());
+                    }
+                }
+                return unmodifiableMap(properties);
+            }
+        });
+    }
+
     static Builder builder() {
         return new Builder();
     }
@@ -178,6 +260,8 @@ public final class EffectiveConfig {
         private Map<String, String> defaultProperties = emptyMap();
         private Set<File> sourceDirectories = emptySet();
         private String profile = "prod";
+        private boolean useSystemSources = true;
+        private Map<String, String> filteredSystemProperties = null;
 
         EffectiveConfig build() {
             return new EffectiveConfig(this);
@@ -220,6 +304,21 @@ public final class EffectiveConfig {
 
         Builder withProfile(String profile) {
             this.profile = profile;
+            return this;
+        }
+
+        /**
+         * Replaces {@code addSystemSources()} (which reads ALL system properties and env vars) with
+         * a pre-filtered map of system properties. This avoids Gradle's configuration cache tracking
+         * all system properties as inputs, which would cause cache invalidation when any unrelated
+         * system property changes (e.g. IDE-injected properties).
+         * <p>
+         * The filtered properties are added at ordinal 400, matching the ordinal of
+         * {@code System.getProperties()} in the default config source ordering.
+         */
+        Builder withFilteredSystemProperties(Map<String, String> systemProperties) {
+            this.useSystemSources = false;
+            this.filteredSystemProperties = systemProperties;
             return this;
         }
     }

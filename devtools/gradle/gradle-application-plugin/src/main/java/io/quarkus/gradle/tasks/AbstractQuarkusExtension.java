@@ -21,6 +21,7 @@ import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.process.JavaForkOptions;
+import org.gradle.util.GradleVersion;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.deployment.pkg.NativeConfig;
@@ -76,9 +77,10 @@ public abstract class AbstractQuarkusExtension {
                 .getFiles();
 
         EffectiveConfig effectiveConfig = EffectiveConfig.builder()
+                .withFilteredSystemProperties(getQuarkusRelevantSystemProperties())
                 .withTaskProperties(Collections.emptyMap())
                 .withBuildProperties(quarkusBuildProperties.get())
-                .withProjectProperties(project.getProperties())
+                .withProjectProperties(getQuarkusRelevantProjectProperties())
                 .withSourceDirectories(resourcesDirs)
                 .withProfile(quarkusProfile())
                 .build();
@@ -151,23 +153,80 @@ public abstract class AbstractQuarkusExtension {
     }
 
     private String quarkusProfile() {
-        String profile = System.getProperty(QUARKUS_PROFILE);
+        String profile = project.getProviders().systemProperty(QUARKUS_PROFILE).getOrNull();
         if (profile == null) {
-            profile = System.getenv("QUARKUS_PROFILE");
+            profile = project.getProviders().environmentVariable("QUARKUS_PROFILE").getOrNull();
         }
         if (profile == null) {
             profile = quarkusBuildProperties.get().get(QUARKUS_PROFILE);
         }
         if (profile == null) {
-            Object p = project.getProperties().get(QUARKUS_PROFILE);
-            if (p != null) {
-                profile = p.toString();
-            }
+            profile = getQuarkusRelevantProjectProperties().get(QUARKUS_PROFILE);
         }
         if (profile == null) {
             profile = "prod";
         }
         return profile;
+    }
+
+    /**
+     * Returns only quarkus-relevant project properties using the Gradle 8+ API when available,
+     * to avoid registering all project properties as configuration cache inputs.
+     */
+    private Map<String, String> getQuarkusRelevantProjectProperties() {
+        if (GradleVersion.current().compareTo(GradleVersion.version("8.0")) >= 0) {
+            Map<String, String> result = new HashMap<>(
+                    project.getProviders().gradlePropertiesPrefixedBy("quarkus.").get());
+            result.putAll(project.getProviders().gradlePropertiesPrefixedBy("platform.quarkus.").get());
+            return result;
+        } else {
+            Map<String, String> result = new HashMap<>();
+            for (Map.Entry<String, ?> entry : project.getProperties().entrySet()) {
+                if (entry.getValue() != null
+                        && (entry.getKey().startsWith("quarkus.") || entry.getKey().startsWith("platform.quarkus."))) {
+                    result.put(entry.getKey(), entry.getValue().toString());
+                }
+            }
+            return result;
+        }
+    }
+
+    /**
+     * JVM system properties referenced in Quarkus config default values:
+     * - {@code java.home}: NativeConfig.javaHome() defaults to {@code ${java.home}}
+     * - {@code user.home}: PackageConfig.DecompilerConfig.jarDirectory() defaults to {@code ${user.home}/.quarkus}
+     * These are stable across builds, so tracking them individually in the configuration cache is fine.
+     */
+    private static final List<String> JVM_PROPERTIES_FOR_CONFIG_EXPANSION = List.of(
+            "java.home", "user.home");
+
+    /**
+     * Returns only quarkus-relevant system properties plus well-known JVM properties needed for
+     * config expression expansion, using the Gradle 8+ API when available to avoid registering
+     * all system properties as configuration cache inputs.
+     */
+    private Map<String, String> getQuarkusRelevantSystemProperties() {
+        Map<String, String> result;
+        if (GradleVersion.current().compareTo(GradleVersion.version("8.1")) >= 0) {
+            result = new HashMap<>(project.getProviders().systemPropertiesPrefixedBy("quarkus.").get());
+            result.putAll(project.getProviders().systemPropertiesPrefixedBy("platform.quarkus.").get());
+        } else {
+            result = new HashMap<>();
+            for (Map.Entry<Object, Object> entry : System.getProperties().entrySet()) {
+                String key = entry.getKey().toString();
+                if (key.startsWith("quarkus.") || key.startsWith("platform.quarkus.")) {
+                    result.put(key, entry.getValue().toString());
+                }
+            }
+        }
+        // Add well-known JVM properties needed for config expression expansion (e.g. ${java.home})
+        for (String key : JVM_PROPERTIES_FOR_CONFIG_EXPANSION) {
+            String value = project.getProviders().systemProperty(key).getOrNull();
+            if (value != null) {
+                result.put(key, value);
+            }
+        }
+        return result;
     }
 
     private static FileCollection dependencyClasspath(SourceSet mainSourceSet) {

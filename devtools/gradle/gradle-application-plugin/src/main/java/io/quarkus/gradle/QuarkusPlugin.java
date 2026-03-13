@@ -45,6 +45,7 @@ import io.quarkus.gradle.actions.BeforeTestAction;
 import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
 import io.quarkus.gradle.extension.SourceSetExtension;
+import io.quarkus.gradle.tasks.BaseConfigProvider;
 import io.quarkus.gradle.tasks.BuildAotEnhancedImage;
 import io.quarkus.gradle.tasks.Deploy;
 import io.quarkus.gradle.tasks.ImageBuild;
@@ -224,7 +225,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                 QuarkusGenerateCode.class, LaunchMode.NORMAL, SourceSet.MAIN_SOURCE_SET_NAME,
                 quarkusExt.getCodeGenerationInputs().get());
         quarkusGenerateCode.configure(task -> configureGenerateCodeTask(task, quarkusGenerateAppModelTask,
-                QuarkusGenerateCode.QUARKUS_GENERATED_SOURCES, quarkusExt));
+                QuarkusGenerateCode.QUARKUS_GENERATED_SOURCES, quarkusExt, project));
         // quarkusGenerateCodeDev
         TaskProvider<QuarkusGenerateCode> quarkusGenerateCodeDev = tasks.register(QUARKUS_GENERATE_CODE_DEV_TASK_NAME,
                 QuarkusGenerateCode.class, LaunchMode.DEVELOPMENT, SourceSet.MAIN_SOURCE_SET_NAME,
@@ -232,7 +233,7 @@ public class QuarkusPlugin implements Plugin<Project> {
         quarkusGenerateCodeDev.configure(task -> {
             task.dependsOn(quarkusGenerateCode);
             configureGenerateCodeTask(task, quarkusGenerateDevAppModelTask, QuarkusGenerateCode.QUARKUS_GENERATED_SOURCES,
-                    quarkusExt);
+                    quarkusExt, project);
         });
         // quarkusGenerateCodeTests
         TaskProvider<QuarkusGenerateCode> quarkusGenerateCodeTests = tasks.register(QUARKUS_GENERATE_CODE_TESTS_TASK_NAME,
@@ -241,7 +242,7 @@ public class QuarkusPlugin implements Plugin<Project> {
         quarkusGenerateCodeTests.configure(task -> {
             task.dependsOn("compileQuarkusTestGeneratedSourcesJava");
             configureGenerateCodeTask(task, quarkusGenerateTestAppModelTask,
-                    QuarkusGenerateCode.QUARKUS_TEST_GENERATED_SOURCES, quarkusExt);
+                    QuarkusGenerateCode.QUARKUS_TEST_GENERATED_SOURCES, quarkusExt, project);
         });
 
         TaskProvider<QuarkusApplicationModelTask> quarkusBuildAppModelTask = tasks.register("quarkusBuildAppModel",
@@ -469,6 +470,10 @@ public class QuarkusPlugin implements Plugin<Project> {
                         t.getInputs().files(quarkusGenerateTestAppModelTask);
                         // Register matching compose files from project root as inputs
                         t.getInputs().files(composeDevFiles(project));
+                        BaseConfigProvider values = new BaseConfigProvider(
+                                quarkusExt.getDisableCreatingBuildConfigDuringConfiguration().get(),
+                                project, quarkusExt);
+
                         // Quarkus test configuration action which should be executed before any Quarkus test
                         t.doFirst(new BeforeTestAction(
                                 project.getProjectDir(),
@@ -478,9 +483,11 @@ public class QuarkusPlugin implements Plugin<Project> {
                                 mainSourceSet.getOutput().getClassesDirs(),
                                 project.getObjects().newInstance(QuarkusPluginExtensionView.class, quarkusExt),
                                 project.getObjects().mapProperty(String.class, Object.class)
-                                        .convention(quarkusExt.manifest().getAttributes()),
+                                        .convention(values.getManifestAttributes()),
                                 project.getObjects().mapProperty(String.class, Attributes.class)
-                                        .convention(quarkusExt.getAttributes())));
+                                        .convention(values.getManifestSections()),
+                                project.getObjects().listProperty(String.class)
+                                        .convention(values.getIgnoredEntries())));
 
                         // also make each task use the JUnit platform since it's the only supported test environment
                         t.useJUnitPlatform();
@@ -607,26 +614,27 @@ public class QuarkusPlugin implements Plugin<Project> {
         task.setCompileClasspath(mainSourceSet.getCompileClasspath().plus(mainSourceSet.getRuntimeClasspath())
                 .plus(mainSourceSet.getAnnotationProcessorPath())
                 .plus(mainSourceSet.getResources()));
-        task.getCachingRelevantInput().set(quarkusExt
-                .cachingRelevantProperties(quarkusExt.getCachingRelevantProperties().get()));
-        task.getJarEnabled().set(quarkusExt.packageConfig().jar().enabled());
-        task.getNativeEnabled().set(quarkusExt.nativeConfig().enabled());
-        task.getNativeSourcesOnly().set(quarkusExt.nativeConfig().sourcesOnly());
-        task.getRunnerSuffix().set(quarkusExt.packageConfig().computedRunnerSuffix());
-        task.getRunnerName().set(
-                quarkusExt.packageConfig().outputName().orElseGet(quarkusExt::finalName));
-        task.getOutputDirectory()
-                .set(Path.of(quarkusExt.packageConfig().outputDirectory().map(Path::toString)
-                        .orElse(QuarkusPlugin.DEFAULT_OUTPUT_DIRECTORY)));
-        task.getJarType().set(quarkusExt.packageConfig().jar().type());
-        task.getManifestAttributes().set(quarkusExt.manifest().getAttributes());
-        task.getManifestSections().set(quarkusExt.manifest().getSections());
+        BaseConfigProvider values = new BaseConfigProvider(quarkusExt.getDisableCreatingBuildConfigDuringConfiguration().get(),
+                project, quarkusExt);
+        task.getCachingRelevantInput()
+                .set(values.getCachingRelevantProperties(quarkusExt.getCachingRelevantProperties().get()));
+        task.getJarEnabled().set(values.getJarEnabled());
+        task.getNativeEnabled().set(values.getNativeEnabled());
+        task.getNativeSourcesOnly().set(values.getNativeSourcesOnly());
+        task.getRunnerSuffix().set(values.getRunnerSuffix());
+        task.getRunnerName().set(values.getOutputName());
+        task.getOutputDirectory().set(values.getOutputDirectory());
+        task.getJarType().set(values.getJarType());
+        task.getManifestAttributes().set(values.getManifestAttributes());
+        task.getManifestSections().set(values.getManifestSections());
+        task.getIgnoredListEntries().set(values.getIgnoredEntries());
 
     }
 
     private static void configureGenerateCodeTask(QuarkusGenerateCode task,
             TaskProvider<QuarkusApplicationModelTask> applicationModelTaskTaskProvider, String generateSourcesDir,
-            QuarkusPluginExtension quarkusExt) {
+            QuarkusPluginExtension quarkusExt,
+            Project project) {
         SourceSet generatedSources = getSourceSet(task.getProject(), generateSourcesDir);
         Set<File> sourceSetOutput = generatedSources.getOutput().filter(f -> f.getName().equals(generateSourcesDir)).getFiles();
         if (sourceSetOutput.isEmpty()) {
@@ -636,10 +644,13 @@ public class QuarkusPlugin implements Plugin<Project> {
         task.getApplicationModel()
                 .set(applicationModelTaskTaskProvider.flatMap(QuarkusApplicationModelTask::getApplicationModel));
         task.getGeneratedOutputDirectory().set(generatedSources.getJava().getClassesDirectory());
+        BaseConfigProvider values = new BaseConfigProvider(quarkusExt.getDisableCreatingBuildConfigDuringConfiguration().get(),
+                project, quarkusExt);
         task.getCachingRelevantInput()
-                .set(quarkusExt.cachingRelevantProperties(quarkusExt.getCachingRelevantProperties().get()));
-        task.getManifestAttributes().set(quarkusExt.manifest().getAttributes());
-        task.getManifestSections().set(quarkusExt.manifest().getSections());
+                .set(values.getCachingRelevantProperties(quarkusExt.getCachingRelevantProperties().get()));
+        task.getManifestAttributes().set(values.getManifestAttributes());
+        task.getManifestSections().set(values.getManifestSections());
+        task.getIgnoredListEntries().set(values.getIgnoredEntries());
     }
 
     private void createSourceSets(Project project) {

@@ -46,6 +46,8 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
     private final ListProperty<String> codeGenerationProviders;
     private final ListProperty<String> codeGenerationInputs;
 
+    private final Property<Boolean> disableCreatingBuildConfigDuringConfiguration;
+
     public QuarkusPluginExtension(Project project) {
         super(project);
 
@@ -59,6 +61,7 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
                 .convention(List.of(CODE_GENERATION_INPUT));
 
         this.sourceSetExtension = new SourceSetExtension();
+        this.disableCreatingBuildConfigDuringConfiguration = project.getObjects().property(Boolean.class).convention(false);
     }
 
     public Manifest getManifest() {
@@ -264,5 +267,13 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
 
     private String addQuarkusBuildPropertyPrefix(String name) {
         return String.format("quarkus.%s", name);
+    }
+
+    public void setDisableCreatingBuildConfigDuringConfiguration(Boolean disableCreatingBuildConfigDuringConfiguration) {
+        this.disableCreatingBuildConfigDuringConfiguration.set(disableCreatingBuildConfigDuringConfiguration);
+    }
+
+    public Property<Boolean> getDisableCreatingBuildConfigDuringConfiguration() {
+        return disableCreatingBuildConfigDuringConfiguration;
     }
 }

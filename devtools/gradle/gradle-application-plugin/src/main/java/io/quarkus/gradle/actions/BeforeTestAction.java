@@ -15,6 +15,7 @@ import org.gradle.api.Task;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.java.archives.Attributes;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.testing.Test;
@@ -37,12 +38,15 @@ public class BeforeTestAction implements Action<Task> {
     private final MapProperty<String, Object> manifestAttributes;
     private final MapProperty<String, Attributes> manifestSections;
 
+    private final ListProperty<String> ignoredEntries;
+
     public BeforeTestAction(File projectDir, FileCollection combinedOutputSourceDirs,
             Provider<RegularFile> applicationModelPath, Provider<File> nativeRunnerPath,
             FileCollection mainSourceSetClassesDir,
             QuarkusPluginExtensionView extensionView,
             MapProperty<String, Object> manifestAttributes,
-            MapProperty<String, Attributes> manifestSections) {
+            MapProperty<String, Attributes> manifestSections,
+            ListProperty<String> ignoredEntries) {
         this.projectDir = projectDir;
         this.combinedOutputSourceDirs = combinedOutputSourceDirs;
         this.applicationModelPath = applicationModelPath;
@@ -51,6 +55,7 @@ public class BeforeTestAction implements Action<Task> {
         this.extensionView = extensionView;
         this.manifestAttributes = manifestAttributes;
         this.manifestSections = manifestSections;
+        this.ignoredEntries = ignoredEntries;
 
     }
 
@@ -100,7 +105,7 @@ public class BeforeTestAction implements Action<Task> {
 
     private EffectiveConfigProvider effectiveProvider() {
         return new EffectiveConfigProvider(
-                extensionView.getIgnoredEntries(),
+                ignoredEntries,
                 extensionView.getMainResources(),
                 extensionView.getForcedProperties(),
                 extensionView.getProjectProperties(),

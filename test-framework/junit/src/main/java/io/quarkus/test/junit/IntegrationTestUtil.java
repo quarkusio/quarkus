@@ -319,8 +319,19 @@ public final class IntegrationTestUtil {
                 }
             } else if (testLauncher == TestLauncher.GRADLE) {
                 errorMessage += "Make sure this test is run after the 'quarkusBuild' Gradle task.";
+            } else if (testLauncher == TestLauncher.INTELLIJ) {
+                errorMessage += "It looks like this test is being run from IntelliJ IDEA. "
+                        + "Integration tests require the Quarkus application to be built first. "
+                        + "Please add a 'Run Maven Goal' (mvn package) or 'Run Gradle Task' (quarkusBuild) "
+                        + "in the 'Before launch' section of your Run Configuration.";
+            } else if (testLauncher == TestLauncher.ECLIPSE) {
+                errorMessage += "It looks like this test is being run from Eclipse. "
+                        + "Integration tests require the Quarkus application to be built first. "
+                        + "Please run 'mvn package' (Maven) or the 'quarkusBuild' task (Gradle) before executing this test.";
             } else {
-                errorMessage += "Make sure this test is run after the Quarkus artifact is built from your build tool.";
+                errorMessage += "Make sure this test is run after the Quarkus artifact is built from your build tool. "
+                        + "If you are running this test from an IDE, configure a pre-build step to run "
+                        + "'mvn package' (Maven) or the 'quarkusBuild' task (Gradle) before executing this test.";
             }
             throw new IllegalStateException(errorMessage);
         }
@@ -366,6 +377,15 @@ public final class IntegrationTestUtil {
             }
             if (className.startsWith("org.gradle")) {
                 testLauncher = TestLauncher.GRADLE;
+                break;
+            }
+            if (className.startsWith("com.intellij.rt.")) {
+                testLauncher = TestLauncher.INTELLIJ;
+                break;
+            }
+            if (className.startsWith("org.eclipse.jdt.internal.junit.")) {
+                testLauncher = TestLauncher.ECLIPSE;
+                break;
             }
             if (i == 0) {
                 break;
@@ -377,6 +397,8 @@ public final class IntegrationTestUtil {
     private enum TestLauncher {
         MAVEN,
         GRADLE,
+        INTELLIJ,
+        ECLIPSE,
         UNKNOWN
     }
 

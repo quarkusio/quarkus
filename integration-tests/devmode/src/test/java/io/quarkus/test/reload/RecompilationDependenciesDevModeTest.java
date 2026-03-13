@@ -75,6 +75,7 @@ class RecompilationDependenciesDevModeTest {
         boolean found = false;
         for (LogRecord logRecord : TEST.getLogRecords()) {
             if (logRecord.getLoggerName().equals("io.quarkus.deployment.dev.RuntimeUpdatesProcessor")
+                    && logRecord.getParameters() != null && logRecord.getParameters().length > 0
                     && (logRecord.getParameters()[0].equals("AddressMapper.class, ContactData.class")
                             || logRecord.getParameters()[0].equals("ContactData.class, AddressMapper.class"))) {
                 found = true;

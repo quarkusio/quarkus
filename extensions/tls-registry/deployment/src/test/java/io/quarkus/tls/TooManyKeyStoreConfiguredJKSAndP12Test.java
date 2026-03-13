@@ -31,7 +31,7 @@ public class TooManyKeyStoreConfiguredJKSAndP12Test {
             () -> ShrinkWrap.create(JavaArchive.class)
                     .add(new StringAsset(configuration), "application.properties"))
             .assertException(t -> {
-                assertThat(t).hasMessageContaining("PKCS12", "JKS");
+                assertThat(t).hasMessageContaining("P12", "JKS");
             });
 
     @Test

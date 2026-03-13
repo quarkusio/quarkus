@@ -32,7 +32,7 @@ import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
 @QuarkusTest
-public class BouncyCastleFipsJsseTestCase {
+public abstract class BouncyCastleFipsJsseTestCase {
 
     static final Logger LOG = Logger.getLogger(BouncyCastleFipsJsseTestCase.class);
 

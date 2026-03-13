@@ -508,7 +508,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 }
             }
         }
-        for (var e : existingRecorderValues.entrySet()) {
+        for (var e : existingRecorderValues.entrySet().stream()
+                .sorted(Comparator.comparing(re -> re.getKey().getName())).toList()) {
             e.getValue().preWrite(parameterMap);
         }
 
@@ -525,7 +526,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
         //allocates a new method
         SplitMethodContext context = new SplitMethodContext(array, mainMethod, file);
 
-        for (var i : this.existingRecorderValues.values()) {
+        for (var i : this.existingRecorderValues.values().stream()
+                .sorted(Comparator.comparing(newRecorder -> newRecorder.theClass.getName())).toList()) {
             i.prepare(context);
         }
         //now we invoke the actual method call

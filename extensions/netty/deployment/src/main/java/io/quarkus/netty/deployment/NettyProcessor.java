@@ -1,10 +1,13 @@
 package io.quarkus.netty.deployment;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.BiFunction;
@@ -17,6 +20,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.Level;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 import io.netty.channel.ChannelHandler;
@@ -40,6 +44,7 @@ import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
 import io.quarkus.deployment.builditem.ModuleOpenBuildItem;
 import io.quarkus.deployment.builditem.PreInitRunnableBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -966,6 +971,7 @@ class NettyProcessor {
     @BuildStep
     void indexTransports(BuildProducer<IndexDependencyBuildItem> producer) {
         producer.produce(new IndexDependencyBuildItem("io.netty", "netty-transport"));
+        producer.produce(new IndexDependencyBuildItem("io.netty", "netty-handler"));
     }
 
     @BuildStep
@@ -1048,6 +1054,149 @@ class NettyProcessor {
             ClassTransformer transformer = new ClassTransformer(className);
             transformer.addInterface(NettySharable.class);
             return transformer.applyTo(classVisitor);
+        }
+    }
+
+    /**
+     * The idea here is to determine all the masks at build time, thus making reflection at runtime
+     * for the `@Skip` annotation redundant.
+     */
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void transformChannelHandlerMask(CombinedIndexBuildItem indexBuildItem,
+            ShutdownContextBuildItem shutdownContextBuildItem,
+            NettyRecorder recorder,
+            BuildProducer<BytecodeTransformerBuildItem> producer) {
+        IndexView index = indexBuildItem.getIndex();
+
+        String channelHandlerMaskClassName = "io.netty.channel.ChannelHandlerMask";
+        Class<?> channelHandlerMaskClazz = safeLoadFromTccl(channelHandlerMaskClassName);
+        if (channelHandlerMaskClazz == null) {
+            return;
+        }
+
+        Method mask0Method;
+        try {
+            mask0Method = channelHandlerMaskClazz.getDeclaredMethod("mask0", Class.class);
+            mask0Method.setAccessible(true);
+        } catch (Exception ignored) {
+            return;
+        }
+
+        Map<String, Integer> masks = new HashMap<>();
+        index.getAllKnownImplementations(ChannelHandler.class).forEach(ci -> {
+            String className = ci.name().toString();
+            Class<?> clazz = safeLoadFromTccl(className);
+            if (clazz == null) {
+                return;
+            }
+            try {
+                Integer mask = (Integer) mask0Method.invoke(null, clazz);
+                masks.put(className, mask);
+            } catch (IllegalAccessException | InvocationTargetException ignored) {
+
+            }
+        });
+        recorder.setChannelHandlerMasks(masks);
+        recorder.cleanUp(shutdownContextBuildItem);
+
+        if (masks.isEmpty()) {
+            return;
+        }
+
+        /*
+         * Introduces the following method to `io.netty.channel.ChannelHandlerMask`
+         * private static int mask1(Class<? extends ChannelHandler> handlerType) {
+         * Integer mask = NettyRecorder.channelHandlerMask(handlerType);
+         * if (mask == null) {
+         * return mask0(handlerType);
+         * } else {
+         * return mask;
+         * }
+         * }
+         */
+        producer.produce(new BytecodeTransformerBuildItem.Builder().setClassToTransform(channelHandlerMaskClassName)
+                .setCacheable(true).setVisitorFunction(new BiFunction<>() {
+
+                    @Override
+                    public ClassVisitor apply(String s, ClassVisitor classVisitor) {
+                        ClassTransformer transformer = new ClassTransformer(channelHandlerMaskClassName);
+
+                        // Create the method: private static int mask1(Class<? extends ChannelHandler> handlerType)
+                        MethodCreator methodCreator = transformer.addMethod("mask1", int.class, Class.class)
+                                .setModifiers(Modifier.PRIVATE | Modifier.STATIC);
+
+                        ResultHandle handlerTypeParam = methodCreator.getMethodParam(0);
+
+                        // Call NettyRecorder.channelHandlerMask(handlerType)
+                        ResultHandle mask = methodCreator.invokeStaticMethod(MethodDescriptor.ofMethod(NettyRecorder.class,
+                                "channelHandlerMask", Integer.class, Class.class), handlerTypeParam);
+
+                        // Create the if-else block: if (mask == null)
+                        BranchResult nullCheck = methodCreator.ifNull(mask);
+
+                        // if mask was not determined at build time
+                        BytecodeCreator ifBranch = nullCheck.trueBranch();
+                        ResultHandle mask0Result = ifBranch.invokeStaticMethod(
+                                MethodDescriptor.ofMethod(channelHandlerMaskClassName, "mask0", int.class, Class.class),
+                                handlerTypeParam);
+                        ifBranch.returnValue(mask0Result);
+
+                        // return build time determined mask
+                        BytecodeCreator elseBranch = nullCheck.falseBranch();
+                        ResultHandle unboxedMask = elseBranch
+                                .invokeVirtualMethod(MethodDescriptor.ofMethod(Integer.class, "intValue", int.class), mask);
+                        elseBranch.returnValue(unboxedMask);
+
+                        return transformer.applyTo(classVisitor);
+                    }
+                }).build());
+
+        // transform the existing `mask` method by changing the invocation of `mask0` to `mask1`
+        producer.produce(new BytecodeTransformerBuildItem("io.netty.channel.ChannelHandlerMask",
+                new java.util.function.BiFunction<>() {
+                    @Override
+                    public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
+                        return new ClassVisitor(Opcodes.ASM9, outputClassVisitor) {
+                            @Override
+                            public MethodVisitor visitMethod(int access, String name, String descriptor,
+                                    String signature, String[] exceptions) {
+                                MethodVisitor mv = super.visitMethod(access, name, descriptor, signature, exceptions);
+
+                                // Only transform the 'mask' method
+                                if ("mask".equals(name) && "(Ljava/lang/Class;)I".equals(descriptor)) {
+                                    return new MethodVisitor(Opcodes.ASM9, mv) {
+                                        @Override
+                                        public void visitMethodInsn(int opcode, String owner, String methodName,
+                                                String desc, boolean isInterface) {
+                                            // Replace calls to mask0 with mask1
+                                            if (opcode == Opcodes.INVOKESTATIC &&
+                                                    "io/netty/channel/ChannelHandlerMask".equals(owner) &&
+                                                    "mask0".equals(methodName) &&
+                                                    "(Ljava/lang/Class;)I".equals(desc)) {
+
+                                                // Change mask0 to mask1
+                                                super.visitMethodInsn(opcode, owner, "mask1", desc, isInterface);
+                                            } else {
+                                                super.visitMethodInsn(opcode, owner, methodName, desc, isInterface);
+                                            }
+                                        }
+                                    };
+                                }
+
+                                return mv;
+                            }
+                        };
+                    }
+                }));
+    }
+
+    private Class<?> safeLoadFromTccl(String name) {
+        try {
+            return Class.forName(name, false,
+                    Thread.currentThread().getContextClassLoader());
+        } catch (ClassNotFoundException e) {
+            return null;
         }
     }
 }

@@ -137,6 +137,7 @@ public class ApplicationManifestConfig {
                     }
                     if (holder.path != null && !holder.path.equals(holder.component.getPath())) {
                         holder.component = ApplicationComponent.builder()
+                                .setVersion(holder.component.getVersion())
                                 .setPath(holder.path)
                                 .setResolvedDependency(holder.component.getResolvedDependency())
                                 .setDependencies(holder.component.getDependencies())

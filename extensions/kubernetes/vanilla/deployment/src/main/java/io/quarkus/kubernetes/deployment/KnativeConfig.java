@@ -79,4 +79,14 @@ public interface KnativeConfig extends PlatformConfiguration {
      */
     @WithDefault("CreateOrUpdate")
     DeployStrategy deployStrategy();
+
+    /**
+     * Whether to add image pull secrets to a generated ServiceAccount.
+     * When set to true (default), image pull secrets are added to a ServiceAccount resource.
+     * When set to false, image pull secrets are added directly to the pod spec.
+     * Setting this to false is useful when deploying to environments like IBM Code Engine where users do not have
+     * permission to create ServiceAccount resources.
+     */
+    @WithDefault("true")
+    boolean addImagePullSecretsToServiceAccount();
 }

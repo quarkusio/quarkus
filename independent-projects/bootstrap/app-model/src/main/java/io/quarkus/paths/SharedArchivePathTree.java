@@ -185,8 +185,8 @@ class SharedArchivePathTree extends ArchivePathTree {
         }
 
         @Override
-        public void walkIfContains(String relativePath, PathVisitor visitor) {
-            delegate.walkIfContains(relativePath, visitor);
+        public void walkIfContains(String resourceDirName, PathVisitor visitor) {
+            delegate.walkIfContains(resourceDirName, visitor);
         }
 
         @Override
@@ -195,23 +195,23 @@ class SharedArchivePathTree extends ArchivePathTree {
         }
 
         @Override
-        public <T> T apply(String relativePath, Function<PathVisit, T> func) {
-            return delegate.apply(relativePath, func);
+        public <T> T apply(String resourceName, Function<PathVisit, T> func) {
+            return delegate.apply(resourceName, func);
         }
 
         @Override
-        public void accept(String relativePath, Consumer<PathVisit> consumer) {
-            delegate.accept(relativePath, consumer);
+        public void accept(String resourceName, Consumer<PathVisit> consumer) {
+            delegate.accept(resourceName, consumer);
         }
 
         @Override
-        public void acceptAll(String relativePath, Consumer<PathVisit> consumer) {
-            delegate.acceptAll(relativePath, consumer);
+        public void acceptAll(String resourceName, Consumer<PathVisit> consumer) {
+            delegate.acceptAll(resourceName, consumer);
         }
 
         @Override
-        public boolean contains(String relativePath) {
-            return delegate.contains(relativePath);
+        public boolean contains(String resourceName) {
+            return delegate.contains(resourceName);
         }
 
         @Override

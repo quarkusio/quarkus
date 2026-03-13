@@ -106,7 +106,7 @@ public class GetResourceNamesTest {
         var tree = PathTree.ofDirectoryOrArchive(dir1);
         var resourceNames = tree.getResourceNames();
         var walkNames = new java.util.HashSet<String>();
-        tree.walk(visit -> walkNames.add(visit.getRelativePath()));
+        tree.walk(visit -> walkNames.add(visit.getResourceName()));
         assertThat(resourceNames).containsExactlyInAnyOrderElementsOf(walkNames);
     }
 }

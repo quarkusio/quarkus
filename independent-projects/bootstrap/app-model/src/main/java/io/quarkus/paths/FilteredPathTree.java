@@ -51,46 +51,46 @@ public class FilteredPathTree implements PathTree {
     }
 
     @Override
-    public void walkIfContains(String relativePath, PathVisitor visitor) {
-        if (!PathFilter.isVisible(filter, relativePath)) {
+    public void walkIfContains(String resourceDirName, PathVisitor visitor) {
+        if (!PathFilter.isVisible(filter, resourceDirName)) {
             return;
         }
-        original.walkIfContains(relativePath, visit -> {
-            if (visit != null && filter.isVisible(visit.getRelativePath())) {
+        original.walkIfContains(resourceDirName, visit -> {
+            if (visit != null && filter.isVisible(visit.getResourceName())) {
                 visitor.visitPath(visit);
             }
         });
     }
 
     @Override
-    public <T> T apply(String relativePath, Function<PathVisit, T> func) {
-        if (!PathFilter.isVisible(filter, relativePath)) {
+    public <T> T apply(String resourceName, Function<PathVisit, T> func) {
+        if (!PathFilter.isVisible(filter, resourceName)) {
             return func.apply(null);
         }
-        return original.apply(relativePath, func);
+        return original.apply(resourceName, func);
     }
 
     @Override
-    public void accept(String relativePath, Consumer<PathVisit> consumer) {
-        if (!PathFilter.isVisible(filter, relativePath)) {
+    public void accept(String resourceName, Consumer<PathVisit> consumer) {
+        if (!PathFilter.isVisible(filter, resourceName)) {
             consumer.accept(null);
         } else {
-            original.accept(relativePath, consumer);
+            original.accept(resourceName, consumer);
         }
     }
 
     @Override
-    public void acceptAll(String relativePath, Consumer<PathVisit> consumer) {
-        if (!PathFilter.isVisible(filter, relativePath)) {
+    public void acceptAll(String resourceName, Consumer<PathVisit> consumer) {
+        if (!PathFilter.isVisible(filter, resourceName)) {
             consumer.accept(null);
         } else {
-            original.acceptAll(relativePath, consumer);
+            original.acceptAll(resourceName, consumer);
         }
     }
 
     @Override
-    public boolean contains(String relativePath) {
-        return PathFilter.isVisible(filter, relativePath) && original.contains(relativePath);
+    public boolean contains(String resourceName) {
+        return PathFilter.isVisible(filter, resourceName) && original.contains(resourceName);
     }
 
     @Override

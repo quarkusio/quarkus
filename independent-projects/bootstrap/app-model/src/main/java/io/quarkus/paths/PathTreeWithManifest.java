@@ -7,7 +7,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -24,18 +23,12 @@ public abstract class PathTreeWithManifest implements PathTree {
 
     private static final String META_INF = "META-INF/";
     private static final String META_INF_VERSIONS = META_INF + "versions/";
-    public static final int JAVA_VERSION;
-
-    static {
-        try {
-            final String versionStr = "version";
-            Object v = Runtime.class.getMethod(versionStr).invoke(null);
-            List<Integer> list = (List<Integer>) v.getClass().getMethod(versionStr).invoke(v);
-            JAVA_VERSION = list.get(0);
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to obtain the Java version from java.lang.Runtime", e);
-        }
-    }
+    /**
+     * The feature-release version of the current Java runtime (e.g., 17, 21).
+     * Used to determine which {@code META-INF/versions/<N>} entries apply
+     * when resolving multi-release JAR resources.
+     */
+    public static final int JAVA_VERSION = Runtime.version().feature();
 
     protected boolean manifestEnabled;
     private final ReentrantReadWriteLock manifestInfoLock = new ReentrantReadWriteLock();
@@ -68,11 +61,11 @@ public abstract class PathTreeWithManifest implements PathTree {
     }
 
     @Override
-    public <T> T apply(String relativePath, Function<PathVisit, T> func) {
-        return apply(relativePath, func, manifestEnabled);
+    public <T> T apply(String resourceName, Function<PathVisit, T> func) {
+        return apply(resourceName, func, manifestEnabled);
     }
 
-    protected abstract <T> T apply(String relativePath, Function<PathVisit, T> func, boolean manifestEnabled);
+    protected abstract <T> T apply(String resourceName, Function<PathVisit, T> func, boolean manifestEnabled);
 
     @Override
     public ManifestAttributes getManifestAttributes() {
@@ -120,13 +113,27 @@ public abstract class PathTreeWithManifest implements PathTree {
         return manifestAttributes != null && manifestAttributes.isMultiRelease();
     }
 
+    /**
+     * Returns a mapping of classpath resource names to the corresponding version-specific
+     * resource names for resources found under {@code META-INF/versions/} in a multi-release JAR.
+     * <p>
+     * For example, in a multi-release JAR containing {@code META-INF/versions/11/com/example/Foo.class},
+     * running on Java 11 or later would produce a mapping from {@code com/example/Foo.class}
+     * to {@code META-INF/versions/11/com/example/Foo.class}.
+     * <p>
+     * When multiple version-specific entries exist for the same resource, the highest version
+     * that does not exceed {@link #JAVA_VERSION} takes precedence.
+     *
+     * @return a map from classpath resource names to their version-specific resource names,
+     *         or an empty map if this is not a multi-release JAR
+     */
     protected Map<String, String> getMultiReleaseMapping() {
         if (multiReleaseMapping != null) {
             return multiReleaseMapping;
         }
         final Map<String, String> mrMapping = isMultiReleaseJar()
-                ? apply(META_INF_VERSIONS, MultiReleaseMappingReader.INSTANCE, false)
-                : Collections.emptyMap();
+                ? apply(META_INF_VERSIONS, MultiReleaseResourceMapping.INSTANCE, false)
+                : Map.of();
         initMultiReleaseMapping(mrMapping);
         return mrMapping;
     }
@@ -135,29 +142,29 @@ public abstract class PathTreeWithManifest implements PathTree {
         multiReleaseMapping = mrMapping;
     }
 
-    protected String toMultiReleaseRelativePath(String relativePath) {
-        if (relativePath.startsWith(META_INF)) {
-            return relativePath;
+    protected String toMultiReleaseResourceName(String resourceName) {
+        if (resourceName.startsWith(META_INF)) {
+            return resourceName;
         }
 
-        return getMultiReleaseMapping().getOrDefault(relativePath, relativePath);
+        return getMultiReleaseMapping().getOrDefault(resourceName, resourceName);
     }
 
-    private static class MultiReleaseMappingReader implements Function<PathVisit, Map<String, String>> {
+    private static class MultiReleaseResourceMapping implements Function<PathVisit, Map<String, String>> {
 
-        private static final MultiReleaseMappingReader INSTANCE = new MultiReleaseMappingReader();
+        private static final MultiReleaseResourceMapping INSTANCE = new MultiReleaseResourceMapping();
 
         @Override
         public Map<String, String> apply(PathVisit visit) {
             if (visit == null) {
-                return Collections.emptyMap();
+                return Map.of();
             }
             final Path versionsDir = visit.getPath();
-            if (!Files.isDirectory(versionsDir)) {
-                return Collections.emptyMap();
-            }
             // get the root of the tree
-            final Path root = versionsDir.getParent().getParent();
+            final Path root = getTreeRootForVersionsDir(visit.getPath());
+            if (root == null) {
+                return Map.of();
+            }
             final TreeMap<Integer, Consumer<Map<String, String>>> versionContentMap = new TreeMap<>();
             try (Stream<Path> versions = Files.list(versionsDir)) {
                 versions.forEach(versionDir -> {
@@ -175,19 +182,16 @@ public abstract class PathTreeWithManifest implements PathTree {
                                 .debug("Failed to parse " + versionDir + " entry", e);
                         return;
                     }
-                    versionContentMap.put(version, new Consumer<Map<String, String>>() {
-                        @Override
-                        public void accept(Map<String, String> map) {
-                            try (Stream<Path> versionContent = Files.walk(versionDir)) {
-                                versionContent.forEach(p -> {
-                                    final String relativePath = asSubpath(versionDir, p);
-                                    if (!relativePath.isEmpty()) {
-                                        map.put(relativePath, asSubpath(root, p));
-                                    }
-                                });
-                            } catch (IOException e) {
-                                throw new UncheckedIOException(e);
-                            }
+                    versionContentMap.put(version, map -> {
+                        try (Stream<Path> versionContent = Files.walk(versionDir)) {
+                            versionContent.forEach(p -> {
+                                final String resourceName = asResourceName(versionDir, p);
+                                if (!resourceName.isEmpty()) {
+                                    map.put(resourceName, asResourceName(root, p));
+                                }
+                            });
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
                         }
                     });
 
@@ -202,9 +206,23 @@ public abstract class PathTreeWithManifest implements PathTree {
             return multiReleaseMapping;
         }
 
-        private static String asSubpath(Path parentDir, Path childPath) {
-            return parentDir.getNameCount() == childPath.getNameCount() ? ""
-                    : childPath.subpath(parentDir.getNameCount(), childPath.getNameCount()).toString();
+        private static Path getTreeRootForVersionsDir(Path versionsDir) {
+            if (Files.isDirectory(versionsDir)) {
+                Path parent = versionsDir.getParent();
+                return parent == null ? null : parent.getParent();
+            }
+            return null;
+        }
+
+        private static String asResourceName(Path parentDir, Path child) {
+            if (parentDir.getNameCount() == child.getNameCount()) {
+                return "";
+            }
+            var sb = new StringBuilder().append(child.getName(parentDir.getNameCount()));
+            for (int i = parentDir.getNameCount() + 1; i < child.getNameCount(); i++) {
+                sb.append('/').append(child.getName(i));
+            }
+            return sb.toString();
         }
     }
 

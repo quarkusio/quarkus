@@ -2302,7 +2302,7 @@ public class QuteProcessor {
                         }
                         LOGGER.debugf("Found template: %s", path);
                         // remove templateRoot + /
-                        final String relativePath = visit.getRelativePath();
+                        final String relativePath = visit.getResourceName();
                         String templatePath = relativePath.substring(templateRoot.length() + 1);
                         for (Pattern p : excludePatterns) {
                             if (p.matcher(templatePath).matches()) {
@@ -2314,7 +2314,7 @@ public class QuteProcessor {
                         URI source = null;
                         if (module != null) {
                             for (SourceDir resources : module.getMainSources().getResourceDirs()) {
-                                Path sourcePath = resources.getDir().resolve(visit.getRelativePath());
+                                Path sourcePath = resources.getDir().resolve(visit.getResourceName());
                                 if (Files.isRegularFile(sourcePath)) {
                                     LOGGER.debugf("Source file found for template %s: %s", templatePath, sourcePath);
                                     source = sourcePath.toUri();

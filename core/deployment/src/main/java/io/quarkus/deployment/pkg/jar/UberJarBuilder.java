@@ -251,7 +251,7 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
         try (OpenPathTree pathTree = appDep.getContentTree().open()) {
             pathTree.walkRaw(visit -> {
                 try {
-                    final String relativePath = visit.getRelativePath();
+                    final String relativePath = visit.getResourceName();
                     if (Files.isDirectory(visit.getPath())) {
                         if (!relativePath.isEmpty()) {
                             archiveCreator.addDirectory(relativePath);

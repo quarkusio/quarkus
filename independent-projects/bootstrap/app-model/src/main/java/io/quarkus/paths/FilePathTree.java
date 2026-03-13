@@ -77,7 +77,7 @@ class FilePathTree implements OpenPathTree {
     }
 
     @Override
-    public void walkIfContains(String relativePath, PathVisitor visitor) {
+    public void walkIfContains(String resourceDirName, PathVisitor visitor) {
         throw new UnsupportedOperationException();
     }
 
@@ -87,8 +87,8 @@ class FilePathTree implements OpenPathTree {
     }
 
     @Override
-    public <T> T apply(String relativePath, Function<PathVisit, T> func) {
-        if (relativePath.isEmpty()) {
+    public <T> T apply(String resourceName, Function<PathVisit, T> func) {
+        if (resourceName.isEmpty()) {
             Path parent = file.getParent();
             return PathTreeVisit.process(parent, parent, file, pathFilter, func);
         }
@@ -96,8 +96,8 @@ class FilePathTree implements OpenPathTree {
     }
 
     @Override
-    public void accept(String relativePath, Consumer<PathVisit> func) {
-        if (relativePath.isEmpty()) {
+    public void accept(String resourceName, Consumer<PathVisit> func) {
+        if (resourceName.isEmpty()) {
             Path parent = file.getParent();
             PathTreeVisit.consume(parent, parent, file, pathFilter, func);
             return;
@@ -106,7 +106,7 @@ class FilePathTree implements OpenPathTree {
     }
 
     @Override
-    public boolean contains(String relativePath) {
+    public boolean contains(String resourceName) {
         return false;
     }
 

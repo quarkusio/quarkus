@@ -21,8 +21,6 @@ It offers:
 * Built-in support for Consul and Kubernetes
 * Customizable client load-balancing strategies
 
-include::{includes}/extension-status.adoc[]
-
 == Prerequisites
 
 :prerequisites-docker:

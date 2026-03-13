@@ -15,8 +15,6 @@ If you want to allow HTTP clients to invoke your Funqy functions on Google Cloud
 Funqy functions through HTTP deployed as one Google Cloud Function.  This approach does add overhead over the
 regular Funqy Google Cloud Function integration.
 
-include::{includes}/extension-status.adoc[]
-
 Follow the xref:gcp-functions-http.adoc[Google Cloud Functions Http Guide].  It walks through using a variety of HTTP
 frameworks on Google Cloud Functions, including Funqy.
 

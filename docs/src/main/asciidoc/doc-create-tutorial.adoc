@@ -78,21 +78,6 @@ We will also use Quarkus dev mode for iterative development and testing.
 The preview of your document should contain the abstract as a paragraph immediately following the header.
 --
 
-== Include extension status descriptive text
-
-As the `acme` extension is experimental, we'll include `\{includes}/extension-status.adoc` that provides extension status text.
-It uses the extension status attribute defined in the header.
-
-[source,asciidoc]
-----
-\include::{includes}/extension-status.adoc[]
-----
-
-.Document Preview
---
-The preview of your document should now include an admonition box below the abstract explaining that the plugin is experimental technology, and describing what can be expected in terms of stability or support for experimental technologies.
---
-
 == Define Prerequisites
 
 We need to tell users what resources are required for completing the tutorial.

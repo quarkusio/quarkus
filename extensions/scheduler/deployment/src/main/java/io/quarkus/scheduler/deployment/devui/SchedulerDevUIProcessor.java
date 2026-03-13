@@ -6,6 +6,7 @@ import io.quarkus.assistant.runtime.dev.Assistant;
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.devshell.spi.ShellPageBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
@@ -13,6 +14,7 @@ import io.quarkus.devui.spi.page.FooterPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.WebComponentPageBuilder;
 import io.quarkus.scheduler.deployment.ScheduledBusinessMethodItem;
+import io.quarkus.scheduler.runtime.dev.shell.SchedulerShellPage;
 import io.quarkus.scheduler.runtime.dev.ui.SchedulerJsonRPCService;
 
 public class SchedulerDevUIProcessor {
@@ -76,6 +78,11 @@ public class SchedulerDevUIProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem rpcProvider() {
         return new JsonRPCProvidersBuildItem(SchedulerJsonRPCService.class);
+    }
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    ShellPageBuildItem createShellPage() {
+        return ShellPageBuildItem.withCustomPage("Scheduler", SchedulerShellPage.class);
     }
 
     private static final String INTERPRET_CRON = """

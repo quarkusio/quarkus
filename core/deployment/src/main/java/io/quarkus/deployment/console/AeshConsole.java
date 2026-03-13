@@ -75,6 +75,7 @@ public class AeshConsole extends QuarkusConsole {
     private volatile boolean pauseOutput;
     private volatile boolean firstConsoleRun = true;
     private DelegateConnection delegateConnection;
+    private boolean passEscapeToDelegate = false;
     private ReadlineConsole aeshConsole;
 
     public AeshConsole(Connection connection) {
@@ -257,8 +258,11 @@ public class AeshConsole extends QuarkusConsole {
                         if (keys.length == 1) {
                             for (var k : keys) {
                                 if (k == 27) { // escape key
-                                    exitCliMode();
-                                    return;
+                                    // Only intercept ESC if not passing to delegate
+                                    if (!passEscapeToDelegate) {
+                                        exitCliMode();
+                                        return;
+                                    }
                                 }
                             }
                         }
@@ -646,6 +650,55 @@ public class AeshConsole extends QuarkusConsole {
         connection.enterRawMode();
         //exit alternate screen mode
         connection.write(EXIT_ALTERNATE_SCREEN);
+        pauseOutput = false;
+        write(false, "");
+        deadlockSafeWrite();
+    }
+
+    /**
+     * Get the underlying terminal connection.
+     * This can be used by extensions that need direct terminal access.
+     */
+    public Connection getConnection() {
+        return connection;
+    }
+
+    /**
+     * Set a delegate connection to capture input.
+     * When set, keyboard input will be routed to the delegate's stdin handler
+     * instead of the normal console command processing.
+     *
+     * @param delegate the delegate connection, or null to clear
+     */
+    public void setDelegateConnection(DelegateConnection delegate) {
+        setDelegateConnection(delegate, false);
+    }
+
+    /**
+     * Set a delegate connection to capture input.
+     * When set, keyboard input will be routed to the delegate's stdin handler
+     * instead of the normal console command processing.
+     *
+     * @param delegate the delegate connection, or null to clear
+     * @param passEscape if true, ESC key is passed to the delegate instead of exiting
+     */
+    public void setDelegateConnection(DelegateConnection delegate, boolean passEscape) {
+        this.delegateConnection = delegate;
+        this.passEscapeToDelegate = passEscape;
+        if (delegate != null) {
+            this.pauseOutput = true;
+        }
+    }
+
+    /**
+     * Clear the delegate connection and restore normal input handling.
+     */
+    public void clearDelegateConnection() {
+        if (delegateConnection != null) {
+            delegateConnection.close();
+            delegateConnection = null;
+        }
+        passEscapeToDelegate = false;
         pauseOutput = false;
         write(false, "");
         deadlockSafeWrite();

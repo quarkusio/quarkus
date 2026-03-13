@@ -54,6 +54,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-devui-deployment-spi</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devshell-deployment-spi</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>

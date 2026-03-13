@@ -1,14 +1,19 @@
 package io.quarkus.agroal.deployment.devui;
 
 import io.quarkus.agroal.runtime.DataSourcesJdbcBuildTimeConfig;
+import io.quarkus.agroal.runtime.dev.shell.AgroalShellPage;
 import io.quarkus.agroal.runtime.dev.ui.DatabaseInspector;
+import io.quarkus.agroal.runtime.dev.ui.DatabaseInspectorRecorder;
 import io.quarkus.assistant.runtime.dev.Assistant;
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.dev.spi.DevModeType;
+import io.quarkus.devshell.spi.ShellPageBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
@@ -18,9 +23,16 @@ import io.quarkus.devui.spi.page.Page;
 class AgroalDevUIProcessor {
 
     @BuildStep
-    void devUI(DataSourcesJdbcBuildTimeConfig config,
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void configureDevUI(DataSourcesJdbcBuildTimeConfig config,
+            DatabaseInspectorRecorder recorder,
             BuildProducer<CardPageBuildItem> cardPageProducer,
             LaunchModeBuildItem launchMode) {
+
+        // Pass config values to runtime via recorder to avoid classloader issues
+        recorder.setDevConfig(
+                config.devui().allowSql(),
+                config.devui().allowedDBHost().orElse(null));
 
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
         cardPageBuildItem.setLogo("agroal_logo_dark.png", "agroal_logo_light.png");
@@ -58,6 +70,11 @@ class AgroalDevUIProcessor {
     @BuildStep
     JsonRPCProvidersBuildItem createJsonRPCService() {
         return new JsonRPCProvidersBuildItem(DatabaseInspector.class);
+    }
+
+    @BuildStep
+    ShellPageBuildItem createShellPage() {
+        return ShellPageBuildItem.withCustomPage("Agroal", AgroalShellPage.class);
     }
 
     private static final String ADD_DATA_MESSAGE = """

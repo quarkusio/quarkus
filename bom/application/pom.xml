@@ -217,6 +217,8 @@
         <!-- Dev UI -->
         <importmap.version>1.0.11</importmap.version>
         <webauthn4j.version>0.28.0.RELEASE</webauthn4j.version>
+        <!-- Dev Shell -->
+        <tamboui.version>0.1.0</tamboui.version>
     </properties>
 
     <pluginRepositories>
@@ -701,6 +703,47 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-devui-deployment-spi</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-devshell</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-devshell-dev</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-devshell-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-devshell-deployment-spi</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <!-- Tamboui TUI framework for Dev Shell -->
+            <dependency>
+                <groupId>dev.tamboui</groupId>
+                <artifactId>tamboui-core</artifactId>
+                <version>${tamboui.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.tamboui</groupId>
+                <artifactId>tamboui-widgets</artifactId>
+                <version>${tamboui.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.tamboui</groupId>
+                <artifactId>tamboui-tui</artifactId>
+                <version>${tamboui.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.tamboui</groupId>
+                <artifactId>tamboui-jline3-backend</artifactId>
+                <version>${tamboui.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
@@ -3409,6 +3452,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-micrometer-dev</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-micrometer-opentelemetry-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -3456,6 +3504,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-info</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-info-dev</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -3639,6 +3692,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-web-dependency-locator-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-web-dependency-locator-dev</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

@@ -1,0 +1,675 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Dev Shell
+include::_attributes.adoc[]
+:categories: writing-extensions
+:summary: Learn how to add shell pages to the terminal-based Dev Shell
+:topics: dev-shell,dev-ui,terminal,tui
+
+== General Overview
+
+Quarkus Dev Shell is a terminal-based user interface (TUI) that provides access to Dev UI functionality directly from the console. When running your application in development mode (`./mvnw quarkus:dev`), you can press `t` to launch the Dev Shell.
+
+=== What is Dev Shell?
+
+The Dev Shell brings the power of Dev UI to the terminal, allowing developers to:
+
+- Browse installed extensions and their capabilities
+- View and edit configuration
+- Access extension-specific features (datasources, caches, scheduled jobs, etc.)
+- Execute queries and view results
+- Monitor application state
+
+This is particularly useful for developers who prefer working in the terminal or when a browser-based UI is not available.
+
+=== Layout at a Glance
+
+The Dev Shell presents a hierarchical navigation structure:
+
+- **Main Menu**: Top-level navigation to Extensions, Configuration, Workspace, etc.
+- **Extensions List**: Browse all installed extensions
+- **Extension Pages**: Custom pages provided by extensions for specific functionality
+- **Logs**: Toggle with `L` key, switch log tabs with `1`/`2` keys
+- **Status Bar**: Shows navigation hints and current status
+
+== Guide for Extension Developers
+
+Extensions can enhance the Dev Shell experience by contributing custom shell pages. This guide covers how to add a shell page to your extension.
+
+[[Prerequisites]]
+=== Prerequisites
+
+Your extension needs the following dependencies:
+
+==== Runtime Module (pom.xml)
+
+Configure the `quarkus-extension-maven-plugin` to declare your `runtime-dev` module as a conditional dev dependency.
+This ensures the `runtime-dev` JAR is on the classpath in dev mode:
+
+[source,xml]
+----
+<plugin>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-extension-maven-plugin</artifactId>
+    <executions>
+        <execution>
+            <phase>process-resources</phase>
+            <goals>
+                <goal>extension-descriptor</goal>
+            </goals>
+            <configuration>
+                <conditionalDevDependencies>
+                    <artifact>${project.groupId}:${project.artifactId}-dev:${project.version}</artifact>
+                </conditionalDevDependencies>
+            </configuration>
+        </execution>
+    </executions>
+</plugin>
+----
+
+IMPORTANT: Without `conditionalDevDependencies`, your shell page class will not be found at runtime and you will get a `ClassNotFoundException`.
+
+==== Deployment Module (pom.xml)
+
+Add the DevShell deployment SPI dependency:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-devshell-deployment-spi</artifactId>
+</dependency>
+----
+
+NOTE: This dependency must NOT be `<optional>true</optional>`. Making it optional prevents the `runtime-dev` JAR from being resolved transitively.
+
+==== Runtime-Dev Module (pom.xml)
+
+Add the DevShell dev dependency (mark as optional):
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-devshell-dev</artifactId>
+    <optional>true</optional>
+</dependency>
+----
+
+=== Creating a Shell Page
+
+A shell page is a Java class that extends `BaseExtensionPage` and provides a terminal-based UI for your extension.
+Shell pages are CDI beans — they are automatically registered by the Dev Shell framework, which means you can use `@Inject` to access your extension's services directly.
+
+Rendering uses https://github.com/tamboui/tamboui[TamboUI]'s buffer-based approach: screens write to a `Buffer` using `buffer.setString(x, y, text, style)` and TamboUI widgets like `Block`, `Paragraph`, and `Layout`.
+
+==== Step 1: Create the Shell Page Class
+
+Create a new class in your extension's `runtime-dev` module:
+
+[source,java]
+----
+package io.quarkus.myextension.runtime.dev.shell;
+
+import jakarta.inject.Inject;
+
+import dev.tamboui.buffer.Buffer;
+import dev.tamboui.style.Style;
+import dev.tamboui.terminal.Frame;
+import io.quarkus.devshell.runtime.tui.ShellExtension;
+import io.quarkus.devshell.runtime.tui.pages.BaseExtensionPage;
+import io.quarkus.myextension.runtime.dev.ui.MyExtensionJsonRpcService; // <1>
+
+public class MyExtensionShellPage extends BaseExtensionPage {
+
+    @Inject
+    MyExtensionJsonRpcService myService; // <2>
+
+    // No-arg constructor required for CDI
+    public MyExtensionShellPage() {
+    }
+
+    public MyExtensionShellPage(ShellExtension extension) {
+        this();
+        setExtension(extension);
+    }
+
+    @Override
+    public void loadData() {
+        loading = true;
+        error = null;
+        redraw();
+
+        try {
+            var data = myService.getData(); // <3>
+            loading = false;
+            // ... use typed result directly ...
+            redraw();
+        } catch (Exception ex) {
+            loading = false;
+            error = "Failed to load data: " + ex.getMessage();
+            redraw();
+        }
+    }
+
+    @Override
+    public void render(Frame frame) {  // <4>
+        Buffer buffer = frame.buffer();
+        renderHeader(buffer, width);
+
+        int row = 3;
+
+        // Render content using buffer
+        buffer.setString(1, row - 1, "My Extension Data", Style.create().cyan().bold());  // <5>
+        row++;
+
+        buffer.setString(1, row - 1, "Items: " + itemCount, Style.EMPTY);
+
+        if (error != null) {
+            renderError(buffer, height - 3);
+        }
+
+        renderFooter(buffer, "");  // <6>
+    }
+
+    @Override
+    public boolean handleKey(int key) {
+        // Handle extension-specific keys here
+        // 'R' for refresh and 'Esc' for back are handled by BaseExtensionPage
+        return super.handleKey(key);  // <7>
+    }
+}
+----
+<1> Import your extension's JSON-RPC service (the same class used by Dev UI)
+<2> Inject the service directly — no JSON-RPC routing overhead
+<3> Call service methods directly and get typed results (no JSON parsing needed)
+<4> Render method receives a TamboUI `Frame` (provides the `Buffer`)
+<5> Write to buffer with `buffer.setString(x, y, text, style)` — coordinates are 0-based
+<6> Use `renderFooter()` to show key hints. `[R] Refresh` and `[Esc] Back` are shown automatically.
+<7> Always call `super.handleKey()` for default handling (Esc to go back, R to refresh, Tab to switch tabs)
+
+==== Step 2: Register the Shell Page
+
+In your extension's deployment module, add a `@BuildStep` to register the shell page:
+
+[source,java]
+----
+import io.quarkus.deployment.IsLocalDevelopment;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.devshell.spi.ShellPageBuildItem;
+import io.quarkus.myextension.runtime.dev.shell.MyExtensionShellPage;
+
+public class MyExtensionDevUIProcessor {
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    ShellPageBuildItem createShellPage() {
+        return ShellPageBuildItem.withCustomPage(
+            "My Extension",             // <1>
+            'm',                        // <2>
+            MyExtensionShellPage.class  // <3>
+        );
+    }
+}
+----
+<1> Display name shown in the navigation
+<2> Shortcut key (use `'\0'` for no shortcut)
+<3> Shell page class reference (preferred over string class name)
+
+The extension identifier is auto-detected from the calling extension's Maven artifact (similar to Dev UI's `CardPageBuildItem`). The `quarkus-` prefix and `-deployment` suffix are stripped automatically. For example, if the build step is in `quarkus-agroal-deployment`, the id becomes `agroal`.
+
+===== Available Factory Methods
+
+[cols="1,2", options="header"]
+|===
+| Method | Description
+
+| `withCustomPage(title, pageClass)`
+| Custom page without shortcut (class reference, auto-detected id)
+
+| `withCustomPage(title, shortcutKey, pageClass)`
+| Custom page with shortcut (class reference, auto-detected id)
+
+| `withCustomPage(title, pageClassName)`
+| Custom page without shortcut (string class name, auto-detected id)
+
+| `withCustomPage(title, shortcutKey, pageClassName)`
+| Custom page with shortcut (string class name, auto-detected id)
+
+| `withCustomPage(id, title, pageClass)`
+| Custom page with explicit id (for internal pages or custom namespaces)
+
+| `withCustomPage(id, title, shortcutKey, pageClass)`
+| Custom page with explicit id and shortcut
+
+| `withCustomPage(id, title, pageClassName)`
+| Custom page with explicit id (string class name)
+
+| `withCustomPage(id, title, shortcutKey, pageClassName)`
+| Custom page with explicit id and shortcut (string class name)
+|===
+
+=== Accessing Data
+
+Shell pages can access data in two ways:
+
+==== CDI Injection (Recommended)
+
+Inject your extension's JSON-RPC service bean directly. This is the same service class used by the Dev UI web interface, so you get typed return values with no serialization overhead:
+
+[source,java]
+----
+@Inject
+MyExtensionJsonRpcService myService;
+
+@Override
+public void loadData() {
+    try {
+        List<MyItem> items = myService.getItems(); // Typed result
+        // ... use items directly ...
+    } catch (Exception ex) {
+        error = "Failed to load: " + ex.getMessage();
+    }
+}
+----
+
+If a service method returns `Uni<T>`, use `.await().indefinitely()` to get the result synchronously:
+
+[source,java]
+----
+MyResult result = myService.doSomething(param).await().indefinitely();
+----
+
+==== Build-Time Data
+
+For data that is computed at build time and doesn't change at runtime, use `getBuildTimeData()`:
+
+[source,java]
+----
+String json = getBuildTimeData("quarkus-myextension", "myData");
+// Parse the JSON string as needed
+----
+
+=== Rendering with TamboUI Buffer
+
+All rendering writes to a TamboUI `Buffer` — a 2D grid of styled cells. The buffer is created fresh each render cycle, so there's no need to clear the screen.
+
+==== Buffer Basics
+
+[source,java]
+----
+Buffer buffer = frame.buffer();
+
+// Write text at position (x=column, y=row, both 0-based)
+buffer.setString(1, 0, "Hello", Style.create().cyan());        // col 1, row 0
+buffer.setString(1, 1, "─".repeat(40), Style.create().gray()); // horizontal line
+buffer.setString(1, 2, "Loading...", Style.create().yellow());
+----
+
+==== Styling with TamboUI Style
+
+`Style` objects define text appearance. They are immutable and chainable:
+
+[source,java]
+----
+// Colors
+Style.create().cyan()            // Cyan foreground
+Style.create().red()             // Red foreground
+Style.create().green()           // Green
+Style.create().yellow()          // Yellow
+Style.create().blue()            // Blue
+Style.create().white()           // White
+Style.create().gray()            // Gray/dim
+
+// Modifiers
+Style.create().bold()            // Bold
+Style.create().reversed()        // Reverse video
+Style.create().dim()             // Dimmed
+
+// Combined
+Style.create().cyan().bold()     // Cyan + bold
+Style.create().white().onBlue()  // White text on blue background
+Style.create().red().bold()      // Red + bold for errors
+
+// No styling
+Style.EMPTY                      // Default terminal style
+----
+
+==== TamboUI Layout
+
+Use TamboUI's `Layout` to split areas without manual coordinate math:
+
+[source,java]
+----
+import dev.tamboui.layout.Constraint;
+import dev.tamboui.layout.Layout;
+import dev.tamboui.layout.Rect;
+
+// Split content area into two columns
+Rect content = new Rect(0, 2, width, height - 3);
+List<Rect> cols = Layout.horizontal()
+        .constraints(Constraint.percentage(50), Constraint.percentage(50))
+        .split(content);
+
+// Stack panels vertically in left column
+List<Rect> panels = Layout.vertical()
+        .constraints(Constraint.length(5), Constraint.length(5), Constraint.fill())
+        .split(cols.get(0));
+----
+
+==== TamboUI Widgets
+
+Use TamboUI widgets like `Block` and `Paragraph` for declarative rendering:
+
+[source,java]
+----
+import dev.tamboui.widgets.block.Block;
+import dev.tamboui.widgets.block.Borders;
+import dev.tamboui.widgets.paragraph.Paragraph;
+import dev.tamboui.text.Line;
+import dev.tamboui.text.Span;
+
+// Bordered block with content
+Block block = Block.builder()
+        .title("My Section")
+        .borders(Borders.ALL)
+        .borderColor(Color.GRAY)
+        .build();
+block.render(area, buffer);
+
+// Styled text inside the block
+List<Line> lines = List.of(
+    Line.from(Span.styled("Key:", Style.create().cyan()), Span.raw(" value")),
+    Line.from(Span.styled("Status:", Style.create().cyan()), Span.raw(" active"))
+);
+Paragraph paragraph = Paragraph.from(new Text(lines, null));
+paragraph.render(block.inner(area), buffer);
+----
+
+=== BaseExtensionPage API
+
+The `BaseExtensionPage` class provides several useful methods:
+
+[cols="1,3", options="header"]
+|===
+| Method | Description
+
+| `loadData()`
+| Override to load data. Called when the page is entered.
+
+| `render(Frame frame)`
+| Override to render your page content into the frame's buffer.
+
+| `handleKey(int key)`
+| Override to handle key presses. Return `true` if handled.
+
+| `renderPanelContent(Buffer buffer, int startRow, int startCol, int panelWidth, int panelHeight)`
+| Override to render a compact summary in the extensions overview screen.
+
+| `getBuildTimeData(String namespace, String key)`
+| Get build-time data from Dev UI.
+
+| `renderHeader(Buffer buffer, int width)`
+| Render the standard extension header.
+
+| `renderFooter(Buffer buffer, String hints)`
+| Render the footer with key hints. `[R] Refresh` and `[Esc] Back` are added automatically.
+
+| `renderLoading(Buffer buffer, int row)`
+| Render a loading indicator.
+
+| `renderError(Buffer buffer, int row)`
+| Render an error message (uses the `error` field).
+
+| `redraw()`
+| Request a screen redraw.
+
+| `truncate(String text, int maxLen)`
+| Truncate text to fit within a width.
+
+| `setTabs(String... names)`
+| Configure tab names for a tabbed page layout.
+
+| `renderTabBar(Buffer buffer, int row)`
+| Render the tab bar. Returns the next available row.
+
+| `getCurrentTabIndex()`
+| Get the currently selected tab index.
+
+| `getCurrentTabName()`
+| Get the currently selected tab name.
+|===
+
+=== Available Widgets
+
+The Dev Shell provides several reusable widgets that render to a `Buffer`:
+
+==== ListView
+
+A scrollable list of items with keyboard navigation:
+
+[source,java]
+----
+@Inject
+MyService myService;
+
+private ListView<MyItem> itemList;
+
+public MyShellPage() {
+    this.itemList = new ListView<>(item -> item.getName());  // <1>
+}
+
+@Override
+public void loadData() {
+    var items = myService.getItems();
+    itemList.setItems(items);
+}
+
+@Override
+public void render(Frame frame) {
+    Buffer buffer = frame.buffer();
+    // ...
+    itemList.setVisibleRows(height - 10);
+    itemList.setWidth(width - 4);
+    itemList.render(buffer, startRow, startCol);  // <2>
+}
+
+@Override
+public boolean handleKey(int key) {
+    if (itemList.handleKey(key)) {
+        redraw();
+        return true;
+    }
+    return super.handleKey(key);
+}
+----
+<1> Label extractor returns **plain text** (no ANSI codes or Style objects — the buffer handles styling)
+<2> Renders directly to the buffer
+
+==== TableView
+
+A table with columns:
+
+[source,java]
+----
+private TableView<MyItem> table;
+
+public MyShellPage() {
+    this.table = new TableView<MyItem>()
+            .addColumn("Name", item -> item.getName(), 30)      // <1>
+            .addColumn("Status", item -> item.getStatus(), 15)
+            .addColumn("Value", item -> String.valueOf(item.getValue()), 10);
+}
+----
+<1> Column extractors return **plain text**
+
+==== KeyValuePanel
+
+A formatted panel showing key-value pairs:
+
+[source,java]
+----
+KeyValuePanel panel = new KeyValuePanel("Details");
+panel.add("Name", item.getName());
+panel.add("Version", item.getVersion());
+panel.addStyled("Status", "Active", Style.create().green());  // <1>
+panel.addBlank();
+panel.addIfPresent("Description", item.getDescription());
+int nextRow = panel.render(buffer, row, col, width);           // <2>
+----
+<1> `addStyled()` takes a TamboUI `Style` object
+<2> Returns the next available row for layout composition
+
+==== TreeView
+
+A hierarchical tree view:
+
+[source,java]
+----
+private TreeView<MyNode> treeView;
+
+public MyShellPage() {
+    this.treeView = new TreeView<>(
+        node -> node.getChildren(),  // Children provider
+        node -> node.getName()       // Label function
+    );
+}
+----
+
+=== Key Codes
+
+Common key codes are available in the `KeyCode` class:
+
+[source,java]
+----
+KeyCode.ESCAPE      // Escape key
+KeyCode.ENTER       // Enter key
+KeyCode.TAB         // Tab key
+KeyCode.BACKSPACE   // Backspace key
+KeyCode.UP          // Up arrow
+KeyCode.DOWN        // Down arrow
+KeyCode.LEFT        // Left arrow
+KeyCode.RIGHT       // Right arrow
+KeyCode.PAGE_UP     // Page up
+KeyCode.PAGE_DOWN   // Page down
+KeyCode.HOME        // Home key
+KeyCode.END         // End key
+KeyCode.DELETE      // Delete key
+----
+
+=== Tab-Based Pages
+
+`BaseExtensionPage` has built-in support for tabbed pages:
+
+[source,java]
+----
+public MyShellPage() {
+    setTabs("Items", "Details", "Settings");    // <1>
+    setTabArrowNavigation(true);                // <2>
+}
+
+@Override
+public void render(Frame frame) {
+    Buffer buffer = frame.buffer();
+    renderHeader(buffer, width);
+
+    int row = renderTabBar(buffer, 3);          // <3>
+
+    switch (getCurrentTabIndex()) {             // <4>
+        case 0 -> renderItemsTab(buffer, row);
+        case 1 -> renderDetailsTab(buffer, row);
+        case 2 -> renderSettingsTab(buffer, row);
+    }
+
+    renderFooter(buffer, "");
+}
+----
+<1> Define tab names in the constructor
+<2> Optionally enable left/right arrow keys for tab switching (disabled by default to avoid conflicts with list widgets)
+<3> `renderTabBar()` renders the tab bar and returns the next row
+<4> `getCurrentTabIndex()` returns the selected tab (Tab key and number keys switch tabs automatically)
+
+=== Panel Content
+
+When the extensions overview screen is shown, each extension can display a compact summary panel. Override `renderPanelContent()` to provide this:
+
+[source,java]
+----
+@Override
+protected void renderPanelContent(Buffer buffer, int startRow, int startCol,
+        int panelWidth, int panelHeight) {
+    int row = startRow;
+
+    buffer.setString(startCol - 1, row - 1, "Items: " + itemCount, Style.create().cyan());
+    row++;
+
+    buffer.setString(startCol - 1, row - 1, "Active: " + activeCount, Style.create().cyan());
+}
+----
+
+=== Best Practices
+
+1. **Use `@Inject` for service access**: Inject your extension's JSON-RPC service directly. This gives you typed return values and avoids JSON serialization overhead.
+
+2. **Provide a no-arg constructor**: Shell pages are CDI beans. The no-arg constructor is required. Use `setExtension()` to set the extension after construction.
+
+3. **Use buffer-based rendering**: Write to `buffer.setString(x, y, text, style)` with TamboUI `Style` objects. Never embed ANSI escape codes in strings — they become literal garbage in the buffer.
+
+4. **Use plain text in widget extractors**: ListView/TableView label and column extractors must return plain `String` — no `Style` objects or ANSI codes.
+
+5. **Use TamboUI Layout for positioning**: Use `Layout.horizontal()` and `Layout.vertical()` with constraints instead of manual coordinate arithmetic.
+
+6. **Always handle loading states**: Show a loading indicator while fetching data.
+
+7. **Handle errors gracefully**: Wrap service calls in try/catch and display meaningful error messages.
+
+8. **Don't duplicate footer hints**: `renderFooter()` automatically adds `[R] Refresh` and `[Esc] Back`.
+
+9. **Support screen resizing**: Override `onResize()` to handle terminal size changes.
+
+10. **Implement `renderPanelContent()`**: Provide a compact summary for the extensions overview screen.
+
+== Testing Your Shell Page
+
+1. Build your extension: `mvn install -Dquickly`
+2. Create a test application that uses your extension
+3. Run in dev mode: `mvn quarkus:dev`
+4. Press `t` to open Dev Shell
+5. Navigate to your extension and verify the shell page works
+
+== Troubleshooting
+
+=== Shell page not loading
+
+If you see "This extension doesn't have a dedicated shell page yet":
+
+- Verify the `ShellPageBuildItem` is being produced (add logging to your build step)
+- Check the class name is correct and the class exists
+- Ensure the `runtime-dev` module has the correct dependencies
+- Verify the build step has `onlyIf = IsLocalDevelopment.class`
+
+=== ClassNotFoundException at runtime
+
+This usually means the `runtime-dev` JAR is not on the runtime classpath:
+
+- **Check `conditionalDevDependencies`**: Your runtime module's `pom.xml` must declare the `runtime-dev` artifact in the `quarkus-extension-maven-plugin` configuration. See the <<Prerequisites>> section.
+- **Check `quarkus-devshell-deployment-spi`**: This dependency in your deployment `pom.xml` must NOT be `<optional>true</optional>`.
+- Make sure the shell page class is in the `runtime-dev` module, not `runtime`
+
+=== NullPointerException on injected service
+
+- Ensure your shell page has a **no-arg constructor** (required for CDI)
+- Check that the service class is a CDI bean (annotated with `@ApplicationScoped` or similar, or registered via `JsonRPCProvidersBuildItem`)
+
+=== Garbled text or escape codes visible
+
+- Do not use `AnsiRenderer.FG_xxx` or `Style.create().xxx()` in string concatenation — these produce object `toString()` output, not ANSI codes
+- ListView/TableView extractors must return **plain text** strings
+- Use `buffer.setString(x, y, text, Style.create().xxx())` to apply styling
+
+== Related Guides
+
+- xref:dev-ui.adoc[Dev UI] - Browser-based developer UI
+- xref:building-my-first-extension.adoc[Building My First Extension] - Extension development basics

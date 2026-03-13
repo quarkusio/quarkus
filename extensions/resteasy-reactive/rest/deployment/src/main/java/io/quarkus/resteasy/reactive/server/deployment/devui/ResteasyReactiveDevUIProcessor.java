@@ -3,9 +3,11 @@ package io.quarkus.resteasy.reactive.server.deployment.devui;
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.devshell.spi.ShellPageBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
+import io.quarkus.resteasy.reactive.server.runtime.dev.shell.EndpointsShellPage;
 import io.quarkus.resteasy.reactive.server.runtime.dev.ui.ResteasyReactiveJsonRPCService;
 
 public class ResteasyReactiveDevUIProcessor {
@@ -45,5 +47,10 @@ public class ResteasyReactiveDevUIProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     public void createJsonRPCService(BuildProducer<JsonRPCProvidersBuildItem> jsonRPCServiceProducer) {
         jsonRPCServiceProducer.produce(new JsonRPCProvidersBuildItem(ResteasyReactiveJsonRPCService.class));
+    }
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    public ShellPageBuildItem createShellPage() {
+        return ShellPageBuildItem.withCustomPage("REST Endpoints", EndpointsShellPage.class);
     }
 }

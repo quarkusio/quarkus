@@ -18,10 +18,12 @@ import io.quarkus.arc.runtime.dev.console.InvocationInterceptor;
 import io.quarkus.arc.runtime.dev.console.InvocationTree;
 import io.quarkus.arc.runtime.dev.console.InvocationsMonitor;
 import io.quarkus.arc.runtime.dev.console.Monitored;
+import io.quarkus.arc.runtime.dev.shell.ArcShellPage;
 import io.quarkus.arc.runtime.dev.ui.ArcJsonRPCService;
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.devshell.spi.ShellPageBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
@@ -108,6 +110,11 @@ public class ArcDevUIProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem createJsonRPCService() {
         return new JsonRPCProvidersBuildItem(ArcJsonRPCService.class);
+    }
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    ShellPageBuildItem createShellPage() {
+        return ShellPageBuildItem.withCustomPage("CDI (Arc)", 'a', ArcShellPage.class);
     }
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)

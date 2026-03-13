@@ -7,11 +7,14 @@ public class AgroalDataSourceSupport {
 
     public final boolean disableSslSupport;
     public final boolean mpMetricsPresent;
+    public final boolean recoveryEnabled;
     public final Map<String, Entry> entries;
 
-    public AgroalDataSourceSupport(boolean disableSslSupport, boolean mpMetricsPresent, Map<String, Entry> entries) {
+    public AgroalDataSourceSupport(boolean disableSslSupport, boolean mpMetricsPresent, boolean recoveryEnabled,
+            Map<String, Entry> entries) {
         this.disableSslSupport = disableSslSupport;
         this.mpMetricsPresent = mpMetricsPresent;
+        this.recoveryEnabled = recoveryEnabled;
         this.entries = entries;
     }
 

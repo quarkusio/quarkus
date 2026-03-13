@@ -20,14 +20,26 @@ public final class JdbcDataSourceBuildItem extends MultiBuildItem {
 
     private final boolean transactionIntegrationEnabled;
 
+    private final boolean xaEnabled;
+
     private final boolean isDefault;
 
+    /**
+     * @deprecated Use {@link #JdbcDataSourceBuildItem(String, String, Optional, boolean, boolean, boolean)} instead.
+     */
+    @Deprecated
     public JdbcDataSourceBuildItem(String name, String kind, Optional<String> dbVersion,
             boolean transactionIntegrationEnabled, boolean isDefault) {
+        this(name, kind, dbVersion, transactionIntegrationEnabled, false, isDefault);
+    }
+
+    public JdbcDataSourceBuildItem(String name, String kind, Optional<String> dbVersion,
+            boolean transactionIntegrationEnabled, boolean xaEnabled, boolean isDefault) {
         this.name = name;
         this.dbKind = kind;
         this.dbVersion = dbVersion;
         this.transactionIntegrationEnabled = transactionIntegrationEnabled;
+        this.xaEnabled = xaEnabled;
         this.isDefault = isDefault;
     }
 
@@ -45,6 +57,10 @@ public final class JdbcDataSourceBuildItem extends MultiBuildItem {
 
     public boolean isTransactionIntegrationEnabled() {
         return transactionIntegrationEnabled;
+    }
+
+    public boolean isXaEnabled() {
+        return xaEnabled;
     }
 
     public boolean isDefault() {

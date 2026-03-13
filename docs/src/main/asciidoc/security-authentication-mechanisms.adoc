@@ -35,6 +35,8 @@ The following table maps specific authentication requirements to a supported mec
 
 |Username and password |xref:security-basic-authentication.adoc[Basic], <<form-auth>>
 
+|Email address |xref:security-email-authentication-reference.adoc[Email authentication]
+
 |Bearer access token |xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication], xref:security-jwt.adoc[JWT]
 ifndef::no-quarkus-elytron-security-oauth2[]
 , xref:security-oauth2.adoc[OAuth2]
@@ -535,6 +537,7 @@ Quarkus Security also supports the following authentication mechanisms through e
 ifndef::no-webauthn-authentication[]
 * <<webauthn-authentication>>
 endif::no-webauthn-authentication[]
+* <<email-authentication>>
 * <<openid-connect-authentication>>
 * <<smallrye-jwt-authentication>>
 ifndef::no-quarkus-elytron-security-oauth2[]
@@ -549,6 +552,13 @@ https://webauthn.guide/[WebAuthn] is an authentication mechanism that replaces p
 When you write a service for registering new users, or logging them in, instead of asking for a password, you can use WebAuthn, which replaces the password.
 For more information, see the xref:security-webauthn.adoc[Secure a Quarkus application by using the WebAuthn authentication mechanism] guide.
 endif::no-webauthn-authentication[]
+
+[[email-authentication]]
+=== Email authentication
+
+Authenticates users based on their access to their email account.
+To login, users must provide a valid email address, receive and enter an authentication code.
+For more information, see the xref:security-email-authentication-reference.adoc[Email authentication] guide.
 
 [[openid-connect-authentication]]
 === OpenID Connect authentication

@@ -1,6 +1,7 @@
 package io.quarkus.security.spi.runtime;
 
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
 
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.spi.BeanManager;
@@ -69,9 +70,9 @@ public class SecurityEventHelper<S extends SecurityEvent, F extends SecurityEven
         return fireEventOnFailure;
     }
 
-    public static <T extends SecurityEvent> void fire(Event<T> securityEvent, T event) {
+    public static <T extends SecurityEvent> CompletionStage<T> fire(Event<T> securityEvent, T event) {
         securityEvent.fire(event);
-        securityEvent.fireAsync(event);
+        return securityEvent.fireAsync(event);
     }
 
     public static <T extends SecurityEvent> boolean isEventObserved(T event, BeanManager beanManager, boolean enabled) {

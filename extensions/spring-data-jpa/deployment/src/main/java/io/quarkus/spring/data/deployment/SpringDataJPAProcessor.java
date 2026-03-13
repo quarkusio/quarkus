@@ -128,7 +128,7 @@ public class SpringDataJPAProcessor {
 
         detectAndLogSpecificSpringPropertiesIfExist();
 
-        IndexView indexView = index.getIndex();
+        IndexView indexView = index.getComputingIndex();
         LinkedHashSet<ClassInfo> interfacesExtendingRepository = getAllInterfacesExtending(DotNames.SUPPORTED_REPOSITORIES,
                 indexView);
 

@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -273,8 +274,8 @@ class HibernateValidatorProcessor {
                     });
         }
 
-        Set<DotName> constrainedConfigMappings = new HashSet<>();
-        Set<String> configMappingsConstraints = new HashSet<>();
+        Set<DotName> constrainedConfigMappings = new TreeSet<>();
+        Set<String> configMappingsConstraints = new TreeSet<>();
 
         for (DotName consideredAnnotation : beanValidationAnnotations.getAllAnnotations()) {
             Collection<AnnotationInstance> annotationInstances = combinedIndex.getIndex().getAnnotations(consideredAnnotation);

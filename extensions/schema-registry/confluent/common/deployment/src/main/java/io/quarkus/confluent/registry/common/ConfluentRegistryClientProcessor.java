@@ -30,10 +30,26 @@ public class ConfluentRegistryClientProcessor {
                         .build());
             }
 
+            String prefixSchemaIdSerializer = "io.confluent.kafka.serializers.schema.id.PrefixSchemaIdSerializer";
+            if (QuarkusClassLoader.isClassPresentAtRuntime(prefixSchemaIdSerializer)) {
+                // Class not present before v8.0.0
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(prefixSchemaIdSerializer)
+                        .build());
+            }
+
+            String dualSchemaIdDeserializer = "io.confluent.kafka.serializers.schema.id.DualSchemaIdDeserializer";
+            if (QuarkusClassLoader.isClassPresentAtRuntime(dualSchemaIdDeserializer)) {
+                // Class not present before v8.0.0
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(dualSchemaIdDeserializer)
+                        .build());
+            }
+
             reflectiveClass
                     .produce(ReflectiveClassBuildItem.builder("io.confluent.kafka.serializers.subject.TopicNameStrategy",
                             "io.confluent.kafka.serializers.subject.TopicRecordNameStrategy",
-                            "io.confluent.kafka.serializers.subject.RecordNameStrategy").methods()
+                            "io.confluent.kafka.serializers.subject.RecordNameStrategy",
+                            "io.confluent.kafka.serializers.subject.DefaultReferenceSubjectNameStrategy",
+                            "io.confluent.kafka.serializers.subject.QualifiedReferenceSubjectNameStrategy").methods()
                             .build());
         }
 

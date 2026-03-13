@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package tutorial;
+
+option java_package = "com.example.tutorial";
+
+message Pet {
+  string name = 1;
+  string color = 2;
+}

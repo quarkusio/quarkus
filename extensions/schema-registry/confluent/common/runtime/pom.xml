@@ -23,6 +23,43 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-schema-registry-devservice</artifactId>
         </dependency>
+        <!-- Required by httpclient5's BrotliInputStreamFactory which is referenced by
+             ContentCompressionExec. Without this, GraalVM native image fails because
+             BrotliInputStreamFactory.create() references org.brotli.dec.BrotliInputStream
+             which must be resolvable at build time. Confluent Schema Registry client 8.x
+             brings httpclient5 5.5 which includes Brotli compression support. -->
+        <dependency>
+            <groupId>org.brotli</groupId>
+            <artifactId>dec</artifactId>
+            <version>0.1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>nativeimage</artifactId>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

@@ -1,7 +1,10 @@
 package io.quarkus.grpc.stubs;
 
+import java.util.Optional;
 import java.util.function.Function;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.grpc.Status;
@@ -58,10 +61,7 @@ public class ServerCalls {
                 onError(response, Status.fromCode(Status.Code.INTERNAL).asException());
                 return;
             }
-            handleSubscription(returnValue.subscribe().with(
-                    response::onNext,
-                    throwable -> onError(response, throwable),
-                    () -> onCompleted(response)), response);
+            handleSubscription(wrapStreamObserver(returnValue, response), response);
         } catch (Throwable throwable) {
             onError(response, throwable);
         }
@@ -95,6 +95,28 @@ public class ServerCalls {
         }
     }
 
+    // TODO -- cache this?
+    private static long getPrefetch() {
+        Config config = ConfigProvider.getConfig();
+        Optional<Long> opt = config.getOptionalValue("quarkus.grpc.server.prefetch", Long.class);
+        return opt.orElse(1000L);
+    }
+
+    private static <O> Cancellable wrapStreamObserver(Multi<O> multi, StreamObserver<O> response) {
+        System.out.println("response = " + response);
+        if (response instanceof ServerCallStreamObserver) {
+            MultiToServerCallStreamObserverSubscriber<O> subscriber = new MultiToServerCallStreamObserverSubscriber<O>(
+                    streamCollector,
+                    (ServerCallStreamObserver<O>) response, getPrefetch());
+            return multi.subscribe().withSubscriber(subscriber);
+        } else {
+            return multi.subscribe().with(
+                    response::onNext,
+                    throwable -> onError(response, throwable),
+                    () -> onCompleted(response));
+        }
+    }
+
     private static <O> void handleSubscription(Cancellable cancellable, StreamObserver<O> response) {
         if (response instanceof ServerCallStreamObserver) {
             ServerCallStreamObserver<O> serverCallResponse = (ServerCallStreamObserver<O>) response;
@@ -119,10 +141,7 @@ public class ServerCalls {
                 onError(response, Status.fromCode(Status.Code.INTERNAL).asException());
                 return null;
             }
-            handleSubscription(multi.subscribe().with(
-                    response::onNext,
-                    failure -> onError(response, failure),
-                    () -> onCompleted(response)), response);
+            handleSubscription(wrapStreamObserver(multi, response), response);
 
             return pump;
         } catch (Throwable throwable) {

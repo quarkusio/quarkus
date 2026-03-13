@@ -527,10 +527,10 @@ public class StreamCommandsTest extends DatasourceTestBase {
                     assertThat(m.durationSinceLastDelivery().toMillis()).isGreaterThan(0);
                 });
 
-        // Non-claimed (new) messages should not have idle time info
+        // Non-claimed (new) messages have zero idle time
         messages.stream()
                 .filter(m -> m.deliveryCount() == 0)
-                .forEach(m -> assertThat(m.durationSinceLastDelivery()).isNull());
+                .forEach(m -> assertThat(m.durationSinceLastDelivery()).isEqualTo(Duration.ZERO));
     }
 
     @Test

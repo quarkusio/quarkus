@@ -84,7 +84,7 @@ public class CsrfRequestResponseReactiveFilter {
                     return;
                 }
             } catch (IllegalArgumentException e) {
-                LOG.debugf("Invalid CSRF token cookie: %s", cookieToken);
+                log("Invalid CSRF token cookie: %s", cookieToken);
                 requestContext.abortWith(badClientRequest());
                 return;
             }
@@ -131,7 +131,7 @@ public class CsrfRequestResponseReactiveFilter {
             if (!isMatchingMediaType(mediaType, MediaType.APPLICATION_FORM_URLENCODED_TYPE)
                     && !isMatchingMediaType(mediaType, MediaType.MULTIPART_FORM_DATA_TYPE)) {
                 if (config.requireFormUrlEncoded()) {
-                    LOG.debugf("Request has the wrong media type: %s", mediaType);
+                    log("Request has the wrong media type: %s", mediaType);
                     requestContext.abortWith(badClientRequest());
                     return;
                 } else {
@@ -142,7 +142,7 @@ public class CsrfRequestResponseReactiveFilter {
             }
 
             if (!requestContext.hasEntity()) {
-                LOG.debug("Request has no entity");
+                log("Request has no entity");
                 requestContext.abortWith(badClientRequest());
                 return;
             }
@@ -154,8 +154,24 @@ public class CsrfRequestResponseReactiveFilter {
             verifyCsrfToken(requestContext, routing, config, cookieToken, csrfTokenFormParam);
 
         } else if (cookieToken == null) {
-            LOG.debug("CSRF token is not found");
+            log("CSRF token is not found");
             requestContext.abortWith(badClientRequest());
+        }
+    }
+
+    private void log(String msg, Object ...args) {
+        if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
+            if (args.length == 0) {
+                LOG.info(msg);
+            } else {
+                LOG.infof(msg, args);
+            }
+        } else {
+            if (args.length == 0) {
+                LOG.debug(msg);
+            } else {
+                LOG.debugf(msg, args);
+            }
         }
     }
 
@@ -170,12 +186,12 @@ public class CsrfRequestResponseReactiveFilter {
     private void verifyCsrfToken(ResteasyReactiveContainerRequestContext requestContext, RoutingContext routing,
             RestCsrfConfig config, String cookieToken, String csrfToken) {
         if (cookieToken == null) {
-            LOG.debug("CSRF cookie is not found");
+            log("CSRF cookie is not found");
             requestContext.abortWith(badClientRequest());
             return;
         }
         if (csrfToken == null) {
-            LOG.debug("CSRF token is not found");
+            log("CSRF token is not found");
             requestContext.abortWith(badClientRequest());
             return;
         } else {
@@ -183,7 +199,7 @@ public class CsrfRequestResponseReactiveFilter {
                     ? CsrfTokenUtils.signCsrfToken(csrfToken, config.tokenSignatureKey().get())
                     : csrfToken;
             if (!cookieToken.equals(expectedCookieTokenValue)) {
-                LOG.debug("CSRF token value is wrong");
+                log("CSRF token value is wrong");
                 requestContext.abortWith(badClientRequest());
                 return;
             } else {

@@ -84,6 +84,7 @@ import io.quarkus.deployment.pkg.builditem.BuildAotOptimizedContainerImageResult
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
+import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerAdditionalArgsBuildItem;
 import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveContainerImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
@@ -142,6 +143,26 @@ public class JibProcessor {
 
         producer.produce(
                 new JvmStartupOptimizerArchiveContainerImageBuildItem(determineBaseJvmImage(jibConfig, compiledJavaVersion)));
+    }
+
+    // when AOT cache generation is enabled and a container image build via Jib has been requested,
+    // we want the AOT training command to include the same JVM arguments that will be used
+    // in the final container entrypoint, so the resulting cache is compatible
+    @BuildStep(onlyIf = JibBuild.class)
+    public void jvmStartupOptimizerAdditionalArgs(ContainerImageConfig containerImageConfig,
+            ContainerImageJibConfig jibConfig,
+            BuildProducer<JvmStartupOptimizerAdditionalArgsBuildItem> producer) {
+
+        if (!containerImageConfig.isBuildExplicitlyEnabled() && !containerImageConfig.isPushExplicitlyEnabled()) {
+            return;
+        }
+
+        List<String> effectiveJvmArguments = new ArrayList<>(jibConfig.jvmArguments());
+        jibConfig.jvmAdditionalArguments().ifPresent(effectiveJvmArguments::addAll);
+
+        if (!effectiveJvmArguments.isEmpty()) {
+            producer.produce(new JvmStartupOptimizerAdditionalArgsBuildItem(effectiveJvmArguments));
+        }
     }
 
     private String determineBaseJvmImage(ContainerImageJibConfig jibConfig, CompiledJavaVersionBuildItem compiledJavaVersion) {

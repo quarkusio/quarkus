@@ -11,49 +11,49 @@ import '@vaadin/horizontal-layout';
 class Notifier {
 
     showPrimaryInfoMessage(message, position, duration = 5) {
-        if(position === null)position = "bottom-start";
+        if(position === null)position = "bottom-end";
         let color = "var(--lumo-primary-contrast-color)";
         this.showMessage("font-awesome-solid:circle-info", "primary", message, color, duration, position);
     }
 
     showInfoMessage(message, position, duration = 5) {
-        if(position === null)position = "bottom-start";
+        if(position === null)position = "bottom-end";
         let color = "var(--lumo-primary-text-color)";
         this.showMessage("font-awesome-solid:circle-info", "contrast", message, color, duration, position);
     }
 
     showPrimarySuccessMessage(message, position, duration = 5) {
-        if(position === null)position = "bottom-start";
+        if(position === null)position = "bottom-end";
         let color = "var(--lumo-primary-contrast-color)";
         this.showMessage("font-awesome-solid:circle-check", "success", message, color, duration, position);
     }
     
     showSuccessMessage(message, position, duration = 5) {
-        if(position === null)position = "bottom-start";
+        if(position === null)position = "bottom-end";
         let color = "var(--lumo-success-text-color)";
         this.showMessage("font-awesome-solid:circle-check", "contrast", message, color, duration, position);
     }
 
     showPrimaryWarningMessage(message, position, duration = 5) {
-        if(position === null)position = "bottom-start";
+        if(position === null)position = "bottom-end";
         let color = "var(--lumo-primary-contrast-color)";
         this.showMessage("font-awesome-solid:triangle-exclamation", "contrast", message, color, duration, position);
     }
     
     showWarningMessage(message, position, duration = 5) {
-        if(position === null)position = "bottom-start";
+        if(position === null)position = "bottom-end";
         let color = "var(--lumo-warning-text-color)";
         this.showMessage("font-awesome-solid:triangle-exclamation", "contrast", message, color, duration, position);
     }
 
     showPrimaryErrorMessage(message, position, duration = 5) {
-        if(position === null)position = "bottom-start";
+        if(position === null)position = "bottom-end";
         let color = "var(--lumo-primary-contrast-color)";
         this.showMessage("font-awesome-solid:circle-exclamation", "error", message, color, duration, position);
     }
 
     showErrorMessage(message, position, duration = 5) {
-        if(position === null)position = "bottom-start";
+        if(position === null)position = "bottom-end";
         let color = "var(--lumo-error-text-color)";
         this.showMessage("font-awesome-solid:circle-exclamation", "contrast", message, color, duration, position);
     }

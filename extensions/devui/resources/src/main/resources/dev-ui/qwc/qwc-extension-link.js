@@ -17,8 +17,8 @@ export class QwcExtensionLink extends QwcHotReloadElement {
             flex-direction: row;
             justify-content: space-between;
             align-items: center;
-            color: var(--lumo-contrast-80pct);
-            font-size: small;
+            color: var(--lumo-contrast-70pct);
+            font-size: var(--lumo-font-size-s);
             padding: 2px 5px;
             text-decoration: none;
             gap: 5px;
@@ -28,14 +28,15 @@ export class QwcExtensionLink extends QwcHotReloadElement {
             flex-direction: row;
             justify-content: space-between;
             align-items: center;
-            color: var(--lumo-contrast-80pct);
-            font-size: small;
-            padding: 2px 5px;
+            color: var(--lumo-contrast-70pct);
+            font-size: var(--lumo-font-size-s);
+            padding: 4px 8px;
             cursor: pointer;
             text-decoration: none;
             gap: 5px;
-            border-radius: 4px;
-            transition: background-color 0.15s ease, color 0.15s ease;
+            border-radius: var(--devui-radius-sm, 6px);
+            transition: background-color var(--devui-transition-fast, 0.15s ease),
+                        color var(--devui-transition-fast, 0.15s ease);
         }
         .extensionLink:hover {
             background-color: var(--lumo-primary-color-10pct);
@@ -43,6 +44,8 @@ export class QwcExtensionLink extends QwcHotReloadElement {
         }
         .icon {
             padding-right: 5px;
+            width: var(--lumo-icon-size-s);
+            height: var(--lumo-icon-size-s);
         }
         .iconAndName {
             display: flex;

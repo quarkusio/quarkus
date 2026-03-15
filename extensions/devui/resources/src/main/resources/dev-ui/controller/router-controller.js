@@ -3,6 +3,14 @@ import { Router } from '@vaadin/router';
 let pageNode = document.querySelector('#page');
 pageNode.textContent = '';
 
+// Page transition animation on route change
+window.addEventListener('vaadin-router-location-changed', () => {
+    pageNode.style.animation = 'none';
+    // Force reflow to restart animation
+    void pageNode.offsetHeight;
+    pageNode.style.animation = 'devui-fade-in var(--devui-transition-slow, 0.3s) ease';
+});
+
 export class RouterController {
 
     static router = new Router(pageNode);

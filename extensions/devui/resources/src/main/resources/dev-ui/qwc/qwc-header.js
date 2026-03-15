@@ -33,31 +33,40 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
     routerController = new RouterController(this);
     jsonRpc = new JsonRpc("report-issues", true);
     _dot = "\u00B7";
-    
+
     static styles = css`
-        
+
         .top-bar {
-            height: 70px;
+            height: var(--devui-header-height, 50px);
             display: flex;
             align-items: center;
             flex-direction: row;
             justify-content: space-between;
+            border-bottom: 1px solid var(--lumo-contrast-10pct);
+            padding: 0 4px 0 0;
+            box-sizing: border-box;
+            background: var(--lumo-base-color);
+            z-index: 10;
         }
         .right-bar {
             display: flex;
             justify-content: space-around;
             align-items: center;
-            padding-right: 10px;
+            padding-right: 6px;
+            gap: 2px;
         }
-        
+
         .logo-title {
             display: flex;
             align-items: center;
             flex-direction: row;
+            gap: 0;
+            min-width: 0;
         }
         .top-bar svg {
-            height: 45px;
-            padding: 8px;
+            height: 28px;
+            padding: 0 10px;
+            flex-shrink: 0;
         }
 
         .logo-right-actions {
@@ -65,62 +74,79 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
             align-items:center;
             padding-right: 10px;
         }
-        
+
         .logo-reload-click {
             cursor: pointer;
             display: flex;
             align-items:center;
+            gap: 6px;
+            min-width: 253px;
+            box-sizing: border-box;
+            transition: opacity var(--devui-transition-fast, 0.15s ease);
         }
 
         .logo-reload-click:hover {
-            filter: brightness(90%);
+            opacity: 0.8;
         }
 
         .title {
             display: flex;
             align-items:center;
-            font-size: var(--lumo-font-size-xl);
-            padding-left: 100px;
+            font-size: var(--lumo-font-size-m);
+            font-weight: 500;
+            padding-left: 12px;
             color: var(--lumo-contrast-90pct);
         }
-        
+
         .subtitle {
             display: flex;
             align-items:center;
-            font-size: var(--lumo-font-size-xl);
-            padding-left: 8px;
+            font-size: var(--lumo-font-size-m);
+            font-weight: 400;
+            padding-left: 0;
             color: var(--lumo-contrast-50pct);
         }
-    
+
+        .breadcrumb-sep {
+            padding: 0 8px;
+            color: var(--lumo-contrast-30pct);
+            font-weight: 300;
+        }
+
         .logo-text {
-            padding-top: 10px;
-            font-size: xx-large;
+            font-size: var(--lumo-font-size-l);
+            font-weight: 600;
+            letter-spacing: -0.01em;
         }
-    
+
         .app-info {
-            font-size: var(--lumo-font-size-s);
-            color: var(--lumo-contrast-50pct);
+            font-size: var(--lumo-font-size-xs);
+            color: var(--lumo-contrast-40pct);
             display: flex;
             align-items: center;
+            white-space: nowrap;
         }
-    
+
         .hidden {
             display:none;
         }
-        .button {
-            --vaadin-button-background: var(--lumo-base-color);
+
+        .header-button {
+            --vaadin-button-background: transparent;
+            color: var(--lumo-contrast-60pct);
+            transition: color var(--devui-transition-fast, 0.15s ease);
         }
-    
+
+        .header-button:hover {
+            color: var(--lumo-contrast-90pct);
+        }
+
         @media screen and (max-width: 1280px) {
             .logo-text, .app-info {
                 display: none;
             }
-    
-            .title {
-                padding-left: 10px;
-            
         }
-    
+
         `;
 
     static properties = {
@@ -155,7 +181,7 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
         window.addEventListener('storage-changed', (event) => {
             this._relevantLocalStorageItems = this._getAllLocalStorage();
         });
-        
+
         document.addEventListener('max-retries-reached', (event) => {
             this._connectionDialogOpened = true;
             this.requestUpdate();
@@ -197,9 +223,9 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
     }
 
     async _loadHeadlessComponents(extensions){
-        
+
         for (const extension of extensions) {
-            if (extension.headlessComponentRef) {                
+            if (extension.headlessComponentRef) {
                 try {
                     await import(extension.headlessComponentRef);
 
@@ -218,7 +244,7 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
             }
         }
     }
-    
+
     _loadUnlistedPages(pages){
         for (const page of pages) {
             if(page.componentRef){
@@ -241,16 +267,16 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
                     this.requestUpdate();
                 }}"
             >
-            
-            ${msg('It looks like the application is currently unavailable. After several reconnection attempts, we’re unable to connect. Once the application is back online, click “Retry” to reconnect.', { id: 'disconnected-dialog-text' })}
-                
+
+            ${msg('It looks like the application is currently unavailable. After several reconnection attempts, we\u2019re unable to connect. Once the application is back online, click "Retry" to reconnect.', { id: 'disconnected-dialog-text' })}
+
             </vaadin-confirm-dialog>`;
         }
     }
 
     _renderLogoAndTitle(){
         let classNames = this._getClassNamesForTitle();
-        
+
         return html`
             <div class="${classNames}">
                 <div class="logo-reload-click">
@@ -268,9 +294,9 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
     }
 
     _renderTitle(){
-        
+
         if(this._subTitle){
-            return html`<span class="title">${dynamicMsg('menu', this._title)}</span><span class="subtitle">${this._dot} ${dynamicMsg('page', this._subTitle)} ${this._renderWarning()}</span>`;
+            return html`<span class="title">${dynamicMsg('menu', this._title)}</span><span class="breadcrumb-sep">/</span><span class="subtitle">${dynamicMsg('page', this._subTitle)} ${this._renderWarning()}</span>`;
         }else{
             return html`<span class="title">${dynamicMsg('menu', this._title)}</span>`;
         }
@@ -283,7 +309,7 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
     }
 
     _renderRightSideSettings(){
-        return html`<vaadin-button theme="icon" aria-label="Settings" title="${msg('Settings', { id: 'settings-title' })}" class="button" @click=${this._openSettingsDialog}>
+        return html`<vaadin-button theme="icon" aria-label="Settings" title="${msg('Settings', { id: 'settings-title' })}" class="header-button" @click=${this._openSettingsDialog}>
                         <vaadin-icon icon="font-awesome-solid:gear"></vaadin-icon>
                     </vaadin-button>`;
     }
@@ -302,7 +328,7 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
 
     _updateHeader(event){
         let currentPage = this.routerController.getCurrentPage();
-        
+
         this._selectedPageIsMax = !currentPage.includeInMenu; // TODO: introduce new property called isMaxView ?
         this._title = this.routerController.getCurrentTitle();
         this._subTitle = this.routerController.getCurrentSubTitle();
@@ -311,7 +337,7 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
         }else{
             this._showWarning = false;
         }
-        
+
         var subMenu = this.routerController.getCurrentSubMenu();
         if(subMenu){
             this._rightSideNav = html`<vaadin-tabs selected="${subMenu.index}">
@@ -350,7 +376,7 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
 
     _renderSubMenuLink(index, link){
 
-        let relativePath = link.page.id.replace(link.page.namespace + "/", ""); 
+        let relativePath = link.page.id.replace(link.page.namespace + "/", "");
 
         return html`<qwc-extension-link
             streamingLabelParams="${link.page.streamingLabelParams}"
@@ -385,7 +411,7 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
                     () => html`
                         <h2
                             class="draggable"
-                            style="flex: 1; cursor: move; margin: 0; font-size: 1.5em; font-weight: bold; padding: var(--lumo-space-m) 0;">
+                            style="flex: 1; cursor: move; margin: 0; font-size: 1.25em; font-weight: 600; padding: var(--lumo-space-m) 0;">
                         ${msg('Settings', { id: 'settings-title' })}
                         </h2>
                         <vaadin-button theme="tertiary" @click="${this._closeSettingsDialog}">
@@ -416,7 +442,7 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
                                                 <h4> ${msg('Language', { id: 'language-label' })} </h4>
                                                 <qwc-language-switch flagsVersion="${this.flagsVersion}"></qwc-language-switch>
                                             </div>
-                                        </div>        
+                                        </div>
                                         <hr style="color:var(--lumo-contrast-5pct);"/>
                                         <h4>${msg('Bugs / Features', { id: 'bugs-feature-label' })}</h4>
                                         <div style="display: flex; flex-direction: column;align-items: baseline;">
@@ -458,7 +484,7 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
                     html`${this._renderDynamicSettingsTab(settingItem, index)}`
                 )}`;
     }
-    
+
     _renderDynamicSettingsTab(settingItem, index){
         import(settingItem.componentRef);
         let tabid = settingItem.id + "-tab";
@@ -469,7 +495,7 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
                         <span>${dynamicMsg('settings', settingItem.title)}</span>
                     </vaadin-tab>`;
     }
-    
+
     _renderDynamicSettingsContents(){
         return html`${devuiState.setting.map((settingItem, index) =>
                     html`${this._renderDynamicSettingsContent(settingItem, index)}`
@@ -482,7 +508,7 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
                         ${unsafeHTML(dynamicTab)}
                     </div>`;
     }
-    
+
     _storageDeleteIconRenderer(storageItem){
         return html`<vaadin-icon style="font-size: small;color: var(--lumo-error-color-50pct);cursor: pointer;" title="Delete this from storage" icon="font-awesome-solid:trash" @click=${() => this._deleteStorageItem(storageItem)}></vaadin-icon>`;
     }
@@ -509,7 +535,7 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
     }
 
     _openSettingsDialog(selectedTab = "general-tab"){
-        
+
         if (this._tabIndexById.has(selectedTab)) {
             this._selectedSettingTab = this._tabIndexById.get(selectedTab);
         }
@@ -526,7 +552,7 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
             this._connectionDialogOpened = true;
         });
     }
-    
+
     _connectionDialogChanged(e) {
         this._connectionDialogOpened = e.detail.value;
     }

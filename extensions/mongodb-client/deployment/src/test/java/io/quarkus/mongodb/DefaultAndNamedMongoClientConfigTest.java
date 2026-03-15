@@ -68,10 +68,11 @@ public class DefaultAndNamedMongoClientConfigTest extends MongoWithReplicasTestB
         org.eclipse.microprofile.health.HealthCheckResponse response = health.call();
         assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.UP);
         assertThat(response.getData()).isNotEmpty();
-        assertThat(response.getData().get()).hasSize(2).contains(
+        assertThat(response.getData().get()).hasSize(4).contains(
                 entry("<default>", "OK"),
-                entry("cluster2", "OK"));
-
+                entry("<default-reactive>", "OK"),
+                entry("cluster2", "OK"),
+                entry("cluster2-reactive", "OK"));
     }
 
     private void assertProperConnection(MongoClient client, int expectedPort) {

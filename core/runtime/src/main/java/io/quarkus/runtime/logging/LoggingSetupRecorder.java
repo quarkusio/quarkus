@@ -53,7 +53,7 @@ import org.jboss.logmanager.handlers.SyslogHandler;
 
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.dev.console.CurrentAppExceptionHighlighter;
-import io.quarkus.dev.console.QuarkusConsole;
+import io.quarkus.dev.console.TerminalUtils;
 import io.quarkus.dev.testing.ExceptionReporting;
 import io.quarkus.runtime.ImageMode;
 import io.quarkus.runtime.LaunchMode;
@@ -875,7 +875,7 @@ public class LoggingSetupRecorder {
         if (consoleConfig.color().isPresent()) {
             return consoleConfig.color().get();
         }
-        return QuarkusConsole.hasColorSupport();
+        return TerminalUtils.hasColorSupport();
     }
 
     private static class AdditionalNamedHandlersConsumer implements BiConsumer<String, Handler> {

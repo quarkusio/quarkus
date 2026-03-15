@@ -502,6 +502,18 @@ public final class OidcUtils {
             if (auth.cookieDomain().isPresent()) {
                 cookie.setDomain(auth.cookieDomain().get());
             }
+
+            CookieSameSite sameSite = null;
+            if (cookie.getName().startsWith(SESSION_COOKIE_NAME)) {
+                sameSite = CookieSameSite.valueOf(oidcConfig.authentication().cookieSameSite().name());
+            } else if (cookie.getName().startsWith(STATE_COOKIE_NAME)) {
+                sameSite = CookieSameSite.valueOf(oidcConfig.authentication().stateCookieSameSite().name());
+            }
+            if (CookieSameSite.NONE == sameSite) {
+                // browsers may want it if the same site is none
+                cookie.setSameSite(sameSite);
+                cookie.setSecure(oidcConfig.authentication().cookieForceSecure() || context.request().isSSL());
+            }
         }
     }
 

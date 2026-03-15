@@ -1,11 +1,11 @@
 package io.quarkus.test.junit;
 
+import static io.quarkus.runtime.LaunchMode.NORMAL;
 import static io.quarkus.test.config.TestValueRegistryConfigSource.CONFIG;
 import static io.quarkus.test.junit.ArtifactTypeUtil.isContainer;
 import static io.quarkus.test.junit.ArtifactTypeUtil.isJar;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 import static io.quarkus.test.junit.IntegrationTestUtil.determineBuildOutputDirectory;
-import static io.quarkus.test.junit.IntegrationTestUtil.determineTestProfileAndProperties;
 import static io.quarkus.test.junit.IntegrationTestUtil.doProcessTestInstance;
 import static io.quarkus.test.junit.IntegrationTestUtil.ensureNoInjectAnnotationIsUsed;
 import static io.quarkus.test.junit.IntegrationTestUtil.findProfile;
@@ -41,6 +41,7 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
@@ -61,6 +62,7 @@ import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestHostLauncher;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestScopeManager;
+import io.quarkus.test.config.ValueRegistryParameterResolver;
 import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 import io.quarkus.test.junit.launcher.ArtifactLauncherProvider;
 import io.quarkus.value.registry.ValueRegistry;
@@ -167,7 +169,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         boolean reloadTestResources = false;
         if ((state == null && !failedBoot) || wrongProfile || (reloadTestResources = isNewTestClass
                 && TestResourceUtil.testResourcesRequireReload(state, extensionContext.getRequiredTestClass(),
-                        selectedProfile))) {
+                        Optional.ofNullable(selectedProfile)))) {
             if (wrongProfile || reloadTestResources) {
                 if (state != null) {
                     try {
@@ -219,7 +221,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
 
             Map<String, String> sysPropRestore = getSysPropsToRestore();
 
-            TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile);
+            TestProfileAndProperties testProfileAndProperties = TestProfileAndProperties.ofNullable(profile, NORMAL);
             // prepare dev services after profile and properties have been determined
             ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult = handleDevServices(context,
                     isDockerLaunch, testProfileAndProperties);
@@ -232,7 +234,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             testResourceManager = new TestResourceManager(
                     requiredTestClass,
                     quarkusTestProfile,
-                    copyEntriesFromProfile(testProfileAndProperties.testProfile().orElse(null),
+                    copyEntriesFromProfile(testProfileAndProperties.testProfile(),
                             context.getRequiredTestClass().getClassLoader()),
                     testProfileAndProperties.isDisabledGlobalTestResources(),
                     devServicesProps,
@@ -251,7 +253,11 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                 if (name.startsWith("quarkus.")
                         // don't include 'quarkus.profile' as that has already been taken into account when determining the launch profile
                         // so we don't want this to end up in multiple launch arguments
-                        && !name.equals("quarkus.profile")) {
+                        && !name.equals("quarkus.profile")
+                        // 'quarkus.test.arg-line' is provided directly to DefaultInitContextBase as a list of properties to add,
+                        // if it's not excluded here, it will be added to the command line (unquoted) resulting in
+                        // many duplicate system property arguments
+                        && !name.equals("quarkus.test.arg-line")) {
                     additionalProperties.put(name, existingSysProps.getProperty(name));
                 }
             }
@@ -327,13 +333,14 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                             }).build())
                     .withRuntimeSource(config)
                     .build();
-            context.getStore(LAUNCHER_SESSION, CONFIG).put(ValueRegistry.class, valueRegistry);
             listeningAddress.ifPresent(address -> address.register(valueRegistry, config));
+            context.getStore(LAUNCHER_SESSION, CONFIG).put(ValueRegistry.class.getName(), valueRegistry);
+            context.getStore(Namespace.GLOBAL).put(ValueRegistry.class.getName(), valueRegistry);
 
             Closeable resource = new IntegrationTestExtensionStateResource(launcher,
                     devServicesLaunchResult.getCuratedApplication());
-            IntegrationTestExtensionState state = new IntegrationTestExtensionState(valueRegistry, testResourceManager,
-                    resource, AbstractTestWithCallbacksExtension::clearCallbacks, listeningAddress, sysPropRestore);
+            IntegrationTestExtensionState state = new IntegrationTestExtensionState(testResourceManager, resource,
+                    AbstractTestWithCallbacksExtension::clearCallbacks, listeningAddress, sysPropRestore);
             testHttpEndpointProviders = TestHttpEndpointProvider.load();
 
             return state;

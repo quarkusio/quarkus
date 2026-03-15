@@ -48,7 +48,7 @@
 |false
 |
 |*failure-strategy*
-|Specify the failure strategy to apply when a message produced from a record is acknowledged negatively (nack). Values can be `nack` (default), `fail`, `ignore` or `reconsume-later
+|Specify the failure strategy to apply when a message produced from a record is acknowledged negatively (nack). Values can be `nack` (default), `fail`, `ignore` or `reconsume-later`
 |string
 |false
 |`nack`

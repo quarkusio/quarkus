@@ -9,12 +9,14 @@ import java.net.URL;
 import java.security.KeyStore;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -96,6 +98,7 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
     private ClientLogger clientLogger;
     private LoggingScope loggingScope;
     private Integer loggingBodyLimit;
+    private Set<String> maskedHeaders;
 
     private Boolean trustAll;
     private String userAgent;
@@ -284,6 +287,11 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
 
     public RestClientBuilderImpl loggingBodyLimit(Integer limit) {
         this.loggingBodyLimit = limit;
+        return this;
+    }
+
+    public RestClientBuilderImpl loggingMaskedHeaders(Set<String> maskedHeaders) {
+        this.maskedHeaders = maskedHeaders;
         return this;
     }
 
@@ -520,9 +528,7 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
 
         RestClientsConfig.RestClientLoggingConfig configRootLogging = restClients.logging();
 
-        Integer defaultLoggingBodyLimit = 100;
         LoggingScope effectiveLoggingScope = LoggingScope.NONE;
-        Integer effectiveLoggingBodyLimit = defaultLoggingBodyLimit;
         if (getConfiguration().hasProperty(QuarkusRestClientProperties.LOGGING_SCOPE)) {
             effectiveLoggingScope = (LoggingScope) getConfiguration().getProperty(QuarkusRestClientProperties.LOGGING_SCOPE);
         } else if (loggingScope != null) { //scope, specified programmatically, takes precedence over global configuration
@@ -530,6 +536,9 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
         } else if (configRootLogging != null) {
             effectiveLoggingScope = configRootLogging.scope().map(LoggingScope::forName).orElse(LoggingScope.NONE);
         }
+        clientBuilder.loggingScope(effectiveLoggingScope);
+
+        Integer effectiveLoggingBodyLimit = 100;
         if (getConfiguration().hasProperty(QuarkusRestClientProperties.LOGGING_BODY_LIMIT)) {
             effectiveLoggingBodyLimit = (Integer) getConfiguration()
                     .getProperty(QuarkusRestClientProperties.LOGGING_BODY_LIMIT);
@@ -538,8 +547,20 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
         } else if (configRootLogging != null) {
             effectiveLoggingBodyLimit = configRootLogging.bodyLimit();
         }
-        clientBuilder.loggingScope(effectiveLoggingScope);
         clientBuilder.loggingBodySize(effectiveLoggingBodyLimit);
+
+        Set<String> effectiveMaskedHeaders = Collections.emptySet();
+        if (getConfiguration().hasProperty(QuarkusRestClientProperties.LOGGING_MASKED_HEADERS)) {
+            //noinspection unchecked
+            effectiveMaskedHeaders = (Set<String>) getConfiguration()
+                    .getProperty(QuarkusRestClientProperties.LOGGING_MASKED_HEADERS);
+        } else if (maskedHeaders != null) { //maskedHeaders, specified programmatically, takes precedence over global configuration
+            effectiveMaskedHeaders = maskedHeaders;
+        } else if (configRootLogging != null) {
+            effectiveMaskedHeaders = configRootLogging.maskedHeaders().orElse(Collections.emptySet());
+        }
+        clientBuilder.maskedHeaders(effectiveMaskedHeaders);
+
         if (clientLogger != null) {
             clientBuilder.clientLogger(clientLogger);
         } else {

@@ -121,6 +121,14 @@ public class DurationConverter implements Converter<Duration>, Serializable {
 
     private static boolean startsLikeDigits(String s) {
         char c = s.charAt(0);
-        return (c >= '0' && c <= '9') || c == '-' || c == '+';
+        if (c >= '0' && c <= '9') {
+            return true;
+        }
+        if (c == '-' || c == '+') {
+            // Check if it's already an ISO-8601 duration (has P after optional sign)
+            int signOffset = 1;
+            return signOffset >= s.length() || s.charAt(signOffset) != 'P';
+        }
+        return false;
     }
 }

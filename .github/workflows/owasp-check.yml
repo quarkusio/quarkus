@@ -1,5 +1,9 @@
 name: "OWASP Dependency Check"
 
+permissions:
+  contents: read
+  actions: write
+
 on:
   workflow_dispatch:
   schedule:
@@ -51,7 +55,7 @@ jobs:
     - name: Perform OWASP Dependency Check Report
       run: ./mvnw -Dowasp-report
 
-    - uses: actions/upload-artifact@v6
+    - uses: actions/upload-artifact@v7
       with:
         name: dependency-check-report
         path: target/dependency-check-report.html

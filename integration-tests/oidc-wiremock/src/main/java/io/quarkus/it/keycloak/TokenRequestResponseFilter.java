@@ -32,7 +32,7 @@ public class TokenRequestResponseFilter implements OidcRequestFilter, OidcRespon
         String tenantId = rc.contextProperties().get(OidcUtils.TENANT_ID_ATTRIBUTE);
         instants.put(tenantId, now);
         rc.contextProperties().put("instant", now);
-        if ("code-flow-opaque-access-token".equals(tenantId)) {
+        if ("code-flow-opaque-access-token".equals(tenantId) || "github-no-id-token-no-user-info".equals(tenantId)) {
             rc.contextProperties().put(OidcRequestContextProperties.REQUEST_BODY,
                     Buffer.buffer(rc.requestBody().toString() + "&opaque_token_param=opaque_token_value"));
         }

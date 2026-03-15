@@ -75,7 +75,7 @@ public class CodeFlowTest {
             Cookie stateCookie = getStateCookie(webClient, null);
             assertNotNull(stateCookie);
             assertEquals(stateCookie.getName(), "q_auth_Default_test_" + getStateCookieStateParam(stateCookie));
-            assertNull(stateCookie.getSameSite());
+            assertEquals("lax", stateCookie.getSameSite());
 
             webClient.getCookieManager().clearCookies();
 
@@ -294,7 +294,7 @@ public class CodeFlowTest {
             String endpointLocation = webResponse.getResponseHeaderValue("location");
 
             Cookie stateCookie = getStateCookie(webClient, "tenant-https_test");
-            assertNull(stateCookie.getSameSite());
+            assertEquals("none", stateCookie.getSameSite());
             verifyCodeVerifierAndNonce(stateCookie, keycloakUrl);
 
             assertTrue(endpointLocation.startsWith("https"));
@@ -369,7 +369,7 @@ public class CodeFlowTest {
 
             // State cookie is present
             Cookie stateCookie = getStateCookie(webClient, "tenant-https_test");
-            assertNull(stateCookie.getSameSite());
+            assertEquals("none", stateCookie.getSameSite());
             verifyCodeVerifierAndNonce(stateCookie, keycloakUrl);
 
             // Make a call without an extra state query param, status is 401
@@ -633,6 +633,122 @@ public class CodeFlowTest {
             webResponse = webClient.loadWebResponse(new WebRequest(endpointLocationUri.toURL()));
             assertEquals(401, webResponse.getStatusCode());
             assertNull(getStateCookie(webClient, "tenant-nonce"));
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testCodeFlowAbsoluteRedirect() throws Exception {
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(false);
+
+            WebResponse webResponse = webClient
+                    .loadWebResponse(
+                            new WebRequest(
+                                    URI.create("http://localhost:8081/tenant-absolute-redirect?custom=customValue").toURL()));
+            String keycloakUrl = webResponse.getResponseHeaderValue("location");
+            verifyLocationHeader(webClient, keycloakUrl, "tenant-absolute-redirect", "tenant-absolute-redirect%2Fcallback",
+                    false);
+
+            HtmlPage page = webClient.getPage(keycloakUrl);
+
+            assertEquals("Sign in to quarkus", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+            webResponse = loginForm.getButtonByName("login").click().getWebResponse();
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(true);
+
+            // This is a redirect from the OIDC server to the endpoint, with technical paramerts like `code`
+            // but without a request specific query parameter
+            String endpointLocation = webResponse.getResponseHeaderValue("location");
+
+            URI endpointLocationUri = URI.create(endpointLocation);
+            assertEquals("http://localhost:8081/tenant-absolute-redirect/callback",
+                    endpointLocationUri.getScheme() + "://" + endpointLocationUri.getAuthority()
+                            + endpointLocationUri.getPath());
+            assertTrue(endpointLocationUri.getQuery().contains("code="));
+            assertTrue(endpointLocationUri.getQuery().contains("state="));
+            assertFalse(endpointLocationUri.getQuery().contains("custom="));
+
+            // This is a final redirect dropping the technical parameters like `code`
+            // but restoring the custom query parameter
+            webResponse = webClient.loadWebResponse(new WebRequest(endpointLocationUri.toURL()));
+            endpointLocation = webResponse.getResponseHeaderValue("location");
+            endpointLocationUri = URI.create(endpointLocation);
+            assertEquals("http://localhost:8081/tenant-absolute-redirect/callback",
+                    endpointLocationUri.getScheme() + "://" + endpointLocationUri.getAuthority()
+                            + endpointLocationUri.getPath());
+
+            assertFalse(endpointLocationUri.getQuery().contains("code="));
+            assertFalse(endpointLocationUri.getQuery().contains("state="));
+            assertTrue(endpointLocationUri.getQuery().contains("custom=customValue"));
+
+            webResponse = webClient.loadWebResponse(new WebRequest(endpointLocationUri.toURL()));
+            assertEquals(200, webResponse.getStatusCode());
+            assertEquals("http://localhost:8081/tenant-absolute-redirect/callback", webResponse.getContentAsString());
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testCodeFlowRestorePathAbsoluteRedirect() throws Exception {
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(false);
+
+            WebResponse webResponse = webClient
+                    .loadWebResponse(
+                            new WebRequest(
+                                    URI.create("http://localhost:8081/tenant-restore-path-absolute-redirect?custom=customValue")
+                                            .toURL()));
+            String keycloakUrl = webResponse.getResponseHeaderValue("location");
+            verifyLocationHeader(webClient, keycloakUrl, "tenant-restore-path-absolute-redirect",
+                    "tenant-restore-path-absolute-redirect%2Fcallback",
+                    false);
+
+            HtmlPage page = webClient.getPage(keycloakUrl);
+
+            assertEquals("Sign in to quarkus", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+            webResponse = loginForm.getButtonByName("login").click().getWebResponse();
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(true);
+
+            // This is a redirect from the OIDC server to the endpoint, with technical paramerts like `code`
+            // but without a request specific query parameter
+            String endpointLocation = webResponse.getResponseHeaderValue("location");
+
+            URI endpointLocationUri = URI.create(endpointLocation);
+            assertEquals("http://localhost:8081/tenant-restore-path-absolute-redirect/callback",
+                    endpointLocationUri.getScheme() + "://" + endpointLocationUri.getAuthority()
+                            + endpointLocationUri.getPath());
+            assertTrue(endpointLocationUri.getQuery().contains("code="));
+            assertTrue(endpointLocationUri.getQuery().contains("state="));
+            assertFalse(endpointLocationUri.getQuery().contains("custom="));
+
+            // This is a final redirect dropping the technical parameters like `code`
+            // but restoring the custom query parameter, as well as the original request path
+            webResponse = webClient.loadWebResponse(new WebRequest(endpointLocationUri.toURL()));
+            endpointLocation = webResponse.getResponseHeaderValue("location");
+            endpointLocationUri = URI.create(endpointLocation);
+            assertEquals("http://localhost:8081/tenant-restore-path-absolute-redirect",
+                    endpointLocationUri.getScheme() + "://" + endpointLocationUri.getAuthority()
+                            + endpointLocationUri.getPath());
+
+            assertFalse(endpointLocationUri.getQuery().contains("code="));
+            assertFalse(endpointLocationUri.getQuery().contains("state="));
+            assertTrue(endpointLocationUri.getQuery().contains("custom=customValue"));
+
+            webResponse = webClient.loadWebResponse(new WebRequest(endpointLocationUri.toURL()));
+            assertEquals(200, webResponse.getStatusCode());
+            assertEquals("http://localhost:8081/tenant-restore-path-absolute-redirect", webResponse.getContentAsString());
 
             webClient.getCookieManager().clearCookies();
         }

@@ -5,7 +5,10 @@ import io.quarkus.mongodb.MongoClientName;
 
 /**
  * Represents the values of the {@link MongoClientName}.
+ *
+ * @deprecated use {@link io.quarkus.mongodb.deployment.spi.MongoClientBuildItem} instead.
  */
+@Deprecated(forRemoval = true, since = "3.33")
 public final class MongoClientNameBuildItem extends MultiBuildItem {
 
     private final String name;
@@ -15,6 +18,11 @@ public final class MongoClientNameBuildItem extends MultiBuildItem {
         this(name, true);
     }
 
+    /**
+     * @deprecated use {@link io.quarkus.mongodb.deployment.spi.MongoClientBuildItem} instead.
+     *             {@code addQualifier} has no effect.
+     */
+    @Deprecated(forRemoval = true, since = "3.33")
     public MongoClientNameBuildItem(String name, boolean addQualifier) {
         this.name = name;
         this.addQualifier = addQualifier;
@@ -24,6 +32,10 @@ public final class MongoClientNameBuildItem extends MultiBuildItem {
         return name;
     }
 
+    /**
+     * @deprecated {@code addQualifier} has no effect.
+     */
+    @Deprecated(forRemoval = true, since = "3.33")
     public boolean isAddQualifier() {
         return addQualifier;
     }

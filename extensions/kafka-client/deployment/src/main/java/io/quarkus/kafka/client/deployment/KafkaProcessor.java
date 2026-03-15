@@ -26,30 +26,13 @@ import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.security.authenticator.AbstractLogin;
 import org.apache.kafka.common.security.authenticator.DefaultLogin;
 import org.apache.kafka.common.security.authenticator.SaslClientCallbackHandler;
+import org.apache.kafka.common.security.oauthbearer.DefaultJwtValidator;
+import org.apache.kafka.common.security.oauthbearer.JwtRetriever;
 import org.apache.kafka.common.security.oauthbearer.OAuthBearerToken;
 import org.apache.kafka.common.security.oauthbearer.internals.OAuthBearerRefreshingLogin;
 import org.apache.kafka.common.security.oauthbearer.internals.OAuthBearerSaslClient;
 import org.apache.kafka.common.security.scram.internals.ScramSaslClient;
-import org.apache.kafka.common.serialization.ByteArrayDeserializer;
-import org.apache.kafka.common.serialization.ByteArraySerializer;
-import org.apache.kafka.common.serialization.ByteBufferDeserializer;
-import org.apache.kafka.common.serialization.ByteBufferSerializer;
-import org.apache.kafka.common.serialization.BytesDeserializer;
-import org.apache.kafka.common.serialization.BytesSerializer;
-import org.apache.kafka.common.serialization.Deserializer;
-import org.apache.kafka.common.serialization.DoubleDeserializer;
-import org.apache.kafka.common.serialization.DoubleSerializer;
-import org.apache.kafka.common.serialization.FloatDeserializer;
-import org.apache.kafka.common.serialization.FloatSerializer;
-import org.apache.kafka.common.serialization.IntegerDeserializer;
-import org.apache.kafka.common.serialization.IntegerSerializer;
-import org.apache.kafka.common.serialization.LongDeserializer;
-import org.apache.kafka.common.serialization.LongSerializer;
-import org.apache.kafka.common.serialization.Serializer;
-import org.apache.kafka.common.serialization.ShortDeserializer;
-import org.apache.kafka.common.serialization.ShortSerializer;
-import org.apache.kafka.common.serialization.StringDeserializer;
-import org.apache.kafka.common.serialization.StringSerializer;
+import org.apache.kafka.common.serialization.*;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -85,6 +68,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassConditionBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
@@ -235,7 +219,9 @@ public class KafkaProcessor {
     public void build(
             KafkaBuildTimeConfig config, CurateOutcomeBuildItem curateOutcomeBuildItem,
             BuildProducer<ConfigDescriptionBuildItem> configDescBuildItems,
-            CombinedIndexBuildItem indexBuildItem, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            CombinedIndexBuildItem indexBuildItem,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod,
             BuildProducer<ServiceProviderBuildItem> serviceProviders,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxies,
             Capabilities capabilities,
@@ -254,6 +240,7 @@ public class KafkaProcessor {
         collectImplementors(toRegister, indexBuildItem, ConsumerInterceptor.class);
         collectImplementors(toRegister, indexBuildItem, ProducerInterceptor.class);
         collectImplementors(toRegister, indexBuildItem, MetricsReporter.class);
+        collectImplementors(toRegister, indexBuildItem, JwtRetriever.class);
 
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(OAuthBearerSaslClient.class,
                 OAuthBearerSaslClient.OAuthBearerSaslClientFactory.class,
@@ -261,6 +248,10 @@ public class KafkaProcessor {
                 OAuthBearerRefreshingLogin.class)
                 .reason(getClass().getName() + " OAuthBearerSaslClient classes")
                 .build());
+
+        // This is done to avoid loading jose4j classes when not needed, as DefaultJwtValidator is the default validator used by Kafka clients if no other validator is specified.
+        reflectiveMethod.produce(new ReflectiveMethodBuildItem(getClass().getName() + " DefaultJwtValidator class",
+                DefaultJwtValidator.class.getName(), "<init>", new String[0]));
 
         for (Class<?> i : BUILT_INS) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(i.getName())
@@ -294,7 +285,7 @@ public class KafkaProcessor {
 
         for (DotName s : toRegister) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(s.toString())
-                    .reason(getClass().getName() + " Jackson and " + Capability.JSONB + " support")
+                    .reason(getClass().getName() + ": Kafka Client instantiation")
                     .build());
         }
 
@@ -516,6 +507,8 @@ public class KafkaProcessor {
                         "org.apache.kafka.common.security.oauthbearer.internals.expiring.ExpiringCredentialRefreshingLogin")
                 // VerificationKeyResolver is value on static map in OAuthBearerValidatorCallbackHandler
                 .addRuntimeInitializedClass("org.apache.kafka.common.security.oauthbearer.OAuthBearerValidatorCallbackHandler")
+                .addRuntimeInitializedClass("org.apache.kafka.common.security.oauthbearer.DefaultJwtValidator")
+                .addRuntimeInitializedClass("org.apache.kafka.common.security.oauthbearer.ClientJwtValidator")
                 .addRuntimeInitializedClass("org.apache.kafka.shaded.com.google.protobuf.UnsafeUtil");
         return builder.build();
     }

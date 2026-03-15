@@ -25,7 +25,7 @@ import io.smallrye.config.common.AbstractConfigSource;
  * <a href="https://github.com/quarkusio/quarkus/discussions/46915">#46915</a>.
  */
 public class TestValueRegistryConfigSource extends AbstractConfigSource {
-    public static final ExtensionContext.Namespace CONFIG = ExtensionContext.Namespace.create(new Object());
+    public static final ExtensionContext.Namespace CONFIG = ExtensionContext.Namespace.create("quarkus-test-config");
     private static final Namespace LAUNCHER_CONFIG = Namespace.create(CONFIG.getParts());
 
     private final NamespacedHierarchicalStore<Namespace> store;
@@ -43,7 +43,7 @@ public class TestValueRegistryConfigSource extends AbstractConfigSource {
 
     @Override
     public String getValue(String propertyName) {
-        ValueRegistry valueRegistry = store.get(LAUNCHER_CONFIG, ValueRegistry.class, ValueRegistry.class);
+        ValueRegistry valueRegistry = store.get(LAUNCHER_CONFIG, ValueRegistry.class.getName(), ValueRegistry.class);
         if (valueRegistry != null) {
             RuntimeInfo<?> value = valueRegistry.get(propertyName);
             // TODO - We may be required to convert this to the expected config string in Config

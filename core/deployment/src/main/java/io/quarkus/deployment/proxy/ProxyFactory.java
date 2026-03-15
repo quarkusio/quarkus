@@ -70,8 +70,7 @@ public class ProxyFactory<T> {
         }
 
         this.classBuilder = ClassCreator.builder()
-                .classOutput(configuration.getClassOutput() != null ? configuration.getClassOutput()
-                        : new InjectIntoClassloaderClassOutput(configuration.getClassLoader()))
+                .classOutput(new InjectIntoClassloaderClassOutput(configuration.getClassLoader()))
                 .className(this.proxyName)
                 .superClass(this.superClassName);
         if (!configuration.getAdditionalInterfaces().isEmpty()) {

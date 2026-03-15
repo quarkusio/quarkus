@@ -1,5 +1,6 @@
 name: quarkus-my-quarkiverse-ext
 title: My Quarkiverse extension
-version: dev
+version:
+  main: dev # fallback to using the matched refname as the value for other branches
 nav:
   - modules/ROOT/nav.adoc

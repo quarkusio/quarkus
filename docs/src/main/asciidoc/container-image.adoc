@@ -58,7 +58,7 @@ The exact configuration is:
 quarkus.jib.jvm-additional-arguments=-agentlib:jdwp=transport=dt_socket\\,server=y\\,suspend=n\\,address=*:5005
 ----
 
-Other base images might provide launch scripts that enable debugging when an environment variable is set, in which case you would set than environment variable when launching the container.
+Other base images might provide launch scripts that enable debugging when an environment variable is set, in which case you would set that environment variable when launching the container.
 
 ==== Custom Entrypoint
 

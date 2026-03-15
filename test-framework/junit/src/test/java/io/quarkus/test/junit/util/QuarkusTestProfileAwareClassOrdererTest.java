@@ -115,7 +115,7 @@ class QuarkusTestProfileAwareClassOrdererTest {
                 .getClassDescriptors();
 
         // change secondary orderer from ClassName to OrderAnnotation
-        new QuarkusTestProfileAwareClassOrderer("20_", "40_", "50_", "60_",
+        new QuarkusTestProfileAwareClassOrderer("20_", "40_", "50_", "10_", "_60",
                 Optional.of(ClassOrderer.OrderAnnotation.class.getName())).orderClasses(contextMock);
 
         assertThat(input).containsExactly(quarkusTestb1Desc,
@@ -151,7 +151,7 @@ class QuarkusTestProfileAwareClassOrdererTest {
                 .getClassDescriptors();
 
         // change secondary orderer from ClassName to OrderAnnotation
-        new QuarkusTestProfileAwareClassOrderer("20_", "40_", "50_", "60_",
+        new QuarkusTestProfileAwareClassOrderer("20_", "40_", "50_", "_5", "60_",
                 Optional.of(ClassOrderer.OrderAnnotation.class.getName())).orderClasses(contextMock);
 
         assertThat(input).containsExactly(
@@ -202,7 +202,7 @@ class QuarkusTestProfileAwareClassOrdererTest {
                 .getClassDescriptors();
 
         // change secondary orderer from ClassName to OrderAnnotation
-        new QuarkusTestProfileAwareClassOrderer("20_", "40_", "50_", "60_",
+        new QuarkusTestProfileAwareClassOrderer("20_", "40_", "50_", "70_", "60_",
                 Optional.of(ClassOrderer.OrderAnnotation.class.getName())).orderClasses(contextMock);
 
         assertThat(input).containsExactly(
@@ -294,7 +294,7 @@ class QuarkusTestProfileAwareClassOrdererTest {
         doReturn(input).when(contextMock)
                 .getClassDescriptors();
 
-        new QuarkusTestProfileAwareClassOrderer("20_", "30_", "40_", "01_", Optional.empty()).orderClasses(contextMock);
+        new QuarkusTestProfileAwareClassOrderer("20_", "30_", "40_", "35_", "01_", Optional.empty()).orderClasses(contextMock);
 
         assertThat(input).containsExactly(nonQuarkusTestDesc, quarkusTestDesc);
     }
@@ -314,7 +314,7 @@ class QuarkusTestProfileAwareClassOrdererTest {
         doReturn(input).when(contextMock)
                 .getClassDescriptors();
 
-        new QuarkusTestProfileAwareClassOrderer("20_", "30_", "40_", "60_",
+        new QuarkusTestProfileAwareClassOrderer("20_", "30_", "40_", "80_", "60_",
                 Optional.of(ClassOrderer.OrderAnnotation.class.getName())).orderClasses(contextMock);
 
         assertThat(input).containsExactly(

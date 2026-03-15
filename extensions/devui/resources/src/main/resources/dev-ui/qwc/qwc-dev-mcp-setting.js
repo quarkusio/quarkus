@@ -3,6 +3,7 @@ import 'qwc-no-data';
 import { basepath } from 'devui-data';
 import { JsonRpc } from 'jsonrpc';
 import '@vaadin/button';
+import '@vaadin/details';
 import { RouterController } from 'router-controller';
 import { notifier } from 'notifier';
 import { msg, updateWhenLocaleChanges, dynamicMsg } from 'localization';
@@ -40,6 +41,50 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
     }
     .unlistedLink:hover {
       filter: brightness(150%);
+    }
+    .ideConfigurations {
+      padding-top: 30px;
+      width: 100%;
+    }
+    .ideConfigHeader {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ideConfigContent {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .configFile {
+      font-size: 0.9em;
+      color: var(--lumo-secondary-text-color);
+    }
+    .codeBlock {
+      background-color: var(--lumo-contrast-5pct);
+      border-radius: 4px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 0.85em;
+      white-space: pre;
+      overflow-x: auto;
+      position: relative;
+    }
+    .codeBlockHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+    .docsLink {
+      font-size: 0.85em;
+    }
+    .docsLink a {
+      color: var(--lumo-primary-color);
+      text-decoration: none;
+    }
+    .docsLink a:hover {
+      text-decoration: underline;
     }
   `;
 
@@ -169,7 +214,8 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
         </span>
       <div/>
     </div>
-    ${this._renderDisableButton()}`;
+    ${this._renderDisableButton()}
+    ${this._renderIdeConfigurations()}`;
   }
 
   _renderUnlistedPagesLinks() {
@@ -211,6 +257,163 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
         this._getConnectedClients();
       });
     }
+  }
+
+  _getIdeConfigurations() {
+    return [
+      {
+        name: 'Cursor',
+        icon: 'font-awesome-solid:code',
+        file: '~/.cursor/mcp.json',
+        docsUrl: 'https://docs.cursor.com/context/mcp',
+        config: {
+          mcpServers: {
+            'quarkus-mcp': {
+              url: this._mcpPath
+            }
+          }
+        }
+      },
+      {
+        name: 'VS Code (GitHub Copilot)',
+        icon: 'font-awesome-brands:microsoft',
+        file: '.vscode/mcp.json',
+        docsUrl: 'https://code.visualstudio.com/docs/copilot/chat/mcp-servers',
+        config: {
+          servers: {
+            'quarkus-mcp': {
+              type: 'sse',
+              url: this._mcpPath
+            }
+          }
+        }
+      },
+      {
+        name: 'Claude Desktop',
+        icon: 'font-awesome-solid:desktop',
+        file: '~/Library/Application Support/Claude/claude_desktop_config.json (macOS) or %APPDATA%\\Claude\\claude_desktop_config.json (Windows)',
+        docsUrl: 'https://modelcontextprotocol.io/quickstart/user',
+        config: {
+          mcpServers: {
+            'quarkus-mcp': {
+              command: 'npx',
+              args: ['-y', 'mcp-remote', this._mcpPath]
+            }
+          }
+        }
+      },
+      {
+        name: 'Cline',
+        icon: 'font-awesome-solid:terminal',
+        file: 'Cline MCP Settings (via UI)',
+        docsUrl: 'https://docs.cline.bot/mcp-servers/configuring-mcp-servers',
+        config: {
+          mcpServers: {
+            'quarkus-mcp': {
+              url: this._mcpPath,
+              disabled: false
+            }
+          }
+        }
+      },
+      {
+        name: 'Goose',
+        icon: 'font-awesome-solid:feather',
+        file: '~/.config/goose/config.yaml',
+        docsUrl: 'https://block.github.io/goose/docs/getting-started/using-extensions',
+        configString: `extensions:
+  quarkus-mcp:
+    name: Quarkus MCP
+    type: sse
+    uri: ${this._mcpPath}
+    enabled: true`
+      },
+      {
+        name: 'Windsurf',
+        icon: 'font-awesome-solid:wind',
+        file: '~/.codeium/windsurf/mcp_config.json',
+        docsUrl: 'https://docs.windsurf.com/windsurf/cascade/mcp',
+        config: {
+          mcpServers: {
+            'quarkus-mcp': {
+              serverUrl: this._mcpPath
+            }
+          }
+        }
+      },
+      {
+        name: 'Zed',
+        icon: 'font-awesome-solid:bolt',
+        file: '~/.config/zed/settings.json',
+        docsUrl: 'https://zed.dev/docs/ai/mcp',
+        config: {
+          context_servers: {
+            'quarkus-mcp': {
+              command: {
+                path: 'npx',
+                args: ['-y', 'mcp-remote', this._mcpPath]
+              }
+            }
+          }
+        }
+      },
+      {
+        name: 'JetBrains IDEs',
+        icon: 'font-awesome-solid:cube',
+        file: 'Settings | Tools | MCP Server (auto-configure available)',
+        docsUrl: 'https://www.jetbrains.com/help/idea/mcp-server.html',
+        config: {
+          mcpServers: {
+            'quarkus-mcp': {
+              url: this._mcpPath
+            }
+          }
+        }
+      }
+    ];
+  }
+
+  _renderIdeConfigurations() {
+    const configs = this._getIdeConfigurations();
+    return html`
+      <div class="ideConfigurations">
+        ${configs.map((ide) => this._renderIdeConfigPanel(ide))}
+      </div>
+    `;
+  }
+
+  _renderIdeConfigPanel(ide) {
+    const configText = ide.configString || JSON.stringify(ide.config, null, 2);
+    return html`
+      <vaadin-details>
+        <div slot="summary" class="ideConfigHeader">
+          <vaadin-icon icon="${ide.icon}"></vaadin-icon>
+          <span>${ide.name}</span>
+        </div>
+        <div class="ideConfigContent">
+          <div class="configFile">
+            <b>${msg('Configuration file:', { id: 'devmcp-config-file' })}</b> ${ide.file}
+          </div>
+          <div class="codeBlockHeader">
+            <span class="docsLink">
+              <a href="${ide.docsUrl}" target="_blank" rel="noopener noreferrer">
+                ${msg('Documentation', { id: 'devmcp-docs-link' })}
+                <vaadin-icon icon="font-awesome-solid:arrow-up-right-from-square" style="font-size: 0.8em;"></vaadin-icon>
+              </a>
+            </span>
+            <vaadin-button
+              theme="tertiary small"
+              .title=${msg('Copy configuration', { id: 'devmcp-copy-config' })}
+              @click=${() => this._copyToClipboard(configText)}
+            >
+              <vaadin-icon icon="font-awesome-solid:clipboard" slot="prefix"></vaadin-icon>
+              ${msg('Copy', { id: 'devmcp-copy' })}
+            </vaadin-button>
+          </div>
+          <div class="codeBlock">${configText}</div>
+        </div>
+      </vaadin-details>
+    `;
   }
 
   _copyToClipboard(txt) {

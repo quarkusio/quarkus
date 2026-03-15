@@ -1,5 +1,7 @@
 package io.quarkus.rest.client.reactive.deployment;
 
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
+
 import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.util.LinkedHashMap;
@@ -15,11 +17,10 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.rest.client.reactive.runtime.ResteasyReactiveResponseRedirectHandler;
 import io.quarkus.runtime.util.HashUtil;
 
@@ -29,12 +30,10 @@ import io.quarkus.runtime.util.HashUtil;
  */
 class ClientRedirectHandler {
 
-    private static final String[] EMPTY_STRING_ARRAY = new String[0];
-    private static final ResultHandle[] EMPTY_RESULT_HANDLES_ARRAY = new ResultHandle[0];
-    private final ClassOutput classOutput;
+    private final Gizmo gizmo;
 
-    ClientRedirectHandler(ClassOutput classOutput) {
-        this.classOutput = classOutput;
+    ClientRedirectHandler(Gizmo gizmo) {
+        this.gizmo = gizmo;
     }
 
     /**
@@ -103,38 +102,45 @@ class ClientRedirectHandler {
         ClassInfo restClientInterfaceClassInfo = targetMethod.declaringClass();
         String generatedClassName = restClientInterfaceClassInfo.name().toString() + "_" + targetMethod.name() + "_"
                 + "ResponseRedirectHandler" + "_" + HashUtil.sha1(sigBuilder.toString());
-        try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput).className(generatedClassName)
-                .interfaces(ResteasyReactiveResponseRedirectHandler.class).build()) {
-            MethodCreator handle = cc.getMethodCreator("handle", URI.class, Response.class);
-            LinkedHashMap<String, ResultHandle> targetMethodParams = new LinkedHashMap<>();
-            for (Type paramType : targetMethod.parameterTypes()) {
-                ResultHandle targetMethodParamHandle;
-                if (paramType.name().equals(ResteasyReactiveDotNames.RESPONSE)) {
-                    targetMethodParamHandle = handle.getMethodParam(0);
-                } else {
-                    String message = DotNames.CLIENT_EXCEPTION_MAPPER + " can only take parameters of type '"
-                            + ResteasyReactiveDotNames.RESPONSE + "' or '" + DotNames.METHOD + "'"
-                            + " Offending instance is '" + targetMethod.declaringClass().name().toString()
-                            + "#" + targetMethod.name() + "'";
-                    throw new IllegalStateException(message);
-                }
-                targetMethodParams.put(paramType.name().toString(), targetMethodParamHandle);
-            }
+        final MethodInfo target = targetMethod;
+        final int finalPriority = priority;
+        gizmo.class_(generatedClassName, cc -> {
+            cc.implements_(ResteasyReactiveResponseRedirectHandler.class);
+            cc.defaultConstructor();
+            cc.method("handle", mc -> {
+                mc.returning(URI.class);
+                ParamVar response = mc.parameter("response", Response.class);
+                mc.body(bc -> {
+                    LinkedHashMap<String, Expr> targetMethodParams = new LinkedHashMap<>();
+                    for (Type paramType : target.parameterTypes()) {
+                        Expr targetMethodParamHandle;
+                        if (paramType.name().equals(ResteasyReactiveDotNames.RESPONSE)) {
+                            targetMethodParamHandle = response;
+                        } else {
+                            String message = DotNames.CLIENT_EXCEPTION_MAPPER + " can only take parameters of type '"
+                                    + ResteasyReactiveDotNames.RESPONSE + "' or '" + DotNames.METHOD + "'"
+                                    + " Offending instance is '" + target.declaringClass().name().toString()
+                                    + "#" + target.name() + "'";
+                            throw new IllegalStateException(message);
+                        }
+                        targetMethodParams.put(paramType.name().toString(), targetMethodParamHandle);
+                    }
 
-            ResultHandle resultHandle = handle.invokeStaticInterfaceMethod(
-                    MethodDescriptor.ofMethod(
-                            restClientInterfaceClassInfo.name().toString(),
-                            targetMethod.name(),
-                            targetMethod.returnType().name().toString(),
-                            targetMethodParams.keySet().toArray(EMPTY_STRING_ARRAY)),
-                    targetMethodParams.values().toArray(EMPTY_RESULT_HANDLES_ARRAY));
-            handle.returnValue(resultHandle);
+                    Expr resultHandle = bc.invokeStatic(methodDescOf(target),
+                            targetMethodParams.values().toArray(new Expr[0]));
+                    bc.return_(resultHandle);
+                });
+            });
 
-            if (priority != Priorities.USER) {
-                MethodCreator getPriority = cc.getMethodCreator("getPriority", int.class);
-                getPriority.returnValue(getPriority.load(priority));
+            if (finalPriority != Priorities.USER) {
+                cc.method("getPriority", mc -> {
+                    mc.returning(int.class);
+                    mc.body(bc -> {
+                        bc.return_(Const.of(finalPriority));
+                    });
+                });
             }
-        }
+        });
 
         return new GeneratedClassResult(restClientInterfaceClassInfo.name().toString(), generatedClassName, priority);
     }

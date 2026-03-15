@@ -33,8 +33,8 @@ export class QwcExtensions extends observeState(LitElement) {
             max-height: 100%;
         }
         .grid {
-            display: flex;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 20px;
             padding-left: 5px;
             padding-right: 10px;

@@ -5,6 +5,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -114,11 +116,33 @@ public interface PathTree {
     ManifestAttributes getManifestAttributes();
 
     /**
+     * Returns a set of resource names provided by this path tree.
+     * The set may include both directories and files.
+     *
+     * @return a set of resource names provided by this path tree
+     */
+    default Set<String> getResourceNames() {
+        Set<String> names = new HashSet<>();
+        walk(visit -> names.add(visit.getRelativePath()));
+        return names;
+    }
+
+    /**
      * Walks the tree.
+     * <p/>
+     * This method will make sure the relevant multi release content
+     * is associated with the expected resource name paths for the current Java version.
      *
      * @param visitor path visitor
      */
     void walk(PathVisitor visitor);
+
+    /**
+     * Walks the tree without remapping multi release content to the paths expected for the current Java version.
+     *
+     * @param visitor path visitor
+     */
+    void walkRaw(PathVisitor visitor);
 
     /**
      * Walks a subtree of this tree that begins with a passed in {@code relativePath},

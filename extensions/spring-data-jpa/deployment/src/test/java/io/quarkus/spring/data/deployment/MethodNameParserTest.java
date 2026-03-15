@@ -46,7 +46,7 @@ public class MethodNameParserTest {
         assertSameClass(result.getEntityClass(), entityClass);
         assertThat(result.getParamCount()).isEqualTo(2);
         assertThat(result.getQuery())
-                .isEqualTo("SELECT person FROM Person AS person WHERE name = ?1 AND order = ?2");
+                .isEqualTo("SELECT person FROM Person AS person WHERE person.name = ?1 AND person.order = ?2");
     }
 
     @Test
@@ -57,7 +57,7 @@ public class MethodNameParserTest {
         assertSameClass(result.getEntityClass(), entityClass);
         assertThat(result.getParamCount()).isEqualTo(2);
         assertThat(result.getQuery())
-                .isEqualTo("SELECT person FROM Person AS person WHERE name = ?1 OR order = ?2");
+                .isEqualTo("SELECT person FROM Person AS person WHERE person.name = ?1 OR person.order = ?2");
     }
 
     @Test
@@ -66,7 +66,7 @@ public class MethodNameParserTest {
                 additionalClasses);
         assertThat(result).isNotNull();
         assertSameClass(result.getEntityClass(), entityClass);
-        assertThat(result.getQuery()).isEqualTo("SELECT person FROM Person AS person WHERE addressCountry = ?1");
+        assertThat(result.getQuery()).isEqualTo("SELECT person FROM Person AS person WHERE person.addressCountry = ?1");
         assertThat(result.getParamCount()).isEqualTo(1);
     }
 
@@ -77,7 +77,8 @@ public class MethodNameParserTest {
         assertThat(result).isNotNull();
         assertSameClass(result.getEntityClass(), entityClass);
         assertThat(result.getQuery())
-                .isEqualTo("SELECT person FROM Person AS person WHERE name = ?1 OR age = ?2 OR active = ?3");
+                .isEqualTo(
+                        "SELECT person FROM Person AS person WHERE person.name = ?1 OR person.age = ?2 OR person.active = ?3");
         assertThat(result.getParamCount()).isEqualTo(3);
     }
 
@@ -88,7 +89,8 @@ public class MethodNameParserTest {
         assertThat(result).isNotNull();
         assertSameClass(result.getEntityClass(), entityClass);
         assertThat(result.getQuery())
-                .isEqualTo("SELECT person FROM Person AS person WHERE name = ?1 AND age = ?2 OR active = ?3");
+                .isEqualTo(
+                        "SELECT person FROM Person AS person WHERE person.name = ?1 AND person.age = ?2 OR person.active = ?3");
         assertThat(result.getParamCount()).isEqualTo(3);
     }
 
@@ -99,7 +101,8 @@ public class MethodNameParserTest {
         assertThat(result).isNotNull();
         assertSameClass(result.getEntityClass(), entityClass);
         assertThat(result.getQuery())
-                .isEqualTo("SELECT person FROM Person AS person WHERE name = ?1 AND age = ?2 AND active = ?3");
+                .isEqualTo(
+                        "SELECT person FROM Person AS person WHERE person.name = ?1 AND person.age = ?2 AND person.active = ?3");
         assertThat(result.getParamCount()).isEqualTo(3);
     }
 
@@ -173,6 +176,19 @@ public class MethodNameParserTest {
                 .isEqualTo(
                         "FROM ParentBase AS parentbase LEFT JOIN parentbase.children children WHERE children.nombre = ?1");
         assertThat(result.getParamCount()).isEqualTo(1);
+    }
+
+    // https://github.com/quarkusio/quarkus/issues/48032
+    @Test
+    public void testFieldNameMatchingEntityName() throws Exception {
+        MethodNameParser.Result result = parseMethod(CategoryRepository.class, "findByCategory", Category.class);
+        assertThat(result).isNotNull();
+        assertSameClass(result.getEntityClass(), Category.class);
+        assertThat(result.getParamCount()).isEqualTo(1);
+        // The field 'category' must be qualified with the entity alias to avoid
+        // JPQL ambiguity with the entity alias 'category' (derived from entity name 'Category')
+        assertThat(result.getQuery())
+                .contains("category.category = ?1");
     }
 
     @Test

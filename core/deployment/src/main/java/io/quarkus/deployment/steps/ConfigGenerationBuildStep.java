@@ -88,7 +88,6 @@ import io.quarkus.runtime.BuildAnalyticsConfig;
 import io.quarkus.runtime.BuilderConfig;
 import io.quarkus.runtime.CommandLineRuntimeConfig;
 import io.quarkus.runtime.DebugRuntimeConfig;
-import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.StaticInitSafe;
 import io.quarkus.runtime.configuration.AbstractConfigBuilder;
 import io.quarkus.runtime.configuration.ConfigBuilder;
@@ -369,10 +368,7 @@ public class ConfigGenerationBuildStep {
                 .setLaunchMode(launchModeBuildItem.getLaunchMode())
                 .setBuildTimeReadResult(configItem.getReadResult())
                 .setClassOutput(new GeneratedClassGizmoAdaptor(generatedClass, false))
-                .setLiveReloadPossible(launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT
-                        || launchModeBuildItem.isAuxiliaryApplication())
-                .build()
-                .run();
+                .build();
     }
 
     @BuildStep

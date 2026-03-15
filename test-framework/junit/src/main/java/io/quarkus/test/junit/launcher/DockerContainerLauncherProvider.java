@@ -111,6 +111,8 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
                         .orElse(Boolean.FALSE)
                         // only record AOT file for the default profile
                         && (context.profile() == null),
+                config.getOptionalValues("quarkus.package.jar.aot.additional-recording-args", String.class)
+                        .orElse(List.of()),
                 entryPoint,
                 containerWorkingDirectory,
                 programArgs,
@@ -170,6 +172,7 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
         private final boolean pullRequired;
         private final Map<Integer, Integer> additionalExposedPorts;
         private final Boolean generateAotFile;
+        private final List<String> additionalRecordingArgs;
         private final Optional<String> entryPoint;
         private final Optional<String> containerWorkingDirectory;
         private final List<String> programArgs;
@@ -186,6 +189,7 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
                 Map<String, String> labels,
                 Map<String, String> volumeMounts,
                 Boolean generateAotFile,
+                List<String> additionalRecordingArgs,
                 Optional<String> entryPoint,
                 Optional<String> containerWorkingDirectory,
                 List<String> programArgs, String outputTargetDirectory) {
@@ -197,6 +201,7 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
             this.labels = labels;
             this.volumeMounts = volumeMounts;
             this.generateAotFile = generateAotFile;
+            this.additionalRecordingArgs = additionalRecordingArgs;
             this.entryPoint = entryPoint;
             this.programArgs = programArgs;
             this.outputTargetDirectory = outputTargetDirectory;
@@ -245,6 +250,11 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
         @Override
         public boolean generateAotFile() {
             return generateAotFile;
+        }
+
+        @Override
+        public List<String> additionalRecordingArgs() {
+            return additionalRecordingArgs;
         }
 
         @Override

@@ -1,5 +1,6 @@
 package io.quarkus.test.junit.util;
 
+import java.lang.annotation.Annotation;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -8,6 +9,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.logging.Logger;
 import org.junit.jupiter.api.ClassDescriptor;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.ClassOrdererContext;
@@ -37,7 +39,8 @@ import io.quarkus.test.junit.main.QuarkusMainTest;
  * via {@code CFGKEY_ORDER_PREFIX_*}, e.g. non-Quarkus tests can be run first (not last) by setting
  * {@link #CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST} to {@code 10_}.
  * <p/>
- * The secondary order suffix can be changed via {@value #CFGKEY_SECONDARY_ORDERER}, e.g. a value of
+ * The secondary order suffix can be changed via {@value #CFGKEY_DOCUMENTED_SECONDARY_ORDERER} or
+ * {@value #CFGKEY_UNDOCUMENTED_SECONDARY_ORDERER}, e.g. a value of
  * {@link org.junit.jupiter.api.ClassOrderer.Random org.junit.jupiter.api.ClassOrderer$Random} will order the test classes
  * within one group randomly instead by class name.
  * That order will also generally be maintained across groups, with each group running according to the position of its earliest
@@ -51,9 +54,12 @@ import io.quarkus.test.junit.main.QuarkusMainTest;
  */
 public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
 
+    private static final Logger LOG = Logger.getLogger(QuarkusTestProfileAwareClassOrderer.class);
+
     protected static final String DEFAULT_ORDER_PREFIX_QUARKUS_TEST = "20_";
     protected static final String DEFAULT_ORDER_PREFIX_QUARKUS_MAIN_TEST = "30_";
     protected static final String DEFAULT_ORDER_PREFIX_QUARKUS_INTEGRATION_TEST = "40_";
+    protected static final String DEFAULT_ORDER_PREFIX_QUARKUS_COMPONENT_TEST = "70_";
     protected static final String DEFAULT_ORDER_PREFIX_NON_QUARKUS_TEST = "60_";
 
     static final String CFGKEY_ORDER_PREFIX_QUARKUS_TEST = "junit.quarkus.orderer.prefix.quarkus-test";
@@ -62,15 +68,20 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
 
     static final String CFGKEY_ORDER_PREFIX_QUARKUS_MAIN_TEST = "junit.quarkus.orderer.prefix.quarkus-main-test";
 
+    static final String CFGKEY_ORDER_PREFIX_QUARKUS_COMPONENT_TEST = "junit.quarkus.orderer.prefix.quarkus-component-test";
+
     static final String CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST = "junit.quarkus.orderer.prefix.non-quarkus-test";
 
-    static final String CFGKEY_SECONDARY_ORDERER = "junit.quarkus.orderer.secondary-orderer";
+    static final String CFGKEY_UNDOCUMENTED_SECONDARY_ORDERER = "junit.quarkus.orderer.secondary-orderer";
+    static final String CFGKEY_DOCUMENTED_SECONDARY_ORDERER = "quarkus.test.class-orderer";
 
     private final String prefixQuarkusTest;
     private final String prefixQuarkusMainTest;
+    private final String prefixQuarkusComponentTest;
     private final String prefixQuarkusIntegrationTest;
     private final String prefixNonQuarkusTest;
     private final Optional<String> secondaryOrderer;
+    private final Optional<Class<? extends Annotation>> componentTestAnnotation;
 
     public QuarkusTestProfileAwareClassOrderer() {
         Config config = ConfigProvider.getConfig();
@@ -81,22 +92,54 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
                 .orElse(DEFAULT_ORDER_PREFIX_QUARKUS_MAIN_TEST);
         this.prefixQuarkusIntegrationTest = config.getOptionalValue(CFGKEY_ORDER_PREFIX_QUARKUS_INTEGRATION_TEST, String.class)
                 .orElse(DEFAULT_ORDER_PREFIX_QUARKUS_INTEGRATION_TEST);
+        this.prefixQuarkusComponentTest = config.getOptionalValue(CFGKEY_ORDER_PREFIX_QUARKUS_COMPONENT_TEST, String.class)
+                .orElse(DEFAULT_ORDER_PREFIX_QUARKUS_COMPONENT_TEST);
         this.prefixNonQuarkusTest = config.getOptionalValue(CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST, String.class)
                 .orElse(DEFAULT_ORDER_PREFIX_NON_QUARKUS_TEST);
-        this.secondaryOrderer = config.getOptionalValue(CFGKEY_SECONDARY_ORDERER, String.class);
+
+        // We have two config values we honour. Since it's just one value, not a namespace, relocation + fallback is a bit heavy, just look both up.
+        String secondaryOrdererFromConfig = config.getOptionalValue(CFGKEY_UNDOCUMENTED_SECONDARY_ORDERER, String.class)
+                .orElse(config.getOptionalValue(CFGKEY_DOCUMENTED_SECONDARY_ORDERER, String.class).orElse(null));
+
+        if (this.getClass().getName().equals(secondaryOrdererFromConfig)) {
+            // Avoid infinitely recursing
+            LOG.warnf("Not using the configured secondary orderer, %s, because that would cause an infinite recursion.",
+                    secondaryOrdererFromConfig);
+            secondaryOrdererFromConfig = null;
+        }
+        this.secondaryOrderer = secondaryOrdererFromConfig != null ? Optional.of(secondaryOrdererFromConfig) : Optional.empty();
+        componentTestAnnotation = loadComponentTestAnnotation();
+
     }
 
     QuarkusTestProfileAwareClassOrderer(
             final String prefixQuarkusTest,
             final String prefixQuarkusMainTest,
             final String prefixQuarkusIntegrationTest,
+            final String prefixQuarkusComponentTest,
             final String prefixNonQuarkusTest,
             final Optional<String> secondaryOrderer) {
         this.prefixQuarkusTest = prefixQuarkusTest;
         this.prefixQuarkusMainTest = prefixQuarkusMainTest;
+        this.prefixQuarkusComponentTest = prefixQuarkusComponentTest;
         this.prefixQuarkusIntegrationTest = prefixQuarkusIntegrationTest;
         this.prefixNonQuarkusTest = prefixNonQuarkusTest;
         this.secondaryOrderer = secondaryOrderer;
+
+        componentTestAnnotation = loadComponentTestAnnotation();
+
+    }
+
+    private static Optional<Class<? extends Annotation>> loadComponentTestAnnotation() {
+        Optional<Class<? extends Annotation>> maybeComponentTestAnnotation;
+        try {
+            maybeComponentTestAnnotation = Optional
+                    .of((Class<? extends Annotation>) Class.forName("io.quarkus.test.component.QuarkusComponentTest"));
+        } catch (ClassNotFoundException e) {
+            // The dependency isn't there, so we definitely don't have to worry about it
+            maybeComponentTestAnnotation = Optional.empty();
+        }
+        return maybeComponentTestAnnotation;
     }
 
     @Override
@@ -157,6 +200,8 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
         } else {
             if (classDescriptor.isAnnotated(QuarkusMainTest.class)) {
                 return prefixQuarkusMainTest;
+            } else if (componentTestAnnotation.isPresent() && classDescriptor.isAnnotated(componentTestAnnotation.get())) {
+                return prefixQuarkusComponentTest;
             } else {
                 return prefixNonQuarkusTest;
             }

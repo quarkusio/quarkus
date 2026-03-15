@@ -71,6 +71,40 @@ public class FilteredPathTreeTest {
     }
 
     @Test
+    public void getResourceNamesDirIncludeToolbox() {
+        var pathTree = PathTree.ofDirectoryOrArchive(testDir, PathFilter.forIncludes(List.of("*/toolbox/**")));
+        assertThat(pathTree.getResourceNames()).containsExactlyInAnyOrder(
+                "org/toolbox/Axe.class",
+                "org/toolbox/Hammer.class",
+                "org/toolbox/Saw.class");
+    }
+
+    @Test
+    public void getResourceNamesJarIncludeToolbox() {
+        var pathTree = PathTree.ofDirectoryOrArchive(testJar, PathFilter.forIncludes(List.of("*/toolbox/**")));
+        assertThat(pathTree.getResourceNames()).containsExactlyInAnyOrder(
+                "org/toolbox/Axe.class",
+                "org/toolbox/Hammer.class",
+                "org/toolbox/Saw.class");
+    }
+
+    @Test
+    public void getResourceNamesFilteredPathTree() {
+        var originalFilter = new PathFilter(
+                List.of("*/toolbox/**"),
+                List.of("**/Hammer.class"));
+        var outerFilter = new PathFilter(
+                List.of("**/Axe.class"),
+                List.of("**/Saw.class"));
+
+        var pathTree = new FilteredPathTree(PathTree.ofDirectoryOrArchive(testDir, originalFilter), outerFilter);
+        assertThat(pathTree.getResourceNames()).containsExactlyInAnyOrder("org/toolbox/Axe.class");
+
+        pathTree = new FilteredPathTree(PathTree.ofDirectoryOrArchive(testJar, originalFilter), outerFilter);
+        assertThat(pathTree.getResourceNames()).containsExactlyInAnyOrder("org/toolbox/Axe.class");
+    }
+
+    @Test
     public void dirIncludeToolbox() {
         var pathTree = PathTree.ofDirectoryOrArchive(testDir, PathFilter.forIncludes(List.of("*/toolbox/**")));
         assertThat(getAllPaths(pathTree)).containsExactlyInAnyOrder(

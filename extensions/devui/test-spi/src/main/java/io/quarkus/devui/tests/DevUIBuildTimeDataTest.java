@@ -1,49 +1,49 @@
 package io.quarkus.devui.tests;
 
-import static io.quarkus.runtime.LaunchMode.DEVELOPMENT;
+import static io.quarkus.devui.tests.DevUITestUtils.DOT;
+import static io.quarkus.devui.tests.DevUITestUtils.LOCAL_BASE_URI;
+import static io.quarkus.devui.tests.DevUITestUtils.managementRootPath;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
+import org.junit.jupiter.api.BeforeEach;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.quarkus.test.config.TestConfigProviderResolver;
+import io.quarkus.value.registry.ValueRegistry;
+import io.smallrye.config.Config;
 
 public abstract class DevUIBuildTimeDataTest {
-
-    protected static final Logger log = Logger.getLogger(DevUIBuildTimeDataTest.class);
-
-    protected URI uri;
+    private static final Logger log = Logger.getLogger(DevUIBuildTimeDataTest.class);
 
     private final ObjectMapper mapper = new ObjectMapper();
     private final JsonFactory factory = mapper.getFactory();
+    private final String namespace;
 
-    private static final String DOT = ".";
+    private URI uri;
 
     public DevUIBuildTimeDataTest(String namespace) {
         // The namespace changed to be compatible with MCP. We add some code here to be backward compatible
-        if (namespace.contains(DOT)) {
-            namespace = namespace.substring(namespace.lastIndexOf(DOT) + 1);
+        this.namespace = namespace.contains(DOT) ? namespace.substring(namespace.lastIndexOf(DOT) + 1) : namespace;
+    }
+
+    @SuppressWarnings("JUnitMalformedDeclaration")
+    @BeforeEach
+    public void beforeEach(ValueRegistry valueRegistry) {
+        if (valueRegistry.containsKey(LOCAL_BASE_URI)) {
+            URI localBaseUri = valueRegistry.get(LOCAL_BASE_URI);
+            this.uri = URI
+                    .create(localBaseUri.toString() + managementRootPath(Config.get(), "dev-ui/" + namespace + "-data.js"));
         }
-        Config config = ((TestConfigProviderResolver) ConfigProviderResolver.instance()).getConfig(DEVELOPMENT);
-        String testUrl = config.getValue("test.url", String.class);
-        String nonApplicationRoot = config.getOptionalValue("quarkus.http.non-application-root-path", String.class).orElse("q");
-        if (!nonApplicationRoot.startsWith("/")) {
-            nonApplicationRoot = "/" + nonApplicationRoot;
-        }
-        this.uri = URI.create(testUrl + nonApplicationRoot + "/dev-ui/" + namespace + "-data.js");
     }
 
     public List<String> getAllKeys() throws IOException {
@@ -60,7 +60,6 @@ public abstract class DevUIBuildTimeDataTest {
     }
 
     public JsonNode getBuildTimeData(String key) throws Exception {
-
         String data = readDataFromUrl();
         String[] kvs = data.split(CONST);
 
@@ -84,9 +83,12 @@ public abstract class DevUIBuildTimeDataTest {
         }
     }
 
-    private String readDataFromUrl() throws MalformedURLException, IOException {
-        try (Scanner scanner = new Scanner(uri.toURL().openStream(),
-                StandardCharsets.UTF_8.toString())) {
+    private String readDataFromUrl() throws IOException {
+        if (uri == null) {
+            throw new IllegalStateException("No URI available. Did Quarkus start with HTTP support?");
+        }
+
+        try (Scanner scanner = new Scanner(uri.toURL().openStream(), StandardCharsets.UTF_8)) {
             scanner.useDelimiter("\\A");
             return scanner.hasNext() ? scanner.next() : null;
         }

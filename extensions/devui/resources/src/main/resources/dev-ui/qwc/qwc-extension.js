@@ -4,6 +4,7 @@ import '@vaadin/icon';
 import '@vaadin/dialog';
 import { dialogHeaderRenderer, dialogRenderer, dialogFooterRenderer } from '@vaadin/dialog/lit.js';
 import '@qomponent/qui-badge';
+import '@qomponent/qui-card';
 import { JsonRpc } from 'jsonrpc';
 import { notifier } from 'notifier';
 import { connectionState } from 'connection-state';
@@ -17,63 +18,42 @@ export class QwcExtension extends observeState(LitElement) {
     jsonRpc = new JsonRpc("devui-extensions", false);
 
     static styles = css`
-        .card {
+        :host {
+            width: 100%;
             height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            border: 1px solid var(--lumo-contrast-10pct);
-            border-radius: 4px;
-            width: 300px;
-            filter: brightness(90%);
+        }
+
+        qui-card {
+            height: 100%;
         }
 
         .card-header {
-            font-size: var(--lumo-font-size-l);
-            line-height: 1;
-            height: 25px;
             display: flex;
             flex-direction: row;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 10px;
-            background-color: var(--lumo-contrast-5pct);
-            border-bottom: 1px solid var(--lumo-contrast-10pct);
+            width: 100%;
         }
 
         .card-footer {
-            height: 20px;
-            padding: 10px 10px;
-            color: var(--lumo-contrast-50pct);
             display: flex;
             flex-direction: row;
             justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            color: var(--lumo-contrast-50pct);
         }
 
         .card-footer a {
             color: var(--lumo-contrast-50pct);
         }
 
-        .active:hover {
-            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
-        }
-
-        .active .card-header{
-            color: var(--lumo-contrast-80pct);
-        }
-
-        .inactive .card-header{
-            color: var(--lumo-contrast-70pct);
-        }
-        
-        .active:hover .config, .active:hover .more, .active:hover .guide, .active:hover .fav {
+        :host(:hover) .config, :host(:hover) .more, :host(:hover) .guide, :host(:hover) .fav {
             visibility:visible;
         }
 
-        .inactive:hover .config, .inactive:hover .more, .inactive:hover .guide {
-            visibility:visible;
-        }
-    
         .guide, .more, .config, .fav {
             visibility:hidden;
             --vaadin-icon-size: var(--lumo-font-size-m);
@@ -83,8 +63,13 @@ export class QwcExtension extends observeState(LitElement) {
             font-size: x-small;
             cursor: pointer;
         }
+
+        .headerTools {
+            display: flex;
+            gap: 4px;
+        }
         `;
-    
+
     static properties = {
         _dialogOpened: {state: true},
         name: {type: String},
@@ -101,12 +86,12 @@ export class QwcExtension extends observeState(LitElement) {
         unlisted: {type: String},
         builtWith: {type: String},
         providesCapabilities: {},
-        extensionDependencies: {}, 
+        extensionDependencies: {},
         favourite: {type: Boolean},
         installed: {type: Boolean},
         logoUrl: {type: String}
     };
-    
+
     constructor() {
         super();
         updateWhenLocaleChanges(this);
@@ -117,7 +102,9 @@ export class QwcExtension extends observeState(LitElement) {
     }
 
     render() {
-        
+        const isActive = this.clazz === "active";
+        const accent = isActive ? "var(--lumo-primary-color-10pct)" : null;
+
         return html`
             <vaadin-dialog class="detailDialog"
                 header-title="${this.name} ${msg('extension details', { id: 'extensions-details' })}"
@@ -135,19 +122,27 @@ export class QwcExtension extends observeState(LitElement) {
                 ${dialogFooterRenderer(() => this._renderUninstallButton(), [this.installed, connectionState.current.isConnected])}
             ></vaadin-dialog>
 
-            <div class="card ${this.clazz}">
-                ${this._headerTemplate()}
-                <slot name="content"></slot>
-                ${this._footerTemplate()}
-            </div>`;
+            <qui-card actionable ?inactive=${!isActive} accent="${accent}"
+                footer="${this._hasFooter() ? '' : null}">
+                <div slot="header" class="card-header">
+                    <div>${this.name}</div>
+                    ${this._headerToolBar()}
+                </div>
+                <slot name="content" slot="content"></slot>
+                ${this._renderFooter()}
+            </qui-card>`;
     }
 
-    _headerTemplate() {
-        return html`<div class="card-header">
-                        <div>${this.name}</div>
-                        ${this._headerToolBar()}
-                    </div>
-          `;
+    _hasFooter(){
+        return true;
+    }
+
+    _renderFooter(){
+        return html`<div slot="footer" class="card-footer">
+            ${this._renderConfigFilterIcon()}
+            ${this._renderStatus()}
+            <vaadin-icon class="icon more" icon="font-awesome-solid:ellipsis-vertical" @click="${() => (this._dialogOpened = true)}" title="${msg(str`More about the ${this.name} extension`, { id: 'extensions-more' })}"></vaadin-icon>
+        </div>`;
     }
 
     _headerToolBar(){
@@ -170,17 +165,6 @@ export class QwcExtension extends observeState(LitElement) {
                     </div>`;
     }
 
-    _footerTemplate() {
-        const name = this.name;
-        return html`
-            <div class="card-footer">
-                ${this._renderConfigFilterIcon()}
-                ${this._renderStatus()}
-                <vaadin-icon class="icon more" icon="font-awesome-solid:ellipsis-vertical" @click="${() => (this._dialogOpened = true)}" title="${msg(str`More about the ${name} extension`, { id: 'extensions-more' })}"></vaadin-icon>
-            </div>
-        `;
-    }
-
     _renderConfigFilterIcon(){
         const name = this.name;
         if(this.configFilter){
@@ -194,7 +178,7 @@ export class QwcExtension extends observeState(LitElement) {
 
     _renderStatus(){
         var l = this._statusLevelOnCard();
-        
+
         if(l) {
             return html`<qui-badge level="${l}" small><span>${this.status.toUpperCase()}</span></qui-badge>`;
         }
@@ -204,7 +188,7 @@ export class QwcExtension extends observeState(LitElement) {
         if(this.status === "experimental") {
             return "warning";
         } else if(this.status === "preview") {
-            return "contrast";   
+            return "contrast";
         }
         return null;
     }
@@ -243,15 +227,15 @@ export class QwcExtension extends observeState(LitElement) {
                 <tr>
                     <td><b>${msg('Short name', { id: 'extensions-short-name' })}</b></td>
                     <td>${this.shortName}</td>
-                </tr>        
+                </tr>
                 <tr>
                     <td><b>${msg('Keywords', { id: 'extensions-keywords' })}</b></td>
                     <td>${this._renderKeywordsDetails()}</td>
-                </tr>        
+                </tr>
                 <tr>
                     <td><b>${msg('Status', { id: 'extensions-status' })}</b></td>
                     <td><qui-badge level="${this._statusLevel()}" small><span>${this.status.toUpperCase()}</span></qui-badge></td>
-                </tr>        
+                </tr>
                 <tr>
                     <td><b>${msg('Config Filter', { id: 'extensions-config-filter' })}</b></td>
                     <td>${this.configFilter}</td>
@@ -331,7 +315,7 @@ export class QwcExtension extends observeState(LitElement) {
     _renderCommaString(cs){
         if(cs) {
             var arr = cs.split(',');
-            return html`<ul>${arr.map(v => 
+            return html`<ul>${arr.map(v =>
                 html`<li>${v}</li>`
             )}</ul>`;
         }else{

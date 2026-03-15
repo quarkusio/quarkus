@@ -1,0 +1,42 @@
+package io.quarkus.test.config;
+
+import static io.quarkus.value.registry.ValueRegistry.RuntimeKey.key;
+
+import java.lang.reflect.Field;
+
+import io.quarkus.value.registry.ValueRegistry;
+import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
+
+/**
+ * A field injector for JUnit to allow the resolution of {@link ValueRegistry} and {@link ValueRegistry.RuntimeInfo}
+ * objects in Quarkus Test Extensions.
+ */
+public class ValueRegistryInjector {
+    public static void inject(Object testInstance, ValueRegistry valueRegistry) {
+        Class<?> c = testInstance.getClass();
+        while (c != Object.class) {
+            for (Field f : c.getDeclaredFields()) {
+                if (f.getType().equals(ValueRegistry.class)) {
+                    try {
+                        f.setAccessible(true);
+                        f.set(testInstance, valueRegistry);
+                        continue;
+                    } catch (Exception e) {
+                        throw new RuntimeException("Unable to set field '" + f.getName() + "'", e);
+                    }
+                }
+
+                RuntimeKey<?> key = key(f.getType());
+                if (valueRegistry.containsKey(key)) {
+                    try {
+                        f.setAccessible(true);
+                        f.set(testInstance, valueRegistry.get(key));
+                    } catch (Exception e) {
+                        throw new RuntimeException("Unable to set field '" + f.getName() + "'", e);
+                    }
+                }
+            }
+            c = c.getSuperclass();
+        }
+    }
+}

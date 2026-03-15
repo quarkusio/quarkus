@@ -6,7 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Using Hibernate ORM and Jakarta Persistence
 include::_attributes.adoc[]
 :categories: data
-:summary: Hibernate ORM is the de facto Jakarta Persistence implementation and offers you the full breath of an Object Relational Mapper. It works beautifully in Quarkus.
+:summary: Hibernate ORM is the de facto Jakarta Persistence implementation and offers you the full breadth of an Object Relational Mapper. It works beautifully in Quarkus.
 :config-file: application.properties
 :topics: data,hibernate-orm,sql,jdbc
 :extensions: io.quarkus:quarkus-hibernate-orm
@@ -962,7 +962,11 @@ You can also fine-tune dialect behavior for specific databases using additional 
 ----
 quarkus.hibernate-orm."offline".dialect.mariadb.bytes-per-character=1
 quarkus.hibernate-orm."offline".dialect.mariadb.no-backslash-escapes=true
+quarkus.hibernate-orm."offline".dialect.mariadb.storage-engine=InnoDB <1>
+quarkus.hibernate-orm."inventory".dialect.mysql.storage-engine=MyISAM <2>
 ----
+<1> Set the storage engine for the MariaDB dialect of the `offline` persistence unit.
+<2> Different persistence units can use different storage engines.
 
 Refer to the <<configuration-reference>> section for more details on the available properties.
 

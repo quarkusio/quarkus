@@ -45,19 +45,21 @@ public interface PanacheOperations<One, Many, Query, Count, Completion, Confirma
 
     Completion update(Object entity);
 
+    Completion upsert(Object entity);
+
     Confirmation isPersistent(Object entity);
 
     Completion flush(Object entity);
 
-    Completion persist(Iterable<Object> entities);
+    Completion persist(Iterable<?> entities);
 
-    Completion persist(Stream<Object> entities);
+    Completion persist(Stream<?> entities);
 
     Completion persist(Object firstEntity, Object... entities);
 
-    Completion insert(Iterable<Object> entities);
+    Completion insert(Iterable<?> entities);
 
-    Completion insert(Stream<Object> entities);
+    Completion insert(Stream<?> entities);
 
     Completion insert(Object firstEntity, Object... entities);
 

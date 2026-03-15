@@ -5,7 +5,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -15,6 +17,7 @@ public class MultiRootPathTree implements OpenPathTree {
 
     private final PathTree[] trees;
     private final List<Path> roots;
+    private transient volatile Set<String> resourceNames;
 
     public MultiRootPathTree(PathTree... trees) {
         this.trees = trees;
@@ -67,6 +70,16 @@ public class MultiRootPathTree implements OpenPathTree {
     }
 
     @Override
+    public void walkRaw(PathVisitor visitor) {
+        if (trees.length == 0) {
+            return;
+        }
+        for (PathTree t : trees) {
+            t.walkRaw(visitor);
+        }
+    }
+
+    @Override
     public void walkIfContains(String relativePath, PathVisitor visitor) {
         if (trees.length == 0) {
             return;
@@ -74,6 +87,22 @@ public class MultiRootPathTree implements OpenPathTree {
         for (PathTree t : trees) {
             t.walkIfContains(relativePath, visitor);
         }
+    }
+
+    @Override
+    public Set<String> getResourceNames() {
+        return resourceNames == null ? resourceNames = collectResourceNames() : resourceNames;
+    }
+
+    private Set<String> collectResourceNames() {
+        if (trees.length > 0) {
+            Set<String> result = new HashSet<>();
+            for (PathTree t : trees) {
+                t.walk(visit -> result.add(visit.getRelativePath()));
+            }
+            return result;
+        }
+        return Set.of();
     }
 
     @Override

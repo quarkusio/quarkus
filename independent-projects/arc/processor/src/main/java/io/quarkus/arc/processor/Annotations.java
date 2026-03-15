@@ -206,6 +206,7 @@ public final class Annotations {
      * Returns a list of annotations created out of the given set such that the result does not have
      * annotations that are identical except of the {@linkplain AnnotationInstance#target() annotation target}.
      */
+    @Deprecated(forRemoval = true, since = "3.34")
     public static List<AnnotationInstance> uniqueAnnotations(Set<AnnotationInstance> annotations) {
         Set<AnnotationInstanceEquivalenceProxy> proxies = new HashSet<>();
         for (AnnotationInstance annotation : annotations) {

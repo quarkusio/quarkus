@@ -1,5 +1,7 @@
 package io.quarkus.test.junit;
 
+import static org.junit.jupiter.api.extension.ExtensionContext.Namespace.GLOBAL;
+
 import java.io.IOException;
 
 import org.jboss.logging.Logger;
@@ -7,6 +9,8 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.LifecycleMethodExecutionExceptionHandler;
 import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.junit.jupiter.api.extension.TestWatcher;
+
+import io.quarkus.value.registry.ValueRegistry;
 
 public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTestWithCallbacksExtension
         implements TestExecutionExceptionHandler, LifecycleMethodExecutionExceptionHandler, TestWatcher {
@@ -95,6 +99,7 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
 
     protected void setState(ExtensionContext context, QuarkusTestExtensionState state) {
         ExtensionContext.Store store = getStoreFromContext(context);
+        store.put(ValueRegistry.class.getName(), context.getStore(GLOBAL).get(ValueRegistry.class.getName()));
         store.put(QuarkusTestExtensionState.class.getName(), state);
         store.put(IO_QUARKUS_TESTING_TYPE, this.getTestingType());
     }
@@ -106,7 +111,7 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
         // TODO #store
 
         ExtensionContext root = context.getRoot();
-        return root.getStore(ExtensionContext.Namespace.GLOBAL);
+        return root.getStore(GLOBAL);
     }
 
     protected void markTestAsFailed(ExtensionContext context, Throwable throwable) {

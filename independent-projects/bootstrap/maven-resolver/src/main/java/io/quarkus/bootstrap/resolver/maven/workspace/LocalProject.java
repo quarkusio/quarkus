@@ -176,21 +176,22 @@ public class LocalProject {
     }
 
     LocalProject(Model rawModel, LocalWorkspace workspace) {
-        this(rawModel, null, workspace);
+        this(ModelUtils.getGroupId(rawModel), ModelUtils.getVersion(rawModel), rawModel, null, workspace);
     }
 
-    LocalProject(Model rawModel, Model effectiveModel, LocalWorkspace workspace) {
+    LocalProject(String resolvedGroupId, String resolvedVersion, Model rawModel, Model effectiveModel,
+            LocalWorkspace workspace) {
         this.rawModel = rawModel;
         this.effectiveModel = effectiveModel;
         this.modelBuildingResult = null;
         // Maven does not guarantee the projectDirectory will be normalized
         this.dir = rawModel.getProjectDirectory().toPath().normalize().toAbsolutePath();
         this.workspace = workspace;
-        this.key = ArtifactKey.ga(ModelUtils.getGroupId(rawModel), rawModel.getArtifactId());
+        this.key = ArtifactKey.ga(resolvedGroupId, rawModel.getArtifactId());
 
-        final String rawVersion = ModelUtils.getRawVersion(rawModel);
-        final boolean rawVersionIsUnresolved = ModelUtils.isUnresolvedVersion(rawVersion);
-        version = rawVersionIsUnresolved ? ModelUtils.resolveVersion(rawVersion, rawModel) : rawVersion;
+        final String rawVersion = ModelUtils.getRawVersionOrNull(rawModel);
+        final boolean rawVersionIsUnresolved = rawVersion == null || ModelUtils.isUnresolvedVersion(rawVersion);
+        version = resolvedVersion;
 
         if (workspace != null) {
             workspace.addProject(this);

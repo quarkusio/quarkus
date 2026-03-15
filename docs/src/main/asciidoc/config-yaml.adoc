@@ -39,11 +39,13 @@ Alternatively, add the following dependency to your project:
 implementation("io.quarkus:quarkus-config-yaml")
 ----
 
-After adding the extension or dependency, to avoid confusion, remove the `src/main/resources/application.properties` file and create a `src/main/resources/application.yaml` file.
+After adding the extension or dependency, to avoid confusion, remove the `src/main/resources/application.properties`
+file and create a `src/main/resources/application.yaml` file.
 
 NOTE: If both files are present, {project-name} gives precedence to properties in the YAML file.
 
-TIP: {project-name} recognizes both `.yml` and `.yaml` file extensions.
+TIP: {project-name} recognizes both `.yaml` and `.yml` file extensions. If both files are available, {project-name}
+gives precedence to the `.yaml` file and then the `.yml` file.
 
 === Example YAML configurations
 
@@ -111,6 +113,12 @@ app:
               plain-text: true
 ----
 
+[TIP]
+====
+You can also use JSON in the YAML file to describe the configuration. Use a single format per file. The file extension
+is either `yaml` or `yml`.
+====
+
 == Profiles
 
 As you can see in the previous snippet, you can use xref:config-reference.adoc#profiles[profiles] in YAML.
@@ -163,7 +171,7 @@ quarkus:
 ====
 An `application.yaml` file must exist (even if empty) in the exact location of the profile-aware
 (`application-{profile}.yaml`) file to be included in the configuration to ensure a consistent order when
-loading the files.
+loading the files. All profile files must match the same extension of the main file.
 ====
 
 == Expressions
@@ -219,44 +227,3 @@ one:
 
 YAML `null` keys are not included in the assembly of the configuration property name, allowing them to be used at any level for disambiguating configuration properties.
 
-Although Quarkus primarily uses `.properties` file extension for configuration, the snakeyaml library, which is used for parsing YAML in Quarkus, can also parse JSON structures. This means you can use YAML files with JSON content inside.
-
-YAML and JSON structures can be read in an application.yaml file.
-
-Certainly, here's a step-by-step guide on how to use complex configuration structures with Quarkus:
-
-* Define Your Configuration Interface.
-
-[source,java]
-----
-@ConfigMapping(prefix = "server")
-public interface ServiceConfig {
-
-  List<Environment> environments();
-
-  interface Environment {
-    String name();
-    String services();
-  }
-}
-----
-
-* Create the appropriate JSON structure and store it in a YAML file.
-
-[source,yaml]
-----
-{
-  "server": {
-    "environments": [
-      {
-        "name": "dev",
-        "services": "bookstore"
-      },
-      {
-        "name": "batch",
-        "services": "warehouse"
-      }
-    ]
-  }
-}
-----

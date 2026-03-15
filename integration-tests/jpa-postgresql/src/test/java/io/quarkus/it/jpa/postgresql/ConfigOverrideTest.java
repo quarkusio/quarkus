@@ -27,7 +27,11 @@ public class ConfigOverrideTest {
         @Override
         public Map<String, String> getConfigOverrides() {
             // Disable dev services so we know we're connecting to the right database
-            return Map.of("quarkus.devservices.enabled", "false");
+            return Map.of(
+                    "quarkus.devservices.enabled", "false",
+                    // These are no longer the default when not using dev services
+                    "quarkus.hibernate-orm.schema-management.strategy", "drop-and-create",
+                    "quarkus.hibernate-orm.\"other\".schema-management.strategy", "drop-and-create");
         }
 
         @Override

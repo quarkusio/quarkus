@@ -126,7 +126,7 @@ public class ReflectiveHierarchyStep {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             Deque<ReflectiveHierarchyVisitor> visits) {
         if (type instanceof ClassType) {
-            if (reflectiveHierarchyBuildItem.getIgnoreTypePredicate().test(type.name())) {
+            if (shouldNotProcess(type.name(), reflectiveHierarchyBuildItem, processedReflectiveHierarchies)) {
                 return;
             }
             // If the registered entity is a class make sure to register all its subclasses.
@@ -165,10 +165,6 @@ public class ReflectiveHierarchyStep {
                 type instanceof TypeVariableReference) {
             return;
         } else if (type instanceof ClassType) {
-            if (reflectiveHierarchyBuildItem.getIgnoreTypePredicate().test(type.name())) {
-                return;
-            }
-
             addClassTypeHierarchy(nativeConfig, combinedIndexBuildItem, capabilities, reflectiveHierarchyBuildItem, newSource,
                     type.name(),
                     type.name(),
@@ -181,14 +177,12 @@ public class ReflectiveHierarchyStep {
                     processedReflectiveHierarchies,
                     unindexedClasses, reflectiveClass, visits));
         } else if (type instanceof ParameterizedType parameterizedType) {
-            if (!reflectiveHierarchyBuildItem.getIgnoreTypePredicate().test(type.name())) {
-                addClassTypeHierarchy(nativeConfig, combinedIndexBuildItem, capabilities, reflectiveHierarchyBuildItem,
-                        newSource,
-                        type.name(),
-                        type.name(),
-                        processedReflectiveHierarchies,
-                        unindexedClasses, reflectiveClass, visits);
-            }
+            addClassTypeHierarchy(nativeConfig, combinedIndexBuildItem, capabilities, reflectiveHierarchyBuildItem,
+                    newSource,
+                    type.name(),
+                    type.name(),
+                    processedReflectiveHierarchies,
+                    unindexedClasses, reflectiveClass, visits);
             for (Type typeArgument : parameterizedType.arguments()) {
                 visits.addLast(
                         () -> addReflectiveHierarchyRecursively(nativeConfig, combinedIndexBuildItem, capabilities,
@@ -211,10 +205,7 @@ public class ReflectiveHierarchyStep {
             Map<DotName, Set<String>> unindexedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             Deque<ReflectiveHierarchyVisitor> visits) {
-        if (name == null) {
-            return;
-        }
-        if (reflectiveHierarchyBuildItem.getIgnoreTypePredicate().test(name)) {
+        if (name == null || shouldNotProcess(name, reflectiveHierarchyBuildItem, processedReflectiveHierarchies)) {
             return;
         }
 
@@ -224,10 +215,6 @@ public class ReflectiveHierarchyStep {
         if (info == null) {
             unindexedClasses.putIfAbsent(name, new TreeSet<>());
             unindexedClasses.get(name).add(source);
-        }
-
-        if (processedReflectiveHierarchies.contains(name)) {
-            return;
         }
 
         reflectiveClass.produce(
@@ -294,11 +281,18 @@ public class ReflectiveHierarchyStep {
         if (!reflectiveHierarchyBuildItem.isIgnoreNested()
                 || (capabilities.isPresent(Capability.KOTLIN) && isKotlinClass(info))) {
             for (DotName memberClassName : info.memberClasses()) {
-                addClassTypeHierarchy(nativeConfig, combinedIndexBuildItem, capabilities, reflectiveHierarchyBuildItem, source,
+                visits.addLast(() -> addClassTypeHierarchy(nativeConfig, combinedIndexBuildItem, capabilities,
+                        reflectiveHierarchyBuildItem, source,
                         memberClassName, memberClassName, processedReflectiveHierarchies, unindexedClasses,
-                        reflectiveClass, visits);
+                        reflectiveClass, visits));
             }
         }
+    }
+
+    private static boolean shouldNotProcess(DotName name, ReflectiveHierarchyBuildItem reflectiveHierarchyBuildItem,
+            Set<DotName> processedReflectiveHierarchies) {
+        return processedReflectiveHierarchies.contains(name)
+                || reflectiveHierarchyBuildItem.getIgnoreTypePredicate().test(name);
     }
 
     private static Type getFieldType(CombinedIndexBuildItem combinedIndexBuildItem, DotName initialName, ClassInfo info,

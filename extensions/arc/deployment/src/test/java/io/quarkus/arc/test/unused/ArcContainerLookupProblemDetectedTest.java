@@ -1,15 +1,12 @@
 package io.quarkus.arc.test.unused;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
-import org.jboss.logmanager.formatters.PatternFormatter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -27,15 +24,17 @@ public class ArcContainerLookupProblemDetectedTest {
             .assertLogRecords(records -> {
                 LogRecord warning = records.stream()
                         .filter(l -> l.getMessage().contains("programmatic lookup problem detected")).findAny().orElse(null);
-                assertNotNull(warning);
-                Formatter fmt = new PatternFormatter("%m");
-                String message = fmt.format(warning);
-                assertTrue(message.contains(
-                        "Stack frame: io.quarkus.arc.test.unused.ArcContainerLookupProblemDetectedTest.testWarning"),
-                        message);
-                assertTrue(message.contains(
-                        "Required type: class io.quarkus.arc.test.unused.ArcContainerLookupProblemDetectedTest$Alpha"),
-                        message);
+                assertThat(warning).isNotNull();
+                assertThat(warning.getParameters()).hasSizeGreaterThanOrEqualTo(5);
+                assertThat(warning.getParameters()[2])
+                        .isInstanceOf(Class.class)
+                        // the `Class` objects are different due to Quarkus class loading, so we have to compare names
+                        .extracting("name")
+                        .isEqualTo(Alpha.class.getName());
+                assertThat(warning.getParameters()[4])
+                        .isInstanceOf(StackWalker.StackFrame.class)
+                        .extracting("className", "methodName")
+                        .containsExactly(ArcContainerLookupProblemDetectedTest.class.getName(), "testWarning");
             });
 
     @Test

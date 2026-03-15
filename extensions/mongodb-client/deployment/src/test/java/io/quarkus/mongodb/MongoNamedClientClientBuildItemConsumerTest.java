@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import jakarta.enterprise.inject.Default;
-import jakarta.enterprise.inject.literal.NamedLiteral;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -21,6 +20,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.mongodb.deployment.MongoClientBuildItem;
 import io.quarkus.mongodb.deployment.MongoClientNameBuildItem;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
+import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class MongoNamedClientClientBuildItemConsumerTest {
@@ -33,10 +33,14 @@ public class MongoNamedClientClientBuildItemConsumerTest {
 
     @Test
     public void testContainerHasBeans() {
+        assertThat(MongoClientBeanUtil.mongoClient()).isNotNull();
+        assertThat(MongoClientBeanUtil.mongoClient("second")).isNotNull();
+        assertThat(MongoClientBeanUtil.reactiveMongoClient()).isNotNull();
+        assertThat(MongoClientBeanUtil.reactiveMongoClient("second")).isNotNull();
         assertThat(Arc.container().instance(MongoClient.class, Default.Literal.INSTANCE).get()).isNotNull();
-        assertThat(Arc.container().instance(MongoClient.class, NamedLiteral.of("second")).get()).isNotNull();
+        assertThat(Arc.container().instance(MongoClient.class, MongoClientName.Literal.of("second")).get()).isNotNull();
         assertThat(Arc.container().instance(ReactiveMongoClient.class, Default.Literal.INSTANCE).get()).isNotNull();
-        assertThat(Arc.container().instance(ReactiveMongoClient.class, NamedLiteral.of("secondreactive")).get()).isNotNull();
+        assertThat(Arc.container().instance(ReactiveMongoClient.class, MongoClientName.Literal.of("second")).get()).isNotNull();
     }
 
     protected static Consumer<BuildChainBuilder> buildCustomizer() {

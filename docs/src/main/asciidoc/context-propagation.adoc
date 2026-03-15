@@ -16,7 +16,7 @@ properly: xref:rest-json.adoc[Quarkus REST (formerly RESTEasy Reactive)], xref:c
 for example.
 
 If you write reactive/async code, you have to cut your work into a pipeline of code blocks that get executed
-"later", and in practice after the method you defined them in have returned. As such, `try/finally` blocks
+"later", and in practice after the method you defined them in has returned. As such, `try/finally` blocks
 as well as `ThreadLocal` variables stop working, because your reactive code gets executed in another thread,
 after the caller ran its `finally` block.
 

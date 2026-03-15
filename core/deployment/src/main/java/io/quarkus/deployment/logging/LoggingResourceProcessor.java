@@ -504,10 +504,13 @@ public final class LoggingResourceProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void setupLoggingStaticInit(LoggingSetupRecorder recorder, LaunchModeBuildItem launchModeBuildItem) {
+    StaticInitLoggingSetupBuildItem setupLoggingStaticInit(LoggingSetupRecorder recorder,
+            LaunchModeBuildItem launchModeBuildItem) {
         if (!launchModeBuildItem.isAuxiliaryApplication()) {
             recorder.initializeLoggingForImageBuild();
         }
+
+        return new StaticInitLoggingSetupBuildItem();
     }
 
     // This is specifically to help out with presentations, to allow an env var to always override this value

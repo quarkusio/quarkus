@@ -26,6 +26,7 @@ public abstract class OidcCommonConfigBuilder<T> {
     protected static class OidcCommonConfigImpl implements OidcCommonConfig {
 
         private final Optional<String> authServerUrl;
+        private final String discoveryPath;
         private final Optional<Boolean> discoveryEnabled;
         private final Optional<String> registrationPath;
         private final Optional<Duration> connectionDelay;
@@ -39,6 +40,7 @@ public abstract class OidcCommonConfigBuilder<T> {
 
         protected OidcCommonConfigImpl(OidcCommonConfigBuilder<?> builder) {
             this.authServerUrl = builder.authServerUrl;
+            this.discoveryPath = builder.discoveryPath;
             this.discoveryEnabled = builder.discoveryEnabled;
             this.registrationPath = builder.registrationPath;
             this.connectionDelay = builder.connectionDelay;
@@ -55,6 +57,11 @@ public abstract class OidcCommonConfigBuilder<T> {
         @Override
         public Optional<String> authServerUrl() {
             return authServerUrl;
+        }
+
+        @Override
+        public String discoveryPath() {
+            return discoveryPath;
         }
 
         @Override
@@ -109,6 +116,7 @@ public abstract class OidcCommonConfigBuilder<T> {
     }
 
     private Optional<String> authServerUrl;
+    private String discoveryPath;
     private Optional<Boolean> discoveryEnabled;
     private Optional<String> registrationPath;
     private Optional<Duration> connectionDelay;
@@ -126,6 +134,7 @@ public abstract class OidcCommonConfigBuilder<T> {
 
     protected OidcCommonConfigBuilder(OidcCommonConfig oidcCommonConfig) {
         this.authServerUrl = oidcCommonConfig.authServerUrl();
+        this.discoveryPath = oidcCommonConfig.discoveryPath();
         this.discoveryEnabled = oidcCommonConfig.discoveryEnabled();
         this.registrationPath = oidcCommonConfig.registrationPath();
         this.connectionDelay = oidcCommonConfig.connectionDelay();
@@ -150,6 +159,15 @@ public abstract class OidcCommonConfigBuilder<T> {
      */
     public T authServerUrl(String authServerUrl) {
         this.authServerUrl = Optional.ofNullable(authServerUrl);
+        return getBuilder();
+    }
+
+    /**
+     * @param discoveryPath {@link OidcCommonConfig#discoveryPath()}
+     * @return T builder
+     */
+    public T discoveryPath(String discoveryPath) {
+        this.discoveryPath = discoveryPath;
         return getBuilder();
     }
 

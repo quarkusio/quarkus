@@ -1,17 +1,21 @@
 package ilove.quark.us;
 
 import io.quarkus.runtime.StartupEvent;
-import org.eclipse.microprofile.reactive.messaging.*;
-
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
-import jakarta.inject.Inject;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Outgoing;
+
 import java.util.stream.Stream;
 
 @ApplicationScoped
 public class MyMessagingApplication {
 
-    @Inject
+    /**
+     * Injects an emitter to send messages to the "words-out" channel.
+     */
     @Channel("words-out")
     Emitter<String> emitter;
 
@@ -25,16 +29,16 @@ public class MyMessagingApplication {
 
     /**
      * Consume the message from the "words-in" channel, uppercase it and send it to the uppercase channel.
-     * Messages come from the broker.
+     * This method is called by the framework when a message is received on the "words-in" channel (from the broker).
      **/
     @Incoming("words-in")
     @Outgoing("uppercase")
-    public Message<String> toUpperCase(Message<String> message) {
-        return message.withPayload(message.getPayload().toUpperCase());
+    public String toUpperCase(String message) {
+        return message.toUpperCase();
     }
 
     /**
-     * Consume the uppercase channel (in-memory) and print the messages.
+     * Consume the uppercase channel (coming from within the application) and print the messages to the console.
      **/
     @Incoming("uppercase")
     public void sink(String word) {

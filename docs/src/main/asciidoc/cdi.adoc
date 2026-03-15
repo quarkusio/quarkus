@@ -123,7 +123,7 @@ public class Translator {
 
     @Inject <2>
     void setDeps(Dictionary dic, LocalizationService locService) { <3>
-      / ...
+      // ...
     }
 }
 ----

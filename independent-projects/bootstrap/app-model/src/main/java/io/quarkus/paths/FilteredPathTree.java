@@ -42,6 +42,15 @@ public class FilteredPathTree implements PathTree {
     }
 
     @Override
+    public void walkRaw(PathVisitor visitor) {
+        original.walkRaw(visit -> {
+            if (visit != null && filter.isVisible(visit.getRelativePath("/"))) {
+                visitor.visitPath(visit);
+            }
+        });
+    }
+
+    @Override
     public void walkIfContains(String relativePath, PathVisitor visitor) {
         if (!PathFilter.isVisible(filter, relativePath)) {
             return;

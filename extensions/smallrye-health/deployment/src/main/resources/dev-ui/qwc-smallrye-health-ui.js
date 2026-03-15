@@ -1,6 +1,6 @@
 import { QwcHotReloadElement, html, css} from 'qwc-hot-reload-element';
 import '@vaadin/progress-bar';
-import 'qui-badge';
+import '@qomponent/qui-badge';
 import { JsonRpc } from 'jsonrpc';
 import '@qomponent/qui-card';
 import '@vaadin/icon';
@@ -17,46 +17,45 @@ import { msg, updateWhenLocaleChanges } from 'localization';
 export class QwcSmallryeHealthUi extends QwcHotReloadElement {
     jsonRpc = new JsonRpc(this);
     storageControl = new StorageController(this);
-    
+
     static styles = css`
         :host {
             display: flex;
             justify-content: space-between;
-            height: 100%;
             padding-left: 20px;
             padding-right: 20px;
         }
         .cards {
-            display: flex;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
             padding: 10px;
-            gap:10px;
+            align-items: start;
         }
         .cardcontents {
             display: flex;
             flex-direction: column;
-            padding-top: 10px;
-            padding-bottom: 10px;
-            padding-left: 2px;
-            padding-right: 2px;
+            padding: 10px 12px;
         }
         .key {
             font-weight: bold;
         }
         .entry {
             display: flex;
-            padding: 3px;
+            padding: 5px 8px;
             gap: 10px;
+            border-radius: 4px;
+            font-size: var(--lumo-font-size-s);
         }
-        .empty {
-            height: 4em;
-            visibility: visible;
+        .entry:hover {
+            background-color: var(--lumo-contrast-5pct);
         }
         .headingIcon {
-            display:flex;
+            display: flex;
             justify-content: space-between;
             gap: 10px;
             align-items: center;
+            width: 100%;
         }
         .headingUp {
             color: var(--lumo-success-text-color);
@@ -67,9 +66,9 @@ export class QwcSmallryeHealthUi extends QwcHotReloadElement {
         #configureIcon {
             margin-top: 10px;
             margin-right: 10px;
-            cursor:pointer;
+            cursor: pointer;
         }
-        
+
     `;
 
     static properties = {
@@ -94,7 +93,7 @@ export class QwcSmallryeHealthUi extends QwcHotReloadElement {
 
     hotReload(){
         let interval = this.storageControl.get("interval");
-        this.jsonRpc.getHealth().then(jsonRpcResponse => { 
+        this.jsonRpc.getHealth().then(jsonRpcResponse => {
            this._health = jsonRpcResponse.result;
            this._startStreaming(interval);
         });
@@ -134,7 +133,7 @@ export class QwcSmallryeHealthUi extends QwcHotReloadElement {
             return html`<vaadin-progress-bar indeterminate></vaadin-progress-bar>`;
         }
     }
-    
+
     _configurePopoverRenderer(){
         let i = this._getIntervalIndex();
         return html`<vaadin-list-box selected="${i}" @selected-changed=${this._onSelectedChanged}>
@@ -145,16 +144,16 @@ export class QwcSmallryeHealthUi extends QwcHotReloadElement {
                         <vaadin-item>Off</vaadin-item>
                     </vaadin-list-box>`;
     }
-    
+
     _onSelectedChanged(event) {
         const listBox = event.target;
         const selectedIndex = listBox.selected;
         const selectedItem = listBox.children[selectedIndex];
         this.storageControl.set('interval', selectedItem?.textContent?.trim());
-        
+
         this.hotReload();
     }
-    
+
     _renderCard(check){
         let icon = "font-awesome-solid:thumbs-down";
         let headingClass = "headingDown";
@@ -170,7 +169,7 @@ export class QwcSmallryeHealthUi extends QwcHotReloadElement {
                 ${this._renderCardContent(check)}
             </qui-card>`;
     }
-    
+
     _renderCardContent(check){
         if(check.data){
             return html`<div slot="content">
@@ -182,13 +181,9 @@ export class QwcSmallryeHealthUi extends QwcHotReloadElement {
                                 `)}
                             </div>
                         </div>`;
-        }else{
-            return html`<div slot="content">
-                            <div class="empty"></div>
-                        </div>`;
         }
     }
-    
+
     _cancelObserver(){
         if(this._observer){
             this._observer.cancel();

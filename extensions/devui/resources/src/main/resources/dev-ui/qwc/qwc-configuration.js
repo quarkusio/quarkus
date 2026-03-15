@@ -167,14 +167,29 @@ export class QwcConfiguration extends observeState(LitElement) {
     }
 
     _createConfigSourceObject(configSourceName,configValue){
-        
+
         let displayName = configSourceName;
-        
-        if(configSourceName.startsWith("PropertiesConfigSource[source")
+
+        if(configSourceName.startsWith("PropertiesConfigSource[source=")
                     && configSourceName.endsWith("/application.properties]")){
-            displayName = msg('My properties', { id: 'configuration-my-properties' });
+            // Extract the source path: everything between "source=" and the closing "]"
+            let sourcePath = configSourceName.substring(30, configSourceName.length - 1);
+            if(sourcePath.startsWith("jar:") || sourcePath.includes("!")){
+                // JAR-embedded source: extract the JAR filename
+                // Format: jar:file:/path/to/some-lib-1.0.jar!/application.properties
+                let jarPath = sourcePath;
+                let bangIndex = jarPath.indexOf("!");
+                if(bangIndex > 0){
+                    jarPath = jarPath.substring(0, bangIndex);
+                }
+                let lastSlash = jarPath.lastIndexOf("/");
+                let jarName = lastSlash >= 0 ? jarPath.substring(lastSlash + 1) : jarPath;
+                displayName = "application.properties (" + jarName + ")";
+            }else{
+                displayName = msg('My properties', { id: 'configuration-my-properties' });
+            }
         }
-        
+
         let configSourceObject = {name:configSourceName, display: displayName, position:configValue.configSourcePosition, ordinal:configValue.configSourceOrdinal};
         return configSourceObject;
     }

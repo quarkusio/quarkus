@@ -87,6 +87,41 @@ public class FirstTest {
     }
 
     @Transactional
+    void upsertNew() {
+        Assertions.assertEquals(0, MyEntity_.statelessBlocking().count());
+
+        MyEntity entity = new MyEntity();
+        entity.foo = "bar";
+        entity.id = 1L;
+        entity.statelessBlocking().upsert();
+
+        Assertions.assertEquals(1, MyEntity_.statelessBlocking().count());
+    }
+
+    @Transactional
+    void upsertExisting() {
+        Assertions.assertEquals(1, MyEntity_.statelessBlocking().count());
+
+        MyEntity entity = MyEntity_.statelessBlocking().listAll().get(0);
+        Assertions.assertEquals("bar", entity.foo);
+        Assertions.assertEquals(1L, entity.id);
+        entity.foo = "fu";
+        entity.statelessBlocking().upsert();
+
+        Assertions.assertEquals(1, MyEntity_.statelessBlocking().count());
+    }
+
+    @Transactional
+    void upsertCheck() {
+        Assertions.assertEquals(1, MyEntity_.statelessBlocking().count());
+
+        MyEntity entity = MyEntity_.statelessBlocking().listAll().get(0);
+        Assertions.assertEquals("fu", entity.foo);
+
+        Assertions.assertEquals(1, MyEntity_.statelessBlocking().count());
+    }
+
+    @Transactional
     void clear() {
         MyEntity_.managedBlocking().deleteAll();
     }
@@ -108,6 +143,10 @@ public class FirstTest {
         modifyOneStatelessNoUpdate();
         modifyOneStateless();
         modifyOneStatelessCheck();
+        clear();
+        upsertNew();
+        upsertExisting();
+        upsertCheck();
         runQueries();
     }
 

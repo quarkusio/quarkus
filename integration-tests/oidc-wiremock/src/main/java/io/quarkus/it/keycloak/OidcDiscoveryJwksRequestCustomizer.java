@@ -18,7 +18,10 @@ public class OidcDiscoveryJwksRequestCustomizer implements OidcRequestFilter {
 
     @Override
     public void filter(OidcRequestContext rc) {
-        if (!rc.request().uri().endsWith(".well-known/openid-configuration")
+        String discoveryPath = !rc.request().uri().contains("quarkus2") ? ".well-known/openid-configuration"
+                : ".well-known/oauth-authorization-server";
+
+        if (!rc.request().uri().endsWith(discoveryPath)
                 && !isJwksRequest(rc.request())) {
             throw new OIDCException("Filter is applied to the wrong endpoint: " + rc.request().uri());
         }

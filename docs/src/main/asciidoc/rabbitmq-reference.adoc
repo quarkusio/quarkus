@@ -19,9 +19,10 @@ Refer to the https://smallrye.io/smallrye-reactive-messaging[SmallRye Reactive M
 The RabbitMQ connector allows Quarkus applications to send and receive messages using the AMQP 0.9.1 protocol.
 More details about the protocol can be found in https://www.rabbitmq.com/amqp-0-9-1-reference.html#queue.bind.routing-key[the AMQP 0.9.1 specification].
 
-IMPORTANT: The RabbitMQ connector supports AMQP 0-9-1, which is very different from the AMQP 1.0 protocol used by the
-AMQP 1.0 connector. You can use the AMQP 1.0 connector with RabbitMQ as described in the
-xref:amqp-reference.adoc[AMQP 1.0 connector reference], albeit with *reduced functionality*.
+IMPORTANT: The RabbitMQ connector is specifically designed for AMQP 0-9-1.
+While RabbitMQ 4 now supports the AMQP 1.0 protocol, the two protocols are fundamentally different.
+If you want to communicate with RabbitMQ using AMQP 1.0, we recommend using the xref:amqp-reference.adoc[AMQP 1.0 connector].
+Please note that using AMQP 1.0 with RabbitMQ may still have some limitations or reduced functionality compared to native 0-9-1 usage.
 
 include::{includes}/extension-status.adoc[]
 

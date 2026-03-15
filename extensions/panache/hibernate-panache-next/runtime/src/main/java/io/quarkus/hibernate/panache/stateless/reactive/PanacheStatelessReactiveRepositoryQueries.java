@@ -23,13 +23,13 @@ public interface PanacheStatelessReactiveRepositoryQueries<Entity, Id> extends P
     }
 
     @Override
-    default Entity findById(Id id) {
-        return (Entity) operations().findById(getEntityClass(), id);
+    default Uni<Entity> findById(Id id) {
+        return (Uni) operations().findById(getEntityClass(), id);
     }
 
     @Override
-    default Entity findById(Id id, LockModeType lockModeType) {
-        return (Entity) operations().findById(getEntityClass(), id, lockModeType);
+    default Uni<Entity> findById(Id id, LockModeType lockModeType) {
+        return (Uni) operations().findById(getEntityClass(), id, lockModeType);
     }
 
     @Override

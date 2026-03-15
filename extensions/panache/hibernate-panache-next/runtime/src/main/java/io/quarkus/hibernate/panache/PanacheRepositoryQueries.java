@@ -6,7 +6,7 @@ import jakarta.persistence.LockModeType;
 
 import io.quarkus.panache.common.Sort;
 
-public interface PanacheRepositoryQueries<Entity, EntityList, Query extends PanacheQuery<?, ?, ?, ?>, Count, Confirmation, Id> {
+public interface PanacheRepositoryQueries<EntityResult, EntityList, Query extends PanacheQuery<?, ?, ?, ?>, Count, Confirmation, Id> {
 
     // Queries
 
@@ -16,7 +16,7 @@ public interface PanacheRepositoryQueries<Entity, EntityList, Query extends Pana
      * @param id the ID of the entity to find.
      * @return the entity found, or <code>null</code> if not found.
      */
-    Entity findById(Id id);
+    EntityResult findById(Id id);
 
     /**
      * Find an entity of this type by ID and lock it.
@@ -25,7 +25,7 @@ public interface PanacheRepositoryQueries<Entity, EntityList, Query extends Pana
      * @param lockModeType the locking strategy to be used when retrieving the entity.
      * @return the entity found, or <code>null</code> if not found.
      */
-    Entity findById(Id id, LockModeType lockModeType);
+    EntityResult findById(Id id, LockModeType lockModeType);
 
     /**
      * Find entities using a query, with optional indexed parameters.

@@ -14,8 +14,9 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.zip.GZIPOutputStream;
+
+import org.jboss.logging.Logger;
 
 import io.opentelemetry.exporter.internal.http.HttpSender;
 import io.opentelemetry.exporter.internal.marshal.Marshaler;
@@ -33,6 +34,8 @@ import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.impl.HttpClientBuilderImpl;
+import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.tracing.TracingPolicy;
 
 public final class VertxHttpSender implements HttpSender {
@@ -41,8 +44,10 @@ public final class VertxHttpSender implements HttpSender {
     public static final String METRICS_PATH = "/v1/metrics";
     public static final String LOGS_PATH = "/v1/logs";
 
-    private static final Logger internalLogger = Logger.getLogger(VertxHttpSender.class.getName());
-    private static final ThrottlingLogger logger = new ThrottlingLogger(internalLogger);
+    private static final Logger log = Logger.getLogger(VertxHttpSender.class.getName());
+
+    private static final ThrottlingLogger throttlingLogger = new ThrottlingLogger(
+            java.util.logging.Logger.getLogger(VertxHttpSender.class.getName()));
 
     private static final int MAX_ATTEMPTS = 3;
 
@@ -73,7 +78,15 @@ public final class VertxHttpSender implements HttpSender {
                 .setDefaultPort(getPort(baseUri))
                 .setTracingPolicy(TracingPolicy.IGNORE); // needed to avoid tracing the calls from this http client
         clientOptionsCustomizer.accept(httpClientOptions);
-        this.client = vertx.createHttpClient(httpClientOptions);
+        this.client = (new HttpClientBuilderImpl((VertxInternal) vertx))
+                .with(httpClientOptions)
+                .with(httpClientOptions.getPoolOptions())
+                .withConnectHandler(connection -> {
+                    connection.exceptionHandler(thw -> {
+                        throttlingLogger.log(Level.WARNING, "Connection handler exception: ", thw);
+                    });
+                })
+                .build();
     }
 
     private final AtomicBoolean isShutdown = new AtomicBoolean();
@@ -122,7 +135,7 @@ public final class VertxHttpSender implements HttpSender {
                 + type
                 + ". The request could not be executed. Full error message: "
                 + (t.getMessage() == null ? t.getClass().getName() : t.getMessage());
-        logger.log(Level.WARNING, message);
+        throttlingLogger.log(Level.WARNING, message);
         onError.accept(t);
     }
 
@@ -167,7 +180,7 @@ public final class VertxHttpSender implements HttpSender {
     @SuppressForbidden(reason = "The use of ThrottlingLogger mandates the use of java.util.logging")
     public CompletableResultCode shutdown() {
         if (!isShutdown.compareAndSet(false, true)) {
-            logger.log(Level.FINE, "Calling shutdown() multiple times.");
+            throttlingLogger.log(Level.FINE, "Calling shutdown() multiple times.");
             return shutdownResult;
         }
 
@@ -187,7 +200,7 @@ public final class VertxHttpSender implements HttpSender {
                         }
                     });
         } catch (RejectedExecutionException e) {
-            internalLogger.log(Level.FINE, "Unable to complete shutdown", e);
+            log.debug("Unable to complete shutdown", e);
             // if Netty's ThreadPool has been closed, this onSuccess() will immediately throw RejectedExecutionException
             // which we need to handle
             shutdownResult.fail();

@@ -7,13 +7,11 @@ import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.quarkus.test.common.TestResourceManager;
-import io.quarkus.value.registry.ValueRegistry;
 
 public class QuarkusTestExtensionState implements AutoCloseable {
 
     private final AtomicBoolean closed = new AtomicBoolean();
 
-    private ValueRegistry valueRegistry;
     protected final Closeable testResourceManager;
     protected final Closeable resource;
     private Thread shutdownHook;
@@ -60,10 +58,6 @@ public class QuarkusTestExtensionState implements AutoCloseable {
 
     }
 
-    public ValueRegistry getValueRegistry() {
-        return valueRegistry;
-    }
-
     // Used reflectively
     public Closeable getTestResourceManager() {
         return testResourceManager;
@@ -84,9 +78,7 @@ public class QuarkusTestExtensionState implements AutoCloseable {
         return clearCallbacks;
     }
 
-    public QuarkusTestExtensionState(ValueRegistry valueRegistry, Closeable testResourceManager, Closeable resource,
-            Runnable clearCallbacks) {
-        this.valueRegistry = valueRegistry;
+    public QuarkusTestExtensionState(Closeable testResourceManager, Closeable resource, Runnable clearCallbacks) {
         this.testResourceManager = testResourceManager;
         this.resource = resource;
         this.clearCallbacks = clearCallbacks;
@@ -102,7 +94,6 @@ public class QuarkusTestExtensionState implements AutoCloseable {
         Runtime.getRuntime().addShutdownHook(shutdownHook);
     }
 
-    // TODO - Should ValueRegistry be cloned? Investigate if we still need this clone
     public QuarkusTestExtensionState(Closeable testResourceManager, Closeable resource, Runnable clearCallbacks,
             Thread shutdownHook) {
         this.testResourceManager = testResourceManager;

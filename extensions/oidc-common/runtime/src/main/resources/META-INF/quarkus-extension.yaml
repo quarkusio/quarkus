@@ -8,5 +8,5 @@ metadata:
   - "oidc"
   categories:
   - "security"
-  status: "preview"
+  status: "stable"
   unlisted: true

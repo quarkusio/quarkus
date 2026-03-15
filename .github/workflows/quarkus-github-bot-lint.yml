@@ -1,5 +1,8 @@
 name: quarkus-github-bot.yml lint
 
+permissions:
+  contents: read
+
 on:
   push:
     paths:

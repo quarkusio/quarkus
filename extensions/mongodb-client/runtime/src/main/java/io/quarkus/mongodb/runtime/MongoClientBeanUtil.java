@@ -1,33 +1,62 @@
 package io.quarkus.mongodb.runtime;
 
+import static io.quarkus.mongodb.runtime.MongoConfig.DEFAULT_CLIENT_NAME;
+
+import java.lang.annotation.Annotation;
+
 import jakarta.enterprise.inject.Default;
-import jakarta.enterprise.inject.literal.NamedLiteral;
-import jakarta.enterprise.util.AnnotationLiteral;
+import jakarta.enterprise.inject.spi.Bean;
+
+import com.mongodb.client.MongoClient;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableInstance;
+import io.quarkus.mongodb.MongoClientName;
+import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 
 public final class MongoClientBeanUtil {
-    public static final String REACTIVE_CLIENT_NAME_SUFFIX = "reactive";
-
     private MongoClientBeanUtil() {
         throw new UnsupportedOperationException();
     }
 
-    @Deprecated(forRemoval = true, since = "3.31")
-    public static boolean isDefault(String clientName) {
-        return MongoConfig.isDefaultClient(clientName);
+    public static InjectableInstance<MongoClient> mongoClientInstance(String mongoClientName) {
+        return Arc.container().select(MongoClient.class, qualifier(mongoClientName));
     }
 
-    public static String namedQualifier(String clientName, boolean isReactive) {
-        if (MongoConfig.isDefaultClient(clientName)) {
-            throw new IllegalArgumentException("The default client should not have a named qualifier");
-        }
-        return isReactive ? clientName + REACTIVE_CLIENT_NAME_SUFFIX : clientName;
+    public static MongoClient mongoClient() {
+        return mongoClientInstance(DEFAULT_CLIENT_NAME).getActive();
     }
 
-    @SuppressWarnings("rawtypes")
-    public static AnnotationLiteral clientLiteral(String clientName, boolean isReactive) {
-        if (MongoConfig.isDefaultClient(clientName)) {
+    public static MongoClient mongoClient(String mongoClientName) {
+        return mongoClientInstance(mongoClientName).getActive();
+    }
+
+    public static InjectableInstance<ReactiveMongoClient> mongoClientReactiveInstance(String mongoClientName) {
+        return Arc.container().select(ReactiveMongoClient.class, qualifier(mongoClientName));
+    }
+
+    public static ReactiveMongoClient reactiveMongoClient() {
+        return mongoClientReactiveInstance(DEFAULT_CLIENT_NAME).getActive();
+    }
+
+    public static ReactiveMongoClient reactiveMongoClient(String mongoClientName) {
+        return mongoClientReactiveInstance(mongoClientName).getActive();
+    }
+
+    public static Annotation qualifier(String mongoClientName) {
+        if (MongoConfig.isDefaultClient(mongoClientName)) {
             return Default.Literal.INSTANCE;
+        } else {
+            return MongoClientName.Literal.of(mongoClientName);
         }
-        return NamedLiteral.of(namedQualifier(clientName, isReactive));
+    }
+
+    public static String mongoClientName(final Bean<?> bean) {
+        for (Object qualifier : bean.getQualifiers()) {
+            if (qualifier instanceof MongoClientName mongoClientName) {
+                return mongoClientName.value();
+            }
+        }
+        return DEFAULT_CLIENT_NAME;
     }
 }

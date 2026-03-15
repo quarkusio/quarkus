@@ -1,5 +1,9 @@
 name: Quarkus Documentation CI
 
+permissions:
+  contents: read
+  actions: write
+
 on:
   push:
     branches-ignore:
@@ -99,7 +103,7 @@ jobs:
         run: echo ${{ github.event.number }} > pr-id.txt
 
       - name: Persist documentation
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: documentation
           path: |
@@ -116,7 +120,7 @@ jobs:
               'target/build-report.json' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: "build-reports-${{ github.run_attempt }}-Documentation Build"

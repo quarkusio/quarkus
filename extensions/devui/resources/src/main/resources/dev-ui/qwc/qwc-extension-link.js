@@ -34,9 +34,12 @@ export class QwcExtensionLink extends QwcHotReloadElement {
             cursor: pointer;
             text-decoration: none;
             gap: 5px;
+            border-radius: 4px;
+            transition: background-color 0.15s ease, color 0.15s ease;
         }
         .extensionLink:hover {
-            filter: brightness(80%);
+            background-color: var(--lumo-primary-color-10pct);
+            color: var(--lumo-primary-text-color);
         }
         .icon {
             padding-right: 5px;

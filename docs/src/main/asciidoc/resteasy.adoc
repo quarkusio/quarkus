@@ -299,7 +299,7 @@ public class CustomJsonbConfig {
 [[links]]
 === JSON Hypertext Application Language (HAL) support
 
-The https://tools.ietf.org/id/draft-kelly-json-hal-01.html[HAL] standard is a simple format to represent web links.
+The https://www.ietf.org/archive/id/draft-kelly-json-hal-11.html[HAL] standard is a simple format to represent web links.
 
 To enable the HAL support, add the `quarkus-hal` extension to your project. Also, as HAL needs JSON support, you need to add either the `quarkus-resteasy-jsonb` or the `quarkus-resteasy-jackson` extension.
 
@@ -308,7 +308,7 @@ To enable the HAL support, add the `quarkus-hal` extension to your project. Also
 |GAV|Usage
 
 |`io.quarkus:quarkus-hal`
-|https://tools.ietf.org/id/draft-kelly-json-hal-01.html[HAL]
+|https://www.ietf.org/archive/id/draft-kelly-json-hal-11.html[HAL]
 
 |===
 

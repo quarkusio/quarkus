@@ -200,7 +200,7 @@ Your extension needs to have the following dependency in it's deployment module:
 </dependency>
 ----
 
-This can be transitivly or directly and is only needed in deployment module. This gives your processor access to the relative Build Items.
+This can be transitively or directly and is only needed in deployment module. This gives your processor access to the relative Build Items.
 
 Extensions can contribute interactive pages to the Dev UI in the following areas:
 
@@ -249,7 +249,7 @@ If you find your icon at https://fontawesome.com/search?o=r&m=free[Font awesome]
 
 ===== Optional: Library Version
 
-You can add a underlying library badge on the card. This is usefull for cases where the extension is exposing a well known library. As example, the `quarkus-hibernate-orm` extension provides access to Hibernate. Showing the underlying Hibernate details could be useful information for the user:
+You can add an underlying library badge on the card. This is useful for cases where the extension is exposing a well known library. As example, the `quarkus-hibernate-orm` extension provides access to Hibernate. Showing the underlying Hibernate details could be useful information for the user:
 
 image::devui_hibernate_card_light.png[Dev UI Layout]
 
@@ -415,7 +415,7 @@ To add a tab to the Dev UI settings dialog, produce a `SettingPageBuildItem`:
 <5> You can add an icon. All free font-awesome icons are available.
 <6> Add the link to the web component source (`js`) file in `deployment/src/main/resources/dev-ui/`. This has to take the format of qwc-extensionname-pagename.js
 
-This page will will be loaded as the content for that tab in the settings dialog
+This page will be loaded as the content for that tab in the settings dialog
 
 ===== Optional: Build Time Data
 
@@ -430,7 +430,7 @@ You can add multiple of these key-value pairs for all the data you know at build
 
 ==== Unlisted Page
 
-Lastly, you can add pages that is not listed anywhere, but added to the Router, and can be navigated to. This is usefull if you are building very complex pages that navigates to more pages.
+Lastly, you can add pages that is not listed anywhere, but added to the Router, and can be navigated to. This is useful if you are building very complex pages that navigates to more pages.
 
 To do this, produce a `UnlistedPageBuildItem`:
 
@@ -456,7 +456,7 @@ To do this, produce a `UnlistedPageBuildItem`:
 <5> You can add an icon. All free font-awesome icons are available.
 <6> Add the link to the web component source (`js`) file in `deployment/src/main/resources/dev-ui/`. This has to take the format of qwc-extensionname-pagename.js
 
-This page will will be registered to the Router and can be nagigated to by a normal link or using the Router:
+This page will be registered to the Router and can be navigated to by a normal link or using the Router:
 
 [source,javascript]
 ----
@@ -587,8 +587,8 @@ In this case, we use the `LitElement` class and `html` & `css` functions from `L
 <5> Styles can reference globally defined CSS variables to make sure your page renders correctly, especially when switching between light and dark mode. You can find all CSS variables in the Vaadin documentation (https://vaadin.com/docs/latest/styling/lumo/lumo-style-properties/color[Color], https://vaadin.com/docs/latest/styling/lumo/lumo-style-properties/size-space[Sizing and Spacing], etc.)
 <6> Properties can be added. Use `_` in front of a property if that property is private. Properties are usually injected in the HTML template, and can be defined as having state, meaning that if that property changes, the component (or part of it) should re-render. In this case, the jokes are Build time data that we gathered while building.
 <7> Constructors (optional) should always call `super` first and then set the default values for the properties.
-<8> `connectedCallback` is a method from Lit that gets called when this component are connected to the DOM. This is a good place to do 'page load' type things, like fetching data from the backend (we will discuss this later)
-<9> `disconnectedCallback` us a method from Lit that gets called when this component are disconnected from the DOM. This is a good place to do any clean up.
+<8> `connectedCallback` is a method from Lit that gets called when this component is connected to the DOM. This is a good place to do 'page load' type things, like fetching data from the backend (we will discuss this later)
+<9> `disconnectedCallback` is a method from Lit that gets called when this component is disconnected from the DOM. This is a good place to do any clean up.
 <10> `render` is a method from Lit that will be called to render the page. In this method, you return the markup of the page you want.  
 <11> You can use the `html` function from `Lit`, which gives you a template language to output the HTML you want. Once the template is created, you must only set or change the properties to re-render the page content. Read more about https://lit.dev/docs/components/rendering/[Lit html]
 <12> You must always register your Web component as a custom element, with a unique tag. Here, the tag will follow the same format as the filename (`qwc` dash `extension name` dash `page title` );
@@ -834,7 +834,7 @@ In translation files, use positional variables (${0}, ${1}, …):
 https://vaadin.com/docs/latest/components[Vaadin Web Components]: Dev UI makes extensive usage of Vaadin web components as UI Building blocks.
 
 ====== Qomponent
-https://github.com/qomponent[Qomponent]: A few custom build compoments that can be used. 
+https://github.com/qomponent[Qomponent]: A few custom build components that can be used. 
 
 Currently the following UI component are available:
 
@@ -848,8 +848,8 @@ Currently the following UI component are available:
 
 ====== Code block
 
-Creates a code block (containing marked up code). This could also be made editable. 
-This component use the above mentioned code block from qomponent, that is build with https://codemirror.net/[code-mirror], but adds the automatic theme state when switching themes.
+Creates a code block (containing marked up code). This could also be made editable.
+This component uses the above mentioned code block from qomponent, that is built with https://codemirror.net/[code-mirror], but adds the automatic theme state when switching themes.
 
 Code can be provided remotely (`src`) or as a property (`content`) or as a slotted value (example below).
 
@@ -1156,7 +1156,7 @@ Now you can access the assistant state anywhere in your page, and when that stat
 render() {
     if(assistantState.current.isConfigured){
         return html`<div class="assistantfeature">
-                        <span> Magic happends here</span>
+                        <span> Magic happens here</span>
                     </div>`;
     }
 }
@@ -1332,9 +1332,9 @@ Use any Qute template to display the data, for example, `qute-jokes-template.htm
 ----
 <1> `jokes` added as a build time data key on the Page Build Item.
 
-=== Communicating to the backend 
+=== Communicating to the backend
 
-All communication to the backend happend with https://www.jsonrpc.org/[JsonRPC] over web socket. Dev UI makes this easy to use for extension developers, and you do not really need to get into the details of either JsonRPC or Web Sockets.
+All communication to the backend happens with https://www.jsonrpc.org/[JsonRPC] over web socket. Dev UI makes this easy to use for extension developers, and you do not really need to get into the details of either JsonRPC or Web Sockets.
 
 There are 3 stages to communicate to a backend during runtime (when the user is running their app in dev mode):
 
@@ -1628,7 +1628,7 @@ To do this you can return/produce a `WorkspaceActionBuildItem` in your processor
 
 ==== Input
 
-The input your fuction receive is:
+The input your function receives is:
 
 - actionId: The unique (autoscoped) action id
 - name: The item (or file) name
@@ -1650,7 +1650,7 @@ Here you can set how the response should display in the Workspace page. Options 
 
 Depending on what your action does with the content input, your output might produce the following types:
 
-- raw: This be used as is (text)
+- raw: This will be used as is (text)
 - code: This will be rendered in a code editor
 - markdown: This will display interperated markdown
 - html: This will display interperated html
@@ -1760,7 +1760,7 @@ customElements.define('qwc-chappie-init', QwcChappieInit); // <4>
 <1> The `namespace` attribute will always be provided automatically by Dev UI.
 <2> Perform your logic in `connectedCallback`, then remove the element if no longer needed.
 <3> When using JsonRPC, pass in the provided namespace (instead of `this`, as in normal components).
-<4> Your tag definition have to be the filename without the `.js`
+<4> Your tag definition has to be the filename without the `.js`
 
 
 === Testing

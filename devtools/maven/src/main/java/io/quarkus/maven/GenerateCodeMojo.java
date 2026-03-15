@@ -122,7 +122,7 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
                             Properties properties = mavenProject().getProperties();
                             String argLine = properties.getProperty("argLine", "");
                             properties.setProperty("argLine", argLine +
-                                    " \"-D" + BootstrapConstants.SERIALIZED_TEST_APP_MODEL + "=" + serializedTestAppModelPath
+                                    " -D" + BootstrapConstants.SERIALIZED_TEST_APP_MODEL + "=\"" + serializedTestAppModelPath
                                     + "\"");
                         } catch (IOException e) {
                             getLog().warn("Failed to serialize application model", e);

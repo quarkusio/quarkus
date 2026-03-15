@@ -38,9 +38,20 @@ public class DurationConverterTestCase {
 
     @Test
     public void testValueInCorrectFormatProvided() {
-        Duration expectedDuration = Duration.parse("PT20M");
-        Duration actualDuration = durationConverter.convert("PT20M");
-        assertEquals(expectedDuration, actualDuration);
+        assertStandardDurationFormat("PT20M");
+        assertStandardDurationFormat("PT20.345S");
+        assertStandardDurationFormat("PT15M");
+        assertStandardDurationFormat("PT10H");
+        assertStandardDurationFormat("P2D");
+        assertStandardDurationFormat("P2DT3H4M");
+        assertStandardDurationFormat("P2DT3H4M");
+        assertStandardDurationFormat("PT-6H3M");
+        assertStandardDurationFormat("-PT6H3M");
+        assertStandardDurationFormat("-PT-6H+3M");
+    }
+
+    private void assertStandardDurationFormat(String durationString) {
+        assertEquals(Duration.parse(durationString), durationConverter.convert(durationString));
     }
 
     @Test

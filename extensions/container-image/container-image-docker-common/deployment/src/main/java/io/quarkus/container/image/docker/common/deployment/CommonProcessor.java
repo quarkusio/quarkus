@@ -145,12 +145,16 @@ public abstract class CommonProcessor<C extends CommonConfig> {
                 });
             }
 
-            String workingDir = ((JsonString) config.get("WorkingDir")).value();
+            String workingDir = null;
+            JsonValue workingDirVal = config.get("WorkingDir");
+            if (workingDirVal instanceof JsonString js) {
+                workingDir = js.value();
+            }
 
             Optional<String> baseImage = Optional.empty();
 
-            JsonObject labels = config.get("Labels");
-            if (labels != null) {
+            JsonValue labelsVal = config.get("Labels");
+            if (labelsVal instanceof JsonObject labels) {
                 JsonValue baseNameLabelObj = labels.get("org.opencontainers.image.base.name");
                 if (baseNameLabelObj instanceof JsonString s) {
                     baseImage = Optional.of(s.value());

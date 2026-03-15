@@ -4,15 +4,12 @@ import java.lang.annotation.Annotation;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-import jakarta.inject.Named;
-
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.mongodb.MongoClientName;
 import io.quarkus.mongodb.panache.common.MongoDatabaseResolver;
 import io.quarkus.mongodb.panache.common.MongoEntity;
 import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
@@ -23,6 +20,7 @@ import io.smallrye.config.SmallRyeConfig;
 public final class BeanUtils {
 
     private BeanUtils() {
+        throw new UnsupportedOperationException();
     }
 
     public static String beanName(MongoEntity entity) {
@@ -33,26 +31,14 @@ public final class BeanUtils {
         return MongoConfig.DEFAULT_CLIENT_NAME;
     }
 
-    public static <T> T clientFromArc(MongoEntity entity,
-            Class<T> clientClass, boolean isReactive) {
-        // we must consider multiple instances if @MongoClientName is used in client code
-        T mongoClient = firstInstanceWithoutQualifier(
-                Arc.container().select(clientClass, MongoClientBeanUtil.clientLiteral(beanName(entity), isReactive)).handles(),
-                MongoClientName.class);
-        if (mongoClient != null) {
-            return mongoClient;
-        }
-
-        if ((entity == null || entity.clientName().isEmpty())) {
-            // this case happens when there are multiple instances because they are all annotated with @Named
-            mongoClient = firstInstanceWithoutQualifier(Arc.container().select(clientClass).handles(), Named.class);
-            if (mongoClient != null) {
-                return mongoClient;
-            }
-            throw new IllegalStateException(String.format("Unable to find default %s bean", clientClass.getSimpleName()));
+    @SuppressWarnings("unchecked")
+    @Deprecated(forRemoval = true, since = "3.33")
+    public static <T> T clientFromArc(MongoEntity entity, Class<T> clientClass, boolean isReactive) {
+        String clientName = beanName(entity);
+        if (isReactive) {
+            return (T) MongoClientBeanUtil.reactiveMongoClient(clientName);
         } else {
-            throw new IllegalStateException(
-                    String.format("Unable to find %s bean for entity %s", clientClass.getSimpleName(), entity));
+            return (T) MongoClientBeanUtil.mongoClient(clientName);
         }
     }
 

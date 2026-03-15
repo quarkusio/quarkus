@@ -74,11 +74,6 @@ public class ApplicationDependencyResolver {
     private static final byte COLLECT_DEPLOYMENT_INJECTION_POINTS = 0b1000;
     /* @formatter:on */
 
-    /**
-     * Whether to use a blocking or non-blocking dependency resolution and processing task runner
-     */
-    private static final boolean BLOCKING_TASK_RUNNER = Boolean.getBoolean("quarkus.bootstrap.blocking-task-runner");
-
     public static ApplicationDependencyResolver newInstance() {
         return new ApplicationDependencyResolver();
     }
@@ -89,8 +84,7 @@ public class ApplicationDependencyResolver {
      * @return task runner
      */
     private static ModelResolutionTaskRunner getTaskRunner() {
-        return BLOCKING_TASK_RUNNER ? ModelResolutionTaskRunner.getBlockingTaskRunner()
-                : ModelResolutionTaskRunner.getNonBlockingTaskRunner();
+        return ModelResolutionTaskRunnerFactory.newTaskRunner();
     }
 
     private final ExtensionInfo EXT_INFO_NONE = new ExtensionInfo();
@@ -298,6 +292,7 @@ public class ApplicationDependencyResolver {
      */
     private void populateModelBuilder(DependencyNode root) {
         var app = new AppDep(root);
+        app.resolvedDep = appBuilder.getApplicationArtifact();
         initMissingDependencies(app);
         for (var d : app.children) {
             d.addToModel();
@@ -371,12 +366,12 @@ public class ApplicationDependencyResolver {
     private Collection<AppDep> collectDeploymentDeps() {
         final ConcurrentLinkedDeque<AppDep> injectQueue = new ConcurrentLinkedDeque<>();
         final ModelResolutionTaskRunner taskRunner;
-        if (deploymentInjectionPoints.size() == 1 || BLOCKING_TASK_RUNNER) {
-            taskRunner = ModelResolutionTaskRunner.getBlockingTaskRunner();
+        if (deploymentInjectionPoints.size() == 1 || ModelResolutionTaskRunnerFactory.isDefaultRunnerBlocking()) {
+            taskRunner = ModelResolutionTaskRunnerFactory.getBlockingTaskRunner();
         } else {
             // We've been running into Maven resolver failures to acquire a lock to a local fail when resolving dependencies lately.
             // This error handler will catch those errors and will re-try the corresponding tasks with the blocking task runner.
-            taskRunner = ModelResolutionTaskRunner.getNonBlockingTaskRunner(new RetryLockAcquisitionErrorHandler());
+            taskRunner = ModelResolutionTaskRunnerFactory.getNonBlockingTaskRunner(new RetryLockAcquisitionErrorHandler());
         }
         for (AppDep extDep : deploymentInjectionPoints) {
             extDep.scheduleCollectDeploymentDeps(taskRunner, injectQueue);
@@ -1184,16 +1179,17 @@ public class ApplicationDependencyResolver {
 
         void log(AppDep dep) {
             logInternal(dep);
-            final int childrenTotal = dep.node.getChildren().size();
-            if (childrenTotal > 0) {
-                if (childrenTotal == 1) {
+            List<AppDep> children = getChildrenToLog(dep);
+            if (!children.isEmpty()) {
+                if (children.size() == 1) {
                     depth.add(false);
-                    log(dep.children.get(0));
+                    log(children.get(0));
                 } else {
                     depth.add(true);
+                    int childrenTotal = children.size();
                     int i = 0;
                     while (i < childrenTotal) {
-                        log(dep.children.get(i++));
+                        log(children.get(i++));
                         if (i == childrenTotal - 1) {
                             depth.set(depth.size() - 1, false);
                         }
@@ -1201,6 +1197,26 @@ public class ApplicationDependencyResolver {
                 }
                 depth.remove(depth.size() - 1);
             }
+        }
+
+        private List<AppDep> getChildrenToLog(AppDep dep) {
+            if (dep.resolvedDep.getDependencies().isEmpty() || dep.children.isEmpty()) {
+                return List.of();
+            }
+            if (dep.children.size() == 1) {
+                // some dependencies could be filtered out by applying user-configured exclusions
+                if (dep.resolvedDep.getDependencies().contains(dep.children.get(0).resolvedDep.getArtifactCoords())) {
+                    return dep.children;
+                }
+                return List.of();
+            }
+            final List<AppDep> children = new ArrayList<>(dep.children.size());
+            for (var child : dep.children) {
+                if (dep.resolvedDep.getDependencies().contains(child.resolvedDep.getArtifactCoords())) {
+                    children.add(child);
+                }
+            }
+            return children;
         }
 
         private void logInternal(AppDep dep) {
@@ -1222,7 +1238,7 @@ public class ApplicationDependencyResolver {
                     buf.append('\u2514').append('\u2500').append(' ');
                 }
             }
-            var resolvedDep = getResolvedDependency(getKey(dep.node.getArtifact()));
+            final ResolvedDependencyBuilder resolvedDep = dep.resolvedDep;
             buf.append(resolvedDep.toCompactCoords());
             if (!depth.isEmpty()) {
                 appendFlags(buf, resolvedDep);

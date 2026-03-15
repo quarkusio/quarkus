@@ -151,7 +151,7 @@ Order in which a broker dispatches messages to consumers is: C1, C2, C3, C1, C4,
 |*cryptoFailureAction*
 |Consumer should take action when it receives a message that can not be decrypted. +
 * **FAIL**: this is the default option to fail messages until crypto succeeds. +
-* **DISCARD**:silently acknowledge and not deliver message to an application. +
+* **DISCARD**: silently acknowledge and not deliver message to an application. +
 * **CONSUME**: deliver encrypted messages to applications. It is the application's responsibility to decrypt the message.
 
 The decompression of message fails.

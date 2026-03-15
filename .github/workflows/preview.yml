@@ -18,6 +18,7 @@ jobs:
       issues: write
       # this is unfortunately needed to be able to write comments on pull requests
       pull-requests: write
+      packages: read
     if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
     steps:
       - uses: actions/checkout@v6
@@ -37,7 +38,7 @@ jobs:
         run: git restore-mtime
 
       - name: Download PR Artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           run-id: ${{ github.event.workflow_run.id }}
           name: documentation

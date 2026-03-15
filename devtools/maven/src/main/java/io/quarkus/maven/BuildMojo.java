@@ -152,8 +152,7 @@ public class BuildMojo extends QuarkusBootstrapMojo {
                     final boolean uberJarWithSuffix = result.getJar().isUberJar()
                             && result.getJar().getOriginalArtifact() != null
                             && !result.getJar().getOriginalArtifact().equals(result.getJar().getPath());
-                    if (!skipOriginalJarRename && uberJarWithSuffix
-                            && result.getJar().getOriginalArtifact() != null) {
+                    if (!skipOriginalJarRename && uberJarWithSuffix) {
                         final Path standardJar = result.getJar().getOriginalArtifact();
                         if (Files.exists(standardJar)) {
                             final Path renamedOriginal = standardJar.getParent().toAbsolutePath()
@@ -168,18 +167,18 @@ public class BuildMojo extends QuarkusBootstrapMojo {
                             original.setFile(renamedOriginal.toFile());
                         }
                     }
-                    if (uberJarWithSuffix) {
+                    if (result.getJar().isUberJar()) {
                         if (attachRunnerAsMainArtifact || result.getJar().getClassifier().isEmpty()) {
                             original.setFile(result.getJar().getPath().toFile());
                         } else {
                             projectHelper.attachArtifact(mavenProject(), result.getJar().getPath().toFile(),
                                     result.getJar().getClassifier());
                         }
-                    }
-                    if (attachSboms && result.getJar().isUberJar() && !result.getJar().getSboms().isEmpty()) {
-                        for (var sbom : result.getJar().getSboms()) {
-                            projectHelper.attachArtifact(mavenProject(), sbom.getFormat(), sbom.getClassifier(),
-                                    sbom.getSbomFile().toFile());
+                        if (attachSboms) {
+                            for (var sbom : result.getJar().getSboms()) {
+                                projectHelper.attachArtifact(mavenProject(), sbom.getFormat(), sbom.getClassifier(),
+                                        sbom.getSbomFile().toFile());
+                            }
                         }
                     }
                 }

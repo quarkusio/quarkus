@@ -4,8 +4,11 @@ import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
 
 import java.lang.annotation.Annotation;
 import java.lang.constant.ClassDesc;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import jakarta.enterprise.invoke.Invoker;
 
@@ -48,141 +51,154 @@ final class SyntheticComponentsUtil {
         LocalVar paramsVar;
         if (params.isEmpty()) {
             paramsVar = bc.localVar("params", bc.mapOf());
+        } else if (params.size() <= 10) {
+            List<Expr> paramsMapContent = new ArrayList<>(params.size() * 2);
+            for (Entry<String, Object> paramEntry : params.entrySet()) {
+                paramsMapContent.add(Const.of(paramEntry.getKey()));
+                paramsMapContent.add(convertParamValue(paramEntry.getValue(), tccl, bc, annotationLiterals, beanArchiveIndex));
+            }
+            paramsVar = bc.localVar("params", bc.mapOf(paramsMapContent));
         } else {
-            paramsVar = bc.localVar("params", bc.new_(HashMap.class));
+            int initialCapacity = (int) (params.size() / 0.75f + 1.0f);
+            paramsVar = bc.localVar("params", bc.new_(HashMap.class, Const.of(initialCapacity)));
             for (Map.Entry<String, Object> entry : params.entrySet()) {
-                LocalVar value;
-                if (entry.getValue() instanceof Boolean val) {
-                    value = bc.localVar("value", Const.of(val));
-                } else if (entry.getValue() instanceof boolean[] array) {
-                    value = bc.localVar("value", bc.newEmptyArray(boolean.class, array.length));
-                    for (int i = 0; i < array.length; i++) {
-                        bc.set(value.elem(i), Const.of(array[i]));
-                    }
-                } else if (entry.getValue() instanceof Byte val) {
-                    value = bc.localVar("value", Const.of(val));
-                } else if (entry.getValue() instanceof byte[] array) {
-                    value = bc.localVar("value", bc.newEmptyArray(byte.class, array.length));
-                    for (int i = 0; i < array.length; i++) {
-                        bc.set(value.elem(i), Const.of(array[i]));
-                    }
-                } else if (entry.getValue() instanceof Short val) {
-                    value = bc.localVar("value", Const.of(val));
-                } else if (entry.getValue() instanceof short[] array) {
-                    value = bc.localVar("value", bc.newEmptyArray(short.class, array.length));
-                    for (int i = 0; i < array.length; i++) {
-                        bc.set(value.elem(i), Const.of(array[i]));
-                    }
-                } else if (entry.getValue() instanceof Integer val) {
-                    value = bc.localVar("value", Const.of(val));
-                } else if (entry.getValue() instanceof int[] array) {
-                    value = bc.localVar("value", bc.newEmptyArray(int.class, array.length));
-                    for (int i = 0; i < array.length; i++) {
-                        bc.set(value.elem(i), Const.of(array[i]));
-                    }
-                } else if (entry.getValue() instanceof Long val) {
-                    value = bc.localVar("value", Const.of(val));
-                } else if (entry.getValue() instanceof long[] array) {
-                    value = bc.localVar("value", bc.newEmptyArray(long.class, array.length));
-                    for (int i = 0; i < array.length; i++) {
-                        bc.set(value.elem(i), Const.of(array[i]));
-                    }
-                } else if (entry.getValue() instanceof Float val) {
-                    value = bc.localVar("value", Const.of(val));
-                } else if (entry.getValue() instanceof float[] array) {
-                    value = bc.localVar("value", bc.newEmptyArray(float.class, array.length));
-                    for (int i = 0; i < array.length; i++) {
-                        bc.set(value.elem(i), Const.of(array[i]));
-                    }
-                } else if (entry.getValue() instanceof Double val) {
-                    value = bc.localVar("value", Const.of(val));
-                } else if (entry.getValue() instanceof double[] array) {
-                    value = bc.localVar("value", bc.newEmptyArray(double.class, array.length));
-                    for (int i = 0; i < array.length; i++) {
-                        bc.set(value.elem(i), Const.of(array[i]));
-                    }
-                } else if (entry.getValue() instanceof Character val) {
-                    value = bc.localVar("value", Const.of(val));
-                } else if (entry.getValue() instanceof char[] array) {
-                    value = bc.localVar("value", bc.newEmptyArray(char.class, array.length));
-                    for (int i = 0; i < array.length; i++) {
-                        bc.set(value.elem(i), Const.of(array[i]));
-                    }
-                } else if (entry.getValue() instanceof String val) {
-                    value = bc.localVar("value", Const.of(val));
-                } else if (entry.getValue() instanceof String[] array) {
-                    value = bc.localVar("value", bc.newEmptyArray(String.class, array.length));
-                    for (int i = 0; i < array.length; i++) {
-                        bc.set(value.elem(i), Const.of(array[i]));
-                    }
-                } else if (entry.getValue() instanceof Enum<?> val) {
-                    value = bc.localVar("value", Const.of(val));
-                } else if (entry.getValue() instanceof Enum<?>[] array) {
-                    // most commonly, all values in the array are of the same type, in which case we create an array
-                    // of that type; otherwise, we create an array of Enum, which is the least upper bound
-                    Class<?> arrayElementClass = array.length == 0 ? Enum.class : array[0].getDeclaringClass();
-                    for (Enum<?> enumVal : array) {
-                        if (!arrayElementClass.equals(enumVal.getDeclaringClass())) {
-                            arrayElementClass = Enum.class;
-                            break;
-                        }
-                    }
-                    value = bc.localVar("value", bc.newEmptyArray(arrayElementClass, array.length));
-                    for (int i = 0; i < array.length; i++) {
-                        bc.set(value.elem(i), Const.of(array[i]));
-                    }
-                } else if (entry.getValue() instanceof Class<?> val) {
-                    value = bc.localVar("value", loadClassFromTCCL(val, tccl, bc));
-                } else if (entry.getValue() instanceof Class<?>[] array) {
-                    value = bc.localVar("value", bc.newEmptyArray(Class.class, array.length));
-                    for (int i = 0; i < array.length; i++) {
-                        bc.set(value.elem(i), loadClassFromTCCL(array[i], tccl, bc));
-                    }
-                } else if (entry.getValue() instanceof ClassInfo val) {
-                    value = bc.localVar("value", loadClassFromTCCL(classDescOf(val), tccl, bc));
-                } else if (entry.getValue() instanceof ClassInfo[] array) {
-                    value = bc.localVar("value", bc.newEmptyArray(Class.class, array.length));
-                    for (int i = 0; i < array.length; i++) {
-                        bc.set(value.elem(i), loadClassFromTCCL(classDescOf(array[i]), tccl, bc));
-                    }
-                } else if (entry.getValue() instanceof AnnotationInstance val) {
-                    ClassInfo annotationClass = beanArchiveIndex.getClassByName(val.name());
-                    value = bc.localVar("value", annotationLiterals.create(bc, annotationClass, val));
-                } else if (entry.getValue() instanceof AnnotationInstance[] array) {
-                    // most commonly, all values in the array are of the same type, in which case we create an array
-                    // of that type; otherwise, we create an array of Annotation, which is the least upper bound
-                    ClassDesc arrayElementClass = array.length == 0
-                            ? ClassDesc.of(Annotation.class.getName())
-                            : classDescOf(array[0].name());
-                    for (AnnotationInstance annVal : array) {
-                        if (!arrayElementClass.equals(classDescOf(annVal.name()))) {
-                            arrayElementClass = ClassDesc.of(Annotation.class.getName());
-                            break;
-                        }
-                    }
-
-                    value = bc.localVar("value", bc.newEmptyArray(arrayElementClass, array.length));
-                    for (int i = 0; i < array.length; i++) {
-                        AnnotationInstance annotationInstance = array[i];
-                        ClassInfo annotationClass = beanArchiveIndex.getClassByName(annotationInstance.name());
-                        bc.set(value.elem(i), annotationLiterals.create(bc, annotationClass, annotationInstance));
-                    }
-                } else if (entry.getValue() instanceof InvokerInfo val) {
-                    value = bc.localVar("value", bc.new_(val.getClassDesc()));
-                } else if (entry.getValue() instanceof InvokerInfo[] array) {
-                    value = bc.localVar("value", bc.newEmptyArray(Invoker.class, array.length));
-                    for (int i = 0; i < array.length; i++) {
-                        bc.set(value.elem(i), bc.new_(array[i].getClassDesc()));
-                    }
-                } else {
-                    throw new IllegalArgumentException("Unsupported parameter type: " + entry.getValue());
-                }
-
+                LocalVar value = convertParamValue(entry.getValue(), tccl, bc, annotationLiterals, beanArchiveIndex);
                 bc.withMap(paramsVar).put(Const.of(entry.getKey()), value);
             }
         }
 
         bc.set(cc.this_().field(paramsField), paramsVar);
+    }
+
+    private static LocalVar convertParamValue(Object paramValue, Var tccl, BlockCreator bc,
+            AnnotationLiteralProcessor annotationLiterals, IndexView beanArchiveIndex) {
+        LocalVar value;
+        if (paramValue instanceof Boolean val) {
+            value = bc.localVar("value", Const.of(val));
+        } else if (paramValue instanceof boolean[] array) {
+            value = bc.localVar("value", bc.newEmptyArray(boolean.class, array.length));
+            for (int i = 0; i < array.length; i++) {
+                bc.set(value.elem(i), Const.of(array[i]));
+            }
+        } else if (paramValue instanceof Byte val) {
+            value = bc.localVar("value", Const.of(val));
+        } else if (paramValue instanceof byte[] array) {
+            value = bc.localVar("value", bc.newEmptyArray(byte.class, array.length));
+            for (int i = 0; i < array.length; i++) {
+                bc.set(value.elem(i), Const.of(array[i]));
+            }
+        } else if (paramValue instanceof Short val) {
+            value = bc.localVar("value", Const.of(val));
+        } else if (paramValue instanceof short[] array) {
+            value = bc.localVar("value", bc.newEmptyArray(short.class, array.length));
+            for (int i = 0; i < array.length; i++) {
+                bc.set(value.elem(i), Const.of(array[i]));
+            }
+        } else if (paramValue instanceof Integer val) {
+            value = bc.localVar("value", Const.of(val));
+        } else if (paramValue instanceof int[] array) {
+            value = bc.localVar("value", bc.newEmptyArray(int.class, array.length));
+            for (int i = 0; i < array.length; i++) {
+                bc.set(value.elem(i), Const.of(array[i]));
+            }
+        } else if (paramValue instanceof Long val) {
+            value = bc.localVar("value", Const.of(val));
+        } else if (paramValue instanceof long[] array) {
+            value = bc.localVar("value", bc.newEmptyArray(long.class, array.length));
+            for (int i = 0; i < array.length; i++) {
+                bc.set(value.elem(i), Const.of(array[i]));
+            }
+        } else if (paramValue instanceof Float val) {
+            value = bc.localVar("value", Const.of(val));
+        } else if (paramValue instanceof float[] array) {
+            value = bc.localVar("value", bc.newEmptyArray(float.class, array.length));
+            for (int i = 0; i < array.length; i++) {
+                bc.set(value.elem(i), Const.of(array[i]));
+            }
+        } else if (paramValue instanceof Double val) {
+            value = bc.localVar("value", Const.of(val));
+        } else if (paramValue instanceof double[] array) {
+            value = bc.localVar("value", bc.newEmptyArray(double.class, array.length));
+            for (int i = 0; i < array.length; i++) {
+                bc.set(value.elem(i), Const.of(array[i]));
+            }
+        } else if (paramValue instanceof Character val) {
+            value = bc.localVar("value", Const.of(val));
+        } else if (paramValue instanceof char[] array) {
+            value = bc.localVar("value", bc.newEmptyArray(char.class, array.length));
+            for (int i = 0; i < array.length; i++) {
+                bc.set(value.elem(i), Const.of(array[i]));
+            }
+        } else if (paramValue instanceof String val) {
+            value = bc.localVar("value", Const.of(val));
+        } else if (paramValue instanceof String[] array) {
+            value = bc.localVar("value", bc.newEmptyArray(String.class, array.length));
+            for (int i = 0; i < array.length; i++) {
+                bc.set(value.elem(i), Const.of(array[i]));
+            }
+        } else if (paramValue instanceof Enum<?> val) {
+            value = bc.localVar("value", Const.of(val));
+        } else if (paramValue instanceof Enum<?>[] array) {
+            // most commonly, all values in the array are of the same type, in which case we create an array
+            // of that type; otherwise, we create an array of Enum, which is the least upper bound
+            Class<?> arrayElementClass = array.length == 0 ? Enum.class : array[0].getDeclaringClass();
+            for (Enum<?> enumVal : array) {
+                if (!arrayElementClass.equals(enumVal.getDeclaringClass())) {
+                    arrayElementClass = Enum.class;
+                    break;
+                }
+            }
+            value = bc.localVar("value", bc.newEmptyArray(arrayElementClass, array.length));
+            for (int i = 0; i < array.length; i++) {
+                bc.set(value.elem(i), Const.of(array[i]));
+            }
+        } else if (paramValue instanceof Class<?> val) {
+            value = bc.localVar("value", loadClassFromTCCL(val, tccl, bc));
+        } else if (paramValue instanceof Class<?>[] array) {
+            value = bc.localVar("value", bc.newEmptyArray(Class.class, array.length));
+            for (int i = 0; i < array.length; i++) {
+                bc.set(value.elem(i), loadClassFromTCCL(array[i], tccl, bc));
+            }
+        } else if (paramValue instanceof ClassInfo val) {
+            value = bc.localVar("value", loadClassFromTCCL(classDescOf(val), tccl, bc));
+        } else if (paramValue instanceof ClassInfo[] array) {
+            value = bc.localVar("value", bc.newEmptyArray(Class.class, array.length));
+            for (int i = 0; i < array.length; i++) {
+                bc.set(value.elem(i), loadClassFromTCCL(classDescOf(array[i]), tccl, bc));
+            }
+        } else if (paramValue instanceof AnnotationInstance val) {
+            ClassInfo annotationClass = beanArchiveIndex.getClassByName(val.name());
+            value = bc.localVar("value", annotationLiterals.create(bc, annotationClass, val));
+        } else if (paramValue instanceof AnnotationInstance[] array) {
+            // most commonly, all values in the array are of the same type, in which case we create an array
+            // of that type; otherwise, we create an array of Annotation, which is the least upper bound
+            ClassDesc arrayElementClass = array.length == 0
+                    ? ClassDesc.of(Annotation.class.getName())
+                    : classDescOf(array[0].name());
+            for (AnnotationInstance annVal : array) {
+                if (!arrayElementClass.equals(classDescOf(annVal.name()))) {
+                    arrayElementClass = ClassDesc.of(Annotation.class.getName());
+                    break;
+                }
+            }
+
+            value = bc.localVar("value", bc.newEmptyArray(arrayElementClass, array.length));
+            for (int i = 0; i < array.length; i++) {
+                AnnotationInstance annotationInstance = array[i];
+                ClassInfo annotationClass = beanArchiveIndex.getClassByName(annotationInstance.name());
+                bc.set(value.elem(i), annotationLiterals.create(bc, annotationClass, annotationInstance));
+            }
+        } else if (paramValue instanceof InvokerInfo val) {
+            value = bc.localVar("value", bc.new_(val.getClassDesc()));
+        } else if (paramValue instanceof InvokerInfo[] array) {
+            value = bc.localVar("value", bc.newEmptyArray(Invoker.class, array.length));
+            for (int i = 0; i < array.length; i++) {
+                bc.set(value.elem(i), bc.new_(array[i].getClassDesc()));
+            }
+        } else {
+            throw new IllegalArgumentException("Unsupported parameter type: " + paramValue);
+        }
+        return value;
     }
 
     private static Expr loadClassFromTCCL(Class<?> clazz, Var tccl, BlockCreator bc) {

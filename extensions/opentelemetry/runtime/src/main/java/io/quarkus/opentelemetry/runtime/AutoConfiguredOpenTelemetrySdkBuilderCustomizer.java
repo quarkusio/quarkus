@@ -307,7 +307,9 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                         public MetricReader apply(MetricReader metricReader, ConfigProperties configProperties) {
                             // Replace the provided metric reader because it uses an unmanaged executor
                             // with a null classloader
-                            if (metricExporter.isResolvable() && managedExecutor.isResolvable()) {
+                            if (metricReader instanceof PeriodicMetricReader &&
+                                    metricExporter.isResolvable() &&
+                                    managedExecutor.isResolvable()) {
                                 return PeriodicMetricReader.builder(metricExporter.get())
                                         .setInterval(oTelRuntimeConfig.metric().exportInterval())
                                         .setExecutor(managedExecutor.get())

@@ -31,11 +31,11 @@
         <version.impsort.plugin>1.13.0</version.impsort.plugin>
         <version.install.plugin>3.1.4</version.install.plugin>
         <version.javadoc.plugin>3.12.0</version.javadoc.plugin>
-        <version.jar.plugin>3.5.0</version.jar.plugin>
+         <version.jar.plugin>3.5.0</version.jar.plugin>
         <version.plugin.plugin>3.15.2</version.plugin.plugin>
         <version.release.plugin>3.3.1</version.release.plugin>
-        <version.resources.plugin>3.4.0</version.resources.plugin>
-        <version.shade.plugin>3.6.1</version.shade.plugin>
+        <version.resources.plugin>3.5.0</version.resources.plugin>
+        <version.shade.plugin>3.6.2</version.shade.plugin>
         <version.source.plugin>3.4.0</version.source.plugin>
         <version.surefire.plugin>3.5.4</version.surefire.plugin>
         <version.failsafe.plugin>${version.surefire.plugin}</version.failsafe.plugin>
@@ -229,6 +229,21 @@
             <plugin>
                 <groupId>de.thetaphi</groupId>
                 <artifactId>forbiddenapis</artifactId>
+            </plugin>
+
+            <!-- For all modules with module-info, auto-generate service files. -->
+            <plugin>
+                <groupId>io.github.dmlloyd.maven</groupId>
+                <artifactId>module-services-plugin</artifactId>
+                <version>1.3</version>
+                <executions>
+                    <execution>
+                        <id>generate-services</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
         <pluginManagement>

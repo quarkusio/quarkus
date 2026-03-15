@@ -144,6 +144,26 @@ public class CodeFlowAuthorizationTest {
     }
 
     @Test
+    public void testGithubNoIdTokenNoUserInfo() throws IOException {
+        defineCodeFlowOpaqueAccessTokenStub();
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/github-no-id-token-no-user-info");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            TextPage textPage = form.getInputByValue("login").click();
+
+            assertEquals("alice", textPage.getContent());
+
+            webClient.getCookieManager().clearCookies();
+        }
+        clearCache();
+    }
+
+    @Test
     public void testCodeFlowVerifyIdAndAccessToken() throws IOException {
         defineCodeFlowLogoutStub();
         try (final WebClient webClient = createWebClient()) {

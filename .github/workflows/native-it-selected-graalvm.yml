@@ -1,5 +1,9 @@
 name: Quarkus CI - Native IT on selected GraalVM
 
+permissions:
+  contents: read
+  packages: read
+
 on:
   workflow_dispatch:
     inputs:
@@ -162,7 +166,7 @@ jobs:
       - name: Tar .m2/repository/io/quarkus
         run: tar -czf m2-io-quarkus.tgz -C ~ .m2/repository/io/quarkus
       - name: Upload .m2/repository/io/quarkus
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: m2-io-quarkus
           path: m2-io-quarkus.tgz
@@ -177,7 +181,7 @@ jobs:
               'target/gradle-build-scan-url.txt' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: "build-reports-Initial JDK 17 Build"
@@ -242,7 +246,7 @@ jobs:
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: m2-io-quarkus
           path: .
@@ -290,7 +294,7 @@ jobs:
               'integration-tests/virtual-threads/target/gradle-build-scan-url.txt' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: "build-reports-Virtual Thread Support Tests Native - ${{matrix.category}}"
@@ -347,7 +351,7 @@ jobs:
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: m2-io-quarkus
           path: .
@@ -378,7 +382,7 @@ jobs:
         if: failure()
         run: find . -type d -name '*-reports' -o -wholename '*/build/reports/tests/functionalTest' -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: test-reports-native-${{matrix.category}}
@@ -394,7 +398,7 @@ jobs:
               'target/gradle-build-scan-url.txt' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: "build-reports-Native Tests - ${{matrix.category}}"
@@ -408,7 +412,7 @@ jobs:
     needs: [build-jdk17,native-tests,virtual-thread-native-tests]
     if: always()
     steps:
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           path: build-reports-artifacts
       - name: Set up JDK 17

@@ -6,7 +6,11 @@ import io.quarkus.gizmo.ResultHandle;
 /**
  * A segment of code generation which produces the necessary instructions to load the given object. The result handle
  * is cached for reuse.
+ *
+ * @deprecated This interface is for internal use only, and is tightly coupled to Gizmo 1 which is being replaced
+ *             by Gizmo 2.
  */
+@Deprecated(forRemoval = true)
 public interface ObjectLoader {
     /**
      * Load the given object if possible.

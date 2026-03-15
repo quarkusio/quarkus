@@ -40,21 +40,21 @@ public class WiremockTestResource {
         server.start();
 
         server.stubFor(
-                head(urlEqualTo("/auth/realms/quarkus2/.well-known/openid-configuration"))
+                head(urlEqualTo("/auth/realms/quarkus2/.well-known/oauth-authorization-server"))
                         .willReturn(aResponse().withStatus(200)));
 
         server.stubFor(
-                get(urlEqualTo("/auth/realms/quarkus2/.well-known/openid-configuration"))
+                get(urlEqualTo("/auth/realms/quarkus2/.well-known/oauth-authorization-server"))
                         .withHeader("Filter", equalTo("OK"))
                         .withHeader("Cookie", absent())
                         .willReturn(aResponse()
                                 .withStatus(302)
                                 .withHeader("Location", "http://localhost:" + port
-                                        + "/auth/realms/quarkus2/.well-known/openid-configuration")
+                                        + "/auth/realms/quarkus2/.well-known/oauth-authorization-server")
                                 .withHeader("Set-Cookie", "redirect=true; Path=/; Domain=some.domain.com")));
 
         server.stubFor(
-                get(urlEqualTo("/auth/realms/quarkus2/.well-known/openid-configuration"))
+                get(urlEqualTo("/auth/realms/quarkus2/.well-known/oauth-authorization-server"))
                         .withHeader("Cookie", equalTo("redirect=true"))
                         .withHeader("Filter", equalTo("OK"))
                         .withHeader("tenant-id", not(absent()))

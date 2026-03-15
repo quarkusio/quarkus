@@ -14,7 +14,7 @@ include::_attributes.adoc[]
 This guide explains how your Quarkus application can utilize https://opentelemetry.io/[OpenTelemetry] (OTel) to provide
 Observability for interactive web applications.
 
-On these page we show the signal independent features of the extension.
+On this page we show the signal independent features of the extension.
 
 include::{includes}/observability-include.adoc[]
 
@@ -123,9 +123,9 @@ Once you add the dependency, the extension will generate tracing data by default
 | All output
 |`quarkus.otel.exporter.otlp.enabled`
 |true
-|Deprecated for removal.
+| If false, will disable Quarkus default OTLP exporters at *build* time.
 
-If false will disable the default OTLP exporter at *build* time.
+Telemetry will be generated, contexts will be propagated but no telemetry will be sent out.
 
 | Traces
 |`quarkus.otel.traces.enabled`

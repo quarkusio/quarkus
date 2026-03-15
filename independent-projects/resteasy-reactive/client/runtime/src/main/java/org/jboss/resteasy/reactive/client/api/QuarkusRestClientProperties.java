@@ -115,4 +115,14 @@ public class QuarkusRestClientProperties {
      */
     public static final String LOGGING_BODY_LIMIT = "io.quarkus.rest.client.logging.body-limit";
 
+    /**
+     * Which request and response headers values to mask in logs.
+     * <p>
+     * The value of any matching header will be replaced with {@code "****"}.
+     * The header name itself remains visible. E.g. {@code Authorization=****}
+     * <p>
+     * This property is applicable to reactive REST clients only.
+     */
+    public static final String LOGGING_MASKED_HEADERS = "io.quarkus.rest.client.logging.masked-headers";
+
 }

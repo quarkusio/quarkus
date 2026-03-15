@@ -11,6 +11,6 @@ metadata:
   guide: "https://quarkus.io/guides/security-openid-connect-client"
   categories:
   - "security"
-  status: "experimental"
+  status: "preview"
   config:
   - "quarkus.oidc-client."

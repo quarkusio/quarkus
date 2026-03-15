@@ -47,7 +47,12 @@ public interface OpenApiDocumentConfig {
 
     /**
      * Do not run the filter only at startup, but every time the document is requested (dynamic).
+     *
+     * @deprecated Use {@code @OpenApiFilter(stages = RunStage.RUNTIME_PER_REQUEST)} instead to mark
+     *             individual filters as per-request. This makes the OpenAPI document dynamic
+     *             automatically without requiring this configuration property.
      */
+    @Deprecated(since = "3.34", forRemoval = true)
     @WithDefault("false")
     boolean alwaysRunFilter();
 

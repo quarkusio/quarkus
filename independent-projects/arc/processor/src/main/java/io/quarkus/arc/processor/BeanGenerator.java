@@ -1,7 +1,9 @@
 package io.quarkus.arc.processor;
 
-import static io.quarkus.arc.processor.Annotations.uniqueAnnotations;
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
+import static io.quarkus.arc.processor.Reproducibility.orderedAnnotations;
+import static io.quarkus.arc.processor.Reproducibility.orderedStereotypes;
+import static io.quarkus.arc.processor.Reproducibility.orderedTypes;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.fieldDescOf;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
@@ -25,6 +27,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.spi.Contextual;
 import jakarta.enterprise.context.spi.CreationalContext;
@@ -446,7 +449,7 @@ public class BeanGenerator extends AbstractGenerator {
 
                 // Bean types
                 RuntimeTypeCreator rttc = RuntimeTypeCreator.of(bc).withTCCL(tccl);
-                Expr typesSet = bc.setOf(bean.getTypes().stream().toList(), type -> {
+                Expr typesSet = bc.setOf(orderedTypes(bean.getTypes()), type -> {
                     try {
                         return rttc.create(type);
                     } catch (IllegalArgumentException e) {
@@ -457,7 +460,7 @@ public class BeanGenerator extends AbstractGenerator {
 
                 // Qualifiers
                 if (!bean.getQualifiers().isEmpty() && !bean.hasDefaultQualifiers()) {
-                    Expr qualifiersSet = bc.setOf(uniqueAnnotations(bean.getQualifiers()), qualifier -> {
+                    Expr qualifiersSet = bc.setOf(orderedAnnotations(bean.getQualifiers()), qualifier -> {
                         BuiltinQualifier builtinQualifier = BuiltinQualifier.of(qualifier);
                         if (builtinQualifier != null) {
                             return builtinQualifier.getLiteralInstance();
@@ -471,7 +474,7 @@ public class BeanGenerator extends AbstractGenerator {
 
                 // Stereotypes
                 if (!bean.getStereotypes().isEmpty()) {
-                    Expr stereotypesSet = bc.setOf(bean.getStereotypes(),
+                    Expr stereotypesSet = bc.setOf(orderedStereotypes(bean.getStereotypes()),
                             stereotype -> Const.of(classDescOf(stereotype.getTarget())));
                     bc.set(cc.this_().field(stereotypesField), stereotypesSet);
                 }
@@ -708,7 +711,7 @@ public class BeanGenerator extends AbstractGenerator {
             }));
 
             // Interceptor bindings
-            List<AnnotationInstance> bindings = uniqueAnnotations(aroundConstructInterception.bindings);
+            List<AnnotationInstance> bindings = orderedAnnotations(aroundConstructInterception.bindings);
             LocalVar bindingsSet = bc.localVar("bindings", bc.setOf(bindings, binding -> {
                 ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.name());
                 return annotationLiterals.create(bc, bindingClass, binding);
@@ -908,7 +911,7 @@ public class BeanGenerator extends AbstractGenerator {
             }));
 
             // Interceptor bindings
-            List<AnnotationInstance> bindings = uniqueAnnotations(postConstructInterception.bindings);
+            List<AnnotationInstance> bindings = orderedAnnotations(postConstructInterception.bindings);
             LocalVar bindingsSet = bc.localVar("bindings", bc.setOf(bindings, binding -> {
                 ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.name());
                 return annotationLiterals.create(bc, bindingClass, binding);
@@ -2150,29 +2153,60 @@ public class BeanGenerator extends AbstractGenerator {
 
     public static Var collectInjectionPointQualifiers(BeanDeployment beanDeployment, BlockCreator bc,
             InjectionPointInfo injectionPoint, AnnotationLiteralProcessor annotationLiterals) {
+        return collectInjectionPointQualifiers(beanDeployment, bc, injectionPoint, annotationLiterals, Set.of());
+    }
+
+    public static Var collectInjectionPointQualifiers(BeanDeployment beanDeployment, BlockCreator bc,
+            InjectionPointInfo injectionPoint, AnnotationLiteralProcessor annotationLiterals, Set<DotName> excludeQualifiers) {
         return collectQualifiers(beanDeployment, bc, annotationLiterals,
-                injectionPoint.hasDefaultedQualifier() ? Collections.emptySet() : injectionPoint.getRequiredQualifiers());
+                injectionPoint.hasDefaultedQualifier() ? Set.of() : injectionPoint.getRequiredQualifiers(),
+                excludeQualifiers);
     }
 
     public static Var collectQualifiers(BeanDeployment beanDeployment, BlockCreator bc,
             AnnotationLiteralProcessor annotationLiterals, Set<AnnotationInstance> qualifiers) {
+        return collectQualifiers(beanDeployment, bc, annotationLiterals, qualifiers, Set.of());
+    }
+
+    public static Var collectQualifiers(BeanDeployment beanDeployment, BlockCreator bc,
+            AnnotationLiteralProcessor annotationLiterals, Set<AnnotationInstance> qualifiers,
+            Set<DotName> excludeQualifiers) {
         if (qualifiers.isEmpty()) {
             return Expr.staticField(FieldDescs.QUALIFIERS_IP_QUALIFIERS);
-        } else {
-            LocalVar qualifiersVar = bc.localVar("qualifiers", bc.new_(HashSet.class));
-            for (AnnotationInstance qualifier : qualifiers) {
-                BuiltinQualifier builtinQualifier = BuiltinQualifier.of(qualifier);
-                Expr qualifierExpr;
-                if (builtinQualifier != null) {
-                    qualifierExpr = builtinQualifier.getLiteralInstance();
-                } else {
-                    // Create annotation literal if needed
-                    qualifierExpr = annotationLiterals.create(bc, beanDeployment.getQualifier(qualifier.name()), qualifier);
-                }
-                bc.withSet(qualifiersVar).add(qualifierExpr);
-            }
-            return qualifiersVar;
         }
+
+        Set<AnnotationInstance> filteredQualifiers = qualifiers;
+        if (!excludeQualifiers.isEmpty()) {
+            // let's avoid creating a stream and a new set as the typical case for exclusion is @All and it won't be around in most cases
+            boolean needsFiltering = false;
+            for (AnnotationInstance qualifier : qualifiers) {
+                if (excludeQualifiers.contains(qualifier.name())) {
+                    needsFiltering = true;
+                    break;
+                }
+            }
+            if (needsFiltering) {
+                filteredQualifiers = qualifiers.stream()
+                        .filter(q -> !excludeQualifiers.contains(q.name()))
+                        .collect(Collectors.toSet());
+            }
+        }
+
+        LocalVar qualifiersVar = bc.localVar("qualifiers",
+                bc.setOf(Reproducibility.orderedAnnotations(filteredQualifiers), qualifier -> {
+                    BuiltinQualifier builtinQualifier = BuiltinQualifier.of(qualifier);
+                    Expr qualifierExpr;
+                    if (builtinQualifier != null) {
+                        qualifierExpr = builtinQualifier.getLiteralInstance();
+                    } else {
+                        // Create annotation literal if needed
+                        qualifierExpr = annotationLiterals.create(bc, beanDeployment.getQualifier(qualifier.name()),
+                                qualifier);
+                    }
+                    return qualifierExpr;
+                }));
+
+        return qualifiersVar;
     }
 
     static void destroyTransientReferences(BlockCreator bc, Iterable<TransientReference> transientReferences) {

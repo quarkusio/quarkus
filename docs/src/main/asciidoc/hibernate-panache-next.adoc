@@ -1086,8 +1086,6 @@ public class OnStart {
 
 == Jakarta Data
 
-WARN: Jakarta Data only works with stateless sessions, though it does support blocking and reactive variants.
-
 Naturally, you can also use link:{jakarta-data-spec-url}[Jakarta Data] to define your repositories. For this you need to import the module:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
@@ -1105,20 +1103,22 @@ Naturally, you can also use link:{jakarta-data-spec-url}[Jakarta Data] to define
 implementation 'jakarta.data:jakarta.data-api'
 ----
 
-And then you can write your entity as usual, but for repositories you extend `CrudRepository` (or nothing if you
-wish to implement all the methods yourself), using the entity and its ID types as type parameters, and you must
-annotate the repository with `@Repository`.
+And then you can write your entity as described before, extending a variant of `PanacheEntity` or not, as you wish.
+
+As for the repositories, given that Jakarta Data 1.0 only supports the stateless variants (managed entities are
+being added to the upcoming 1.1 version), we recommend that you stick to the `PanacheRepository` variants in order
+to support stateless or managed entities. Both blocking and reactive variants are supported, though.
 
 Otherwise, just replace `@HQL` with `@Query` and change the package import of `@Find`, and you can even write
 `@Delete` finder methods:
 
 [source,java]
 ----
-import jakarta.data.repository.CrudRepository;
+import io.quarkus.hibernate.panache.PanacheRepository;
+
 import jakarta.data.repository.Delete;
 import jakarta.data.repository.Find;
 import jakarta.data.repository.Query;
-import jakarta.data.repository.Repository;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -1139,8 +1139,7 @@ public class Cat {
         CUTE, HAIRLESS;
     }
 
-    @Repository
-    public interface Repo extends CrudRepository<Cat, Long> {
+    public interface Repo extends PanacheRepository.Stateless<Cat, Long> {
         @Find <1>
         Cat findByName(String name);
 

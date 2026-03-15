@@ -11,9 +11,13 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -82,6 +86,7 @@ public class ClientBuilderImpl extends ClientBuilder {
     private ClientLogger clientLogger = new DefaultClientLogger();
     private LoggingScope loggingScope = LoggingScope.NONE;
     private Integer loggingBodySize = 100;
+    private Set<String> maskedHeaders = Collections.emptySet();
 
     private int maxChunkSize = 8096;
     private MultiQueryParamMode multiQueryParamMode;
@@ -211,6 +216,11 @@ public class ClientBuilderImpl extends ClientBuilder {
         return this;
     }
 
+    public ClientBuilder maskedHeaders(Set<String> maskedHeaders) {
+        this.maskedHeaders = maskedHeaders;
+        return this;
+    }
+
     public ClientBuilder clientLogger(ClientLogger clientLogger) {
         this.clientLogger = clientLogger;
         return this;
@@ -321,6 +331,17 @@ public class ClientBuilderImpl extends ClientBuilder {
         }
 
         clientLogger.setBodySize(loggingBodySize);
+
+        if (maskedHeaders == null || maskedHeaders.isEmpty()) {
+            clientLogger.setMaskedHeaders(Collections.emptySet());
+        } else {
+            Set<String> effectiveMaskedHeaders = new HashSet<>();
+            for (String maskedHeader : maskedHeaders) {
+                effectiveMaskedHeaders.add(maskedHeader.toLowerCase(Locale.ROOT));
+            }
+
+            clientLogger.setMaskedHeaders(Collections.unmodifiableSet(effectiveMaskedHeaders));
+        }
 
         options.setMaxChunkSize(maxChunkSize);
 

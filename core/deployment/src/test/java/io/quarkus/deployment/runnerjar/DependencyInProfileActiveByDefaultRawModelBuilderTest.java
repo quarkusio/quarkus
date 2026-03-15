@@ -72,8 +72,6 @@ public class DependencyInProfileActiveByDefaultRawModelBuilderTest extends Boots
 
         appJar.addProfile(profile);
 
-        createWorkspace();
-
         return appJar;
     }
 

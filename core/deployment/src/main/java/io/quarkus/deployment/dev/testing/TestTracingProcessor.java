@@ -113,7 +113,7 @@ public class TestTracingProcessor {
             }
         }
         QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
-        ((QuarkusClassLoader) cl.parent()).addCloseTask(ContinuousTestingSharedStateManager::reset);
+        ((QuarkusClassLoader) cl.getParent()).addCloseTask(ContinuousTestingSharedStateManager::reset);
     }
 
     @BuildStep(onlyIf = IsTest.class)

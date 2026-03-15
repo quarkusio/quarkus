@@ -79,7 +79,7 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.ScopeInfo;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
+import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -365,13 +365,15 @@ class RestClientReactiveProcessor {
         }
 
         MultivaluedMap<String, GeneratedClassResult> generatedProviders = new QuarkusMultivaluedHashMap<>();
-        populateClientExceptionMapperFromAnnotations(index, generatedClassesProducer, reflectiveClassesProducer,
+        Gizmo classGizmo = Gizmo
+                .create(new GeneratedClassGizmo2Adaptor(generatedClassesProducer, null, true));
+        populateClientExceptionMapperFromAnnotations(index, classGizmo, reflectiveClassesProducer,
                 executionModelAnnotationsAllowedProducer)
                 .forEach(generatedProviders::add);
-        populateClientRedirectHandlerFromAnnotations(generatedClassesProducer, reflectiveClassesProducer, index)
+        populateClientRedirectHandlerFromAnnotations(classGizmo, reflectiveClassesProducer, index)
                 .forEach(generatedProviders::add);
         for (AnnotationToRegisterIntoClientContextBuildItem annotation : annotationsToRegisterIntoClientContext) {
-            populateClientProviderFromAnnotations(annotation, generatedClassesProducer, reflectiveClassesProducer, index)
+            populateClientProviderFromAnnotations(annotation, classGizmo, reflectiveClassesProducer, index)
                     .forEach(generatedProviders::add);
         }
 
@@ -733,7 +735,7 @@ class RestClientReactiveProcessor {
                     // }
                     cc.method(method.name(), mc -> {
                         mc.public_();
-                        mc.returning(genericTypeOf(method.returnType(), index));
+                        mc.returning(genericTypeOf(method.returnType()));
 
                         // Collect parameter annotations grouped by position
                         Map<Short, List<AnnotationInstance>> paramAnnotations = new HashMap<>();
@@ -851,7 +853,7 @@ class RestClientReactiveProcessor {
 
     private Map<String, GeneratedClassResult> populateClientExceptionMapperFromAnnotations(
             IndexView index,
-            BuildProducer<GeneratedClassBuildItem> generatedClassesProducer,
+            Gizmo gizmo,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer,
             BuildProducer<ExecutionModelAnnotationsAllowedBuildItem> executionModelAnnotationsAllowedProducer) {
 
@@ -864,8 +866,7 @@ class RestClientReactiveProcessor {
                 }));
 
         var result = new HashMap<String, GeneratedClassResult>();
-        ClientExceptionMapperHandler clientExceptionMapperHandler = new ClientExceptionMapperHandler(
-                new GeneratedClassGizmoAdaptor(generatedClassesProducer, true));
+        ClientExceptionMapperHandler clientExceptionMapperHandler = new ClientExceptionMapperHandler(gizmo);
         for (AnnotationInstance instance : index.getAnnotations(CLIENT_EXCEPTION_MAPPER)) {
             GeneratedClassResult classResult = clientExceptionMapperHandler.generateResponseExceptionMapper(instance);
             if (classResult == null) {
@@ -884,11 +885,11 @@ class RestClientReactiveProcessor {
     }
 
     private Map<String, GeneratedClassResult> populateClientRedirectHandlerFromAnnotations(
-            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            Gizmo gizmo,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses, IndexView index) {
 
         var result = new HashMap<String, GeneratedClassResult>();
-        ClientRedirectHandler clientHandler = new ClientRedirectHandler(new GeneratedClassGizmoAdaptor(generatedClasses, true));
+        ClientRedirectHandler clientHandler = new ClientRedirectHandler(gizmo);
         for (AnnotationInstance instance : index.getAnnotations(CLIENT_REDIRECT_HANDLER)) {
             GeneratedClassResult classResult = clientHandler.generateResponseExceptionMapper(instance);
             if (classResult == null) {
@@ -912,13 +913,12 @@ class RestClientReactiveProcessor {
 
     private Map<String, GeneratedClassResult> populateClientProviderFromAnnotations(
             AnnotationToRegisterIntoClientContextBuildItem annotationBuildItem,
-            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            Gizmo gizmo,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses, IndexView index) {
 
         var result = new HashMap<String, GeneratedClassResult>();
         ClientContextResolverHandler handler = new ClientContextResolverHandler(annotationBuildItem.getAnnotation(),
-                annotationBuildItem.getExpectedReturnType(),
-                new GeneratedClassGizmoAdaptor(generatedClasses, true));
+                annotationBuildItem.getExpectedReturnType(), gizmo);
         for (AnnotationInstance instance : index.getAnnotations(annotationBuildItem.getAnnotation())) {
             GeneratedClassResult classResult = handler.generateContextResolver(instance);
             if (classResult == null) {

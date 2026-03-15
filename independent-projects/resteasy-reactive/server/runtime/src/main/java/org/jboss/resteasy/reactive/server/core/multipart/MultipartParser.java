@@ -143,12 +143,21 @@ public class MultipartParser {
                 } else if (subState == -1) {
                     if (b == CR) {
                         subState = -2;
+                    } else if (b == DASH) {
+                        subState = -3;
                     }
                 } else if (subState == -2) {
                     if (b == LF) {
                         subState = 0;
                         state = 1;//preamble is done
                         headers = new CaseInsensitiveMap<String>();
+                        return;
+                    } else {
+                        subState = -1;
+                    }
+                } else if (subState == -3) {
+                    if (b == DASH) {
+                        state = -1; // we are done
                         return;
                     } else {
                         subState = -1;

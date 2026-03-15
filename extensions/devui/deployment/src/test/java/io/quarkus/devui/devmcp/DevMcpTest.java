@@ -260,4 +260,33 @@ public class DevMcpTest {
 
     }
 
+    @Test
+    public void testResourcesReadWithInvalidUri() {
+        String jsonBody = """
+                    {
+                      "jsonrpc": "2.0",
+                      "id": 7,
+                      "method": "resources/read",
+                      "params": {
+                           "uri": "quarkus://"
+                      }
+                    }
+                """;
+
+        RestAssured
+                .given()
+                .contentType(ContentType.JSON)
+                .body(jsonBody)
+                .when()
+                .post("/q/dev-mcp")
+                .then()
+                .statusCode(200)
+                .log().all()
+                .body("id", CoreMatchers.equalTo(7))
+                .body("jsonrpc", CoreMatchers.equalTo("2.0"))
+                .body("error.code", CoreMatchers.equalTo(-32603))
+                .body("error.message", CoreMatchers.containsString("Invalid resource URI"));
+
+    }
+
 }

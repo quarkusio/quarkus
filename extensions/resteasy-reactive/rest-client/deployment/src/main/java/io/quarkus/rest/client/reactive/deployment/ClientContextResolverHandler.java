@@ -1,5 +1,7 @@
 package io.quarkus.rest.client.reactive.deployment;
 
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -19,12 +21,14 @@ import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.gizmo.SignatureBuilder;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.GenericType;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.TypeArgument;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.rest.client.reactive.runtime.ResteasyReactiveContextResolver;
 import io.quarkus.runtime.util.HashUtil;
 
@@ -37,19 +41,25 @@ import io.quarkus.runtime.util.HashUtil;
  */
 class ClientContextResolverHandler {
 
-    private static final String[] EMPTY_STRING_ARRAY = new String[0];
-    private static final ResultHandle[] EMPTY_RESULT_HANDLES_ARRAY = new ResultHandle[0];
-    private static final MethodDescriptor GET_INVOKED_METHOD = MethodDescriptor.ofMethod(RestClientRequestContext.class,
+    private static final MethodDesc GET_INVOKED_METHOD = MethodDesc.of(RestClientRequestContext.class,
             "getInvokedMethod", Method.class);
+    private static final MethodDesc GET_CONTEXT_CLASS_LOADER = MethodDesc.of(Thread.class,
+            "getContextClassLoader", ClassLoader.class);
+    private static final MethodDesc ARC_CONTAINER = MethodDesc.of(Arc.class,
+            "container", ArcContainer.class);
+    private static final MethodDesc ARC_CONTAINER_INSTANCE = MethodDesc.of(ArcContainer.class,
+            "instance", InstanceHandle.class, Class.class, Annotation[].class);
+    private static final MethodDesc INSTANCE_HANDLE_GET = MethodDesc.of(InstanceHandle.class,
+            "get", Object.class);
 
     private final DotName annotation;
     private final Class<?> expectedReturnType;
-    private final ClassOutput classOutput;
+    private final Gizmo gizmo;
 
-    ClientContextResolverHandler(DotName annotation, Class<?> expectedReturnType, ClassOutput classOutput) {
+    ClientContextResolverHandler(DotName annotation, Class<?> expectedReturnType, Gizmo gizmo) {
         this.annotation = annotation;
         this.expectedReturnType = expectedReturnType;
-        this.classOutput = classOutput;
+        this.gizmo = gizmo;
     }
 
     /**
@@ -94,34 +104,33 @@ class ClientContextResolverHandler {
 
         ClassInfo restClientInterfaceClassInfo = targetMethod.declaringClass();
         String generatedClassName = getGeneratedClassName(targetMethod);
-        try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput).className(generatedClassName)
-                .signature(SignatureBuilder.forClass()
-                        .addInterface(io.quarkus.gizmo.Type.parameterizedType(
-                                io.quarkus.gizmo.Type.classType(ResteasyReactiveContextResolver.class),
-                                io.quarkus.gizmo.Type.classType(returnTypeClassName))))
-                .build()) {
-            MethodCreator getContext = cc.getMethodCreator("getContext", Object.class, Class.class);
-            LinkedHashMap<String, ResultHandle> targetMethodParams = new LinkedHashMap<>();
-            for (Type paramType : targetMethod.parameterTypes()) {
-                ResultHandle targetMethodParamHandle;
-                if (paramType.name().equals(DotNames.METHOD)) {
-                    targetMethodParamHandle = getContext.invokeVirtualMethod(GET_INVOKED_METHOD, getContext.getMethodParam(1));
-                } else {
-                    targetMethodParamHandle = getFromCDI(getContext, targetMethod.returnType().name().toString());
-                }
+        final MethodInfo target = targetMethod;
+        gizmo.class_(generatedClassName, cc -> {
+            cc.implements_(GenericType.ofClass(ResteasyReactiveContextResolver.class,
+                    TypeArgument.of(returnTypeClassName)));
+            cc.defaultConstructor();
+            cc.method("getContext", mc -> {
+                mc.returning(Object.class);
+                ParamVar typeParam = mc.parameter("type", Class.class);
+                mc.body(bc -> {
+                    LinkedHashMap<String, Expr> targetMethodParams = new LinkedHashMap<>();
+                    for (Type paramType : target.parameterTypes()) {
+                        Expr targetMethodParamHandle;
+                        if (paramType.name().equals(DotNames.METHOD)) {
+                            targetMethodParamHandle = bc.invokeVirtual(GET_INVOKED_METHOD, typeParam);
+                        } else {
+                            targetMethodParamHandle = getFromCDI(bc, target.returnType().name().toString());
+                        }
 
-                targetMethodParams.put(paramType.name().toString(), targetMethodParamHandle);
-            }
+                        targetMethodParams.put(paramType.name().toString(), targetMethodParamHandle);
+                    }
 
-            ResultHandle resultHandle = getContext.invokeStaticInterfaceMethod(
-                    MethodDescriptor.ofMethod(
-                            restClientInterfaceClassInfo.name().toString(),
-                            targetMethod.name(),
-                            targetMethod.returnType().name().toString(),
-                            targetMethodParams.keySet().toArray(EMPTY_STRING_ARRAY)),
-                    targetMethodParams.values().toArray(EMPTY_RESULT_HANDLES_ARRAY));
-            getContext.returnValue(resultHandle);
-        }
+                    Expr resultHandle = bc.invokeStatic(methodDescOf(target),
+                            targetMethodParams.values().toArray(new Expr[0]));
+                    bc.return_(resultHandle);
+                });
+            });
+        });
 
         return new GeneratedClassResult(restClientInterfaceClassInfo.name().toString(), generatedClassName, priority);
     }
@@ -158,16 +167,15 @@ class ClientContextResolverHandler {
         return returnTypeClassName;
     }
 
-    private static ResultHandle getFromCDI(MethodCreator getContext, String className) {
-        ResultHandle containerHandle = getContext
-                .invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
-        ResultHandle instanceHandle = getContext.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
-                        Annotation[].class),
-                containerHandle, getContext.loadClassFromTCCL(className),
-                getContext.newArray(Annotation.class, 0));
-        return getContext.invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
-                instanceHandle);
+    private static Expr getFromCDI(BlockCreator bc, String className) {
+        Expr containerHandle = bc.invokeStatic(ARC_CONTAINER);
+        Expr currentThread = bc.currentThread();
+        Expr tccl = bc.invokeVirtual(GET_CONTEXT_CLASS_LOADER, currentThread);
+        Expr classHandle = bc.classForName(Const.of(className), Const.of(false), tccl);
+        Expr instanceHandle = bc.invokeInterface(ARC_CONTAINER_INSTANCE,
+                containerHandle, classHandle,
+                bc.newArray(Annotation.class));
+        return bc.invokeInterface(INSTANCE_HANDLE_GET, instanceHandle);
     }
 
     public static String getGeneratedClassName(MethodInfo methodInfo) {

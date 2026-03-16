@@ -176,6 +176,7 @@
             </properties>
         </profile>
 
+        <!-- note that a small number of tests fail with Redis 8, so we don't use it by default yet -->
         <profile>
             <id>redis-8.4</id>
             <properties>

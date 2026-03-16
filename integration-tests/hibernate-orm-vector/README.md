@@ -15,5 +15,5 @@ extension installed. By default, tests are skipped unless the `test-containers` 
 ./mvnw verify -pl integration-tests/hibernate-orm-vector -Dtest-containers
 ```
 
-The test uses Quarkus Dev Services with the `pgvector/pgvector:pg17` Docker image,
+The test uses Quarkus Dev Services with the `pgvector/pgvector:pg18` Docker image,
 which bundles PostgreSQL and the pgvector extension together.

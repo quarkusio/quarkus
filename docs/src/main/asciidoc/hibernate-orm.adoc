@@ -1172,7 +1172,7 @@ public class Document {
 }
 ----
 
-NOTE: The `vector` PostgreSQL extension must be installed in your database. When using Dev Services, configure the pgvector image: `quarkus.datasource.devservices.image-name=docker.io/pgvector/pgvector:pg17`.
+NOTE: The `vector` PostgreSQL extension must be installed in your database. When using Dev Services, configure the pgvector image: `quarkus.datasource.devservices.image-name=docker.io/pgvector/pgvector:pg18`.
 
 You can find all information about Vector in the Hibernate user guide: link:{hibernate-orm-docs-url}#vector[Hibernate ORM Vector].
 

@@ -1,8 +1,0 @@
-org.hibernate.vector.internal.PGVectorTypeContributor
-org.hibernate.vector.internal.OracleVectorTypeContributor
-org.hibernate.vector.internal.MariaDBTypeContributor
-org.hibernate.vector.internal.MySQLTypeContributor
-org.hibernate.vector.internal.DB2VectorTypeContributor
-org.hibernate.vector.internal.CockroachTypeContributor
-org.hibernate.vector.internal.HANAVectorTypeContributor
-org.hibernate.vector.internal.SQLServerTypeContributor

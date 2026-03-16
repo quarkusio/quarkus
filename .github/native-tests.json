@@ -32,7 +32,7 @@
         },
         {
             "category": "Data5",
-            "timeout": 80,
+            "timeout": 90,
             "test-modules": "jpa-postgresql, jpa-postgresql-withxml, narayana-stm, narayana-jta, reactive-pg-client, hibernate-reactive-postgresql, hibernate-orm-tenancy/schema, hibernate-orm-tenancy/schema-mariadb, hibernate-orm-spatial, hibernate-orm-vector",
             "os-name": "ubuntu-latest"
         },

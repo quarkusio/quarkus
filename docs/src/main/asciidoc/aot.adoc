@@ -173,6 +173,44 @@ You can obtain more information about AOT cache usage with the `-Xlog:aot` optio
 You can collect even more information in an `aot.log` file with `-Xlog:class+load=info,aot+codecache=debug:file=aot.log:level,tags`.
 ====
 
+== Manual AOT file generation
+
+As explained above, Quarkus takes care of all the heavy lifting when coming to the AOT file generation. However, in cases where more control is needed, users can perform the necessary steps manually.
+
+To build an application using the `aot-jar` packaging, use the following:
+
+[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-maven"]
+.Maven
+----
+mvn package -Dquarkus.package.jar.type=aot-jar
+----
+
+[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+----
+./gradlew build -Dquarkus.package.jar.type=aot-jar
+----
+
+To start the application in recording mode, use the following:
+
+[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-maven"]
+.Maven
+----
+cd target/quarkus-app
+java -XX:AOTCacheOutput=app.aot -jar quarkus-run.jar
+----
+
+[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+----
+cd build/quarkus-app
+java -XX:AOTCacheOutput=app.aot-jar quarkus-run.jar
+----
+
+After driving some load to the application, stop it. Once the process is stopped, you will notice that the `app.aot` has been created in the same directory as `quarkus-run.jar`.
+
+Please refer to [JEP 514](https://openjdk.org/jeps/514) for more details.
+
 == Container images
 
 Quarkus can automatically build container images that include AOT caches, giving you fast startup times out of the box.

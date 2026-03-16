@@ -1,5 +1,6 @@
 package io.quarkus.arc.deployment;
 
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.ServiceLoader;
 import java.util.Set;
@@ -42,7 +43,7 @@ class ValueRegistryProcessor {
             ValueRegistryRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
 
-        for (Class<?> runtimeInfo : getRuntimeInfoClasses()) {
+        for (Class<?> runtimeInfo : getRuntimeInfoClasses().stream().sorted(Comparator.comparing(Class::getName)).toList()) {
             SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                     .configure(runtimeInfo)
                     .startup()

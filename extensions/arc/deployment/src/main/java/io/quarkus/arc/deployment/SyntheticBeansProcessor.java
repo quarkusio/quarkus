@@ -1,8 +1,9 @@
 package io.quarkus.arc.deployment;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -38,13 +39,19 @@ public class SyntheticBeansProcessor {
     void initStatic(ArcRecorder recorder, List<SyntheticBeanBuildItem> syntheticBeans,
             BeanRegistrationPhaseBuildItem beanRegistration, BuildProducer<BeanConfiguratorBuildItem> configurators) {
 
-        Map<String, Function<SyntheticCreationalContext<?>, ?>> creationFunctions = new HashMap<>();
-        Map<String, Supplier<ActiveResult>> checkActiveSuppliers = new HashMap<>();
-
+        TreeMap<String, SyntheticBeanBuildItem> sortedBeans = new TreeMap<>();
         for (SyntheticBeanBuildItem bean : syntheticBeans) {
             if (bean.hasRecorderInstance() && bean.isStaticInit()) {
-                configureSyntheticBean(recorder, creationFunctions, checkActiveSuppliers, beanRegistration, bean);
+                sortedBeans.put(createName(bean.configurator()), bean);
             }
+        }
+
+        Map<String, Function<SyntheticCreationalContext<?>, ?>> creationFunctions = new LinkedHashMap<>();
+        Map<String, Supplier<ActiveResult>> checkActiveSuppliers = new LinkedHashMap<>();
+
+        for (Map.Entry<String, SyntheticBeanBuildItem> entry : sortedBeans.entrySet()) {
+            configureSyntheticBean(recorder, entry.getKey(), creationFunctions, checkActiveSuppliers, beanRegistration,
+                    entry.getValue());
         }
         // Init the map of bean instances
         recorder.initStaticSupplierBeans(creationFunctions, checkActiveSuppliers);
@@ -56,13 +63,19 @@ public class SyntheticBeansProcessor {
     ServiceStartBuildItem initRuntime(ArcRecorder recorder, List<SyntheticBeanBuildItem> syntheticBeans,
             BeanRegistrationPhaseBuildItem beanRegistration, BuildProducer<BeanConfiguratorBuildItem> configurators) {
 
-        Map<String, Function<SyntheticCreationalContext<?>, ?>> creationFunctions = new HashMap<>();
-        Map<String, Supplier<ActiveResult>> checkActiveSuppliers = new HashMap<>();
-
+        TreeMap<String, SyntheticBeanBuildItem> sortedBeans = new TreeMap<>();
         for (SyntheticBeanBuildItem bean : syntheticBeans) {
             if (bean.hasRecorderInstance() && !bean.isStaticInit()) {
-                configureSyntheticBean(recorder, creationFunctions, checkActiveSuppliers, beanRegistration, bean);
+                sortedBeans.put(createName(bean.configurator()), bean);
             }
+        }
+
+        Map<String, Function<SyntheticCreationalContext<?>, ?>> creationFunctions = new LinkedHashMap<>();
+        Map<String, Supplier<ActiveResult>> checkActiveSuppliers = new LinkedHashMap<>();
+
+        for (Map.Entry<String, SyntheticBeanBuildItem> entry : sortedBeans.entrySet()) {
+            configureSyntheticBean(recorder, entry.getKey(), creationFunctions, checkActiveSuppliers, beanRegistration,
+                    entry.getValue());
         }
         recorder.initRuntimeSupplierBeans(creationFunctions, checkActiveSuppliers);
         return new ServiceStartBuildItem("runtime-bean-init");
@@ -72,18 +85,22 @@ public class SyntheticBeansProcessor {
     void initRegular(List<SyntheticBeanBuildItem> syntheticBeans,
             BeanRegistrationPhaseBuildItem beanRegistration, BuildProducer<BeanConfiguratorBuildItem> configurators) {
 
+        TreeMap<String, SyntheticBeanBuildItem> sortedBeans = new TreeMap<>();
         for (SyntheticBeanBuildItem bean : syntheticBeans) {
             if (!bean.hasRecorderInstance()) {
-                configureSyntheticBean(null, null, null, beanRegistration, bean);
+                sortedBeans.put(createName(bean.configurator()), bean);
             }
+        }
+
+        for (Map.Entry<String, SyntheticBeanBuildItem> entry : sortedBeans.entrySet()) {
+            configureSyntheticBean(null, entry.getKey(), null, null, beanRegistration, entry.getValue());
         }
     }
 
-    private void configureSyntheticBean(ArcRecorder recorder,
+    private void configureSyntheticBean(ArcRecorder recorder, String name,
             Map<String, Function<SyntheticCreationalContext<?>, ?>> creationFunctions,
             Map<String, Supplier<ActiveResult>> checkActiveSuppliers, BeanRegistrationPhaseBuildItem beanRegistration,
             SyntheticBeanBuildItem bean) {
-        String name = createName(bean.configurator());
         if (bean.configurator().getRuntimeValue() != null) {
             creationFunctions.put(name, recorder.createFunction(bean.configurator().getRuntimeValue()));
         } else if (bean.configurator().getSupplier() != null) {

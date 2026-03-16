@@ -20,6 +20,7 @@ import static org.jboss.jandex.AnnotationValue.createStringValue;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -239,6 +240,7 @@ public class ConfigBuildStep {
         recorder.validateConfigProperties(
                 configProperties.stream()
                         .filter(ConfigPropertyBuildItem::isRuntimeInit)
+                        .sorted(Comparator.comparing(ConfigPropertyBuildItem::getPropertyName))
                         .map(p -> configPropertyToConfigValidation(p, reflectiveClass))
                         .collect(toSet()));
     }

@@ -117,6 +117,7 @@ public class VertxCertificateHolder implements TlsConfiguration {
         options.setKeyCertOptions(getKeyStoreOptions());
         options.setTrustOptions(getTrustStoreOptions());
         options.setUseAlpn(config().alpn());
+        options.setUseHybridKeyExchangeProtocol(config().hybridKeyExchangeProtocol());
         options.setSslHandshakeTimeoutUnit(TimeUnit.SECONDS);
         options.setSslHandshakeTimeout(config().handshakeTimeout().toSeconds());
         options.setEnabledSecureTransportProtocols(config().protocols());

@@ -1524,13 +1524,13 @@ public final class HibernateOrmProcessor {
      */
     public static QuarkusScanner buildQuarkusScanner(JpaModelBuildItem jpaModel) {
         QuarkusScanner scanner = new QuarkusScanner();
-        Set<PackageDescriptor> packageDescriptors = new HashSet<>();
+        Set<PackageDescriptor> packageDescriptors = new LinkedHashSet<>();
         for (String packageName : jpaModel.getAllModelPackageNames()) {
             QuarkusScanner.PackageDescriptorImpl desc = new QuarkusScanner.PackageDescriptorImpl(packageName);
             packageDescriptors.add(desc);
         }
         scanner.setPackageDescriptors(packageDescriptors);
-        Set<ClassDescriptor> classDescriptors = new HashSet<>();
+        Set<ClassDescriptor> classDescriptors = new LinkedHashSet<>();
         for (String className : jpaModel.getEntityClassNames()) {
             QuarkusScanner.ClassDescriptorImpl desc = new QuarkusScanner.ClassDescriptorImpl(className,
                     ClassDescriptor.Categorization.MODEL);

@@ -944,12 +944,13 @@ public class JibProcessor {
     @BuildStep
     public BuildAotOptimizedContainerImageResultBuildItem buildAotOptimizedContainerImageBuildItem(
             ContainerImageJibConfig jibConfig,
+            ContainerImageConfig containerImageConfig,
             BuildAotOptimizedContainerImageRequestBuildItem requestBuildItem) {
 
         // TODO: this needs a lot of hardening as for the time being it assumes the image is in the docker daemon and only writes the new one there
 
         String baseImage = requestBuildItem.getOriginalContainerImage();
-        String enhancedImage = requestBuildItem.getOriginalContainerImage() + "-aot";
+        String enhancedImage = requestBuildItem.getOriginalContainerImage() + containerImageConfig.effectiveAotImageSuffix();
 
         try {
             createPatchedInstance(jibConfig, baseImage)

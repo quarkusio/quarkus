@@ -7,6 +7,7 @@ import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.hibernate.orm.deployment.spatial.HibernateSpatialAvailable;
+import io.quarkus.hibernate.orm.deployment.vector.HibernateVectorAvailable;
 import io.quarkus.hibernate.orm.runtime.graal.DisableLoggingFeature;
 
 /**
@@ -50,5 +51,11 @@ public final class HibernateLogFilterBuildStep {
     void setupSpatialLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
         filters.produce(new LogCleanupFilterBuildItem("org.hibernate.spatial.integration.SpatialService",
                 "Hibernate Spatial integration enabled"));
+    }
+
+    @BuildStep(onlyIf = HibernateVectorAvailable.class)
+    void setupVectorLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.vector",
+                "Hibernate Vector integration enabled"));
     }
 }

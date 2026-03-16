@@ -1,0 +1,8 @@
+org.hibernate.vector.internal.PGVectorFunctionContributor
+org.hibernate.vector.internal.OracleVectorFunctionContributor
+org.hibernate.vector.internal.MariaDBFunctionContributor
+org.hibernate.vector.internal.MySQLFunctionContributor
+org.hibernate.vector.internal.DB2VectorFunctionContributor
+org.hibernate.vector.internal.CockroachFunctionContributor
+org.hibernate.vector.internal.HANAVectorFunctionContributor
+org.hibernate.vector.internal.SQLServerVectorFunctionContributor

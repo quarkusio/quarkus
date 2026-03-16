@@ -6,7 +6,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.Mappable;
@@ -42,8 +44,11 @@ public class PathFilter implements Mappable, Serializable {
 
     }
 
-    private List<Pattern> includes;
-    private List<Pattern> excludes;
+    private volatile transient Set<String> includesPatterns;
+    private volatile transient Set<String> excludesPatterns;
+
+    private final List<Pattern> includes;
+    private final List<Pattern> excludes;
 
     public PathFilter(Collection<String> includes, Collection<String> excludes) {
         this.includes = compileGlob(includes);
@@ -100,9 +105,28 @@ public class PathFilter implements Mappable, Serializable {
         return result;
     }
 
+    private static Set<String> canonicalPatterns(List<Pattern> patterns) {
+        return patterns == null || patterns.isEmpty() ? Set.of()
+                : patterns.stream().map(Pattern::pattern).collect(Collectors.toSet());
+    }
+
+    private Set<String> canonicalIncludes() {
+        if (includesPatterns == null) {
+            includesPatterns = canonicalPatterns(includes);
+        }
+        return includesPatterns;
+    }
+
+    private Set<String> canonicalExcludes() {
+        if (excludesPatterns == null) {
+            excludesPatterns = canonicalPatterns(excludes);
+        }
+        return excludesPatterns;
+    }
+
     @Override
     public int hashCode() {
-        return Objects.hash(excludes, includes);
+        return Objects.hash(canonicalExcludes(), canonicalIncludes());
     }
 
     @Override
@@ -114,7 +138,8 @@ public class PathFilter implements Mappable, Serializable {
         if (getClass() != obj.getClass())
             return false;
         PathFilter other = (PathFilter) obj;
-        return Objects.equals(excludes, other.excludes) && Objects.equals(includes, other.includes);
+        return Objects.equals(canonicalExcludes(), other.canonicalExcludes())
+                && Objects.equals(canonicalIncludes(), other.canonicalIncludes());
     }
 
     @Override

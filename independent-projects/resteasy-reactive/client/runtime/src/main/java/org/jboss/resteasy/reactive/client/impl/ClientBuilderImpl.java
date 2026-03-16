@@ -395,6 +395,10 @@ public class ClientBuilderImpl extends ClientBuilder {
             }
             options.setEnabledSecureTransportProtocols(sslOptions.getEnabledSecureTransportProtocols());
             options.setUseAlpn(sslOptions.isUseAlpn());
+            if (sslOptions.getKeyExchangeGroups() != null && !sslOptions.getKeyExchangeGroups().isEmpty()) {
+                options.getSslOptions().setKeyExchangeGroups(sslOptions.getKeyExchangeGroups());
+            }
+            options.getSslOptions().setPqcEnforcementPolicy(sslOptions.getPqcEnforcementPolicy());
         }
     }
 

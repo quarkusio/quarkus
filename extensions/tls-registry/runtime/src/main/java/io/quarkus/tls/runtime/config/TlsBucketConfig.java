@@ -74,6 +74,29 @@ public interface TlsBucketConfig {
     boolean alpn();
 
     /**
+     * Sets the PQC enforcement policy.
+     * <p>
+     * {@code STRICT}: a connection will be refused unless both the client and the server support PQC
+     * ({@code X25519MLKEM768}). The server requires PQC-capable clients.
+     * <p>
+     * {@code CLIENT_NEGOTIATED}: the server advertises PQC groups but will not refuse a connection if the client
+     * does not support them, allowing fallback to classical key exchange.
+     * <p>
+     * {@code RELAXED}: no PQC enforcement; standard TLS key exchange negotiation applies.
+     */
+    @WithDefault("relaxed")
+    PqcEnforcePolicyEnum pqcEnforcementPolicy();
+
+    /**
+     * Sets the ordered list of enabled TLS key exchange groups (supported groups).
+     * If not set, the default groups defined by the {@code SSLEngineOptions} in use are used.
+     * <p>
+     * Example values: {@code X25519MLKEM768}, {@code X25519}, {@code P-256}.
+     * When set, these groups take precedence over the engine defaults.
+     */
+    Optional<List<String>> keyExchangeGroups();
+
+    /**
      * Sets the list of revoked certificates (paths to files).
      * <p>
      * A Certificate Revocation List (CRL) is a list of digital certificates that have been revoked by the issuing

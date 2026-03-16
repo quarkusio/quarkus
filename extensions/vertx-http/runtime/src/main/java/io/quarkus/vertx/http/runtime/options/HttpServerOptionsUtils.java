@@ -253,6 +253,10 @@ public class HttpServerOptionsUtils {
         if (!other.isUseAlpn()) {
             serverOptions.setUseAlpn(false);
         }
+        if (other.getKeyExchangeGroups() != null && !other.getKeyExchangeGroups().isEmpty()) {
+            serverOptions.getSslOptions().setKeyExchangeGroups(other.getKeyExchangeGroups());
+        }
+        serverOptions.getSslOptions().setPqcEnforcementPolicy(other.getPqcEnforcementPolicy());
         serverOptions.setEnabledSecureTransportProtocols(other.getEnabledSecureTransportProtocols());
     }
 

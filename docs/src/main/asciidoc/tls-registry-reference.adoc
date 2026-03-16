@@ -763,6 +763,60 @@ Disabling ALPN is not recommended for non-experts, as it can lead to performance
 However, disabling ALPN can be useful for diagnosing native inconsistencies or testing performance in specific edge cases where protocol negotiation causes conflicts.
 ====
 
+==== Post-Quantum Cryptography (PQC)
+
+Post-Quantum Cryptography (PQC) protects TLS connections against attacks from quantum computers.
+Quarkus exposes two properties to control PQC key exchange, both of which apply to the HTTP server, HTTP client, REST client, and mailer.
+
+===== Key exchange groups
+
+The key exchange groups (also called _supported groups_) are the elliptic-curve or post-quantum algorithms the TLS engine advertises during the handshake.
+When not set, the engine uses its built-in defaults.
+
+To advertise the hybrid post-quantum group `X25519MLKEM768` (combining X25519 with ML-KEM-768):
+
+[source,properties]
+----
+quarkus.tls.key-exchange-groups=X25519MLKEM768
+----
+
+You can specify multiple groups as a comma-separated list.
+Groups are tried in the order listed; the first one the peer also supports is used.
+
+===== PQC enforcement policy
+
+The enforcement policy controls how strictly the server requires post-quantum key exchange from clients.
+
+[source,properties]
+----
+quarkus.tls.pqc-enforcement-policy=relaxed # Default
+----
+
+The available values are:
+
+`relaxed`:: No enforcement.
+Standard TLS negotiation applies, and no post-quantum groups are required.
+This is the default.
+
+`client-negotiated`:: The server advertises PQC groups and prefers them, but accepts connections from clients that do not support them, falling back to classical key exchange.
+Use this when you want PQC where available without breaking existing clients.
+
+`strict`:: The server only accepts connections that use a post-quantum key exchange group.
+Clients that do not negotiate a PQC group are rejected.
+Use this when all clients are known to support PQC.
+
+[NOTE]
+====
+When using `client-negotiated` or `strict`, `quarkus.tls.key-exchange-groups` must include at least one PQC-capable group such as `X25519MLKEM768`.
+Vert.x validates this at startup and throws an exception if no compatible engine or group is configured.
+====
+
+[WARNING]
+====
+`strict` enforcement will reject any client that does not support the configured PQC group, including standard browsers and TLS clients that have not yet adopted post-quantum extensions.
+Ensure all clients are upgraded before enabling this mode.
+====
+
 ==== Certificate Revocation List (CRL)
 
 A Certificate Revocation List (CRL) is a list of certificates that the issuing Certificate Authority (CA) revoked before their scheduled expiration date.

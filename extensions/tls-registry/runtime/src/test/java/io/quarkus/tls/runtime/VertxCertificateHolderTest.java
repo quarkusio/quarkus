@@ -1,5 +1,6 @@
 package io.quarkus.tls.runtime;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -13,8 +14,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.tls.runtime.config.KeyStoreConfig;
+import io.quarkus.tls.runtime.config.PqcEnforcePolicyEnum;
 import io.quarkus.tls.runtime.config.TlsBucketConfig;
 import io.quarkus.tls.runtime.config.TrustStoreConfig;
+import io.vertx.core.net.PqcEnforcementPolicy;
 
 class VertxCertificateHolderTest {
 
@@ -22,7 +25,6 @@ class VertxCertificateHolderTest {
 
     @BeforeEach
     void setUp() {
-        // Create a minimal test config with only the required methods implemented
         TlsBucketConfig config = new TlsBucketConfig() {
             @Override
             public Optional<KeyStoreConfig> keyStore() {
@@ -65,6 +67,16 @@ class VertxCertificateHolderTest {
             }
 
             @Override
+            public PqcEnforcePolicyEnum pqcEnforcementPolicy() {
+                return PqcEnforcePolicyEnum.STRICT;
+            }
+
+            @Override
+            public Optional<List<String>> keyExchangeGroups() {
+                return Optional.of(List.of("x25519mlkem768"));
+            }
+
+            @Override
             public Duration handshakeTimeout() {
                 return Duration.ofSeconds(10);
             }
@@ -81,6 +93,17 @@ class VertxCertificateHolderTest {
     void testDefault() {
         assertFalse(holder.warnIfOldProtocols(Set.of(TlsBucketConfig.DEFAULT_TLS_PROTOCOLS), "test"));
         assertFalse(holder.warnIfOldProtocols(Set.of(TlsBucketConfig.DEFAULT_TLS_PROTOCOLS.toLowerCase()), "test"));
+    }
+
+    @Test
+    void testKeyExchangeGroups() {
+        assertEquals(1, holder.getSSLOptions().getKeyExchangeGroups().size());
+        assertTrue(holder.getSSLOptions().getKeyExchangeGroups().contains("x25519mlkem768"));
+    }
+
+    @Test
+    void testPqcEnforcementPolicy() {
+        assertEquals(PqcEnforcementPolicy.STRICT, holder.getSSLOptions().getPqcEnforcementPolicy());
     }
 
     @Test

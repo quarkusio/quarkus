@@ -112,6 +112,9 @@ public class ReactiveStreamCommandsImpl<K, F, V> extends AbstractStreamCommands<
         // the response is an array with two elements:
         // 1. the stream id
         // 2. the payload (another array)
+        // When XREADGROUP CLAIM is used, claimed (pending) entries have two extra elements:
+        // 3. milliseconds since last delivery
+        // 4. delivery count
 
         if (response == null) {
             return null;
@@ -124,6 +127,11 @@ public class ReactiveStreamCommandsImpl<K, F, V> extends AbstractStreamCommands<
             var streamId = response.get(0).toString();
             var payload = response.get(1);
             var content = decodeMessagePayload(payload);
+            if (response.size() > 2) {
+                var durationSinceLastDelivery = Duration.ofMillis(response.get(2).toLong());
+                var deliveryCount = response.get(3).toInteger();
+                return new StreamMessage<>(key, streamId, content, durationSinceLastDelivery, deliveryCount);
+            }
             return new StreamMessage<>(key, streamId, content);
         }
     }

@@ -489,6 +489,51 @@ public class StreamCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis84OrHigher
+    void xReadGroupWithClaim() throws InterruptedException {
+        String g1 = "my-group";
+        stream.xgroupCreate(key, g1, "$", new XGroupCreateArgs().mkstream());
+
+        Map<String, Integer> payload = Map.of("sensor-id", 1234, "temperature", 19);
+        for (int i = 0; i < 5; i++) {
+            stream.xadd(key, payload);
+        }
+
+        // c1 reads 3 messages but does not ack them
+        assertThat(stream.xreadgroup(g1, "c1", key, ">", new XReadGroupArgs().count(3)))
+                .hasSize(3);
+
+        // Wait a bit so the messages become idle
+        Thread.sleep(50);
+
+        // c2 reads remaining messages and claims c1's idle messages in one call
+        List<StreamMessage<String, String, Integer>> messages = stream.xreadgroup(g1, "c2", key, ">",
+                new XReadGroupArgs().claim(Duration.ofMillis(10)));
+
+        // Should get all 5 messages: 2 new + 3 claimed
+        assertThat(messages).hasSize(5);
+
+        // Claimed messages have deliveryCount > 0
+        long claimedCount = messages.stream()
+                .filter(m -> m.deliveryCount() > 0)
+                .count();
+        assertThat(claimedCount).isEqualTo(3);
+
+        // Claimed messages should have idle time info
+        messages.stream()
+                .filter(m -> m.deliveryCount() > 0)
+                .forEach(m -> {
+                    assertThat(m.durationSinceLastDelivery()).isNotNull();
+                    assertThat(m.durationSinceLastDelivery().toMillis()).isGreaterThan(0);
+                });
+
+        // Non-claimed (new) messages have zero idle time
+        messages.stream()
+                .filter(m -> m.deliveryCount() == 0)
+                .forEach(m -> assertThat(m.durationSinceLastDelivery()).isEqualTo(Duration.ZERO));
+    }
+
+    @Test
     @RequiresRedis6OrHigher
     void xAutoClaim() throws InterruptedException {
         String g1 = "my-group";

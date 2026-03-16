@@ -233,7 +233,7 @@ public class DockerProcessor extends CommonProcessor<DockerConfig> {
         // TODO: this needs a lot of hardening as for the time being it assumes the image is in the docker daemon and only writes the new one there
 
         String baseImage = requestBuildItem.getOriginalContainerImage();
-        String enhancedImage = requestBuildItem.getOriginalContainerImage() + "-aot";
+        String enhancedImage = requestBuildItem.getOriginalContainerImage() + containerImageConfig.effectiveAotImageSuffix();
 
         Path outputDirectory = outputTargetBuildItem.getOutputDirectory();
 

@@ -475,7 +475,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             classNameBindings = existingClassNameBindings;
         }
 
-        for (DotName httpMethod : httpAnnotationToMethod.keySet()) {
+        for (DotName httpMethod : httpAnnotationToMethod.keySet().stream().sorted().toList()) {
             List<MethodInfo> methods = currentClassInfo.methods();
             for (MethodInfo info : methods) {
                 AnnotationInstance annotation = annotationStore.getAnnotation(info, httpMethod);

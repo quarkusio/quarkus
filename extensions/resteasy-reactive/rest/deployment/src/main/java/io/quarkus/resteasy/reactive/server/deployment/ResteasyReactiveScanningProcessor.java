@@ -6,9 +6,11 @@ import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReac
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -197,7 +199,8 @@ public class ResteasyReactiveScanningProcessor {
                 .scanForExceptionMappers(combinedIndexBuildItem.getComputingIndex(), applicationResultBuildItem.getResult());
 
         if (config.exceptionMapping().disableMapperFor().isPresent()) {
-            for (String disabledMapper : config.exceptionMapping().disableMapperFor().get()) {
+            for (String disabledMapper : config.exceptionMapping().disableMapperFor().get()
+                    .stream().sorted().toList()) {
                 if (disabledMapper != null && !disabledMapper.isEmpty()) {
                     exceptions.addDisabledMapper(disabledMapper);
                 }
@@ -206,7 +209,8 @@ public class ResteasyReactiveScanningProcessor {
 
         exceptions.addBlockingProblem(BlockingOperationNotAllowedException.class);
         exceptions.addBlockingProblem(BlockingNotAllowedException.class);
-        for (UnwrappedExceptionBuildItem bi : unwrappedExceptions) {
+        for (UnwrappedExceptionBuildItem bi : unwrappedExceptions.stream()
+                .sorted(Comparator.comparing(UnwrappedExceptionBuildItem::getThrowableClassName)).toList()) {
             exceptions.addUnwrappedException(bi.getThrowableClassName(), bi.getStrategy());
         }
         if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
@@ -214,11 +218,11 @@ public class ResteasyReactiveScanningProcessor {
                     new ExceptionMapping.ExceptionTypeAndMessageContainsPredicate(IllegalStateException.class, "HR000068"));
         }
 
-        for (Map.Entry<String, ResourceExceptionMapper<? extends Throwable>> i : exceptions.getMappers()
-                .entrySet()) {
+        for (Map.Entry<String, ResourceExceptionMapper<? extends Throwable>> i : exceptions.getMappers().entrySet()) {
             beanBuilder.addBeanClass(i.getValue().getClassName());
         }
-        for (ExceptionMapperBuildItem additionalExceptionMapper : mappers) {
+        for (ExceptionMapperBuildItem additionalExceptionMapper : mappers.stream()
+                .sorted(Comparator.comparing(ExceptionMapperBuildItem::getClassName)).toList()) {
             if (additionalExceptionMapper.isRegisterAsBean()) {
                 beanBuilder.addBeanClass(additionalExceptionMapper.getClassName());
             } else {

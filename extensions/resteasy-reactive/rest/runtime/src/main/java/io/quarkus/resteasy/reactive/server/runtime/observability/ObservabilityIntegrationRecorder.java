@@ -82,11 +82,10 @@ public class ObservabilityIntegrationRecorder {
             return null;
         }
         var firstHandler = serverRestHandlers[0];
-        if (!(firstHandler instanceof ClassRoutingHandler)) {
+        if (!(firstHandler instanceof ClassRoutingHandler classRoutingHandler)) {
             return null;
         }
 
-        var classRoutingHandler = (ClassRoutingHandler) firstHandler;
         var mappers = classRoutingHandler.getMappers();
 
         var requestMethod = rc.request().method().name();

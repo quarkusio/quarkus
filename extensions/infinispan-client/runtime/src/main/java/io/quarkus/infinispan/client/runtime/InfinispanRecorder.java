@@ -110,7 +110,11 @@ public class InfinispanRecorder {
                 RemoteCache.class, Any.Literal.INSTANCE);
 
         for (InstanceHandle<RemoteCache> handle : allCaches.handles()) {
-            handle.get(); // Force init
+            // handle.get() returns the ClientProxy for ApplicationScoped beans.
+            // We must invoke a method on it to trigger arc$delegate() and force
+            // the actual bean creation (including the blocking getCache() call)
+            // here on the main thread, rather than lazily on the Vert.x event loop.
+            handle.get().getName();
         }
     }
 }

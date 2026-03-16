@@ -952,7 +952,19 @@ public class JibProcessor {
         String baseImage = requestBuildItem.getOriginalContainerImage();
         String enhancedImage = requestBuildItem.getOriginalContainerImage() + containerImageConfig.effectiveAotImageSuffix();
 
+        boolean pushContainerImage = containerImageConfig.isPushExplicitlyEnabled();
+
         try {
+            ImageReference enhancedImageReference = ImageReference.parse(enhancedImage);
+            Containerizer containerizer;
+            if (pushContainerImage) {
+                RegistryImage registryImage = toRegistryImage(enhancedImageReference, containerImageConfig.username(),
+                        containerImageConfig.password());
+                containerizer = Containerizer.to(registryImage);
+            } else {
+                containerizer = dockerDaemonContainerizer(jibConfig, enhancedImageReference);
+            }
+
             createPatchedInstance(jibConfig, baseImage)
                     .addLayer(
                             // Add the app.aot file to the working directory
@@ -960,7 +972,7 @@ public class JibProcessor {
                             AbsoluteUnixPath.get(requestBuildItem.getContainerWorkingDirectory()))
                     .addEnvironmentVariable("JAVA_TOOL_OPTIONS",
                             "-XX:AOTCache=%s".formatted(requestBuildItem.getAotFile().getFileName().toString()))
-                    .containerize(dockerDaemonContainerizer(jibConfig, ImageReference.parse(enhancedImage)));
+                    .containerize(containerizer);
 
             log.infof("Created AOT enhanced container image %s", enhancedImage);
             return new BuildAotOptimizedContainerImageResultBuildItem(enhancedImage);

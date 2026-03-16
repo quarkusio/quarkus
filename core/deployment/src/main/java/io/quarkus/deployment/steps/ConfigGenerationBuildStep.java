@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -29,6 +30,8 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import jakarta.annotation.Priority;
 
@@ -242,7 +245,8 @@ public class ConfigGenerationBuildStep {
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws Exception {
 
-        Map<String, String> defaultValues = new HashMap<>();
+        // we make sure all entries to the config generation are properly sorted to make sure the build is reproducible
+        Map<String, String> defaultValues = new TreeMap<>();
         for (RunTimeConfigurationDefaultBuildItem e : runTimeDefaults) {
             defaultValues.put(e.getKey(), e.getValue());
         }
@@ -264,15 +268,17 @@ public class ConfigGenerationBuildStep {
         ignoreMappings.add(ConfigClass.configClass(CommandLineRuntimeConfig.class, "quarkus"));
         ignoreMappings.add(ConfigClass.configClass(DebugRuntimeConfig.class, "quarkus.debug"));
 
-        Set<ConfigClass> allMappings = new LinkedHashSet<>();
+        Set<ConfigClass> allMappings = new TreeSet<>(
+                Comparator.comparing((ConfigClass cc) -> cc.getType().getName()).thenComparing(ConfigClass::getPrefix));
         allMappings.addAll(staticSafeConfigMappings(configMappings));
         allMappings.addAll(runtimeConfigMappings(configMappings));
         allMappings.addAll(configItem.getReadResult().getBuildTimeRunTimeMappings());
         allMappings.addAll(configItem.getReadResult().getRunTimeMappings());
         allMappings.removeAll(ignoreMappings);
 
-        Set<ConfigClass> buildTimeRuntimeMappings = new LinkedHashSet<>(
-                configItem.getReadResult().getBuildTimeRunTimeMappings());
+        Set<ConfigClass> buildTimeRuntimeMappings = new TreeSet<>(
+                Comparator.comparing((ConfigClass cc) -> cc.getType().getName()).thenComparing(ConfigClass::getPrefix));
+        buildTimeRuntimeMappings.addAll(configItem.getReadResult().getBuildTimeRunTimeMappings());
         buildTimeRuntimeMappings.removeAll(ignoreMappings);
 
         // Shared components
@@ -308,11 +314,12 @@ public class ConfigGenerationBuildStep {
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(CONFIG_STATIC_NAME).build());
 
         // For RunTime Config
-        Map<String, String> runtimeValues = new HashMap<>();
+        Map<String, String> runtimeValues = new TreeMap<>();
         for (Entry<String, ConfigValue> entry : configItem.getReadResult().getRunTimeValues().entrySet()) {
             runtimeValues.put(entry.getKey(), entry.getValue().getRawValue());
         }
-        Set<ConfigClass> runTimeMappings = new LinkedHashSet<>();
+        Set<ConfigClass> runTimeMappings = new TreeSet<>(
+                Comparator.comparing((ConfigClass cc) -> cc.getType().getName()).thenComparing(ConfigClass::getPrefix));
         runTimeMappings.addAll(runtimeConfigMappings(configMappings));
         runTimeMappings.addAll(configItem.getReadResult().getBuildTimeRunTimeMappings());
         runTimeMappings.addAll(configItem.getReadResult().getRunTimeMappings());

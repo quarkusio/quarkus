@@ -169,8 +169,15 @@ public class JvmStartupOptimizerArchiveBuildStep {
             archivePath = createAppCDSFromExit(jarResult, outputTarget, javaBinPath, containerImage,
                     isFastJar);
         } else if (archiveType == JvmStartupOptimizerArchiveType.AOT) {
-            archivePath = createAot(jarResult, outputTarget, javaBinPath, containerImage, isFastJar,
-                    packageConfig.jar().aot().additionalRecordingArgs().orElse(List.of()));
+            List<String> additionalJvmArguments = new ArrayList<>();
+            if (packageConfig.jar().aot().additionalRecordingArgs().isPresent()) {
+                additionalJvmArguments.addAll(packageConfig.jar().aot().additionalRecordingArgs().get());
+            }
+            if (jvmStartupOptimizerArchiveContainerImage.isPresent()
+                    && jvmStartupOptimizerArchiveContainerImage.get().getAdditionalJvmArgs().isPresent()) {
+                additionalJvmArguments.addAll(jvmStartupOptimizerArchiveContainerImage.get().getAdditionalJvmArgs().get());
+            }
+            archivePath = createAot(jarResult, outputTarget, javaBinPath, containerImage, isFastJar, additionalJvmArguments);
         } else {
             throw new IllegalStateException("Unsupported archive type: " + archiveType);
         }

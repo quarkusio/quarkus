@@ -173,7 +173,7 @@ You can obtain more information about AOT cache usage with the `-Xlog:aot` optio
 You can collect even more information in an `aot.log` file with `-Xlog:class+load=info,aot+codecache=debug:file=aot.log:level,tags`.
 ====
 
-== Manually AOT file generation
+== Manual AOT file generation
 
 As explained above, Quarkus takes care of all the heavy lifting when coming to the AOT file generation. However, in cases where more control is needed, users can perform the necessary steps manually.
 

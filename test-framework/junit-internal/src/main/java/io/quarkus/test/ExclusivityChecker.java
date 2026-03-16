@@ -10,7 +10,10 @@ public class ExclusivityChecker {
 
         Class<?> testType = store.get(IO_QUARKUS_TESTING_TYPE, Class.class);
         if (testType != null) {
-            if (testType != QuarkusUnitTest.class && testType != QuarkusDevModeTest.class
+            if (testType != QuarkusUnitTest.class
+                    && testType != QuarkusExtensionTest.class
+                    && testType != AbstractQuarkusExtensionTest.class
+                    && testType != QuarkusDevModeTest.class
                     && testType != QuarkusProdModeTest.class) {
                 throw new IllegalStateException(
                         "Cannot mix both " + current.getName() + " based tests and " + testType.getName()

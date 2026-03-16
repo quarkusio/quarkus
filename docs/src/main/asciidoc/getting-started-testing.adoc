@@ -1491,7 +1491,7 @@ To test against a running instance that only accepts SSL/TLS connection (example
 
 == Mixing `@QuarkusTest` with other type of tests
 
-Mixing tests annotated with `@QuarkusTest` with tests annotated with either `@QuarkusDevModeTest`, `@QuarkusProdModeTest` or `@QuarkusUnitTest`
+Mixing tests annotated with `@QuarkusTest` with tests annotated with either `@QuarkusDevModeTest`, `@QuarkusProdModeTest` or `@QuarkusExtensionTest`
 is not allowed in a single execution run (in a single Maven Surefire Plugin execution, for instance),
 while the latter three can coexist.
 

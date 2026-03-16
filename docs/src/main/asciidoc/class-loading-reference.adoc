@@ -50,7 +50,7 @@ At the moment we have the following use cases for bootstrapping Quarkus:
 - Gradle creating a production application
 - Gradle dev mode
 - QuarkusTest (Maven, Gradle and IDE)
-- QuarkusUnitTest (Maven, Gradle and IDE)
+- QuarkusExtensionTest (Maven, Gradle and IDE)
 - QuarkusDevModeTest (Maven, Gradle and IDE)
 - Arquillian Adaptor
 

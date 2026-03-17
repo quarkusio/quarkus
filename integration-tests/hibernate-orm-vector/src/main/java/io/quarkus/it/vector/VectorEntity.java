@@ -1,9 +1,9 @@
 package io.quarkus.it.vector;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 
+import org.hibernate.annotations.Array;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -14,15 +14,24 @@ public class VectorEntity {
     private Long id;
 
     @JdbcTypeCode(SqlTypes.VECTOR)
-    @Column(columnDefinition = "vector(3)")
+    @Array(length = 3)
     private float[] embedding;
+
+    @JdbcTypeCode(SqlTypes.VECTOR)
+    @Array(length = 3)
+    private double[] preciseEmbedding;
 
     public VectorEntity() {
     }
 
     public VectorEntity(Long id, float[] embedding) {
+        this(id, embedding, null);
+    }
+
+    public VectorEntity(Long id, float[] embedding, double[] preciseEmbedding) {
         this.id = id;
         this.embedding = embedding;
+        this.preciseEmbedding = preciseEmbedding;
     }
 
     public Long getId() {
@@ -31,5 +40,9 @@ public class VectorEntity {
 
     public float[] getEmbedding() {
         return embedding;
+    }
+
+    public double[] getPreciseEmbedding() {
+        return preciseEmbedding;
     }
 }

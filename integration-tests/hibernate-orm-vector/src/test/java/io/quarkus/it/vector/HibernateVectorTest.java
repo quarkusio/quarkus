@@ -24,9 +24,20 @@ public class HibernateVectorTest {
     }
 
     @Test
+    public void testPreciseVectorRoundTrip() {
+        RestAssured.when().get("/hibernate-vector-test/vector/precise/1").then()
+                .body(containsString("1.0"));
+    }
+
+    @Test
     public void testNearestNeighbor() {
-        // Entity 1 [1,2,3] is nearest to entity 2 [4,5,6] than entity 3 [7,8,9]
         RestAssured.when().get("/hibernate-vector-test/vector/nearest/1").then()
+                .body(containsString("2"));
+    }
+
+    @Test
+    public void testNearestNeighborL2() {
+        RestAssured.when().get("/hibernate-vector-test/vector/nearest-l2/1").then()
                 .body(containsString("2"));
     }
 }

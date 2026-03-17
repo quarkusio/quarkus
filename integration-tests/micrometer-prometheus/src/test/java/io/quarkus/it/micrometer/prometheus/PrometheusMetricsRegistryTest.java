@@ -97,6 +97,17 @@ class PrometheusMetricsRegistryTest {
     }
 
     @Test
+    @Order(12)
+    void testSecuredOverlappingEndpoints() {
+        // Hit all 3 overlapping controllers with unauthenticated requests (401)
+        when().get("/secured/abc/details").then().statusCode(401);
+        when().get("/secured/abc/info/general").then().statusCode(401);
+        // Also hit with authenticated requests (200)
+        given().auth().preemptive().basic("scott", "reader").when().get("/secured/abc/details").then().statusCode(200);
+        given().auth().preemptive().basic("scott", "reader").when().get("/secured/abc/info/general").then().statusCode(200);
+    }
+
+    @Test
     @Order(11)
     void testTemplatedPathOnSubResource() {
         when().get("/root/r1/sub/s2").then().statusCode(200)
@@ -131,6 +142,13 @@ class PrometheusMetricsRegistryTest {
                 .body(containsString("uri=\"/secured/item/{id}\""))
                 .body(containsString("status=\"200\",uri=\"/secured/item/{id}\""))
                 .body(containsString("status=\"401\",uri=\"/secured/item/{id}\""))
+                .body(containsString("status=\"401\",uri=\"/secured/{id}/details\""))
+                .body(containsString("status=\"401\",uri=\"/secured/{id}/info/{section}\""))
+                .body(containsString("status=\"200\",uri=\"/secured/{id}/details\""))
+                .body(containsString("status=\"200\",uri=\"/secured/{id}/info/{section}\""))
+                // Verify no raw paths leaked for overlapping secured controllers
+                .body(not(containsString("uri=\"/secured/abc/details\"")))
+                .body(not(containsString("uri=\"/secured/abc/info/general\"")))
                 .body(containsString("outcome=\"SUCCESS\""))
                 .body(containsString("dummy="))
                 .body(containsString("foo=\"bar\""))

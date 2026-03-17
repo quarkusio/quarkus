@@ -8,6 +8,7 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.util.PathHelper;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.handlers.ClassRoutingHandler;
+import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 
 import io.quarkus.runtime.RuntimeValue;
@@ -54,21 +55,33 @@ public class ObservabilityIntegrationRecorder {
     public static void setTemplatePath(RoutingContext rc, Deployment deployment) {
         // do what RestInitialHandler does
         var initMappers = new RequestMapper<>(deployment.getClassMappers());
-        var requestMatch = initMappers.map(getPathWithoutPrefix(rc, deployment));
-        if (requestMatch == null) {
-            return;
+        var path = getPathWithoutPrefix(rc, deployment);
+        var requestMatch = initMappers.map(path);
+
+        // Try each class-level match until we find one whose method-level mapper also matches.
+        // This handles overlapping class paths (e.g. /hello and /hello/{id}) where the first
+        // class match may not contain the correct method route.
+        while (requestMatch != null) {
+            var templatePath = tryMatchTemplatePath(rc, requestMatch);
+            if (templatePath != null) {
+                setUrlPathTemplate(rc, templatePath);
+                return;
+            }
+            requestMatch = initMappers.continueMatching(path, requestMatch);
         }
+    }
+
+    private static String tryMatchTemplatePath(RoutingContext rc,
+            RequestMapper.RequestMatch<RestInitialHandler.InitialMatch> requestMatch) {
         var remaining = requestMatch.remaining.isEmpty() ? "/" : requestMatch.remaining;
 
         var serverRestHandlers = requestMatch.value.handlers;
         if (serverRestHandlers == null || serverRestHandlers.length < 1) {
-            // nothing we can do
-            return;
+            return null;
         }
         var firstHandler = serverRestHandlers[0];
         if (!(firstHandler instanceof ClassRoutingHandler)) {
-            // nothing we can do
-            return;
+            return null;
         }
 
         var classRoutingHandler = (ClassRoutingHandler) firstHandler;
@@ -86,8 +99,7 @@ public class ObservabilityIntegrationRecorder {
                 mapper = mappers.get(null);
             }
             if (mapper == null) {
-                // can't match the path
-                return;
+                return null;
             }
         }
         var target = mapper.map(remaining);
@@ -100,8 +112,7 @@ public class ObservabilityIntegrationRecorder {
             }
 
             if (target == null) {
-                // can't match the path
-                return;
+                return null;
             }
         }
 
@@ -110,7 +121,7 @@ public class ObservabilityIntegrationRecorder {
             templatePath = templatePath.substring(0, templatePath.length() - 1);
         }
 
-        setUrlPathTemplate(rc, templatePath);
+        return templatePath;
     }
 
     private static String getPathWithoutPrefix(RoutingContext rc, Deployment deployment) {

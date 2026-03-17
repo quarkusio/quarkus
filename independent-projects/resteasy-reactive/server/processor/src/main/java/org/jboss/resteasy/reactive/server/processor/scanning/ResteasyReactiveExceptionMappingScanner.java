@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.server.processor.scanning;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 
@@ -45,7 +46,7 @@ public class ResteasyReactiveExceptionMappingScanner {
         ExceptionMapping exceptionMapping = new ExceptionMapping();
         Collection<ClassInfo> exceptionMappers = index
                 .getAllKnownImplementors(ResteasyReactiveDotNames.EXCEPTION_MAPPER);
-        for (ClassInfo mapperClass : exceptionMappers) {
+        for (ClassInfo mapperClass : exceptionMappers.stream().sorted(Comparator.comparing(ClassInfo::name)).toList()) {
             ApplicationScanningResult.KeepProviderResult keepProviderResult = result
                     .keepProvider(mapperClass);
             if (keepProviderResult != ApplicationScanningResult.KeepProviderResult.DISCARD) {

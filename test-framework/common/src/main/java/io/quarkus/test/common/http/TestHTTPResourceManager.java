@@ -17,7 +17,6 @@ import io.quarkus.test.common.ListeningAddress;
 import io.quarkus.value.registry.ValueRegistry;
 import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
 import io.smallrye.config.Config;
-import io.smallrye.config.SmallRyeConfig;
 
 public class TestHTTPResourceManager {
 
@@ -64,15 +63,19 @@ public class TestHTTPResourceManager {
     }
 
     public static void inject(Object testCase, ValueRegistry valueRegistry) {
-        inject(testCase, valueRegistry, TestHttpEndpointProvider.load());
+        inject(testCase, valueRegistry, Config.get(), TestHttpEndpointProvider.load());
+    }
+
+    public static void inject(Object testCase, ValueRegistry valueRegistry, Config config) {
+        inject(testCase, valueRegistry, config, TestHttpEndpointProvider.load());
     }
 
     public static void inject(
             Object testCase,
             ValueRegistry valueRegistry,
+            Config config,
             List<Function<Class<?>, String>> endpointProviders) {
 
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         Map<Class<?>, TestHTTPResourceProvider<?>> providers = getProviders();
         Class<?> c = testCase.getClass();
         while (c != Object.class) {

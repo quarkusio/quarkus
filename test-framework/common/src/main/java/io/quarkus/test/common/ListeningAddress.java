@@ -1,6 +1,7 @@
 package io.quarkus.test.common;
 
 import java.net.URI;
+import java.util.Optional;
 
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 import io.quarkus.value.registry.ValueRegistry;
@@ -25,4 +26,6 @@ public record ListeningAddress(Integer port, String protocol) {
     public static final RuntimeKey<Integer> HTTPS_PORT = RuntimeKey.intKey("quarkus.http.ssl-port");
     public static final RuntimeKey<Integer> HTTPS_TEST_PORT = RuntimeKey.intKey("quarkus.http.test-ssl-port");
     public static final RuntimeKey<URI> LOCAL_BASE_URI = RuntimeKey.key("quarkus.http.local-base-uri");
+    public static final RuntimeKey<Optional<ListeningAddress>> LISTENING_ADDRESS = RuntimeKey
+            .key("quarkus.http.listening-address");
 }

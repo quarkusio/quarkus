@@ -1,5 +1,7 @@
 package io.quarkus.devservice.runtime.config;
 
+import static io.quarkus.runtime.configuration.ConfigSourceOrdinal.DEV_SERVICES_OVERRIDE;
+
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -59,6 +61,6 @@ public class DevServicesOverrideConfigSource implements ConfigSource {
 
     @Override
     public int getOrdinal() {
-        return Integer.MAX_VALUE - 500;
+        return DEV_SERVICES_OVERRIDE.getOrdinal();
     }
 }

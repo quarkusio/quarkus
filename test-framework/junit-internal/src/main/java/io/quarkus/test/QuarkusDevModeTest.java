@@ -1,7 +1,6 @@
 package io.quarkus.test;
 
-import static io.quarkus.test.config.TestValueRegistryConfigSource.CONFIG;
-import static org.junit.jupiter.api.extension.ExtensionContext.StoreScope.LAUNCHER_SESSION;
+import static io.quarkus.runtime.configuration.ConfigSourceOrdinal.DEV_TEST;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -34,6 +34,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.logmanager.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
@@ -58,12 +59,16 @@ import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
 import io.quarkus.deployment.dev.CompilationProvider;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
+import io.quarkus.deployment.dev.testing.TestConfigCustomizer;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.dev.testing.TestScanningLock;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.PathList;
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.ValueRegistryConfigSource;
 import io.quarkus.runtime.ValueRegistryImpl;
+import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.test.common.GroovyClassValue;
 import io.quarkus.test.common.ListeningAddress;
 import io.quarkus.test.common.PathTestHelper;
@@ -71,11 +76,15 @@ import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.quarkus.test.config.ConfigInjector;
+import io.quarkus.test.config.ThreadLocalConfigSourceProvider;
 import io.quarkus.test.config.ValueRegistryInjector;
-import io.quarkus.test.config.ValueRegistryParameterResolver;
 import io.quarkus.test.junit.common.ClearCache;
 import io.quarkus.value.registry.ValueRegistry;
 import io.smallrye.config.Config;
+import io.smallrye.config.PropertiesConfigSource;
+import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
 
 /**
  * A test extension for <strong>black-box</strong> testing of Quarkus development mode in extensions.
@@ -134,7 +143,6 @@ public class QuarkusDevModeTest
     private Path projectSourceRoot;
     private Path testLocation;
     private String[] commandLineArgs = new String[0];
-    private final Map<String, String> oldSystemProps = new HashMap<>();
     private final Map<String, String> buildSystemProperties = new HashMap<>();
     private boolean allowFailedStart = false;
 
@@ -260,17 +268,6 @@ public class QuarkusDevModeTest
         TestResourceManager tm = (TestResourceManager) store.get(TestResourceManager.class.getName());
         assert tm != null;
 
-        //dev mode tests just use system properties
-        //we set them here and clear them in afterAll
-        //so they don't interfere with other tests
-        for (Map.Entry<String, String> i : tm.getConfigProperties().entrySet()) {
-            oldSystemProps.put(i.getKey(), System.getProperty(i.getKey()));
-            if (i.getValue() == null) {
-                System.clearProperty(i.getKey());
-            } else {
-                System.setProperty(i.getKey(), i.getValue());
-            }
-        }
         Class<?> testClass = context.getRequiredTestClass();
         Object testInstance = context.getRequiredTestInstance();
         try {
@@ -290,20 +287,37 @@ public class QuarkusDevModeTest
             InMemoryLogHandler startupLogHandler = new InMemoryLogHandler(
                     logRecord -> logRecord.getMessage().contains("powered by Quarkus"));
             rootLogger.addHandler(startupLogHandler);
-            devModeMain = newDevModeMain(context, deploymentDir, projectSourceRoot);
+            devModeMain = newDevModeMain(context, deploymentDir, projectSourceRoot, tm.getConfigProperties());
             devModeMain.start();
             ApplicationStateNotification.waitForApplicationStart();
             rootLogger.removeHandler(startupLogHandler);
 
-            Optional<ListeningAddress> listeningAddress = listeningAddress(startupLogHandler.getRecords());
+            // Create the ValueRegistry with the current Config and test config
+            ConfigSource testSource = new PropertiesConfigSource(
+                    tm.getConfigProperties(), DEV_TEST.getName(), DEV_TEST.getOrdinal());
             ValueRegistry valueRegistry = ValueRegistryImpl.builder().addDiscoveredInfos()
+                    .withRuntimeSource(new SmallRyeConfigBuilder().withSources(testSource).build())
                     .withRuntimeSource(Config.get())
                     .build();
-            listeningAddress.ifPresent(address -> address.register(valueRegistry, Config.get()));
-            context.getStore(LAUNCHER_SESSION, CONFIG).put(ValueRegistry.class.getName(), valueRegistry);
-            context.getStore(Namespace.GLOBAL).put(ValueRegistry.class.getName(), valueRegistry);
+            ValueRegistryInjector.set(context, valueRegistry);
 
+            // Create a new Config to add the configuration coming from test resources
+            SmallRyeConfig newConfig = ConfigUtils.configBuilder(LaunchMode.TEST)
+                    .forClassLoader(Config.get().getClass().getClassLoader())
+                    .withCustomizers(new TestConfigCustomizer(LaunchMode.TEST))
+                    .withCustomizers(ValueRegistryConfigSource.customizer(valueRegistry))
+                    .withSources(testSource)
+                    .build();
+            ConfigInjector.set(context, newConfig);
+
+            // Capture the listening port if available and register it in ValueRegistry
+            Optional<ListeningAddress> listeningAddress = listeningAddress(startupLogHandler.getRecords());
+            listeningAddress.ifPresent(address -> address.register(valueRegistry, newConfig));
+
+            // Inject ValueRegistry and Config
             ValueRegistryInjector.inject(testInstance, valueRegistry);
+            ConfigInjector.inject(testInstance, newConfig);
+            ThreadLocalConfigSourceProvider.set(newConfig);
             TestHTTPResourceManager.inject(testInstance, valueRegistry);
 
         } catch (Exception e) {
@@ -333,24 +347,29 @@ public class QuarkusDevModeTest
     @Override
     public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
             throws ParameterResolutionException {
-        return ValueRegistryParameterResolver.INSTANCE.supportsParameter(parameterContext, extensionContext);
+        if (ValueRegistryInjector.PARAMETER_RESOLVER.supportsParameter(parameterContext, extensionContext)) {
+            return true;
+        }
+        if (ConfigInjector.PARAMETER_RESOLVER.supportsParameter(parameterContext, extensionContext)) {
+            return true;
+        }
+        return false;
     }
 
     @Override
     public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
             throws ParameterResolutionException {
-        return ValueRegistryParameterResolver.INSTANCE.resolveParameter(parameterContext, extensionContext);
+        if (ValueRegistryInjector.PARAMETER_RESOLVER.supportsParameter(parameterContext, extensionContext)) {
+            return ValueRegistryInjector.PARAMETER_RESOLVER.resolveParameter(parameterContext, extensionContext);
+        }
+        if (ConfigInjector.PARAMETER_RESOLVER.supportsParameter(parameterContext, extensionContext)) {
+            return ConfigInjector.PARAMETER_RESOLVER.resolveParameter(parameterContext, extensionContext);
+        }
+        return null;
     }
 
     @Override
     public void afterAll(ExtensionContext context) {
-        for (Map.Entry<String, String> e : oldSystemProps.entrySet()) {
-            if (e.getValue() == null) {
-                System.clearProperty(e.getKey());
-            } else {
-                System.setProperty(e.getKey(), e.getValue());
-            }
-        }
         rootLogger.setHandlers(originalRootLoggerHandlers);
         inMemoryLogHandler.clearRecords();
         inMemoryLogHandler.setFilter(null);
@@ -359,7 +378,7 @@ public class QuarkusDevModeTest
     }
 
     @Override
-    public void afterEach(ExtensionContext extensionContext) throws Exception {
+    public void afterEach(ExtensionContext context) throws Exception {
         try {
             if (devModeMain != null) {
                 devModeMain.close();
@@ -370,14 +389,16 @@ public class QuarkusDevModeTest
                 FileUtil.deleteDirectory(deploymentDir);
             }
         }
-        extensionContext.getStore(Namespace.GLOBAL).remove(ValueRegistry.class.getName());
+        ThreadLocalConfigSourceProvider.reset();
+        ConfigInjector.clear(context);
+        ValueRegistryInjector.clear(context);
         inMemoryLogHandler.clearRecords();
     }
 
-    private DevModeMain newDevModeMain(ExtensionContext extensionContext, Path deploymentDir, Path testSourceDir) {
+    private DevModeMain newDevModeMain(ExtensionContext extensionContext, Path deploymentDir, Path testSourceDir,
+            Map<String, String> config) {
 
         try {
-
             deploymentSourcePath = deploymentDir.resolve("src/main/java");
             deploymentSourceParentPath = deploymentDir.resolve("src/main");
             deploymentResourcePath = deploymentDir.resolve("src/main/resources");
@@ -390,6 +411,12 @@ public class QuarkusDevModeTest
             Files.createDirectories(cache);
 
             JavaArchive archive = archiveProducer.get();
+
+            // Merge TestResource configuration
+            Properties properties = new Properties();
+            properties.putAll(config);
+            ExportUtil.mergeCustomApplicationProperties(archive, properties);
+
             exportAndGenerateSourceTree(archive, classes, testSourceDir, deploymentSourcePath, deploymentResourcePath);
 
             // TODO: again a hack, assumes the sources dir is one dir above java sources path
@@ -407,6 +434,7 @@ public class QuarkusDevModeTest
             context.getBuildSystemProperties().put("quarkus.banner.enabled", "false");
             context.getBuildSystemProperties().put("quarkus.console.disable-input", "true"); //surefire communicates via stdin, we don't want the test to be reading input
             context.getBuildSystemProperties().putAll(buildSystemProperties);
+            context.getBuildSystemProperties().putAll(config);
             context.setCacheDir(cache.toFile());
 
             final DevModeContext.ModuleInfo.Builder moduleBuilder = new DevModeContext.ModuleInfo.Builder()
@@ -428,7 +456,6 @@ public class QuarkusDevModeTest
 
             //now tests, if required
             if (testArchiveProducer != null) {
-
                 deploymentTestSourcePath = deploymentDir.resolve("src/test/java");
                 deploymentTestSourceParentPath = deploymentDir.resolve("src/test");
                 deploymentTestResourcePath = deploymentDir.resolve("src/test/resources");

@@ -413,12 +413,20 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         return quarkusBootstrap.getBaseName() != null ? " for " + quarkusBootstrap.getBaseName() : "";
     }
 
-    public QuarkusClassLoader createRuntimeClassLoader(Map<String, byte[]> resources, Map<String, byte[]> transformedClasses) {
-        return createRuntimeClassLoader(getOrCreateBaseRuntimeClassLoader(), resources, transformedClasses);
+    public QuarkusClassLoader createRuntimeClassLoader(
+            Map<String, byte[]> resources,
+            Map<String, byte[]> transformedClasses,
+            List<Path> additionalLocations) {
+        return createRuntimeClassLoader(getOrCreateBaseRuntimeClassLoader(), resources, transformedClasses,
+                additionalLocations);
     }
 
-    public QuarkusClassLoader createRuntimeClassLoader(ClassLoader base, Map<String, byte[]> resources,
-            Map<String, byte[]> transformedClasses) {
+    public QuarkusClassLoader createRuntimeClassLoader(
+            ClassLoader base,
+            Map<String, byte[]> resources,
+            Map<String, byte[]> transformedClasses,
+            List<Path> additionalLocations) {
+
         QuarkusClassLoader.Builder builder = QuarkusClassLoader
                 .builder(
                         "Quarkus Runtime ClassLoader: " + quarkusBootstrap.getMode()
@@ -430,6 +438,10 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                 .setCuratedApplication(this)
                 .setAggregateParentResources(true);
         builder.setTransformedClasses(transformedClasses);
+
+        for (Path additionalLocation : additionalLocations) {
+            builder.addNormalPriorityElement(ClassPathElement.fromPath(additionalLocation, true));
+        }
 
         builder.addNormalPriorityElement(new MemoryClassPathElement(resources, true));
         for (Path root : quarkusBootstrap.getApplicationRoot()) {

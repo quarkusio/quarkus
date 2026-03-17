@@ -496,6 +496,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
                 builder.addRemovalExclusion(exclusion);
             }
             builder.setAlternativePriorities(alternativePriorities);
+            builder.setAllowMocking(testMode);
 
             BeanProcessor beanProcessor = builder.build();
 

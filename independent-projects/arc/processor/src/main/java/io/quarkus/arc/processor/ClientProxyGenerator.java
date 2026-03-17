@@ -116,7 +116,8 @@ public class ClientProxyGenerator extends AbstractGenerator {
             boolean transformUnproxyableClasses, String generatedName, String targetPackage) {
 
         Type providerType = bean.getProviderType();
-        ClassInfo providerClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(), providerType.name());
+        IndexView index = bean.getDeployment().getBeanArchiveIndex();
+        ClassInfo providerClass = getClassByName(index, providerType.name());
         ClassDesc providerClassDesc = classDescOf(providerClass);
 
         boolean isInterface = providerClass.isInterface();
@@ -145,7 +146,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
                 mockField = cc.field(MOCK_FIELD, fc -> {
                     fc.private_();
                     fc.volatile_();
-                    fc.setType(providerClassDesc);
+                    fc.setType(Object.class);
                 });
             } else {
                 mockField = null;
@@ -187,14 +188,10 @@ public class ClientProxyGenerator extends AbstractGenerator {
             MethodDesc delegateMethod = cc.method(DELEGATE_METHOD_NAME, mc -> {
                 mc.private_();
                 mc.returning(providerClassDesc);
+                // Mock dispatch is handled per-method rather than here to avoid a VerifyError:
+                // returning Object (the mock field type) from a method declaring a class return type
+                // is rejected by the JVM verifier.
                 mc.body(b0 -> {
-                    if (mockable) {
-                        // if mockable and mocked just return the mock
-                        b0.ifNotNull(cc.this_().field(mockField), b1 -> {
-                            b1.return_(cc.this_().field(mockField));
-                        });
-                    }
-
                     Expr ret;
                     if (BuiltinScope.APPLICATION.is(bean.getScope())) {
                         // Application context is stored in a field and is always active
@@ -256,6 +253,48 @@ public class ClientProxyGenerator extends AbstractGenerator {
                     }
 
                     mc.body(bc -> {
+                        if (mockable) {
+                            // Use invokeinterface where possible: the JVM verifier is lenient about
+                            // invokeinterface receiver types (checked at runtime), unlike invokevirtual.
+                            // This allows mocks that only implement the interface without extending the bean class.
+                            final ClassDesc mockDispatchDesc;
+                            final boolean dispatchViaInterface;
+                            if (isInterface) {
+                                mockDispatchDesc = providerClassDesc;
+                                dispatchViaInterface = true;
+                            } else if (Methods.isObjectToString(method)) {
+                                mockDispatchDesc = CD_Object;
+                                dispatchViaInterface = false;
+                            } else {
+                                ClassInfo declaringIface = findDeclaringInterface(providerClass, method, index);
+                                if (declaringIface != null) {
+                                    mockDispatchDesc = classDescOf(declaringIface);
+                                    dispatchViaInterface = true;
+                                } else {
+                                    mockDispatchDesc = providerClassDesc;
+                                    dispatchViaInterface = false;
+                                }
+                            }
+                            bc.ifNotNull(cc.this_().field(mockField), b1 -> {
+                                Expr mockExpr = dispatchViaInterface
+                                        ? b1.uncheckedCast(cc.this_().field(mockField), mockDispatchDesc)
+                                        : b1.cast(cc.this_().field(mockField), mockDispatchDesc);
+                                Expr mockRet;
+                                if (dispatchViaInterface) {
+                                    mockRet = b1.invokeInterface(
+                                            InterfaceMethodDesc.of(mockDispatchDesc, originalMethodDesc.name(),
+                                                    originalMethodDesc.type()),
+                                            mockExpr, params);
+                                } else {
+                                    mockRet = b1.invokeVirtual(
+                                            ClassMethodDesc.of(mockDispatchDesc, originalMethodDesc.name(),
+                                                    originalMethodDesc.type()),
+                                            mockExpr, params);
+                                }
+                                b1.return_(mockRet);
+                            });
+                        }
+
                         if (!superClass.equals(CD_Object)) {
                             // Skip delegation if proxy is not constructed yet
                             // This is not necessary for producers of interfaces, because interfaces cannot have constructors
@@ -357,6 +396,34 @@ public class ClientProxyGenerator extends AbstractGenerator {
                         new Methods.RemoveFinalFromMethod(entry.getValue())));
             }
         }
+    }
+
+    /**
+     * Finds the first interface in the class hierarchy of {@code classInfo} that declares
+     * a method with the same name and parameter types as {@code method}.
+     * Returns {@code null} if no such interface exists.
+     */
+    private ClassInfo findDeclaringInterface(ClassInfo classInfo, MethodInfo method, IndexView index) {
+        if (classInfo == null) {
+            return null;
+        }
+        for (DotName ifaceName : classInfo.interfaceNames()) {
+            ClassInfo iface = getClassByName(index, ifaceName);
+            if (iface == null) {
+                continue;
+            }
+            if (iface.method(method.name(), method.parameterTypes().toArray(Type[]::new)) != null) {
+                return iface;
+            }
+            ClassInfo found = findDeclaringInterface(iface, method, index);
+            if (found != null) {
+                return found;
+            }
+        }
+        if (classInfo.superName() != null && !classInfo.superName().equals(DotNames.OBJECT)) {
+            return findDeclaringInterface(getClassByName(index, classInfo.superName()), method, index);
+        }
+        return null;
     }
 
     private DotName getApplicationClassTestName(BeanInfo bean) {

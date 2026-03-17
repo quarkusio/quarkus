@@ -29,12 +29,17 @@ enum MDCEnabledContextStorage implements ContextStorage {
         return new Scope() {
             @Override
             public void close() {
-                if (log.isDebugEnabled()) {
-                    log.debugv("Closing Otel context: {0}", OpenTelemetryUtil.getSpanData(toAttach));
-                }
                 if (beforeAttach == null) {
+                    if (log.isDebugEnabled()) {
+                        log.debugv("Closing Otel context: {0}", OpenTelemetryUtil.getSpanData(toAttach));
+                    }
                     OpenTelemetryUtil.clearMDCData(null);
                 } else {
+                    if (log.isDebugEnabled()) {
+                        log.debugv("Closing Otel context: {0} and restoring previous OTel context: {1}",
+                                OpenTelemetryUtil.getSpanData(toAttach),
+                                OpenTelemetryUtil.getSpanData(beforeAttach));
+                    }
                     OpenTelemetryUtil.setMDCData(beforeAttach, null);
                 }
                 scope.close();

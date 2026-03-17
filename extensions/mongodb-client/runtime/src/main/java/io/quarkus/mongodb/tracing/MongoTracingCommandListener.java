@@ -21,13 +21,18 @@ import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
+import io.quarkus.mongodb.runtime.MongoConfig;
 import io.quarkus.mongodb.runtime.MongoRequestContext;
+import io.quarkus.mongodb.runtime.MongoTracingRuntimeConfig;
+import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 
 public class MongoTracingCommandListener implements CommandListener {
     private static final org.jboss.logging.Logger LOGGER = Logger.getLogger(MongoTracingCommandListener.class);
-    private static final String KEY = "mongodb.command";
+    private static final String KEY = "db.query.text";
     private final Map<Integer, ContextEvent> requestMap;
     private final Instrumenter<MongoCommand, Void> instrumenter;
+    private final MongoCommandSanitizer sanitizer;
+    private final MongoTracingRuntimeConfig config;
 
     private record MongoCommand(String name, BsonDocument command) {
     }
@@ -36,14 +41,21 @@ public class MongoTracingCommandListener implements CommandListener {
     }
 
     @Inject
-    public MongoTracingCommandListener(OpenTelemetry openTelemetry) {
-        requestMap = new ConcurrentHashMap<>();
+    public MongoTracingCommandListener(
+            OpenTelemetry openTelemetry,
+            MongoConfig mongoConfig,
+            OTelRuntimeConfig oTelRuntimeConfig) {
+
+        this.config = mongoConfig.tracing();
+        this.sanitizer = new MongoCommandSanitizer();
+        this.requestMap = new ConcurrentHashMap<>();
+
         SpanNameExtractor<MongoCommand> spanNameExtractor = MongoCommand::name;
         instrumenter = Instrumenter.<MongoCommand, Void> builder(
                 openTelemetry, "quarkus-mongodb-client", spanNameExtractor)
-                .addAttributesExtractor(new CommandEventAttrExtractor())
+                .setEnabled(!oTelRuntimeConfig.sdkDisabled())
+                .addAttributesExtractor(new CommandEventAttrExtractor(sanitizer, config))
                 .buildInstrumenter(SpanKindExtractor.alwaysClient());
-        LOGGER.debugf("MongoTracingCommandListener created");
     }
 
     @Override
@@ -88,9 +100,32 @@ public class MongoTracingCommandListener implements CommandListener {
 
     private static class CommandEventAttrExtractor implements AttributesExtractor<MongoCommand, Void> {
 
+        private final MongoCommandSanitizer sanitizer;
+        private final MongoTracingRuntimeConfig config;
+
+        CommandEventAttrExtractor(MongoCommandSanitizer sanitizer, MongoTracingRuntimeConfig config) {
+            this.sanitizer = sanitizer;
+            this.config = config;
+        }
+
         @Override
         public void onStart(AttributesBuilder attributesBuilder, Context context, MongoCommand command) {
-            attributesBuilder.put(KEY, command.command().toJson());
+            // Only add operation metadata as standard OTel attributes
+            String collectionName = sanitizer.extractCollectionName(command.command());
+            if (collectionName != null) {
+                attributesBuilder.put("db.collection.name", collectionName);
+            }
+
+            switch (config.commandDetailLevel()) {
+                case OFF:
+                    break;
+                case SANITIZED:
+                    attributesBuilder.put(KEY, sanitizer.sanitizeCommand(command.command()));
+                    break;
+                case FULL:
+                    attributesBuilder.put(KEY, command.command().toJson());
+                    break;
+            }
         }
 
         @Override

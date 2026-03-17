@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -109,6 +110,13 @@ public interface MongoConfig {
     @WithDefault("false")
     @WithName("dns.log-activity")
     boolean dnsLookupLogActivity();
+
+    /**
+     * Tracing configuration
+     */
+    @ConfigDocSection
+    @WithDefaults
+    MongoTracingRuntimeConfig tracing();
 
     static boolean isDefaultClient(final String name) {
         return DEFAULT_CLIENT_NAME.equalsIgnoreCase(name) || DEFAULT_REACTIVE_CLIENT_NAME.equalsIgnoreCase(name);

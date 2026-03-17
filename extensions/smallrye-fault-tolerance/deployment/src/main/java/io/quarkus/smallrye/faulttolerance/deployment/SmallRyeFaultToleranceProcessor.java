@@ -16,6 +16,7 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -28,7 +29,6 @@ import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.AnnotationStore;
-import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
@@ -71,11 +71,11 @@ import io.smallrye.faulttolerance.FaultToleranceInterceptor;
 import io.smallrye.faulttolerance.RequestContextIntegration;
 import io.smallrye.faulttolerance.SpecCompatibility;
 import io.smallrye.faulttolerance.autoconfig.FaultToleranceMethod;
+import io.smallrye.faulttolerance.context.propagation.ContextPropagationRequestContextControllerProvider;
+import io.smallrye.faulttolerance.context.propagation.ContextPropagationRunnableWrapper;
 import io.smallrye.faulttolerance.core.util.RunnableWrapper;
 import io.smallrye.faulttolerance.internal.RequestContextControllerProvider;
 import io.smallrye.faulttolerance.internal.StrategyCache;
-import io.smallrye.faulttolerance.propagation.ContextPropagationRequestContextControllerProvider;
-import io.smallrye.faulttolerance.propagation.ContextPropagationRunnableWrapper;
 
 public class SmallRyeFaultToleranceProcessor {
 
@@ -145,16 +145,16 @@ public class SmallRyeFaultToleranceProcessor {
         }
 
         // Add transitive interceptor binding to FT annotations
-        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationTransformation() {
             @Override
-            public boolean appliesTo(Kind kind) {
+            public boolean supports(Kind kind) {
                 return kind == Kind.CLASS;
             }
 
             @Override
-            public void transform(TransformationContext context) {
-                if (DotNames.FT_ANNOTATIONS.contains(context.getTarget().asClass().name())) {
-                    context.transform().add(FaultToleranceBinding.class).done();
+            public void apply(TransformationContext context) {
+                if (DotNames.FT_ANNOTATIONS.contains(context.declaration().asClass().name())) {
+                    context.add(FaultToleranceBinding.class);
                 }
             }
         }));
@@ -178,22 +178,13 @@ public class SmallRyeFaultToleranceProcessor {
                         SpecCompatibility.class,
                         Enablement.class);
 
-        int metricsProviders = 0;
         if (metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)) {
             // Priority to Micrometer. We should avoid having OTel + Micrometer on.
             builder.addBeanClass("io.smallrye.faulttolerance.metrics.MicrometerProvider");
-            metricsProviders++;
+        } else if (openTelemetrySdk.map(OpenTelemetrySdkBuildItem::isMetricsBuildTimeEnabled).orElse(false)) {
+            builder.addBeanClass("io.smallrye.faulttolerance.metrics.OpenTelemetryProvider");
         } else {
-            if (openTelemetrySdk.map(OpenTelemetrySdkBuildItem::isMetricsBuildTimeEnabled).orElse(false)) {
-                builder.addBeanClass("io.smallrye.faulttolerance.metrics.OpenTelemetryProvider");
-                metricsProviders++;
-            }
-        }
-
-        if (metricsProviders == 0) {
             builder.addBeanClass("io.smallrye.faulttolerance.metrics.NoopProvider");
-        } else if (metricsProviders > 1) {
-            builder.addBeanClass("io.smallrye.faulttolerance.metrics.CompoundMetricsProvider");
         }
 
         beans.produce(builder.build());
@@ -211,28 +202,24 @@ public class SmallRyeFaultToleranceProcessor {
     }
 
     @BuildStep
-    AnnotationsTransformerBuildItem transformInterceptorPriority(BeanArchiveIndexBuildItem index) {
-        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+    AnnotationsTransformerBuildItem transformInterceptorPriority() {
+        return new AnnotationsTransformerBuildItem(new AnnotationTransformation() {
             @Override
-            public boolean appliesTo(Kind kind) {
+            public boolean supports(Kind kind) {
                 return kind == Kind.CLASS;
             }
 
             @Override
-            public void transform(TransformationContext ctx) {
-                if (ctx.isClass()) {
-                    if (!ctx.getTarget().asClass().name().equals(DotNames.FAULT_TOLERANCE_INTERCEPTOR)) {
-                        return;
-                    }
-                    Config config = ConfigProvider.getConfig();
+            public void apply(TransformationContext ctx) {
+                if (!ctx.declaration().asClass().name().equals(DotNames.FAULT_TOLERANCE_INTERCEPTOR)) {
+                    return;
+                }
 
-                    OptionalInt priority = config.getValue("mp.fault.tolerance.interceptor.priority", OptionalInt.class);
-                    if (priority.isPresent()) {
-                        ctx.transform()
-                                .remove(ann -> ann.name().toString().equals(Priority.class.getName()))
-                                .add(Priority.class, AnnotationValue.createIntegerValue("value", priority.getAsInt()))
-                                .done();
-                    }
+                Config config = ConfigProvider.getConfig();
+                OptionalInt priority = config.getValue("mp.fault.tolerance.interceptor.priority", OptionalInt.class);
+                if (priority.isPresent()) {
+                    ctx.remove(ann -> ann.name().toString().equals(Priority.class.getName()));
+                    ctx.add(AnnotationInstance.builder(Priority.class).value(priority.getAsInt()).build());
                 }
             }
         });

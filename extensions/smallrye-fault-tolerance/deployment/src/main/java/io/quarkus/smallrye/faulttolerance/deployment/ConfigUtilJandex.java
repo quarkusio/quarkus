@@ -8,7 +8,7 @@ import org.jboss.jandex.MethodInfo;
 import io.smallrye.config.common.utils.StringUtil;
 import io.smallrye.faulttolerance.autoconfig.ConfigConstants;
 
-// copy of a past version of `io.smallrye.faulttolerance.basicconfig.ConfigUtil` and translation from reflection to Jandex
+// copy of a past version of `io.smallrye.faulttolerance.apiimpl.basicconfig.ConfigUtil` and translation from reflection to Jandex
 final class ConfigUtilJandex {
     static String newKey(Class<? extends Annotation> annotation, String member, MethodInfo declaringMethod) {
         return ConfigConstants.PREFIX + "\"" + declaringMethod.declaringClass().name() + "/" + declaringMethod.name()

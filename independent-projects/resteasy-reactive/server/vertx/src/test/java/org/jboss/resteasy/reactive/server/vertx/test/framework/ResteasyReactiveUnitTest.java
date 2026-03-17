@@ -104,13 +104,6 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
                 return !Context.isOnEventLoopThread();
             }
         });
-        org.jboss.resteasy.reactive.server.core.BlockingOperationSupport.setIoThreadDetector(
-                new org.jboss.resteasy.reactive.server.core.BlockingOperationSupport.IOThreadDetector() {
-                    @Override
-                    public boolean isBlockingAllowed() {
-                        return !Context.isOnEventLoopThread();
-                    }
-                });
     }
 
     private Path deploymentDir;

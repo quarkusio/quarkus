@@ -45,7 +45,7 @@ public class OpenTelemetryWithSpanAtStartupTest {
         await().atMost(Duration.ofSeconds(5L)).pollDelay(Duration.ofMillis(50)).until(() -> {
             // make sure incoming spans are processed
             List<Map<String, Object>> spans = getSpans();
-            return spans.size() >= 1;
+            return spans.size() >= 2;
         });
 
         List<Map<String, Object>> spans = getSpans();

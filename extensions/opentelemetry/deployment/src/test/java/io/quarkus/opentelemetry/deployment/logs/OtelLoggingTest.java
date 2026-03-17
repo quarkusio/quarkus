@@ -54,7 +54,8 @@ public class OtelLoggingTest {
                                     "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
                             .add(new StringAsset(
                                     "quarkus.otel.logs.enabled=true\n" +
-                                            "quarkus.otel.traces.enabled=true\n"),
+                                            "quarkus.otel.traces.enabled=true\n" +
+                                            "quarkus.log.category.\"io.quarkus.opentelemetry\".level=INFO\n"),
                                     "application.properties"));
 
     @Inject

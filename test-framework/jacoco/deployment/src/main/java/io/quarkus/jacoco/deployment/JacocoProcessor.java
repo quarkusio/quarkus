@@ -83,6 +83,9 @@ public class JacocoProcessor {
         } else {
             dataFilePath = outputDir.resolve(JacocoConfig.JACOCO_QUARKUS_EXEC);
         }
+        // Make sure the parent directory of the data file exists
+        Files.createDirectories(dataFilePath.getParent());
+
         String dataFile = dataFilePath.toString();
         log.debugf("JaCoCo destFile: %s", dataFilePath);
 

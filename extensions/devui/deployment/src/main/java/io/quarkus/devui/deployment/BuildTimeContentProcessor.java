@@ -884,17 +884,17 @@ public class BuildTimeContentProcessor {
 
         addQuarkusLogoColors(dark, light);
 
-        // Base Colors
+        // Base Colors - tinted for modern feel
         light.put("--lumo-base-color", getThemeSettingOrDefault(theme, DevUIConfig.Theme::light,
-                DevUIConfig.ThemeMode::baseColor, Color.from(0, 0, 100).toString()));
+                DevUIConfig.ThemeMode::baseColor, Color.from(220, 14, 97).toString()));
         dark.put("--lumo-base-color", getThemeSettingOrDefault(theme, DevUIConfig.Theme::dark, DevUIConfig.ThemeMode::baseColor,
-                Color.from(0, 0, 13).toString()));
+                Color.from(220, 13, 10).toString()));
 
         // Contrast Colors
         light.put("--lumo-contrast", getThemeSettingOrDefault(theme, DevUIConfig.Theme::light, DevUIConfig.ThemeMode::contrast,
-                Color.from(0, 0, 13).toString()));
+                Color.from(220, 13, 10).toString()));
         dark.put("--lumo-contrast", getThemeSettingOrDefault(theme, DevUIConfig.Theme::dark, DevUIConfig.ThemeMode::contrast,
-                Color.from(0, 0, 100).toString()));
+                Color.from(220, 14, 97).toString()));
 
         // Primary Colors
         light.put("--lumo-primary-color", getThemeSettingOrDefault(theme, DevUIConfig.Theme::light,
@@ -903,9 +903,9 @@ public class BuildTimeContentProcessor {
                 DevUIConfig.ThemeMode::primaryColor, QUARKUS_BLUE.toString()));
 
         light.put("--lumo-primary-text-color", getThemeSettingOrDefault(theme, DevUIConfig.Theme::light,
-                DevUIConfig.ThemeMode::primaryTextColor, Color.from(210, 90, 60).toString()));
+                DevUIConfig.ThemeMode::primaryTextColor, Color.from(213, 94, 58).toString()));
         dark.put("--lumo-primary-text-color", getThemeSettingOrDefault(theme, DevUIConfig.Theme::dark,
-                DevUIConfig.ThemeMode::primaryTextColor, Color.from(210, 90, 60).toString()));
+                DevUIConfig.ThemeMode::primaryTextColor, Color.from(213, 94, 58).toString()));
 
         light.put("--lumo-primary-contrast-color", getThemeSettingOrDefault(theme, DevUIConfig.Theme::light,
                 DevUIConfig.ThemeMode::primaryContrastColor, Color.from(0, 0, 100).toString()));
@@ -1300,10 +1300,10 @@ public class BuildTimeContentProcessor {
         };
     }
 
-    private static final Color QUARKUS_BLUE = Color.from(210, 90, 60);
+    private static final Color QUARKUS_BLUE = Color.from(213, 94, 58);
     private static final Color QUARKUS_RED = Color.from(4, 90, 58);
-    private static final Color QUARKUS_DARK = Color.from(0, 0, 13);
-    private static final Color QUARKUS_LIGHT = Color.from(0, 0, 100);
+    private static final Color QUARKUS_DARK = Color.from(220, 13, 10);
+    private static final Color QUARKUS_LIGHT = Color.from(220, 14, 97);
     private static final Color QUARKUS_ASSISTANT = Color.from(320, 100, 71);
 
     private static String getThemeSettingOrDefault(Optional<DevUIConfig.Theme> theme,

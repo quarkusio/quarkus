@@ -35,36 +35,42 @@ export class QwcExtensions extends observeState(LitElement) {
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            padding-left: 5px;
-            padding-right: 10px;
-            padding-bottom: 10px;
+            gap: 16px;
+            padding: 12px 12px 12px 8px;
+            animation: devui-fade-in var(--devui-transition-slow, 0.3s ease);
         }
-        
+
+        @keyframes devui-fade-in {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .description {
             padding-bottom: 10px;
             color: var(--lumo-contrast-50pct);
             display: flex;
             gap: 10px;
+            font-size: var(--lumo-font-size-s);
+            line-height: 1.5;
         }
-    
+
         .libraryVersion {
             display: flex;
             justify-content: center;
             gap: 5px;
             flex-wrap: wrap;
         }
-    
+
         .card-content {
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
             height: 100%;
-            gap: 20px;
+            gap: 16px;
         }
-    
+
         .card-content-top{
-            color: var(--lumo-contrast-90pct);
+            color: var(--lumo-contrast-80pct);
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
@@ -80,27 +86,33 @@ export class QwcExtensions extends observeState(LitElement) {
         .float-right {
             align-self: flex-end;
         }
-    
+
         qwc-extension-link {
             cursor: grab;
         }
         .addExtensionButton {
             position: fixed;
-            bottom: calc(var(--footer-height, 38px) + 10px);
-            right: 40px;
-            width: 3em;
-            height: 3em;
-            box-shadow: var(--lumo-shade) 5px 5px 15px 3px;
+            bottom: calc(var(--footer-height, 38px) + 16px);
+            right: 24px;
+            width: 48px;
+            height: 48px;
+            border-radius: var(--devui-radius-lg, 12px);
+            box-shadow: 0 2px 8px var(--lumo-contrast-10pct), 0 4px 16px var(--lumo-contrast-5pct);
             z-index: 9;
+            transition: transform var(--devui-transition-fast, 0.15s ease), box-shadow var(--devui-transition-fast, 0.15s ease);
+        }
+        .addExtensionButton:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px var(--lumo-contrast-15pct), 0 8px 24px var(--lumo-contrast-10pct);
         }
         .addExtensionIcon {
-            width: 2em;
-            height: 2em;
+            width: 1.5em;
+            height: 1.5em;
         }
         .extensionFilterInput {
             width: 99%;
-            padding-left: 5px;
-            padding-right: 5px;
+            padding-left: 8px;
+            padding-right: 8px;
             padding-top: unset;
         }
         vaadin-text-field::part(input-field):focus-within {

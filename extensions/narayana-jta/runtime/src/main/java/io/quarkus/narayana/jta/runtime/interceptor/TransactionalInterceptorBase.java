@@ -30,6 +30,8 @@ import com.arjuna.ats.jta.logging.jtaLogger;
 import io.quarkus.arc.runtime.InterceptorBindings;
 import io.quarkus.narayana.jta.runtime.NotifyingTransactionManager;
 import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
+import io.quarkus.runtime.BlockingOperationControl;
+import io.quarkus.runtime.BlockingOperationNotAllowedException;
 import io.quarkus.transaction.annotations.Rollback;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.reactive.converters.ReactiveTypeConverter;
@@ -61,6 +63,16 @@ public abstract class TransactionalInterceptorBase implements Serializable {
             return doIntercept(tm, tx, ic);
         } finally {
             resetUserTransactionAvailability(previousUserTransactionAvailability);
+        }
+    }
+
+    protected void checkBlockingAllowed() {
+        if (!BlockingOperationControl.isBlockingAllowed()) {
+            throw new BlockingOperationNotAllowedException(
+                    "@Transactional cannot start a JTA transaction within a reactive pipeline." +
+                            " If the annotated method is intended to be blocking, ensure it is executed on a worker thread, for example by annotating it with @Blocking.");
+            // TODO mention reactive transactions as an alternative?
+            //  e.g.: If the annotated method is intended to be reactive, use Hibernate Reactive, which is currently the only extension supporting @Transactional in a reactive context
         }
     }
 

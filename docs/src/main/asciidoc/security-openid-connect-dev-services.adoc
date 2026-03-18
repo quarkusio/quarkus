@@ -439,10 +439,17 @@ Whichever user you choose, no password is required.
 
 == Configuration reference
 
+=== Keycloak Dev Services
+
 include::{generated-dir}/config/quarkus-devservices-keycloak_quarkus.keycloak.adoc[opts=optional, leveloffset=+1]
+
+=== OIDC Dev Services
+
+include::{generated-dir}/config/quarkus-devservices-oidc_quarkus.oidc.adoc[opts=optional, leveloffset=+1]
 
 == References
 
+* xref:dev-services.adoc[Dev Services Overview]
 * xref:dev-ui.adoc[Dev UI]
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]
 * https://openid.net/connect/[OpenID Connect]

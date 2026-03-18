@@ -39,7 +39,9 @@ public class ApplicationManifest {
             Files.walkFileTree(config.getDistributionDirectory(), new SimpleFileVisitor<>() {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                    builder.addComponent(ApplicationComponent.builder().setPath(file));
+                    builder.addComponent(ApplicationComponent.builder()
+                            .setVersion(config.getMainComponent().getVersion())
+                            .setPath(file));
                     return FileVisitResult.CONTINUE;
                 }
             });

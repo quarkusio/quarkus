@@ -60,6 +60,14 @@ public class QuarkusRecoveryService extends RecoveryManagerService {
         xaResources.clear();
     }
 
+    /**
+     * Returns whether the recovery service has been created and is currently active.
+     */
+    public static boolean isRunning() {
+        return recoveryManagerService instanceof QuarkusRecoveryService
+                && ((QuarkusRecoveryService) recoveryManagerService).isCreated;
+    }
+
     @Override
     public void stop() {
 

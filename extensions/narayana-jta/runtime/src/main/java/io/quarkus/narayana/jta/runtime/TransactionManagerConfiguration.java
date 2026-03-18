@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -41,9 +42,12 @@ public interface TransactionManagerConfiguration {
 
     /**
      * Start the recovery service on startup.
+     * <p>
+     * If not set, the recovery service will be started automatically if XA datasources are configured.
+     * Set to {@code true} to always enable recovery, or {@code false} to explicitly disable it.
      */
-    @WithDefault("false")
-    boolean enableRecovery();
+    @ConfigDocDefault("`true` if XA datasources are configured, `false` otherwise")
+    Optional<Boolean> enableRecovery();
 
     /**
      * The list of recovery modules.

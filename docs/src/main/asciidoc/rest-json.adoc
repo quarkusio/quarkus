@@ -541,3 +541,6 @@ Creating JSON REST services with Quarkus is easy as it relies on proven and well
 As usual, Quarkus further simplifies things under the hood when running your application as a native executable.
 
 There is only one thing to remember: if you use `Response` and Quarkus can't determine the beans that are serialized, you need to annotate them with `@RegisterForReflection`.
+
+TIP: As an alternative, you can use `org.jboss.resteasy.reactive.RestResponse<T>` instead of `Response`.
+Because `RestResponse` is strongly typed, Quarkus can determine the serialized type at build time and automatically registers it for reflection, eliminating the need for `@RegisterForReflection`.

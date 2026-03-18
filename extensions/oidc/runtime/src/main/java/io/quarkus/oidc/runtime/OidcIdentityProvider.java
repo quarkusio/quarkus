@@ -463,9 +463,15 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                     return Uni.createFrom().failure(new AuthenticationCompletionException(errorMessage));
                 }
                 final String principalClaim = resolvedContext.oidcConfig().token().principalClaim().orElse(null);
-                if (principalClaim != null && !tokenJson.containsKey(principalClaim) && userInfo != null
-                        && userInfo.contains(principalClaim)) {
-                    tokenJson.put(principalClaim, userInfo.getString(principalClaim));
+                if (principalClaim != null && userInfo != null) {
+                    Object tokenValue = OidcUtils.findClaimValueByPath(principalClaim, tokenJson);
+                    if (tokenValue == null) {
+                        Object userInfoValue = OidcUtils.findClaimValueByPath(principalClaim,
+                                new JsonObject(userInfo.getJsonObject().toString()));
+                        if (userInfoValue != null) {
+                            tokenJson.put(principalClaim, userInfoValue);
+                        }
+                    }
                 }
                 JsonObject rolesJson = getRolesJson(requestData, resolvedContext, tokenCred, tokenJson,
                         userInfo);
@@ -499,7 +505,10 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 if (resolvedContext.oidcConfig().token().allowOpaqueTokenIntrospection() &&
                         resolvedContext.oidcConfig().token().verifyAccessTokenWithUserInfo().orElse(false)) {
                     if (resolvedContext.oidcConfig().token().principalClaim().isPresent() && userInfo != null) {
-                        userName = userInfo.getString(resolvedContext.oidcConfig().token().principalClaim().get());
+                        Object principalValue = OidcUtils.findClaimValueByPath(
+                                resolvedContext.oidcConfig().token().principalClaim().get(),
+                                new JsonObject(userInfo.getJsonObject().toString()));
+                        userName = principalValue != null ? principalValue.toString() : null;
                     } else {
                         userName = "";
                     }

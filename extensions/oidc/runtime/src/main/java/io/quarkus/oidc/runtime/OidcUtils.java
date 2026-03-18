@@ -309,6 +309,10 @@ public final class OidcUtils {
         return claimPath.indexOf('/') > 0 ? CLAIM_PATH_PATTERN.split(claimPath) : new String[] { claimPath };
     }
 
+    static Object findClaimValueByPath(String claimPath, JsonObject json) {
+        return findClaimValue(claimPath, json, splitClaimPath(claimPath), 0);
+    }
+
     private static Object findClaimValue(String claimPath, JsonObject json, String[] pathArray, int step) {
         Object claimValue = json.getValue(pathArray[step].replace("\"", ""));
         if (claimValue == null) {

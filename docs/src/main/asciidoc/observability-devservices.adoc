@@ -5,9 +5,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Observability Dev Services
 include::_attributes.adoc[]
-:categories: observability,devservices,telemetry,metrics,tracing,logging
+:categories: observability
 :summary: Entry point for Observability DevServices
-:topics: observability,grafana,lgtm,prometheus,victoriametrics,jaeger,otel,otlp
+:topics: observability,devservices,telemetry,metrics,tracing,logging,grafana,lgtm,prometheus,victoriametrics,jaeger,otel,otlp
 :extensions: io.quarkus:quarkus-observability-devservices
 
 We are already familiar with xref:dev-services.adoc[Dev Service] concept, but in the case of Observability we need a way to orchestrate and connect more than a single Dev Service, usually a whole stack of them; e.g. a metrics agent periodically scraping application for metrics, pushing them into timeseries database, and Grafana feeding graphs of this timeseries data.

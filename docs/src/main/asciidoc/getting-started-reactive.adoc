@@ -5,7 +5,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Getting Started With Reactive
 include::_attributes.adoc[]
-:categories: getting-started,reactive
+:categories: getting-started,web
 :summary: Learn more about developing reactive applications with Quarkus.
 :topics: getting-started,reactive
 

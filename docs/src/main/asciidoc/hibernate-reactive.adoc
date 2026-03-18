@@ -8,6 +8,7 @@ include::_attributes.adoc[]
 :config-file: application.properties
 :reactive-doc-url-prefix: https://hibernate.org/reactive/documentation/1.1/reference/html_single/#getting-started
 :extension-status: preview
+:categories: data
 :topics: data,hibernate-reactive,sql
 :extensions: io.quarkus:quarkus-hibernate-reactive-panache,io.quarkus:quarkus-hibernate-reactive
 

@@ -5,9 +5,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Observability Dev Services with Grafana OTel LGTM
 include::_attributes.adoc[]
-:categories: observability,devservices,telemetry,metrics,tracing,logging, opentelemetry, micrometer, prometheus, tempo, loki, grafana
+:categories: observability
 :summary: Instructions on how to use Grafana Otel LGTM
-:topics: observability,grafana,lgtm,otlp,opentelemetry,devservices,micrometer
+:topics: observability,devservices,telemetry,metrics,tracing,logging,opentelemetry,micrometer,prometheus,tempo,loki,grafana,lgtm,otlp
 :extensions: io.quarkus:quarkus-observability-devservices
 
 This Dev Service provides the https://github.com/grafana/docker-otel-lgtm[Grafana OTel-LGTM], an `all-in-one` Docker image containing an https://opentelemetry.io/docs/collector[OpenTelemetry Collector] receiving and then forwarding telemetry data to Prometheus (metrics), Tempo (traces) and Loki (logs).

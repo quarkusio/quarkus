@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Frequently asked questions about writing extensions
 include::_attributes.adoc[]
 :diataxis-type: howto
-:categories: extensions
+:categories: writing-extensions
 ////
 :extension-status: preview
 TODO: uncomment the above for experimental or tech-preview content.

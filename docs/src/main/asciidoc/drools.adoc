@@ -5,7 +5,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Defining and executing business rules with Drools
 include::_attributes.adoc[]
-:categories: rule engine
+:categories: business-automation
 :summary: Drools is the most used rule engine implementation in the Java ecosystem. The purpose of this guide is to show how to use to define and execute business rules in Quarkus using Drools.
 :topics: drools,rules,rule engine
 :extensions: org.drools:drools-quarkus

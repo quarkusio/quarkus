@@ -437,6 +437,11 @@ image::dev-ui-oidc-dev-svc-login-for-custom-users.png[alt=Dev Services for OIDC 
 
 Whichever user you choose, no password is required.
 
+== Troubleshooting "HTTPS required"
+If you are seeing `java.lang.RuntimeException: {"error":"invalid_request","error_description":"HTTPS required"}` or, `We are sorry, https required.` You might be facing a docker issue that mainly affects MacOS users. 
+
+A few solutions are listed below:
+
 == Configuration reference
 
 include::{generated-dir}/config/quarkus-devservices-keycloak_quarkus.keycloak.adoc[opts=optional, leveloffset=+1]

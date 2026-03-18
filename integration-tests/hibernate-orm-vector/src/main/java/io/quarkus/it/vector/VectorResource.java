@@ -71,6 +71,24 @@ public class VectorResource {
     }
 
     @GET
+    @Path("/nearest-precise/{id}")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String nearestNeighborsPrecise(@PathParam("id") Long id) {
+        VectorEntity target = em.find(VectorEntity.class, id);
+        if (target == null) {
+            return "not found";
+        }
+        TypedQuery<VectorEntity> query = em.createQuery(
+                "SELECT e FROM VectorEntity e WHERE e.id != :id ORDER BY cosine_distance(e.preciseEmbedding, :vec)",
+                VectorEntity.class);
+        query.setParameter("id", id);
+        query.setParameter("vec", target.getPreciseEmbedding());
+        query.setMaxResults(1);
+        VectorEntity nearest = query.getSingleResult();
+        return String.valueOf(nearest.getId());
+    }
+
+    @GET
     @Path("/nearest-l2/{id}")
     @Produces(MediaType.TEXT_PLAIN)
     public String nearestNeighborsL2(@PathParam("id") Long id) {

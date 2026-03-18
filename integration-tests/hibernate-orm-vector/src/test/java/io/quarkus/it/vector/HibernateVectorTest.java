@@ -30,6 +30,12 @@ public class HibernateVectorTest {
     }
 
     @Test
+    public void testNearestNeighborPrecise() {
+        RestAssured.when().get("/hibernate-vector-test/vector/nearest-precise/1").then()
+                .body(containsString("2"));
+    }
+
+    @Test
     public void testNearestNeighbor() {
         RestAssured.when().get("/hibernate-vector-test/vector/nearest/1").then()
                 .body(containsString("2"));

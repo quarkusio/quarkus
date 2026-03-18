@@ -716,6 +716,14 @@ List<Person> persons = Person.list(Sort.by("birth", Sort.NullPrecedence.NULLS_FI
 
 The `Sort` class has plenty of methods for adding columns and specifying sort direction or the null precedence.
 
+NOTE: Panache escapes column names in `Sort` to prevent HQL injection.
+If you need to use HQL functions such as `lower()` or `upper()` in your sort clause, you must disable escaping:
+
+[source,java]
+----
+List<Person> persons = Person.list(Sort.by("lower(name)").disableEscaping());
+----
+
 === Simplified queries
 
 Normally, HQL queries are of this form: `from EntityName [where ...] [order by ...]`, with optional elements

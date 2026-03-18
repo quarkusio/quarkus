@@ -31,7 +31,7 @@ import io.smallrye.config.common.MapBackedConfigSource;
 public abstract class AbstractConfigBuilder implements SmallRyeConfigBuilderCustomizer {
 
     protected static void withSharedBuilder(SmallRyeConfigBuilder builder) {
-        builder.withMappingIgnore("quarkus.**");
+        builder.addDefaultInterceptors().withCustomizers(new QuarkusConfigBuilderCustomizer());
     }
 
     protected static void withDefaultValues(SmallRyeConfigBuilder builder, Map<String, String> values) {

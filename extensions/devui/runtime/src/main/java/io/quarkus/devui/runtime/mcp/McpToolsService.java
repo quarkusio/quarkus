@@ -10,6 +10,8 @@ import java.util.Map;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.devui.runtime.comms.JsonRpcRouter;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
 import io.quarkus.devui.runtime.mcp.model.tool.Tool;
@@ -23,6 +25,9 @@ import io.quarkus.runtime.annotations.JsonRpcDescription;
  */
 @ApplicationScoped
 public class McpToolsService {
+
+    private static final Logger LOG = Logger.getLogger(McpToolsService.class);
+    private static final int MAX_TOOL_NAME_LENGTH = 50;
 
     @Inject
     JsonRpcRouter jsonRpcRouter;
@@ -83,6 +88,10 @@ public class McpToolsService {
     private Tool toTool(JsonRpcMethod jsonRpcMethod) {
         Tool tool = new Tool();
         tool.name = jsonRpcMethod.getMethodName();
+        if (tool.name != null && tool.name.length() > MAX_TOOL_NAME_LENGTH) {
+            LOG.warnf("MCP tool name '%s' exceeds %d characters. Some MCP clients may not support long tool names.",
+                    tool.name, MAX_TOOL_NAME_LENGTH);
+        }
         if (jsonRpcMethod.getDescription() != null && !jsonRpcMethod.getDescription().isBlank()) {
             tool.description = jsonRpcMethod.getDescription();
         }

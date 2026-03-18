@@ -18,7 +18,7 @@ include::_attributes.adoc[]
 Quarkus offers the ability to automatically generate {openshift} resources based on sane defaults and user-supplied configuration.
 
 As an application developer, you can deploy your {project-name} applications to {openshift-long}.
-This functionality is provided by the `quarkus-openshift` extension, which supports multiple deployment options:
+The `quarkus-openshift` extension provides this functionality, which supports multiple deployment options:
 
 * xref:deploying-to-openshift-howto.adoc[With a single step]
 * xref:deploying-to-openshift-docker-howto.adoc[By using a Docker build strategy]
@@ -43,7 +43,7 @@ Source to Image (S2I):: The build process is performed inside the {openshift} cl
 
 Binary S2I:: This strategy uses a JAR file as input to the S2I build process, which speeds up the building and deploying of your application.
 
-=== Build strategies supported by Quarkus
+=== Supported build strategies
 
 The following table outlines the build strategies that {project-name} supports:
 

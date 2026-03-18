@@ -17,7 +17,7 @@ public class VectorEntity {
     @Array(length = 3)
     private float[] embedding;
 
-    @JdbcTypeCode(SqlTypes.VECTOR_FLOAT64)
+    @JdbcTypeCode(SqlTypes.VECTOR)
     @Array(length = 3)
     private double[] preciseEmbedding;
 

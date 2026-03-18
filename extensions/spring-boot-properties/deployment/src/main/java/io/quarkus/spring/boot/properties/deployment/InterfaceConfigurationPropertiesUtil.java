@@ -13,7 +13,6 @@ import java.util.Set;
 import jakarta.enterprise.inject.Produces;
 import jakarta.enterprise.inject.spi.DeploymentException;
 
-import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -41,6 +40,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.util.HashUtil;
+import io.smallrye.config.Config;
 import io.smallrye.config.ConfigMapping;
 
 final class InterfaceConfigurationPropertiesUtil {
@@ -125,7 +125,7 @@ final class InterfaceConfigurationPropertiesUtil {
                     .setModifiers(Modifier.PRIVATE)
                     .getFieldDescriptor();
 
-            // generate a constructor that takes MP Config as an argument
+            // generate a constructor that takes Config as an argument
             try (MethodCreator ctor = interfaceImplClassCreator.getMethodCreator("<init>", void.class, Config.class)) {
                 ctor.setModifiers(Modifier.PUBLIC);
                 ctor.invokeSpecialMethod(MethodDescriptor.ofConstructor(Object.class), ctor.getThis());

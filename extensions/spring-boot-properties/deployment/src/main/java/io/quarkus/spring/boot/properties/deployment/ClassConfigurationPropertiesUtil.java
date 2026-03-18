@@ -15,7 +15,6 @@ import jakarta.enterprise.inject.Produces;
 import jakarta.enterprise.inject.spi.DeploymentException;
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -47,6 +46,7 @@ import io.quarkus.runtime.StartupEvent;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.runtime.util.StringUtil;
 import io.quarkus.spring.boot.properties.deployment.ConfigurationPropertiesUtil.ReadOptionalResponse;
+import io.smallrye.config.Config;
 import io.smallrye.config.ConfigMapping;
 
 final class ClassConfigurationPropertiesUtil {
@@ -287,11 +287,11 @@ final class ClassConfigurationPropertiesUtil {
                  */
                 DotName fieldTypeDotName = fieldType.name();
                 ClassInfo fieldTypeClassInfo = applicationIndex.getClassByName(fieldType.name());
-                ResultHandle mpConfig = methodCreator.getMethodParam(0);
+                ResultHandle config = methodCreator.getMethodParam(0);
                 if (fieldTypeClassInfo != null) {
                     if (DotNames.ENUM.equals(fieldTypeClassInfo.superName())) {
                         populateTypicalProperty(methodCreator, configObject, configPropertyBuildItemCandidates,
-                                currentClassInHierarchy, field, useFieldAccess, fieldType, setter, mpConfig,
+                                currentClassInHierarchy, field, useFieldAccess, fieldType, setter, config,
                                 getFullConfigName(prefixStr, namingStrategy, field));
 
                         // we need to register the 'valueOf' method of the enum for reflection because
@@ -336,7 +336,7 @@ final class ClassConfigurationPropertiesUtil {
                             ResultHandle setterValue = methodCreator.invokeInterfaceMethod(
                                     MethodDescriptor.ofMethod(Config.class, "getOptionalValue", Optional.class, String.class,
                                             Class.class),
-                                    mpConfig, methodCreator.load(fullConfigName),
+                                    config, methodCreator.load(fullConfigName),
                                     methodCreator.loadClassFromTCCL(genericType.name().toString()));
                             createWriteValue(methodCreator, configObject, field, setter, useFieldAccess, setterValue);
                         } else {
@@ -344,7 +344,7 @@ final class ClassConfigurationPropertiesUtil {
                             ReadOptionalResponse readOptionalResponse = ConfigurationPropertiesUtil
                                     .createReadOptionalValueAndConvertIfNeeded(
                                             fullConfigName,
-                                            genericType, field.declaringClass().name(), methodCreator, mpConfig);
+                                            genericType, field.declaringClass().name(), methodCreator, config);
                             createWriteValue(readOptionalResponse.getIsPresentTrue(), configObject, field, setter,
                                     useFieldAccess,
                                     readOptionalResponse.getIsPresentTrue().invokeStaticMethod(
@@ -364,13 +364,13 @@ final class ClassConfigurationPropertiesUtil {
                                             + field.name() + "' of class '" + field.declaringClass().name().toString());
                         }
                         ResultHandle setterValue = yamlListObjectHandler.handle(new YamlListObjectHandler.FieldMember(field),
-                                methodCreator, mpConfig,
+                                methodCreator, config,
                                 getEffectiveConfigName(namingStrategy, field), fullConfigName);
                         createWriteValue(methodCreator, configObject, field, setter, useFieldAccess, setterValue);
                     } else {
                         ConfigurationPropertiesUtil.registerImplicitConverter(fieldType, reflectiveClasses);
                         populateTypicalProperty(methodCreator, configObject, configPropertyBuildItemCandidates,
-                                currentClassInHierarchy, field, useFieldAccess, fieldType, setter, mpConfig,
+                                currentClassInHierarchy, field, useFieldAccess, fieldType, setter, config,
                                 fullConfigName);
                     }
                 }
@@ -410,7 +410,7 @@ final class ClassConfigurationPropertiesUtil {
     private static void populateTypicalProperty(MethodCreator methodCreator, ResultHandle configObject,
             List<ConfigPropertyBuildItemCandidate> configPropertyBuildItemCandidates, ClassInfo currentClassInHierarchy,
             FieldInfo field, boolean useFieldAccess, Type fieldType, MethodInfo setter,
-            ResultHandle mpConfig, String fullConfigName) {
+            ResultHandle config, String fullConfigName) {
         /*
          * We want to support cases where the Config class defines a default value for fields
          * by simply specifying the default value in its constructor
@@ -421,7 +421,7 @@ final class ClassConfigurationPropertiesUtil {
         if (shouldCheckForDefaultValue(currentClassInHierarchy, field)) {
             ReadOptionalResponse readOptionalResponse = ConfigurationPropertiesUtil.createReadOptionalValueAndConvertIfNeeded(
                     fullConfigName,
-                    fieldType, field.declaringClass().name(), methodCreator, mpConfig);
+                    fieldType, field.declaringClass().name(), methodCreator, config);
 
             // call the setter if the optional contained data
             createWriteValue(readOptionalResponse.getIsPresentTrue(), configObject, field, setter,
@@ -434,7 +434,7 @@ final class ClassConfigurationPropertiesUtil {
              */
             ResultHandle setterValue = ConfigurationPropertiesUtil.createReadMandatoryValueAndConvertIfNeeded(
                     fullConfigName, fieldType,
-                    field.declaringClass().name(), methodCreator, mpConfig);
+                    field.declaringClass().name(), methodCreator, config);
             createWriteValue(methodCreator, configObject, field, setter, useFieldAccess, setterValue);
 
         }

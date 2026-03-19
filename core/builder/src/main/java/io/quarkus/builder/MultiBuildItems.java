@@ -2,6 +2,7 @@ package io.quarkus.builder;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +27,11 @@ class MultiBuildItems {
         this.producingOrdinals = producingOrdinals;
         final Map<ItemId, List<MultiBuildItem>[]> ms = new HashMap<ItemId, List<MultiBuildItem>[]>(producingOrdinals.size());
         for (Entry<ItemId, int[]> en : producingOrdinals.entrySet()) {
-            ms.put(en.getKey(), new List[en.getValue().length + 1]);
+            if (en.getKey().isComparable()) {
+                ms.put(en.getKey(), new List[1]);
+            } else {
+                ms.put(en.getKey(), new List[en.getValue().length + 1]);
+            }
         }
         this.multis = ms;
     }
@@ -39,16 +44,30 @@ class MultiBuildItems {
      * @param id the {@link ItemId} to store the given {@code value} under
      * @param value the {@link MultiBuildItem} to store.
      */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     void put(int ordinal, ItemId id, MultiBuildItem value) {
         final List<MultiBuildItem>[] list = multis.get(id);
-        int pos = Arrays.binarySearch(producingOrdinals.get(id), ordinal);
         synchronized (list) {
-            List<MultiBuildItem> entry = list[pos + 1];
-            if (entry == null) {
-                entry = new ArrayList<MultiBuildItem>();
-                list[pos + 1] = entry;
+            if (id.isComparable()) {
+                List<MultiBuildItem> entry = list[0];
+                if (entry == null) {
+                    entry = new ArrayList<>();
+                    list[0] = entry;
+                }
+                int idx = Collections.binarySearch((List) entry, value);
+                if (idx < 0) {
+                    idx = -idx - 1;
+                }
+                entry.add(idx, value);
+            } else {
+                int pos = Arrays.binarySearch(producingOrdinals.get(id), ordinal);
+                List<MultiBuildItem> entry = list[pos + 1];
+                if (entry == null) {
+                    entry = new ArrayList<>();
+                    list[pos + 1] = entry;
+                }
+                entry.add(value);
             }
-            entry.add(value);
         }
     }
 
@@ -59,16 +78,29 @@ class MultiBuildItems {
      * @param id the {@link ItemId} to store the given {@code value} under
      * @param value the {@link MultiBuildItem} to store.
      */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     void putInitial(ItemId id, MultiBuildItem value) {
-        @SuppressWarnings("unchecked")
         final List<MultiBuildItem>[] list = multis.computeIfAbsent(id, x -> new ArrayList[1]);
         synchronized (list) {
-            List<MultiBuildItem> entry = list[0];
-            if (entry == null) {
-                entry = new ArrayList<MultiBuildItem>();
-                list[0] = entry;
+            if (id.isComparable()) {
+                List<MultiBuildItem> entry = list[0];
+                if (entry == null) {
+                    entry = new ArrayList<>();
+                    list[0] = entry;
+                }
+                int idx = Collections.binarySearch((List) entry, value);
+                if (idx < 0) {
+                    idx = -idx - 1;
+                }
+                entry.add(idx, value);
+            } else {
+                List<MultiBuildItem> entry = list[0];
+                if (entry == null) {
+                    entry = new ArrayList<>();
+                    list[0] = entry;
+                }
+                entry.add(value);
             }
-            entry.add(value);
         }
     }
 

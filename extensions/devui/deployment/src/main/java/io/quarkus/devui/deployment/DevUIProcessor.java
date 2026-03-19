@@ -1232,10 +1232,11 @@ public class DevUIProcessor {
     }
 
     private static GACT getDeploymentKey(ResolvedDependency runtimeExt) {
-        return runtimeExt.getContentTree().apply(BootstrapConstants.DESCRIPTOR_PATH, extPropsVisit -> {
+        // Return null instead of throwing when the resource is not found in a given path tree root,
+        // so that MultiRootPathTree.apply() can continue searching the remaining roots.
+        final GACT result = runtimeExt.getContentTree().apply(BootstrapConstants.DESCRIPTOR_PATH, extPropsVisit -> {
             if (extPropsVisit == null) {
-                throw new RuntimeException("Failed to locate " + BootstrapConstants.DESCRIPTOR_PATH
-                        + " in " + runtimeExt.toCompactCoords());
+                return null;
             }
             final Properties props = new Properties();
             try (BufferedReader reader = Files.newBufferedReader(extPropsVisit.getPath())) {
@@ -1251,6 +1252,11 @@ public class DevUIProcessor {
             var coords = GACTV.fromString(deploymentCoords);
             return new GACT(coords.getGroupId(), coords.getArtifactId(), coords.getClassifier(), coords.getType());
         });
+        if (result == null) {
+            throw new RuntimeException("Failed to locate " + BootstrapConstants.DESCRIPTOR_PATH
+                    + " in " + runtimeExt.toCompactCoords());
+        }
+        return result;
     }
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)

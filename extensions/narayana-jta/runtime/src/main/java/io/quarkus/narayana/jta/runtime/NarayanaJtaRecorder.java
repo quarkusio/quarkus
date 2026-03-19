@@ -165,7 +165,7 @@ public class NarayanaJtaRecorder {
     }
 
     public void startRecoveryService(Map<String, String> configuredDataSourcesConfigKeys,
-            Set<String> dataSourcesWithTransactionIntegration) {
+            Set<String> dataSourcesWithTransactionIntegration, boolean xaResourcesPresent, ShutdownContext context) {
 
         if (transactions.getValue().objectStore().type().equals(ObjectStoreType.JDBC)) {
             final String objectStoreDataSourceName;
@@ -206,25 +206,25 @@ public class NarayanaJtaRecorder {
                         objectStoreDataSourceName, configuredDataSourcesConfigKeys.get(objectStoreDataSourceName)));
             }
         }
-        if (transactions.getValue().enableRecovery()) {
-            QuarkusRecoveryService.getInstance().create();
-            QuarkusRecoveryService.getInstance().start();
+        boolean recoveryEnabled = transactions.getValue().enableRecovery().orElse(xaResourcesPresent);
+        if (!recoveryEnabled) {
+            return;
         }
+        QuarkusRecoveryService.getInstance().create();
+        QuarkusRecoveryService.getInstance().start();
+        context.addShutdownTask(() -> {
+            try {
+                QuarkusRecoveryService.getInstance().stop();
+            } catch (Exception e) {
+                // the recovery manager throws IllegalStateException if it has already been shutdown
+                log.warn("The recovery manager has already been shutdown", e);
+            } finally {
+                QuarkusRecoveryService.getInstance().destroy();
+            }
+        });
     }
 
     public void handleShutdown(ShutdownContext context) {
-        context.addShutdownTask(() -> {
-            if (transactions.getValue().enableRecovery()) {
-                try {
-                    QuarkusRecoveryService.getInstance().stop();
-                } catch (Exception e) {
-                    // the recovery manager throws IllegalStateException if it has already been shutdown
-                    log.warn("The recovery manager has already been shutdown", e);
-                } finally {
-                    QuarkusRecoveryService.getInstance().destroy();
-                }
-            }
-        });
         context.addLastShutdownTask(() -> {
             TransactionReaper.terminate(false);
         });

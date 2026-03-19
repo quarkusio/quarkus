@@ -762,7 +762,7 @@ public final class Beans {
         List<MethodInfo> callbacks = new ArrayList<>();
         collectCallbacks(beanClass, callbacks, annotation, index, new HashSet<>(), interceptionType);
         Collections.reverse(callbacks);
-        return callbacks;
+        return callbacks.isEmpty() ? List.of() : Collections.unmodifiableList(callbacks);
     }
 
     static List<MethodInfo> getAroundInvokes(ClassInfo beanClass, BeanDeployment deployment) {

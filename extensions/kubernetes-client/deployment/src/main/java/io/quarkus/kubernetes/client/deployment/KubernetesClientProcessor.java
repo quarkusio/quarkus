@@ -22,7 +22,6 @@ import io.fabric8.kubernetes.api.model.KubernetesResource;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.CustomResource;
-import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.VersionInfo;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.extension.ExtensionAdapter;
@@ -194,7 +193,7 @@ public class KubernetesClientProcessor {
                 .methods().build());
 
         reflectiveClasses.produce(
-                ReflectiveClassBuildItem.builder(KubernetesClientImpl.class, DefaultKubernetesClient.class, VersionInfo.class)
+                ReflectiveClassBuildItem.builder(KubernetesClientImpl.class, VersionInfo.class)
                         .reason(getClass().getName())
                         .methods().fields().build());
         reflectiveClasses.produce(ReflectiveClassBuildItem

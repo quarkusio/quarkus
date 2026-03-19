@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.Test;
@@ -35,7 +34,6 @@ public class MultiplePersistenceUnitsTest extends BaseMultiplePersistenceUnitTes
     Mutiny.SessionFactory inventoryEntityManager;
 
     @Test
-    @Transactional
     @RunOnVertxContext
     public void createEntityAndRefetch(UniAsserter uniAsserter) {
         assertNotNull(defaultEntityManager);

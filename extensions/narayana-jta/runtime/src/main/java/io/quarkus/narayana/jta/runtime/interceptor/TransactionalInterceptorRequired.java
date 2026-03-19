@@ -23,6 +23,10 @@ public class TransactionalInterceptorRequired extends TransactionalInterceptorBa
     @Override
     @AroundInvoke
     public Object intercept(InvocationContext ic) throws Exception {
+        if (willReactiveTransactionalInterceptorRun()) {
+            return ic.proceed();
+        }
+
         checkBlockingAllowed();
         return super.intercept(ic);
     }

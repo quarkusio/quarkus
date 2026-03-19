@@ -33,6 +33,7 @@ public class SystemPropsAsBuildTimeConfigSourceTest extends QuarkusGradleWrapper
         gradleConfigurationCache(false);
         runGradleWrapper(projectDir,
                 "-Dquarkus.example.name=cheburashka",
+                "-Dquarkus.example.runtime-name=crocodile",
                 "-Dquarkus.package.jar.type=mutable-jar",
                 ":example-extension:example-extension-deployment:build",
                 // this quarkusIntTest will make sure runtime config properties passed as env vars when launching the app are effective

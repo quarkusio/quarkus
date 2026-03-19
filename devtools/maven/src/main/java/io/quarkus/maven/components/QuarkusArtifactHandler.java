@@ -1,11 +1,11 @@
 package io.quarkus.maven.components;
 
 import javax.inject.Named;
+import javax.inject.Singleton;
 
-import org.apache.maven.SessionScoped;
 import org.apache.maven.artifact.handler.ArtifactHandler;
 
-@SessionScoped
+@Singleton
 @Named("quarkus")
 public class QuarkusArtifactHandler implements ArtifactHandler {
 

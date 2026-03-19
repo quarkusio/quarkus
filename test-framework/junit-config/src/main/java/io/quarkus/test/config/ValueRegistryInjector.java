@@ -21,6 +21,13 @@ import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
 public class ValueRegistryInjector {
     public static final ParameterResolver PARAMETER_RESOLVER = new ValueRegistryParameterResolver();
 
+    private static final String VALUE_REGISTRY_NAMESPACE = "io.quarkus.test.valueregistry";
+
+    private static Namespace getNamespace(ExtensionContext context) {
+        // Use test class name to create unique namespace per test class
+        return Namespace.create(VALUE_REGISTRY_NAMESPACE, context.getRequiredTestClass().getName());
+    }
+
     public static void inject(Object testInstance, ValueRegistry valueRegistry) {
         Class<?> c = testInstance.getClass();
         while (c != Object.class) {
@@ -50,16 +57,16 @@ public class ValueRegistryInjector {
     }
 
     public static ValueRegistry get(ExtensionContext context) {
-        Store store = context.getStore(Namespace.GLOBAL);
+        Store store = context.getStore(getNamespace(context));
         return store.get(ValueRegistry.class.getName(), ValueRegistry.class);
     }
 
     public static void set(ExtensionContext context, ValueRegistry valueRegistry) {
-        context.getStore(Namespace.GLOBAL).put(ValueRegistry.class.getName(), valueRegistry);
+        context.getStore(getNamespace(context)).put(ValueRegistry.class.getName(), valueRegistry);
     }
 
     public static void clear(ExtensionContext context) {
-        context.getStore(Namespace.GLOBAL).remove(ValueRegistry.class.getName());
+        context.getStore(getNamespace(context)).remove(ValueRegistry.class.getName());
     }
 
     private static class ValueRegistryParameterResolver implements ParameterResolver {

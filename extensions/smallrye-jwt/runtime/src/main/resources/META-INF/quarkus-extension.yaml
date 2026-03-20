@@ -9,6 +9,7 @@ metadata:
   - "rbac"
   - "security"
   guide: "https://quarkus.io/guides/security-jwt"
+  quickstart: "security-jwt-quickstart"
   categories:
   - "security"
   status: "stable"

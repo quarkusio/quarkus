@@ -8,6 +8,7 @@ metadata:
   categories:
   - "messaging"
   guide: "https://quarkus.io/guides/kafka-streams"
+  quickstart: "kafka-streams-quickstart"
   status: "stable"
   config:
   - "quarkus.kafka-streams."

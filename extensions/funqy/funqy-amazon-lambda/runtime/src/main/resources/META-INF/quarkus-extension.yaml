@@ -8,6 +8,7 @@ metadata:
   - "aws"
   - "amazon"
   guide: "https://quarkus.io/guides/funqy-aws-lambda"
+  quickstart: "funqy-quickstarts"
   categories:
   - "cloud"
   status: "experimental"

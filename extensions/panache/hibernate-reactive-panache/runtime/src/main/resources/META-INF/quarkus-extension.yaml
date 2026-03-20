@@ -2,6 +2,7 @@
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
 name: "Hibernate Reactive with Panache"
 metadata:
+  quickstart: "hibernate-reactive-panache-quickstart"
   keywords:
   - "hibernate-reactive-panache"
   - "panache"

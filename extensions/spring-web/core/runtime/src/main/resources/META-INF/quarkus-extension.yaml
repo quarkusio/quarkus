@@ -5,6 +5,7 @@ metadata:
   - "spring-web"
   - "spring"
   guide: "https://quarkus.io/guides/spring-web"
+  quickstart: "spring-web-quickstart"
   categories:
   - "compatibility"
   status: "stable"

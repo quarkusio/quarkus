@@ -7,6 +7,7 @@ metadata:
   - "spring"
   - "security"
   guide: "https://quarkus.io/guides/spring-security"
+  quickstart: "spring-security-quickstart"
   categories:
   - "compatibility"
   status: "stable"

@@ -86,7 +86,67 @@ BuildTimeActionBuildItem createBuildTimeActions() {
 <3> Set a human‑readable description.
 <4> Provide the runtime value returned by your recorder.
 
-By default this resource will be disabled, and the user has to enable it in Dev UI. You can change this default by adding `.enableMcpFuctionByDefault()` in the builder method.
+By default this resource will be disabled, and the user has to enable it in Dev UI. You can change this default by adding `.enableMcpFunctionByDefault()` in the builder method.
+
+=== Extension skills
+
+Extensions can ship a `quarkus-skill.md` file to provide AI coding agents with extension-specific coding guidelines, testing patterns, and common pitfalls. At build time, these skill files are automatically combined with the extension's metadata (name, description, guide URL) and configuration properties to produce a rich MCP resource.
+
+==== Adding a skill file to your extension
+
+Place a `quarkus-skill.md` file in your extension's deployment module at:
+
+[source]
+----
+my-extension/deployment/src/main/resources/META-INF/quarkus-skill.md
+----
+
+The file should contain concise, actionable Markdown content. Focus on what an AI agent needs to know to use your extension correctly:
+
+- **Key patterns** — how to use the main APIs, annotations, and CDI beans.
+- **Testing** — how to write tests using `@QuarkusTest`, Dev Services, and extension-specific test utilities.
+- **Common pitfalls** — mistakes that agents (and developers) frequently make.
+
+Example for a hypothetical extension:
+
+[source,markdown]
+----
+### Data Access
+
+- Inject `MyClient` with `@Inject` — it is an `@ApplicationScoped` CDI bean.
+- Use `client.query("...")` for read operations.
+- Always wrap write operations in `@Transactional`.
+
+### Testing
+
+- Use `@QuarkusTest` — Dev Services starts a backing service automatically.
+- Inject `MyClient` in tests for direct assertions.
+
+### Common Pitfalls
+
+- Do NOT create `MyClient` manually with `new` — always let CDI inject it.
+- Do NOT set the connection URL without a `%prod.` profile prefix — this disables Dev Services.
+----
+
+==== What gets composed
+
+The skill file content is **not** exposed as-is. At build time, the `SkillProcessor` composes a single MCP resource per extension by combining:
+
+1. **Extension metadata** — name, description, guide URL, and categories from `quarkus-extension.yaml`.
+2. **Skill content** — the `quarkus-skill.md` file authored by the extension developer.
+3. **Configuration reference** — all configuration properties matching the extension's `config` prefixes (from `quarkus-extension.yaml`), with types, defaults, and descriptions.
+
+The composed resource is exposed as a Dev MCP resource with `text/markdown` MIME type and is enabled by default.
+
+==== What NOT to put in the skill file
+
+- **Configuration properties** — these are auto-included from the config metadata. Do not duplicate them.
+- **Extension description or guide links** — these come from `quarkus-extension.yaml`.
+- **Obvious instructions** — focus on Quarkus-specific patterns and gotchas, not generic advice.
+
+==== Requirements
+
+The skill file is only picked up if your extension's `quarkus-extension.yaml` contains a `name` field. Extensions without a name (internal extensions) are skipped.
 
 === MCP tools
 
@@ -159,7 +219,7 @@ BuildTimeActionBuildItem createBuildTimeActions() {
 
 The code in the `function` runs on the deployment classpath. The function can return a plain value, a `CompletionStage` or `CompletableFuture` for asynchronous work.
 
-By default this tool will be disabled, and the user has to enable it in Dev UI. You can change this default by adding `.enableMcpFuctionByDefault()` in the builder method.
+By default this tool will be disabled, and the user has to enable it in Dev UI. You can change this default by adding `.enableMcpFunctionByDefault()` in the builder method.
 
 === JSON‑RPC usage
 

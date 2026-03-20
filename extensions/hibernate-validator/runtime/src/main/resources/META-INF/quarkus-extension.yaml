@@ -8,6 +8,7 @@ metadata:
   - "bean-validation"
   - "validation"
   guide: "https://quarkus.io/guides/validation"
+  quickstart: "validation-quickstart"
   categories:
   - "web"
   - "data"

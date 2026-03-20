@@ -7,6 +7,7 @@ metadata:
   - "tasks"
   - "periodic-tasks"
   guide: "https://quarkus.io/guides/scheduler"
+  quickstart: "scheduler-quickstart"
   categories:
   - "miscellaneous"
   status: "stable"

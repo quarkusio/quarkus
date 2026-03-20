@@ -6,6 +6,7 @@ metadata:
   - "function"
   - "http"
   guide: "https://quarkus.io/guides/funqy-http"
+  quickstart: "funqy-quickstarts"
   categories:
   - "cloud"
   status: "experimental"

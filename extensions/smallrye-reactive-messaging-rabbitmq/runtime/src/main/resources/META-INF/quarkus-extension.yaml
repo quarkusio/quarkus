@@ -7,6 +7,7 @@ metadata:
   - "rabbitmq"
   - "reactive-rabbitmq"
   guide: "https://quarkus.io/guides/rabbitmq"
+  quickstart: "rabbitmq-quickstart"
   categories:
   - "messaging"
   status: "experimental"

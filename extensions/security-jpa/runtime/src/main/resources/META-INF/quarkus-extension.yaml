@@ -8,6 +8,7 @@ metadata:
   - "orm"
   - "panache"
   guide: "https://quarkus.io/guides/security-getting-started"
+  quickstart: "security-jpa-quickstart"
   categories:
   - "security"
   status: "stable"

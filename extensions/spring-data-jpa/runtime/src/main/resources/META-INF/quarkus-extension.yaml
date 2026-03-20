@@ -6,6 +6,7 @@ metadata:
   - "spring-data"
   - "spring"
   guide: "https://quarkus.io/guides/spring-data-jpa"
+  quickstart: "spring-data-jpa-quickstart"
   categories:
   - "compatibility"
   status: "stable"

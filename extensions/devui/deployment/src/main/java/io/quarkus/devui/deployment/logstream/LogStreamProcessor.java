@@ -62,7 +62,7 @@ public class LogStreamProcessor {
                     RuntimeUpdatesProcessor.INSTANCE.doScan(true, true);
                     return Map.of();
                 })
-                .enableMcpFuctionByDefault()
+                .enableMcpFunctionByDefault()
                 .build();
 
         keyStrokeActions.actionBuilder()

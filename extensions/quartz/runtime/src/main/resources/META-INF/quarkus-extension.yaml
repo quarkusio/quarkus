@@ -8,6 +8,7 @@ metadata:
   - "tasks"
   - "periodic-tasks"
   guide: "https://quarkus.io/guides/quartz"
+  quickstart: "quartz-quickstart"
   categories:
   - "miscellaneous"
   status: "stable"

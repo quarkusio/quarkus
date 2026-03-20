@@ -7,6 +7,7 @@ metadata:
   - "full text"
   - "search"
   guide: "https://quarkus.io/guides/elasticsearch"
+  quickstart: "elasticsearch-quickstart"
   categories:
   - "data"
   # WARNING: Before leaving preview, we will need to discuss backwards compatibility.

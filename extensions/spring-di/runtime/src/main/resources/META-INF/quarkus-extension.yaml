@@ -6,6 +6,7 @@ metadata:
   - "spring-di"
   - "spring"
   guide: "https://quarkus.io/guides/spring-di"
+  quickstart: "spring-di-quickstart"
   categories:
   - "compatibility"
   status: "stable"

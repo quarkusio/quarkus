@@ -5,6 +5,7 @@ metadata:
   keywords:
   - "kafka"
   guide: "https://quarkus.io/guides/kafka"
+  quickstart: "kafka-quickstart"
   categories:
   - "messaging"
   status: "stable"

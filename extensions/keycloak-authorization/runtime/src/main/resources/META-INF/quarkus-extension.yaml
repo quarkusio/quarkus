@@ -11,6 +11,7 @@ metadata:
   - "fine-grained-permission"
   - "resource-based-authorization"
   guide: "https://quarkus.io/guides/security-keycloak-authorization"
+  quickstart: "security-keycloak-authorization-quickstart"
   categories:
     - "security"
   status: "stable"

@@ -7,6 +7,7 @@ metadata:
   - "openid-connect"
   - "oidc"
   guide: "https://quarkus.io/guides/security-openid-connect"
+  quickstart: "security-openid-connect-quickstart"
   categories:
   - "security"
   status: "stable"

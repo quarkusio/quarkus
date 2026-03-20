@@ -9,6 +9,7 @@ metadata:
   categories:
   - "cloud"
   guide: "https://quarkus.io/guides/gcp-functions"
+  quickstart: "google-cloud-functions-quickstart"
   status: "stable"
   codestart:
     name: "google-cloud-functions"

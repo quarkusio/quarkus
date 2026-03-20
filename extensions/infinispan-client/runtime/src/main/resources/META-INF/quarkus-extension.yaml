@@ -10,6 +10,7 @@ metadata:
   - "distributed-cache"
   - "caching"
   guide: "https://quarkus.io/guides/infinispan-client"
+  quickstart: "infinispan-client-quickstart"
   categories:
   - "data"
   status: "stable"

@@ -10,6 +10,7 @@ metadata:
   categories:
   - "web"
   guide: "https://quarkus.io/guides/smallrye-graphql-client"
+  quickstart: "microprofile-graphql-client-quickstart"
   status: "stable"
   config:
   - "quarkus.smallrye-graphql-client."

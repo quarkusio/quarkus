@@ -12,6 +12,7 @@ metadata:
   - "resteasy"
   - "jakarta-rest"
   guide: "https://quarkus.io/guides/rest-data-panache"
+  quickstart: "hibernate-orm-rest-data-panache-quickstart"
   categories:
   - "data"
   - "web"

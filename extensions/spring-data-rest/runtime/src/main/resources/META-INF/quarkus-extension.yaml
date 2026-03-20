@@ -9,6 +9,7 @@ metadata:
     - "data"
     - "rest"
   guide: "https://quarkus.io/guides/spring-data-rest"
+  quickstart: "spring-data-rest-quickstart"
   categories:
     - "compatibility"
   status: "stable"

@@ -2,6 +2,7 @@
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
 name: "gRPC"
 metadata:
+  quickstart: "grpc-plain-text-quickstart"
   keywords:
     - "gRPC"
   categories:

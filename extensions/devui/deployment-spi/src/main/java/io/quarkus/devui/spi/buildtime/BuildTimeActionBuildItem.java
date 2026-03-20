@@ -151,9 +151,17 @@ public final class BuildTimeActionBuildItem extends AbstractDevUIBuildItem {
             return this;
         }
 
-        public ActionBuilder enableMcpFuctionByDefault() {
+        public ActionBuilder enableMcpFunctionByDefault() {
             this.mcpEnabledByDefault = true;
             return this;
+        }
+
+        /**
+         * @deprecated Use {@link #enableMcpFunctionByDefault()} instead.
+         */
+        @Deprecated(forRemoval = true)
+        public ActionBuilder enableMcpFuctionByDefault() {
+            return enableMcpFunctionByDefault();
         }
 
         public <T> ActionBuilder function(Function<Map<String, String>, T> function) {
@@ -245,9 +253,17 @@ public final class BuildTimeActionBuildItem extends AbstractDevUIBuildItem {
             return this;
         }
 
-        public SubscriptionBuilder enableMcpFuctionByDefault() {
+        public SubscriptionBuilder enableMcpFunctionByDefault() {
             this.mcpEnabledByDefault = true;
             return this;
+        }
+
+        /**
+         * @deprecated Use {@link #enableMcpFunctionByDefault()} instead.
+         */
+        @Deprecated(forRemoval = true)
+        public SubscriptionBuilder enableMcpFuctionByDefault() {
+            return enableMcpFunctionByDefault();
         }
 
         public <T> SubscriptionBuilder function(Function<Map<String, String>, T> function) {

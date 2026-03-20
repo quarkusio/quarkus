@@ -9,6 +9,7 @@ metadata:
   - "datastore"
   - "panache"
   guide: "https://quarkus.io/guides/mongodb-panache"
+  quickstart: "mongodb-panache-quickstart"
   categories:
   - "data"
   status: "stable"

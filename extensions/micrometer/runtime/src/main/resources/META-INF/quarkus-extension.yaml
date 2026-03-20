@@ -7,6 +7,7 @@ metadata:
   - "metric"
   - "monitoring"
   guide: "https://quarkus.io/guides/micrometer"
+  quickstart: "micrometer-quickstart"
   categories:
   - "observability"
   status: "stable"

@@ -6,6 +6,7 @@ metadata:
   - "mail"
   - "mailer"
   guide: "https://quarkus.io/guides/mailer"
+  quickstart: "mailer-quickstart"
   categories:
   - "miscellaneous"
   status: "stable"

@@ -6,5 +6,6 @@ metadata:
   - "swagger-ui"
   - "openapi"
   guide: "https://quarkus.io/guides/openapi-swaggerui"
+  quickstart: "openapi-swaggerui-quickstart"
   status: stable
   unlisted: true

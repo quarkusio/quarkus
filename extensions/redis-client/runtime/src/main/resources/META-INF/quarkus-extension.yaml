@@ -10,6 +10,7 @@ metadata:
     - "vert.x"
     - "reactive"
   guide: "https://quarkus.io/guides/redis"
+  quickstart: "redis-quickstart"
   categories:
     - "data"
     - "reactive"

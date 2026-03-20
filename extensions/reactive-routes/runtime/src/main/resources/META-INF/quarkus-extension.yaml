@@ -16,3 +16,4 @@ metadata:
     - "reactive"
   status: "stable"
   guide: https://quarkus.io/guides/reactive-routes
+  quickstart: "reactive-routes-quickstart"

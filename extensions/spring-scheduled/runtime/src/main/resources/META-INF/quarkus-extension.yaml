@@ -5,6 +5,7 @@ metadata:
   - "spring-scheduled"
   - "spring"
   guide: "https://quarkus.io/guides/spring-scheduled"
+  quickstart: "spring-scheduled-quickstart"
   categories:
   - "compatibility"
   status: "stable"

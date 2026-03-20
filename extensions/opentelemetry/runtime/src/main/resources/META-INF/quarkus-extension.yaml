@@ -9,6 +9,7 @@ metadata:
     - "opentelemetry-otlp-exporter"
     - "monitoring"
   guide: "https://quarkus.io/guides/opentelemetry"
+  quickstart: "opentelemetry-quickstart"
   categories:
     - "observability"
   status: "stable"

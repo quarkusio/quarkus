@@ -6,6 +6,7 @@ metadata:
   - "security"
   - "webauthn"
   guide: "https://quarkus.io/guides/security-webauthn"
+  quickstart: "security-webauthn-quickstart"
   categories:
   - "security"
   status: "experimental"

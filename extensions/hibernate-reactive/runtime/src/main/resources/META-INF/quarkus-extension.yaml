@@ -2,6 +2,7 @@
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
 name: "Hibernate Reactive"
 metadata:
+  quickstart: "hibernate-reactive-quickstart"
   keywords:
   - "hibernate-reactive"
   - "hibernate"

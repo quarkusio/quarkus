@@ -8,6 +8,7 @@ metadata:
   - "template"
   - "html"
   guide: "https://quarkus.io/guides/qute"
+  quickstart: "qute-quickstart"
   categories:
   - "miscellaneous"
   status: "stable"

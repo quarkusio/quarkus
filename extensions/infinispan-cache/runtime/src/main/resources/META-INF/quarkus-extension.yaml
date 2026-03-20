@@ -6,6 +6,7 @@ metadata:
     - "infinispan"
     - "cache"
   guide: "https://quarkus.io/guides/cache-infinispan-reference"
+  quickstart: "infinispan-cache-quickstart"
   categories:
     - "data"
     - "reactive"

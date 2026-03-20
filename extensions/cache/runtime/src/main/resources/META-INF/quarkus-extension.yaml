@@ -6,6 +6,7 @@ metadata:
   - "cache"
   - "caching"
   guide: "https://quarkus.io/guides/cache"
+  quickstart: "cache-quickstart"
   categories:
   - "data"
   status: "stable"

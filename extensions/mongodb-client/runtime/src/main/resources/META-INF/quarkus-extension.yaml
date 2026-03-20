@@ -8,6 +8,7 @@ metadata:
   - "nosql"
   - "datastore"
   guide: "https://quarkus.io/guides/mongodb"
+  quickstart: "mongodb-quickstart"
   categories:
   - "data"
   status: "stable"

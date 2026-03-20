@@ -8,6 +8,7 @@ metadata:
   - "jpa"
   - "hibernate"
   guide: "https://quarkus.io/guides/hibernate-orm"
+  quickstart: "hibernate-orm-quickstart"
   categories:
   - "data"
   status: "stable"

@@ -11,6 +11,7 @@ metadata:
   - "data"
   - "mssql"
   guide: "https://quarkus.io/guides/reactive-sql-clients"
+  quickstart: "getting-started-reactive-crud"
   categories:
   - "data"
   - "reactive"

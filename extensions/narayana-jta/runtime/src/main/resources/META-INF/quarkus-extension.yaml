@@ -11,6 +11,7 @@ metadata:
   - "tx"
   - "txs"
   guide: "https://quarkus.io/guides/transaction"
+  quickstart: "jta-quickstart"
   categories:
   - "data"
   status: "stable"

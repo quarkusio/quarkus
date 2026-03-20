@@ -9,6 +9,7 @@ metadata:
   - "oidc-client"
   - "oidc-client-filter"
   guide: "https://quarkus.io/guides/security-openid-connect-client"
+  quickstart: "security-openid-connect-client-quickstart"
   categories:
   - "security"
   status: "stable"

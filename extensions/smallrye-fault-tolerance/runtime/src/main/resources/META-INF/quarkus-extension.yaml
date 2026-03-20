@@ -13,6 +13,7 @@ metadata:
   - "retry"
   - "timeout"
   guide: "https://quarkus.io/guides/smallrye-fault-tolerance"
+  quickstart: "microprofile-fault-tolerance-quickstart"
   categories:
   - "cloud"
   status: "stable"

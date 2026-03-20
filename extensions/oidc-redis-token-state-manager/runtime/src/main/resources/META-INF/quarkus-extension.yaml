@@ -10,6 +10,7 @@ metadata:
   - "oidc-redis-token-state-manager"
   - "redis"
   guide: "https://quarkus.io/guides/security-openid-connect-client"
+  quickstart: "security-openid-connect-client-quickstart"
   categories:
   - "security"
   status: "preview"

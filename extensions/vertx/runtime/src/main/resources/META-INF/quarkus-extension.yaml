@@ -8,6 +8,7 @@ metadata:
   - "vert.x"
   - "reactive"
   guide: "https://quarkus.io/guides/vertx"
+  quickstart: "vertx-quickstart"
   categories:
   - "reactive"
   status: "stable"

@@ -309,30 +309,29 @@ quarkus.keycloak.devservices.resource-mappings.policies=/opt/keycloak/providers/
 Policy jars can also be located in the file system.
 <2> The policies jar is mapped to the `/opt/keycloak/providers/policies.jar` container location.
 
-== Keycloak Troubleshooting "HTTPS required"
-If you are seeing `java.lang.RuntimeException: {"error":"invalid_request","error_description":"HTTPS required"}` or, `We are sorry, https required.` You might be facing a docker issue that mainly affects MacOS users attempting to use keycloak locally where the ports dont automatically bind to localhost.
+[NOTE]
+====
+`java.lang.RuntimeException: {"error":"invalid_request","error_description":"HTTPS required"}` or, `We are sorry, https required.` You might be facing a docker issue that mainly affects MacOS users attempting to use keycloak locally where the ports dont automatically bind to localhost.
 
-> External requests Users can interact with Keycloak without SSL so long as they stick to private IPv4 addresses such as localhost, 127.0.0.1, 10.x.x.x, 192.168.x.x, 172.16.x.x or IPv6 link-local and unique-local addresses. If you try to access Keycloak without SSL from a non-private IP address, you will get an error.
+Possible solutions:
 
-=== Include localhost with port bindings
-A common solution is to update your docker compose file to include your local loopback address when binding ports for keycloak.
+Include localhost with port bindings - A common solution is to update your docker compose file to include your local loopback address when binding ports for keycloak.
 ```
     ports:
       - "127.0.0.1:8081:8080"
 ```
 
-=== Force docker desktop to use localhost when binding ports
-Be aware that this change is applied to all containers, and may have unforseen side affects. These instructions only apply to docker desktop. 
+Force docker desktop to use localhost when binding ports - Be aware that this change is applied to all containers, and may have unforseen side affects. These instructions only apply to docker desktop. 
 
 Inside docker desktop go to `Settings > Resources > Network > Port Binding Behaviour = localhost by default` 
 
 NOTE: If you do not see the option mentioned, try updating to the latest version of docker.
 
-=== Disable SSLRequired
-Run the following inside your container everytime it restarts:
+Disable SSLRequired - Run the following inside your container everytime it restarts:
 ```
 kcadm.sh update realms/master -s sslRequired=NONE
 ```
+====
 
 == Disable Dev Services for Keycloak
 

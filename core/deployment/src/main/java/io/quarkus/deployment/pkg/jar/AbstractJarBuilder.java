@@ -7,6 +7,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -167,8 +168,12 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
             Predicate<String> ignoredEntriesPredicate)
             throws IOException {
 
+        // Collect all transformed file names so we skip the originals during copyFiles.
+        // The transformed versions are added later in this method and should replace the originals.
+        Predicate<String> combinedIgnorePredicate = createCombinedIgnorePredicate(ignoredEntriesPredicate);
+
         // the order of operations is important here as we override elements in order
-        copyFiles(applicationArchives.getRootArchive(), archiveCreator, concatenatedEntries, ignoredEntriesPredicate);
+        copyFiles(applicationArchives.getRootArchive(), archiveCreator, concatenatedEntries, combinedIgnorePredicate);
 
         //TODO: this is probably broken in gradle
         //        if (Files.exists(augmentOutcome.getConfigDir())) {
@@ -202,6 +207,18 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
         for (Map.Entry<String, List<byte[]>> entry : concatenatedEntries.entrySet()) {
             archiveCreator.addFile(entry.getValue(), entry.getKey());
         }
+    }
+
+    private Predicate<String> createCombinedIgnorePredicate(Predicate<String> ignoredEntriesPredicate) {
+        Set<String> transformedFileNames = transformedClasses.getTransformedClassesByJar().values()
+                .stream()
+                .flatMap(Collection::stream)
+                .filter(tc -> tc.getData() != null)
+                .map(TransformedClassesBuildItem.TransformedClass::getFileName)
+                .collect(Collectors.toSet());
+        return transformedFileNames.isEmpty()
+                ? ignoredEntriesPredicate
+                : path -> ignoredEntriesPredicate.test(path) || transformedFileNames.contains(path);
     }
 
     protected static Manifest createManifest(PackageConfig config, ResolvedDependency appArtifact,

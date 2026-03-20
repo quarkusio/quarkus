@@ -449,7 +449,7 @@ Include localhost with port bindings - A common solution is to update your docke
       - "127.0.0.1:8081:8080"
 ```
 
-Force docker desktop to use localhost when binding ports - Be aware that this change is applied to all containers, and may have unforseen side affects. These instructions only apply to docker desktop. 
+Force localhost when binding ports - Be aware that this change is applied to all docker containers, and may have unforseen side affects. These instructions only apply to docker desktop. 
 
 Inside docker desktop go to `Settings > Resources > Network > Port Binding Behaviour = localhost by default` 
 

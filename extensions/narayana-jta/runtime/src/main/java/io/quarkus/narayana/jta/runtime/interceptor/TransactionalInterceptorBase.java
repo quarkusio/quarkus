@@ -2,6 +2,9 @@ package io.quarkus.narayana.jta.runtime.interceptor;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Optional;
@@ -30,6 +33,8 @@ import com.arjuna.ats.jta.logging.jtaLogger;
 import io.quarkus.arc.runtime.InterceptorBindings;
 import io.quarkus.narayana.jta.runtime.NotifyingTransactionManager;
 import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
+import io.quarkus.runtime.BlockingOperationControl;
+import io.quarkus.runtime.BlockingOperationNotAllowedException;
 import io.quarkus.transaction.annotations.Rollback;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.reactive.converters.ReactiveTypeConverter;
@@ -40,13 +45,28 @@ import mutiny.zero.flow.adapters.AdaptersToReactiveStreams;
 public abstract class TransactionalInterceptorBase implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    private static final Logger log = Logger.getLogger(TransactionalInterceptorBase.class);
+    protected static final Logger log = Logger.getLogger(TransactionalInterceptorBase.class);
     private final Map<Method, Integer> methodTransactionTimeoutDefinedByPropertyCache = new ConcurrentHashMap<>();
 
     @Inject
     TransactionManager transactionManager;
 
     private final boolean userTransactionAvailable;
+
+    // Test whether both Vertx and reactive-transactions modules are in the class path
+    private static final MethodHandle REACTIVE_INTERCEPTOR_SHOULD_RUN = reactiveInterceptorShouldRun();
+
+    private static MethodHandle reactiveInterceptorShouldRun() {
+        try {
+            Class<?> vertxContext = Class.forName("io.quarkus.reactive.transaction.TransactionalInterceptorBase", true,
+                    Thread.currentThread().getContextClassLoader());
+            return MethodHandles.publicLookup().findStatic(vertxContext, "reactiveInterceptorShouldRun",
+                    MethodType.methodType(boolean.class));
+        } catch (NoClassDefFoundError | NoSuchMethodException | IllegalAccessException | ClassNotFoundException e) {
+            // This means Vert.x is not on the classpath
+            return null;
+        }
+    }
 
     protected TransactionalInterceptorBase(boolean userTransactionAvailable) {
         this.userTransactionAvailable = userTransactionAvailable;
@@ -61,6 +81,16 @@ public abstract class TransactionalInterceptorBase implements Serializable {
             return doIntercept(tm, tx, ic);
         } finally {
             resetUserTransactionAvailability(previousUserTransactionAvailability);
+        }
+    }
+
+    protected void checkBlockingAllowed() {
+        if (!BlockingOperationControl.isBlockingAllowed()) {
+            throw new BlockingOperationNotAllowedException(
+                    "@Transactional cannot start a JTA transaction within a reactive pipeline." +
+                            " If the annotated method is intended to be blocking, ensure it is executed on a worker thread, for example by annotating it with @Blocking."
+                            +
+                            " If the annotated method is intended to be reactive, consider using Hibernate Reactive, which supports @Transactional in a reactive context.");
         }
     }
 
@@ -432,5 +462,13 @@ public abstract class TransactionalInterceptorBase implements Serializable {
     @SuppressWarnings("unchecked")
     private static <E extends Throwable> void sneakyThrow(Throwable e) throws E {
         throw (E) e;
+    }
+
+    protected boolean willReactiveTransactionalInterceptorRun() throws Exception {
+        try {
+            return REACTIVE_INTERCEPTOR_SHOULD_RUN == null ? false : (boolean) REACTIVE_INTERCEPTOR_SHOULD_RUN.invokeExact();
+        } catch (Throwable e) {
+            return false;
+        }
     }
 }

@@ -1,6 +1,7 @@
 package io.quarkus.it.hibernate.reactive.postgresql;
 
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
@@ -28,9 +29,32 @@ public class HibernateReactiveTestEndpoint {
         log.info("Reactive persist, session factory:" + sessionFactory);
 
         return sessionFactory
-                .withTransaction(s -> s.persist(cow))
-                .chain(() -> sessionFactory
-                        .withSession(s -> s.createQuery("from FriesianCow f where f.name = :name", FriesianCow.class)
-                                .setParameter("name", cow.name).getSingleResult()));
+                .withTransaction(s -> s.persist(cow)
+                        .chain(v -> findCowByName(s, cow).getSingleResult()));
+    }
+
+    @Inject
+    Mutiny.Session session;
+
+    @GET
+    @Path("/reactiveCowPersistTransactional")
+    @Transactional
+    public Uni<FriesianCow> reactiveCowPersistTransactional() {
+        final FriesianCow cow = new FriesianCow();
+        cow.name = "Carolina Reactive Transactional";
+
+        log.info("Reactive persist with @Transactional, session factory:" + sessionFactory);
+
+        return persistAndGetTransactional(session, cow);
+    }
+
+    public Uni<FriesianCow> persistAndGetTransactional(Mutiny.Session session, FriesianCow cow) {
+        return session.persist(cow)
+                .chain(v -> findCowByName(session, cow).getSingleResult());
+    }
+
+    private static Mutiny.SelectionQuery<FriesianCow> findCowByName(Mutiny.Session session, FriesianCow cow) {
+        return session.createQuery("from FriesianCow f where f.name = :name", FriesianCow.class)
+                .setParameter("name", cow.name);
     }
 }

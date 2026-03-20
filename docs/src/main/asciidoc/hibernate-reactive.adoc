@@ -183,6 +183,70 @@ Make sure to terminate each statement with a semicolon.
 
 This is useful to have a data set ready for your tests or demos.
 
+=== Using `@Transactional` with Hibernate Reactive
+
+You can use the standard `jakarta.transaction.Transactional` annotation with Hibernate Reactive.
+This provides a more familiar programming model for developers coming from Hibernate ORM.
+
+While defining transaction handling using the annotation, you should inject `Mutiny.Session` or `Mutiny.StatelessSession` using CDI and use them in methods annotated with `@Transactional`.
+
+Here's an example showing how to use `@Transactional` in a REST resource:
+
+[source,java]
+.Example REST resource using @Transactional
+----
+@Path("/fruits")
+public class FruitResource {
+
+    @Inject
+    Mutiny.Session session; <1>
+
+    @GET
+    @Path("/{id}")
+    public Uni<Fruit> getFruit(Long id) {
+        return session.find(Fruit.class, id);
+    }
+
+    @POST
+    @Transactional <2>
+    public Uni<Fruit> createFruit(Fruit fruit) {
+        return session.persist(fruit)
+                .chain(() -> session.find(Fruit.class, fruit.getId()));
+    }
+
+    @PUT
+    @Path("/{id}")
+    @Transactional <3>
+    public Uni<Fruit> updateFruit(Long id, @QueryParam("name") String newName) {
+        return session.find(Fruit.class, id)
+                .map(fruit -> {
+                    fruit.setName(newName);
+                    return fruit;
+                });
+    }
+
+}
+----
+
+<1> Inject the reactive session directly
+<2> Use `@Transactional` for persist operations - creates new entities in the database
+<3> Use `@Transactional` for update operations - modifies existing entities
+
+The `@Transactional` interceptor will:
+
+* Lazily open a Hibernate Reactive session when first accessed
+* Begin a transaction automatically
+* Commit the transaction when the `Uni` completes successfully
+* Roll back the transaction if an exception is thrown or the `Uni` is cancelled
+* Close the session and release the database connection when the reactive chain completes
+
+[IMPORTANT]
+====
+There are some limitations when using `@Transactional` with Hibernate Reactive, in particular not being able to use a specific `TxType`, not being able to use multiple persistence units / datasources, or non-functional `Uni.combine()`/`Uni.joining()`.
+
+See <<hr-limitations>> for more information.
+====
+
 [[hr-configuration-properties]]
 === Hibernate Reactive configuration properties
 
@@ -404,7 +468,7 @@ But while they share the same code, Quarkus does configure some components autom
 for some extension points; this should be transparent and useful but if you're an expert of Hibernate Reactive you might want to
 know what is being done.
 
-Here's a list of things to pay attention when using Hibernate Reactive in Quarkus:
+=== General limitations
 
 * Hibernate Reactive is not configurable via a `persistence.xml` file.
 * This extension only considers the default persistence unit at the moment:
@@ -415,9 +479,39 @@ or xref:hibernate-orm.adoc#schema-approach[schema-based multitenancy] at the mom
 xref:hibernate-orm.adoc#discriminator-approach[Discriminator-based multitenancy], on the other hand, is expected to work correctly.
 See https://github.com/quarkusio/quarkus/issues/15959.
 * Integration with the Envers extension is not supported.
-* Transaction demarcation cannot be done using `jakarta.transaction.Transactional` or `QuarkusTransaction`;
-if you use xref:hibernate-reactive-panache.adoc[Hibernate Reactive with Panache],
-consider xref:hibernate-reactive-panache.adoc#transactions[using `@WithTransaction` or `Panache.withTransaction()`] instead.
+
+=== Transaction management: choosing between `@Transactional` and Panache annotations
+
+With the introduction of the `quarkus-reactive-transactions` extension, you now have two options for managing transactions in Hibernate Reactive applications:
+
+1. Use `jakarta.transaction.Transactional` for declarative transaction management
+2. Use Panache's transaction annotations (`@WithTransaction`, `@WithSession`, `@WithSessionOnDemand`, or the programmatic `Panache.withTransaction()`)
+
+You must choose one approach and use it consistently throughout your application.
+Mixing both transaction management styles in the same reactive pipeline is not supported and will result in an `UnsupportedOperationException`.
+In the future, we'll deprecate the previous annotations provided by Panache and and support only `@Transactional`.
+
+You can inject either `Mutiny.Session` or `Mutiny.StatelessSession`.
+Be careful of injecting both session types in the same bean. Attempting to use both session types within the same transaction will throw an `IllegalStateException`.
+
+[[transactional-different-pipelines]]
+=== Using Declarative Transaction Management in different reactive pipelines
+
+When using declarative transaction management with Vert.x context-based interceptors (`@Transactional`, `@WithTransaction`, `@WithSession`, `@WithSessionOnDemand`) in multiple methods and combining such methods with either `Uni.combine().all().unis()` or `Uni.join().all()` the same transaction might be shared by different reactive pipelines causing unpredictable behavior.
+
+For this reason, **avoid using declarative transactional management with those methods**.
+
+[[transactional-others]]
+=== Other Declarative Transactional Management limitations
+
+Reactive transactions does not use `TransactionManager`, thus they are local only and do not support XA transactions. Every parameter defined on the `TransactionManager` (such as `quarkus.transaction-manager.default-transaction-timeout`) will be ignored. Only a single datasource can participate in a transaction.
+
+Reactive transactions also work exclusively within the reactive pipeline.
+If blocking code is executed (for example on a worker thread) as part of that pipeline, it will not be able to participate in the transaction.
+
+Declarative reactive transactions with `@Transactional` can only be applied to methods returning `Uni`, not `Multi`, `CompletionStage`, or `CompletableFuture`.
+
+Currently, only `Transactional.TxType.REQUIRED` is supported with reactive transactions. Other transaction types (`REQUIRES_NEW`, `MANDATORY`, etc.) will throw an `UnsupportedOperationException`.
 
 == Simplifying Hibernate Reactive with Panache
 

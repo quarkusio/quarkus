@@ -443,17 +443,17 @@ Whichever user you choose, no password is required.
 
 Possible solutions:
 
-Include localhost with port bindings - A common solution is to update your docker compose file to include your local loopback address when binding ports for keycloak.
+*Include localhost with port bindings* - A common solution is to update your docker compose file to use a private IPv4 addresse, such as localhost.
 ```
     ports:
       - "127.0.0.1:8081:8080"
 ```
-
-Force localhost when binding ports - Be aware that this change is applied to all docker containers, and may have unforseen side affects. These instructions only apply to docker desktop. 
+*Alternatively,*
+You can change the default behaviour within docker desktop to use localhost when binding ports but be aware that this change is applied to all docker containers, and may have unforseen side affects.
 
 Inside docker desktop go to `Settings > Resources > Network > Port Binding Behaviour` and change it to  `localhost by default`. If you do not see the option mentioned, try updating to the latest version of docker.
 
-Disable SSLRequired - Run the following inside your container everytime it restarts:
+*Disable SSLRequired* - Run the following inside your container everytime it restarts:
 ```
 kcadm.sh update realms/master -s sslRequired=NONE
 ```

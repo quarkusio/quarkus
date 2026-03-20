@@ -451,7 +451,7 @@ Include localhost with port bindings - A common solution is to update your docke
 
 Force localhost when binding ports - Be aware that this change is applied to all docker containers, and may have unforseen side affects. These instructions only apply to docker desktop. 
 
-Inside docker desktop go to `Settings > Resources > Network > Port Binding Behaviour = localhost by default` 
+Inside docker desktop go to `Settings > Resources > Network > Port Binding Behaviour` and change it to  `localhost by default` 
 
 NOTE: If you do not see the option mentioned, try updating to the latest version of docker.
 

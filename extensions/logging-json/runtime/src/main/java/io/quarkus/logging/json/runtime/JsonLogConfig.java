@@ -6,11 +6,13 @@ import java.util.Set;
 
 import org.jboss.logmanager.formatters.StructuredFormatter;
 
+import io.quarkus.runtime.annotations.ConfigDocIgnore;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
@@ -21,7 +23,7 @@ import io.smallrye.config.WithParentName;
  */
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 @ConfigMapping(prefix = "quarkus.log")
-public interface JsonLogConfig {
+public interface JsonLogConfig extends LogRuntimeConfig {
 
     /**
      * Console logging.
@@ -51,8 +53,81 @@ public interface JsonLogConfig {
     @WithName("socket.json")
     JsonConfig socketJson();
 
+    /**
+     * Console handlers.
+     * <p>
+     * The named console handlers configured here can be linked on one or more categories.
+     */
+    @WithName("handler.console")
+    @ConfigDocSection
+    Map<String, JsonConsoleConfig> jsonConsoleHandlers();
+
+    /**
+     * File handlers.
+     * <p>
+     * The named file handlers configured here can be linked on one or more categories.
+     */
+    @WithName("handler.file")
+    @ConfigDocSection
+    Map<String, JsonFileConfig> jsonFileHandlers();
+
+    /**
+     * Syslog handlers.
+     * <p>
+     * The named syslog handlers configured here can be linked on one or more categories.
+     */
+    @WithName("handler.syslog")
+    @ConfigDocSection
+    Map<String, JsonSyslogConfig> jsonSyslogHandlers();
+
+    /**
+     * Socket handlers.
+     * <p>
+     * The named socket handlers configured here can be linked on one or more categories.
+     */
+    @WithName("handler.socket")
+    @ConfigDocSection
+    Map<String, JsonSocketConfig> jsonSocketHandlers();
+
+    @ConfigDocIgnore
+    @Override
+    Map<String, ConsoleConfig> consoleHandlers();
+
+    @ConfigDocIgnore
+    @Override
+    Map<String, FileConfig> fileHandlers();
+
+    @ConfigDocIgnore
+    @Override
+    Map<String, SyslogConfig> syslogHandlers();
+
+    @ConfigDocIgnore
+    @Override
+    Map<String, SocketConfig> socketHandlers();
+
+    interface JsonHandlerConfig {
+        /**
+         * JSON logging configuration.
+         */
+        @ConfigDocSection
+        @WithName("json")
+        JsonConfig json();
+    }
+
+    interface JsonConsoleConfig extends LogRuntimeConfig.ConsoleConfig, JsonHandlerConfig {
+    }
+
+    interface JsonFileConfig extends LogRuntimeConfig.FileConfig, JsonHandlerConfig {
+    }
+
+    interface JsonSyslogConfig extends LogRuntimeConfig.SyslogConfig, JsonHandlerConfig {
+    }
+
+    interface JsonSocketConfig extends LogRuntimeConfig.SocketConfig, JsonHandlerConfig {
+    }
+
     @ConfigGroup
-    public interface JsonConfig {
+    interface JsonConfig {
         /**
          * Determine whether to enable the JSON console formatting extension, which disables "normal" console formatting.
          */
@@ -127,7 +202,7 @@ public interface JsonLogConfig {
         @WithDefault("default")
         LogFormat logFormat();
 
-        public enum LogFormat {
+        enum LogFormat {
             DEFAULT,
             ECS,
             GCP
@@ -138,11 +213,11 @@ public interface JsonLogConfig {
      * Post additional fields. E.g. `fieldName1=value1,fieldName2=value2`.
      */
     @ConfigGroup
-    public interface AdditionalFieldConfig {
+    interface AdditionalFieldConfig {
         /**
          * Additional field value.
          */
-        public String value();
+        String value();
 
         /**
          * Additional field type specification.
@@ -150,9 +225,9 @@ public interface JsonLogConfig {
          * String is the default if not specified.
          */
         @WithDefault("string")
-        public Type type();
+        Type type();
 
-        public enum Type {
+        enum Type {
             STRING,
             INT,
             LONG

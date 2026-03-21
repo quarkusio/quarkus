@@ -70,6 +70,9 @@ public class BeforeTestAction implements Action<Task> {
             config.getOptionalValue(TEST.getProfileKey(), String.class)
                     .ifPresent(value -> props.put(TEST.getProfileKey(), value));
             props.putAll(effectiveConfig.getQuarkusValues());
+            // Do not propagate quarkus.profile: effective config is resolved with Gradle's default profile (often prod),
+            // but the test JVM must use LaunchMode.TEST so @QuarkusTest and DevServices see the correct profile.
+            props.remove("quarkus.profile");
 
             props.put(BootstrapConstants.SERIALIZED_TEST_APP_MODEL, serializedModel.toString());
 

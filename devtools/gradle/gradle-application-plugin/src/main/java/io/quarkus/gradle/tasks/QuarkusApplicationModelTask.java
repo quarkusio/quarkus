@@ -2,6 +2,7 @@ package io.quarkus.gradle.tasks;
 
 import static io.quarkus.gradle.tooling.GradleApplicationModelBuilder.clearFlag;
 import static io.quarkus.gradle.tooling.GradleApplicationModelBuilder.isFlagOn;
+import static io.quarkus.gradle.tooling.dependency.DependencyUtils.getKey;
 import static java.util.stream.Collectors.toList;
 
 import java.io.BufferedReader;
@@ -41,6 +42,8 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.Input;
@@ -66,6 +69,7 @@ import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.gradle.tooling.DefaultProjectDescriptor;
 import io.quarkus.gradle.tooling.ProjectDescriptor;
 import io.quarkus.gradle.tooling.ToolingUtils;
+import io.quarkus.gradle.tooling.dependency.DependencyDataCollector;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -113,6 +117,9 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
     public abstract QuarkusResolvedClasspath getDeploymentClasspath();
 
     @Nested
+    public abstract QuarkusResolvedClasspath getCompileOnlyClasspath();
+
+    @Nested
     public abstract QuarkusPlatformInfo getPlatformInfo();
 
     @Input
@@ -126,6 +133,19 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
      */
     @Input
     public abstract Property<DefaultProjectDescriptor> getProjectDescriptor();
+
+    @Input
+    public abstract Property<Boolean> getDeclaredDependencyCollectorEnabled();
+
+    @Internal
+    public abstract MapProperty<ArtifactKey, DependencyDataCollector.DeclaredDepsResult> getDeclaredDependencies();
+
+    /**
+     * Snapshot here is declared as input, since it's used for incremental builds/caching,
+     * while the actual map of declared dependencies is declared as internal.
+     */
+    @Input
+    public abstract ListProperty<String> getDeclaredDependenciesSnapshot();
 
     @OutputFile
     public abstract RegularFileProperty getApplicationModel();
@@ -147,6 +167,16 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
 
         collectDependencies(getAppClasspath(), modelBuilder, projectDescriptor.getWorkspaceModule(), projectDescriptor);
         collectExtensionDependencies(getDeploymentClasspath(), modelBuilder);
+        collectCompileOnlyDependencies(getCompileOnlyClasspath(), modelBuilder);
+
+        if (getDeclaredDependencyCollectorEnabled().get()) {
+            var declaredDependencies = getDeclaredDependencies().get();
+            DependencyDataCollector.setDirectDeps(appArtifact, modelBuilder, declaredDependencies, getLogger());
+            for (ResolvedDependencyBuilder dep : modelBuilder.getDependencies()) {
+                DependencyDataCollector.setDirectDeps(dep, modelBuilder, declaredDependencies, getLogger());
+            }
+        }
+
         DefaultApplicationModel model = modelBuilder.build();
         ToolingUtils.serializeAppModel(model, getApplicationModel().get().getAsFile().toPath());
     }
@@ -280,11 +310,11 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         byte newFlags = flags;
         for (QuarkusResolvedArtifact artifact : artifacts) {
             collectedArtifactFiles.add(artifact.file);
-            String classifier = resolveClassifier(moduleId, artifact.file);
-            final ArtifactKey artifactKey = ArtifactKey.of(
+            final ArtifactKey artifactKey = getKey(
                     moduleId.getGroup(),
                     moduleId.getName(),
-                    classifier,
+                    moduleId.getVersion(),
+                    artifact.file,
                     artifact.type);
             if (!isDependency(artifact)
                     || modelBuilder.getDependency(artifactKey) != null
@@ -385,10 +415,11 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         final ModuleVersionIdentifier moduleVersionIdentifier = getModuleVersion(resolvedDependency);
         boolean clearReloadableFlagChildren = clearReloadableFlag;
         for (QuarkusResolvedArtifact artifact : artifacts) {
-
-            String classifier = resolveClassifier(moduleVersionIdentifier, artifact.file);
-            ArtifactKey artifactKey = ArtifactKey.of(moduleVersionIdentifier.getGroup(), moduleVersionIdentifier.getName(),
-                    classifier,
+            ArtifactKey artifactKey = getKey(
+                    moduleVersionIdentifier.getGroup(),
+                    moduleVersionIdentifier.getName(),
+                    moduleVersionIdentifier.getVersion(),
+                    artifact.file,
                     artifact.type);
             if (!isDependency(artifact)
                     // test fixtures depend on the default jar artifact, which could be the root one
@@ -418,21 +449,72 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         }
     }
 
+    private static void collectCompileOnlyDependencies(QuarkusResolvedClasspath classpath,
+            ApplicationModelBuilder modelBuilder) {
+        final Map<ComponentIdentifier, List<QuarkusResolvedArtifact>> artifacts = classpath
+                .resolvedArtifactsByComponentIdentifier();
+        final Set<ModuleVersionIdentifier> processedModules = new HashSet<>();
+        classpath.getRoot().get().getDependencies().forEach(d -> {
+            if (d instanceof ResolvedDependencyResult resolved) {
+                collectCompileOnlyDependencies(resolved, modelBuilder, artifacts, processedModules);
+            }
+        });
+    }
+
+    private static void collectCompileOnlyDependencies(
+            ResolvedDependencyResult resolvedDependency,
+            ApplicationModelBuilder modelBuilder,
+            Map<ComponentIdentifier, List<QuarkusResolvedArtifact>> resolvedArtifacts,
+            Set<ModuleVersionIdentifier> processedModules) {
+        final ModuleVersionIdentifier moduleId = getModuleVersion(resolvedDependency);
+        if (!processedModules.add(moduleId)) {
+            return;
+        }
+        final List<QuarkusResolvedArtifact> artifacts = getResolvedModuleArtifacts(resolvedArtifacts,
+                resolvedDependency.getSelected().getId());
+        if (artifacts.isEmpty()) {
+            return;
+        }
+
+        boolean skip = true;
+        for (QuarkusResolvedArtifact artifact : artifacts) {
+            if (!isDependency(artifact)) {
+                continue;
+            }
+            final ArtifactKey artifactKey = getKey(
+                    moduleId.getGroup(),
+                    moduleId.getName(),
+                    moduleId.getVersion(),
+                    artifact.file,
+                    artifact.type);
+            if (isApplicationRoot(modelBuilder, artifactKey)) {
+                continue;
+            }
+
+            ResolvedDependencyBuilder dep = modelBuilder.getDependency(artifactKey);
+            if (dep == null) {
+                ArtifactCoords artifactCoords = new GACTV(artifactKey, moduleId.getVersion());
+                dep = toDependency(artifactCoords, artifact.file);
+                modelBuilder.addDependency(dep);
+            }
+            if (!dep.isFlagSet(DependencyFlags.COMPILE_ONLY)) {
+                skip = false;
+                dep.setFlags(DependencyFlags.COMPILE_ONLY);
+            }
+        }
+
+        if (!skip) {
+            for (DependencyResult dependency : resolvedDependency.getSelected().getDependencies()) {
+                if (dependency instanceof ResolvedDependencyResult result) {
+                    collectCompileOnlyDependencies(result, modelBuilder, resolvedArtifacts, processedModules);
+                }
+            }
+        }
+    }
+
     private static List<QuarkusResolvedArtifact> getResolvedModuleArtifacts(
             Map<ComponentIdentifier, List<QuarkusResolvedArtifact>> artifacts, ComponentIdentifier moduleId) {
         return artifacts.getOrDefault(moduleId, List.of());
-    }
-
-    private static String resolveClassifier(ModuleVersionIdentifier moduleVersionIdentifier, File file) {
-        String artifactIdVersion = moduleVersionIdentifier.getVersion().isEmpty()
-                || "unspecified".equals(moduleVersionIdentifier.getVersion())
-                        ? moduleVersionIdentifier.getName()
-                        : moduleVersionIdentifier.getName() + "-" + moduleVersionIdentifier.getVersion();
-        if ((file.getName().endsWith(".jar") || file.getName().endsWith(".pom") || file.getName().endsWith(".exe"))
-                && file.getName().startsWith(artifactIdVersion + "-")) {
-            return file.getName().substring(artifactIdVersion.length() + 1, file.getName().length() - 4);
-        }
-        return "";
     }
 
     static ResolvedDependencyBuilder toDependency(ArtifactCoords artifactCoords, File file, int... flags) {

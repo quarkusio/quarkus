@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -273,8 +274,8 @@ class HibernateValidatorProcessor {
                     });
         }
 
-        Set<DotName> constrainedConfigMappings = new HashSet<>();
-        Set<String> configMappingsConstraints = new HashSet<>();
+        Set<DotName> constrainedConfigMappings = new TreeSet<>();
+        Set<String> configMappingsConstraints = new TreeSet<>();
 
         for (DotName consideredAnnotation : beanValidationAnnotations.getAllAnnotations()) {
             Collection<AnnotationInstance> annotationInstances = combinedIndex.getIndex().getAnnotations(consideredAnnotation);
@@ -355,15 +356,13 @@ class HibernateValidatorProcessor {
                 fc.final_();
                 fc.setType(BeanValidationConfigValidator.class);
                 fc.setInitializer(bc -> {
-                    LocalVar constraints = bc.localVar("constraints", bc.new_(HashSet.class));
-                    for (String configMappingsConstraint : configMappingsConstraints) {
-                        bc.withSet(constraints).add(Const.of(configMappingsConstraint));
-                    }
+                    LocalVar constraints = bc.localVar("constraints", bc.setOf(
+                            new ArrayList<>(configMappingsConstraints),
+                            Const::of));
 
-                    LocalVar classes = bc.localVar("classes", bc.new_(HashSet.class));
-                    for (DotName configClassToValidate : configClassesToValidate) {
-                        bc.withSet(classes).add(Const.of(classDescOf(configClassToValidate)));
-                    }
+                    LocalVar classes = bc.localVar("classes", bc.setOf(
+                            new ArrayList<>(configClassesToValidate),
+                            c -> Const.of(classDescOf(c))));
 
                     bc.yield(bc.new_(ConstructorDesc.of(HibernateBeanValidationConfigValidator.class, Set.class, Set.class),
                             constraints, classes));

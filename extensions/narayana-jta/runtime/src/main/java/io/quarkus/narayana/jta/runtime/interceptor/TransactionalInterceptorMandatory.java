@@ -32,6 +32,10 @@ public class TransactionalInterceptorMandatory extends TransactionalInterceptorB
 
     @Override
     protected Object doIntercept(TransactionManager tm, Transaction tx, InvocationContext ic) throws Exception {
+        if (willReactiveTransactionalInterceptorRun()) {
+            return ic.proceed(); // Skip the blocking interceptor
+        }
+
         if (tx == null) {
             throw new TransactionalException(jtaLogger.i18NLogger.get_tx_required(), new TransactionRequiredException());
         }

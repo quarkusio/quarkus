@@ -13,8 +13,11 @@ import static java.util.Arrays.asList;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -646,7 +649,7 @@ public class GrpcServerProcessor {
             }
         }
 
-        Map<String, Set<String>> registeredInterceptors = new HashMap<>();
+        Map<String, Set<String>> registeredInterceptors = new LinkedHashMap<>();
         for (AnnotationInstance annotation : found) {
             String interceptorClass = annotation.value().asString();
             if (annotation.target().kind() != Kind.CLASS) {
@@ -658,22 +661,23 @@ public class GrpcServerProcessor {
             // the interceptors defined on the user bean have to be applied to the generated bean:
             targetClass = delegateMap.getOrDefault(targetClass, targetClass);
 
-            Set<String> registered = registeredInterceptors.computeIfAbsent(targetClass, k -> new HashSet<>());
+            Set<String> registered = registeredInterceptors.computeIfAbsent(targetClass, k -> new LinkedHashSet<>());
             registered.add(interceptorClass);
             superfluousInterceptors.remove(interceptorClass);
         }
 
-        Set<Class<?>> globalInterceptors = new HashSet<>();
-        for (String interceptor : interceptors.globalInterceptors) {
+        Set<Class<?>> globalInterceptors = new LinkedHashSet<>();
+        for (String interceptor : interceptors.globalInterceptors.stream().sorted().toList()) {
             reflectiveClassBuildItemBuildProducer
                     .produce(ReflectiveClassBuildItem.builder(interceptor).constructors(false).build());
             globalInterceptors.add(recorderContext.classProxy(interceptor));
         }
-        for (AdditionalGlobalInterceptorBuildItem globalInterceptorBuildItem : additionalGlobalInterceptors) {
+        for (AdditionalGlobalInterceptorBuildItem globalInterceptorBuildItem : additionalGlobalInterceptors
+                .stream().sorted(Comparator.comparing(AdditionalGlobalInterceptorBuildItem::interceptorClass)).toList()) {
             globalInterceptors.add(recorderContext.classProxy(globalInterceptorBuildItem.interceptorClass()));
         }
 
-        Map<String, Set<Class<?>>> perClientInterceptors = new HashMap<>();
+        Map<String, Set<Class<?>>> perClientInterceptors = new LinkedHashMap<>();
         for (Entry<String, Set<String>> entry : registeredInterceptors.entrySet()) {
             Set<Class<?>> interceptorClasses = new HashSet<>();
             for (String interceptorClass : entry.getValue()) {

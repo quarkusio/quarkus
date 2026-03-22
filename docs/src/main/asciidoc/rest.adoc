@@ -1035,7 +1035,9 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
-import java.util.List;import java.util.Map;import org.eclipse.microprofile.reactive.messaging.Channel;
+import java.util.List;
+import java.util.Map;
+import org.eclipse.microprofile.reactive.messaging.Channel;
 
 import io.smallrye.mutiny.Multi;
 import org.jboss.resteasy.reactive.RestMulti;

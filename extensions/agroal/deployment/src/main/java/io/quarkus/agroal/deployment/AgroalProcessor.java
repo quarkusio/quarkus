@@ -300,6 +300,7 @@ class AgroalProcessor {
                     aggregatedBuildTimeConfigBuildItem.getDbKind(),
                     aggregatedBuildTimeConfigBuildItem.getDataSourceConfig().dbVersion(),
                     aggregatedBuildTimeConfigBuildItem.getJdbcConfig().transactions() != TransactionIntegration.DISABLED,
+                    aggregatedBuildTimeConfigBuildItem.getJdbcConfig().transactions() == TransactionIntegration.XA,
                     aggregatedBuildTimeConfigBuildItem.isDefault()));
         }
     }

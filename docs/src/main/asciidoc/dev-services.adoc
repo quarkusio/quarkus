@@ -99,6 +99,7 @@ xref:kafka-dev-services.adoc[Kafka Dev Services Guide].
 
 include::{generated-dir}/config/quarkus-kafka-client_quarkus.kafka.devservices.adoc[opts=optional, leveloffset=+1]
 
+[[keycloak]]
 === Keycloak
 
 The Keycloak Dev Service will be enabled when the `quarkus-oidc` extension is present in your application, and
@@ -106,6 +107,8 @@ the server address has not been explicitly configured. More information can be f
 xref:security-openid-connect-dev-services.adoc[OIDC Dev Services Guide].
 
 include::{generated-dir}/config/quarkus-devservices-keycloak_quarkus.keycloak.adoc[opts=optional, leveloffset=+1]
+
+A lightweight <<oidc,OIDC Dev Service>> is also available as an alternative to Keycloak.
 
 === Kubernetes
 
@@ -129,6 +132,16 @@ the server address has not been explicitly configured. More information can be f
 xref:mongodb-dev-services.adoc[MongoDB Guide].
 
 include::{generated-dir}/config/quarkus-mongodb-client_quarkus.mongodb.devservices.adoc[opts=optional, leveloffset=+1]
+
+[[oidc]]
+=== OIDC
+
+A standalone OIDC Dev Service is available as a lightweight alternative to <<keycloak,Keycloak>>.
+It is enabled by default when Docker and Podman are not available, or it can be explicitly enabled with `quarkus.oidc.devservices.enabled=true`.
+More information can be found in the
+xref:security-openid-connect-dev-services.adoc#dev-services-for-oidc[OIDC Dev Services Guide].
+
+include::{generated-dir}/config/quarkus-devservices-oidc_quarkus.oidc.adoc[opts=optional, leveloffset=+1]
 
 === RabbitMQ
 

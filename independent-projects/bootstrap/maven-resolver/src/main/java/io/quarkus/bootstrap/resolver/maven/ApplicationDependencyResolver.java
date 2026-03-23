@@ -1004,7 +1004,7 @@ public class ApplicationDependencyResolver {
                     runtimeNode.getDependency().isOptional());
 
             replaceRuntimeExtensionNodes(deploymentNode);
-            if (!presentInTargetGraph) {
+            if (!presentInTargetGraph && !isExemptGact(deploymentNode)) {
                 throw new RuntimeException(
                         "Quarkus extension deployment artifact " + deploymentNode.getArtifact()
                                 + " does not appear to depend on the corresponding runtime artifact "
@@ -1069,6 +1069,12 @@ public class ApplicationDependencyResolver {
             }
             return false;
         }
+    }
+
+    private boolean isExemptGact(DependencyNode gact) {
+        return DependencyUtils.isExemptFromDeploymentDependencyValidation(
+                gact.getArtifact().getGroupId(),
+                gact.getArtifact().getArtifactId());
     }
 
     private class ConditionalDependency {

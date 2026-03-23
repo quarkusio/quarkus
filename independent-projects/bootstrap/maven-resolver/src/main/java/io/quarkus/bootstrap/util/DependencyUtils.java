@@ -179,4 +179,21 @@ public class DependencyUtils {
         final DependencyNode winner = (DependencyNode) node.getData().get(ConflictResolver.NODE_DATA_WINNER);
         return winner == null || !node.getChildren().isEmpty() ? null : winner;
     }
+
+    /**
+     * Checks if a given artifact is exempt from deployment dependency validation.
+     * <p>
+     * This is useful for core extensions which were introduced with only deployment
+     * modules, and then had runtime modules added later, when updating all the consumers would have been a major breaking
+     * change.
+     *
+     * @param groupId the artifact group ID
+     * @param artifactId the artifact ID
+     * @return true if the artifact is exempt from validation
+     */
+    public static boolean isExemptFromDeploymentDependencyValidation(String groupId, String artifactId) {
+        return "io.quarkus".equals(groupId)
+                && ("quarkus-devservices".equals(artifactId)
+                        || "quarkus-devservices-deployment".equals(artifactId));
+    }
 }

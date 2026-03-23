@@ -1106,8 +1106,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     }
 
     private static boolean isExemptGact(ArtifactKey gact) {
-        return (gact.getArtifactId().equals("quarkus-devservices")
-                || gact.getArtifactId().equals("quarkus-devservices-deployment")) && gact.getGroupId().equals("io.quarkus");
+        return DependencyUtils.isExemptFromDeploymentDependencyValidation(gact.getGroupId(), gact.getArtifactId());
     }
 
     private void visitRuntimeDeps(RootNode root, Node currentNode, int currentId, DependencyNode node)

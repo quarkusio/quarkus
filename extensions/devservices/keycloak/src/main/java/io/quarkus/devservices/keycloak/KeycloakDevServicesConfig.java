@@ -220,4 +220,13 @@ public interface KeycloakDevServicesConfig {
     @WithDefault("4S")
     Duration webClientTimeout();
 
+    /**
+     * Specifies whether to disable HTTPS on the master realm by setting {@code sslRequired=NONE}.
+     *
+     * This is useful when the Keycloak container is started without HTTPS support and the master realm's
+     * default SSL requirement prevents HTTP access.
+     */
+    @WithDefault("false")
+    boolean disableHttps();
+
 }

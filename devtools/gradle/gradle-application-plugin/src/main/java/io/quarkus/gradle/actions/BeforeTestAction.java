@@ -21,6 +21,7 @@ import org.gradle.api.tasks.testing.Test;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.gradle.tasks.EffectiveConfig;
 import io.quarkus.gradle.tasks.EffectiveConfigProvider;
 import io.quarkus.gradle.tasks.QuarkusPluginExtensionView;
 import io.quarkus.gradle.tooling.ToolingUtils;
@@ -63,8 +64,10 @@ public class BeforeTestAction implements Action<Task> {
             final Path serializedModel = applicationModelPath.get().getAsFile().toPath();
             ApplicationModel applicationModel = ToolingUtils.deserializeAppModel(serializedModel);
 
-            SmallRyeConfig config = effectiveProvider().buildEffectiveConfiguration(applicationModel, new HashMap<>())
-                    .getConfig();
+            EffectiveConfig effectiveConfig = effectiveProvider().buildEffectiveConfiguration(applicationModel,
+                    new HashMap<>());
+            SmallRyeConfig config = effectiveConfig.getConfig();
+            props.putAll(effectiveConfig.getQuarkusValues());
             config.getOptionalValue(TEST.getProfileKey(), String.class)
                     .ifPresent(value -> props.put(TEST.getProfileKey(), value));
 

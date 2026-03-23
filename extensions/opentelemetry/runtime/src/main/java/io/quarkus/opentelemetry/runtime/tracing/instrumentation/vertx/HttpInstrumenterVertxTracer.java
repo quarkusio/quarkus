@@ -12,6 +12,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
 
+import org.jboss.logging.Logger;
+
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributesBuilder;
@@ -51,6 +53,8 @@ import io.vertx.core.spi.tracing.TagExtractor;
 import io.vertx.core.tracing.TracingPolicy;
 
 public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest, HttpResponse> {
+    private static final Logger logger = Logger.getLogger(HttpInstrumenterVertxTracer.class);
+
     private final Instrumenter<HttpRequest, HttpResponse> serverInstrumenter;
     private final Instrumenter<HttpRequest, HttpResponse> clientInstrumenter;
 
@@ -104,7 +108,9 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
             final OpenTelemetryVertxTracer.SpanOperation spanOperation,
             final Throwable failure,
             final TagExtractor<R> tagExtractor) {
-
+        if (logger.isDebugEnabled()) {
+            logger.debugv("http failure: {0}", failure);
+        }
         HttpServerRoute.update(spanOperation.getSpanContext(), SERVER_FILTER, RouteGetter.ROUTE_GETTER,
                 ((HttpRequestSpan) spanOperation.getRequest()), (HttpResponse) response);
         InstrumenterVertxTracer.super.sendResponse(context, response, spanOperation, failure, tagExtractor);

@@ -215,7 +215,8 @@ public class KeycloakDevServicesProcessor {
                 config.port(),
                 safeMapHash(config.containerEnv()),
                 config.containerMemoryLimit(),
-                config.webClientTimeout());
+                config.webClientTimeout(),
+                config.disableHttps());
         serviceConfigIdentifier.append(configHashCode);
 
         for (int fileTimeHashCode : getRealmFileLastModifiedDateHashCode(config.realmPath())) {
@@ -511,7 +512,29 @@ public class KeycloakDevServicesProcessor {
         @Override
         public void start() {
             super.start();
+            if (config.disableHttps()) {
+                disableMasterRealmHttpsRequirement();
+            }
             configPropertiesContext = createConfigPropertiesContext();
+        }
+
+        private void disableMasterRealmHttpsRequirement() {
+            try {
+                var configResult = execInContainer("/opt/keycloak/bin/kcadm.sh",
+                        "config", "credentials", "--server", "http://localhost:8080",
+                        "--realm", "master", "--user", KEYCLOAK_ADMIN_USER, "--password", KEYCLOAK_ADMIN_PASSWORD);
+                if (configResult.getExitCode() != 0) {
+                    LOG.errorf("Failed to configure kcadm.sh credentials: %s", configResult.getStderr());
+                    return;
+                }
+                var updateResult = execInContainer("/opt/keycloak/bin/kcadm.sh",
+                        "update", "realms/master", "-s", "sslRequired=NONE");
+                if (updateResult.getExitCode() != 0) {
+                    LOG.errorf("Failed to disable HTTPS on the master realm: %s", updateResult.getStderr());
+                }
+            } catch (IOException | InterruptedException e) {
+                LOG.error("Failed to disable HTTPS on the master realm", e);
+            }
         }
 
         @Override

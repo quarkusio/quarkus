@@ -149,7 +149,6 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 executorService)) {
             LOG.info("Building uber jar: " + runnerJar);
 
-            final Map<String, Set<Dependency>> duplicateCatcher = new HashMap<>();
             final Map<String, List<byte[]>> concatenatedEntries = new HashMap<>();
             final Set<String> mergeResourcePaths = mergedResources.stream()
                     .map(UberJarMergedResourceBuildItem::getPath)
@@ -166,10 +165,11 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             attachRunnerMetadata(manifest, mainClass.getClassName(), "", jvmRequirements);
             archiveCreator.addManifest(manifest);
 
-            final Set<String> existingEntries = new HashSet<>();
-            generatedResources.stream()
-                    .map(GeneratedResourceBuildItem::getName)
-                    .forEach(existingEntries::add);
+            // application content is added first so that it takes precedence over dependency content
+            // the archive creator uses first-write-wins semantics
+            copyApplicationContent(archiveCreator, concatenatedEntries, allIgnoredEntriesPredicate);
+
+            final Map<String, Set<Dependency>> duplicateCatcher = new HashMap<>();
 
             for (ResolvedDependency appDep : curateOutcome.getApplicationModel().getRuntimeDependencies()) {
 
@@ -179,15 +179,8 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                     continue;
                 }
 
-                for (Path resolvedDep : appDep.getResolvedPaths()) {
-                    Set<String> transformedFilesByJar = transformedClasses.getTransformedFilesByJar().get(resolvedDep);
-                    if (transformedFilesByJar != null) {
-                        existingEntries.addAll(transformedFilesByJar);
-                    }
-                }
-
                 walkFileDependencyForDependency(archiveCreator, duplicateCatcher,
-                        concatenatedEntries, allIgnoredEntriesPredicate, appDep, existingEntries,
+                        concatenatedEntries, allIgnoredEntriesPredicate, appDep,
                         mergeResourcePaths);
             }
 
@@ -211,7 +204,9 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 }
             }
 
-            copyApplicationContent(archiveCreator, concatenatedEntries, allIgnoredEntriesPredicate);
+            // write concatenated entries (services, etc.) after all sources have been collected
+            writeConcatenatedEntries(archiveCreator, concatenatedEntries);
+
             // now that all entries have been added, check if there's a META-INF/versions/ entry. If present,
             // mark this jar as multi-release jar. Strictly speaking, the jar spec expects META-INF/versions/N
             // directory where N is an integer greater than 8, but we don't do that level of checks here but that
@@ -241,7 +236,7 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
     private void walkFileDependencyForDependency(ArchiveCreator archiveCreator,
             Map<String, Set<Dependency>> duplicateCatcher, Map<String, List<byte[]>> concatenatedEntries,
-            Predicate<String> ignoredEntriesPredicate, ResolvedDependency appDep, Set<String> existingEntries,
+            Predicate<String> ignoredEntriesPredicate, ResolvedDependency appDep,
             Set<String> mergeResourcePaths) throws IOException {
 
         // The reason opening and closing a path tree right away works, unlike creating and closing a ZipFileSystem,
@@ -260,7 +255,6 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                     }
 
                     final Path file = visit.getPath();
-                    //if this has been transformed we do not copy it
                     // if it's a signature file (under the <jar>/META-INF directory),
                     // then we don't add it to the uber jar
                     if (isBlockOrSF(relativePath) &&
@@ -272,18 +266,16 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                         return;
                     }
 
-                    if (!existingEntries.contains(relativePath)) {
-                        if (UBER_JAR_CONCATENATED_ENTRIES_PREDICATE.test(relativePath)
-                                || mergeResourcePaths.contains(relativePath)) {
-                            concatenatedEntries.computeIfAbsent(relativePath, (u) -> new ArrayList<>())
-                                    .add(Files.readAllBytes(file));
-                        } else if (!ignoredEntriesPredicate.test(relativePath)) {
-                            if (!UBER_JAR_IGNORED_DUPLICATE_ENTRIES_PREDICATE.test(relativePath)) {
-                                duplicateCatcher.computeIfAbsent(relativePath, (a) -> new HashSet<>())
-                                        .add(appDep);
-                            }
-                            archiveCreator.addFileIfNotExists(file, relativePath, appDep.toString());
+                    if (UBER_JAR_CONCATENATED_ENTRIES_PREDICATE.test(relativePath)
+                            || mergeResourcePaths.contains(relativePath)) {
+                        concatenatedEntries.computeIfAbsent(relativePath, (u) -> new ArrayList<>())
+                                .add(Files.readAllBytes(file));
+                    } else if (!ignoredEntriesPredicate.test(relativePath)) {
+                        if (!UBER_JAR_IGNORED_DUPLICATE_ENTRIES_PREDICATE.test(relativePath)) {
+                            duplicateCatcher.computeIfAbsent(relativePath, (a) -> new HashSet<>())
+                                    .add(appDep);
                         }
+                        archiveCreator.addFileIfNotExists(file, relativePath, appDep.toString());
                     }
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);

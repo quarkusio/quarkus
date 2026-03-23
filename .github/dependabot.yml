@@ -26,7 +26,6 @@ updates:
       - dependency-name: org.eclipse:yasson
       - dependency-name: org.yaml:snakeyaml
       - dependency-name: com.google.guava:guava
-      - dependency-name: com.vackosar.gitflowincrementalbuilder:gitflow-incremental-builder
       - dependency-name: org.jboss.logging:*
       - dependency-name: org.jboss.logmanager:*
       - dependency-name: org.apache.logging.log4j:*
@@ -90,6 +89,7 @@ updates:
       - dependency-name: net.revelc.code.formatter:formatter-maven-plugin
       - dependency-name: net.revelc.code:impsort-maven-plugin
       - dependency-name: eu.maveniverse.maven.njord:*
+      - dependency-name: io.github.gitflow-incremental-builder:*
       # Narayana
       - dependency-name: org.jboss.narayana.jta:*
       - dependency-name: org.jboss.narayana.jts:*

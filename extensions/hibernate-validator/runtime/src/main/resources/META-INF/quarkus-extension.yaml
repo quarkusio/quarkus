@@ -1,6 +1,7 @@
 ---
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
 name: "Hibernate Validator"
+description: "Bean validation using Hibernate Validator and Jakarta Validation annotations"
 metadata:
   short-name: "bean validation"
   keywords:
@@ -8,6 +9,7 @@ metadata:
   - "bean-validation"
   - "validation"
   guide: "https://quarkus.io/guides/validation"
+  quickstart: "validation-quickstart"
   categories:
   - "web"
   - "data"

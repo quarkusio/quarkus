@@ -248,18 +248,25 @@ public class McpResourcesService {
     }
 
     private String getBuildTimeDataConstValue(String jsContent, String constName) {
-        String patternString = "export const " + Pattern.quote(constName) + "\\s*=\\s*([^;]+);";
-        Pattern pattern = Pattern.compile(patternString, Pattern.DOTALL);
+        // Match the full value including any semicolons inside JSON strings.
+        // Values are always on a single physical line (newlines are escaped in JSON strings).
+        String patternString = "export const " + Pattern.quote(constName) + "\\s*=\\s*(.+)";
+        Pattern pattern = Pattern.compile(patternString);
         Matcher matcher = pattern.matcher(jsContent);
 
         if (matcher.find()) {
-            return matcher.group(1).trim();
+            String value = matcher.group(1).trim();
+            // Strip the trailing semicolon
+            if (value.endsWith(";")) {
+                value = value.substring(0, value.length() - 1).trim();
+            }
+            return value;
         }
 
         return "Error: Data not found for " + constName;
     }
 
-    private static final Pattern BTD_PATTERN = Pattern.compile("export const (\\w+)\\s*=\\s*([^;]+);", Pattern.DOTALL);
+    private static final Pattern BTD_PATTERN = Pattern.compile("export const (\\w+)\\s*=\\s*(.+)");
 
     private static final String URI_SCHEME = "quarkus://resource/";
     private static final String SUB_SCHEME_BUILD_TIME = "build-time/";

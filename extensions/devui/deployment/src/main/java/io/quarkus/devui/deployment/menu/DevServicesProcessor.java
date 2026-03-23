@@ -90,7 +90,7 @@ public class DevServicesProcessor {
                 .function(ignored -> CompletableFuture.supplyAsync(() -> getServices(devServiceDescriptions, otherDevServices)))
                 .description(
                         "Get all the DevServices started by this Quarkus app, including information on container (if any) and the config that is being set automatically")
-                .enableMcpFuctionByDefault()
+                .enableMcpFunctionByDefault()
                 .build();
     }
 

@@ -86,7 +86,7 @@ BuildTimeActionBuildItem createBuildTimeActions() {
 <3> Set a human‑readable description.
 <4> Provide the runtime value returned by your recorder.
 
-By default this resource will be disabled, and the user has to enable it in Dev UI. You can change this default by adding `.enableMcpFuctionByDefault()` in the builder method.
+By default this resource will be disabled, and the user has to enable it in Dev UI. You can change this default by adding `.enableMcpFunctionByDefault()` in the builder method.
 
 === MCP tools
 
@@ -159,7 +159,7 @@ BuildTimeActionBuildItem createBuildTimeActions() {
 
 The code in the `function` runs on the deployment classpath. The function can return a plain value, a `CompletionStage` or `CompletableFuture` for asynchronous work.
 
-By default this tool will be disabled, and the user has to enable it in Dev UI. You can change this default by adding `.enableMcpFuctionByDefault()` in the builder method.
+By default this tool will be disabled, and the user has to enable it in Dev UI. You can change this default by adding `.enableMcpFunctionByDefault()` in the builder method.
 
 === JSON‑RPC usage
 

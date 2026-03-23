@@ -13,6 +13,7 @@ import java.util.Set;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 
@@ -38,9 +39,16 @@ public class McpDevUIJsonRpcService {
     private final Set<McpClientInfo> connectedClients = new HashSet<>();
     private McpServerConfiguration mcpServerConfiguration;
 
+    @Inject
+    DevMcpConfig devMcpConfig;
+
     @PostConstruct
     public void init() {
         this.mcpServerConfiguration = new McpServerConfiguration(loadConfiguration());
+
+        // Allow SmallRye Config sources (system properties, env vars, application.properties)
+        // to override the ~/.quarkus/dev-mcp.properties file setting
+        devMcpConfig.enabled().ifPresent(this.mcpServerConfiguration::setEnable);
     }
 
     public Set<McpClientInfo> getConnectedClients() {

@@ -2,6 +2,7 @@ package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 import static io.quarkus.arc.processor.Reproducibility.orderedAnnotations;
+import static io.quarkus.arc.processor.Reproducibility.orderedInjectionPoints;
 import static io.quarkus.arc.processor.Reproducibility.orderedStereotypes;
 import static io.quarkus.arc.processor.Reproducibility.orderedTypes;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
@@ -1980,8 +1981,7 @@ public class BeanGenerator extends AbstractGenerator {
             mc.returning(Set.class);
             mc.body(bc -> {
                 LocalVar tccl = bc.localVar("tccl", bc.invokeVirtual(MethodDescs.THREAD_GET_TCCL, bc.currentThread()));
-                LocalVar result = bc.localVar("result", bc.new_(HashSet.class));
-                for (InjectionPointInfo injectionPoint : injectionPoints) {
+                bc.return_(bc.setOf(orderedInjectionPoints(injectionPoints), injectionPoint -> {
                     LocalVar type = RuntimeTypeCreator.of(bc).withTCCL(tccl).create(injectionPoint.getType());
                     Var qualifiers = collectInjectionPointQualifiers(bean.getDeployment(), bc, injectionPoint,
                             annotationLiterals);
@@ -1989,12 +1989,10 @@ public class BeanGenerator extends AbstractGenerator {
                             annotationLiterals, injectionPointAnnotationsPredicate);
                     Var member = getJavaMember(bc, injectionPoint, reflectionRegistration);
 
-                    Expr ip = bc.new_(MethodDescs.INJECTION_POINT_IMPL_CONSTRUCTOR, type, type, qualifiers, cc.this_(),
+                    return bc.new_(MethodDescs.INJECTION_POINT_IMPL_CONSTRUCTOR, type, type, qualifiers, cc.this_(),
                             annotations, member, Const.of(injectionPoint.getPosition()),
                             Const.of(injectionPoint.isTransient()));
-                    bc.withSet(result).add(ip);
-                }
-                bc.return_(result);
+                }));
             });
         });
     }
@@ -2190,8 +2188,8 @@ public class BeanGenerator extends AbstractGenerator {
             }
         }
 
-        LocalVar qualifiersVar = bc.localVar("qualifiers",
-                bc.setOf(Reproducibility.orderedAnnotations(filteredQualifiers), qualifier -> {
+        return bc.localVar("qualifiers",
+                bc.setOf(orderedAnnotations(filteredQualifiers), qualifier -> {
                     BuiltinQualifier builtinQualifier = BuiltinQualifier.of(qualifier);
                     Expr qualifierExpr;
                     if (builtinQualifier != null) {
@@ -2203,8 +2201,6 @@ public class BeanGenerator extends AbstractGenerator {
                     }
                     return qualifierExpr;
                 }));
-
-        return qualifiersVar;
     }
 
     static void destroyTransientReferences(BlockCreator bc, Iterable<TransientReference> transientReferences) {

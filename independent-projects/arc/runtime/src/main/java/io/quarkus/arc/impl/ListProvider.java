@@ -28,6 +28,8 @@ public class ListProvider implements InjectableReferenceProvider<List<?>> {
             Member javaMember, int position, boolean isTransient, boolean needsInstanceHandle) {
         this.requiredType = requiredType;
         this.injectionPointType = injectionPointType;
+        // we previously used to remove the `@All` qualifier here, but we no longer have to,
+        // it is removed in `BeanGenerator` at build time and doesn't reach runtime anymore
         this.qualifiers = qualifiers;
         this.targetBean = targetBean;
         this.annotations = annotations;

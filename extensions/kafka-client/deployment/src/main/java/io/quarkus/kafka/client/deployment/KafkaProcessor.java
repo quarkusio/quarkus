@@ -51,6 +51,7 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
@@ -159,6 +160,21 @@ public class KafkaProcessor {
         log.produce(new LogCategoryBuildItem("org.apache.kafka.common.metrics", Level.WARNING));
         log.produce(new LogCategoryBuildItem("org.apache.kafka.common.config", Level.WARNING));
         log.produce(new LogCategoryBuildItem("org.apache.kafka.common.telemetry", Level.WARNING));
+    }
+
+    @BuildStep
+    void removeAppInfoJmxRegistration(KafkaBuildTimeConfig config,
+            BuildProducer<BytecodeTransformerBuildItem> transformers,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfig) {
+        if (config.jmxEnabled()) {
+            return;
+        }
+        transformers.produce(new BytecodeTransformerBuildItem.Builder()
+                .setClassToTransform("org.apache.kafka.common.utils.AppInfoParser")
+                .setCacheable(true)
+                .setVisitorFunction((className, classVisitor) -> new AppInfoClassVisitor(classVisitor))
+                .build());
+        runtimeConfig.produce(new RunTimeConfigurationDefaultBuildItem("kafka.metric.reporters", ""));
     }
 
     @BuildStep

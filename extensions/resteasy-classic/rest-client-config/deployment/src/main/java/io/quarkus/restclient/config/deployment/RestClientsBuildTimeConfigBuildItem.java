@@ -81,7 +81,7 @@ public final class RestClientsBuildTimeConfigBuildItem extends SimpleBuildItem {
                     }
                 })
                 .withMapping(RestClientsBuildTimeConfig.class)
-                .withMappingIgnore("quarkus.**")
+                .withMappingIgnorePrefix("quarkus")
                 .build();
         this.restClientsBuildTimeConfig = config.getConfigMapping(RestClientsBuildTimeConfig.class);
         RestClientKeysProvider.KEYS.clear();

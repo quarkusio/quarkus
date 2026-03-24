@@ -144,6 +144,6 @@ public class QuarkusConfigBuilderCustomizer implements SmallRyeConfigBuilderCust
         });
 
         // Ignore unmapped quarkus properties, because properties in the same root may be split between build / runtime
-        builder.withMappingIgnore("quarkus.**");
+        builder.withMappingIgnorePrefix("quarkus");
     }
 }

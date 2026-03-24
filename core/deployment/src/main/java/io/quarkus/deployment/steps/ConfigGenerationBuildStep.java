@@ -295,7 +295,7 @@ public class ConfigGenerationBuildStep {
                 buildTimeRuntimeMappings,
                 Set.of(),
                 staticMappings,
-                configItem.getReadResult().getMappingsIgnorePaths(),
+                configItem.getReadResult().getMappingsIgnorePrefixes(),
                 staticCustomizers,
                 staticInitConfigBuilders.stream().map(StaticInitConfigBuilderBuildItem::getBuilderClassName).collect(toSet()));
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(CONFIG_STATIC_NAME).build());
@@ -330,7 +330,7 @@ public class ConfigGenerationBuildStep {
                 buildTimeRuntimeMappings,
                 staticMappings,
                 runTimeMappings,
-                configItem.getReadResult().getMappingsIgnorePaths(),
+                configItem.getReadResult().getMappingsIgnorePrefixes(),
                 runtimeCustomizers,
                 runTimeConfigBuilders.stream().map(RunTimeConfigBuilderBuildItem::getBuilderClassName).collect(toSet()));
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(CONFIG_RUNTIME_NAME).build());
@@ -618,8 +618,8 @@ public class ConfigGenerationBuildStep {
             AbstractConfigBuilder.class,
             "withMappingInstance",
             void.class, SmallRyeConfigBuilder.class, ConfigClass.class);
-    private static final MethodDescriptor WITH_MAPPING_IGNORE = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
-            "withMappingIgnore",
+    private static final MethodDescriptor WITH_MAPPING_IGNORE_PREFIX = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
+            "withMappingIgnorePrefix",
             void.class, SmallRyeConfigBuilder.class, String.class);
     private static final MethodDescriptor WITH_CUSTOMIZER = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
             "withCustomizer",
@@ -741,7 +741,7 @@ public class ConfigGenerationBuildStep {
             Set<ConfigClass> mappingsShared,
             Set<ConfigClass> mappingsInstances,
             Set<ConfigClass> mappings,
-            Set<String> mappingsIgnorePaths,
+            Set<String> mappingsIgnorePrefixes,
             Set<String> configCustomizers,
             Set<String> configBuilders) {
 
@@ -845,8 +845,8 @@ public class ConfigGenerationBuildStep {
                 method.invokeStaticMethod(WITH_MAPPING, configBuilder, method.readStaticField(sharedFields.get(mapping)));
             }
 
-            for (String path : mappingsIgnorePaths) {
-                method.invokeStaticMethod(WITH_MAPPING_IGNORE, configBuilder, method.load(path));
+            for (String path : mappingsIgnorePrefixes) {
+                method.invokeStaticMethod(WITH_MAPPING_IGNORE_PREFIX, configBuilder, method.load(path));
             }
 
             clinit.returnVoid();

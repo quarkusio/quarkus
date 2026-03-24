@@ -31,7 +31,7 @@ public class KubernetesServiceBindingConfigSourceFactory implements ConfigSource
         SmallRyeConfig config = new SmallRyeConfigBuilder()
                 .withSources(new ConfigSourceContext.ConfigSourceContextConfigSource(context))
                 .withMapping(KubernetesServiceBindingConfig.class)
-                .withMappingIgnore("quarkus.**")
+                .withMappingIgnorePrefix("quarkus")
                 .build();
 
         KubernetesServiceBindingConfig kubernetesServiceBindingConfig = config

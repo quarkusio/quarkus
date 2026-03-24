@@ -106,8 +106,8 @@ public abstract class AbstractConfigBuilder implements SmallRyeConfigBuilderCust
         builder.getMappingsBuilder().mappingInstance(mapping, config.getConfigMapping(mapping.getType(), mapping.getPrefix()));
     }
 
-    protected static void withMappingIgnore(SmallRyeConfigBuilder builder, String path) {
-        builder.withMappingIgnore(path);
+    protected static void withMappingIgnorePrefix(SmallRyeConfigBuilder builder, String prefix) {
+        builder.withMappingIgnorePrefix(prefix);
     }
 
     protected static void withBuilder(SmallRyeConfigBuilder builder, ConfigBuilder configBuilder) {

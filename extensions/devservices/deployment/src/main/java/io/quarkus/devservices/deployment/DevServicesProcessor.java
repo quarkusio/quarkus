@@ -99,6 +99,17 @@ public class DevServicesProcessor {
     }
 
     private Optional<String> getOrCreateNetworkId(String name) {
+        // Skip creation for pre-defined/reserved network names
+        if ("default".equals(name) || // alias to choose the platform-specific default network stack
+                "host".equals(name) || // NetworkMode host is selected
+                "none".equals(name) || // NetworkMode none is selected
+                "bridge".equals(name) || // NetworkMode bridge is selected (default network on Linux)
+                "nat".equals(name) || // NetworkMode nat is selected (default network on Windows)
+                "container".equals(name) || // NetworkMode container is selected
+                name.startsWith("container:") // NetworkMode container is selected with a specific container name or id
+        ) {
+            return Optional.of(name);
+        }
         var networks = DockerClientFactory.lazyClient().listNetworksCmd().exec();
         for (var network : networks) {
             if (network.getName().equals(name)) {

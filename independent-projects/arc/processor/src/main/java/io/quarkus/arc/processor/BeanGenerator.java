@@ -852,8 +852,7 @@ public class BeanGenerator extends AbstractGenerator {
         class PostConstructGenerator {
             void generate(BlockCreator bc, Var instance) {
                 if (!bean.isInterceptor()) {
-                    List<MethodInfo> postConstructCallbacks = Beans.getCallbacks(bean.getTarget().get().asClass(),
-                            DotNames.POST_CONSTRUCT, bean.getDeployment().getBeanArchiveIndex());
+                    List<MethodInfo> postConstructCallbacks = bean.getPostConstructCallbacks();
 
                     for (MethodInfo callback : postConstructCallbacks) {
                         if (isReflectionFallbackNeeded(callback, targetPackage)) {
@@ -1480,9 +1479,7 @@ public class BeanGenerator extends AbstractGenerator {
                                     void generate(BlockCreator bc, Var instance) {
                                         // PreDestroy callbacks
                                         // possibly wrapped into Runnable so that PreDestroy interceptors can proceed() correctly
-                                        List<MethodInfo> preDestroyCallbacks = Beans.getCallbacks(
-                                                bean.getTarget().get().asClass(), DotNames.PRE_DESTROY,
-                                                bean.getDeployment().getBeanArchiveIndex());
+                                        List<MethodInfo> preDestroyCallbacks = bean.getPreDestroyCallbacks();
                                         for (MethodInfo callback : preDestroyCallbacks) {
                                             if (isReflectionFallbackNeeded(callback, targetPackage)) {
                                                 if (Modifier.isPrivate(callback.flags())) {

@@ -14,12 +14,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.smallrye.reactivemessaging.hotreload.SomeProcessor;
 import io.quarkus.smallrye.reactivemessaging.hotreload.SomeSource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ChainTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(SomeSource.class, MySink.class, SomeProcessor.class));
 

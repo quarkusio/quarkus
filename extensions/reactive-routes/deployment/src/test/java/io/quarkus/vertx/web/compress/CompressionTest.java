@@ -10,7 +10,7 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.http.Compressed;
 import io.quarkus.vertx.http.Uncompressed;
 import io.quarkus.vertx.web.Route;
@@ -21,7 +21,7 @@ import io.vertx.ext.web.RoutingContext;
 public class CompressionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addClasses(MyRoutes.class)
                     .addAsManifestResource(new StringAsset(MyRoutes.MESSAGE), "resources/file.txt")

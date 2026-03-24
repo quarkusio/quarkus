@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.flyway.FlywayDataSource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Test a full configuration with default and two named datasources plus their flyway settings.
@@ -29,7 +29,7 @@ public class FlywayExtensionConfigMultiDataSourcesWithoutDefaultTest {
     Flyway flywayInventory;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(FlywayExtensionConfigFixture.class, FlywayExtensionCallback.class)
                     .addAsResource("config-for-multiple-datasources-without-default.properties", "application.properties"));

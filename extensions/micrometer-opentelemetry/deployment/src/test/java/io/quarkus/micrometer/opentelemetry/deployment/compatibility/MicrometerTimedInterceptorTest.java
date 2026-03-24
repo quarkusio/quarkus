@@ -23,7 +23,7 @@ import io.quarkus.micrometer.opentelemetry.deployment.common.InMemoryMetricExpor
 import io.quarkus.micrometer.opentelemetry.deployment.common.InMemoryMetricExporterProvider;
 import io.quarkus.micrometer.opentelemetry.deployment.common.MetricDataFilter;
 import io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -31,7 +31,7 @@ import io.smallrye.mutiny.Uni;
  */
 public class MicrometerTimedInterceptorTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.otel.metrics.exporter", "in-memory")
             .overrideConfigKey("quarkus.otel.metric.export.interval", "100ms")

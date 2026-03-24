@@ -10,7 +10,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.WebSocket;
@@ -25,7 +25,7 @@ import io.smallrye.certs.junit5.Certificates;
 public class TlsClientEndpointMissingTlsConfigurationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(ServerEndpoint.class, ClientEndpoint.class)
                     .addAsResource(new File("target/certs/ssl-test-keystore.jks"), "keystore.jks")

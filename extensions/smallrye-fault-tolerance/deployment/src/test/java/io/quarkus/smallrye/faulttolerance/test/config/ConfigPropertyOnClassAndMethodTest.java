@@ -8,11 +8,11 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ConfigPropertyOnClassAndMethodTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(ConfigPropertyBean.class))
             .overrideConfigKey(
                     "quarkus.fault-tolerance.\"io.quarkus.smallrye.faulttolerance.test.config.ConfigPropertyBean\".retry.max-retries",

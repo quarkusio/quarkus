@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.runtime.BlockingOperationControl;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.smallrye.common.annotation.NonBlocking;
@@ -38,7 +38,7 @@ import io.smallrye.common.annotation.NonBlocking;
 public class SimpleXmlTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withConfigurationResource("exclude-model-from-jaxb.properties")
             .withApplicationRoot((jar) -> jar
                     .addClasses(Person.class, ModelWithoutAnnotation.class, SimpleXmlResource.class,

@@ -15,7 +15,7 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class HideCheckedExceptionMessageTest extends AbstractGraphQLTest {
 
@@ -24,7 +24,7 @@ public class HideCheckedExceptionMessageTest extends AbstractGraphQLTest {
     private static final String SQL_EXCEPTION_MESSAGE = "Something went really wrong, but should expect a message";
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestApi.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml")

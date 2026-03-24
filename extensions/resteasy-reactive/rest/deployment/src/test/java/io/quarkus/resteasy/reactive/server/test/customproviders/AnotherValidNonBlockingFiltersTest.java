@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.runtime.BlockingOperationControl;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.restassured.http.Headers;
 import io.smallrye.common.annotation.Blocking;
@@ -35,7 +35,7 @@ import io.smallrye.common.annotation.NonBlocking;
 public class AnotherValidNonBlockingFiltersTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {

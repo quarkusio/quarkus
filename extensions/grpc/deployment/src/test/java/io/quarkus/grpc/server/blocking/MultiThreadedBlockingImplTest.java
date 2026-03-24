@@ -21,7 +21,7 @@ import io.grpc.stub.StreamObserver;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.grpc.runtime.devmode.GrpcServices;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.common.annotation.Blocking;
 import io.vertx.core.impl.ConcurrentHashSet;
 
@@ -30,7 +30,7 @@ public class MultiThreadedBlockingImplTest {
     private static final Logger logger = Logger.getLogger(GrpcServices.class);
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setFlatClassPath(true)
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)

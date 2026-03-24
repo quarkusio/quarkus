@@ -30,13 +30,13 @@ import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
 import io.quarkus.grpc.server.services.AssertHelper;
 import io.quarkus.grpc.server.services.BlockingMutinyHelloService;
 import io.quarkus.grpc.server.services.TestService;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Multi;
 
 public class BlockingAndNonBlockingTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setFlatClassPath(true)
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)

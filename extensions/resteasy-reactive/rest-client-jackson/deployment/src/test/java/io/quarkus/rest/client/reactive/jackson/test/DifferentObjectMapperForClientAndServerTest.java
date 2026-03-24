@@ -29,12 +29,12 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import io.quarkus.jackson.ObjectMapperCustomizer;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.rest.client.reactive.jackson.ClientObjectMapper;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 
 public class DifferentObjectMapperForClientAndServerTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withEmptyApplication();
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest().withEmptyApplication();
 
     @TestHTTPResource
     URI uri;

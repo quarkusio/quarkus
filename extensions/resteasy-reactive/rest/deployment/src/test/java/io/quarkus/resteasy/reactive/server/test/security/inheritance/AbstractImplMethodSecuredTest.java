@@ -37,7 +37,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 
@@ -47,12 +47,12 @@ import io.restassured.http.ContentType;
  */
 public abstract class AbstractImplMethodSecuredTest {
 
-    protected static QuarkusUnitTest getRunner() {
+    protected static QuarkusExtensionTest getRunner() {
         return getRunner("");
     }
 
-    protected static QuarkusUnitTest getRunner(String applicationProperties) {
-        return new QuarkusUnitTest()
+    protected static QuarkusExtensionTest getRunner(String applicationProperties) {
+        return new QuarkusExtensionTest()
                 .withApplicationRoot((jar) -> jar
                         .addPackage("io.quarkus.resteasy.reactive.server.test.security.inheritance.noclassannotation")
                         .addPackage("io.quarkus.resteasy.reactive.server.test.security.inheritance.classrolesallowed")

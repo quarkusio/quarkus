@@ -23,7 +23,7 @@ import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 
@@ -38,7 +38,7 @@ public class CodeFlowRuntimeCredentialsProviderTest {
     };
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TEST_CLASSES)
                     .addAsResource("application-runtime-cred-provider.properties", "application.properties"))

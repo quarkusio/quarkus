@@ -13,14 +13,14 @@ import io.quarkus.smallrye.graphql.client.deployment.model.Person;
 import io.quarkus.smallrye.graphql.client.deployment.model.PersonDto;
 import io.quarkus.smallrye.graphql.client.deployment.model.TestingGraphQLApi;
 import io.quarkus.smallrye.graphql.client.deployment.model.TestingGraphQLClientApi;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.smallrye.graphql.client.typesafe.api.TypesafeGraphQLClientBuilder;
 
 public class TypesafeGraphQLClientProgrammaticUsageTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestingGraphQLApi.class, TestingGraphQLClientApi.class, Person.class, PersonDto.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));

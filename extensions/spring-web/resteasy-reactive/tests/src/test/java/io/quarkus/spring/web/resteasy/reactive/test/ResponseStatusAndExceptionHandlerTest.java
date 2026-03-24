@@ -14,14 +14,14 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 
 public class ResponseStatusAndExceptionHandlerTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(ExceptionController.class, RestExceptionHandler.class));
 

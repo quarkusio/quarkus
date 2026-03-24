@@ -13,13 +13,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.config.ConfigValidationException;
 
 public class JacksonErroneousTimeZonePropertiesTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(Pojo.class, SomeBean.class))
             .withConfigurationResource("application-erroneous-timezone-properties.properties")
             .setExpectedException(ConfigValidationException.class);

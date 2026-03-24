@@ -13,7 +13,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.MyEntity;
 import io.quarkus.runtime.configuration.ConfigurationException;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Test that setting {@code quarkus.hibernate-orm.sql-load-script}
@@ -51,7 +51,7 @@ public class SqlLoadScriptAbsoluteFileSystemPathTestCase {
     }
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class))
             .withConfigurationResource("application.properties")

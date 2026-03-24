@@ -34,13 +34,13 @@ import io.grpc.stub.StreamObserver;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.grpc.RegisterInterceptor;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
 
 public class GlobalAndServiceInterceptorsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addPackage(GreeterGrpc.class.getPackage())
                     .addPackage(Greeter3Grpc.class.getPackage())

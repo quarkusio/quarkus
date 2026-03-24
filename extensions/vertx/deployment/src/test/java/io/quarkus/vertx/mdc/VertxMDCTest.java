@@ -33,7 +33,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.bootstrap.logging.InitialConfigurator;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -50,7 +50,7 @@ public class VertxMDCTest {
     private static final Logger LOGGER = Logger.getLogger(VertxMDCTest.class);
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .addClass(VerticleDeployer.class)

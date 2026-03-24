@@ -8,12 +8,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.PermissionChecker;
 import io.quarkus.security.PermissionsAllowed;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class NoArgsPermissionCheckerValidationFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .assertException(t -> {
                 Assertions.assertEquals(RuntimeException.class, t.getClass(), t.getMessage());
                 Assertions.assertTrue(t.getMessage().contains("Checker#checkSomeValue"));

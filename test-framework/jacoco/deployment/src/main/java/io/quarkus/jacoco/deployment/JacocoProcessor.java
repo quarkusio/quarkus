@@ -144,7 +144,7 @@ public class JacocoProcessor {
         // In a single-module Quarkus app/extension all we need is to prevent multiple shutdown hook registrations
         // for a single test suite execution (all tests executed in a single module).
         // Note that for @QuarkusTest a new build can be triggered e.g. by @TestProfile.
-        // And for @QuarkusUnitTest each test class triggers a separate build.
+        // And for @QuarkusUnitTest or @QuarkusExtensionTest each test class triggers a separate build.
         // So the system property check below will help for single module.
         // However, it will not help for multi-module projects if a shared data file is used:
         //

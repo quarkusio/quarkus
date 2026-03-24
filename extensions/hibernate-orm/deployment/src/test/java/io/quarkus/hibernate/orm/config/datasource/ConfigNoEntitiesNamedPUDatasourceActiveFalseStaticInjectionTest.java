@@ -13,12 +13,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.InactiveBeanException;
 import io.quarkus.hibernate.orm.PersistenceUnit;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ConfigNoEntitiesNamedPUDatasourceActiveFalseStaticInjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withEmptyApplication()
             .withConfigurationResource("application-config-named-pu.properties")
             .overrideConfigKey("quarkus.datasource.\"mydatasource\".active", "false")

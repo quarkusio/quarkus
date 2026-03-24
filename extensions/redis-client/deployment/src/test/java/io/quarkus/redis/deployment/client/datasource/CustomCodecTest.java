@@ -19,14 +19,14 @@ import io.quarkus.redis.datasource.codecs.Codec;
 import io.quarkus.redis.datasource.codecs.Codecs;
 import io.quarkus.redis.datasource.hash.HashCommands;
 import io.quarkus.redis.deployment.client.RedisTestResource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
 
 @QuarkusTestResource(RedisTestResource.class)
 public class CustomCodecTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
+    static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class).addClass(Jedi.class).addClass(Sith.class)
                             .addClass(CustomJediCodec.class).addClass(CustomSithCodec.class))

@@ -9,14 +9,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class ImportMapTest extends WebDependencyLocatorTestSupport {
     private static final String META_INF_RESOURCES = "META-INF/resources/";
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset("<html>Hello!<html>"), META_INF_RESOURCES + "/index.html")
                     .addAsResource(new StringAsset("Test"), META_INF_RESOURCES + "/some/path/test.txt"))

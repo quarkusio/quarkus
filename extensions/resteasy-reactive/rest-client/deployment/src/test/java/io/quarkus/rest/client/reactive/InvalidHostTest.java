@@ -12,12 +12,12 @@ import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class InvalidHostTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest();
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest();
 
     @Test
     void shouldThrowDummyException() {

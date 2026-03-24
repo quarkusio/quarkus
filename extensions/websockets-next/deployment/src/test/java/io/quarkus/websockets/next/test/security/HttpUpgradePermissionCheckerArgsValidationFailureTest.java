@@ -13,7 +13,7 @@ import io.quarkus.security.PermissionChecker;
 import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.test.utils.WSClient;
@@ -21,7 +21,7 @@ import io.quarkus.websockets.next.test.utils.WSClient;
 public class HttpUpgradePermissionCheckerArgsValidationFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Endpoint.class, WSClient.class, TestIdentityProvider.class, TestIdentityController.class,
                             Checker.class))

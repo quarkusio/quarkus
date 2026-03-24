@@ -14,12 +14,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.smallrye.reactivemessaging.blocking.beans.BeanReturningMessagesUsingSmallRyeBlocking;
 import io.quarkus.smallrye.reactivemessaging.blocking.beans.BeanReturningPayloadsUsingSmallRyeBlocking;
 import io.quarkus.smallrye.reactivemessaging.blocking.beans.InfiniteSubscriber;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class SmallRyeBlockingPublisherTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(BeanReturningPayloadsUsingSmallRyeBlocking.class,
                             BeanReturningMessagesUsingSmallRyeBlocking.class, InfiniteSubscriber.class));

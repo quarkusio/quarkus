@@ -12,7 +12,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.restassured.RestAssured;
 import io.smallrye.certs.Format;
@@ -30,7 +30,7 @@ public class TlsServerWithP12WithAliasTest {
     URL url;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyBean.class)
                     .addAsResource(new File("target/certs/ssl-test-alias-keystore.p12"), "server-keystore.pkcs12"))

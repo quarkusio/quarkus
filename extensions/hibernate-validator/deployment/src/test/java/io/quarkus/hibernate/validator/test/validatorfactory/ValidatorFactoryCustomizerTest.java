@@ -12,7 +12,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ValidatorFactoryCustomizerTest {
 
@@ -20,7 +20,7 @@ public class ValidatorFactoryCustomizerTest {
     ValidatorFactory validatorFactory;
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest().setArchiveProducer(() -> ShrinkWrap
             .create(JavaArchive.class)
             .addClasses(MyMultipleValidatorFactoryCustomizer.class, MyEmailValidator.class,
                     MyNumValidator.class));

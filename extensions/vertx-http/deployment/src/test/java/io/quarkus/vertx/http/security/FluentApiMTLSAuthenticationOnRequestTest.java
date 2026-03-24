@@ -13,7 +13,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.restassured.RestAssured;
 import io.smallrye.certs.Format;
@@ -25,7 +25,7 @@ import io.vertx.core.http.ClientAuth;
 public class FluentApiMTLSAuthenticationOnRequestTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+    static QuarkusExtensionTest test = new QuarkusExtensionTest().setArchiveProducer(() -> ShrinkWrap
             .create(JavaArchive.class)
             .addClasses(AuthMechanismConfig.class, PathHandler.class)
             .addAsResource(new StringAsset("""

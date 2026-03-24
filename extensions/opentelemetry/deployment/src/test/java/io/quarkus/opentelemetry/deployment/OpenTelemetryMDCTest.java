@@ -46,13 +46,13 @@ import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryLogRecordExpo
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporterProvider;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.core.runtime.VertxMDC;
 import io.restassured.RestAssured;
 
 public class OpenTelemetryMDCTest {
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
+    static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addPackage(TestSpanExporter.class.getPackage())
                     .addClass(MdcTracingEntry.class)

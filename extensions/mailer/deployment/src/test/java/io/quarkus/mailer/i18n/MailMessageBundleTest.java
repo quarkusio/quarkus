@@ -15,12 +15,12 @@ import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.MailTemplate.MailTemplateInstance;
 import io.quarkus.mailer.MockMailbox;
 import io.quarkus.qute.CheckedTemplate;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class MailMessageBundleTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Templates.class, AppMessages.class)
                     .addAsResource("mock-config.properties", "application.properties")

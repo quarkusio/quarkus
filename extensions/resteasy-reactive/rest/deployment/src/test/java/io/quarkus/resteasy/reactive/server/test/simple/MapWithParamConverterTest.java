@@ -25,13 +25,13 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class MapWithParamConverterTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(HelloResource.class, MapParamConverter.class, MapParamConverterProvider.class));
 

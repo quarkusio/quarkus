@@ -23,7 +23,7 @@ import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.spi.runtime.SecurityEvent;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.OnError;
 import io.quarkus.websockets.next.OnOpen;
@@ -35,7 +35,7 @@ import io.vertx.core.http.UpgradeRejectedException;
 public class HttpUpgradeRolesAllowedAnnotationTest extends SecurityTestBase {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset("""
                             quarkus.security.events.enabled=false

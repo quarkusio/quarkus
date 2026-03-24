@@ -9,14 +9,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Unremovable;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.websockets.next.WebSocketClientException;
 import io.quarkus.websockets.next.WebSocketConnector;
 
 public class InvalidConnectorInjectionPointTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
+    public static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(root -> {
                 root.addClasses(Service.class);
             })

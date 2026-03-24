@@ -20,13 +20,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class HibernateOrmPgDbTokenStateManagerTest extends AbstractDbTokenStateManagerTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(ProtectedResource.class, UnprotectedResource.class, PublicResource.class,
                             GreetingResource.class, GreetingEntity.class, OidcDbTokenStateManagerEntity.class,

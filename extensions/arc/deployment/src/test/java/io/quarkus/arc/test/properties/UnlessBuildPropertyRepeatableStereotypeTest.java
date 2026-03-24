@@ -21,11 +21,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.properties.UnlessBuildProperty;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class UnlessBuildPropertyRepeatableStereotypeTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MatchingProperty.class, InheritableMatchingProperty.class, TransitiveMatchingProperty.class,
                             InheritableTransitiveMatchingProperty.class, MyService.class, MatchingPropertyMyService.class,

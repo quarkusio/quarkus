@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.liquibase.LiquibaseFactory;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Assures, that Liquibase can also be used without any configuration,
@@ -28,7 +28,7 @@ public class LiquibaseExtensionConfigDefaultDataSourceWithoutLiquibaseTest {
     AgroalDataSource defaultDataSource;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(LiquibaseExtensionConfigFixture.class)
                     .addAsResource("db/changeLog.xml", "db/changeLog.xml")

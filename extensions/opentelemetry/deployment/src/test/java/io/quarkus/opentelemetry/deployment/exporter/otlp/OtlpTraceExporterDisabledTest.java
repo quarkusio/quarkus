@@ -12,12 +12,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.LateBoundSpanProcessor;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class OtlpTraceExporterDisabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withEmptyApplication()
             .overrideConfigKey("quarkus.otel.exporter.otlp.enabled", "false");
 

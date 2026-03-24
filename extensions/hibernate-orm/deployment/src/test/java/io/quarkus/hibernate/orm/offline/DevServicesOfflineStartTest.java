@@ -8,13 +8,13 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class DevServicesOfflineStartTest {
 
     // A simple runner like this will trigger Dev Services
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .overrideConfigKey("quarkus.hibernate-orm.database.start-offline", "true")
             .withEmptyApplication()
             .setLogRecordPredicate(record -> "io.quarkus.config".equals(record.getLoggerName()))

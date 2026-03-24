@@ -20,12 +20,12 @@ import io.quarkus.qute.Template;
 import io.quarkus.qute.Variant;
 import io.quarkus.qute.runtime.QuteRecorder.QuteContext;
 import io.quarkus.qute.runtime.TemplateProducer;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class InjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(SimpleBean.class)
                     .addAsResource(new StringAsset("{this}"), "templates/foo.txt")

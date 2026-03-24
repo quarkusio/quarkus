@@ -15,13 +15,13 @@ import jakarta.ws.rs.ext.Provider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 //https://github.com/quarkusio/quarkus/issues/17168
 class NullHeaderTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(NullFilter.class, NullResource.class));
 

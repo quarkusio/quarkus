@@ -14,12 +14,12 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class FailWhenUseListParamTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .setExpectedException(DeploymentException.class)
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(GreetingResource.class));

@@ -20,12 +20,12 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import io.quarkus.jackson.ObjectMapperCustomizer;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class OverrideZonedDateTimeSerializerTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest();
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest();
 
     @Inject
     ObjectMapper objectMapper;

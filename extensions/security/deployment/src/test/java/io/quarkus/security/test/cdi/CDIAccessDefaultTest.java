@@ -25,7 +25,7 @@ import io.quarkus.security.test.cdi.app.TestException;
 import io.quarkus.security.test.utils.AuthData;
 import io.quarkus.security.test.utils.IdentityMock;
 import io.quarkus.security.test.utils.SecurityTestUtils;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
@@ -47,7 +47,7 @@ public class CDIAccessDefaultTest {
     SubclassWithoutAnnotations unannotatedBean;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(BeanWithSecuredMethods.class,
                             IdentityMock.class,

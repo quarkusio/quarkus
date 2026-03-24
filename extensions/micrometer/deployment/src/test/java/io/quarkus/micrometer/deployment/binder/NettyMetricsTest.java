@@ -37,14 +37,14 @@ import io.quarkus.micrometer.runtime.binder.netty.NettyAllocatorMetrics;
 import io.quarkus.micrometer.runtime.binder.netty.NettyMetricsProvider;
 import io.quarkus.micrometer.runtime.binder.netty.VertxNettyAllocatorMetricsProvider;
 import io.quarkus.micrometer.test.HelloResource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.vertx.core.Vertx;
 import io.vertx.core.impl.VertxInternal;
 
 public class NettyMetricsTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(HelloResource.class))
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")

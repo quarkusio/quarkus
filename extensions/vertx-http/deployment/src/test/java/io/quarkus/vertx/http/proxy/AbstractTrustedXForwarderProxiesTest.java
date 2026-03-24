@@ -3,7 +3,7 @@ package io.quarkus.vertx.http.proxy;
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.http.ForwardedHandlerInitializer;
 import io.restassured.RestAssured;
 import io.restassured.response.ValidatableResponse;
@@ -12,14 +12,14 @@ public abstract class AbstractTrustedXForwarderProxiesTest {
 
     static final String SUCCESS = "https|somehost|backend:4444|/path|https://somehost/path";
 
-    protected static QuarkusUnitTest createTrustedProxyUnitTest(String... trustedProxies) {
+    protected static QuarkusExtensionTest createTrustedProxyUnitTest(String... trustedProxies) {
         final String trustedProxiesAsStr;
         if (trustedProxies.length == 0) {
             trustedProxiesAsStr = "";
         } else {
             trustedProxiesAsStr = "quarkus.http.proxy.trusted-proxies=" + String.join(",", trustedProxies) + "\n";
         }
-        return new QuarkusUnitTest()
+        return new QuarkusExtensionTest()
                 .withApplicationRoot((jar) -> jar
                         .addClasses(ForwardedHandlerInitializer.class)
                         .addAsResource(new StringAsset("quarkus.http.proxy.proxy-address-forwarding=true\n" +

@@ -91,7 +91,7 @@ import io.smallrye.config.SmallRyeConfigBuilder;
  * <p>
  * Intended for use by extension developers testing their extension functionality in dev mode.
  * <p>
- * Note that unlike {@link QuarkusUnitTest}:
+ * Note that unlike {@link QuarkusExtensionTest}:
  * <ul>
  * <li>Tests run in black-box mode: the classloader of test methods
  * does not give access to the running Quarkus application,

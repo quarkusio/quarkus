@@ -14,7 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.smallrye.common.annotation.NonBlocking;
@@ -22,7 +22,7 @@ import io.smallrye.common.annotation.NonBlocking;
 public class EmptyInputTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {

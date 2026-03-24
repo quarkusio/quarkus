@@ -23,12 +23,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.test.exclude.bar.Bar;
 import io.quarkus.arc.test.exclude.baz.bazzz.Baz;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ExcludeTypesTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(ExcludeTypesTest.class, Pong.class, Alpha.class, Bravo.class, Charlie.class, Bar.class,
                             Baz.class, Magic.class, MagicInterceptor.class)

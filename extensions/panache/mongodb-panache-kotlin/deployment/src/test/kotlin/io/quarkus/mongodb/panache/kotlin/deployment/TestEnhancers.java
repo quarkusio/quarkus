@@ -16,6 +16,7 @@ import java.util.TreeMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import io.quarkus.test.QuarkusExtensionTest;
 import org.bson.types.ObjectId;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,6 @@ import io.quarkus.mongodb.panache.kotlin.PanacheMongoCompanionBase;
 import io.quarkus.mongodb.panache.kotlin.PanacheMongoRepositoryBase;
 import io.quarkus.panache.common.deployment.ByteCodeType;
 import io.quarkus.panache.common.impl.GenerateBridge;
-import io.quarkus.test.QuarkusUnitTest;
 
 @SuppressWarnings("unchecked")
 public class TestEnhancers {
@@ -42,7 +42,7 @@ public class TestEnhancers {
     public static final ByteCodeType GENERATE_BRIDGE = new ByteCodeType(GenerateBridge.class);
     public static final Pattern LABEL = Pattern.compile("^L(\\d)$");
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Book.class)
                     .addClasses(Student.class)
@@ -50,15 +50,18 @@ public class TestEnhancers {
 
     @Test
     public void testCompanion() throws Exception {
-        evaluate(new ByteCodeType(Book.Companion.getClass()), new ByteCodeType(Book.class), PanacheMongoCompanionBase.class, OBJECT_ID);
+        evaluate(new ByteCodeType(Book.Companion.getClass()), new ByteCodeType(Book.class), PanacheMongoCompanionBase.class,
+                OBJECT_ID);
     }
 
     @Test
     public void testRepository() throws Exception {
-        evaluate(new ByteCodeType(StudentRepository.class), new ByteCodeType(Student.class), PanacheMongoRepositoryBase.class, LONG);
+        evaluate(new ByteCodeType(StudentRepository.class), new ByteCodeType(Student.class), PanacheMongoRepositoryBase.class,
+                LONG);
     }
 
-    private void evaluate(ByteCodeType testClass, ByteCodeType entityType, Class<?> baseType, ByteCodeType idType) throws Exception {
+    private void evaluate(ByteCodeType testClass, ByteCodeType entityType, Class<?> baseType, ByteCodeType idType)
+            throws Exception {
         ByteCodeType object = new ByteCodeType(Object.class);
         Map<String, BytecodeMethod> localMethods = findLocalMethods(testClass);
 

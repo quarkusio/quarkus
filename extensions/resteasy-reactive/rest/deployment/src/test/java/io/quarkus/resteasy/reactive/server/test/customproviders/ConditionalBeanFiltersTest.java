@@ -30,14 +30,14 @@ import io.quarkus.arc.lookup.LookupIfProperty;
 import io.quarkus.arc.lookup.LookupUnlessProperty;
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.arc.properties.IfBuildProperty;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.http.Header;
 import io.smallrye.mutiny.Uni;
 
 public class ConditionalBeanFiltersTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {

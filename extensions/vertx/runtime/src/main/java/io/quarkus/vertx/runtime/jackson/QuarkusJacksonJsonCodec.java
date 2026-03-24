@@ -57,7 +57,7 @@ public class QuarkusJacksonJsonCodec implements JsonCodec {
     private static void populateMapper() {
         ArcContainer container = Arc.container();
         if (container == null) {
-            // this can happen in QuarkusUnitTest
+            // this can happen in QuarkusExtensionTest
             mapper = new ObjectMapper();
         } else {
             ObjectMapper managedMapper = container.instance(ObjectMapper.class).get();

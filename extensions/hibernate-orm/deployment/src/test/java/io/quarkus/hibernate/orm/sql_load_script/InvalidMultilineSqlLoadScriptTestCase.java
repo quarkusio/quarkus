@@ -7,11 +7,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.MyEntity;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class InvalidMultilineSqlLoadScriptTestCase {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .setExpectedException(PersistenceException.class)
             .withApplicationRoot((jar) -> jar
                     .addAsResource("application-invalid-multiline-test.properties", "application.properties")

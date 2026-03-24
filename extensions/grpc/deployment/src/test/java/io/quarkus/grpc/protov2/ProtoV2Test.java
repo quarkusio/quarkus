@@ -16,12 +16,12 @@ import io.grpc.examples.helloworld.v2.HelloRequest;
 import io.grpc.examples.helloworld.v2.HelloRequestOrBuilder;
 import io.grpc.examples.helloworld.v2.MutinyGreeterGrpc;
 import io.quarkus.grpc.GrpcClient;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ProtoV2Test {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(HelloServiceV2.class, MutinyGreeterGrpc.MutinyGreeterStub.class,
                             HelloReply.class, HelloRequest.class, MutinyGreeterGrpc.class, GreeterGrpc.class,

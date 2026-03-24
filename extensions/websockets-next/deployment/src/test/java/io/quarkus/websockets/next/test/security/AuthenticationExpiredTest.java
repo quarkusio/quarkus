@@ -24,7 +24,7 @@ import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.CloseReason;
 import io.quarkus.websockets.next.OnClose;
@@ -52,7 +52,7 @@ public class AuthenticationExpiredTest {
     }
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root.addClasses(Endpoint.class, TestIdentityProvider.class,
                     TestIdentityController.class, WSClient.class, ExpiredIdentityAugmentor.class, SecurityTestBase.class));
 

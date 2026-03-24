@@ -12,7 +12,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.SchemaUtil;
 import io.quarkus.hibernate.orm.SmokeTestUtils;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Test that assigning an orm.xml mapping file explicitly to override annotations
@@ -21,7 +21,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class OrmXmlAnnotationOverrideTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(SmokeTestUtils.class)
                     .addClass(SchemaUtil.class)

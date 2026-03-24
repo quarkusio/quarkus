@@ -15,14 +15,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 import io.smallrye.mutiny.Uni;
 
 public class QuarkusSessionTypeTest {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource("application-test.properties", "application.properties")
                     .addClasses(SessionTypeEntity.class, SessionTypeEntity_.class,

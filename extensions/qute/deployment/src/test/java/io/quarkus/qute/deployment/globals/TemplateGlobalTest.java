@@ -17,12 +17,12 @@ import io.quarkus.qute.Qute;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateGlobal;
 import io.quarkus.qute.TemplateInstance;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class TemplateGlobalTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addClasses(Globals.class, NextGlobals.class)
                     .addAsResource(new StringAsset(

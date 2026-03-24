@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.RoutingExchange;
@@ -27,7 +27,7 @@ import io.vertx.ext.web.RoutingContext;
 public class SyncRouteTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(SimpleBean.class));
 
     @TestHTTPResource

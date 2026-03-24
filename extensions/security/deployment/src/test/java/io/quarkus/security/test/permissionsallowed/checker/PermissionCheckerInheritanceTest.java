@@ -20,7 +20,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.test.utils.AuthData;
 import io.quarkus.security.test.utils.IdentityMock;
 import io.quarkus.security.test.utils.SecurityTestUtils;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class PermissionCheckerInheritanceTest {
 
@@ -28,7 +28,7 @@ public class PermissionCheckerInheritanceTest {
     private static final AuthData ADMIN_WITH_AUGMENTORS = new AuthData(ADMIN, true);
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class));
 

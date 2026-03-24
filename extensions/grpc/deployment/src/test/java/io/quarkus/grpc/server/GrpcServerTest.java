@@ -15,12 +15,12 @@ import io.grpc.BindableService;
 import io.grpc.ServerServiceDefinition;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.grpc.runtime.GrpcServerRecorder;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class GrpcServerTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyFakeService.class, MySecondFakeService.class))
             .withConfigurationResource("grpc-server-no-health-configuration.properties");

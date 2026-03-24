@@ -13,12 +13,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.quartz.QuartzScheduler;
 import io.quarkus.scheduler.Scheduled;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class NonconcurrentJobDefinitionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root.addClasses(Jobs.class))
             .overrideConfigKey("quarkus.scheduler.start-mode", "forced");
 

@@ -13,7 +13,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.WebSocket;
@@ -57,7 +57,7 @@ public class EchoWebSocketTest {
     URI echoMultiBidi;
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
+    public static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(root -> {
                 root.addClasses(Echo.class, EchoBlocking.class, EchoBlockingAndAwait.class, EchoService.class, EchoJson.class,
                         EchoJsonArray.class, EchoPojo.class, EchoBlockingPojo.class, EchoMultiConsume.class,

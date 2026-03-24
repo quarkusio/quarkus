@@ -20,12 +20,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateException;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class TimeTemplateExtensionsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset(
                             "{now.format('d uuuu')}:{nowLocalDate.format('d MMM uuuu',myLocale)}:{time:format(nowDate,'d MMM uuuu',myLocale)}:{time:format(nowCalendar,'d uuuu')}"),

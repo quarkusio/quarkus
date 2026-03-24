@@ -2,12 +2,12 @@ package io.quarkus.resteasy.test.security.inheritance;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class DefaultJaxRsRolesAllowedImplMethodSecuredTest extends AbstractImplMethodSecuredTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = getRunner("quarkus.security.jaxrs.default-roles-allowed=admin");
+    static QuarkusExtensionTest runner = getRunner("quarkus.security.jaxrs.default-roles-allowed=admin");
 
     @Override
     protected String roleRequiredForUnannotatedEndpoint() {

@@ -15,12 +15,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.bootstrap.classloading.ClassLoaderLimiter;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class TransactionalTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TransactionalTest.TransactionalBean.class, TestXAResource.class,
                             TxAssertionData.class, TestException.class, AnnotatedTestException.class, AnnotatedError.class))

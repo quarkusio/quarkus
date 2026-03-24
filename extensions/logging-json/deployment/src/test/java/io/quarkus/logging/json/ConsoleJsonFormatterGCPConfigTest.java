@@ -20,13 +20,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 import io.quarkus.logging.json.runtime.JsonFormatter;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.core.runtime.VertxMDC;
 
 public class ConsoleJsonFormatterGCPConfigTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset("""
                             quarkus.log.level=INFO

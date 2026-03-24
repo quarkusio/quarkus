@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.cache.CacheManager;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * This test checks that no exception is thrown when a {@link CacheManager} method is called while the extension is enabled and
@@ -18,7 +18,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ZeroCaffeineCacheTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withEmptyApplication();
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest().withEmptyApplication();
 
     @Inject
     CacheManager cacheManager;

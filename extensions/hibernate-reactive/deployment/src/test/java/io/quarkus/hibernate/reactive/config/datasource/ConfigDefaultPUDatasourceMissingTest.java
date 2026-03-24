@@ -8,12 +8,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.reactive.config.MyEntity;
 import io.quarkus.runtime.configuration.ConfigurationException;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ConfigDefaultPUDatasourceMissingTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(MyEntity.class))
             .overrideConfigKey("quarkus.hibernate-orm.datasource", "ds-1")

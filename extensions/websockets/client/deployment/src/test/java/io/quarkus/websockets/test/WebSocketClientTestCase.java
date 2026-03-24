@@ -16,7 +16,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -29,7 +29,7 @@ public class WebSocketClientTestCase {
     static HttpServer server;
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
+    public static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {

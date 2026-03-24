@@ -37,7 +37,7 @@ import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.security.spi.runtime.SecurityEvent;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.PathMatchingHttpSecurityPolicy;
 import io.restassured.RestAssured;
@@ -68,7 +68,7 @@ public class HttpSecurityPolicySecurityEventTest {
             """;
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+    static QuarkusExtensionTest test = new QuarkusExtensionTest().setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
             .addClasses(TestIdentityController.class, TestIdentityProvider.class, PathHandler.class, EventObserver.class,
                     CustomNamedHttpSecurityPolicy.class, GlobalCustomHttpSecurityPolicy.class)
             .addAsResource(new StringAsset(APP_PROPS), "application.properties"));

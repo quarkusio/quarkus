@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.narayana.jta.QuarkusTransaction;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Checks that non-standard access to fields by the application works correctly,
@@ -25,7 +25,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class NonStandardAccessTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyAbstractMappedSuperClass.class, MyAbstractEntity.class, MyAbstractConfusingEntity.class,
                             MyConcreteEntity.class)

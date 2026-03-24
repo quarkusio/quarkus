@@ -16,7 +16,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.config.properties.defaultpu.MyEntityForDefaultPU;
 import io.quarkus.hibernate.orm.config.properties.overridespu.MyEntityForOverridesPU;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests that configuration properties set in Quarkus are translated to the right key and value in Hibernate ORM.
@@ -24,7 +24,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ConfigPropertiesTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addPackage(MyEntityForDefaultPU.class.getPackage())
                     .addPackage(MyEntityForOverridesPU.class.getPackage()))

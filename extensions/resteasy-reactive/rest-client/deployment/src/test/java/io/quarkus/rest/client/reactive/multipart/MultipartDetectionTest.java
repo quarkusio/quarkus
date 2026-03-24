@@ -26,7 +26,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.rest.client.reactive.TestJacksonBasicMessageBodyReader;
 import io.quarkus.rest.client.reactive.TestJacksonBasicMessageBodyWriter;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.buffer.Buffer;
@@ -37,7 +37,7 @@ public class MultipartDetectionTest {
     URI baseUri;
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot(
                     jar -> jar.addClasses(Resource.class, Client.class, Person.class, TestJacksonBasicMessageBodyReader.class,
                             TestJacksonBasicMessageBodyWriter.class));

@@ -24,12 +24,12 @@ import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.PreloadClassBuildItem;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class SubResourceNoDuplicateClassGenerationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(StoreResourceClientV2.class)
                     .addClass(StoreResourceClient.class)

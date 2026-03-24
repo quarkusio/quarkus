@@ -13,14 +13,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.module.jakarta.xmlbind.JakartaXmlBindAnnotationModule;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Reproducer for https://github.com/quarkusio/quarkus/issues/33832
  */
 public class PreExistingGetterTest {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(PreExistingGetterEntity.class));
 

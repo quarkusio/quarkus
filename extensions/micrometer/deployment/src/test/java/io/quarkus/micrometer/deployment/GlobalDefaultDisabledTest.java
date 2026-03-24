@@ -9,7 +9,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.quarkus.micrometer.test.Util;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Should not have any registered MeterRegistry objects when micrometer is disabled
@@ -17,7 +17,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class GlobalDefaultDisabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")

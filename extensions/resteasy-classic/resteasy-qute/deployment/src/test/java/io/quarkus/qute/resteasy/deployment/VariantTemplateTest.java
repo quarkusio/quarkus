@@ -8,12 +8,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qute.resteasy.deployment.ItemResource.Item;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class VariantTemplateTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(ItemResource.class, Item.class)
                     .addAsResource(new StringAsset("Item {item.name}: {item.price}"), "templates/ItemResource/item.txt")

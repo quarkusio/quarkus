@@ -10,13 +10,13 @@ import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.rest.data.panache.MethodProperties;
 import io.quarkus.rest.data.panache.ResourceProperties;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
 
 class PanacheEntityResourcePathCustomisationTest extends AbstractPathCustomisationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Collection.class, CollectionsResource.class, AbstractEntity.class, AbstractItem.class,
                             Item.class, CustomPathCollectionsResource.class)

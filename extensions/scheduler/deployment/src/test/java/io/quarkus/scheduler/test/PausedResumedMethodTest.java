@@ -22,12 +22,12 @@ import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.ScheduledJobPaused;
 import io.quarkus.scheduler.ScheduledJobResumed;
 import io.quarkus.scheduler.Scheduler;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class PausedResumedMethodTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(PausedResumedMethodTest.Jobs.class));
 

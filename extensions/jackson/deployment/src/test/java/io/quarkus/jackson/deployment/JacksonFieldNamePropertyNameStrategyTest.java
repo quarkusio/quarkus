@@ -9,12 +9,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class JacksonFieldNamePropertyNameStrategyTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClass(Pojo.class))
             .withConfigurationResource("application-field-name-property-name-strategy.properties");
 

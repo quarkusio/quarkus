@@ -21,7 +21,7 @@ import io.quarkus.security.Authenticated;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.OnTextMessage;
 import io.smallrye.mutiny.Multi;
@@ -41,8 +41,8 @@ public abstract class AbstractSecurityIdentityPropagationTest {
     @TestHTTPResource("echo-multi-produce")
     URI echoMultiProduce;
 
-    protected static QuarkusUnitTest getQuarkusUnitTest(String applicationProperties, Class<?>... additionalClasses) {
-        return new QuarkusUnitTest()
+    protected static QuarkusExtensionTest getQuarkusExtensionTest(String applicationProperties, Class<?>... additionalClasses) {
+        return new QuarkusExtensionTest()
                 .withApplicationRoot(root -> root
                         .addClasses(EchoMultiProduce.class, TestIdentityProvider.class, MyService.class,
                                 TestIdentityController.class)

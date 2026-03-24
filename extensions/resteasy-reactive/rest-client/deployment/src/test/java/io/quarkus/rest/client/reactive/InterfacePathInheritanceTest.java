@@ -19,11 +19,11 @@ import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class InterfacePathInheritanceTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(Z.class)
                     .addClass(Y.class)

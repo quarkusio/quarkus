@@ -20,7 +20,7 @@ import io.quarkus.security.Authenticated;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.restassured.filter.cookie.CookieFilter;
 import io.smallrye.mutiny.Uni;
@@ -29,7 +29,7 @@ import io.vertx.ext.web.Router;
 public class FluentApiCombinedFormBasicAuthTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+    static QuarkusExtensionTest test = new QuarkusExtensionTest().setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
             // propagate security identity so that it is available in empty CDI request context
             .addAsResource(new StringAsset("quarkus.http.auth.propagate-security-identity=true"), "application.properties")
             .addClasses(TestIdentityProvider.class, TestTrustedIdentityProvider.class, TestIdentityController.class,

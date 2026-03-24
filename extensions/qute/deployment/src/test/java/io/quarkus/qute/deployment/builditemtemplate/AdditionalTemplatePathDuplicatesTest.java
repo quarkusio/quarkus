@@ -12,12 +12,12 @@ import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.qute.deployment.TemplatePathBuildItem;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class AdditionalTemplatePathDuplicatesTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addAsResource(new StringAsset("Hi {name}!"), "templates/hi.txt"))
             .overrideConfigKey("quarkus.qute.duplicit-templates-strategy", "fail")

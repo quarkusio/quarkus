@@ -11,12 +11,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.runtime.ApplicationConfig;
 import io.quarkus.runtime.ThreadPoolConfig;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ConfigRootInjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(ConfigRootInjectionTest.class, Client.class));
 

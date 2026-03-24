@@ -13,12 +13,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.xml.persistence.MyEntity;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class IgnoreExplicitForJoinedTrueValueWithPersistenceXmlTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(MyEntity.class)
                     .addAsManifestResource("META-INF/persistence-discriminator-ignore-explicit-for-joined-true-value.xml",

@@ -11,7 +11,7 @@ import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.websockets.next.OnError;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.OnTextMessage;
@@ -21,7 +21,7 @@ import io.quarkus.websockets.next.test.utils.WSClient;
 public class LazySecurityTest extends SecurityTestBase {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addAsResource(new StringAsset("quarkus.http.auth.proactive=false\n" +
                             "quarkus.http.auth.permission.secured.paths=/end\n" +

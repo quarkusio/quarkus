@@ -12,12 +12,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.qute.i18n.Localized;
 import io.quarkus.qute.i18n.Message;
 import io.quarkus.qute.i18n.MessageBundle;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class DefaultFileDefaultBundleNameTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Messages.class)
                     .addAsResource(new StringAsset("goodbye=Mej se!\nfarewell=Sbohem!"), "messages/msg.properties"))

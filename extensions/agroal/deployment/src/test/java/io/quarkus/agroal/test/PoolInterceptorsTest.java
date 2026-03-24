@@ -14,7 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.AgroalPoolInterceptor;
 import io.quarkus.agroal.DataSource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class PoolInterceptorsTest {
 
@@ -32,7 +32,7 @@ public class PoolInterceptorsTest {
     //end::injection[]
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml")
                     .addClasses(PoolInterceptorsTest.class)

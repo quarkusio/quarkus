@@ -22,7 +22,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.test.supplement.SomeClassInExternalLibrary;
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class SynthObserverAsIfInExternalClassTest {
     // the test includes an _application_ that declares a build compatible extension
@@ -30,7 +30,7 @@ public class SynthObserverAsIfInExternalClassTest {
     // in a class that is _outside_ of the application (in the Base Runtime CL)
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyBean.class, MyExtension.class, MySyntheticObserver.class)
                     .addAsServiceProvider(BuildCompatibleExtension.class, MyExtension.class))

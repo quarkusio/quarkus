@@ -2,12 +2,12 @@ package io.quarkus.jaxb.deployment;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ClassExcludeTest extends AbstractJaxbContextTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(
                             io.quarkus.jaxb.deployment.one.Model.class,

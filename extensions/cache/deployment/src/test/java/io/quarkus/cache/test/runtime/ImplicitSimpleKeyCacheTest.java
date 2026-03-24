@@ -11,7 +11,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.cache.CacheInvalidate;
 import io.quarkus.cache.CacheInvalidateAll;
 import io.quarkus.cache.CacheResult;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests a cache with <b>implicit simple</b> cache keys.
@@ -22,7 +22,8 @@ public class ImplicitSimpleKeyCacheTest {
     private static final Object KEY_2 = new Object();
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(jar -> jar.addClass(CachedService.class));
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
+            .withApplicationRoot(jar -> jar.addClass(CachedService.class));
 
     @Inject
     CachedService cachedService;

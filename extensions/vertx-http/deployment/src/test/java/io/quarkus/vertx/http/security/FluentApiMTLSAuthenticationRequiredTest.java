@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.tls.BaseTlsConfiguration;
 import io.restassured.RestAssured;
@@ -33,7 +33,7 @@ import io.vertx.core.net.TrustOptions;
 public class FluentApiMTLSAuthenticationRequiredTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+    static QuarkusExtensionTest test = new QuarkusExtensionTest().setArchiveProducer(() -> ShrinkWrap
             .create(JavaArchive.class)
             .addClasses(AuthMechanismConfig.class, PathHandler.class, MyTlsConfiguration.class)
             .addAsResource(new File("target/certs/mtls-test-keystore.p12"), "server-keystore.p12")

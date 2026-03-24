@@ -16,13 +16,13 @@ import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateExtension;
 import io.quarkus.qute.deployment.Foo;
 import io.quarkus.qute.deployment.MyFooList;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
 
 public class TypeSafeLoopTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Foo.class, MyFooList.class, Item.class, Extensions.class)
                     .addAsResource(new StringAsset("{@java.util.List<io.quarkus.qute.deployment.Foo> list}"

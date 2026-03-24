@@ -27,12 +27,12 @@ import io.quarkus.arc.deployment.QualifierRegistrarBuildItem;
 import io.quarkus.arc.processor.QualifierRegistrar;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class QualifierRegistrarTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(NotAQualifier.class, SimpleBean.class, Client.class))
             .addBuildChainCustomizer(b -> {

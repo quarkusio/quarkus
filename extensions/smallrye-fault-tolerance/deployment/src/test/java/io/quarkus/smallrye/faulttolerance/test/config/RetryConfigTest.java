@@ -11,11 +11,11 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class RetryConfigTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(RetryConfigBean.class, TestException.class,
                     TestConfigExceptionA.class, TestConfigExceptionB.class, TestConfigExceptionB1.class))
             .overrideConfigKey(

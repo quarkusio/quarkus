@@ -18,7 +18,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.hibernate.orm.MyEntity;
 import io.quarkus.hibernate.orm.SmokeTestUtils;
 import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class DbVersionValidPersistenceXmlTest {
 
@@ -33,7 +33,7 @@ public class DbVersionValidPersistenceXmlTest {
     }
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(SmokeTestUtils.class)
                     .addClass(MyEntity.class)

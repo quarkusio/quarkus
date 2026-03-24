@@ -10,7 +10,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class EmptyChallengeTestCase {
@@ -20,7 +20,7 @@ public class EmptyChallengeTestCase {
             "quarkus.http.auth.permission.roles1.policy=authenticated\n";
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+    static QuarkusExtensionTest test = new QuarkusExtensionTest().setArchiveProducer(new Supplier<>() {
         @Override
         public JavaArchive get() {
             return ShrinkWrap.create(JavaArchive.class)

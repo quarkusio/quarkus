@@ -6,12 +6,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class OpenTelemetryServiceNameCombinedResourceWinsTest extends OpenTelemetryServiceNameBaseTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(TestSpanExporter.class)
                     .addClass(TestSpanExporterProvider.class))

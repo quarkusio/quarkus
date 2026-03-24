@@ -24,12 +24,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
 import io.quarkus.arc.Unremovable;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.http.ContentType;
 
 public class CustomObjectMapperTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withEmptyApplication();
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest().withEmptyApplication();
 
     /**
      * Because we have configured the server Object Mapper instance with:

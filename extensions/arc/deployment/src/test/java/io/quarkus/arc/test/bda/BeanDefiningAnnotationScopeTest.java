@@ -28,12 +28,12 @@ import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class BeanDefiningAnnotationScopeTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addClasses(MyBean.class, AnotherBean.class, YetAnotherBean.class, MakeItBean.class,
                             QualifierMakeItBean.class, DependentStereotype.class))

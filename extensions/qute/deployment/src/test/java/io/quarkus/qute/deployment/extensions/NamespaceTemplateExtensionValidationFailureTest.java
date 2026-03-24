@@ -10,12 +10,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.TemplateExtension;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class NamespaceTemplateExtensionValidationFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset(
                             "{bro:surname}\n"

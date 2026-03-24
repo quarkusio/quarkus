@@ -10,11 +10,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ReallyEmptyBeanParamRecordTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .setArchiveProducer(() -> {
                 return ShrinkWrap.create(JavaArchive.class)
                         .addClasses(EmptyBeanParam.class, Resource.class);

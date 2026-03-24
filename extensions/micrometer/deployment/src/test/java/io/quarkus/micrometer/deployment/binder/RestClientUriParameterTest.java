@@ -22,14 +22,14 @@ import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.search.Search;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.rest.client.reactive.Url;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class RestClientUriParameterTest {
 
     final static SimpleMeterRegistry registry = new SimpleMeterRegistry();
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot(
                     jar -> jar.addClasses(Resource.class, Client.class))
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")

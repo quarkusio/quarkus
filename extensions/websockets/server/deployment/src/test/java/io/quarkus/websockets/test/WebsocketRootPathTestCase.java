@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 
 /**
@@ -32,7 +32,7 @@ public class WebsocketRootPathTestCase {
     URI echoUri;
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
+    public static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(a -> {
                 a.addClasses(EchoWebSocket.class, EchoService.class)
                         .add(new StringAsset("quarkus.http.root-path=/foo"), "application.properties");

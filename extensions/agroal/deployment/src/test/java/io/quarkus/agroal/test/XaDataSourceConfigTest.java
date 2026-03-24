@@ -17,7 +17,7 @@ import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
 import io.agroal.narayana.NarayanaTransactionIntegration;
 import io.quarkus.agroal.DataSource;
 import io.quarkus.narayana.jta.QuarkusTransaction;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class XaDataSourceConfigTest {
 
@@ -32,7 +32,7 @@ public class XaDataSourceConfigTest {
     //end::injection[]
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("application-recovery-datasources.properties");
 
     @Test

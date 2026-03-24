@@ -19,12 +19,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ContextProviderDisabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().overrideConfigKey("quarkus.arc.context-propagation.enabled",
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().overrideConfigKey(
+            "quarkus.arc.context-propagation.enabled",
             "false");
 
     @Inject

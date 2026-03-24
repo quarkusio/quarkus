@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
@@ -13,7 +12,7 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
 
 /**
@@ -26,7 +25,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 public class CheckHealthExtensionLogsOptionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource("application.properties"))
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.FINE.intValue())

@@ -12,11 +12,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.restclient.config.RestClientsConfig.RestClientConfig;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 class RestClientRandomPortTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(EchoResource.class, EchoClient.class))
             .overrideRuntimeConfigKey("quarkus.http.port", "0")

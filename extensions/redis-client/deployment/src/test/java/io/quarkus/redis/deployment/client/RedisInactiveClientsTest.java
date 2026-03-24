@@ -13,7 +13,7 @@ import io.quarkus.arc.InjectableInstance;
 import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.redis.client.RedisAPI;
@@ -21,7 +21,7 @@ import io.vertx.redis.client.RedisAPI;
 @QuarkusTestResource(RedisTestResource.class)
 public class RedisInactiveClientsTest {
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
+    static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class));
 
     @Inject

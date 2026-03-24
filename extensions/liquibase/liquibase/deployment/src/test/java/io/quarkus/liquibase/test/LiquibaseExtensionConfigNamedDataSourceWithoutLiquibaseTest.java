@@ -12,7 +12,7 @@ import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;
 import io.quarkus.liquibase.LiquibaseDataSource;
 import io.quarkus.liquibase.LiquibaseFactory;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Assures, that liquibase can also be used without any configuration,
@@ -32,7 +32,7 @@ public class LiquibaseExtensionConfigNamedDataSourceWithoutLiquibaseTest {
     AgroalDataSource usersDataSource;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(LiquibaseExtensionConfigFixture.class)
                     .addAsResource("db/changeLog.xml", "db/changeLog.xml")

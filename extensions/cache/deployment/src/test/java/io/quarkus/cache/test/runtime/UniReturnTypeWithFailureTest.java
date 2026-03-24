@@ -22,14 +22,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.cache.CacheResult;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.impl.NoStackTraceException;
 
 public class UniReturnTypeWithFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClass(CachedService.class).addClass(ConcurrentFailureService.class)
                     .addClass(FailureCachingService.class));
 

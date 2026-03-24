@@ -14,12 +14,12 @@ import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.info.deployment.spi.InfoBuildTimeContributorBuildItem;
 import io.quarkus.info.deployment.spi.InfoBuildTimeValuesBuildItem;
 import io.quarkus.info.runtime.spi.InfoContributor;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class CustomDataInfoTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestInfoContributor.class))
             .addBuildChainCustomizer(buildCustomizer());

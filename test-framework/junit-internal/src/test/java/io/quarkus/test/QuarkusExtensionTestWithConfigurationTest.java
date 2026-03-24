@@ -8,17 +8,17 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /**
- * Pure unit tests for QuarkusUnitTest.withConfiguration(String),
+ * Pure unit tests for QuarkusExtensionTest.withConfiguration(String),
  * without starting Quarkus or CDI.
  */
-final class QuarkusUnitTestWithConfigurationTest {
+final class QuarkusExtensionTestWithConfigurationTest {
 
-    static final class TestableConfigUnit extends QuarkusUnitTest {
+    static final class TestableConfigExtension extends QuarkusExtensionTest {
 
         private final Map<String, String> configMap = new LinkedHashMap<>();
 
         @Override
-        public QuarkusUnitTest overrideConfigKey(String key, String value) {
+        public QuarkusExtensionTest overrideConfigKey(String key, String value) {
             configMap.put(key, value);
             return this;
         }
@@ -30,7 +30,7 @@ final class QuarkusUnitTestWithConfigurationTest {
 
     @Test
     void parsesConfigurationCorrectly() {
-        TestableConfigUnit testUnit = new TestableConfigUnit();
+        TestableConfigExtension testUnit = new TestableConfigExtension();
 
         testUnit.withConfiguration("""
                         quarkus.datasource.db-kind=postgresql
@@ -48,7 +48,7 @@ final class QuarkusUnitTestWithConfigurationTest {
 
     @Test
     void ignoresBlankLinesAndComments() {
-        TestableConfigUnit testUnit = new TestableConfigUnit();
+        TestableConfigExtension testUnit = new TestableConfigExtension();
 
         testUnit.withConfiguration("""
                         # comment

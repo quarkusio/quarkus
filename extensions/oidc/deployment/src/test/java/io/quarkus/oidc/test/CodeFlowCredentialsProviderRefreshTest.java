@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.credentials.CredentialsProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 import io.smallrye.mutiny.Uni;
@@ -31,7 +31,7 @@ public class CodeFlowCredentialsProviderRefreshTest {
     private static final String NAMED_TENANT = "named";
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(ProtectedResource.class,
                             ClientSecretProviderProducer.class)

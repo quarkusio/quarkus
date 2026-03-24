@@ -9,12 +9,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.funqy.Funq;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class DependencyInjectionTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(
                     (jar) -> jar.addClasses(GreetingFunction.class, GreetingService.class, FarewellFunction.class,
                             HiFunction.class, ByeFunction.class));

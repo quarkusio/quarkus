@@ -11,11 +11,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.lookup.LookupIfProperty;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class LookupMultipleConditionsTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(AlphaService.class, BravoService.class))
             .overrideConfigKey("service.alpha.enabled", "true")
             .overrideConfigKey("service.alpha.active", "true")

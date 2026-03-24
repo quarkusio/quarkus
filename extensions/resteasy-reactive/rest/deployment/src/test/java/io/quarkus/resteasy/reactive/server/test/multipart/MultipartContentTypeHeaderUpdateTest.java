@@ -22,7 +22,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 /**
@@ -33,7 +33,7 @@ public class MultipartContentTypeHeaderUpdateTest {
     public static final String TO_BE_MULTIPART_MARKER = "application/to-be-multipart";
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(Resource.class, Input.class, MultipartDataInputTest.Result.class,
                             SetMultipartContentTypeFilter.class));

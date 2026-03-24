@@ -19,7 +19,7 @@ import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.search.MeterNotFoundException;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.redis.datasource.RedisDataSource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.vertx.redis.client.Command;
 import io.vertx.redis.client.Redis;
 import io.vertx.redis.client.Request;
@@ -28,7 +28,7 @@ import io.vertx.redis.client.Request;
 public class RedisClientMetricsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest();
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest();
 
     final static SimpleMeterRegistry registry = new SimpleMeterRegistry();
 

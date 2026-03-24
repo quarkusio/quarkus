@@ -20,12 +20,12 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.deployment.TemplateRootBuildItem;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class AdditionalTemplateRootTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addAsResource(new StringAsset("Hi {name}!"), "templates/hi.txt")
                     .addAsResource(new StringAsset("Hoho {name}!"), "templates/nested/hoho.txt")

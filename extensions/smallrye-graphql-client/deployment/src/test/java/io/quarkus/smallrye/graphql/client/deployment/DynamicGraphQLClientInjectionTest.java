@@ -19,7 +19,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.smallrye.graphql.client.deployment.model.Person;
 import io.quarkus.smallrye.graphql.client.deployment.model.PersonDto;
 import io.quarkus.smallrye.graphql.client.deployment.model.TestingGraphQLApi;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.graphql.client.GraphQLClient;
 import io.smallrye.graphql.client.core.Document;
 import io.smallrye.graphql.client.core.Operation;
@@ -31,7 +31,7 @@ public class DynamicGraphQLClientInjectionTest {
             System.getProperty("quarkus.http.test-port", "8081") + "/graphql";
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestingGraphQLApi.class, Person.class, PersonDto.class)
                     .addAsResource(new StringAsset("people-client/mp-graphql/url=" + url + "\n" +

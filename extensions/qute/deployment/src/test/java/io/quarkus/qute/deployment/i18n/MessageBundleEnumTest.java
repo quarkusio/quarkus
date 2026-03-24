@@ -12,12 +12,12 @@ import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateEnum;
 import io.quarkus.qute.i18n.Message;
 import io.quarkus.qute.i18n.MessageBundle;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class MessageBundleEnumTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Messages.class, MyEnum.class, UnderscoredEnum.class, AnotherUnderscoredEnum.class)
                     .addAsResource("messages/enu.properties")

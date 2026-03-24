@@ -18,7 +18,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.search.orm.outboxpolling.test.configuration.defaultpu.IndexedEntity;
 import io.quarkus.hibernate.search.orm.outboxpolling.test.configuration.pu1.IndexedEntityForPU1;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests that configuration properties set in Quarkus are translated to the right key and value in Hibernate Search.
@@ -28,7 +28,7 @@ public class ConfigPropertiesTest {
     static final String TENANT_ID = "my-tenant";
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addPackage(IndexedEntity.class.getPackage())
                     .addPackage(IndexedEntityForPU1.class.getPackage()))

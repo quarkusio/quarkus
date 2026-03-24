@@ -15,7 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.jfr.runtime.internal.runtime.QuarkusRuntimeInfo;
 import io.quarkus.runtime.ApplicationConfig;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import jdk.jfr.Recording;
 import jdk.jfr.consumer.RecordedEvent;
 import jdk.jfr.consumer.RecordingFile;
@@ -23,7 +23,7 @@ import jdk.jfr.consumer.RecordingFile;
 public class JfrRuntimeTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class));
 
     @Inject

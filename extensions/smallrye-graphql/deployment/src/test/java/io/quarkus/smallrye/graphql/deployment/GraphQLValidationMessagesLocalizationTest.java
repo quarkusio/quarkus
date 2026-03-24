@@ -11,7 +11,7 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.restassured.http.Header;
 import io.smallrye.common.annotation.Blocking;
@@ -28,7 +28,7 @@ public class GraphQLValidationMessagesLocalizationTest extends AbstractGraphQLTe
     private static final String ERROR_MESSAGE_ENGLISH = "Message is too long";
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(ApiWithValidation.class)
                     .addAsResource(new StringAsset("quarkus.locales=es_ES,en_US,de_DE\n" +

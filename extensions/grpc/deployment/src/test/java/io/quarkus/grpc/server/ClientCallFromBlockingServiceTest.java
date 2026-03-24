@@ -15,11 +15,11 @@ import io.grpc.examples.helloworld3.HelloRequest3;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.server.services.GrpcCallWithinBlockingService;
 import io.quarkus.grpc.server.services.HelloService;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ClientCallFromBlockingServiceTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addPackage(Greeter3Grpc.class.getPackage())
                     .addPackage(GreeterGrpc.class.getPackage())

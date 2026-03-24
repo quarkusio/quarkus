@@ -22,7 +22,7 @@ import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.GenericE
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.GenericEntityFloatWriter;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.GenericEntityIntegerServerMessageBodyWriter;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.GenericEntityResource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 
 /**
@@ -36,7 +36,7 @@ public class GenericEntityTest {
     static Client client;
 
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
+    static QuarkusExtensionTest testExtension = new QuarkusExtensionTest()
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {

@@ -15,7 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
 import io.quarkus.agroal.DataSource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class NamedDataSourceConfigTest {
     @Inject
@@ -23,7 +23,7 @@ public class NamedDataSourceConfigTest {
     AgroalDataSource ds;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("application-named-datasource.properties");
 
     @Test

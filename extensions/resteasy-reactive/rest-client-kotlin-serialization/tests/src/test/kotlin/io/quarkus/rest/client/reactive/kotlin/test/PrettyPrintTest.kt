@@ -1,10 +1,9 @@
 
 package io.quarkus.rest.client.reactive.kotlin.test
 
-import io.quarkus.test.QuarkusUnitTest
+import io.quarkus.test.QuarkusExtensionTest
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNames
 import org.assertj.core.api.Assertions.assertThat
@@ -16,7 +15,7 @@ import jakarta.inject.Inject
 class PrettyPrintTest {
     companion object {
         @RegisterExtension
-        val config = QuarkusUnitTest()
+        val config = QuarkusExtensionTest()
             .withConfigurationResource("pretty-print.properties")
     }
 

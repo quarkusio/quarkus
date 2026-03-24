@@ -13,12 +13,12 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ConnectorConfigTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(DumbConnector.class, BeanUsingDummyConnector.class))
             .overrideConfigKey("mp.messaging.incoming.a.values", "bonjour")

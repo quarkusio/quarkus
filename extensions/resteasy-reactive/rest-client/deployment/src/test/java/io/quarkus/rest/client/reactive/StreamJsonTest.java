@@ -28,7 +28,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.vertx.web.ReactiveRoutes;
 import io.quarkus.vertx.web.Route;
@@ -42,7 +42,7 @@ public class StreamJsonTest {
     private static final long TICK_EVERY_MS = 200;
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(TestJacksonBasicMessageBodyReader.class));
 
     @TestHTTPResource

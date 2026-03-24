@@ -12,7 +12,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.hibernate.reactive.DialectUtils;
 import io.quarkus.hibernate.reactive.MyEntity;
 import io.quarkus.hibernate.reactive.SmokeTestUtils;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 
@@ -32,7 +32,7 @@ public class DbVersionValidTest {
     }
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(SmokeTestUtils.class)
                     .addClass(DialectUtils.class)

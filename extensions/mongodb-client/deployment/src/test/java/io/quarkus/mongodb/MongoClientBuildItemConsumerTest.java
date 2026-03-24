@@ -15,12 +15,12 @@ import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.mongodb.deployment.MongoClientBuildItem;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class MongoClientBuildItemConsumerTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(MongoTestBase.class))
             .withConfigurationResource("default-mongoclient.properties")
             .addBuildChainCustomizer(buildCustomizer());

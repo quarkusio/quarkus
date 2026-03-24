@@ -19,7 +19,7 @@ import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalConnectionFactoryConfiguration;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
 import io.agroal.narayana.NarayanaTransactionIntegration;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class DefaultDataSourceConfigTest {
 
@@ -29,7 +29,7 @@ public class DefaultDataSourceConfigTest {
     //end::injection[]
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("application-default-datasource.properties");
 
     @Test

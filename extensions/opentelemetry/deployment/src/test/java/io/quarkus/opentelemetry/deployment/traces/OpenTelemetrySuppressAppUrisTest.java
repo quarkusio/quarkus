@@ -20,12 +20,12 @@ import io.quarkus.opentelemetry.deployment.common.TracerRouter;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporterProvider;
 import io.quarkus.opentelemetry.deployment.common.traces.TraceMeResource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class OpenTelemetrySuppressAppUrisTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addPackage(InMemoryExporter.class.getPackage())
                     .addAsResource("resource-config/application.properties", "application.properties")

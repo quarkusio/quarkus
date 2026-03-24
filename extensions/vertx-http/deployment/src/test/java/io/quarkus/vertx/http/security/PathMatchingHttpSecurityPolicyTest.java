@@ -25,7 +25,7 @@ import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
@@ -40,8 +40,9 @@ public abstract class PathMatchingHttpSecurityPolicyTest {
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(20);
     private static WebClient client;
 
-    protected static QuarkusUnitTest createQuarkusUnitTest(String applicationProperties, Class<?>... additionalTestClasses) {
-        return new QuarkusUnitTest().setArchiveProducer(() -> {
+    protected static QuarkusExtensionTest createQuarkusExtensionTest(String applicationProperties,
+            Class<?>... additionalTestClasses) {
+        return new QuarkusExtensionTest().setArchiveProducer(() -> {
             var javaArchive = ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TestIdentityController.class, TestIdentityProvider.class, PathHandler.class,
                             RouteHandler.class, CustomNamedPolicy.class)

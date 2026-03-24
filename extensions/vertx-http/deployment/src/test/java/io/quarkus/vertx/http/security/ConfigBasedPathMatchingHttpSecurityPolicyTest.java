@@ -2,7 +2,7 @@ package io.quarkus.vertx.http.security;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ConfigBasedPathMatchingHttpSecurityPolicyTest extends PathMatchingHttpSecurityPolicyTest {
 
@@ -54,6 +54,6 @@ public class ConfigBasedPathMatchingHttpSecurityPolicyTest extends PathMatchingH
             """;
 
     @RegisterExtension
-    static QuarkusUnitTest test = createQuarkusUnitTest(APP_PROPS);
+    static QuarkusExtensionTest test = createQuarkusExtensionTest(APP_PROPS);
 
 }

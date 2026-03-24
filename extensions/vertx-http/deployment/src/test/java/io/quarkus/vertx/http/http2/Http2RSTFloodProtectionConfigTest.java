@@ -18,7 +18,7 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.smallrye.certs.Format;
@@ -54,7 +54,7 @@ public class Http2RSTFloodProtectionConfigTest {
     URL url;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyBean.class)
                     .addAsResource(new StringAsset(configuration), "application.properties")

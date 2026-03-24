@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Reproducer for https://github.com/quarkusio/quarkus/issues/22183
@@ -26,7 +26,7 @@ public class ConfigEntityPUAssigmentUsingOnlyPanacheEntityBaseTest {
     private static final Formatter LOG_FORMATTER = new PatternFormatter("%s");
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(EntityExtendingOnlyPanacheEntityBase.class))
             // In a real-world scenario, this would be used only if there are multiple PUs,

@@ -3,12 +3,12 @@ package io.quarkus.hibernate.orm.rest.data.panache.deployment.entity;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.rest.data.panache.deployment.AbstractCountMethodTest;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 class PanacheEntityResourceCountMethodTest extends AbstractCountMethodTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Collection.class, CollectionsResource.class, AbstractEntity.class, AbstractItem.class,
                             Item.class, ItemsResource.class,

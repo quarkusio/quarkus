@@ -7,7 +7,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.restassured.RestAssured;
@@ -15,7 +15,7 @@ import io.restassured.RestAssured;
 public class RootPathTestHTTPResourceTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .overrideConfigKey("quarkus.http.root-path", "app/")
             .withApplicationRoot((jar) -> jar
                     .addClass(HelloResource.class));

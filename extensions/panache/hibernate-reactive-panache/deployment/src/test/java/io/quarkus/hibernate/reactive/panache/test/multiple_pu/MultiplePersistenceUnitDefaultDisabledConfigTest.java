@@ -6,13 +6,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.reactive.panache.test.multiple_pu.first.FirstEntity;
 import io.quarkus.hibernate.reactive.panache.test.multiple_pu.second.SecondEntity;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class MultiplePersistenceUnitDefaultDisabledConfigTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(FirstEntity.class, SecondEntity.class, PanacheTestResource.class)
                     .addAsResource("application-multiple-persistence-units-default-disabled.properties",

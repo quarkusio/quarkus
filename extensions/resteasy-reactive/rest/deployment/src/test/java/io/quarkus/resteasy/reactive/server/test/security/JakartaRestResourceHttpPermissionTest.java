@@ -22,7 +22,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.client.WebClient;
@@ -49,7 +49,7 @@ public class JakartaRestResourceHttpPermissionTest {
     private static WebClient client;
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestIdentityProvider.class, TestIdentityController.class, ApiResource.class,
                             RootResource.class, PublicResource.class, JaxRsResource.class)

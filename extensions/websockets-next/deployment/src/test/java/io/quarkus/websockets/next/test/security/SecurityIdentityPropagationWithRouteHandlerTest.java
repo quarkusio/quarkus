@@ -12,14 +12,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.vertx.ext.web.Router;
 
 public class SecurityIdentityPropagationWithRouteHandlerTest extends AbstractSecurityIdentityPropagationTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = getQuarkusUnitTest("quarkus.http.auth.propagate-security-identity=true",
+    public static final QuarkusExtensionTest test = getQuarkusExtensionTest(
+            "quarkus.http.auth.propagate-security-identity=true",
             UserInfo.class, RouterObserver.class);
 
     @Test

@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.agroal.api.AgroalDataSource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class FlywayExtensionCleanAtStartTest {
 
@@ -29,7 +29,7 @@ public class FlywayExtensionCleanAtStartTest {
     AgroalDataSource defaultDataSource;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource("db/migration/V1.0.0__Quarkus.sql")
                     .addAsResource("clean-at-start-config.properties", "application.properties"));

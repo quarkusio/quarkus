@@ -12,7 +12,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
@@ -29,7 +29,7 @@ import io.vertx.core.buffer.Buffer;
 public class SignatureTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
+    public static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(root -> {
                 root.addClasses(MethodReturningString.class, UniWs.class, MultiWs.class, WSClient.class);
             });

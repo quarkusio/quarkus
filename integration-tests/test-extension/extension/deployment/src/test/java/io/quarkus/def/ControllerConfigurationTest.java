@@ -9,12 +9,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.extest.runtime.def.ControllerConfiguration;
 import io.quarkus.extest.runtime.def.QuarkusControllerConfiguration;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ControllerConfigurationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withEmptyApplication();
 
     @Inject

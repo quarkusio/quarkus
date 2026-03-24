@@ -13,13 +13,13 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.oidc.client.runtime.OidcClientsConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public abstract class AbstractOidcClientDevServiceTest {
 
-    protected static QuarkusUnitTest createQuarkusUnitTest(String applicationProperties) {
-        return new QuarkusUnitTest()
+    protected static QuarkusExtensionTest createQuarkusExtensionTest(String applicationProperties) {
+        return new QuarkusExtensionTest()
                 .withApplicationRoot((jar) -> jar
                         .addClasses(NamedOidcClientResource.class)
                         .addAsResource(applicationProperties, "application.properties"));

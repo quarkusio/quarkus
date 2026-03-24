@@ -12,7 +12,7 @@ import io.quarkus.agroal.runtime.AgroalDataSourceUtil;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Check that datasources are created eagerly on application startup.
@@ -22,7 +22,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class EagerStartupTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("base.properties");
 
     @Test

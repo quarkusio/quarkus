@@ -20,14 +20,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.quarkus.resteasy.reactive.jackson.DisableSecureSerialization;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.common.annotation.NonBlocking;
 
 @Disabled("This needs to be disable until we make the reflection-free serializers the default")
 public class DefaultReflectionFreeSerializerTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {

@@ -21,12 +21,12 @@ import io.quarkus.micrometer.opentelemetry.deployment.common.InMemoryMetricExpor
 import io.quarkus.micrometer.opentelemetry.deployment.common.InMemoryMetricExporterProvider;
 import io.quarkus.micrometer.opentelemetry.deployment.common.MetricDataFilter;
 import io.quarkus.rest.client.reactive.Url;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class RestClientUriParameterTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot(
                     jar -> jar.addClasses(Resource.class, Client.class)
                             .addClasses(InMemoryMetricExporter.class,

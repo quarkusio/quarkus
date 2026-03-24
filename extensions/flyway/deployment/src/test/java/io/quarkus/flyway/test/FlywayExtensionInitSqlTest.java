@@ -15,7 +15,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class FlywayExtensionInitSqlTest {
     // Quarkus built object
@@ -23,7 +23,7 @@ public class FlywayExtensionInitSqlTest {
     DataSource datasource;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource("db/migration/V1.0.0__Quarkus.sql")
                     .addAsResource("init-sql-config.properties", "application.properties"));

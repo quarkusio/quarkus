@@ -11,7 +11,7 @@ import org.quartz.SchedulerException;
 
 import io.quarkus.quartz.test.listeners.HelloJobListener;
 import io.quarkus.scheduler.Scheduled;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class RegisterJobListenerTest {
 
@@ -19,7 +19,7 @@ public class RegisterJobListenerTest {
     org.quartz.Scheduler quartzScheduler;
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Jobs.class)
                     .addClass(HelloJobListener.class)

@@ -23,14 +23,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import com.fasterxml.jackson.annotation.JsonView;
 
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.smallrye.mutiny.Uni;
 
 public class JsonViewClientTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withEmptyApplication();
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest().withEmptyApplication();
 
     @TestHTTPResource
     URI uri;

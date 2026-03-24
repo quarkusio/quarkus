@@ -4,7 +4,8 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 /**
- * An SPI that allows modules that integrate with {@code @QuarkusTest} or {@code @QuarkusUnitTest} to alter the invocation of
+ * An SPI that allows modules that integrate with {@code @QuarkusTest} or {@code @QuarkusExtensionTest} to alter the invocation
+ * of
  * the actual test
  * method.
  *

@@ -17,12 +17,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
 import io.agroal.api.exceptionsorter.MySQLExceptionSorter;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class DevServicesMySQLDatasourceTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withEmptyApplication()
             // Expect no warnings (in particular from Agroal)
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue()

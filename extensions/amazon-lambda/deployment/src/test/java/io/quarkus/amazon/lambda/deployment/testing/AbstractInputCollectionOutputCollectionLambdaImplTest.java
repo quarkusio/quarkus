@@ -15,12 +15,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.amazon.lambda.deployment.testing.model.InputPerson;
 import io.quarkus.amazon.lambda.deployment.testing.model.OutputPerson;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class AbstractInputCollectionOutputCollectionLambdaImplTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest().setArchiveProducer(() -> ShrinkWrap
             .create(JavaArchive.class)
             .addClasses(AbstractInputCollectionOutputCollectionLambdaImpl.class, AbstractInputCollectionOutputCollection.class,
                     InputPerson.class, OutputPerson.class));

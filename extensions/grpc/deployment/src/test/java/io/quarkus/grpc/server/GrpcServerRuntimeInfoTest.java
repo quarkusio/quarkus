@@ -11,11 +11,11 @@ import io.grpc.BindableService;
 import io.grpc.ServerServiceDefinition;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.grpc.runtime.GrpcServer;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class GrpcServerRuntimeInfoTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest();
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest();
 
     @Inject
     GrpcServer server;

@@ -27,11 +27,11 @@ import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class AddingSpanAttributesInterceptorTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .addClass(HelloRouter.class)

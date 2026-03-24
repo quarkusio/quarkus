@@ -10,13 +10,13 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
 
 public class AvailableConfigSourcesTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest().withApplicationRoot(
             (jar) -> jar.addAsResource(new StringAsset("quarkus.config.sources.system-only=true\n" +
                     "my.prop=1234\n"), "application.properties"));
 

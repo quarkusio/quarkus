@@ -20,7 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
@@ -29,7 +29,7 @@ import io.vertx.ext.web.client.WebClient;
 public class CancelableUniTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(Resource.class));
 
     @BeforeEach

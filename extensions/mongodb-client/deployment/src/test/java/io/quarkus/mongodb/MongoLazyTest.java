@@ -13,7 +13,7 @@ import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.arc.Arc;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /** Variation of {@link io.quarkus.mongodb.MongoMetricsTest} to verify lazy client initialization. */
 class MongoLazyTest extends MongoTestBase {
@@ -22,7 +22,7 @@ class MongoLazyTest extends MongoTestBase {
     MeterRegistry meterRegistry;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(MongoTestBase.class))
             .withConfigurationResource("application-metrics-mongo.properties");
 

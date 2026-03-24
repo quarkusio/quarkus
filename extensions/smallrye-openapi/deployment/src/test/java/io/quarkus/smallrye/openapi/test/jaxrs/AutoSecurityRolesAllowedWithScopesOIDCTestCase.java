@@ -8,12 +8,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 class AutoSecurityRolesAllowedWithScopesOIDCTestCase extends AutoSecurityRolesAllowedWithScopesTestBase {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(ResourceBean.class, OpenApiResourceSecuredAtClassLevel.class,
                             OpenApiResourceSecuredAtMethodLevel.class, OpenApiResourceSecuredAtMethodLevel2.class)

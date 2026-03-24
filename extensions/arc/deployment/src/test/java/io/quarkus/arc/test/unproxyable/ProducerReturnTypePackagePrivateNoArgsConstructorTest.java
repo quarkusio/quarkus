@@ -15,14 +15,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.test.unproxyable.some.Resource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 // This test aims to test the https://github.com/quarkusio/quarkus/issues/22815 in Quarkus integration
 // There is a duplicate test for ArC standalone: io.quarkus.arc.test.clientproxy.constructor.ProducerReturnTypePackagePrivateNoArgsConstructorTest
 public class ProducerReturnTypePackagePrivateNoArgsConstructorTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addClasses(ProducerReturnTypePackagePrivateNoArgsConstructorTest.class, ResourceProducer.class,
                             Resource.class));

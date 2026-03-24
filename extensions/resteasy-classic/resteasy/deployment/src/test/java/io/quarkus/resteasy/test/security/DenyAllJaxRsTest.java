@@ -16,14 +16,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
  */
 public class DenyAllJaxRsTest {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(PermitAllResource.class, UnsecuredResource.class,
                             TestIdentityProvider.class, UnsecuredParentResource.class,

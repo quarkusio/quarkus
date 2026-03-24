@@ -6,13 +6,13 @@ import static org.junit.jupiter.api.Assertions.fail;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.config.ConfigValidationException;
 
 public class InvalidConfigInNameTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .assertException(t -> {
                 assertTrue(t instanceof ConfigValidationException);
                 assertTrue(t.getMessage().contains("NoSuchElementException"));

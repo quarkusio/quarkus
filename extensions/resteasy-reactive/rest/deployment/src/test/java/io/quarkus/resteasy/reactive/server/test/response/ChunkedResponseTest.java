@@ -27,14 +27,14 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ChunkedResponseTest {
 
     private static final String LARGE_HELLO_STRING = "h" + "e".repeat(256) + "llo";
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(HelloResource.class)
                     .addAsResource(new StringAsset("quarkus.rest.output-buffer-size = 256"),

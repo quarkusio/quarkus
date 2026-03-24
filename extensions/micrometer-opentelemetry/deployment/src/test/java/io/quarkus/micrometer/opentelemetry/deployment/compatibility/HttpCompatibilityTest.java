@@ -27,7 +27,7 @@ import io.quarkus.micrometer.opentelemetry.deployment.common.PingPongResource;
 import io.quarkus.micrometer.opentelemetry.deployment.common.ServletEndpoint;
 import io.quarkus.micrometer.opentelemetry.deployment.common.Util;
 import io.quarkus.micrometer.opentelemetry.deployment.common.VertxWebEndpoint;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 /**
@@ -35,7 +35,7 @@ import io.restassured.RestAssured;
  */
 public class HttpCompatibilityTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .addClasses(Util.class,

@@ -18,9 +18,13 @@ import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.fs.util.ZipUtils;
 
 class ZipFileSystemArchiveCreator implements ArchiveCreator {
+
+    private static final Logger LOG = Logger.getLogger(ZipFileSystemArchiveCreator.class);
 
     // we probably don't need the Windows entry but let's be safe
     private static final Set<String> MANIFESTS = Set.of("META-INF/MANIFEST.MF", "META-INF\\MANIFEST.MF");
@@ -67,35 +71,42 @@ class ZipFileSystemArchiveCreator implements ArchiveCreator {
         }
     }
 
+    /**
+     * First-write wins, subsequent additions of the same file will generate a warning.
+     * <p>
+     * Use {@link #addFileIfNotExists(Path, String, String)} if you expect a second write to be an expected behavior.
+     * It has the same first-write wins behavior but won't generate a warning.
+     */
     @Override
     public void addFile(Path origin, String target, String source) throws IOException {
-        if (MANIFESTS.contains(target)) {
-            return;
-        }
-        if (addedFiles.putIfAbsent(target, source) != null) {
-            return;
-        }
-        Path targetInFsPath = zipFileSystem.getPath(target);
-        handleParentDirectories(targetInFsPath, source);
-        Files.copy(origin, targetInFsPath, StandardCopyOption.REPLACE_EXISTING);
+        doAddFile(target, source,
+                targetInFsPath -> Files.copy(origin, targetInFsPath, StandardCopyOption.REPLACE_EXISTING));
     }
 
+    /**
+     * First-write wins, subsequent additions of the same file will generate a warning.
+     * <p>
+     * Use {@link #addFileIfNotExists(byte[], String, String)} if you expect a second write to be an expected behavior.
+     * It has the same first-write wins behavior but won't generate a warning.
+     */
     @Override
     public void addFile(byte[] bytes, String target, String source) throws IOException {
-        if (MANIFESTS.contains(target)) {
-            return;
-        }
-        Path targetInFsPath = zipFileSystem.getPath(target);
-        handleParentDirectories(targetInFsPath, source);
-        Files.write(targetInFsPath, bytes);
-        addedFiles.put(target, source);
+        doAddFile(target, source, targetInFsPath -> Files.write(targetInFsPath, bytes));
     }
 
+    /**
+     * First-write wins, subsequent additions of the same file will generate a warning.
+     */
+    @Override
+    public void addFile(List<byte[]> bytes, String target, String source) throws IOException {
+        addFile(joinWithNewlines(bytes), target, source);
+    }
+
+    /**
+     * First-write wins but don't generate a warning if an entry with this name already exists.
+     */
     @Override
     public void addFileIfNotExists(Path origin, String target, String source) throws IOException {
-        if (MANIFESTS.contains(target)) {
-            return;
-        }
         if (addedFiles.containsKey(target)) {
             return;
         }
@@ -103,11 +114,11 @@ class ZipFileSystemArchiveCreator implements ArchiveCreator {
         addFile(origin, target, source);
     }
 
+    /**
+     * First-write wins but don't generate a warning if an entry with this name already exists.
+     */
     @Override
     public void addFileIfNotExists(byte[] bytes, String target, String source) throws IOException {
-        if (MANIFESTS.contains(target)) {
-            return;
-        }
         if (addedFiles.containsKey(target)) {
             return;
         }
@@ -115,12 +126,24 @@ class ZipFileSystemArchiveCreator implements ArchiveCreator {
         addFile(bytes, target, source);
     }
 
-    @Override
-    public void addFile(List<byte[]> bytes, String target, String source) throws IOException {
+    private void doAddFile(String target, String source, FileWriter writer) throws IOException {
         if (MANIFESTS.contains(target)) {
             return;
         }
-        addFile(joinWithNewlines(bytes), target, source);
+        String existingSource = addedFiles.putIfAbsent(target, source);
+        if (existingSource != null) {
+            LOG.warn("Duplicate entry '" + target + "' — already added from '" + existingSource
+                    + "', ignoring entry from '" + source + "'");
+            return;
+        }
+        Path targetInFsPath = zipFileSystem.getPath(target);
+        handleParentDirectories(targetInFsPath, source);
+        writer.write(targetInFsPath);
+    }
+
+    @FunctionalInterface
+    private interface FileWriter {
+        void write(Path targetInFsPath) throws IOException;
     }
 
     @Override

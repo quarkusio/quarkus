@@ -1337,8 +1337,9 @@ public class BeanGenerator extends AbstractGenerator {
                             .append(implClassName)
                             .append("'\n");
                     msgBuilder.append("This bean is injected into:");
-                    for (InjectionPointInfo matchingIP : matchingIPs) {
-                        msgBuilder.append("\n\t- ").append(matchingIP.getTargetInfo());
+                    for (String matchingTargetInfo : matchingIPs.stream().map(InjectionPointInfo::getTargetInfo).sorted()
+                            .toList()) {
+                        msgBuilder.append("\n\t- ").append(matchingTargetInfo);
                     }
                 }
                 b1.throw_(InactiveBeanException.class, b1.exprToString(msg));

@@ -1,6 +1,6 @@
 package io.quarkus.arc.deployment;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -12,7 +12,6 @@ import jakarta.enterprise.inject.CreationException;
 import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
-import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
 import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BeanConfiguratorBase;
 import io.quarkus.arc.runtime.ArcRecorder;
@@ -29,7 +28,6 @@ import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.creator.BlockCreator;
 import io.quarkus.gizmo2.desc.FieldDesc;
 import io.quarkus.gizmo2.desc.MethodDesc;
-import io.quarkus.runtime.util.HashUtil;
 
 public class SyntheticBeansProcessor {
 
@@ -38,8 +36,8 @@ public class SyntheticBeansProcessor {
     void initStatic(ArcRecorder recorder, List<SyntheticBeanBuildItem> syntheticBeans,
             BeanRegistrationPhaseBuildItem beanRegistration, BuildProducer<BeanConfiguratorBuildItem> configurators) {
 
-        Map<String, Function<SyntheticCreationalContext<?>, ?>> creationFunctions = new HashMap<>();
-        Map<String, Supplier<ActiveResult>> checkActiveSuppliers = new HashMap<>();
+        Map<String, Function<SyntheticCreationalContext<?>, ?>> creationFunctions = new LinkedHashMap<>();
+        Map<String, Supplier<ActiveResult>> checkActiveSuppliers = new LinkedHashMap<>();
 
         for (SyntheticBeanBuildItem bean : syntheticBeans) {
             if (bean.hasRecorderInstance() && bean.isStaticInit()) {
@@ -56,8 +54,8 @@ public class SyntheticBeansProcessor {
     ServiceStartBuildItem initRuntime(ArcRecorder recorder, List<SyntheticBeanBuildItem> syntheticBeans,
             BeanRegistrationPhaseBuildItem beanRegistration, BuildProducer<BeanConfiguratorBuildItem> configurators) {
 
-        Map<String, Function<SyntheticCreationalContext<?>, ?>> creationFunctions = new HashMap<>();
-        Map<String, Supplier<ActiveResult>> checkActiveSuppliers = new HashMap<>();
+        Map<String, Function<SyntheticCreationalContext<?>, ?>> creationFunctions = new LinkedHashMap<>();
+        Map<String, Supplier<ActiveResult>> checkActiveSuppliers = new LinkedHashMap<>();
 
         for (SyntheticBeanBuildItem bean : syntheticBeans) {
             if (bean.hasRecorderInstance() && !bean.isStaticInit()) {
@@ -83,7 +81,7 @@ public class SyntheticBeansProcessor {
             Map<String, Function<SyntheticCreationalContext<?>, ?>> creationFunctions,
             Map<String, Supplier<ActiveResult>> checkActiveSuppliers, BeanRegistrationPhaseBuildItem beanRegistration,
             SyntheticBeanBuildItem bean) {
-        String name = createName(bean.configurator());
+        String name = bean.name();
         if (bean.configurator().getRuntimeValue() != null) {
             creationFunctions.put(name, recorder.createFunction(bean.configurator().getRuntimeValue()));
         } else if (bean.configurator().getSupplier() != null) {
@@ -103,12 +101,6 @@ public class SyntheticBeansProcessor {
             checkActiveSuppliers.put(name, bean.configurator().getCheckActive());
         }
         configurator.done();
-    }
-
-    private String createName(ExtendedBeanConfigurator configurator) {
-        return configurator.getImplClazz().toString().replace(".", "_") + "_"
-                + HashUtil.sha1(configurator.getTypes().toString() + configurator.getQualifiers().toString()
-                        + (configurator.getIdentifier() != null ? configurator.getIdentifier() : ""));
     }
 
     private Consumer<BeanConfiguratorBase.CreateGeneration> creator(String name, SyntheticBeanBuildItem bean) {

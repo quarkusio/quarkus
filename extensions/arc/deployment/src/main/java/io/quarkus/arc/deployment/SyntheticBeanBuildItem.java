@@ -18,6 +18,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl.ReturnedProxy;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.util.HashUtil;
 
 /**
  * Makes it possible to register a synthetic bean.
@@ -29,7 +30,7 @@ import io.quarkus.runtime.RuntimeValue;
  * @see ExtendedBeanConfigurator
  * @see BeanRegistrar
  */
-public final class SyntheticBeanBuildItem extends MultiBuildItem {
+public final class SyntheticBeanBuildItem extends MultiBuildItem implements Comparable<SyntheticBeanBuildItem> {
 
     /**
      * Returns a configurator object allowing for further customization of the synthetic bean.
@@ -84,13 +85,26 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
     }
 
     private final ExtendedBeanConfigurator configurator;
+    private final String name;
 
     SyntheticBeanBuildItem(ExtendedBeanConfigurator configurator) {
         this.configurator = configurator;
+        this.name = configurator.getImplClazz().toString().replace(".", "_") + "_"
+                + HashUtil.sha1(configurator.getTypes().toString() + configurator.getQualifiers().toString()
+                        + (configurator.getIdentifier() != null ? configurator.getIdentifier() : ""));
     }
 
     ExtendedBeanConfigurator configurator() {
         return configurator;
+    }
+
+    String name() {
+        return name;
+    }
+
+    @Override
+    public int compareTo(SyntheticBeanBuildItem other) {
+        return this.name.compareTo(other.name);
     }
 
     boolean isStaticInit() {

@@ -8,7 +8,7 @@ import io.quarkus.runtime.ExecutionMode;
 /**
  * Represents a mandatory config property that needs to be validated at runtime.
  */
-public final class ConfigPropertyBuildItem extends MultiBuildItem {
+public final class ConfigPropertyBuildItem extends MultiBuildItem implements Comparable<ConfigPropertyBuildItem> {
     private final String propertyName;
     private final Type propertyType;
     private final String defaultValue;
@@ -48,6 +48,11 @@ public final class ConfigPropertyBuildItem extends MultiBuildItem {
 
     public boolean isRuntimeInit() {
         return executionMode.equals(ExecutionMode.RUNTIME_INIT);
+    }
+
+    @Override
+    public int compareTo(ConfigPropertyBuildItem other) {
+        return this.propertyName.compareTo(other.propertyName);
     }
 
     public static ConfigPropertyBuildItem staticInit(

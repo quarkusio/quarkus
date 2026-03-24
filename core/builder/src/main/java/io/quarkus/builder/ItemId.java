@@ -8,14 +8,20 @@ import io.smallrye.common.constraint.Assert;
 
 final class ItemId {
     private final Class<? extends BuildItem> itemType;
+    private final boolean comparable;
 
     ItemId(final Class<? extends BuildItem> itemType) {
         Assert.checkNotNullParam("itemType", itemType);
         this.itemType = itemType;
+        this.comparable = Comparable.class.isAssignableFrom(itemType);
     }
 
     boolean isMulti() {
         return MultiBuildItem.class.isAssignableFrom(itemType);
+    }
+
+    boolean isComparable() {
+        return comparable;
     }
 
     @Override

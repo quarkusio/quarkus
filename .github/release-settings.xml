@@ -11,7 +11,7 @@
             <username>${env.SONATYPE_USERNAME}</username>
             <password>${env.SONATYPE_PASSWORD}</password>
             <configuration>
-                <njord.publisher>sonatype-cp</njord.publisher>
+                <njord.publisher>deploy</njord.publisher>
                 <njord.releaseUrl>njord:template:release-sca</njord.releaseUrl>
                 <njord.snapshotUrl>njord:template:snapshot-sca</njord.snapshotUrl>
             </configuration>
@@ -51,10 +51,6 @@
         </profile>
         <profile>
           <id>snapshots</id>
-          <properties>
-            <!-- https://docs.aws.amazon.com/codeartifact/latest/ug/maven-troubleshooting.html#disable-parallel-puts -->
-            <aether.connector.basic.parallelPut>false</aether.connector.basic.parallelPut>
-          </properties>
         </profile>
     </profiles>
     <activeProfiles>

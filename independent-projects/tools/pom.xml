@@ -56,7 +56,7 @@
         <junit.version>6.0.3</junit.version>
         <commons-compress.version>1.28.0</commons-compress.version>
         <jboss-logging.version>3.6.3.Final</jboss-logging.version>
-        <mockito.version>5.21.0</mockito.version>
+        <mockito.version>5.23.0</mockito.version>
         <quarkus.version>${project.version}</quarkus.version>
         <maven-model-helper.version>41</maven-model-helper.version>
         <jandex.version>3.5.3</jandex.version>

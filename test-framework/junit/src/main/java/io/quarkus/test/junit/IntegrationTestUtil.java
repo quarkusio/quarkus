@@ -1,5 +1,6 @@
 package io.quarkus.test.junit;
 
+import static io.quarkus.deployment.util.ContainerRuntimeUtil.detectContainerRuntime;
 import static io.quarkus.runtime.configuration.QuarkusConfigBuilderCustomizer.QUARKUS_PROFILE;
 import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
@@ -24,6 +25,8 @@ import java.util.function.Consumer;
 
 import jakarta.inject.Inject;
 
+import org.apache.commons.lang3.RandomStringUtils;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.jandex.Index;
@@ -43,6 +46,7 @@ import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesNetworkIdBuildItem;
 import io.quarkus.deployment.builditem.DevServicesRegistryBuildItem;
 import io.quarkus.deployment.dev.testing.TestConfig;
+import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
 import io.quarkus.test.common.ArtifactLauncher;
@@ -55,6 +59,7 @@ import io.quarkus.test.config.ConfigInjector;
 import io.quarkus.test.config.ThreadLocalConfigSourceProvider;
 import io.quarkus.test.config.ValueRegistryInjector;
 import io.quarkus.value.registry.ValueRegistry;
+import io.smallrye.common.process.ProcessBuilder;
 import io.smallrye.config.Config;
 
 public final class IntegrationTestUtil {
@@ -228,6 +233,7 @@ public final class IntegrationTestUtil {
 
         Map<String, String> propertyMap = new HashMap<>();
         AugmentAction augmentAction;
+        String networkId = null;
         if (isDockerAppLaunch) {
             // when the application is going to be launched as a docker container, we need to make containers started by DevServices
             // use a shared network that the application container can then use as well
@@ -246,8 +252,55 @@ public final class IntegrationTestUtil {
         }, DevServicesLauncherConfigResultBuildItem.class.getName(), DevServicesNetworkIdBuildItem.class.getName(),
                 DevServicesRegistryBuildItem.class.getName(), DevServicesCustomizerBuildItem.class.getName());
 
-        String networkId = propertyMap.get("quarkus.test.container.network");
-        return new DefaultDevServicesLaunchResult(propertyMap, networkId, curatedApplication);
+        networkId = propertyMap.get("quarkus.test.container.network");
+        boolean manageNetwork = false;
+        if (isDockerAppLaunch) {
+            if (networkId == null) {
+                // use the network the use has specified or else just generate one if none is configured
+                Optional<String> networkIdOpt = ConfigProvider.getConfig().getOptionalValue(
+                        "quarkus.test.container.network", String.class);
+                if (networkIdOpt.isPresent()) {
+                    networkId = networkIdOpt.get();
+                } else {
+                    networkId = "quarkus-integration-test-" + RandomStringUtils.insecure().next(5, true, false);
+                    manageNetwork = true;
+                }
+            }
+        }
+
+        DefaultDevServicesLaunchResult result = new DefaultDevServicesLaunchResult(propertyMap, networkId, manageNetwork,
+                curatedApplication);
+        createNetworkIfNecessary(result);
+        return result;
+    }
+
+    // this probably isn't the best place for this method, but we need to create the docker container before
+    // user code is aware of the network
+    private static void createNetworkIfNecessary(
+            final ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult) {
+        if (devServicesLaunchResult.manageNetwork() && (devServicesLaunchResult.networkId() != null)) {
+            ContainerRuntimeUtil.ContainerRuntime containerRuntime = detectContainerRuntime(true);
+
+            try {
+                ProcessBuilder.exec(containerRuntime.getExecutableName(), "network", "create",
+                        devServicesLaunchResult.networkId());
+                // do the cleanup in a shutdown hook because there might be more services (launched via QuarkusTestResourceLifecycleManager) connected to the network
+                Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            ProcessBuilder.exec(containerRuntime.getExecutableName(), "network", "rm",
+                                    devServicesLaunchResult.networkId());
+                        } catch (Exception e) {
+                            System.out.printf("Unable to delete container network '%s'", devServicesLaunchResult.networkId());
+                        }
+                    }
+                }));
+            } catch (Exception e) {
+                throw new RuntimeException("Creating container network '%s' completed unsuccessfully"
+                        .formatted(devServicesLaunchResult.networkId()), e);
+            }
+        }
     }
 
     static void activateLogging() {
@@ -268,12 +321,14 @@ public final class IntegrationTestUtil {
     static class DefaultDevServicesLaunchResult implements ArtifactLauncher.InitContext.DevServicesLaunchResult {
         private final Map<String, String> properties;
         private final String networkId;
+        private final boolean manageNetwork;
         private final CuratedApplication curatedApplication;
 
         DefaultDevServicesLaunchResult(Map<String, String> properties, String networkId,
-                CuratedApplication curatedApplication) {
+                boolean manageNetwork, CuratedApplication curatedApplication) {
             this.properties = properties;
             this.networkId = networkId;
+            this.manageNetwork = manageNetwork;
             this.curatedApplication = curatedApplication;
         }
 
@@ -287,7 +342,7 @@ public final class IntegrationTestUtil {
 
         @Override
         public boolean manageNetwork() {
-            return false;
+            return manageNetwork;
         }
 
         @Override

@@ -38,13 +38,14 @@ public class SmallRyeStorkRegistrationRecorder {
                     LOGGER.info("Service registering disabled for  '" + serviceName + "'.");
                     continue;
                 }
+                Map<String, String> parameters = serviceConfig.serviceRegistrar().parameters();
+                String host = StorkConfigUtil.getOrDefaultHost(parameters,
+                        quarkusConfig);
+                int port = StorkConfigUtil.getOrDefaultPort(parameters, quarkusConfig);
+                Stork.getInstance().getService(serviceName).registerInstance(serviceName, host,
+                        port).await().indefinitely();
             }
-            Map<String, String> parameters = serviceConfig.serviceRegistrar().parameters();
-            String host = StorkConfigUtil.getOrDefaultHost(parameters,
-                    quarkusConfig);
-            int port = StorkConfigUtil.getOrDefaultPort(parameters, quarkusConfig);
-            Stork.getInstance().getService(serviceName).registerInstance(serviceName, host,
-                    port).await().indefinitely();
+
         }
     }
 

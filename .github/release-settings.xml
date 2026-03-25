@@ -16,6 +16,15 @@
                 <njord.snapshotUrl>njord:template:snapshot-sca</njord.snapshotUrl>
             </configuration>
         </server>
+        <server>
+            <id>github</id>
+            <username>${env.GITHUB_ACTOR}</username>
+            <password>${env.GITHUB_TOKEN}</password>
+            <configuration>
+                <njord.publisher>deploy</njord.publisher>
+                <njord.snapshotUrl>njord:template:snapshot-sca</njord.snapshotUrl>
+            </configuration>
+        </server>
     </servers>
 
     <!-- Enable Google mirror to avoid hammering Maven Central -->

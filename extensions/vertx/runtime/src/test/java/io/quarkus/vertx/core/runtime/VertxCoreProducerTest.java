@@ -243,7 +243,7 @@ public class VertxCoreProducerTest {
         }
     }
 
-    private static class DefaultVertxConfiguration implements VertxConfiguration {
+    static class DefaultVertxConfiguration implements VertxConfiguration {
         @Override
         public boolean caching() {
             return true;

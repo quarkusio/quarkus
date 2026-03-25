@@ -35,7 +35,7 @@ To build a Quarkus application with AOT caching enabled:
 [source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
 .Gradle
 ----
-./gradlew build quarkusIntTest buildAotEnhancedImage -Dquarkus.package.jar.aot.enabled=true
+./gradlew build quarkusIntTest -Dquarkus.package.jar.aot.enabled=true
 ----
 
 NOTE: When enabling AOT via `quarkus.package.jar.aot.enabled=true`, Quarkus will automatically switch to the `aot-jar` JAR packaging if none is explicitly configured via `quarkus.package.jar.type`.
@@ -100,7 +100,7 @@ Quarkus can use your `@QuarkusIntegrationTest` test suite for this training:
 [source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
 .Gradle
 ----
-./gradlew build quarkusIntTest buildAotEnhancedImage -Dquarkus.package.jar.aot.enabled=true
+./gradlew build quarkusIntTest -Dquarkus.package.jar.aot.enabled=true
 ----
 
 With this approach:
@@ -142,7 +142,7 @@ The `quarkus.package.jar.aot.phase` configuration controls when training occurs:
 .Gradle
 ----
 # Explicit integration test training
-./mvnw build quarkusIntTest buildAotEnhancedImage -Dquarkus.package.jar.aot.enabled=true -Dquarkus.package.jar.aot.phase=integration-tests
+./mvnw build quarkusIntTest -Dquarkus.package.jar.aot.enabled=true -Dquarkus.package.jar.aot.phase=integration-tests
 
 # Build-time only (builds faster, less optimal)
 ./mvnw build -Dquarkus.package.jar.aot.enabled=true -Dquarkus.package.jar.aot.phase=build

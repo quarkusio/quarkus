@@ -1534,10 +1534,13 @@ jobs:
         with:
           distribution: temurin
           java-version: 25
-      - name: Install cl.exe
+      - name: Set up Visual Studio C++ environment
+        shell: pwsh
         if: startsWith(matrix.os-name, 'windows')
-        uses: ilammy/msvc-dev-cmd@v1
-      - uses: microsoft/setup-msbuild@v2
+        run: |
+          $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          cmd /c "`"$vsPath\Common7\Tools\VsDevCmd.bat`" -arch=x64 && set" | Out-String
+      - uses: microsoft/setup-msbuild@v3
         if: startsWith(matrix.os-name, 'windows')
       - name: Setup GraalVM
         id: setup-graalvm

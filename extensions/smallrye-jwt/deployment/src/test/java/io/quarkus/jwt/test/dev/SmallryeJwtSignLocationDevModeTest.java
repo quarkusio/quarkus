@@ -18,15 +18,14 @@ import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class SmallryeJwtLocationDevModeTest {
+public class SmallryeJwtSignLocationDevModeTest {
 
     @RegisterExtension
     static QuarkusUnitTest unitTest = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource(new StringAsset(
                             """
-                                    smallrye.jwt.encrypt.key.location=/publicKey.pem
-                                    mp.jwt.decrypt.key.location=/privateKey.pem
+                                    smallrye.jwt.verify.key.location=/publicKey.pem
                                     """), "application.properties")
                     .addAsResource("publicKey.pem")
                     .addAsResource("privateKey.pem"))

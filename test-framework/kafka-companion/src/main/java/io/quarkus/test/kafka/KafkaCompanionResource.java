@@ -27,6 +27,12 @@ public class KafkaCompanionResource implements QuarkusTestResourceLifecycleManag
     public void setIntegrationTestContext(DevServicesContext context) {
         Map<String, String> devServicesProperties = context.devServicesProperties();
         String bootstrapServers = devServicesProperties.get("kafka.bootstrap.servers");
+        if (bootstrapServers == null) {
+            bootstrapServers = System.getProperty("kafka.bootstrap.servers");
+        }
+        if (bootstrapServers == null) {
+            bootstrapServers = System.getenv("KAFKA_BOOTSTRAP_SERVERS");
+        }
         if (bootstrapServers != null) {
             kafkaCompanion = new KafkaCompanion(bootstrapServers);
             String apicurioUrl = devServicesProperties.get("mp.messaging.connector.smallrye-kafka.apicurio.registry.url");

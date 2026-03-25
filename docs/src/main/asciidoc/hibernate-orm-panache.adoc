@@ -898,6 +898,21 @@ PanacheQuery<DogDto> query = Dog.findAll().project(DogDto.class);
 ----
 <1> The `ownerName` DTO constructor's parameter will be loaded from the `owner.name` HQL property.
 
+The `@ProjectedFieldName` annotation also supports HQL expressions, including aggregate functions.
+This is particularly useful for GROUP BY queries:
+
+[source,java]
+----
+public record DogWeightTotal(
+    @ProjectedFieldName("owner.name") String ownerName,
+    @ProjectedFieldName("SUM(weight)") Double totalWeight
+) {}
+
+PanacheQuery<DogWeightTotal> query = Dog.find(
+    "FROM Dog d JOIN d.owner o GROUP BY o.name"
+).project(DogWeightTotal.class);
+----
+
 In case you want to project an entity in a class with nested classes, you can use the `@NestedProjectedClass` annotation on those nested classes.
 
 [source,java]

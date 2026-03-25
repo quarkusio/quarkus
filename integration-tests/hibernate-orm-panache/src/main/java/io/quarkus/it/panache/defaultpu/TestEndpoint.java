@@ -1699,6 +1699,45 @@ public class TestEndpoint {
     }
 
     @GET
+    @Path("projection-aggregate-function")
+    @Transactional
+    public String testProjectionWithAggregateFunction() {
+        // Clean up and setup test data
+        Cat.deleteAll();
+        CatOwner.deleteAll();
+
+        CatOwner owner1 = new CatOwner("Owner1");
+        owner1.persist();
+        CatOwner owner2 = new CatOwner("Owner2");
+        owner2.persist();
+
+        Cat cat1 = new Cat("Cat1", owner1);
+        cat1.weight = 5.0;
+        cat1.persist();
+
+        Cat cat2 = new Cat("Cat2", owner1);
+        cat2.weight = 7.0;
+        cat2.persist();
+
+        Cat cat3 = new Cat("Cat3", owner2);
+        cat3.weight = 3.0;
+        cat3.persist();
+
+        // Test projection with aggregate function
+        List<CatOwnerWeightDto> results = Cat.find("FROM Cat c GROUP BY c.owner ORDER BY c.owner.name")
+                .project(CatOwnerWeightDto.class)
+                .list();
+
+        Assertions.assertEquals(2, results.size());
+        Assertions.assertEquals("Owner1", results.get(0).ownerName());
+        Assertions.assertEquals(12.0, results.get(0).totalWeight());
+        Assertions.assertEquals("Owner2", results.get(1).ownerName());
+        Assertions.assertEquals(3.0, results.get(1).totalWeight());
+
+        return "OK";
+    }
+
+    @GET
     @Path("model3")
     @Transactional
     public String testModel3() {

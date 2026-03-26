@@ -9,7 +9,6 @@ module io.quarkus.arc {
 
     requires jakarta.annotation;
     requires jakarta.cdi;
-    requires jakarta.el;
     requires jakarta.inject;
     requires jakarta.interceptor;
     requires jakarta.transaction;

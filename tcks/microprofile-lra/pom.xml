@@ -1,6 +1,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>quarkus-tck-parent</artifactId>
         <groupId>io.quarkus</groupId>
@@ -13,7 +13,7 @@
     <name>Quarkus - TCK - MicroProfile LRA</name>
 
     <properties>
-        <microprofile-lra-tck.version>2.0.1</microprofile-lra-tck.version>
+        <microprofile-lra-tck.version>2.0.2</microprofile-lra-tck.version>
     </properties>
 
     <build>
@@ -79,7 +79,10 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+        </dependency>
 
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
         <dependency>

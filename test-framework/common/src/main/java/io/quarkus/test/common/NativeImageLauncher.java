@@ -9,5 +9,9 @@ public interface NativeImageLauncher extends ArtifactLauncher<NativeImageLaunche
         String getConfiguredOutputDirectory();
 
         Class<?> testClass();
+
+        default boolean pgoEnabled() {
+            return false;
+        }
     }
 }

@@ -41,6 +41,8 @@ public class NativeImageLauncherProvider implements ArtifactLauncherProvider {
 
             SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
             TestConfig testConfig = config.getConfigMapping(TestConfig.class);
+            boolean pgoEnabled = config.getOptionalValue("quarkus.native.pgo.enabled", Boolean.class)
+                    .orElse(Boolean.FALSE);
             launcher.init(new NativeImageLauncherProvider.DefaultNativeImageInitContext(
                     config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
                     config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
@@ -52,7 +54,8 @@ public class NativeImageLauncherProvider implements ArtifactLauncherProvider {
                     context.devServicesLaunchResult(),
                     System.getProperty("native.image.path"),
                     config.getOptionalValue("quarkus.package.output-directory", String.class).orElse(null),
-                    context.testClass()));
+                    context.testClass(),
+                    pgoEnabled));
             return launcher;
         } else {
             throw new IllegalStateException("The path of the native binary could not be determined");
@@ -65,16 +68,19 @@ public class NativeImageLauncherProvider implements ArtifactLauncherProvider {
         private final String nativeImagePath;
         private final Class<?> testClass;
         private final String configuredOutputDirectory;
+        private final boolean pgoEnabled;
 
         public DefaultNativeImageInitContext(int httpPort, int httpsPort, Duration waitTime, Duration shutdownTimeout,
                 String testProfile,
                 List<String> argLine, Map<String, String> env,
                 ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult,
-                String nativeImagePath, String configuredOutputDirectory, Class<?> testClass) {
+                String nativeImagePath, String configuredOutputDirectory, Class<?> testClass,
+                boolean pgoEnabled) {
             super(httpPort, httpsPort, waitTime, shutdownTimeout, testProfile, argLine, env, devServicesLaunchResult);
             this.nativeImagePath = nativeImagePath;
             this.configuredOutputDirectory = configuredOutputDirectory;
             this.testClass = testClass;
+            this.pgoEnabled = pgoEnabled;
         }
 
         @Override
@@ -90,6 +96,11 @@ public class NativeImageLauncherProvider implements ArtifactLauncherProvider {
         @Override
         public Class<?> testClass() {
             return testClass;
+        }
+
+        @Override
+        public boolean pgoEnabled() {
+            return pgoEnabled;
         }
     }
 }

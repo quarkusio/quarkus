@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.acme</groupId>
         <artifactId>avro-multimodule-project</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>4.0.999-SNAPSHOT</version>
     </parent>
 
     <artifactId>module1</artifactId>

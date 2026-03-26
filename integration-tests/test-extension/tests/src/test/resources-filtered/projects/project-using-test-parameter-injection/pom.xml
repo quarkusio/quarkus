@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>test-application</groupId>
   <artifactId>project-using-test-parameter-injection</artifactId>
-  <version>999-SNAPSHOT</version>
+  <version>4.0.999-SNAPSHOT</version>
 
   <properties>
     <compiler-plugin.version>${compiler-plugin.version}</compiler-plugin.version>

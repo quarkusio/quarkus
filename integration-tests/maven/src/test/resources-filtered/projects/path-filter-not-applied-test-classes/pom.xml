@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.acme</groupId>
     <artifactId>acme-parent</artifactId>
-    <version>999-SNAPSHOT</version>
+    <version>4.0.999-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Acme - Parent</name>
 

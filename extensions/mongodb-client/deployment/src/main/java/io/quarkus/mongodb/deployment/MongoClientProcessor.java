@@ -39,6 +39,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
+import io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
@@ -116,8 +117,13 @@ public class MongoClientProcessor {
     }
 
     @BuildStep
-    AdditionalIndexedClassesBuildItem includeMongoCommandListener(MongoClientBuildTimeConfig buildTimeConfig) {
-        if (buildTimeConfig.tracingEnabled()) {
+    AdditionalIndexedClassesBuildItem includeMongoCommandListener(
+            MongoClientBuildTimeConfig buildTimeConfig,
+            Optional<OpenTelemetrySdkBuildItem> openTelemetrySdkBuildItem) {
+        if (buildTimeConfig.tracingEnabled()
+                && openTelemetrySdkBuildItem
+                        .map(OpenTelemetrySdkBuildItem::isTracingBuildTimeEnabled)
+                        .orElse(false)) {
             return new AdditionalIndexedClassesBuildItem(
                     MongoTracingCommandListener.class.getName(),
                     MongoReactiveContextProvider.class.getName());

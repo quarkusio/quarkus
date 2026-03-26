@@ -113,7 +113,7 @@ class BookResourceTest {
         boolean found = false;
         for (Map<String, Object> spanData : getSpans()) {
             if (spanData.get("attributes") instanceof Map attr) {
-                var cmd = (String) attr.get("mongodb.command");
+                var cmd = (String) attr.get("db.query.text");
                 if (cmd != null) {
                     assertThat(cmd).contains(commandPart).contains("books");
                     found = true;
@@ -138,7 +138,7 @@ class BookResourceTest {
         for (Map<String, Object> spanData : spans) {
             assertThat(spanData).as("span must have trace id").containsEntry("traceId", traceId);
             if (spanData.get("attributes") instanceof Map attr) {
-                var cmd = (String) attr.get("mongodb.command");
+                var cmd = (String) attr.get("db.query.text");
                 if (cmd != null) {
                     assertThat(cmd).contains(commandPart).contains("books");
                     var parentSpanContext = (Map<String, Object>) spanData.get("parentSpanContext");

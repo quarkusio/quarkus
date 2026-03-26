@@ -700,6 +700,31 @@ Even with all the tracing infrastructure in place the mongodb tracing is not ena
 quarkus.mongodb.tracing.enabled=true
 ----
 
+=== Command Detail Level
+
+By default, MongoDB command details are not included in traces (`OFF` mode). You can control this behavior with the `command-detail-level` property.
+When enabled, the command text is stored in the `db.query.text` attribute following OpenTelemetry semantic conventions.
+
+[source, properties]
+----
+# Command detail level: OFF (default), SANITIZED, or FULL
+quarkus.mongodb.tracing.command-detail-level=SANITIZED
+----
+
+**Detail levels:**
+
+* `OFF` (default) - No command details, only operation metadata (operation name, database, collection)
+* `SANITIZED` - Command structure with type placeholders instead of actual values
+** Example: `{"find": "<string>", "filter": {"email": "<string>", "age": "<int32>"}}`
+** Preserves command structure for debugging while protecting sensitive data
+* `FULL` - Complete command including all data
+** **NOT recommended for production** - may expose sensitive information
+
+[WARNING]
+====
+Using `FULL` mode can expose sensitive data (passwords, emails, personal information) in your traces. Only use in development or when you're certain no sensitive data is involved.
+====
+
 == Testing helpers
 
 xref:#dev-services[Dev Services for MongoDB] is your best option to start a MongoDB database for your unit tests.

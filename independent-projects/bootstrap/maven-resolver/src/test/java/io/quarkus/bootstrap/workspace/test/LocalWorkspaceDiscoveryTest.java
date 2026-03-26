@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.apache.maven.model.Dependency;
+import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.junit.jupiter.api.AfterAll;
@@ -783,6 +784,113 @@ public class LocalWorkspaceDiscoveryTest {
         assertTrue(projects
                 .containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "empty-parent-relative-path-module")));
         assertTrue(projects.containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "root")));
+    }
+
+    /**
+     * Simulates the flatten-maven-plugin scenario where project.getFile() points to
+     * a flattened POM in the target/ directory, and the workspace loader must still
+     * resolve the current project correctly.
+     * <p>
+     * This reproduces the issue described in https://github.com/quarkusio/quarkus/issues/53285
+     */
+    @Test
+    public void loadWorkspaceWithFlattenedPomProvidedModules() throws Exception {
+        // Create a simple multi-module project: root -> lib, app
+        final Path projectDir = IoUtils.createRandomTmpDir();
+        try {
+            // Root POM
+            final Model rootModel = new Model();
+            rootModel.setModelVersion("4.0.0");
+            rootModel.setGroupId("com.example");
+            rootModel.setArtifactId("root");
+            rootModel.setVersion("1.0-SNAPSHOT");
+            rootModel.setPackaging("pom");
+            rootModel.addModule("lib");
+            rootModel.addModule("app");
+            ModelUtils.persistModel(projectDir.resolve("pom.xml"), rootModel);
+
+            // Lib module
+            final Path libDir = IoUtils.mkdirs(projectDir.resolve("lib"));
+            IoUtils.mkdirs(libDir.resolve("target/classes"));
+            final Model libModel = new Model();
+            libModel.setModelVersion("4.0.0");
+            libModel.setArtifactId("lib");
+            final Parent libParent = new Parent();
+            libParent.setGroupId("com.example");
+            libParent.setArtifactId("root");
+            libParent.setVersion("1.0-SNAPSHOT");
+            libModel.setParent(libParent);
+            ModelUtils.persistModel(libDir.resolve("pom.xml"), libModel);
+
+            // App module
+            final Path appDir = IoUtils.mkdirs(projectDir.resolve("app"));
+            IoUtils.mkdirs(appDir.resolve("target/classes"));
+            final Model appModel = new Model();
+            appModel.setModelVersion("4.0.0");
+            appModel.setArtifactId("app");
+            final Parent appParent = new Parent();
+            appParent.setGroupId("com.example");
+            appParent.setArtifactId("root");
+            appParent.setVersion("1.0-SNAPSHOT");
+            appModel.setParent(appParent);
+            appModel.addDependency(newDependency("com.example", "lib", "1.0-SNAPSHOT"));
+            ModelUtils.persistModel(appDir.resolve("pom.xml"), appModel);
+
+            // Simulate flatten-maven-plugin: create flattened POM in target/
+            final Path flattenedPom = appDir.resolve("target/app-1.0-SNAPSHOT.pom");
+            final Model flattenedAppModel = appModel.clone();
+            flattenedAppModel.setGroupId("com.example");
+            flattenedAppModel.setVersion("1.0-SNAPSHOT");
+            ModelUtils.persistModel(flattenedPom, flattenedAppModel);
+
+            // Simulate what QuarkusBootstrapProvider.setProvidedModules does:
+            // For root: pom-packaging, flatten didn't run, pomDir == basedir
+            final Model rootRawModel = ModelUtils.readModel(projectDir.resolve("pom.xml"));
+            rootRawModel.setPomFile(projectDir.resolve("pom.xml").toFile());
+
+            // For app: flatten ran, project.getFile() -> target/app-1.0-SNAPSHOT.pom
+            final Model appRawModel = ModelUtils.readModel(appDir.resolve("pom.xml"));
+            appRawModel.setPomFile(flattenedPom.toFile()); // simulates getRawModel's setPomFile(mp.getFile())
+
+            // Effective model for app (like mp.getModel())
+            final Model appEffective = appRawModel.clone();
+            appEffective.setGroupId("com.example");
+            appEffective.setVersion("1.0-SNAPSHOT");
+
+            // Lib raw model: flatten ran on lib too
+            final Model libRawModel = ModelUtils.readModel(libDir.resolve("pom.xml"));
+            final Path flattenedLibPom = libDir.resolve("target/lib-1.0-SNAPSHOT.pom");
+            final Model flattenedLibModel = libModel.clone();
+            flattenedLibModel.setGroupId("com.example");
+            flattenedLibModel.setVersion("1.0-SNAPSHOT");
+            ModelUtils.persistModel(flattenedLibPom, flattenedLibModel);
+            libRawModel.setPomFile(flattenedLibPom.toFile());
+
+            final Model libEffective = libRawModel.clone();
+            libEffective.setGroupId("com.example");
+            libEffective.setVersion("1.0-SNAPSHOT");
+
+            // Simulate -am -pl app: all modules are provided (root, lib, app)
+            // Each flattened module gets two entries (target POM + basedir pom.xml)
+            final var config = BootstrapMavenContext.config()
+                    .setCurrentProject(flattenedPom.toString())
+                    .setPreferPomsFromWorkspace(true)
+                    // Root: single provided module (flatten didn't change pom-packaging root)
+                    .addProvidedModule(projectDir.resolve("pom.xml"), rootRawModel, null)
+                    // Lib: two provided modules (flatten ran)
+                    .addProvidedModule(flattenedLibPom, libRawModel, libEffective)
+                    .addProvidedModule(libDir.resolve("pom.xml"), libRawModel, libEffective)
+                    // App: two provided modules (flatten ran)
+                    .addProvidedModule(flattenedPom, appRawModel, appEffective)
+                    .addProvidedModule(appDir.resolve("pom.xml"), appRawModel, appEffective);
+
+            final LocalProject currentProject = new BootstrapMavenContext(config).getCurrentProject();
+            assertNotNull(currentProject, "Current project should not be null when flatten-maven-plugin is used");
+            assertEquals("app", currentProject.getArtifactId());
+            assertEquals("com.example", currentProject.getGroupId());
+        } finally {
+            IoUtils.recursiveDelete(projectDir);
+        }
     }
 
     private static void assertParents(LocalProject project, String... parentArtifactId) {

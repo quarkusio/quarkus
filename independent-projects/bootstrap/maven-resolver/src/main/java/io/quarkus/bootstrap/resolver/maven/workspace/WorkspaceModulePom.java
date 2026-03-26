@@ -21,8 +21,8 @@ public class WorkspaceModulePom {
     final Path pom;
     Model model;
     Model effectiveModel;
-    WorkspaceModulePom parent;
-    int state = STATE_NEW;
+    volatile WorkspaceModulePom parent;
+    volatile int state = STATE_NEW;
     // a queue of modules that should be loaded after this one
     final ConcurrentLinkedDeque<WorkspaceModulePom> thenLoad = new ConcurrentLinkedDeque<>();
 

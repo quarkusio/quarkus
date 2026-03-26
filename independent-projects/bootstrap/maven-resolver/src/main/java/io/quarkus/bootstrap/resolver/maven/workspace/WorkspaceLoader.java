@@ -148,6 +148,22 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
         }
 
         if (currentProject == null) {
+            // The current project wasn't identified during normal processing.
+            // This can happen when plugins like flatten-maven-plugin create two WorkspaceModulePom
+            // entries for the same artifact (one for the target/ POM, one for the basedir pom.xml).
+            // The GAV-based dedup in loadAndQueueChildren may have skipped the module whose
+            // directory matches currentProjectPom. Try to find and process it directly.
+            var currentPomDir = currentProjectPom.getParent();
+            if (currentPomDir == null) {
+                currentPomDir = getFsRootDir();
+            }
+            var module = knownModules.get(currentPomDir);
+            if (module != null) {
+                module.process(loadedModelProcessor);
+            }
+        }
+
+        if (currentProject == null) {
             log.errorf("Failed to locate %s among the following loaded modules:", currentProjectPom);
             for (Path moduleDir : knownModules.keySet()) {
                 log.error("- " + moduleDir);

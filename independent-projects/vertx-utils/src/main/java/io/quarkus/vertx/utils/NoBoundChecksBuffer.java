@@ -11,6 +11,7 @@ import io.netty.util.CharsetUtil;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.buffer.impl.BufferImpl;
 import io.vertx.core.impl.Arguments;
+import io.vertx.core.internal.buffer.BufferInternal;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
@@ -83,8 +84,18 @@ public class NoBoundChecksBuffer implements Buffer {
         return buffer.getDouble(pos);
     }
 
+    @Override
+    public double getDoubleLE(int pos) {
+        return buffer.getDoubleLE(pos);
+    }
+
     public float getFloat(int pos) {
         return buffer.getFloat(pos);
+    }
+
+    @Override
+    public float getFloatLE(int pos) {
+        return buffer.getFloatLE(pos);
     }
 
     public short getShort(int pos) {
@@ -170,12 +181,12 @@ public class NoBoundChecksBuffer implements Buffer {
     }
 
     public Buffer appendBuffer(Buffer buff) {
-        buffer.writeBytes(buff.getByteBuf());
+        buffer.writeBytes(((BufferInternal)buff).getByteBuf());
         return this;
     }
 
     public Buffer appendBuffer(Buffer buff, int offset, int len) {
-        ByteBuf byteBuf = buff.getByteBuf();
+        ByteBuf byteBuf = ((BufferInternal)buff).getByteBuf();
         int from = byteBuf.readerIndex() + offset;
         buffer.writeBytes(byteBuf, from, len);
         return this;
@@ -266,8 +277,20 @@ public class NoBoundChecksBuffer implements Buffer {
         return this;
     }
 
+    @Override
+    public Buffer appendFloatLE(float f) {
+        buffer.writeFloatLE(f);
+        return this;
+    }
+
     public Buffer appendDouble(double d) {
         buffer.writeDouble(d);
+        return this;
+    }
+
+    @Override
+    public Buffer appendDoubleLE(double d) {
+        buffer.writeDoubleLE(d);
         return this;
     }
 
@@ -345,9 +368,23 @@ public class NoBoundChecksBuffer implements Buffer {
         return this;
     }
 
+    @Override
+    public Buffer setDoubleLE(int pos, double d) {
+        ensureWritable(pos, 8);
+        buffer.setDoubleLE(pos, d);
+        return this;
+    }
+
     public Buffer setFloat(int pos, float f) {
         ensureWritable(pos, 4);
         buffer.setFloat(pos, f);
+        return this;
+    }
+
+    @Override
+    public Buffer setFloatLE(int pos, float f) {
+        ensureWritable(pos, 4);
+        buffer.setFloatLE(pos, f);
         return this;
     }
 
@@ -377,13 +414,13 @@ public class NoBoundChecksBuffer implements Buffer {
 
     public Buffer setBuffer(int pos, Buffer b) {
         ensureWritable(pos, b.length());
-        buffer.setBytes(pos, b.getByteBuf());
+        buffer.setBytes(pos, ((BufferInternal)b).getByteBuf());
         return this;
     }
 
     public Buffer setBuffer(int pos, Buffer b, int offset, int len) {
         ensureWritable(pos, len);
-        ByteBuf byteBuf = b.getByteBuf();
+        ByteBuf byteBuf = ((BufferInternal)b).getByteBuf();
         buffer.setBytes(pos, byteBuf, byteBuf.readerIndex() + offset, len);
         return this;
     }
@@ -488,7 +525,7 @@ public class NoBoundChecksBuffer implements Buffer {
     public int readFromBuffer(int pos, Buffer buffer) {
         int len = buffer.getInt(pos);
         Buffer b = buffer.getBuffer(pos + 4, pos + 4 + len);
-        this.buffer = b.getByteBuf();
+        this.buffer = ((BufferInternal)b).getByteBuf();
         return pos + 4 + len;
     }
 }

@@ -11,7 +11,7 @@ import io.quarkus.hibernate.panache.runtime.orm.ManagedBlockingOperations;
 import io.quarkus.hibernate.panache.runtime.orm.StatelessBlockingOperations;
 import io.quarkus.panache.common.Sort;
 
-public interface PanacheOperations<One, Many, Query, Count, Completion, Confirmation, Session, StatelessSession> {
+public interface PanacheOperations<One, Many, Query, Count, Completion, Confirmation> {
 
     static PanacheBlockingOperations getBlockingManaged() {
         return ManagedBlockingOperations.INSTANCE;
@@ -30,10 +30,6 @@ public interface PanacheOperations<One, Many, Query, Count, Completion, Confirma
     }
 
     // Operations
-
-    Session getSession(Class<?> entityClass);
-
-    StatelessSession getStatelessSession(Class<?> entityClass);
 
     Completion insert(Object entity);
 

@@ -65,9 +65,9 @@ public abstract class TransactionalInterceptorBase {
             validateLegacyPanacheAnnotations();
 
             Transactional annotation = getTransactionalAnnotation(context);
-            return defineReactiveTransactionalChain(annotation, method, () -> {
-                return proceedUni(context);
-            });
+            // Deferral allows the Uni to be reused (re-subscribed-to) in different Vert.x contexts.
+            return Uni.createFrom()
+                    .deferred(() -> defineReactiveTransactionalChain(annotation, method, () -> proceedUni(context)));
         }
         LOG.tracef("Transactional interceptor end from method %s", method);
         return context.proceed();
@@ -77,7 +77,7 @@ public abstract class TransactionalInterceptorBase {
         Context context = vertxContext();
 
         if (context.getLocal(TRANSACTIONAL_METHOD_KEY) == null) {
-            // This is the parent method, responsible for commit, rollback or cancelation of the transaction
+            // This is the parent method, responsible for commit, rollback or cancellation of the transaction
 
             /*
              * Mark the current context to be @Transactional

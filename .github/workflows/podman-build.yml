@@ -4,10 +4,12 @@ permissions:
   contents: read
   actions: write
 
-on:
-  workflow_dispatch:
-  schedule: ## Do a run daily, to check our compatibility
-    - cron: '0 1 * * *'
+# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
+#on:
+#  workflow_dispatch:
+#  schedule: ## Do a run daily, to check our compatibility
+#    - cron: '0 1 * * *'
+on: [workflow_dispatch]
 
 env:
   # Workaround testsuite locale issue

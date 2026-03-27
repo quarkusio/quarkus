@@ -5,22 +5,24 @@ permissions:
   issues: write
   packages: read
 
-on:
-  schedule:
-    # midnight every weekday + saturday
-    - cron:  '0 0 * * 1-6'
-  workflow_dispatch:
-    inputs:
-      jdkVersion:
-        description: 'JDK version'
-        required: true
-        # make sure to keep the matrix entries (see below) in sync!
-        default: '21'
-      jdkDistribution:
-        description: 'JDK distribution'
-        required: true
-        # make sure to keep the matrix entries (see below) in sync!
-        default: 'jdk.java.net'
+# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
+#on:
+#  schedule:
+#    # midnight every weekday + saturday
+#    - cron:  '0 0 * * 1-6'
+#  workflow_dispatch:
+#    inputs:
+#      jdkVersion:
+#        description: 'JDK version'
+#        required: true
+#        # make sure to keep the matrix entries (see below) in sync!
+#        default: '21'
+#      jdkDistribution:
+#        description: 'JDK distribution'
+#        required: true
+#        # make sure to keep the matrix entries (see below) in sync!
+#        default: 'jdk.java.net'
+on: [workflow_dispatch]
 
 env:
   # Workaround testsuite locale issue

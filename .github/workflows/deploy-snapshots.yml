@@ -5,10 +5,12 @@ permissions:
   issues: write
   packages: write
 
-on:
-  schedule:
-    - cron: '0 0 * * *'
-  workflow_dispatch:
+# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
+#on:
+#  schedule:
+#    - cron: '0 0 * * *'
+#  workflow_dispatch:
+on: [workflow_dispatch]
 
 env:
   LANG: en_US.UTF-8

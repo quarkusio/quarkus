@@ -5,9 +5,11 @@ permissions:
   issues: write
   packages: read
 
-on:
-  schedule:
-    - cron: '0 3 * * *'
+# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
+#on:
+#  schedule:
+#    - cron: '0 3 * * *'
+on: [workflow_dispatch]
 env:
   LANG: en_US.UTF-8
   MVNW_REPOURL: https://maven-central.storage-download.googleapis.com/maven2

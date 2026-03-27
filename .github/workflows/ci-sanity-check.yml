@@ -4,37 +4,39 @@ name: Quarkus CI Sanity Check
 permissions:
   contents: read
 
-on:
-  push:
-    paths:
-      - '.gitignore'
-      - '.dockerignore'
-      - '*.md'
-      - '*.adoc'
-      - '*.txt'
-      - 'adr/**'
-      - 'jakarta/**'
-      - '.github/ISSUE_TEMPLATE/**'
-      - '.github/*.yml'
-      - '.github/*.java'
-      - '.github/*.conf'
-      - '.sdkmanrc'
-      - '.devcontainer/**'
-  pull_request:
-    paths:
-      - '.gitignore'
-      - '.dockerignore'
-      - '*.md'
-      - '*.adoc'
-      - '*.txt'
-      - 'adr/**'
-      - 'jakarta/**'
-      - '.github/ISSUE_TEMPLATE/**'
-      - '.github/*.yml'
-      - '.github/*.java'
-      - '.github/*.conf'
-      - '.sdkmanrc'
-      - '.devcontainer/**'
+# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
+#on:
+#  push:
+#    paths:
+#      - '.gitignore'
+#      - '.dockerignore'
+#      - '*.md'
+#      - '*.adoc'
+#      - '*.txt'
+#      - 'adr/**'
+#      - 'jakarta/**'
+#      - '.github/ISSUE_TEMPLATE/**'
+#      - '.github/*.yml'
+#      - '.github/*.java'
+#      - '.github/*.conf'
+#      - '.sdkmanrc'
+#      - '.devcontainer/**'
+#  pull_request:
+#    paths:
+#      - '.gitignore'
+#      - '.dockerignore'
+#      - '*.md'
+#      - '*.adoc'
+#      - '*.txt'
+#      - 'adr/**'
+#      - 'jakarta/**'
+#      - '.github/ISSUE_TEMPLATE/**'
+#      - '.github/*.yml'
+#      - '.github/*.java'
+#      - '.github/*.conf'
+#      - '.sdkmanrc'
+#      - '.devcontainer/**'
+on: [workflow_dispatch]
 
 jobs:
   ci-sanity-check:

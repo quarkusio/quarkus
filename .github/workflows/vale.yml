@@ -1,10 +1,12 @@
 ---
 name: Linting with Vale
-on:
-  pull_request:
-    paths:
-      - 'docs/src/main/asciidoc/**'
-      - '.github/workflows/vale.yml'
+# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
+#on:
+#  pull_request:
+#    paths:
+#      - 'docs/src/main/asciidoc/**'
+#      - '.github/workflows/vale.yml'
+on: [workflow_dispatch]
 
 concurrency:
   group: "workflow = ${{ github.workflow }}, ref = ${{ github.event.ref }}, pr = ${{ github.event.pull_request.id }}"

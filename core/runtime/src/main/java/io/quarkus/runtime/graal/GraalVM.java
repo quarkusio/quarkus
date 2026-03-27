@@ -50,7 +50,7 @@ public final class GraalVM {
                 String vendor = versionMatcher.group(VENDOR_PREFIX_GROUP);
                 if (GRAALVM_CE_VERS_PREFIX.equals(vendor) || ORACLE_GRAALVM_VERS_PREFIX.equals(vendor)) {
                     String version = versionMatcher.group(VERSION_GROUP);
-                    String tokens[] = version.split("\\.", 3);
+                    String[] tokens = version.split("\\.", 3);
                     String jdkFeature = tokens[0];
                     String jdkVers = jdkFeature;
                     if (tokens.length == 3 && !graalVMFutureVers(tokens)) {
@@ -76,8 +76,8 @@ public final class GraalVM {
         // Anything beyond 25.0 is a future GraalVM version not suitable for Runtime.Version.parse()
         private static boolean graalVMFutureVers(String[] tokens) {
             try {
-                int feature = Integer.valueOf(tokens[0]);
-                int interim = Integer.valueOf(tokens[1]);
+                int feature = Integer.parseInt(tokens[0]);
+                int interim = Integer.parseInt(tokens[1]);
                 return feature > 25 || (feature == 25 && interim > 0);
             } catch (NumberFormatException e) {
                 return false;

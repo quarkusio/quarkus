@@ -16,7 +16,7 @@
     <version>999-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <description>Quarkus - Kubernetes Native Java stack tailored for OpenJDK HotSpot and GraalVM</description>
+    <description>Quarkus - Supersonic Subatomic Java</description>
     <url>https://github.com/quarkusio/quarkus</url>
 
     <developers>

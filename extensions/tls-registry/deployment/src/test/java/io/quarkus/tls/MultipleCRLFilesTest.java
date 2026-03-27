@@ -29,6 +29,6 @@ public class MultipleCRLFilesTest {
     @Test
     void testMultipleCRLFiles() {
         TlsConfiguration def = certificates.getDefault().orElseThrow();
-        assertThat(def.getSSLOptions().getCrlValues()).hasSize(2);
+        assertThat(def.getServerSSLOptions().getCrlValues()).hasSize(2);
     }
 }

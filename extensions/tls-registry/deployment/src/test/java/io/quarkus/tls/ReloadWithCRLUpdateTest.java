@@ -67,12 +67,12 @@ public class ReloadWithCRLUpdateTest {
     void testCRLIsReloadedWithCertificate() throws IOException {
         TlsConfiguration def = registry.getDefault().orElseThrow();
 
-        assertThat(def.getSSLOptions().getCrlValues()).hasSize(1);
+        assertThat(def.getServerSSLOptions().getCrlValues()).hasSize(1);
 
         Files.copy(new File("target/certs/test-reload-crl-B-keystore.p12").toPath(),
                 new File(certs, "/tls.p12").toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 
         assertThat(def.reload()).isTrue();
-        assertThat(def.getSSLOptions().getCrlValues()).hasSize(1);
+        assertThat(def.getServerSSLOptions().getCrlValues()).hasSize(1);
     }
 }

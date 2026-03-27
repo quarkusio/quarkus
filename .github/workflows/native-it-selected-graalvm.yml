@@ -10,7 +10,7 @@ on:
       BRANCH:
         description: 'Branch to use'
         required: true
-        default: 'main'
+        default: '4.0'
         type: string
       NATIVE_COMPILER:
         description: 'the native compiler to use'
@@ -28,7 +28,6 @@ on:
         default: '25'
         type: choice
         options:
-          - '17'
           - '21'
           - '25'
 
@@ -39,7 +38,7 @@ env:
   COMMON_TEST_MAVEN_ARGS: "-Dformat.skip -Denforcer.skip -DskipDocs -Dforbiddenapis.skip -DskipExtensionValidation -DskipCodestartValidation"
   NATIVE_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.native.native-image-xmx=6g -Dnative -Dnative.surefire.skip -Dno-descriptor-tests clean install -DskipDocs"
   JVM_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.test.hang-detection-timeout=60"
-  PTS_MAVEN_ARGS: "-Ddevelocity.pts.enabled=${{ github.event_name == 'pull_request' && github.base_ref == 'main' && 'true' || 'false' }}"
+  PTS_MAVEN_ARGS: "-Ddevelocity.pts.enabled=${{ github.event_name == 'pull_request' && github.base_ref == '4.0' && 'true' || 'false' }}"
   DB_USER: hibernate_orm_test
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test
@@ -51,8 +50,8 @@ defaults:
     shell: bash
 
 jobs:
-  build-jdk17:
-    name: "Initial JDK 17 Build - ${{ inputs.BRANCH }}"
+  build-jdk21:
+    name: "Initial JDK 21 Build - ${{ inputs.BRANCH }}"
     runs-on: ubuntu-latest
     outputs:
       gib_args: ${{ steps.get-gib-args.outputs.gib_args }}
@@ -65,8 +64,8 @@ jobs:
     steps:
       - name: Gradle Enterprise environment
         run: |
-          echo "GE_TAGS=jdk-17" >> "$GITHUB_ENV"
-          echo "GE_CUSTOM_VALUES=gh-job-name=Initial JDK 17 Build" >> "$GITHUB_ENV"
+          echo "GE_TAGS=jdk-21" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=Initial JDK 21 Build" >> "$GITHUB_ENV"
       - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.BRANCH }}
@@ -76,11 +75,11 @@ jobs:
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
       - name: Generate cache key
         id: cache-key
         run: |
@@ -111,7 +110,7 @@ jobs:
         uses: gradle/develocity-actions/setup-maven@v2.1
         with:
           capture-strategy: ON_DEMAND
-          job-name: "Initial JDK 17 Build"
+          job-name: "Initial JDK 21 Build"
           add-pr-comment: false
           add-job-summary: false
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
@@ -139,10 +138,10 @@ jobs:
             # - the current branch is a backport branch targeting some released branch like 1.10 (merge target is not main)
             GIB_ARGS+=" -Dgib.referenceBranch=origin/$PULL_REQUEST_BASE -Dgib.disableIfReferenceBranchMatches='origin/\d+\.\d+'"
           else
-            # No PR means the merge target is uncertain so fetch & use main of quarkusio/quarkus, *unless*:
-            # - the current branch is main or some released branch like 1.10
-            # - the current branch is a backport branch which is going to target some released branch like 1.10 (merge target is not main)
-            GIB_ARGS+=" -Dgib.referenceBranch=refs/remotes/quarkusio/main -Dgib.fetchReferenceBranch -Dgib.disableIfBranchMatches='main|\d+\.\d+|.*backport.*'"
+            # No PR means the merge target is uncertain so fetch & use 4.0 of quarkusio/quarkus, *unless*:
+            # - the current branch is 4.0 or some released branch like 1.10
+            # - the current branch is a backport branch which is going to target some released branch like 1.10 (merge target is not 4.0)
+            GIB_ARGS+=" -Dgib.referenceBranch=refs/remotes/quarkusio/4.0 -Dgib.fetchReferenceBranch -Dgib.disableIfBranchMatches='4\\.0|\d+\.\d+|.*backport.*'"
           fi
           echo "GIB_ARGS: $GIB_ARGS"
           echo "gib_args=${GIB_ARGS}" >> $GITHUB_OUTPUT
@@ -184,7 +183,7 @@ jobs:
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: "build-reports-Initial JDK 17 Build"
+          name: "build-reports-Initial JDK 21 Build"
           path: |
             build-reports.zip
           retention-days: 7
@@ -192,9 +191,9 @@ jobs:
   calculate-test-jobs:
     name: Calculate Test Jobs
     runs-on: ubuntu-latest
-    needs: build-jdk17
+    needs: build-jdk21
     env:
-      GIB_IMPACTED_MODULES: ${{ needs.build-jdk17.outputs.gib_impacted }}
+      GIB_IMPACTED_MODULES: ${{ needs.build-jdk21.outputs.gib_impacted }}
     outputs:
       native_matrix: ${{ steps.calc-native-matrix.outputs.matrix }}
       virtual_threads_matrix: ${{ steps.calc-virtual-threads-matrix.outputs.matrix }}
@@ -224,7 +223,7 @@ jobs:
   virtual-thread-native-tests:
     name: Native Tests - Virtual Thread - ${{matrix.category}} - ${{inputs.NATIVE_COMPILER}} ${{inputs.NATIVE_COMPILER_VERSION}} - ${{inputs.BRANCH}}
     runs-on: ${{matrix.os-name}}
-    needs: [build-jdk17, calculate-test-jobs]
+    needs: [build-jdk21, calculate-test-jobs]
     timeout-minutes: ${{matrix.timeout}}
     strategy:
       max-parallel: 12
@@ -241,10 +240,10 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: ~/.m2/repository
-          key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
+          key: ${{ needs.build-jdk21.outputs.m2-cache-key }}
           restore-keys: |
-            ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
-            ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
+            ${{ needs.build-jdk21.outputs.m2-monthly-branch-cache-key }}-
+            ${{ needs.build-jdk21.outputs.m2-monthly-cache-key }}-
       - name: Download .m2/repository/io/quarkus
         uses: actions/download-artifact@v8
         with:
@@ -304,7 +303,7 @@ jobs:
 
   native-tests:
     name: Native Tests - ${{matrix.category}} - ${{inputs.NATIVE_COMPILER}} ${{inputs.NATIVE_COMPILER_VERSION}} - ${{inputs.BRANCH}}
-    needs: [build-jdk17, calculate-test-jobs]
+    needs: [build-jdk21, calculate-test-jobs]
     runs-on: ${{matrix.os-name}}
     env:
       # leave more space for the actual native compilation and execution
@@ -324,11 +323,11 @@ jobs:
       - uses: actions/checkout@v6
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
       - name: Setup GraalVM
         id: setup-graalvm
         uses: graalvm/setup-graalvm@v1
@@ -346,10 +345,10 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: ~/.m2/repository
-          key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
+          key: ${{ needs.build-jdk21.outputs.m2-cache-key }}
           restore-keys: |
-            ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
-            ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
+            ${{ needs.build-jdk21.outputs.m2-monthly-branch-cache-key }}-
+            ${{ needs.build-jdk21.outputs.m2-monthly-cache-key }}-
       - name: Download .m2/repository/io/quarkus
         uses: actions/download-artifact@v8
         with:
@@ -370,9 +369,9 @@ jobs:
         uses: actions/cache@v5
         with:
           path: '**/.quarkus/quarkus-prod-config-dump'
-          key: ${{ needs.build-jdk17.outputs.quarkus-metadata-cache-key }}
+          key: ${{ needs.build-jdk21.outputs.quarkus-metadata-cache-key }}
           # The key is restored from default branch if not found, but still branch specific to override the default after first run
-          restore-keys: ${{ needs.build-jdk17.outputs.quarkus-metadata-cache-key-default }}
+          restore-keys: ${{ needs.build-jdk21.outputs.quarkus-metadata-cache-key-default }}
       - name: Build
         env:
           TEST_MODULES: ${{matrix.test-modules}}
@@ -409,17 +408,17 @@ jobs:
   build-report:
     runs-on: ubuntu-latest
     name: Build report - ${{inputs.NATIVE_COMPILER}} ${{inputs.NATIVE_COMPILER_VERSION}} - ${{inputs.BRANCH}}
-    needs: [build-jdk17,native-tests,virtual-thread-native-tests]
+    needs: [build-jdk21,native-tests,virtual-thread-native-tests]
     if: always()
     steps:
       - uses: actions/download-artifact@v8
         with:
           path: build-reports-artifacts
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
       - name: Produce report and add it as job summary
         uses: quarkusio/action-build-reporter@main
         with:

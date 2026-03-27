@@ -62,14 +62,14 @@ public class VerticleDeployer {
                             vertx.executeBlocking(() -> {
                                 LOGGER.info("Blocking task executed ### " + MDC.get(MDC_KEY));
                                 return null;
-                            }, false).onComplete(bar -> request.send(rar -> {
+                            }, false).onComplete(bar -> request.send().onComplete(rar -> {
                                 String value = (String) MDC.get(MDC_KEY);
                                 LOGGER.info("Received Web Client response ### " + value);
                                 req.response().end(value);
                             }));
                         });
                     })
-                    .listen(VERTICLE_PORT, httpServerPromise);
+                    .listen(VERTICLE_PORT).onComplete(httpServerPromise);
         }
     }
 }

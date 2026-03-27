@@ -30,7 +30,7 @@ public class MessageConsumerReturnTypesTest {
 
     private Object requestAndAwait(String address, Object message, boolean nullAsMarker) throws InterruptedException {
         BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
-        eventBus.request(address, message, ar -> {
+        eventBus.request(address, message).onComplete(ar -> {
             if (ar.succeeded()) {
                 Object body = ar.result().body();
                 synchronizer.offer(nullAsMarker && body == null ? NULL_BODY : body);
@@ -52,7 +52,7 @@ public class MessageConsumerReturnTypesTest {
         // The request times out because no reply is ever produced.
         // This documents the current behavior; it may be revisited in Quarkus 4.
         BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
-        eventBus.request("null-return", "hello", ar -> {
+        eventBus.request("null-return", "hello").onComplete(ar -> {
             if (ar.succeeded()) {
                 synchronizer.offer(ar.result().body() == null ? NULL_BODY : ar.result().body());
             } else {

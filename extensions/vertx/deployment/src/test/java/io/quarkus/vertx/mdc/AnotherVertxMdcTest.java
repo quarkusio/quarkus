@@ -120,14 +120,14 @@ public class AnotherVertxMdcTest {
                 for (Map.Entry entry : map.entrySet()) {
                     VertxMDC.INSTANCE.put((String) entry.getKey(), (String) entry.getValue());
                 }
-                report.put("MDC with probe", Vertx.currentContext().getLocal(VertxMDC.class.getName()));
+                report.put("MDC with probe", Vertx.currentContext().getLocal(VertxMDC.MDC_LOCAL));
                 report.put("MDC before object",
-                        "" + System.identityHashCode(Vertx.currentContext().getLocal(VertxMDC.class.getName())));
+                        "" + System.identityHashCode(Vertx.currentContext().getLocal(VertxMDC.MDC_LOCAL)));
 
                 VertxMDC.INSTANCE.reinitializeVertxMdc(Vertx.currentContext(), keysToDiscard);
-                report.put("MDC after reinit", Vertx.currentContext().getLocal(VertxMDC.class.getName()));
+                report.put("MDC after reinit", Vertx.currentContext().getLocal(VertxMDC.MDC_LOCAL));
                 report.put("MDC after reinit object",
-                        "" + System.identityHashCode(Vertx.currentContext().getLocal(VertxMDC.class.getName())));
+                        "" + System.identityHashCode(Vertx.currentContext().getLocal(VertxMDC.MDC_LOCAL)));
                 return report;
             }).subscribe().asCompletionStage().toCompletableFuture().get(1, TimeUnit.SECONDS);
         }

@@ -18,6 +18,6 @@ public class MyUndeployedVerticle extends AbstractVerticle {
     public Uni<Void> asyncStart() {
         return vertx.eventBus().consumer("bravo")
                 .handler(m -> m.reply("hello from bravo"))
-                .completionHandler();
+                .completion();
     }
 }

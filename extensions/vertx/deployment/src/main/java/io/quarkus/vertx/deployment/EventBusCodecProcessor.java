@@ -181,8 +181,7 @@ public class EventBusCodecProcessor {
             JsonArray.class.getName(),
 
             // Buffers classes
-            Buffer.class.getName(),
-            io.vertx.mutiny.core.buffer.Buffer.class.getName());
+            Buffer.class.getName());
 
     private static Type extractPayloadTypeFromReturn(MethodInfo method) {
         Type returnType = method.returnType();

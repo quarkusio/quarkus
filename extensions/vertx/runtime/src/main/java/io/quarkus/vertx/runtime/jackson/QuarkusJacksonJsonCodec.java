@@ -17,6 +17,7 @@ import io.netty.buffer.ByteBufInputStream;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.internal.buffer.BufferInternal;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.EncodeException;
 import io.vertx.core.json.JsonArray;
@@ -123,7 +124,7 @@ public class QuarkusJacksonJsonCodec implements JsonCodec {
     public static JsonParser createParser(Buffer buf) {
         try {
             return QuarkusJacksonJsonCodec.mapper().getFactory()
-                    .createParser((InputStream) new ByteBufInputStream(buf.getByteBuf()));
+                    .createParser((InputStream) new ByteBufInputStream(((BufferInternal) buf).getByteBuf()));
         } catch (IOException e) {
             throw new DecodeException("Failed to decode:" + e.getMessage(), e);
         }

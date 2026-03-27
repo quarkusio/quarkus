@@ -3,13 +3,15 @@ name: quarkus-github-bot.yml lint
 permissions:
   contents: read
 
-on:
-  push:
-    paths:
-      - '.github/quarkus-github-bot.yml'
-  pull_request:
-    paths:
-      - '.github/quarkus-github-bot.yml'
+# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
+#on:
+#  push:
+#    paths:
+#      - '.github/quarkus-github-bot.yml'
+#  pull_request:
+#    paths:
+#      - '.github/quarkus-github-bot.yml'
+on: [workflow_dispatch]
 
 jobs:
   lint:

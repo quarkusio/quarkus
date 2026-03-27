@@ -4,33 +4,35 @@ permissions:
   contents: read
   packages: read
 
-on:
-  workflow_dispatch:
-    inputs:
-      BRANCH:
-        description: 'Branch to use'
-        required: true
-        default: 'main'
-        type: string
-      NATIVE_COMPILER:
-        description: 'the native compiler to use'
-        required: true
-        default: 'mandrel'
-        type: choice
-        options:
-          - mandrel
-          - graalvm-community
-          - graalvm
-          - liberica
-      NATIVE_COMPILER_VERSION:
-        description: 'the native compiler version to use'
-        required: true
-        default: '25'
-        type: choice
-        options:
-          - '17'
-          - '21'
-          - '25'
+# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
+#on:
+#  workflow_dispatch:
+#    inputs:
+#      BRANCH:
+#        description: 'Branch to use'
+#        required: true
+#        default: 'main'
+#        type: string
+#      NATIVE_COMPILER:
+#        description: 'the native compiler to use'
+#        required: true
+#        default: 'mandrel'
+#        type: choice
+#        options:
+#          - mandrel
+#          - graalvm-community
+#          - graalvm
+#          - liberica
+#      NATIVE_COMPILER_VERSION:
+#        description: 'the native compiler version to use'
+#        required: true
+#        default: '25'
+#        type: choice
+#        options:
+#          - '17'
+#          - '21'
+#          - '25'
+on: [workflow_dispatch]
 
 env:
   # Workaround testsuite locale issue

@@ -9,10 +9,12 @@ permissions:
   contents: read
   security-events: write
 
-on:
-
-  schedule:
-    - cron: '0 3 * * 0'
+# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
+#on:
+#
+#  schedule:
+#    - cron: '0 3 * * 0'
+on: [workflow_dispatch]
 
 jobs:
   analyze:

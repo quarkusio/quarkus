@@ -4,10 +4,12 @@ permissions:
   contents: read
   actions: write
 
-on:
-  workflow_dispatch:
-  schedule:
-    - cron: '0 0 * * 0,3'
+# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
+#on:
+#  workflow_dispatch:
+#  schedule:
+#    - cron: '0 0 * * 0,3'
+on: [workflow_dispatch]
 
 jobs:
   owasp:

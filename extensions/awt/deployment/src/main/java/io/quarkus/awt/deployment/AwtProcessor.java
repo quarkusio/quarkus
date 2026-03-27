@@ -38,7 +38,7 @@ class AwtProcessor {
         return new FeatureBuildItem(Feature.AWT);
     }
 
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    @BuildStep
     void nativeImageFeatures(BuildProducer<NativeImageFeatureBuildItem> nativeImageFeatures) {
         nativeImageFeatures.produce(new NativeImageFeatureBuildItem(DarwinAwtFeature.class));
         nativeImageFeatures.produce(new NativeImageFeatureBuildItem(AwtFeature.class));
@@ -77,7 +77,7 @@ class AwtProcessor {
                         .build());
     }
 
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    @BuildStep
     ReflectiveClassBuildItem setupReflectionClasses() {
         return ReflectiveClassBuildItem.builder(
                 "com.sun.imageio.plugins.common.I18N",
@@ -86,7 +86,7 @@ class AwtProcessor {
                 "sun.awt.X11GraphicsEnvironment").build();
     }
 
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    @BuildStep
     ReflectiveClassBuildItem setupReflectionClassesWithMethods() {
         //@formatter:off
         return ReflectiveClassBuildItem.builder(

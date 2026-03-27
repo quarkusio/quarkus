@@ -75,7 +75,6 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeImageFutureDefault;
-import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.kafka.client.runtime.KafkaAdminClient;
 import io.quarkus.kafka.client.runtime.KafkaBindingConverter;
 import io.quarkus.kafka.client.runtime.KafkaRecorder;
@@ -324,14 +323,13 @@ public class KafkaProcessor {
                 "The tls-configuration to use for the Kafka client", null, null, ConfigPhase.RUN_TIME));
     }
 
-    @BuildStep(onlyIf = { HasSnappy.class, NativeOrNativeSourcesBuild.class })
-    public void handleSnappyInNative(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+    @BuildStep(onlyIf = HasSnappy.class)
+    public void handleSnappyReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageFeatureBuildItem> feature) {
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("org.xerial.snappy.SnappyInputStream",
                 "org.xerial.snappy.SnappyOutputStream")
                 .reason(getClass().getName() + " snappy support")
                 .methods().fields().build());
-
         feature.produce(new NativeImageFeatureBuildItem(SnappyFeature.class));
     }
 

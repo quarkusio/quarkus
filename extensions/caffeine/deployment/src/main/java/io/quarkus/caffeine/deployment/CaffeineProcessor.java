@@ -16,7 +16,6 @@ import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
-import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.runtime.metrics.MetricsFactory;
 
 public class CaffeineProcessor {
@@ -52,12 +51,12 @@ public class CaffeineProcessor {
         }
     }
 
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    @BuildStep
     NativeImageFeatureBuildItem nativeImageFeature() {
         return new NativeImageFeatureBuildItem(CacheConstructorsFeature.class);
     }
 
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    @BuildStep
     NativeImageSystemPropertyBuildItem registerRecordStatsImplementationsIfMicrometerAround(
             Optional<MetricsCapabilityBuildItem> metricsCapability) {
         if (metricsCapability.isEmpty()) {

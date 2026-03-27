@@ -108,7 +108,7 @@ class LiquibaseProcessor {
         return new IndexDependencyBuildItem(LIQUIBASE_ARTIFACT.getGroupId(), LIQUIBASE_ARTIFACT.getArtifactId());
     }
 
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    @BuildStep
     void nativeImageConfiguration(
             LiquibaseBuildTimeConfig liquibaseBuildConfig,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,

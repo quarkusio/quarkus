@@ -321,6 +321,9 @@ If the key does not identify any cache entry, nothing will happen.
 
 When a method annotated with `@CacheInvalidateAll` is invoked, Quarkus will remove all entries from the cache.
 
+Cache invalidation is performed *after* the annotated method completes successfully.
+If the method throws an exception, the cache will *not* be invalidated.
+
 === @CacheKey
 
 When a method argument is annotated with `@CacheKey`, it is identified as a part of the cache key during an invocation of a

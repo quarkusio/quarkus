@@ -14,6 +14,9 @@ import io.quarkus.cache.CacheInvalidateAll.List;
 /**
  * When a method annotated with {@link CacheInvalidateAll} is invoked, Quarkus will remove all entries from the cache.
  * <p>
+ * Cache invalidation is performed <b>after</b> the annotated method completes successfully. If the method throws an
+ * exception, the cache will <b>not</b> be invalidated.
+ * <p>
  * This annotation can be combined with multiple other caching annotations on a single method. Caching operations will always
  * be executed in the same order: {@link CacheInvalidateAll} first, then {@link CacheInvalidate} and finally
  * {@link CacheResult}.

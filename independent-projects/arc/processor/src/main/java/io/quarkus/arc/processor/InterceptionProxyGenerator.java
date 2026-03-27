@@ -27,6 +27,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
+import org.jboss.jandex.MethodSignatureKey;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.gizmo2.StringBuilderGen;
 
@@ -36,6 +37,7 @@ import io.quarkus.arc.InterceptionProxySubclass;
 import io.quarkus.arc.impl.InterceptedMethodMetadata;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.arc.processor.SubclassGenerator.IntegerHolder;
+import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
@@ -430,14 +432,14 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
             Consumer<BytecodeTransformer> bytecodeTransformerConsumer, boolean transformUnproxyableClasses) {
         ClassInfo pseudoBeanClass = pseudoBean.getImplClazz();
 
-        Map<Methods.MethodKey, MethodInfo> methods = new HashMap<>();
-        Map<String, Set<Methods.MethodKey>> methodsFromWhichToRemoveFinal = new HashMap<>();
+        Map<MethodSignatureKey, MethodInfo> methods = new HashMap<>();
+        Map<String, Set<MethodDescriptor>> methodsFromWhichToRemoveFinal = new HashMap<>();
 
         Methods.addDelegatingMethods(beanArchiveIndex, pseudoBeanClass, methods, methodsFromWhichToRemoveFinal,
                 transformUnproxyableClasses);
 
         if (!methodsFromWhichToRemoveFinal.isEmpty()) {
-            for (Map.Entry<String, Set<Methods.MethodKey>> entry : methodsFromWhichToRemoveFinal.entrySet()) {
+            for (Map.Entry<String, Set<MethodDescriptor>> entry : methodsFromWhichToRemoveFinal.entrySet()) {
                 String className = entry.getKey();
                 bytecodeTransformerConsumer.accept(new BytecodeTransformer(className,
                         new Methods.RemoveFinalFromMethod(entry.getValue())));
@@ -446,7 +448,7 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
 
         for (MethodInfo interceptedMethod : pseudoBean.getInterceptedMethods().keySet()) {
             // these methods are intercepted, so they don't need to (and in fact _must not_) forward directly
-            methods.remove(new Methods.MethodKey(interceptedMethod));
+            methods.remove(interceptedMethod.signatureKey());
         }
 
         return methods.values();

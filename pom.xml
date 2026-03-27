@@ -331,6 +331,17 @@
             </build>
         </profile>
         <profile>
+            <id>lts</id>
+            <activation>
+                <property>
+                    <name>lts</name>
+                </property>
+            </activation>
+            <modules>
+                <module>bom/application-lts</module>
+            </modules>
+        </profile>
+        <profile>
             <id>owasp-report</id>
             <activation>
                 <property>

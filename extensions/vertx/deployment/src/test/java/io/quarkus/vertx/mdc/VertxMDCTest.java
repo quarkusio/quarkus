@@ -40,7 +40,6 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.client.HttpRequest;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
-import io.vertx.ext.web.client.predicate.ResponsePredicate;
 
 /*
 This test was mostly based on https://github.com/reactiverse/reactiverse-contextual-logging/blob/39e691d3a8fd78d19ee120cab8d8b38a4ef67813/src/test/java/io/reactiverse/contextual/logging/ContextualLoggingIT.java
@@ -150,8 +149,7 @@ public class VertxMDCTest {
     private void sendRequests(List<String> ids, CountDownLatch done) {
         WebClient webClient = WebClient.create(vertx, new WebClientOptions().setDefaultPort(VERTICLE_PORT));
 
-        HttpRequest<Buffer> request = webClient.get("/")
-                .expect(ResponsePredicate.SC_OK);
+        HttpRequest<Buffer> request = webClient.get("/");
 
         List<? extends Future<?>> futures = ids.stream()
                 .map(id -> request.putHeader(REQUEST_ID_HEADER, id).send())

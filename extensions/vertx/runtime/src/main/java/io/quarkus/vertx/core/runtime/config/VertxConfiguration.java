@@ -109,16 +109,6 @@ public interface VertxConfiguration {
     boolean useAsyncDNS();
 
     /**
-     * The event bus configuration.
-     */
-    EventBusConfiguration eventbus();
-
-    /**
-     * The cluster configuration.
-     */
-    ClusterConfiguration cluster();
-
-    /**
      * The address resolver configuration.
      */
     AddressResolverConfiguration resolver();

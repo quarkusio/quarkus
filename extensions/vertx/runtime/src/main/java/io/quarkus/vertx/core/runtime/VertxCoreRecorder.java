@@ -1,12 +1,5 @@
 package io.quarkus.vertx.core.runtime;
 
-import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configureJksKeyCertOptions;
-import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemKeyCertOptions;
-import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemTrustOptions;
-import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxKeyCertOptions;
-import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOptions;
-import static io.vertx.core.file.impl.FileResolverImpl.CACHE_DIR_BASE_PROP_NAME;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,7 +10,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -40,14 +32,13 @@ import io.quarkus.runtime.*;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.vertx.core.runtime.config.AddressResolverConfiguration;
-import io.quarkus.vertx.core.runtime.config.ClusterConfiguration;
-import io.quarkus.vertx.core.runtime.config.EventBusConfiguration;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.quarkus.vertx.mdc.provider.LateBoundMDCProvider;
 import io.quarkus.vertx.runtime.VertxCurrentContextFactory;
 import io.quarkus.vertx.runtime.jackson.QuarkusJacksonFactory;
 import io.smallrye.common.cpu.ProcessorInfo;
+import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -55,17 +46,15 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.dns.AddressResolverOptions;
-import io.vertx.core.eventbus.EventBusOptions;
 import io.vertx.core.file.FileSystemOptions;
-import io.vertx.core.http.ClientAuth;
-import io.vertx.core.impl.ContextInternal;
-import io.vertx.core.impl.VertxBuilder;
+import io.vertx.core.impl.SysProps;
 import io.vertx.core.impl.VertxImpl;
 import io.vertx.core.impl.VertxThread;
+import io.vertx.core.internal.ContextInternal;
+import io.vertx.core.internal.VertxBootstrap;
 import io.vertx.core.spi.VerticleFactory;
 import io.vertx.core.spi.VertxServiceProvider;
 import io.vertx.core.spi.VertxThreadFactory;
-import io.vertx.core.spi.resolver.ResolverProvider;
 
 @Recorder
 public class VertxCoreRecorder {
@@ -148,7 +137,7 @@ public class VertxCoreRecorder {
                             if (!id.equals(webDeploymentId)) {
                                 CountDownLatch latch = new CountDownLatch(1);
                                 latches.add(latch);
-                                vertx.v.undeploy(id, new Handler<AsyncResult<Void>>() {
+                                vertx.v.undeploy(id).onComplete(new Handler<AsyncResult<Void>>() {
                                     @Override
                                     public void handle(AsyncResult<Void> event) {
                                         latch.countDown();
@@ -200,7 +189,7 @@ public class VertxCoreRecorder {
     static void shutdownDevMode() {
         if (vertx != null) {
             CountDownLatch latch = new CountDownLatch(1);
-            vertx.get().close(new Handler<AsyncResult<Void>>() {
+            vertx.get().close().onComplete(new Handler<AsyncResult<Void>>() {
                 @Override
                 public void handle(AsyncResult<Void> event) {
                     latch.countDown();
@@ -231,13 +220,19 @@ public class VertxCoreRecorder {
         VertxOptions options = new VertxOptions();
 
         if (conf != null) {
-            convertToVertxOptions(conf, options, threadPoolConfig, true, shutdown);
+            convertToVertxOptions(conf, options, threadPoolConfig, shutdown);
         }
 
         // Allow extension customizers to do their thing
         if (customizer != null) {
             customizer.customize(options);
         }
+
+        // Preload locals
+        // Just touch them to preload the class
+        // TODO Find a better approach.
+        VertxContext.isOnDuplicatedContext();
+        VertxMDC.values();
 
         Vertx vertx;
 
@@ -249,31 +244,20 @@ public class VertxCoreRecorder {
                 return createVertxThread(target, name, worker, maxExecTime, maxExecTimeUnit, launchMode, nonDevModeTccl);
             }
         };
-        if (conf != null && conf.cluster() != null && conf.cluster().clustered()) {
-            CompletableFuture<Vertx> latch = new CompletableFuture<>();
-            new VertxBuilder(options)
-                    .serviceProviders(vertxServiceProviders)
-                    .verticleFactories(verticleFactories)
-                    .threadFactory(vertxThreadFactory)
-                    .executorServiceFactory(new QuarkusExecutorFactory(conf, launchMode))
-                    .init().clusteredVertx(new Handler<AsyncResult<Vertx>>() {
-                        @Override
-                        public void handle(AsyncResult<Vertx> ar) {
-                            if (ar.failed()) {
-                                latch.completeExceptionally(ar.cause());
-                            } else {
-                                latch.complete(ar.result());
-                            }
-                        }
-                    });
-            vertx = latch.join();
-        } else {
-            vertx = new VertxBuilder(options)
-                    .serviceProviders(vertxServiceProviders)
-                    .verticleFactories(verticleFactories)
-                    .threadFactory(vertxThreadFactory)
-                    .executorServiceFactory(new QuarkusExecutorFactory(conf, launchMode))
-                    .init().vertx();
+        var bootstrap = VertxBootstrap.create()
+                .options(options)
+                .executorServiceFactory(new QuarkusExecutorFactory(conf, launchMode))
+                .threadFactory(vertxThreadFactory);
+
+        for (VertxServiceProvider provider : vertxServiceProviders) {
+            // Does this call the provider twice?
+            provider.init(bootstrap);
+        }
+
+        vertx = bootstrap.init().vertx();
+
+        for (VerticleFactory verticleFactory : verticleFactories) {
+            vertx.registerVerticleFactory(verticleFactory);
         }
 
         vertx.exceptionHandler(new Handler<Throwable>() {
@@ -328,26 +312,20 @@ public class VertxCoreRecorder {
     }
 
     private static VertxOptions convertToVertxOptions(VertxConfiguration conf, VertxOptions options,
-            ThreadPoolConfig threadPoolConfig, boolean allowClustering,
+            ThreadPoolConfig threadPoolConfig,
             ShutdownContext shutdown) {
 
         if (!conf.useAsyncDNS()) {
-            System.setProperty(ResolverProvider.DISABLE_DNS_RESOLVER_PROP_NAME, "true");
+            System.setProperty(SysProps.DISABLE_DNS_RESOLVER.name, "true");
         }
 
         setAddressResolverOptions(conf, options);
-
-        if (allowClustering) {
-            // Order matters, as the cluster options modifies the event bus options.
-            setEventBusOptions(conf, options);
-            initializeClusterOptions(conf, options);
-        }
 
         FileSystemOptions fileSystemOptions = new FileSystemOptions()
                 .setFileCachingEnabled(conf.caching())
                 .setClassPathResolvingEnabled(conf.classpathResolving());
 
-        String fileCacheDir = System.getProperty(CACHE_DIR_BASE_PROP_NAME);
+        String fileCacheDir = System.getProperty(SysProps.FILE_CACHE_DIR.name);
         if (fileCacheDir == null) {
             fileCacheDir = conf.cacheDirectory().orElse(null);
         }
@@ -448,7 +426,7 @@ public class VertxCoreRecorder {
             FastThreadLocal.destroy();
             CountDownLatch latch = new CountDownLatch(1);
             AtomicReference<Throwable> problem = new AtomicReference<>();
-            vertx.v.close(new Handler<AsyncResult<Void>>() {
+            vertx.v.close().onComplete(new Handler<AsyncResult<Void>>() {
                 @Override
                 public void handle(AsyncResult<Void> ar) {
                     if (ar.failed()) {
@@ -477,59 +455,6 @@ public class VertxCoreRecorder {
             LateBoundMDCProvider.setMDCProviderDelegate(null);
             vertx = null;
         }
-    }
-
-    private static void initializeClusterOptions(VertxConfiguration conf, VertxOptions options) {
-        ClusterConfiguration cluster = conf.cluster();
-        options.getEventBusOptions().setClusterPingReplyInterval(cluster.pingReplyInterval().toMillis());
-        options.getEventBusOptions().setClusterPingInterval(cluster.pingInterval().toMillis());
-        if (cluster.host() != null) {
-            options.getEventBusOptions().setHost(cluster.host());
-        }
-        if (cluster.port().isPresent()) {
-            options.getEventBusOptions().setPort(cluster.port().getAsInt());
-        }
-        if (cluster.publicHost().isPresent()) {
-            options.getEventBusOptions().setClusterPublicHost(cluster.publicHost().get());
-        }
-        if (cluster.publicPort().isPresent()) {
-            options.getEventBusOptions().setPort(cluster.publicPort().getAsInt());
-        }
-    }
-
-    private static void setEventBusOptions(VertxConfiguration conf, VertxOptions options) {
-        EventBusConfiguration eb = conf.eventbus();
-        EventBusOptions opts = new EventBusOptions();
-        opts.setAcceptBacklog(eb.acceptBacklog().orElse(-1));
-        opts.setClientAuth(ClientAuth.valueOf(eb.clientAuth().toUpperCase()));
-        opts.setConnectTimeout((int) (Math.min(Integer.MAX_VALUE, eb.connectTimeout().toMillis())));
-        opts.setIdleTimeout(
-                eb.idleTimeout().isPresent()
-                        ? (int) Math.max(1, Math.min(Integer.MAX_VALUE, eb.idleTimeout().get().getSeconds()))
-                        : 0);
-        opts.setSendBufferSize(eb.sendBufferSize().orElse(-1));
-        opts.setSoLinger(eb.soLinger().orElse(-1));
-        opts.setSsl(eb.ssl());
-        opts.setReceiveBufferSize(eb.receiveBufferSize().orElse(-1));
-        opts.setReconnectAttempts(eb.reconnectAttempts());
-        opts.setReconnectInterval(eb.reconnectInterval().toMillis());
-        opts.setReuseAddress(eb.reuseAddress());
-        opts.setReusePort(eb.reusePort());
-        opts.setTrafficClass(eb.trafficClass().orElse(-1));
-        opts.setTcpKeepAlive(eb.tcpKeepAlive());
-        opts.setTcpNoDelay(eb.tcpNoDelay());
-        opts.setTrustAll(eb.trustAll());
-
-        // Certificates and trust.
-        configurePemKeyCertOptions(opts, eb.keyCertificatePem());
-        configureJksKeyCertOptions(opts, eb.keyCertificateJks());
-        configurePfxKeyCertOptions(opts, eb.keyCertificatePfx());
-
-        configurePemTrustOptions(opts, eb.trustCertificatePem());
-        configureJksKeyCertOptions(opts, eb.trustCertificateJks());
-        configurePfxTrustOptions(opts, eb.trustCertificatePfx());
-
-        options.setEventBusOptions(opts);
     }
 
     private static void setAddressResolverOptions(VertxConfiguration conf, VertxOptions options) {
@@ -570,7 +495,7 @@ public class VertxCoreRecorder {
             @Override
             public EventLoopGroup get() {
                 vertx.get();
-                return ((VertxImpl) vertx.v).getAcceptorEventLoopGroup();
+                return ((VertxImpl) vertx.v).acceptorEventLoopGroup();
             }
         };
     }
@@ -579,7 +504,7 @@ public class VertxCoreRecorder {
         return new Supplier<EventLoopGroup>() {
             @Override
             public EventLoopGroup get() {
-                return vertx.get().nettyEventLoopGroup();
+                return ((VertxImpl) vertx.v).nettyEventLoopGroup();
             }
         };
     }
@@ -663,6 +588,7 @@ public class VertxCoreRecorder {
                     // The CDI contexts must not be propagated
                     // First test if VertxCurrentContextFactory is actually used
                     if (ignoredKeys != null) {
+                        // TODO To be changed - localContextData will be removed.
                         ConcurrentMap<Object, Object> local = vertxContext.localContextData();
                         if (containsIgnoredKey(ignoredKeys, local)) {
                             // Duplicate the context, copy the data, remove the request context

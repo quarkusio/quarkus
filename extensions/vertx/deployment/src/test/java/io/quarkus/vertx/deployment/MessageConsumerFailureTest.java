@@ -88,7 +88,7 @@ public class MessageConsumerFailureTest {
 
     void verifyFailure(String address, String expectedMessage, boolean explicit) throws InterruptedException {
         BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
-        eventBus.request(address, "hello", ar -> {
+        eventBus.request(address, "hello").onComplete(ar -> {
             try {
                 if (ar.cause() != null) {
                     synchronizer.put(ar.cause());

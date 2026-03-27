@@ -37,7 +37,7 @@ public class VertxCommonProducerTest {
 
         public void verify() throws Exception {
             CountDownLatch latch = new CountDownLatch(1);
-            vertx.fileSystem().readFile("files/lorem.txt", ar -> {
+            vertx.fileSystem().readFile("files/lorem.txt").onComplete(ar -> {
                 if (ar.failed()) {
                     ar.cause().printStackTrace();
                 } else {

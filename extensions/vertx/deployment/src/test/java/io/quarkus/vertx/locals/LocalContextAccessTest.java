@@ -15,10 +15,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import io.smallrye.common.vertx.ContextLocals;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
-import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.internal.ContextInternal;
 
 public class LocalContextAccessTest {
 
@@ -32,47 +33,6 @@ public class LocalContextAccessTest {
 
     @Inject
     BeanAccessingContext bean;
-
-    @Test
-    public void testGlobalAccessFromEventLoop() throws ExecutionException, InterruptedException, TimeoutException {
-        Context context = vertx.getOrCreateContext();
-        CompletableFuture<Throwable> get = new CompletableFuture<>();
-        CompletableFuture<Throwable> put = new CompletableFuture<>();
-        CompletableFuture<Throwable> remove = new CompletableFuture<>();
-
-        context.runOnContext(x -> {
-            try {
-                bean.getGlobal();
-                get.completeExceptionally(new Exception("Exception expected as using get is forbidden"));
-            } catch (Exception e) {
-                get.complete(e);
-            }
-        });
-        Throwable t = get.toCompletableFuture().get(5, TimeUnit.SECONDS);
-        Assertions.assertThat(t).isInstanceOf(UnsupportedOperationException.class).hasMessageContaining("Context.get()");
-
-        context.runOnContext(x -> {
-            try {
-                bean.putGlobal();
-                put.completeExceptionally(new Exception("Exception expected as using put is forbidden"));
-            } catch (Exception e) {
-                put.complete(e);
-            }
-        });
-        t = put.toCompletableFuture().get(5, TimeUnit.SECONDS);
-        Assertions.assertThat(t).isInstanceOf(UnsupportedOperationException.class).hasMessageContaining("Context.put()");
-
-        context.runOnContext(x -> {
-            try {
-                bean.removeGlobal();
-                remove.completeExceptionally(new Exception("Exception expected as using remove is forbidden"));
-            } catch (Exception e) {
-                remove.complete(e);
-            }
-        });
-        t = remove.toCompletableFuture().get(5, TimeUnit.SECONDS);
-        Assertions.assertThat(t).isInstanceOf(UnsupportedOperationException.class).hasMessageContaining("Context.remove()");
-    }
 
     @Test
     public void testLocalAccessFromEventLoop() throws ExecutionException, InterruptedException, TimeoutException {
@@ -90,7 +50,7 @@ public class LocalContextAccessTest {
             }
         });
         Throwable t = get.toCompletableFuture().get(5, TimeUnit.SECONDS);
-        Assertions.assertThat(t).isInstanceOf(UnsupportedOperationException.class).hasMessageContaining("Context.getLocal()");
+        Assertions.assertThat(t).isInstanceOf(UnsupportedOperationException.class).hasMessageContaining("Context Locals");
 
         context.runOnContext(x -> {
             try {
@@ -101,7 +61,7 @@ public class LocalContextAccessTest {
             }
         });
         t = put.toCompletableFuture().get(5, TimeUnit.SECONDS);
-        Assertions.assertThat(t).isInstanceOf(UnsupportedOperationException.class).hasMessageContaining("Context.putLocal()");
+        Assertions.assertThat(t).isInstanceOf(UnsupportedOperationException.class).hasMessageContaining("Context Locals");
 
         context.runOnContext(x -> {
             try {
@@ -113,7 +73,7 @@ public class LocalContextAccessTest {
         });
         t = remove.toCompletableFuture().get(5, TimeUnit.SECONDS);
         Assertions.assertThat(t).isInstanceOf(UnsupportedOperationException.class)
-                .hasMessageContaining("Context.removeLocal()");
+                .hasMessageContaining("Context Locals");
     }
 
     @Test
@@ -159,28 +119,16 @@ public class LocalContextAccessTest {
     @ApplicationScoped
     public static class BeanAccessingContext {
 
-        public String getGlobal() {
-            return Vertx.currentContext().get("foo");
-        }
-
-        public void putGlobal() {
-            Vertx.currentContext().put("foo", "bar");
-        }
-
-        public void removeGlobal() {
-            Vertx.currentContext().remove("foo");
-        }
-
         public String getLocal() {
-            return Vertx.currentContext().getLocal("foo");
+            return ContextLocals.get("foo", "");
         }
 
         public void putLocal() {
-            Vertx.currentContext().putLocal("foo", "bar");
+            ContextLocals.put("foo", "bar");
         }
 
         public boolean removeLocal() {
-            return Vertx.currentContext().removeLocal("foo");
+            return ContextLocals.remove("foo");
         }
 
     }

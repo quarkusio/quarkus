@@ -15,6 +15,11 @@ public class VertxLogDelegate implements LogDelegate {
     }
 
     @Override
+    public String implementation() {
+        return "Quarkus";
+    }
+
+    @Override
     public boolean isWarnEnabled() {
         return logger.isLoggable(Level.WARN);
     }
@@ -43,81 +48,36 @@ public class VertxLogDelegate implements LogDelegate {
         log(Level.ERROR, message);
     }
 
-    @Override
-    public void error(Object message, Object... params) {
-        log(Level.ERROR, message, null, params);
-    }
-
     public void error(final Object message, final Throwable t) {
         log(Level.ERROR, message, t);
-    }
-
-    @Override
-    public void error(Object message, Throwable t, Object... params) {
-        log(Level.ERROR, message, t, params);
     }
 
     public void warn(final Object message) {
         log(Level.WARN, message);
     }
 
-    @Override
-    public void warn(Object message, Object... params) {
-        log(Level.WARN, message, null, params);
-    }
-
     public void warn(final Object message, final Throwable t) {
         log(Level.WARN, message, t);
-    }
-
-    @Override
-    public void warn(Object message, Throwable t, Object... params) {
-        log(Level.WARN, message, t, params);
     }
 
     public void info(final Object message) {
         log(Level.INFO, message);
     }
 
-    @Override
-    public void info(Object message, Object... params) {
-        log(Level.INFO, message, null, params);
-    }
-
     public void info(final Object message, final Throwable t) {
         log(Level.INFO, message, t);
-    }
-
-    @Override
-    public void info(Object message, Throwable t, Object... params) {
-        log(Level.INFO, message, t, params);
     }
 
     public void debug(final Object message) {
         log(Level.DEBUG, message);
     }
 
-    @Override
-    public void debug(Object message, Object... params) {
-        log(Level.DEBUG, message, null, params);
-    }
-
     public void debug(final Object message, final Throwable t) {
         log(Level.DEBUG, message, t);
     }
 
-    @Override
-    public void debug(Object message, Throwable t, Object... params) {
-        log(Level.DEBUG, message, t, params);
-    }
-
     public void trace(final Object message) {
         log(Level.TRACE, message);
-    }
-
-    @Override
-    public void trace(Object message, Object... params) {
-        log(Level.TRACE, message, null, params);
     }
 
     public void trace(final Object message, final Throwable t) {
@@ -125,8 +85,8 @@ public class VertxLogDelegate implements LogDelegate {
     }
 
     @Override
-    public void trace(Object message, Throwable t, Object... params) {
-        log(Level.TRACE, message, t, params);
+    public Object unwrap() {
+        return logger;
     }
 
     private void log(Level level, Object message) {

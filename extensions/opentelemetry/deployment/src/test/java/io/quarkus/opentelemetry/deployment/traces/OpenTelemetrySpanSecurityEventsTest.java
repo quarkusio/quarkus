@@ -38,6 +38,7 @@ public class OpenTelemetrySpanSecurityEventsTest {
                     .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class, EventsResource.class,
                             CustomSecurityEvent.class)
                     .addAsResource(new StringAsset("""
+                            quarkus.otel.traces.sampler=parentbased_always_on
                             quarkus.otel.security-events.enabled=true
                             quarkus.otel.metrics.exporter=none
                             quarkus.otel.security-events.event-types=AUTHENTICATION_SUCCESS,AUTHORIZATION_SUCCESS,OTHER

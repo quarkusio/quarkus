@@ -55,6 +55,7 @@ public class OtelLoggingTest {
                             .add(new StringAsset(
                                     "quarkus.otel.logs.enabled=true\n" +
                                             "quarkus.otel.traces.enabled=true\n" +
+                                            "quarkus.otel.traces.sampler=parentbased_always_on\n" +
                                             "quarkus.log.category.\"io.quarkus.opentelemetry\".level=INFO\n"),
                                     "application.properties"));
 

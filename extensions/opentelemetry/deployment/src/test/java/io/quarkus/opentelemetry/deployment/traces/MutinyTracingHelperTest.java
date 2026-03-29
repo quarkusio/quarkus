@@ -45,7 +45,8 @@ class MutinyTracingHelperTest {
                             .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                                     "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
                             .addAsResource(new StringAsset(
-                                    "quarkus.otel.bsp.schedule.delay=50ms\n"),
+                                    "quarkus.otel.traces.sampler=parentbased_always_on\n" +
+                                            "quarkus.otel.bsp.schedule.delay=50ms\n"),
                                     "application.properties"));
 
     @Inject

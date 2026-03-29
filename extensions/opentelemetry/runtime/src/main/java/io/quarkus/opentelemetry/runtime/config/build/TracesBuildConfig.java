@@ -48,9 +48,9 @@ public interface TracesBuildConfig {
      * {@link io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSamplerProvider}.
      * <p>
      * Fallbacks to the legacy property <code>quarkus.opentelemetry.tracer.sampler.sampler.name</code> or
-     * defaults to {@value SamplerType.Constants#PARENT_BASED_ALWAYS_ON}.
+     * defaults to {@value SamplerType.Constants#PARENT_BASED_TRACE_ID_RATIO}.
      */
-    @WithDefault(SamplerType.Constants.PARENT_BASED_ALWAYS_ON)
+    @WithDefault(SamplerType.Constants.PARENT_BASED_TRACE_ID_RATIO)
     String sampler();
 
     /**

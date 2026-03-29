@@ -58,9 +58,9 @@ public interface TracesRuntimeConfig {
      * value between `0.0d` and `1.0d`, like `0.01d` or `0.5d`. It is kept as a `String` to allow the flexible customisation of
      * alternative samplers.
      * <p>
-     * Defaults to `1.0d`.
+     * Defaults to `0.1d`.
      */
     @WithName("sampler.arg")
-    @WithDefault("1.0d")
+    @WithDefault("0.1d")
     Optional<String> samplerArg();
 }

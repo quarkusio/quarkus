@@ -336,6 +336,8 @@ A https://github.com/open-telemetry/opentelemetry-specification/blob/main/specif
 
 Quarkus comes equipped with a https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk.md#built-in-samplers[built-in sampler], and you also have the option to create your custom sampler.
 
+By default, Quarkus uses the `parentbased_traceidratio` sampler with a ratio of `0.1` (10%). This means that only 10% of the traces are sampled when there is no parent span, while child spans follow the parent's sampling decision. This default is intended for production environments where 100% sampling would be too costly. To sample all traces during development, set `quarkus.otel.traces.sampler=parentbased_always_on` in your `application.properties`.
+
 To use the built-in sampler, you can configure it by setting the desired sampler parameters as detailed in the <<configuration-reference>>. As an example, you can configure the sampler to retain 50% of the traces:
 [source,application.properties]
 ----
@@ -352,7 +354,7 @@ An interesting use case for the sampler is to activate and deactivate tracing ex
 ----
 # build time property only:
 quarkus.otel.traces.sampler=traceidratio
-# On (default). All traces are exported:
+# On. All traces are exported:
 quarkus.otel.traces.sampler.arg=1.0
 # Off. No traces are exported:
 quarkus.otel.traces.sampler.arg=0.0

@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -274,8 +275,8 @@ class HibernateValidatorProcessor {
                     });
         }
 
-        Set<DotName> constrainedConfigMappings = new TreeSet<>();
-        Set<String> configMappingsConstraints = new TreeSet<>();
+        Set<DotName> constrainedConfigMappings = new HashSet<>();
+        Set<String> configMappingsConstraints = new HashSet<>();
 
         for (DotName consideredAnnotation : beanValidationAnnotations.getAllAnnotations()) {
             Collection<AnnotationInstance> annotationInstances = combinedIndex.getIndex().getAnnotations(consideredAnnotation);
@@ -357,11 +358,11 @@ class HibernateValidatorProcessor {
                 fc.setType(BeanValidationConfigValidator.class);
                 fc.setInitializer(bc -> {
                     LocalVar constraints = bc.localVar("constraints", bc.setOf(
-                            new ArrayList<>(configMappingsConstraints),
+                            configMappingsConstraints.stream().sorted().toList(),
                             Const::of));
 
                     LocalVar classes = bc.localVar("classes", bc.setOf(
-                            new ArrayList<>(configClassesToValidate),
+                            configClassesToValidate.stream().sorted().toList(),
                             c -> Const.of(classDescOf(c))));
 
                     bc.yield(bc.new_(ConstructorDesc.of(HibernateBeanValidationConfigValidator.class, Set.class, Set.class),
@@ -485,11 +486,11 @@ class HibernateValidatorProcessor {
             indexView = CompositeIndex.create(beanArchiveIndexBuildItem.getIndex(), combinedIndexBuildItem.getIndex());
         }
 
-        Set<DotName> classNamesToBeValidated = new HashSet<>();
+        Set<DotName> classNamesToBeValidated = new TreeSet<>();
+        Set<String> detectedBuiltinConstraints = new LinkedHashSet<>();
         Map<DotName, Set<SimpleMethodSignatureKey>> methodsWithInheritedValidation = new HashMap<>();
-        Set<String> detectedBuiltinConstraints = new HashSet<>();
 
-        for (DotName consideredAnnotation : beanValidationAnnotations.getAllAnnotations()) {
+        for (DotName consideredAnnotation : beanValidationAnnotations.getAllAnnotations().stream().sorted().toList()) {
             Collection<AnnotationInstance> annotationInstances = indexView.getAnnotations(consideredAnnotation);
 
             if (annotationInstances.isEmpty()) {
@@ -575,19 +576,19 @@ class HibernateValidatorProcessor {
                                 jaxRsMethods,
                                 methodsWithInheritedValidation)));
 
-        Set<Class<?>> classesToBeValidated = new HashSet<>();
+        Set<Class<?>> classesToBeValidated = new LinkedHashSet<>();
         for (DotName className : classNamesToBeValidated) {
             classesToBeValidated.add(recorderContext.classProxy(className.toString()));
         }
 
         // Prevent the removal of ValueExtractor beans
         // and collect all classes implementing ValueExtractor (for use in HibernateValidatorRecorder)
-        Set<DotName> valueExtractorClassNames = new HashSet<>();
+        Set<DotName> valueExtractorClassNames = new TreeSet<>();
         for (ClassInfo valueExtractorType : indexView.getAllKnownImplementors(VALUE_EXTRACTOR)) {
             valueExtractorClassNames.add(valueExtractorType.name());
         }
         unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(valueExtractorClassNames));
-        Set<Class<?>> valueExtractorClassProxies = new HashSet<>();
+        Set<Class<?>> valueExtractorClassProxies = new LinkedHashSet<>();
         for (DotName className : valueExtractorClassNames) {
             valueExtractorClassProxies.add(recorderContext.classProxy(className.toString()));
         }

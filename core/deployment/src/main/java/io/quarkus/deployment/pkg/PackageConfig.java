@@ -272,8 +272,8 @@ public interface PackageConfig {
             /**
              * The type of AOT file to generate
              * <p>
-             * If {@code auto} is used, Quarkus will generate an AOT file for JDK 25+,
-             * for older JDKs it will generate an AppCDS file.
+             * If {@code auto} is used, Quarkus will generate an AOT file on OpenJDK 25+,
+             * an SCC on IBM Semeru, and an AppCDS file otherwise.
              */
             Optional<AotType> type();
 
@@ -299,7 +299,8 @@ public interface PackageConfig {
             enum AotType {
                 AUTO,
                 AOT,
-                AppCDS
+                AppCDS,
+                SCC
             }
 
             enum AotPhase {

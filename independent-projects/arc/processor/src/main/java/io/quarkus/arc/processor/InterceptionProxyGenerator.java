@@ -469,12 +469,12 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
     private CodeGenInfo preprocess(BeanInfo pseudoBean) {
         List<InterceptorInfo> boundInterceptors = pseudoBean.getBoundInterceptors();
 
-        IntegerHolder methodIdx = new IntegerHolder();
         List<InterceptedMethod> interceptedMethods = new ArrayList<>();
-        pseudoBean.getInterceptedMethods().forEach((method, interception) -> {
-            interceptedMethods.add(new InterceptedMethod(methodIdx.i, method, interception));
-            methodIdx.i++;
-        });
+        pseudoBean.getInterceptedMethods().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey(Reproducibility.METHOD_COMPARATOR))
+                .forEach(e -> {
+                    interceptedMethods.add(new InterceptedMethod(interceptedMethods.size(), e.getKey(), e.getValue()));
+                });
 
         List<MethodGroup> methodGroups = Grouping.of(interceptedMethods, 30, MethodGroup::new);
 

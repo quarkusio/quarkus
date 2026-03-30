@@ -245,7 +245,8 @@ public class ClientProxyGenerator extends AbstractGenerator {
                 });
             }
 
-            for (MethodInfo method : getDelegatingMethods(bean, bytecodeTransformerConsumer, transformUnproxyableClasses)) {
+            for (MethodInfo method : Reproducibility
+                    .orderedMethods(getDelegatingMethods(bean, bytecodeTransformerConsumer, transformUnproxyableClasses))) {
                 MethodDesc originalMethodDesc = methodDescOf(method);
                 cc.method(method.name(), mc -> {
                     mc.returning(classDescOf(method.returnType()));

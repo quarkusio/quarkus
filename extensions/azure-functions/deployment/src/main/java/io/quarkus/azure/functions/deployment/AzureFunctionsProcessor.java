@@ -138,7 +138,7 @@ public class AzureFunctionsProcessor {
     }
 
     private static final String DEFAULT_HOST_JSON = "{\"version\":\"2.0\",\"extensionBundle\":" +
-            "{\"id\":\"Microsoft.Azure.Functions.ExtensionBundle\",\"version\":\"[3.*, 4.0.0)\"}}\n";
+            "{\"id\":\"Microsoft.Azure.Functions.ExtensionBundle\",\"version\":\"[4.0.0, 5.0.0)\"}}\n";
 
     protected void copyHostJson(Path rootPath, Path functionStagingDir) throws IOException {
         final File sourceHostJsonFile = rootPath.resolve(HOST_JSON).toFile();

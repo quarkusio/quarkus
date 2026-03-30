@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 
@@ -115,4 +116,12 @@ public interface ComposeDevServicesBuildTimeConfig {
      */
     @WithDefault("1s")
     Duration stopTimeout();
+
+    /**
+     * Timeout for starting services, used as a global maximum for all wait strategies.
+     * If not provided, falls back to the global {@code quarkus.devservices.timeout}, or 1 minute by default.
+     */
+    @WithDefault("${quarkus.devservices.timeout}")
+    @ConfigDocDefault("60s")
+    Optional<Duration> startupTimeout();
 }

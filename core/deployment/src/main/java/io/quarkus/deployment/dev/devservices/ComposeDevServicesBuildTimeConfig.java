@@ -110,6 +110,12 @@ public interface ComposeDevServicesBuildTimeConfig {
     boolean reuseProjectForTests();
 
     /**
+     * Timeout for starting services, used as a global maximum for all wait strategies.
+     * If not provided, falls back to the global {@code quarkus.devservices.timeout}, or 1 minute by default.
+     */
+    Optional<Duration> startupTimeout();
+
+    /**
      * Timeout for stopping services, after the timeout the services are forcefully stopped,
      *
      */

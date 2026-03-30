@@ -228,7 +228,7 @@ public class ComposeDevServicesProcessor {
                 .withStopTimeout(cfg.stopTimeout)
                 .withBuild(cfg.build);
 
-        timeout.ifPresent(builder::withStartupTimeout);
+        cfg.startupTimeout.or(() -> timeout).ifPresent(builder::withStartupTimeout);
         ComposeProject compose = builder.build();
 
         // if compose is configured to not start services, only try discovering existing services
@@ -351,6 +351,7 @@ public class ComposeDevServicesProcessor {
         private final boolean startServices;
         private final boolean stopServices;
         private final Duration stopTimeout;
+        private final Optional<Duration> startupTimeout;
         private final boolean ryukEnabled;
         private final List<File> files;
         private final List<String> profiles;
@@ -385,6 +386,7 @@ public class ComposeDevServicesProcessor {
             this.startServices = cfg.startServices();
             this.stopServices = cfg.stopServices();
             this.stopTimeout = cfg.stopTimeout();
+            this.startupTimeout = cfg.startupTimeout();
             this.ryukEnabled = cfg.ryukEnabled();
             this.profiles = cfg.profiles().orElse(Collections.emptyList());
             this.options = cfg.options().orElse(Collections.emptyList());
@@ -408,6 +410,7 @@ public class ComposeDevServicesProcessor {
                     && Objects.equals(project, that.project)
                     && Objects.equals(startServices, that.startServices)
                     && Objects.equals(stopServices, that.stopServices)
+                    && Objects.equals(startupTimeout, that.startupTimeout)
                     && Objects.equals(ryukEnabled, that.ryukEnabled)
                     && Objects.equals(files, that.files)
                     && Objects.equals(filesSha, that.filesSha)
@@ -424,8 +427,8 @@ public class ComposeDevServicesProcessor {
 
         @Override
         public int hashCode() {
-            return Objects.hash(devServicesEnabled, project, startServices, stopServices, ryukEnabled, files, filesSha,
-                    profiles, options, removeImages, removeVolumes,
+            return Objects.hash(devServicesEnabled, project, startServices, stopServices, startupTimeout, ryukEnabled,
+                    files, filesSha, profiles, options, removeImages, removeVolumes,
                     followContainerLogs, build, envVariables, scalingPreferences, reuseProjectForTests);
         }
     }

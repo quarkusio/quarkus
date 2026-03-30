@@ -1,7 +1,5 @@
 package io.quarkus.smallrye.reactivemessaging.kafka.deployment;
 
-import java.util.UUID;
-
 import org.jboss.jandex.Type;
 
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
@@ -26,7 +24,7 @@ public class JacksonSerdeGenerator {
         String baseName = type.name().withoutPackagePrefix();
         String targetPackage = io.quarkus.arc.processor.DotNames
                 .internalPackageNameWithTrailingSlash(type.name());
-        String out = baseName + "_Serializer_" + HashUtil.sha1(UUID.randomUUID().toString());
+        String out = baseName + "_Serializer_" + HashUtil.sha1(type.name().toString());
         String generatedName = targetPackage + out;
         ClassCreator creator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
                 .superClass(ObjectMapperSerializer.class).build();
@@ -39,7 +37,7 @@ public class JacksonSerdeGenerator {
         String baseName = type.name().withoutPackagePrefix();
         String targetPackage = io.quarkus.arc.processor.DotNames
                 .internalPackageNameWithTrailingSlash(type.name());
-        String out = baseName + "_Deserializer_" + HashUtil.sha1(Long.toString(UUID.randomUUID().getMostSignificantBits()));
+        String out = baseName + "_Deserializer_" + HashUtil.sha1(type.name().toString());
         String generatedName = targetPackage + out;
         ClassCreator creator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
                 .superClass(ObjectMapperDeserializer.class).build();

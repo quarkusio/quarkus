@@ -199,7 +199,7 @@ public class JaxrsClientReactiveProcessor {
 
     private static final String MULTI_BYTE_SIGNATURE = "L" + Multi.class.getName().replace('.', '/') + "<Ljava/lang/Byte;>;";
     private static final String MULTI_BUFFER_SIGNATURE = "L" + Multi.class.getName().replace('.', '/')
-            + "<Lio/vertx/mutiny/core/buffer/Buffer;>;";
+            + "<Lio/vertx/core/buffer/Buffer;>;";
     private static final String FILE_SIGNATURE = "L" + File.class.getName().replace('.', '/') + ";";
     private static final String PATH_SIGNATURE = "L" + java.nio.file.Path.class.getName().replace('.', '/') + ";";
     private static final String BUFFER_SIGNATURE = "L" + Buffer.class.getName().replace('.', '/') + ";";
@@ -1148,7 +1148,7 @@ public class JaxrsClientReactiveProcessor {
                             if (param.declaredType.equals(Multi.class.getName())) {
                                 if (!param.signature.equals(MULTI_BUFFER_SIGNATURE)) {
                                     throw new IllegalArgumentException(
-                                            "When using Multi as body parameter only Multi<io.vertx.mutiny.core.buffer.Buffer> is supported");
+                                            "When using Multi as body parameter only Multi<io.vertx.core.buffer.Buffer> is supported");
                                 }
                             }
 

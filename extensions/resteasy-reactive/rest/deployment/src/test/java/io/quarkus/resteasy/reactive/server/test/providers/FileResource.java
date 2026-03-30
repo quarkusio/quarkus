@@ -51,7 +51,7 @@ public class FileResource {
     @GET
     public Uni<AsyncFile> getAsyncFile(RoutingContext vertxRequest) {
         return Uni.createFrom().emitter(emitter -> {
-            vertxRequest.vertx().fileSystem().open(FILE, new OpenOptions(), result -> {
+            vertxRequest.vertx().fileSystem().open(FILE, new OpenOptions()).onComplete(result -> {
                 if (result.succeeded())
                     emitter.complete(result.result());
                 else
@@ -64,7 +64,7 @@ public class FileResource {
     @GET
     public Uni<RestResponse<AsyncFile>> getRestResponseAsyncFile(RoutingContext vertxRequest) {
         return Uni.createFrom().emitter(emitter -> {
-            vertxRequest.vertx().fileSystem().open(FILE, new OpenOptions(), result -> {
+            vertxRequest.vertx().fileSystem().open(FILE, new OpenOptions()).onComplete(result -> {
                 if (result.succeeded())
                     emitter.complete(RestResponse.ResponseBuilder.ok(result.result()).header("foo", "bar").build());
                 else
@@ -83,7 +83,7 @@ public class FileResource {
     @GET
     public Uni<AsyncFile> getAsyncFilePartial(RoutingContext vertxRequest) {
         return Uni.createFrom().emitter(emitter -> {
-            vertxRequest.vertx().fileSystem().open(FILE, new OpenOptions(), result -> {
+            vertxRequest.vertx().fileSystem().open(FILE, new OpenOptions()).onComplete(result -> {
                 if (result.succeeded()) {
                     AsyncFile asyncFile = result.result();
                     asyncFile.setReadPos(20);

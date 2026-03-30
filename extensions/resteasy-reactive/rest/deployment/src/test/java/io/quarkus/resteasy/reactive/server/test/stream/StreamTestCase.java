@@ -71,7 +71,7 @@ public class StreamTestCase {
                     @Override
                     public void handle(HttpClientRequest event) {
                         event.end();
-                        event.connect().onFailure(failure)
+                        event.response().onFailure(failure)
                                 .onSuccess(response -> {
                                     response.request().connection().closeHandler(new Handler<Void>() {
                                         @Override

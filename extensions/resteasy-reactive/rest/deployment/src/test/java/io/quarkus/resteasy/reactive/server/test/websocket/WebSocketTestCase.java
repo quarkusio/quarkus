@@ -10,10 +10,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
-import io.vertx.core.http.HttpClient;
-import io.vertx.core.http.WebSocket;
+import io.vertx.core.http.WebSocketClient;
 
 public class WebSocketTestCase {
 
@@ -27,34 +24,21 @@ public class WebSocketTestCase {
 
     @Test
     public void testWebSocket() throws Exception {
-        HttpClient httpClient = VertxCoreRecorder.getVertx().get().createHttpClient();
+        WebSocketClient wsClient = VertxCoreRecorder.getVertx().get().createWebSocketClient();
         try {
             final CompletableFuture<String> result = new CompletableFuture<>();
-            httpClient.webSocket(uri.getPort(), uri.getHost(), uri.getPath(), new Handler<AsyncResult<WebSocket>>() {
-                @Override
-                public void handle(AsyncResult<WebSocket> event) {
-                    if (event.failed()) {
-                        result.completeExceptionally(event.cause());
-                    } else {
-                        event.result().exceptionHandler(new Handler<Throwable>() {
-                            @Override
-                            public void handle(Throwable event) {
-                                result.completeExceptionally(event);
-                            }
-                        });
-                        event.result().textMessageHandler(new Handler<String>() {
-                            @Override
-                            public void handle(String event) {
-                                result.complete(event);
-                            }
-                        });
-                        event.result().writeTextMessage("Hello World");
-                    }
+            wsClient.connect(uri.getPort(), uri.getHost(), uri.getPath()).onComplete(event -> {
+                if (event.failed()) {
+                    result.completeExceptionally(event.cause());
+                } else {
+                    event.result().exceptionHandler(result::completeExceptionally);
+                    event.result().textMessageHandler(result::complete);
+                    event.result().writeTextMessage("Hello World");
                 }
             });
             Assertions.assertEquals("Hello World", result.get());
         } finally {
-            httpClient.close();
+            wsClient.close();
         }
 
     }

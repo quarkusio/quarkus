@@ -18,7 +18,7 @@ import io.vertx.core.json.JsonObject;
 /**
  * A variant of {@link BufferImpl} doing no bound checks for performance reasons.
  */
-public class NoBoundChecksBuffer implements Buffer {
+public class NoBoundChecksBuffer implements Buffer, BufferInternal {
 
     private ByteBuf buffer;
 
@@ -144,28 +144,28 @@ public class NoBoundChecksBuffer implements Buffer {
     }
 
     @Override
-    public Buffer getBytes(byte[] dst) {
+    public NoBoundChecksBuffer getBytes(byte[] dst) {
         return getBytes(dst, 0);
     }
 
     @Override
-    public Buffer getBytes(byte[] dst, int dstIndex) {
+    public NoBoundChecksBuffer getBytes(byte[] dst, int dstIndex) {
         return getBytes(0, buffer.writerIndex(), dst, dstIndex);
     }
 
     @Override
-    public Buffer getBytes(int start, int end, byte[] dst) {
+    public NoBoundChecksBuffer getBytes(int start, int end, byte[] dst) {
         return getBytes(start, end, dst, 0);
     }
 
     @Override
-    public Buffer getBytes(int start, int end, byte[] dst, int dstIndex) {
+    public NoBoundChecksBuffer getBytes(int start, int end, byte[] dst, int dstIndex) {
         Arguments.require(end >= start, "end must be greater or equal than start");
         buffer.getBytes(start, dst, dstIndex, end - start);
         return this;
     }
 
-    public Buffer getBuffer(int start, int end) {
+    public NoBoundChecksBuffer getBuffer(int start, int end) {
         return new NoBoundChecksBuffer(Unpooled.wrappedBuffer(getBytes(start, end)));
     }
 
@@ -180,247 +180,247 @@ public class NoBoundChecksBuffer implements Buffer {
         return new String(bytes, StandardCharsets.UTF_8);
     }
 
-    public Buffer appendBuffer(Buffer buff) {
-        buffer.writeBytes(((BufferInternal)buff).getByteBuf());
+    public NoBoundChecksBuffer appendBuffer(Buffer buff) {
+        buffer.writeBytes(((BufferInternal) buff).getByteBuf());
         return this;
     }
 
-    public Buffer appendBuffer(Buffer buff, int offset, int len) {
-        ByteBuf byteBuf = ((BufferInternal)buff).getByteBuf();
+    public NoBoundChecksBuffer appendBuffer(Buffer buff, int offset, int len) {
+        ByteBuf byteBuf = ((BufferInternal) buff).getByteBuf();
         int from = byteBuf.readerIndex() + offset;
         buffer.writeBytes(byteBuf, from, len);
         return this;
     }
 
-    public Buffer appendBytes(byte[] bytes) {
+    public NoBoundChecksBuffer appendBytes(byte[] bytes) {
         buffer.writeBytes(bytes);
         return this;
     }
 
-    public Buffer appendBytes(byte[] bytes, int offset, int len) {
+    public NoBoundChecksBuffer appendBytes(byte[] bytes, int offset, int len) {
         buffer.writeBytes(bytes, offset, len);
         return this;
     }
 
-    public Buffer appendByte(byte b) {
+    public NoBoundChecksBuffer appendByte(byte b) {
         buffer.writeByte(b);
         return this;
     }
 
-    public Buffer appendUnsignedByte(short b) {
+    public NoBoundChecksBuffer appendUnsignedByte(short b) {
         buffer.writeByte(b);
         return this;
     }
 
-    public Buffer appendInt(int i) {
+    public NoBoundChecksBuffer appendInt(int i) {
         buffer.writeInt(i);
         return this;
     }
 
-    public Buffer appendIntLE(int i) {
+    public NoBoundChecksBuffer appendIntLE(int i) {
         buffer.writeIntLE(i);
         return this;
     }
 
-    public Buffer appendUnsignedInt(long i) {
+    public NoBoundChecksBuffer appendUnsignedInt(long i) {
         buffer.writeInt((int) i);
         return this;
     }
 
-    public Buffer appendUnsignedIntLE(long i) {
+    public NoBoundChecksBuffer appendUnsignedIntLE(long i) {
         buffer.writeIntLE((int) i);
         return this;
     }
 
-    public Buffer appendMedium(int i) {
+    public NoBoundChecksBuffer appendMedium(int i) {
         buffer.writeMedium(i);
         return this;
     }
 
-    public Buffer appendMediumLE(int i) {
+    public NoBoundChecksBuffer appendMediumLE(int i) {
         buffer.writeMediumLE(i);
         return this;
     }
 
-    public Buffer appendLong(long l) {
+    public NoBoundChecksBuffer appendLong(long l) {
         buffer.writeLong(l);
         return this;
     }
 
-    public Buffer appendLongLE(long l) {
+    public NoBoundChecksBuffer appendLongLE(long l) {
         buffer.writeLongLE(l);
         return this;
     }
 
-    public Buffer appendShort(short s) {
+    public NoBoundChecksBuffer appendShort(short s) {
         buffer.writeShort(s);
         return this;
     }
 
-    public Buffer appendShortLE(short s) {
+    public NoBoundChecksBuffer appendShortLE(short s) {
         buffer.writeShortLE(s);
         return this;
     }
 
-    public Buffer appendUnsignedShort(int s) {
+    public NoBoundChecksBuffer appendUnsignedShort(int s) {
         buffer.writeShort(s);
         return this;
     }
 
-    public Buffer appendUnsignedShortLE(int s) {
+    public NoBoundChecksBuffer appendUnsignedShortLE(int s) {
         buffer.writeShortLE(s);
         return this;
     }
 
-    public Buffer appendFloat(float f) {
+    public NoBoundChecksBuffer appendFloat(float f) {
         buffer.writeFloat(f);
         return this;
     }
 
     @Override
-    public Buffer appendFloatLE(float f) {
+    public NoBoundChecksBuffer appendFloatLE(float f) {
         buffer.writeFloatLE(f);
         return this;
     }
 
-    public Buffer appendDouble(double d) {
+    public NoBoundChecksBuffer appendDouble(double d) {
         buffer.writeDouble(d);
         return this;
     }
 
     @Override
-    public Buffer appendDoubleLE(double d) {
+    public NoBoundChecksBuffer appendDoubleLE(double d) {
         buffer.writeDoubleLE(d);
         return this;
     }
 
-    public Buffer appendString(String str, String enc) {
+    public NoBoundChecksBuffer appendString(String str, String enc) {
         return append(str, Charset.forName(Objects.requireNonNull(enc)));
     }
 
-    public Buffer appendString(String str) {
+    public NoBoundChecksBuffer appendString(String str) {
         return append(str, CharsetUtil.UTF_8);
     }
 
-    public Buffer setByte(int pos, byte b) {
+    public NoBoundChecksBuffer setByte(int pos, byte b) {
         ensureWritable(pos, 1);
         buffer.setByte(pos, b);
         return this;
     }
 
-    public Buffer setUnsignedByte(int pos, short b) {
+    public NoBoundChecksBuffer setUnsignedByte(int pos, short b) {
         ensureWritable(pos, 1);
         buffer.setByte(pos, b);
         return this;
     }
 
-    public Buffer setInt(int pos, int i) {
+    public NoBoundChecksBuffer setInt(int pos, int i) {
         ensureWritable(pos, 4);
         buffer.setInt(pos, i);
         return this;
     }
 
-    public Buffer setIntLE(int pos, int i) {
+    public NoBoundChecksBuffer setIntLE(int pos, int i) {
         ensureWritable(pos, 4);
         buffer.setIntLE(pos, i);
         return this;
     }
 
-    public Buffer setUnsignedInt(int pos, long i) {
+    public NoBoundChecksBuffer setUnsignedInt(int pos, long i) {
         ensureWritable(pos, 4);
         buffer.setInt(pos, (int) i);
         return this;
     }
 
-    public Buffer setUnsignedIntLE(int pos, long i) {
+    public NoBoundChecksBuffer setUnsignedIntLE(int pos, long i) {
         ensureWritable(pos, 4);
         buffer.setIntLE(pos, (int) i);
         return this;
     }
 
-    public Buffer setMedium(int pos, int i) {
+    public NoBoundChecksBuffer setMedium(int pos, int i) {
         ensureWritable(pos, 3);
         buffer.setMedium(pos, i);
         return this;
     }
 
-    public Buffer setMediumLE(int pos, int i) {
+    public NoBoundChecksBuffer setMediumLE(int pos, int i) {
         ensureWritable(pos, 3);
         buffer.setMediumLE(pos, i);
         return this;
     }
 
-    public Buffer setLong(int pos, long l) {
+    public NoBoundChecksBuffer setLong(int pos, long l) {
         ensureWritable(pos, 8);
         buffer.setLong(pos, l);
         return this;
     }
 
-    public Buffer setLongLE(int pos, long l) {
+    public NoBoundChecksBuffer setLongLE(int pos, long l) {
         ensureWritable(pos, 8);
         buffer.setLongLE(pos, l);
         return this;
     }
 
-    public Buffer setDouble(int pos, double d) {
+    public NoBoundChecksBuffer setDouble(int pos, double d) {
         ensureWritable(pos, 8);
         buffer.setDouble(pos, d);
         return this;
     }
 
     @Override
-    public Buffer setDoubleLE(int pos, double d) {
+    public NoBoundChecksBuffer setDoubleLE(int pos, double d) {
         ensureWritable(pos, 8);
         buffer.setDoubleLE(pos, d);
         return this;
     }
 
-    public Buffer setFloat(int pos, float f) {
+    public NoBoundChecksBuffer setFloat(int pos, float f) {
         ensureWritable(pos, 4);
         buffer.setFloat(pos, f);
         return this;
     }
 
     @Override
-    public Buffer setFloatLE(int pos, float f) {
+    public NoBoundChecksBuffer setFloatLE(int pos, float f) {
         ensureWritable(pos, 4);
         buffer.setFloatLE(pos, f);
         return this;
     }
 
-    public Buffer setShort(int pos, short s) {
+    public NoBoundChecksBuffer setShort(int pos, short s) {
         ensureWritable(pos, 2);
         buffer.setShort(pos, s);
         return this;
     }
 
-    public Buffer setShortLE(int pos, short s) {
+    public NoBoundChecksBuffer setShortLE(int pos, short s) {
         ensureWritable(pos, 2);
         buffer.setShortLE(pos, s);
         return this;
     }
 
-    public Buffer setUnsignedShort(int pos, int s) {
+    public NoBoundChecksBuffer setUnsignedShort(int pos, int s) {
         ensureWritable(pos, 2);
         buffer.setShort(pos, s);
         return this;
     }
 
-    public Buffer setUnsignedShortLE(int pos, int s) {
+    public NoBoundChecksBuffer setUnsignedShortLE(int pos, int s) {
         ensureWritable(pos, 2);
         buffer.setShortLE(pos, s);
         return this;
     }
 
-    public Buffer setBuffer(int pos, Buffer b) {
+    public NoBoundChecksBuffer setBuffer(int pos, Buffer b) {
         ensureWritable(pos, b.length());
-        buffer.setBytes(pos, ((BufferInternal)b).getByteBuf());
+        buffer.setBytes(pos, ((BufferInternal) b).getByteBuf());
         return this;
     }
 
-    public Buffer setBuffer(int pos, Buffer b, int offset, int len) {
+    public NoBoundChecksBuffer setBuffer(int pos, Buffer b, int offset, int len) {
         ensureWritable(pos, len);
-        ByteBuf byteBuf = ((BufferInternal)b).getByteBuf();
+        ByteBuf byteBuf = ((BufferInternal) b).getByteBuf();
         buffer.setBytes(pos, byteBuf, byteBuf.readerIndex() + offset, len);
         return this;
     }
@@ -431,23 +431,23 @@ public class NoBoundChecksBuffer implements Buffer {
         return this;
     }
 
-    public Buffer setBytes(int pos, byte[] b) {
+    public NoBoundChecksBuffer setBytes(int pos, byte[] b) {
         ensureWritable(pos, b.length);
         buffer.setBytes(pos, b);
         return this;
     }
 
-    public Buffer setBytes(int pos, byte[] b, int offset, int len) {
+    public NoBoundChecksBuffer setBytes(int pos, byte[] b, int offset, int len) {
         ensureWritable(pos, len);
         buffer.setBytes(pos, b, offset, len);
         return this;
     }
 
-    public Buffer setString(int pos, String str) {
+    public NoBoundChecksBuffer setString(int pos, String str) {
         return setBytes(pos, str, CharsetUtil.UTF_8);
     }
 
-    public Buffer setString(int pos, String str, String enc) {
+    public NoBoundChecksBuffer setString(int pos, String str, String enc) {
         return setBytes(pos, str, Charset.forName(enc));
     }
 
@@ -455,15 +455,15 @@ public class NoBoundChecksBuffer implements Buffer {
         return buffer.writerIndex();
     }
 
-    public Buffer copy() {
+    public NoBoundChecksBuffer copy() {
         return new NoBoundChecksBuffer(buffer.copy());
     }
 
-    public Buffer slice() {
+    public NoBoundChecksBuffer slice() {
         return new NoBoundChecksBuffer(buffer.slice());
     }
 
-    public Buffer slice(int start, int end) {
+    public NoBoundChecksBuffer slice(int start, int end) {
         return new NoBoundChecksBuffer(buffer.slice(start, end - start));
     }
 
@@ -473,13 +473,17 @@ public class NoBoundChecksBuffer implements Buffer {
         return buffer;
     }
 
-    private Buffer append(String str, Charset charset) {
+    public ByteBuf unwrap() {
+        return buffer;
+    }
+
+    private NoBoundChecksBuffer append(String str, Charset charset) {
         byte[] bytes = str.getBytes(charset);
         buffer.writeBytes(bytes);
         return this;
     }
 
-    private Buffer setBytes(int pos, String str, Charset charset) {
+    private NoBoundChecksBuffer setBytes(int pos, String str, Charset charset) {
         byte[] bytes = str.getBytes(charset);
         ensureWritable(pos, bytes.length);
         buffer.setBytes(pos, bytes);
@@ -525,7 +529,7 @@ public class NoBoundChecksBuffer implements Buffer {
     public int readFromBuffer(int pos, Buffer buffer) {
         int len = buffer.getInt(pos);
         Buffer b = buffer.getBuffer(pos + 4, pos + 4 + len);
-        this.buffer = ((BufferInternal)b).getByteBuf();
+        this.buffer = ((BufferInternal) b).getByteBuf();
         return pos + 4 + len;
     }
 }

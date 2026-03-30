@@ -47,33 +47,43 @@ public class FileResource {
     @GET
     public Uni<AsyncFile> getAsyncFile(RoutingContext vertxRequest) {
         return Uni.createFrom().emitter(emitter -> {
-            vertxRequest.vertx().fileSystem().open(FILE, new OpenOptions(), result -> {
-                if (result.succeeded())
+            vertxRequest.vertx().fileSystem().open(FILE, new OpenOptions()).onComplete(result -> {
+                if (result.succeeded()) {
                     emitter.complete(result.result());
-                else
+                } else {
                     emitter.fail(result.cause());
+                }
             });
         });
     }
 
     @Path("mutiny-async-file")
     @GET
-    public Uni<io.vertx.mutiny.core.file.AsyncFile> getMutinyAsyncFile(RoutingContext vertxRequest) {
-        return new io.vertx.mutiny.core.Vertx(vertxRequest.vertx()).fileSystem().open(FILE, new OpenOptions());
+    public Uni<AsyncFile> getMutinyAsyncFile(RoutingContext vertxRequest) {
+        return Uni.createFrom().emitter(emitter -> {
+            vertxRequest.vertx().fileSystem().open(FILE, new OpenOptions()).onComplete(result -> {
+                if (result.succeeded()) {
+                    emitter.complete(result.result());
+                } else {
+                    emitter.fail(result.cause());
+                }
+            });
+        });
     }
 
     @Path("async-file-partial")
     @GET
     public Uni<AsyncFile> getAsyncFilePartial(RoutingContext vertxRequest) {
         return Uni.createFrom().emitter(emitter -> {
-            vertxRequest.vertx().fileSystem().open(FILE, new OpenOptions(), result -> {
+            vertxRequest.vertx().fileSystem().open(FILE, new OpenOptions()).onComplete(result -> {
                 if (result.succeeded()) {
                     AsyncFile asyncFile = result.result();
                     asyncFile.setReadPos(20);
                     asyncFile.setReadLength(10);
                     emitter.complete(asyncFile);
-                } else
+                } else {
                     emitter.fail(result.cause());
+                }
             });
         });
     }

@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -42,17 +43,12 @@ import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode;
 import org.jboss.resteasy.reactive.common.jaxrs.UriBuilderImpl;
 
-import io.netty.channel.EventLoopGroup;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
+import io.vertx.core.Deployable;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.MultiMap;
-import io.vertx.core.Promise;
-import io.vertx.core.TimeoutStream;
 import io.vertx.core.Timer;
-import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.WorkerExecutor;
@@ -63,25 +59,21 @@ import io.vertx.core.dns.DnsClientOptions;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.file.FileSystem;
 import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientAgent;
 import io.vertx.core.http.HttpClientBuilder;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
-import io.vertx.core.http.HttpConnection;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.PoolOptions;
 import io.vertx.core.http.RequestOptions;
-import io.vertx.core.http.WebSocket;
 import io.vertx.core.http.WebSocketClient;
 import io.vertx.core.http.WebSocketClientOptions;
-import io.vertx.core.http.WebSocketConnectOptions;
-import io.vertx.core.http.WebsocketVersion;
 import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.NetServer;
 import io.vertx.core.net.NetServerOptions;
-import io.vertx.core.net.SSLOptions;
 import io.vertx.core.shareddata.SharedData;
 import io.vertx.core.spi.VerticleFactory;
 
@@ -168,9 +160,6 @@ public class ClientImpl implements Client {
         } else {
             log.debugf("Setting connectionPoolSize to %d", connectionPoolSize);
         }
-        options.setMaxPoolSize((int) connectionPoolSize);
-        options.setHttp2MaxPoolSize((int) connectionPoolSize);
-
         Object keepAliveEnabled = configuration.getProperty(KEEP_ALIVE_ENABLED);
         if (keepAliveEnabled != null) {
             Boolean enabled = (Boolean) keepAliveEnabled;
@@ -197,26 +186,34 @@ public class ClientImpl implements Client {
             options.setShared(true);
         }
 
-        var httpClientBuilder = this.vertx.httpClientBuilder().with(options).with(options.getPoolOptions());
+        var poolOptions = new PoolOptions()
+                .setHttp1MaxSize((int) connectionPoolSize)
+                .setHttp2MaxSize((int) connectionPoolSize);
+        var httpClientBuilder = this.vertx.httpClientBuilder().with(options).with(poolOptions);
+
+        Function<HttpClientResponse, Future<RequestOptions>> redirectFunction = null;
         AdvancedRedirectHandler advancedRedirectHandler = configuration.getFromContext(AdvancedRedirectHandler.class);
         if (advancedRedirectHandler != null) {
-            httpClientBuilder.withRedirectHandler(new WrapperVertxAdvancedRedirectHandlerImpl(advancedRedirectHandler));
+            redirectFunction = new WrapperVertxAdvancedRedirectHandlerImpl(advancedRedirectHandler);
         } else {
             RedirectHandler redirectHandler = configuration.getFromContext(RedirectHandler.class);
             if (redirectHandler != null) {
-                httpClientBuilder.withRedirectHandler(new WrapperVertxRedirectHandlerImpl(redirectHandler));
+                redirectFunction = new WrapperVertxRedirectHandlerImpl(redirectHandler);
             }
         }
 
-        httpClient = httpClientBuilder.build();
-
-        if (loggingScope != LoggingScope.NONE) {
-            Function<HttpClientResponse, Future<RequestOptions>> defaultRedirectHandler = httpClient.redirectHandler();
-            httpClient.redirectHandler(response -> {
-                clientLogger.logResponse(response, true);
-                return defaultRedirectHandler.apply(response);
-            });
+        if (redirectFunction != null) {
+            if (loggingScope != LoggingScope.NONE) {
+                Function<HttpClientResponse, Future<RequestOptions>> delegate = redirectFunction;
+                redirectFunction = response -> {
+                    clientLogger.logResponse(response, true);
+                    return delegate.apply(response);
+                };
+            }
+            httpClientBuilder.withRedirectHandler(redirectFunction);
         }
+
+        httpClient = httpClientBuilder.build();
 
         handlerChain = new HandlerChain(options, isCaptureStacktrace(configuration),
                 followRedirects,
@@ -459,23 +456,13 @@ public class ClientImpl implements Client {
         }
 
         @Override
-        public HttpClient createHttpClient(HttpClientOptions httpClientOptions) {
-            return new LazyHttpClient(new Supplier<HttpClient>() {
-                @Override
-                public HttpClient get() {
-                    return getDelegate().createHttpClient(httpClientOptions);
-                }
-            });
+        public HttpClientAgent createHttpClient(HttpClientOptions httpClientOptions) {
+            return getDelegate().createHttpClient(httpClientOptions);
         }
 
         @Override
-        public HttpClient createHttpClient() {
-            return new LazyHttpClient(new Supplier<HttpClient>() {
-                @Override
-                public HttpClient get() {
-                    return getDelegate().createHttpClient();
-                }
-            });
+        public HttpClientAgent createHttpClient() {
+            return getDelegate().createHttpClient();
         }
 
         @Override
@@ -529,11 +516,6 @@ public class ClientImpl implements Client {
         }
 
         @Override
-        public TimeoutStream timerStream(long l) {
-            return getDelegate().timerStream(l);
-        }
-
-        @Override
         public long setPeriodic(long l, Handler<Long> handler) {
             return getDelegate().setPeriodic(l, handler);
         }
@@ -541,16 +523,6 @@ public class ClientImpl implements Client {
         @Override
         public long setPeriodic(long initialDelay, long delay, Handler<Long> handler) {
             return getDelegate().setPeriodic(initialDelay, delay, handler);
-        }
-
-        @Override
-        public TimeoutStream periodicStream(long l) {
-            return getDelegate().periodicStream(l);
-        }
-
-        @Override
-        public TimeoutStream periodicStream(long initialDelay, long delay) {
-            return getDelegate().periodicStream(initialDelay, delay);
         }
 
         @Override
@@ -572,20 +544,8 @@ public class ClientImpl implements Client {
         }
 
         @Override
-        public void close(Handler<AsyncResult<Void>> handler) {
-            if (supplied != null) { // no need to close if we never obtained a reference
-                getDelegate().close(handler);
-            }
-        }
-
-        @Override
-        public Future<String> deployVerticle(Verticle verticle) {
+        public Future<String> deployVerticle(Deployable verticle) {
             return getDelegate().deployVerticle(verticle);
-        }
-
-        @Override
-        public void deployVerticle(Verticle verticle, Handler<AsyncResult<String>> handler) {
-            getDelegate().deployVerticle(verticle, handler);
         }
 
         public static Vertx vertx() {
@@ -594,11 +554,6 @@ public class ClientImpl implements Client {
 
         public static Vertx vertx(VertxOptions options) {
             return Vertx.vertx(options);
-        }
-
-        public static void clusteredVertx(VertxOptions options,
-                Handler<AsyncResult<Vertx>> resultHandler) {
-            Vertx.clusteredVertx(options, resultHandler);
         }
 
         public static Future<Vertx> clusteredVertx(VertxOptions options) {
@@ -610,36 +565,18 @@ public class ClientImpl implements Client {
         }
 
         @Override
-        public Future<String> deployVerticle(Verticle verticle, DeploymentOptions options) {
+        public Future<String> deployVerticle(Deployable verticle, DeploymentOptions options) {
             return getDelegate().deployVerticle(verticle, options);
         }
 
         @Override
-        public Future<String> deployVerticle(Class<? extends Verticle> verticleClass, DeploymentOptions options) {
+        public Future<String> deployVerticle(Class<? extends Deployable> verticleClass, DeploymentOptions options) {
             return getDelegate().deployVerticle(verticleClass, options);
         }
 
         @Override
-        public Future<String> deployVerticle(Supplier<Verticle> verticleSupplier, DeploymentOptions options) {
+        public Future<String> deployVerticle(Supplier<? extends Deployable> verticleSupplier, DeploymentOptions options) {
             return getDelegate().deployVerticle(verticleSupplier, options);
-        }
-
-        @Override
-        public void deployVerticle(Verticle verticle, DeploymentOptions options,
-                Handler<AsyncResult<String>> completionHandler) {
-            getDelegate().deployVerticle(verticle, options, completionHandler);
-        }
-
-        @Override
-        public void deployVerticle(Class<? extends Verticle> verticleClass, DeploymentOptions options,
-                Handler<AsyncResult<String>> completionHandler) {
-            getDelegate().deployVerticle(verticleClass, options, completionHandler);
-        }
-
-        @Override
-        public void deployVerticle(Supplier<Verticle> verticleSupplier, DeploymentOptions options,
-                Handler<AsyncResult<String>> completionHandler) {
-            getDelegate().deployVerticle(verticleSupplier, options, completionHandler);
         }
 
         @Override
@@ -648,31 +585,13 @@ public class ClientImpl implements Client {
         }
 
         @Override
-        public void deployVerticle(String name,
-                Handler<AsyncResult<String>> completionHandler) {
-            getDelegate().deployVerticle(name, completionHandler);
-        }
-
-        @Override
         public Future<String> deployVerticle(String name, DeploymentOptions options) {
             return getDelegate().deployVerticle(name, options);
         }
 
         @Override
-        public void deployVerticle(String name, DeploymentOptions options,
-                Handler<AsyncResult<String>> completionHandler) {
-            getDelegate().deployVerticle(name, options, completionHandler);
-        }
-
-        @Override
         public Future<Void> undeploy(String deploymentID) {
             return getDelegate().undeploy(deploymentID);
-        }
-
-        @Override
-        public void undeploy(String deploymentID,
-                Handler<AsyncResult<Void>> completionHandler) {
-            getDelegate().undeploy(deploymentID, completionHandler);
         }
 
         @Override
@@ -701,33 +620,13 @@ public class ClientImpl implements Client {
         }
 
         @Override
-        @Deprecated
-        public <T> void executeBlocking(Handler<Promise<T>> blockingCodeHandler, boolean ordered,
-                Handler<AsyncResult<T>> asyncResultHandler) {
-            getDelegate().executeBlocking(blockingCodeHandler, ordered, asyncResultHandler);
-        }
-
-        @Override
-        @Deprecated
-        public <T> void executeBlocking(Handler<Promise<T>> blockingCodeHandler,
-                Handler<AsyncResult<T>> asyncResultHandler) {
-            getDelegate().executeBlocking(blockingCodeHandler, asyncResultHandler);
-        }
-
-        @Override
-        @Deprecated
-        public <T> Future<T> executeBlocking(Handler<Promise<T>> blockingCodeHandler, boolean ordered) {
+        public <T> Future<T> executeBlocking(Callable<T> blockingCodeHandler, boolean ordered) {
             return getDelegate().executeBlocking(blockingCodeHandler, ordered);
         }
 
         @Override
-        public <T> Future<T> executeBlocking(Handler<Promise<T>> blockingCodeHandler) {
+        public <T> Future<T> executeBlocking(Callable<T> blockingCodeHandler) {
             return getDelegate().executeBlocking(blockingCodeHandler);
-        }
-
-        @Override
-        public EventLoopGroup nettyEventLoopGroup() {
-            return getDelegate().nettyEventLoopGroup();
         }
 
         @Override
@@ -774,182 +673,6 @@ public class ClientImpl implements Client {
         @Override
         public boolean isMetricsEnabled() {
             return getDelegate().isMetricsEnabled();
-        }
-
-        private static class LazyHttpClient implements HttpClient {
-            private final Supplier<HttpClient> supplier;
-            private volatile HttpClient supplied = null;
-
-            LazyHttpClient(Supplier<HttpClient> supplier) {
-                this.supplier = supplier;
-            }
-
-            private HttpClient getDelegate() {
-                if (supplied == null) {
-                    supplied = supplier.get();
-                }
-                return supplied;
-            }
-
-            @Override
-            public void request(RequestOptions options,
-                    Handler<AsyncResult<HttpClientRequest>> handler) {
-                getDelegate().request(options, handler);
-            }
-
-            @Override
-            public Future<HttpClientRequest> request(RequestOptions options) {
-                return getDelegate().request(options);
-            }
-
-            @Override
-            public void request(HttpMethod method, int port, String host, String requestURI,
-                    Handler<AsyncResult<HttpClientRequest>> handler) {
-                getDelegate().request(method, port, host, requestURI, handler);
-            }
-
-            @Override
-            public Future<HttpClientRequest> request(HttpMethod method, int port, String host, String requestURI) {
-                return getDelegate().request(method, port, host, requestURI);
-            }
-
-            @Override
-            public void request(HttpMethod method, String host, String requestURI,
-                    Handler<AsyncResult<HttpClientRequest>> handler) {
-                getDelegate().request(method, host, requestURI, handler);
-            }
-
-            @Override
-            public Future<HttpClientRequest> request(HttpMethod method, String host, String requestURI) {
-                return getDelegate().request(method, host, requestURI);
-            }
-
-            @Override
-            public void request(HttpMethod method, String requestURI,
-                    Handler<AsyncResult<HttpClientRequest>> handler) {
-                getDelegate().request(method, requestURI, handler);
-            }
-
-            @Override
-            public Future<HttpClientRequest> request(HttpMethod method, String requestURI) {
-                return getDelegate().request(method, requestURI);
-            }
-
-            @Override
-            public void webSocket(int port, String host, String requestURI,
-                    Handler<AsyncResult<WebSocket>> handler) {
-                getDelegate().webSocket(port, host, requestURI, handler);
-            }
-
-            @Override
-            public Future<WebSocket> webSocket(int port, String host, String requestURI) {
-                return getDelegate().webSocket(port, host, requestURI);
-            }
-
-            @Override
-            public void webSocket(String host, String requestURI,
-                    Handler<AsyncResult<WebSocket>> handler) {
-                getDelegate().webSocket(host, requestURI, handler);
-            }
-
-            @Override
-            public Future<WebSocket> webSocket(String host, String requestURI) {
-                return getDelegate().webSocket(host, requestURI);
-            }
-
-            @Override
-            public void webSocket(String requestURI,
-                    Handler<AsyncResult<WebSocket>> handler) {
-                getDelegate().webSocket(requestURI, handler);
-            }
-
-            @Override
-            public Future<WebSocket> webSocket(String requestURI) {
-                return getDelegate().webSocket(requestURI);
-            }
-
-            @Override
-            public void webSocket(WebSocketConnectOptions options,
-                    Handler<AsyncResult<WebSocket>> handler) {
-                getDelegate().webSocket(options, handler);
-            }
-
-            @Override
-            public Future<WebSocket> webSocket(WebSocketConnectOptions options) {
-                return getDelegate().webSocket(options);
-            }
-
-            @Override
-            public void webSocketAbs(String url, MultiMap headers, WebsocketVersion version,
-                    List<String> subProtocols,
-                    Handler<AsyncResult<WebSocket>> handler) {
-                getDelegate().webSocketAbs(url, headers, version, subProtocols, handler);
-            }
-
-            @Override
-            public Future<WebSocket> webSocketAbs(String url, MultiMap headers, WebsocketVersion version,
-                    List<String> subProtocols) {
-                return getDelegate().webSocketAbs(url, headers, version, subProtocols);
-            }
-
-            @Override
-            public Future<Boolean> updateSSLOptions(SSLOptions options) {
-                return getDelegate().updateSSLOptions(options);
-            }
-
-            @Override
-            public void updateSSLOptions(SSLOptions options, Handler<AsyncResult<Boolean>> handler) {
-                getDelegate().updateSSLOptions(options, handler);
-            }
-
-            @Override
-            public Future<Boolean> updateSSLOptions(SSLOptions options, boolean force) {
-                return getDelegate().updateSSLOptions(options, force);
-            }
-
-            @Override
-            public void updateSSLOptions(SSLOptions options, boolean force, Handler<AsyncResult<Boolean>> handler) {
-                getDelegate().updateSSLOptions(options, force, handler);
-            }
-
-            @Override
-            public HttpClient connectionHandler(Handler<HttpConnection> handler) {
-                return getDelegate().connectionHandler(handler);
-            }
-
-            @Override
-            public HttpClient redirectHandler(
-                    Function<HttpClientResponse, Future<RequestOptions>> handler) {
-                return getDelegate().redirectHandler(handler);
-            }
-
-            @Override
-            public Function<HttpClientResponse, Future<RequestOptions>> redirectHandler() {
-                return getDelegate().redirectHandler();
-            }
-
-            @Override
-            public void close(Handler<AsyncResult<Void>> handler) {
-                if (supplied != null) { // no need to close if we never obtained a reference
-                    getDelegate().close(handler);
-                }
-                if (handler != null) {
-                    handler.handle(Future.succeededFuture());
-                }
-            }
-
-            @Override
-            public Future<Void> close() {
-                if (supplied != null) { // no need to close if we never obtained a reference
-                    return getDelegate().close();
-                }
-                return Future.succeededFuture();
-            }
-
-            @Override
-            public boolean isMetricsEnabled() {
-                return getDelegate().isMetricsEnabled();
-            }
         }
     }
 }

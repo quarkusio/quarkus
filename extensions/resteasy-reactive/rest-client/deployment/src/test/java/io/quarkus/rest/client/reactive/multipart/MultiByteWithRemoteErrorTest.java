@@ -58,7 +58,7 @@ public class MultiByteWithRemoteErrorTest {
                         }));
 
         CompletableFuture<Integer> port = new CompletableFuture<>();
-        netServer.listen(server -> port.complete(server.result().actualPort()));
+        netServer.listen().onComplete(server -> port.complete(server.result().actualPort()));
 
         await().atMost(Duration.ofSeconds(5)).until(port::isDone);
 

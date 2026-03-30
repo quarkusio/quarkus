@@ -7,6 +7,7 @@ import jakarta.ws.rs.sse.SseEvent;
 
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.internal.buffer.BufferInternal;
 
 public class SseParser implements Handler<Buffer> {
 
@@ -83,7 +84,7 @@ public class SseParser implements Handler<Buffer> {
     @Override
     public void handle(Buffer event) {
         byte[] newBytes = event.getBytes();
-        event.getByteBuf().release();
+        ((BufferInternal) event).getByteBuf().release();
         // check if we have partial data remaining
         if (bytes != null) {
             // concat old and new data

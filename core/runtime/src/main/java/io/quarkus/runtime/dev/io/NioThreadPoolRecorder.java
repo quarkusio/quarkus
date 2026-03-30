@@ -19,6 +19,6 @@ public class NioThreadPoolRecorder {
             });
         }
         // Else: don't add an unnecessary shutdown task that may hold a reference to a QuarkusClassLoader,
-        // which could be a problem with QuarkusUnitTest since it creates one classloader per test.
+        // which could be a problem with QuarkusExtensionTest since it creates one classloader per test.
     }
 }

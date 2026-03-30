@@ -20,12 +20,12 @@ import io.quarkus.spring.security.deployment.springapp.Person;
 import io.quarkus.spring.security.deployment.springapp.Roles;
 import io.quarkus.spring.security.deployment.springapp.SpringComponent;
 import io.quarkus.spring.security.deployment.springapp.SpringService;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class SpringPreAuthorizeTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Roles.class,
                             Person.class,

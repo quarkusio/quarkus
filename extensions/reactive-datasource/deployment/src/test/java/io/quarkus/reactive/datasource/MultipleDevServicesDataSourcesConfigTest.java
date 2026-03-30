@@ -16,7 +16,7 @@ import io.quarkus.arc.ClientProxy;
 import io.quarkus.builder.Version;
 import io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.vertx.sqlclient.Pool;
 
 @DisabledOnOs(OS.WINDOWS)
@@ -36,7 +36,7 @@ public class MultipleDevServicesDataSourcesConfigTest {
     //end::injection[]
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-reactive-pg-client-deployment", Version.getVersion())))
             .withConfigurationResource("application-multiple-devservices-datasources.properties");

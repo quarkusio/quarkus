@@ -9,12 +9,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.qute.EngineConfiguration;
 import io.quarkus.qute.TemplateException;
 import io.quarkus.runtime.util.ExceptionUtil;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class WrongTargetTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root.addClasses(CustomSection.class))
             .assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);

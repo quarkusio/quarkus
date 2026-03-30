@@ -10,7 +10,7 @@ import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.jwt.test.GreetingResource;
 import io.quarkus.smallrye.jwt.deployment.GenerateEncryptedDevModeJwtKeysBuildItem;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.restassured.http.Header;
 import io.smallrye.jwt.build.Jwt;
@@ -18,7 +18,7 @@ import io.smallrye.jwt.build.Jwt;
 public class SmallryeJwtPersistentDevModeEncryptedTest {
 
     @RegisterExtension
-    static QuarkusUnitTest unitTest = new QuarkusUnitTest()
+    static QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(GreetingResource.class, SmallryeJwtPersistentDevModeSignedTest.PersistentJwtChainBuilder.class))
             .addBuildChainCustomizer(new SmallryeJwtPersistentDevModeSignedTest.PersistentJwtChainBuilder() {

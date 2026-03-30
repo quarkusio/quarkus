@@ -17,12 +17,12 @@ import io.grpc.examples.helloworld.HelloRequest;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.runtime.GrpcServer;
 import io.quarkus.grpc.server.services.HelloService;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.config.SmallRyeConfig;
 
 public class RandomPortSeparateServerTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addPackage(GreeterGrpc.class.getPackage())
                     .addClasses(HelloService.class, HelloRequest.class, HelloReply.class))

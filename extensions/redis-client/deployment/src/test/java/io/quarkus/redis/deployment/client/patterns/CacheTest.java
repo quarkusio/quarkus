@@ -14,13 +14,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.value.ValueCommands;
 import io.quarkus.redis.deployment.client.RedisTestResource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
 
 @QuarkusTestResource(RedisTestResource.class)
 public class CacheTest {
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
+    static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class).addClass(MyRedisCache.class).addClass(BusinessObject.class))
             .overrideConfigKey("quarkus.redis.hosts", "${quarkus.redis.tr}");

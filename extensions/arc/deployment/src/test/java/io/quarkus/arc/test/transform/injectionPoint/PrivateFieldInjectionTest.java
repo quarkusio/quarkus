@@ -17,7 +17,7 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.test.transform.injectionPoint.diffPackage.Foo;
 import io.quarkus.arc.test.transform.injectionPoint.diffPackage.SomeBean;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests that a private field can be injected into even though there is no reflection fallback.
@@ -27,7 +27,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class PrivateFieldInjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Head.class, CombineHarvester.class, FooExtended.class, Foo.class, SomeBean.class, Bar.class,
                             Simple.class, SomeInterceptor.class, InterceptedDecoratedBean.class, SomeDecorator.class,

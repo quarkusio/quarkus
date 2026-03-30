@@ -6,7 +6,7 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 class HealthOpenAPITest {
@@ -14,7 +14,7 @@ class HealthOpenAPITest {
     private static final String OPEN_API_PATH = "/q/openapi";
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(BasicHealthCheck.class, OpenApiRoute.class)
                     .addAsResource(new StringAsset("quarkus.smallrye-health.openapi.included=true\n"

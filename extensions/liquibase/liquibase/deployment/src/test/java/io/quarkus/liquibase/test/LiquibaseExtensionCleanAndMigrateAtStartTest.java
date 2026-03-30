@@ -19,7 +19,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.liquibase.LiquibaseFactory;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import liquibase.Liquibase;
 import liquibase.changelog.ChangeSetStatus;
 
@@ -32,7 +32,7 @@ public class LiquibaseExtensionCleanAndMigrateAtStartTest {
     AgroalDataSource defaultDataSource;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource("db/changeLog.xml", "db/changeLog.xml")
                     .addAsResource("clean-and-migrate-at-start-config.properties", "application.properties"));

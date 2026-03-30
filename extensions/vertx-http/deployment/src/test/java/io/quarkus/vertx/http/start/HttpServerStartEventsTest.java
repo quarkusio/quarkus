@@ -16,7 +16,7 @@ import jakarta.enterprise.event.ObservesAsync;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.http.HttpServerStart;
 import io.quarkus.vertx.http.HttpsServerStart;
 import io.smallrye.certs.Format;
@@ -28,7 +28,7 @@ import io.smallrye.certs.junit5.Certificates;
 public class HttpServerStartEventsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root.addClasses(MyListener.class)
                     .addAsResource(new File("target/certs/ssl-test-keystore.jks"), "server-keystore.jks"))
             .overrideConfigKey("quarkus.http.ssl.certificate.key-store-file", "server-keystore.jks")

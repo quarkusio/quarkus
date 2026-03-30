@@ -4,7 +4,7 @@ import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.websockets.next.WebSocketConnector;
 import io.quarkus.websockets.next.test.telemetry.endpoints.onbinarymessage.BounceClient;
 import io.quarkus.websockets.next.test.telemetry.endpoints.onbinarymessage.MultiClient;
@@ -15,7 +15,7 @@ import io.quarkus.websockets.next.test.telemetry.endpoints.onbinarymessage.Multi
 public class MicrometerWebSocketsOnBinaryMessageTest extends AbstractWebSocketsOnMessageTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = createQuarkusUnitTest(
+    public static final QuarkusExtensionTest test = createQuarkusExtensionTest(
             "io.quarkus.websockets.next.test.telemetry.endpoints.onbinarymessage");
 
     @Inject

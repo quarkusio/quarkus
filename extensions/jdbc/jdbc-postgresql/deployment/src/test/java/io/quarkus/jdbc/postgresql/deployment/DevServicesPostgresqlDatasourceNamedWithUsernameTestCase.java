@@ -14,12 +14,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class DevServicesPostgresqlDatasourceNamedWithUsernameTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withEmptyApplication()
             .overrideConfigKey("quarkus.datasource.\"DB2\".db-kind", "postgresql")
             .overrideConfigKey("quarkus.datasource.\"DB2\".username", "foo")

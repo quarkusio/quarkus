@@ -67,6 +67,7 @@ public class BeforeTestAction implements Action<Task> {
             EffectiveConfig effectiveConfig = effectiveProvider().buildEffectiveConfiguration(applicationModel,
                     new HashMap<>());
             SmallRyeConfig config = effectiveConfig.getConfig();
+            props.putAll(effectiveConfig.getQuarkusValues());
             config.getOptionalValue(TEST.getProfileKey(), String.class)
                     .ifPresent(value -> props.put(TEST.getProfileKey(), value));
             props.putAll(effectiveConfig.getQuarkusValues());

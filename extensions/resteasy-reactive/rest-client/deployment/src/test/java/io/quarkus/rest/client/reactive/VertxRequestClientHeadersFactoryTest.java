@@ -24,7 +24,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.RouteBase;
 import io.restassured.http.Header;
@@ -35,7 +35,7 @@ public class VertxRequestClientHeadersFactoryTest {
     private static final int port = 8922;
 
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
+    static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(SimpleRestClient.class, SimpleVertxRoute.class,
                     VertxRequestClientHeadersFactory.class))
             .overrideConfigKey("org.eclipse.microprofile.rest.client.propagateHeaders", "X-Flow-Instance-Id,X-Flow-Task-Ids")

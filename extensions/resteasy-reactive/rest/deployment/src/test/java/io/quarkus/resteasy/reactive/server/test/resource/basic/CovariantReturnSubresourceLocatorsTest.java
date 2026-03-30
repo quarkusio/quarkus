@@ -19,7 +19,7 @@ import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.Covarian
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.CovariantReturnSubresourceLocatorsSubProxy;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.CovariantReturnSubresourceLocatorsSubProxyRootImpl;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.CovariantReturnSubresourceLocatorsSubProxySubImpl;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 
 /**
@@ -32,7 +32,7 @@ import io.quarkus.test.common.http.TestHTTPResource;
 public class CovariantReturnSubresourceLocatorsTest {
 
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
+    static QuarkusExtensionTest testExtension = new QuarkusExtensionTest()
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {

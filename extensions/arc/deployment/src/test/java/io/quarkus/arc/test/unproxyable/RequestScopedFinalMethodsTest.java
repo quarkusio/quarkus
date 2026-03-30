@@ -12,12 +12,12 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.Unremovable;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class RequestScopedFinalMethodsTest {
 
     @RegisterExtension
-    public static QuarkusUnitTest container = new QuarkusUnitTest()
+    public static QuarkusExtensionTest container = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(RequestScopedBean.class, OtherRequestScopedBean.class, OtherRequestScopeBeanProducer.class));
 

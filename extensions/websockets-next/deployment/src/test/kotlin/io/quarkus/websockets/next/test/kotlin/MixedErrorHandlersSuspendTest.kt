@@ -1,6 +1,6 @@
 package io.quarkus.websockets.next.test.kotlin
 
-import io.quarkus.test.QuarkusUnitTest
+import io.quarkus.test.QuarkusExtensionTest
 import io.quarkus.test.common.http.TestHTTPResource
 import io.quarkus.websockets.next.OnError
 import io.quarkus.websockets.next.OnTextMessage
@@ -18,7 +18,7 @@ import java.net.URI
 class MixedErrorHandlersSuspendTest {
     companion object {
         @RegisterExtension
-        val test: QuarkusUnitTest? = QuarkusUnitTest()
+        val test: QuarkusExtensionTest? = QuarkusExtensionTest()
             .withApplicationRoot { jar ->
                 jar.addClasses(Echo::class.java, GlobalErrorHandlers::class.java, WSClient::class.java)
             }

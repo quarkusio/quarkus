@@ -116,21 +116,28 @@ triage:
         - devtools/platform-descriptor-json/src/main/resources/templates/
     - id: hibernate-reactive
       labels: [area/hibernate-reactive]
-      title: "hibernate.reactive"
       expression: |
+        // Fuzzy match; to avoid false positives we match on title and add exclusions on title+body
         matches("hibernate", title) && matches("reactive", title)
-        && !matches("hibernate.validator", title)
+        && !matches("hibernate.validator", titleBody)
         && !matches("hibernate.search", titleBody)
+        // Stricter match; lesser risk of false positive so we match on title+body and don't add exclusions
+        || matches("hibernate.reactive", titleBody)
       notify: [DavideD, gavinking]
       directories:
         - extensions/hibernate-reactive
     - id: hibernate-orm
       labels: [area/hibernate-orm]
       expression: |
-        matches("hibernate", title) && !matches("reactive", title)
-        && !matches("hibernate.validator", title)
+        // Fuzzy match; to avoid false positives we match on title and add exclusions on title+body
+        matches("hibernate", title)
+        && !matches("reactive", title)
+        && !matches("hibernate.validator", titleBody)
         && !matches("hibernate.search", titleBody)
         && !matches("hibernate.reactive", titleBody)
+        // Stricter match; lesser risk of false positive so we match on title+body and don't add exclusions
+        || matches("hibernate.orm", titleBody)
+        || matches("hibernate-core", titleBody)
       notify: [gsmet]
       notifyInPullRequest: true
       directories:
@@ -144,7 +151,11 @@ triage:
         - integration-tests/infinispan-cache-jpa
     - id: hibernate-search
       labels: [area/hibernate-search]
-      title: "hibernate.search"
+      expression: |
+        // Fuzzy match; to avoid false positives we match on title
+        matches("hibernate", title) && matches("search", title)
+        // Stricter match; lesser risk of false positive so we match on title+body and don't add exclusions
+        || matches("hibernate.search", titleBody)
       notify: [gsmet, marko-bekhta]
       notifyInPullRequest: true
       directories:
@@ -162,7 +173,13 @@ triage:
         - integration-tests/elasticsearch
     - id: hibernate-validator
       labels: [area/hibernate-validator]
-      title: "hibernate.validator"
+      expression: |
+        // Fuzzy match; to avoid false positives we match on title
+        (matches("hibernate", title) && matches("validator", title)
+        || matches("jakarta", title) && matches("validation", title))
+        // Stricter match; lesser risk of false positive so we match on title+body and don't add exclusions
+        || matches("hibernate.validator", titleBody)
+        || matches("jakarta.validation", titleBody)
       notify: [gsmet, marko-bekhta]
       directories:
         # No trailing slashes: we also match sibling directories starting with these names

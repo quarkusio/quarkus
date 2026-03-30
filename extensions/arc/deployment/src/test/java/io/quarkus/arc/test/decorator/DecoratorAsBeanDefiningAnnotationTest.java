@@ -15,7 +15,7 @@ import io.quarkus.arc.test.supplement.decorator.SomeDecorator;
 import io.quarkus.arc.test.supplement.decorator.SomeInterface;
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class DecoratorAsBeanDefiningAnnotationTest {
 
@@ -23,7 +23,7 @@ public class DecoratorAsBeanDefiningAnnotationTest {
     // The idea is to test that @Decorator is a bean defining annotation and will be picked up.
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClass(SomeBean.class))
             // we need a non-application archive, so cannot use `withAdditionalDependency()`
             .setForcedDependencies(

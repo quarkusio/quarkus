@@ -24,7 +24,7 @@ import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.SubResou
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.SubResourceLocatorPlatformServiceImpl;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.SubResourceLocatorPlatformServiceResource;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.SubResourceLocatorUserResource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 
 /**
@@ -37,7 +37,7 @@ import io.quarkus.test.common.http.TestHTTPResource;
 public class SubResourceLocatorTest {
 
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
+    static QuarkusExtensionTest testExtension = new QuarkusExtensionTest()
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {

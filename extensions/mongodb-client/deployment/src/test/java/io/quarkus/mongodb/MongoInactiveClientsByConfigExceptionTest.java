@@ -14,12 +14,12 @@ import com.mongodb.client.MongoClient;
 
 import io.quarkus.arc.InactiveBeanException;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Flapdoodle doesn't work very well on Windows with replicas")
 public class MongoInactiveClientsByConfigExceptionTest {
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
+    static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(MongoTestBase.class))
             .overrideRuntimeConfigKey("quarkus.mongodb.active.active", "false")
             .assertException(e -> assertThat(e)// Can't use isInstanceOf due to weird classloading in tests

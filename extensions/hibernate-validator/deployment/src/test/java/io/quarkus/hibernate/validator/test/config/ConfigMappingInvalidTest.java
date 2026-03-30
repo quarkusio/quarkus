@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.runtime.configuration.DurationConverter;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.ConfigValidationException;
 import io.smallrye.config.WithConverter;
@@ -41,7 +41,7 @@ import io.smallrye.config.WithParentName;
 
 public class ConfigMappingInvalidTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource("application-mappings-validation.properties", "application.properties"))
             .assertException(new Consumer<Throwable>() {

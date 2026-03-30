@@ -44,12 +44,33 @@ public class JfrRuntimeBean {
     }
 
     public void disable() {
-        FlightRecorder.removePeriodicEvent(runtimeEventTask);
-        FlightRecorder.removePeriodicEvent(applicationEventTask);
-        FlightRecorder.removePeriodicEvent(extensionEventTask);
-        FlightRecorder.unregister(QuarkusRuntimeEvent.class);
-        FlightRecorder.unregister(QuarkusApplicationEvent.class);
-        FlightRecorder.unregister(ExtensionEvent.class);
+        if (runtimeEventTask == null) {
+            // enable() didn't run/complete
+            return;
+        }
+        try {
+            /*
+             * Quarkus unregisters JFR Quarkus extension periodic events upon shutdown.
+             * Quarkus may shutdown earlier than JFR at the VM-level. If that happens,
+             * these events will miss being emitted as part of the final JFR chunk
+             * and the data will be lost. Directly emit the JFR extension events here
+             * to avoid that scenario.
+             */
+            emitEvents();
+        } finally {
+            FlightRecorder.removePeriodicEvent(runtimeEventTask);
+            FlightRecorder.removePeriodicEvent(applicationEventTask);
+            FlightRecorder.removePeriodicEvent(extensionEventTask);
+            FlightRecorder.unregister(QuarkusRuntimeEvent.class);
+            FlightRecorder.unregister(QuarkusApplicationEvent.class);
+            FlightRecorder.unregister(ExtensionEvent.class);
+        }
+    }
+
+    private void emitEvents() {
+        runtimeEventTask.run();
+        applicationEventTask.run();
+        extensionEventTask.run();
     }
 
     public void onStart(@Observes StartupEvent ev) {

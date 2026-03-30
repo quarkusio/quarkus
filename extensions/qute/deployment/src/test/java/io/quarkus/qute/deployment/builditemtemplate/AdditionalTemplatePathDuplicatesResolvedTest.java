@@ -15,12 +15,12 @@ import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.deployment.TemplatePathBuildItem;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class AdditionalTemplatePathDuplicatesResolvedTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addAsResource(new StringAsset("Hi {name}!"), "templates/hi.txt"))
             .addBuildChainCustomizer(buildCustomizer());

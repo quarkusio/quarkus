@@ -25,7 +25,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.quarkus.rest.client.reactive.TestUtils;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -41,7 +41,7 @@ import io.vertx.ext.web.codec.BodyCodec;
 public class GzipCompressionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Endpoint.class, Client1.class, TestUtils.class))
             .overrideRuntimeConfigKey("quarkus.rest-client.client1.url", "http://localhost:${quarkus.http.test-port:8081}")

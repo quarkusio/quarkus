@@ -12,12 +12,12 @@ import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.TemplateGlobal;
 import io.quarkus.qute.i18n.Message;
 import io.quarkus.qute.i18n.MessageBundle;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class MessageBundleExpressionValidationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(WrongBundle.class, Item.class, MyGlobals.class)
                     .addAsResource(new StringAsset(

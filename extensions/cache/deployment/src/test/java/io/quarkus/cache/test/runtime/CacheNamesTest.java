@@ -22,7 +22,7 @@ import io.quarkus.cache.CacheKey;
 import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.CacheName;
 import io.quarkus.cache.CacheResult;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class CacheNamesTest {
 
@@ -32,7 +32,7 @@ public class CacheNamesTest {
     private static final String CACHE_NAME_4 = "test-cache-4";
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(CachedService1.class, CachedService2.class));
 
     @Inject

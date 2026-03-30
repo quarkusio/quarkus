@@ -9,12 +9,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.identity.RunAsUser;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 class RunAsUserMissingAnnotationValidationFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().withEmptyApplication()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().withEmptyApplication()
             .assertException(t -> {
                 assertInstanceOf(RuntimeException.class, t);
                 String exceptionMessage = t.getMessage();

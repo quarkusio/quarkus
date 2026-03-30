@@ -14,13 +14,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.api.trace.Span;
 import io.quarkus.scheduler.Scheduled;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
 
 public class OpenTelemetryTracingTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Jobs.class)
                     .addAsResource(new StringAsset("quarkus.scheduler.tracing.enabled=true"),

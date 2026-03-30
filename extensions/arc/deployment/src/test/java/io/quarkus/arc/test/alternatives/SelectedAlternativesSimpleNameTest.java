@@ -14,12 +14,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.test.alternatives.bar.Bar;
 import io.quarkus.arc.test.alternatives.bar.MyStereotype;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class SelectedAlternativesSimpleNameTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(SelectedAlternativesSimpleNameTest.class, Alpha.class, Producers.class, Foo.class, Bar.class,
                             MyStereotype.class)

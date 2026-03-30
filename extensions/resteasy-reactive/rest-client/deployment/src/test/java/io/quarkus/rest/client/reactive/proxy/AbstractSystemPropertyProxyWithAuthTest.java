@@ -9,11 +9,11 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.SetSystemProperty;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public abstract class AbstractSystemPropertyProxyWithAuthTest extends ProxyTestBase {
-    protected static QuarkusUnitTest config(String applicationProperties) {
-        return new QuarkusUnitTest()
+    protected static QuarkusExtensionTest config(String applicationProperties) {
+        return new QuarkusExtensionTest()
                 .withApplicationRoot(
                         jar -> jar.addClasses(Client1.class, Client2.class, Client3.class, ViaHeaderReturningResource.class))
                 .withConfigurationResource("system-props-proxy-test-application.properties");

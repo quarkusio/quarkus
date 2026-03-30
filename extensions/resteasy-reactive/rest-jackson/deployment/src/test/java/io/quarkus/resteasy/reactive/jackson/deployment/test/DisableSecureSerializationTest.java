@@ -17,14 +17,14 @@ import io.quarkus.resteasy.reactive.jackson.EnableSecureSerialization;
 import io.quarkus.resteasy.reactive.jackson.SecureField;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.restassured.response.ValidatableResponse;
 
 public class DisableSecureSerializationTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TestIdentityProvider.class, TestIdentityController.class));
 

@@ -2,7 +2,7 @@ package io.quarkus.hibernate.orm.panache.kotlin.deployment.test.multiple_pu
 
 import io.quarkus.hibernate.orm.panache.kotlin.deployment.test.multiple_pu.first.FirstEntity
 import io.quarkus.hibernate.orm.panache.kotlin.deployment.test.multiple_pu.second.SecondEntity
-import io.quarkus.test.QuarkusUnitTest
+import io.quarkus.test.QuarkusExtensionTest
 import org.jboss.shrinkwrap.api.ShrinkWrap
 import org.jboss.shrinkwrap.api.spec.JavaArchive
 import org.junit.jupiter.api.Assertions
@@ -18,7 +18,7 @@ class ErroneousPersistenceUnitConfigTest {
     companion object {
         @RegisterExtension
         @JvmField
-        var runner = QuarkusUnitTest()
+        var runner = QuarkusExtensionTest()
                 .setExpectedException(IllegalStateException::class.java)
                 .setArchiveProducer {
                     ShrinkWrap.create(JavaArchive::class.java)

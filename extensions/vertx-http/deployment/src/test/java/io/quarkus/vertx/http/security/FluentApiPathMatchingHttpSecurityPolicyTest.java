@@ -7,12 +7,12 @@ import jakarta.enterprise.event.Observes;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class FluentApiPathMatchingHttpSecurityPolicyTest extends PathMatchingHttpSecurityPolicyTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = createQuarkusUnitTest("", HttpPermissionsConfig.class);
+    static QuarkusExtensionTest test = createQuarkusExtensionTest("", HttpPermissionsConfig.class);
 
     public static class HttpPermissionsConfig {
 

@@ -12,11 +12,11 @@ import org.jboss.logmanager.formatters.PatternFormatter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class LoggingWithPanacheKotlinTest {
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(LoggingEntity.class, LoggingRepository.class))
             .setLogRecordPredicate(record -> record.getLoggerName().startsWith("io.quarkus.logging.Logging"))
             .assertLogRecords(records -> {

@@ -23,12 +23,12 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
 import io.quarkus.amazon.lambda.deployment.testing.model.InputPerson;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 class LambdaWithDecoratorTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest().setArchiveProducer(() -> ShrinkWrap
             .create(JavaArchive.class)
             .addClasses(LambdaWithDecorator.class, RequestHandlerDecorator.class, InputPerson.class))
             .setLogRecordPredicate(record -> record.getLevel().intValue() == Level.INFO.intValue()

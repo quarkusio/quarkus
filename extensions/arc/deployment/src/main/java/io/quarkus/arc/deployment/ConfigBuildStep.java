@@ -8,6 +8,7 @@ import static io.quarkus.deployment.builditem.ConfigClassBuildItem.Kind.PROPERTI
 import static io.quarkus.deployment.configuration.ConfigMappingUtils.CONFIG_MAPPING_NAME;
 import static io.quarkus.deployment.configuration.ConfigMappingUtils.processConfigClasses;
 import static io.smallrye.config.ConfigMappings.ConfigClass.configClass;
+import static java.util.stream.Collectors.toCollection;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.eclipse.microprofile.config.inject.ConfigProperties.UNCONFIGURED_PREFIX;
@@ -22,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -226,7 +228,7 @@ public class ConfigBuildStep {
                 configProperties.stream()
                         .filter(ConfigPropertyBuildItem::isStaticInit)
                         .map(p -> configPropertyToConfigValidation(p, reflectiveClass))
-                        .collect(toSet()));
+                        .collect(toCollection(LinkedHashSet::new)));
     }
 
     @BuildStep
@@ -240,7 +242,7 @@ public class ConfigBuildStep {
                 configProperties.stream()
                         .filter(ConfigPropertyBuildItem::isRuntimeInit)
                         .map(p -> configPropertyToConfigValidation(p, reflectiveClass))
-                        .collect(toSet()));
+                        .collect(toCollection(LinkedHashSet::new)));
     }
 
     @BuildStep

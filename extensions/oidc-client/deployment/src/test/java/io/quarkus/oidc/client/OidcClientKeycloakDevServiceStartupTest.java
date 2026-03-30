@@ -6,7 +6,7 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Test Keycloak Dev Service is not started when known social provider is configured
@@ -15,7 +15,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class OidcClientKeycloakDevServiceStartupTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar
                     .addAsResource(new StringAsset("""
                             # Disable Dev Services, Keycloak is started by a Maven plugin

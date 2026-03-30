@@ -24,7 +24,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporterProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.junit.common.JdkUtil;
 import io.restassured.RestAssured;
 
@@ -33,7 +33,7 @@ import io.restassured.RestAssured;
  */
 public class JvmMetricsTest extends BaseJvmMetricsTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .addClasses(InMemoryMetricExporter.class, InMemoryMetricExporterProvider.class)
@@ -85,6 +85,13 @@ public class JvmMetricsTest extends BaseJvmMetricsTest {
             allMetrics.add(new MetricToAssert("jvm.network.io", "Network read/write bytes.", "By", HISTOGRAM));
             allMetrics.add(new MetricToAssert("jvm.network.time", "Network read/write duration.", "s", HISTOGRAM));
         }
+        // Recommended sdk metrics
+        allMetrics.add(new MetricToAssert("otel.sdk.span.live",
+                "The number of created spans with recording=true for which the end operation has not been called yet.",
+                "{span}", LONG_SUM));
+        allMetrics.add(new MetricToAssert("otel.sdk.span.started",
+                "The number of created spans.",
+                "{span}", LONG_SUM));
 
         // Force GC to run
         System.gc();

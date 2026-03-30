@@ -28,7 +28,7 @@ import io.grpc.BindableService;
 import io.grpc.ServerServiceDefinition;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcService;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Multi;
 
 /*
@@ -49,7 +49,7 @@ import io.smallrye.mutiny.Multi;
 public class MicroProfileHealthEnabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setFlatClassPath(true)
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)

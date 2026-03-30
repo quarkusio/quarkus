@@ -2,7 +2,7 @@ package io.quarkus.security.test;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests of a CUSTOM authentication mechanism that uses the BASIC authentication headers
@@ -13,7 +13,7 @@ public class CustomAuthEmbeddedEncryptedTestCase extends CustomAuthEmbeddedBase 
             ParametrizedPathsResource.class, SubjectExposingResource.class
     };
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(testClasses)
                     .addClasses(CustomAuth.class)

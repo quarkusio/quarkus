@@ -13,7 +13,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Arc;
 import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.datasource.RedisDataSource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class NamedRedisCacheTest {
 
@@ -21,7 +21,7 @@ public class NamedRedisCacheTest {
     private static final String KEY_2 = "2";
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(SimpleCachedService.class, TestUtil.class))
             .overrideConfigKey("quarkus.redis.test.hosts", "${quarkus.redis.hosts}/1")
             .overrideConfigKey("quarkus.cache.redis.client-name", "test");

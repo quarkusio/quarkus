@@ -22,12 +22,12 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class UnremovableSyntheticInjectionPointTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(UnremovableSyntheticInjectionPointTest.class, Alpha.class, Gama.class, GamaCreator.class))
             .addBuildChainCustomizer(buildCustomizer());

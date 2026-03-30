@@ -6,9 +6,15 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Define a field's path for the SELECT statement when using a projection DTO.
- * It supports the "dot" notation for fields in referenced entities:
- * the name is composed of the property name for the relationship, followed by a dot ("."), followed by the name of the field.
+ * Define a field's path or HQL expression for the SELECT statement when using a projection DTO.
+ * <p>
+ * It supports:
+ * <ul>
+ * <li>Simple field names</li>
+ * <li>Dot notation for fields in referenced entities (e.g., {@code "owner.name"})</li>
+ * <li>Any valid HQL expression, including aggregate functions (e.g., {@code "SUM(amount)"}, {@code "COUNT(id)"})</li>
+ * </ul>
+ * </p>
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.PARAMETER, ElementType.FIELD })

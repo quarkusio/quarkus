@@ -1,9 +1,12 @@
 package io.quarkus.arc.processor;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.function.IntFunction;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationInstanceEquivalenceProxy;
@@ -28,6 +31,28 @@ public class Reproducibility {
             .<AnnotationInstanceEquivalenceProxy, DotName> comparing(it -> it.get().name())
             .thenComparing(it -> it.get().toString());
     static final Comparator<StereotypeInfo> STEREOTYPE_COMPARATOR = Comparator.comparing(StereotypeInfo::getName);
+    static final Comparator<InjectionPointInfo> INJECTION_POINT_COMPARATOR = Comparator
+            .comparing(InjectionPointInfo::getType, TYPE_COMPARATOR)
+            .thenComparing(InjectionPointInfo::getRequiredQualifiers,
+                    setComparator(ANNOTATION_COMPARATOR, AnnotationInstance[]::new));
+
+    // this is relatively sane only for tiny sets, which is the case here
+    private static <T> Comparator<Set<T>> setComparator(Comparator<T> comparator, IntFunction<T[]> toArray) {
+        return (a, b) -> {
+            T[] aArray = a.toArray(toArray);
+            T[] bArray = b.toArray(toArray);
+            Arrays.sort(aArray, comparator);
+            Arrays.sort(bArray, comparator);
+            int len = Math.min(aArray.length, bArray.length);
+            for (int i = 0; i < len; i++) {
+                int cmp = comparator.compare(aArray[i], bArray[i]);
+                if (cmp != 0) {
+                    return cmp;
+                }
+            }
+            return Integer.compare(aArray.length, bArray.length);
+        };
+    }
 
     static List<BeanInfo> orderedBeans(Collection<BeanInfo> beans) {
         return ordered(beans, BEAN_COMPARATOR);
@@ -60,6 +85,10 @@ public class Reproducibility {
 
     static List<StereotypeInfo> orderedStereotypes(Collection<StereotypeInfo> stereotypes) {
         return ordered(stereotypes, STEREOTYPE_COMPARATOR);
+    }
+
+    static List<InjectionPointInfo> orderedInjectionPoints(Collection<InjectionPointInfo> injectionPoints) {
+        return ordered(injectionPoints, INJECTION_POINT_COMPARATOR);
     }
 
     private static <T> List<T> ordered(Collection<T> collection, Comparator<? super T> comparator) {

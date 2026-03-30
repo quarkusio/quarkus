@@ -29,13 +29,13 @@
         <resteasy-microprofile.version>3.0.1.Final</resteasy-microprofile.version>
         <resteasy-spring-web.version>3.2.0.Final</resteasy-spring-web.version>
         <resteasy.version>6.2.15.Final</resteasy.version>
-        <opentelemetry-instrumentation.version>2.23.0-alpha</opentelemetry-instrumentation.version> <!-- OTel SDk 1.55.0-->
-        <opentelemetry-semconv.version>1.37.0-alpha</opentelemetry-semconv.version>
+        <opentelemetry-instrumentation.version>2.25.0-alpha</opentelemetry-instrumentation.version> <!-- OTel SDk 1.59.0-->
+        <opentelemetry-semconv.version>1.40.0-alpha</opentelemetry-semconv.version>
         <quarkus-http.version>5.4.0</quarkus-http.version>
         <micrometer.version>1.16.3</micrometer.version><!-- keep in sync with hdrhistogram: https://central.sonatype.com/artifact/io.micrometer/micrometer-core -->
         <hdrhistogram.version>2.2.2</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
-        <graphql-java.version>24.3</graphql-java.version> <!-- keep in sync with smallrye-graphql -->
+        <graphql-java.version>25.0</graphql-java.version> <!-- keep in sync with smallrye-graphql -->
         <microprofile-config-api.version>3.1</microprofile-config-api.version>
         <microprofile-health-api.version>4.0.1</microprofile-health-api.version>
         <microprofile-context-propagation.version>1.3</microprofile-context-propagation.version>
@@ -49,15 +49,15 @@
         <smallrye-config.version>3.16.0</smallrye-config.version>
         <smallrye-health.version>4.3.0</smallrye-health.version>
         <smallrye-open-api.version>4.2.4</smallrye-open-api.version>
-        <smallrye-graphql.version>2.17.0</smallrye-graphql.version>
+        <smallrye-graphql.version>2.18.0</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.11.0</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.3</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.3.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>3.0.3</smallrye-reactive-types-converter.version>
-        <smallrye-mutiny-vertx-binding.version>3.21.5</smallrye-mutiny-vertx-binding.version>
+        <smallrye-mutiny-vertx-binding.version>3.21.6</smallrye-mutiny-vertx-binding.version>
         <smallrye-reactive-messaging.version>4.33.0</smallrye-reactive-messaging.version>
-        <smallrye-stork.version>2.7.7</smallrye-stork.version>
+        <smallrye-stork.version>2.7.9</smallrye-stork.version>
         <jakarta.activation.version>2.1.4</jakarta.activation.version>
         <jakarta.annotation-api.version>3.0.0</jakarta.annotation-api.version>
         <jakarta.authentication-api>3.1.0</jakarta.authentication-api>
@@ -88,7 +88,7 @@
         <graal-sdk.version>23.1.2</graal-sdk.version>
         <gizmo.version>1.10.1</gizmo.version>
         <gizmo2.version>2.1.1</gizmo2.version>
-        <jackson-bom.version>2.21.1</jackson-bom.version>
+        <jackson-bom.version>2.21.2</jackson-bom.version>
         <commons-logging-jboss-logging.version>2.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.20.0</commons-lang3.version>
         <commons-codec.version>1.21.0</commons-codec.version>
@@ -97,9 +97,9 @@
              hibernate-search.version, antlr.version, bytebuddy.version -->
         <narayana.version>7.3.3.Final</narayana.version>
         <narayana-lra.version>1.1.0.Final</narayana-lra.version>
-        <agroal.version>3.0</agroal.version>
+        <agroal.version>3.0.1</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
-        <elasticsearch-opensource-components.version>9.2.3</elasticsearch-opensource-components.version>
+        <elasticsearch-opensource-components.version>9.3.2</elasticsearch-opensource-components.version>
         <rxjava.version>2.2.21</rxjava.version>
         <wildfly.openssl-java.version>2.2.5.Final</wildfly.openssl-java.version>
         <wildfly.openssl-linux.version>2.2.2.SP01</wildfly.openssl-linux.version>
@@ -110,7 +110,7 @@
         <wildfly-elytron.version>2.8.3.Final</wildfly-elytron.version>
         <jboss-marshalling.version>2.3.0</jboss-marshalling.version>
         <jboss-threads.version>3.9.2</jboss-threads.version>
-        <vertx.version>4.5.25</vertx.version>
+        <vertx.version>4.5.26</vertx.version>
         <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>
         <httpasync.version>4.1.5</httpasync.version>
@@ -131,10 +131,10 @@
         <infinispan.version>16.0.8</infinispan.version>
         <infinispan.protostream.version>6.0.6</infinispan.protostream.version>
         <caffeine.version>3.2.3</caffeine.version>
-        <netty.version>4.1.130.Final</netty.version>
+        <netty.version>4.1.132.Final</netty.version>
         <brotli4j.version>1.16.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
-        <jboss-logging.version>3.6.2.Final</jboss-logging.version>
+        <jboss-logging.version>3.6.3.Final</jboss-logging.version>
         <mutiny.version>3.1.1</mutiny.version>
         <jctools-core.version>4.0.5</jctools-core.version>
         <kafka.version>4.1.1</kafka.version>

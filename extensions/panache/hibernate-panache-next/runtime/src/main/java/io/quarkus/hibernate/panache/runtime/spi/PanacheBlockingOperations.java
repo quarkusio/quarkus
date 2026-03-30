@@ -14,7 +14,11 @@ import io.quarkus.hibernate.panache.blocking.PanacheBlockingQuery;
 import io.quarkus.panache.common.Sort;
 
 public interface PanacheBlockingOperations extends
-        PanacheOperations<Object, List<?>, PanacheBlockingQuery<?>, Long, Void, Boolean, Session, StatelessSession> {
+        PanacheOperations<Object, List<?>, PanacheBlockingQuery<?>, Long, Void, Boolean> {
+
+    Session getSession(Class<?> entityClass);
+
+    StatelessSession getStatelessSession(Class<?> entityClass);
 
     Optional<?> findByIdOptional(Class<?> entityClass, Object id);
 

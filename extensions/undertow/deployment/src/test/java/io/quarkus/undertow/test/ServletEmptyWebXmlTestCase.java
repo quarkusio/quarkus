@@ -4,7 +4,7 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class ServletEmptyWebXmlTestCase {
@@ -20,7 +20,7 @@ public class ServletEmptyWebXmlTestCase {
             "</web-app>";
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(WebXmlServlet.class)
                     .addAsManifestResource(new StringAsset(WEB_XML), "web.xml"));

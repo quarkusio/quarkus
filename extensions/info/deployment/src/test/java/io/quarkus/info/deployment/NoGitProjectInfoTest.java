@@ -17,13 +17,13 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 @EnabledOnOs(OS.LINUX) // as this test deals with temp files that are created manually, let's avoid dealing with other OSes
 public class NoGitProjectInfoTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withEmptyApplication()
             .addBootstrapCustomizer(new Consumer<QuarkusBootstrap.Builder>() {
                 @Override

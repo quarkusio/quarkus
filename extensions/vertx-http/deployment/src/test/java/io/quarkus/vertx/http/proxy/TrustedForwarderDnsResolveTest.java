@@ -7,7 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.http.ForwardedHandlerInitializer;
 import io.quarkus.vertx.http.proxy.fakedns.DnameRecordEncoder;
 import io.quarkus.vertx.http.proxy.fakedns.DnsMessageEncoder;
@@ -19,7 +19,7 @@ public class TrustedForwarderDnsResolveTest {
     private FakeDNSServer dnsServer;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(ForwardedHandlerInitializer.class, DnameRecordEncoder.class, DnsMessageEncoder.class,
                             FakeDNSServer.class)

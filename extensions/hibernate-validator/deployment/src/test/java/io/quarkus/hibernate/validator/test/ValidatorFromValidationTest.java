@@ -17,12 +17,12 @@ import io.quarkus.hibernate.validator.test.injection.TestBean;
 import io.quarkus.hibernate.validator.test.injection.TestConstraint;
 import io.quarkus.hibernate.validator.test.injection.TestInjectedBean;
 import io.quarkus.hibernate.validator.test.injection.TestInjectionValidator;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ValidatorFromValidationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest().setArchiveProducer(() -> ShrinkWrap
             .create(JavaArchive.class)
             .addClasses(TestBean.class, TestConstraint.class, TestInjectedBean.class, TestInjectionValidator.class));
 

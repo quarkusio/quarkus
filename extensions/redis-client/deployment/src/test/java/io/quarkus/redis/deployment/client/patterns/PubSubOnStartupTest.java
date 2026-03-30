@@ -23,7 +23,7 @@ import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
 import io.quarkus.redis.datasource.value.ValueCommands;
 import io.quarkus.redis.deployment.client.RedisTestResource;
 import io.quarkus.runtime.Startup;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.Cancellable;
@@ -31,7 +31,7 @@ import io.smallrye.mutiny.subscription.Cancellable;
 @QuarkusTestResource(RedisTestResource.class)
 public class PubSubOnStartupTest {
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
+    static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(MyCache.class)
                     .addClass(BusinessObject.class).addClass(Notification.class).addClass(MySubscriber.class))
             .overrideConfigKey("quarkus.redis.hosts", "${quarkus.redis.tr}");

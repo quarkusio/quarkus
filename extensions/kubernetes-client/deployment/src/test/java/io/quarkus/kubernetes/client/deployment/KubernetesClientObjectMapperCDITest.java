@@ -16,7 +16,7 @@ import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.kubernetes.client.KubernetesClientObjectMapper;
 import io.quarkus.kubernetes.client.KubernetesClientObjectMapperCustomizer;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class KubernetesClientObjectMapperCDITest {
 
@@ -41,7 +41,7 @@ public class KubernetesClientObjectMapperCDITest {
     }
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .overrideConfigKey("quarkus.kubernetes-client.devservices.enabled", "false");
 
     @Singleton

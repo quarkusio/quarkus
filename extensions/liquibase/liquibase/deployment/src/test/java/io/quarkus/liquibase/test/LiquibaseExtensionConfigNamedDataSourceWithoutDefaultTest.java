@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.liquibase.LiquibaseDataSource;
 import io.quarkus.liquibase.LiquibaseFactory;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Test a full configuration with default and two named datasources plus their liquibase settings.
@@ -25,7 +25,7 @@ public class LiquibaseExtensionConfigNamedDataSourceWithoutDefaultTest {
     LiquibaseFactory liquibaseUsers;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(LiquibaseExtensionConfigFixture.class)
                     .addAsResource("db/xml/changeLog.xml")

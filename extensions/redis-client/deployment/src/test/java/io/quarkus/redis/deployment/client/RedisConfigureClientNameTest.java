@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.datasource.RedisDataSource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.vertx.mutiny.redis.client.Response;
 import io.vertx.redis.client.Command;
@@ -19,7 +19,7 @@ import io.vertx.redis.client.Command;
 public class RedisConfigureClientNameTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
+    static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
             .overrideConfigKey("quarkus.redis.my-redis.hosts", "${quarkus.redis.tr}/1")
             .overrideConfigKey("quarkus.redis.my-redis.configure-client-name", "true")

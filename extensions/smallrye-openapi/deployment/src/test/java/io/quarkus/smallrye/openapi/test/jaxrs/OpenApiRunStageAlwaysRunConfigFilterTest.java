@@ -25,7 +25,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.smallrye.openapi.OpenApiFilter;
 import io.quarkus.smallrye.openapi.OpenApiFilter.RunStage;
 import io.quarkus.smallrye.openapi.runtime.OpenApiConstants;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * @deprecated This is basically a copy from OpenApiRunStageFilterTest, which is okay since only the special interactions with
@@ -40,7 +40,7 @@ class OpenApiRunStageAlwaysRunConfigFilterTest {
     private static final String STORE_SCHEMA_DIRECTORY = "target/generated/OpenApiRunStageAlwaysRunConfigFilterTest/";
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(BuildFilter.class)
                     .addClass(RuntimeStartupFilter.class)

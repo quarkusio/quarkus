@@ -16,7 +16,7 @@ import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.redis.runtime.RedisCache;
 import io.quarkus.redis.datasource.RedisDataSource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class RedisCacheWithOptimisticLockingTest {
 
@@ -24,7 +24,7 @@ public class RedisCacheWithOptimisticLockingTest {
     private static final String KEY_2 = "2";
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(SimpleCachedService.class, TestUtil.class))
             .overrideRuntimeConfigKey("quarkus.cache.redis.use-optimistic-locking", "true");
 

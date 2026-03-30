@@ -1,6 +1,5 @@
 package io.quarkus.smallrye.graphql.deployment;
 
-import static io.quarkus.smallrye.graphql.deployment.AbstractGraphQLTest.MEDIATYPE_JSON;
 import static io.quarkus.smallrye.graphql.deployment.AbstractGraphQLTest.getPropertyAsString;
 
 import java.time.LocalDate;
@@ -20,7 +19,7 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.restassured.filter.log.ResponseLoggingFilter;
 import io.smallrye.mutiny.Uni;
@@ -31,7 +30,7 @@ import io.smallrye.mutiny.Uni;
 public class UniTest extends AbstractGraphQLTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(BookGraphQLApi.class, Book.class)
                     .addAsResource(new StringAsset(getPropertyAsString()), "application.properties")

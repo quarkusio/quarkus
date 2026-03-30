@@ -29,7 +29,7 @@ import io.quarkus.cache.CacheKey;
 import io.quarkus.cache.CacheKeyGenerator;
 import io.quarkus.cache.CacheResult;
 import io.quarkus.cache.CompositeCacheKey;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class CacheKeyGeneratorTest {
 
@@ -38,7 +38,7 @@ public class CacheKeyGeneratorTest {
     private static final Object OBJECT = new Object();
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(jar -> jar
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest().withApplicationRoot(jar -> jar
             .addAsResource(new StringAsset("cache-key-element=" + ASPARAGUS), "application.properties")
             .addClass(CachedService.class));
 

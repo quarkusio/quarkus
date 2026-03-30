@@ -15,12 +15,12 @@ import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.deployment.ValidationParserHookBuildItem;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ValidationHookTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(
                     root -> root.addClasses(Foo.class)
                             .addAsResource(new StringAsset("{foo.bar}"), "templates/foo.html"))

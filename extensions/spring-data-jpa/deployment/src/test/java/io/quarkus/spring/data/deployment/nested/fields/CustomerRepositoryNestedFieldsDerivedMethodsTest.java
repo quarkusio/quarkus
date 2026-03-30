@@ -19,12 +19,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import io.quarkus.spring.data.deployment.Customer;
 import io.quarkus.spring.data.deployment.CustomerRepository;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 class CustomerRepositoryNestedFieldsDerivedMethodsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource("import_customers.sql", "import.sql")
                     .addClasses(Customer.class, CustomerRepository.class))
@@ -64,11 +64,11 @@ class CustomerRepositoryNestedFieldsDerivedMethodsTest {
         QueryArgumentException exception = assertThrows(QueryArgumentException.class,
                 () -> customerRepository.findAllByAddressCountry("Spain"));
         assertThat(exception).hasMessageContaining(
-                "Argument to query parameter has an incompatible type (java.lang.String is not assignable to io.quarkus.spring.data.deployment.Customer$Country)");
+                "incompatible type (argument [Spain] is not assignable to io.quarkus.spring.data.deployment.Customer$Country");
         assertThrows(QueryArgumentException.class,
                 () -> customerRepository.findAllByAddress_Country("Spain"));
         assertThat(exception).hasMessageContaining(
-                "Argument to query parameter has an incompatible type (java.lang.String is not assignable to io.quarkus.spring.data.deployment.Customer$Country)");
+                "incompatible type (argument [Spain] is not assignable to io.quarkus.spring.data.deployment.Customer$Country");
 
     }
 

@@ -27,12 +27,12 @@ import org.quartz.TriggerBuilder;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.runtime.StartupEvent;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class InjectJobTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Starter.class, Service.class, CountDownLatchProducer.class)
                     .addAsResource(new StringAsset("quarkus.scheduler.start-mode=forced"),

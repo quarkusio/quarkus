@@ -16,7 +16,7 @@ import java.util.function.Predicate;
  * loader is used it should not also be annotated as this will result in it being executed
  * twice.
  *
- * Note that when using these with QuarkusUnitTest (rather than @QuarkusTest) they run
+ * Note that when using these with QuarkusExtensionTest or QuarkusUnitTest (rather than @QuarkusTest) they run
  * before the ClassLoader has been setup. This means injection may not work
  * as expected.
  * <p>

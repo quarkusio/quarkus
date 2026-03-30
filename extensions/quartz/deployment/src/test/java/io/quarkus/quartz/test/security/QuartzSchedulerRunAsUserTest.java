@@ -27,7 +27,7 @@ import io.quarkus.security.Authenticated;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.security.identity.RunAsUser;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
 
 class QuartzSchedulerRunAsUserTest {
@@ -38,7 +38,7 @@ class QuartzSchedulerRunAsUserTest {
     private static final String AUTHORIZED_SCHEDULER = "authorized";
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(Scheduler.class, SecuredBean.class, StaticScheduler.class))
             .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-security", Version.getVersion())));
 

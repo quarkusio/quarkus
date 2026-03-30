@@ -20,7 +20,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpMethod;
@@ -48,7 +48,7 @@ public class JakartaRestResourceHttpPermissionTest {
             "quarkus.http.auth.policy.admin-role.roles-allowed=admin";
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestIdentityProvider.class, TestIdentityController.class, ApiResource.class,
                             RootResource.class, PublicResource.class, JaxRsResource.class)

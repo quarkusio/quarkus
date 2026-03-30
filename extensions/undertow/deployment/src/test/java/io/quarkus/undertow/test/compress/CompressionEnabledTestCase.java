@@ -6,12 +6,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class CompressionEnabledTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest config = new QuarkusUnitTest()
+    static QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addClasses(SimpleServlet.class))
             .overrideConfigKey("quarkus.http.enable-compression", "true");

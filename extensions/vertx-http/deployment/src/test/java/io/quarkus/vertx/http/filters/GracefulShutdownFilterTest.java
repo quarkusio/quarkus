@@ -22,7 +22,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.quarkus.runtime.shutdown.ShutdownRecorder;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -38,7 +38,7 @@ import io.vertx.ext.web.Router;
 public class GracefulShutdownFilterTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyBean.class, GracefulShutdownFilterTest.class))
             .overrideConfigKey("quarkus.shutdown.timeout", "10");
@@ -79,22 +79,16 @@ public class GracefulShutdownFilterTest {
         Future<HttpClientResponse> response = client
                 .request(HttpMethod.GET, "/")
                 .compose(HttpClientRequest::send)
-                .andThen(r -> r.result().body().onComplete(buffer -> responseLatch.countDown()));
+                .onFailure(t -> responseLatch.countDown());
 
         if (!responseLatch.await(10, TimeUnit.SECONDS)) {
             throw new RuntimeException("Timeout waiting for response");
         }
 
-        if (response.failed()) {
-            throw new RuntimeException(response.cause());
+        if (!response.failed()) {
+            throw new RuntimeException("The request should have failed after the server shutdown was triggered");
         }
 
-        if (response.result().body().failed()) {
-            throw new RuntimeException(response.result().body().cause());
-        }
-
-        Assertions.assertThat(response.result().body().result().toString()).isEqualTo("h2");
-        Assertions.assertThat(response.result().headers().get(HttpHeaders.CONNECTION.toString())).isNull();
         client.close();
     }
 

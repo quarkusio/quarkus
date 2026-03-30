@@ -9,7 +9,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Make sure that the default JAXB context is not validated at build time as long as there is no injection point for it.
@@ -18,7 +18,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class NoJaxbContextBeanTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(
                             io.quarkus.jaxb.deployment.one.Model.class,

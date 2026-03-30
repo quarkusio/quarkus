@@ -15,12 +15,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.jackson.JacksonMixin;
 import io.quarkus.jackson.ObjectMapperCustomizer;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class JacksonMixinsWithCustomizerTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest();
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest();
 
     @Inject
     ObjectMapper objectMapper;

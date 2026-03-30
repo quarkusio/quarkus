@@ -23,7 +23,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.http.runtime.FormAuthConfig.CookieSameSite;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
@@ -36,7 +36,7 @@ import io.vertx.ext.web.RoutingContext;
 class FormAuthRedirectQueryParamsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(jar -> jar
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest().withApplicationRoot(jar -> jar
             .addClasses(TestIdentityProvider.class, TestIdentityController.class, TestTrustedIdentityProvider.class,
                     PathHandler.class, HttpSecurityConfigurator.class, DelegatingMechanism.class)
             .addAsResource(new StringAsset("""

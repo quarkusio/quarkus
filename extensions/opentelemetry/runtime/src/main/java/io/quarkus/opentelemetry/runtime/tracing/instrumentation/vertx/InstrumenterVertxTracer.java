@@ -68,8 +68,22 @@ public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOper
 
         Object request = spanOperation.getRequest();
         Instrumenter<REQ, RESP> instrumenter = getSendResponseInstrumenter();
-        try (scope) {
-            instrumenter.end(spanOperation.getSpanContext(), (REQ) request, (RESP) response, failure);
+
+        if (failure != null && response == null) {
+            // Connection reset (e.g. client read timeout) can be triggered while a worker is still running.
+            // When the worker completed, this method is called again but the original scope.close() has already cleaned the
+            // OTel context from the DuplicatedContext
+            // This will end the span to record the failure but won't close the scope yet because it would erase the OTel context
+            // and mess with ongoing child spans
+            if (spanOperation.tryEndSpan()) {
+                instrumenter.end(spanOperation.getSpanContext(), (REQ) request, (RESP) response, failure);
+            }
+        } else {
+            try (scope) {
+                if (spanOperation.tryEndSpan()) {
+                    instrumenter.end(spanOperation.getSpanContext(), (REQ) request, (RESP) response, failure);
+                }
+            }
         }
     }
 

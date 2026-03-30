@@ -27,11 +27,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.sun.net.httpserver.HttpServer;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ProviderClientRegistrationTest {
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(ProviderClientRegistrationTest.class, ClientBean.class, HelloFooProvider.class));
 

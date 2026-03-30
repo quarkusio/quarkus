@@ -47,7 +47,7 @@ public class BuildTimeRunTimeConfigTest {
 
     @Test
     void buildTimeRunTimeConfig() {
-        // A combination of QuarkusUnitTest and QuarkusProdModeTest tests ordering may mess with the port leaving it in
+        // A combination of QuarkusExtensionTest and QuarkusProdModeTest tests ordering may mess with the port leaving it in
         // 8081 and QuarkusDevModeTest does not change to the right port.
         RestAssured.port = -1;
 

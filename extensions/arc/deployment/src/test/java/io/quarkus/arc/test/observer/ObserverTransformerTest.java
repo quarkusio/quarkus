@@ -32,12 +32,12 @@ import io.quarkus.arc.processor.ObserverTransformer;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ObserverTransformerTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyObserver.class, AlphaQualifier.class, BravoQualifier.class))
             .addBuildChainCustomizer(buildCustomizer());

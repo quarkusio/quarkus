@@ -17,7 +17,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.hibernate.orm.SmokeTestUtils;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * @author Emmanuel Bernard emmanuel@hibernate.org
@@ -26,7 +26,7 @@ public class PersistenceXmlTest {
 
     private static final Formatter LOG_FORMATTER = new PatternFormatter("%s");
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .setLogRecordPredicate(record -> record.getLevel().equals(Level.INFO))
             .assertLogRecords(records -> assertThat(records)
                     .as("Logs on startup")

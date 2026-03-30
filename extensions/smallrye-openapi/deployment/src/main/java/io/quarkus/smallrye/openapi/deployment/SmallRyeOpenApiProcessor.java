@@ -873,7 +873,7 @@ public class SmallRyeOpenApiProcessor {
 
     private List<String> getPermissionsAllowedMethodReferences(OpenApiSecurityTransformer securityTransformer) {
         return securityTransformer
-                .getAnnotations(DotName.createSimple(PermissionsAllowed.class))
+                .getAnnotationsWithRepeatable(DotName.createSimple(PermissionsAllowed.class))
                 .stream()
                 .flatMap(t -> getMethods(t, securityTransformer.getIndex()))
                 .map(e -> createUniqueMethodReference(e.getKey().classInfo(), e.getKey().method()))
@@ -1503,7 +1503,7 @@ public class SmallRyeOpenApiProcessor {
         List<String> filenames = new ArrayList<>();
         // Here we are resolving the resource dir relative to the classes dir and if it does not exist, we fall back to locating the resource dir on the classpath.
         // Although the classes dir should already be on the classpath.
-        // In a QuarkusUnitTest the module's classes dir and the test application root could be different directories, is this code here for that reason?
+        // In a QuarkusExtensionTest the module's classes dir and the test application root could be different directories, is this code here for that reason?
         final Path targetResourceDir = target == null ? null : target.resolve("classes").resolve(resourcePath);
         if (targetResourceDir != null && Files.exists(targetResourceDir)) {
             try (Stream<Path> paths = Files.list(targetResourceDir)) {
@@ -1559,6 +1559,18 @@ public class SmallRyeOpenApiProcessor {
             }
 
             @Override
+            public Collection<AnnotationInstance> getAnnotationsWithRepeatable(DotName securityAnnotationName) {
+                if (securityTransformer != null) {
+                    return securityTransformer.getAnnotationsWithRepeatable(securityAnnotationName);
+                }
+                // the annotation definition may not be in the index if the security extension is not on the classpath
+                if (index.getClassByName(securityAnnotationName) == null) {
+                    return Collections.emptyList();
+                }
+                return index.getAnnotationsWithRepeatable(securityAnnotationName, index);
+            }
+
+            @Override
             public IndexView getIndex() {
                 return index;
             }
@@ -1568,6 +1580,8 @@ public class SmallRyeOpenApiProcessor {
     private interface OpenApiSecurityTransformer {
 
         Collection<AnnotationInstance> getAnnotations(DotName securityAnnotationName);
+
+        Collection<AnnotationInstance> getAnnotationsWithRepeatable(DotName securityAnnotationName);
 
         IndexView getIndex();
 

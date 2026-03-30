@@ -14,11 +14,11 @@ import org.eclipse.microprofile.faulttolerance.exceptions.TimeoutException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class TimeoutConfigTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(TimeoutConfigBean.class))
             .overrideConfigKey(
                     "quarkus.fault-tolerance.\"io.quarkus.smallrye.faulttolerance.test.config.TimeoutConfigBean/value\".timeout.value",

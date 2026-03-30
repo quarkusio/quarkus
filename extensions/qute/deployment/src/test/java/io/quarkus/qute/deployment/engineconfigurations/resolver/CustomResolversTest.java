@@ -16,12 +16,12 @@ import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.ValueResolver;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class CustomResolversTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(
                     root -> root.addClasses(CustomValueResolver.class, CustomNamespaceResolver.class, ResolverBase.class)
                             .addAsResource(new StringAsset("{bool.foo}::{custom:bar}"), "templates/foo.html"));

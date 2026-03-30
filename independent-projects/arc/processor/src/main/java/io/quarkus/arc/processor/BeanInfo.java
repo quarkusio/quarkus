@@ -87,6 +87,10 @@ public class BeanInfo implements InjectionTargetInfo {
 
     private final List<MethodInfo> aroundInvokes;
 
+    private final List<MethodInfo> postConstructCallbacks;
+
+    private final List<MethodInfo> preDestroyCallbacks;
+
     private final InterceptionProxyInfo interceptionProxy;
 
     // Following fields are only used by synthetic beans
@@ -173,6 +177,15 @@ public class BeanInfo implements InjectionTargetInfo {
         this.targetPackageName = targetPackageName;
         this.startupPriority = startupPriority;
         this.aroundInvokes = isInterceptor() || isDecorator() ? List.of() : Beans.getAroundInvokes(implClazz, beanDeployment);
+        if (isClassBean() && !isInterceptor()) {
+            this.postConstructCallbacks = Beans.getCallbacks(target.asClass(), DotNames.POST_CONSTRUCT,
+                    beanDeployment.getBeanArchiveIndex());
+            this.preDestroyCallbacks = Beans.getCallbacks(target.asClass(), DotNames.PRE_DESTROY,
+                    beanDeployment.getBeanArchiveIndex());
+        } else {
+            this.postConstructCallbacks = List.of();
+            this.preDestroyCallbacks = List.of();
+        }
     }
 
     @Override
@@ -457,8 +470,7 @@ public class BeanInfo implements InjectionTargetInfo {
         }
         // test class bean with @PreDestroy interceptor or callback
         return isClassBean() && (!getLifecycleInterceptors(InterceptionType.PRE_DESTROY).isEmpty()
-                || !Beans.getCallbacks(target.get().asClass(), DotNames.PRE_DESTROY, beanDeployment.getBeanArchiveIndex())
-                        .isEmpty());
+                || !preDestroyCallbacks.isEmpty());
     }
 
     public boolean isForceApplicationClass() {
@@ -531,6 +543,22 @@ public class BeanInfo implements InjectionTargetInfo {
             }
         }
         return false;
+    }
+
+    /**
+     *
+     * @return the list of {@code @PostConstruct} callback methods declared in the hierarchy of a bean class
+     */
+    List<MethodInfo> getPostConstructCallbacks() {
+        return postConstructCallbacks;
+    }
+
+    /**
+     *
+     * @return the list of {@code @PreDestroy} callback methods declared in the hierarchy of a bean class
+     */
+    List<MethodInfo> getPreDestroyCallbacks() {
+        return preDestroyCallbacks;
     }
 
     /**

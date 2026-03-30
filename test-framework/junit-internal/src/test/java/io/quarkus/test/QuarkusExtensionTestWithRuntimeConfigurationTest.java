@@ -8,20 +8,20 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /**
- * Pure unit tests for QuarkusUnitTest.withRuntimeConfiguration(String),
+ * Pure unit tests for QuarkusExtensionTest.withRuntimeConfiguration(String),
  * without starting Quarkus or CDI.
  */
-final class QuarkusUnitTestWithRuntimeConfigurationTest {
+final class QuarkusExtensionTestWithRuntimeConfigurationTest {
 
     /**
      * Test double that captures calls to overrideRuntimeConfigKey.
      */
-    static final class TestableQuarkusUnitTest extends QuarkusUnitTest {
+    static final class TestableQuarkusExtensionTest extends QuarkusExtensionTest {
 
         private final Map<String, String> runtimeConfig = new LinkedHashMap<>();
 
         @Override
-        public QuarkusUnitTest overrideRuntimeConfigKey(String key, String value) {
+        public QuarkusExtensionTest overrideRuntimeConfigKey(String key, String value) {
             runtimeConfig.put(key, value);
             return this;
         }
@@ -33,7 +33,7 @@ final class QuarkusUnitTestWithRuntimeConfigurationTest {
 
     @Test
     void parsesValidConfigBlock() {
-        TestableQuarkusUnitTest testUnit = new TestableQuarkusUnitTest();
+        TestableQuarkusExtensionTest testUnit = new TestableQuarkusExtensionTest();
 
         testUnit.withRuntimeConfiguration("""
                 test.inline.runtime=value
@@ -49,7 +49,7 @@ final class QuarkusUnitTestWithRuntimeConfigurationTest {
 
     @Test
     void ignoresBlankAndCommentLines() {
-        TestableQuarkusUnitTest testUnit = new TestableQuarkusUnitTest();
+        TestableQuarkusExtensionTest testUnit = new TestableQuarkusExtensionTest();
 
         testUnit.withRuntimeConfiguration("""
                 # comment

@@ -37,6 +37,7 @@ public class SmallryeJwtDevModeProcessor {
     private static final Logger LOGGER = Logger.getLogger(SmallryeJwtDevModeProcessor.class);
 
     public static final String MP_JWT_VERIFY_PUBLIC_KEY = "mp.jwt.verify.publickey";
+    public static final String SMALLRYE_JWT_VERIFY_KEY_LOCATION = "smallrye.jwt.verify.key.location";
     private static final String MP_JWT_VERIFY_ISSUER = "mp.jwt.verify.issuer";
     private static final String SMALLRYE_JWT_DECRYPT_KEY = "smallrye.jwt.decrypt.key"; // no MP equivalent
     private static final String MP_JWT_DECRYPT_KEY_LOCATION = "mp.jwt.decrypt.key.location";
@@ -54,6 +55,7 @@ public class SmallryeJwtDevModeProcessor {
 
     private static final Set<String> JWT_SIGN_KEY_PROPERTIES = Set.of(
             MP_JWT_VERIFY_KEY_LOCATION,
+            SMALLRYE_JWT_VERIFY_KEY_LOCATION,
             MP_JWT_VERIFY_PUBLIC_KEY,
             SMALLRYE_JWT_DECRYPT_KEY,
             MP_JWT_DECRYPT_KEY_LOCATION,

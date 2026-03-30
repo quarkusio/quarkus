@@ -5,12 +5,12 @@ import static org.junit.jupiter.api.Assertions.fail;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class CategoryConfiguredHandlerInvalidDueToMultipleHandlersTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setExpectedException(RuntimeException.class)
             .withConfigurationResource("application-category-invalid-configured-handlers-output.properties")
             .withApplicationRoot((jar) -> jar

@@ -2106,6 +2106,18 @@ add `quarkus.kafka.snappy.enabled=true` to your `application.properties`.
 
 In native mode, Snappy is disabled by default as the use of Snappy requires embedding a native library and unpacking it when the application starts.
 
+== Disabling JMX MBean registration
+
+To disable JMX MBean registration, set the following property in your `application.properties`:
+
+[source, properties]
+----
+quarkus.kafka.jmx.enabled=false
+----
+
+When disabled, the `AppInfoParser` skipş the JMX MBean registration and the default value for `kafka.metric.reporters` is set to empty, preventing the `JmxReporter` from being loaded.
+Kafka client metrics are available through Micrometer when the xref:telemetry-micrometer.adoc[Micrometer extension] is present.
+
 == Authentication with OAuth
 
 If your Kafka broker uses OAuth as authentication mechanism, you need to configure the Kafka consumer to enable this authentication process.

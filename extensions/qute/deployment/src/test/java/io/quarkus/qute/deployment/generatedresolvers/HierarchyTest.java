@@ -17,12 +17,12 @@ import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateData;
 import io.quarkus.qute.ValueResolver;
 import io.quarkus.qute.generator.ValueResolverGenerator;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class HierarchyTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Foo.class, Bar.class)
                     .addAsResource(new StringAsset("{foo.name}"), "templates/test.html"));

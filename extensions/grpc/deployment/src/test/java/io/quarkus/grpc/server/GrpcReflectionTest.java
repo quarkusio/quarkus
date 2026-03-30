@@ -32,7 +32,7 @@ import io.grpc.reflection.v1.ServerReflectionResponse;
 import io.grpc.reflection.v1.ServiceResponse;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcService;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.operators.multi.processors.UnicastProcessor;
@@ -43,7 +43,7 @@ import io.smallrye.mutiny.operators.multi.processors.UnicastProcessor;
 public class GrpcReflectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addPackage(HealthGrpc.class.getPackage())
                     .addPackage(MutinyReflectableServiceGrpc.class.getPackage())

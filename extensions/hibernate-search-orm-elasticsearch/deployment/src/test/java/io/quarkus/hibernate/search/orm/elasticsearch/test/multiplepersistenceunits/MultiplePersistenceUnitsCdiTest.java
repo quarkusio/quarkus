@@ -24,12 +24,12 @@ import io.quarkus.hibernate.search.orm.elasticsearch.test.multiplepersistenceuni
 import io.quarkus.hibernate.search.orm.elasticsearch.test.multiplepersistenceunits.pu2.PU2Entity;
 import io.quarkus.hibernate.search.orm.elasticsearch.test.multiplepersistenceunits.pu3.PU3Entity;
 import io.quarkus.hibernate.search.orm.elasticsearch.test.util.TransactionUtils;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class MultiplePersistenceUnitsCdiTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(TransactionUtils.class)
                     .addPackage(DefaultPUEntity.class.getPackage())

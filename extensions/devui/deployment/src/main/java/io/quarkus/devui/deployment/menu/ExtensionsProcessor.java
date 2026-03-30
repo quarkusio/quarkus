@@ -137,7 +137,7 @@ public class ExtensionsProcessor {
                         return filtered;
                     });
                 })
-                .enableMcpFuctionByDefault()
+                .enableMcpFunctionByDefault()
                 .build();
     }
 
@@ -221,7 +221,7 @@ public class ExtensionsProcessor {
                         }
                     });
                 })
-                .enableMcpFuctionByDefault()
+                .enableMcpFunctionByDefault()
                 .build();
     }
 
@@ -247,7 +247,7 @@ public class ExtensionsProcessor {
                         }
                     });
                 })
-                .enableMcpFuctionByDefault()
+                .enableMcpFunctionByDefault()
                 .build();
     }
 

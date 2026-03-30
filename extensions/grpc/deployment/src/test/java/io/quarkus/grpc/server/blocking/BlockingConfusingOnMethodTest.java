@@ -13,7 +13,7 @@ import com.dam.Blocking2;
 import com.dam.MutinyBlocking2Grpc;
 
 import io.quarkus.grpc.GrpcService;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Uni;
@@ -21,7 +21,7 @@ import io.smallrye.mutiny.Uni;
 public class BlockingConfusingOnMethodTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setFlatClassPath(true)
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)

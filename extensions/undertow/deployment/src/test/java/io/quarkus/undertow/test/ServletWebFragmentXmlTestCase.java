@@ -6,12 +6,12 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 /**
  * tests a web fragment. Normally this would be in a different jar however we don't really have that facility yet in
- * QuarkusUnitTest
+ * QuarkusExtensionTest
  */
 public class ServletWebFragmentXmlTestCase {
 
@@ -35,7 +35,7 @@ public class ServletWebFragmentXmlTestCase {
             "</web-fragment>";
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(WebXmlServlet.class)
                     .addAsManifestResource(new StringAsset(WEB_FRAGMENT_XML), "web-fragment.xml"));

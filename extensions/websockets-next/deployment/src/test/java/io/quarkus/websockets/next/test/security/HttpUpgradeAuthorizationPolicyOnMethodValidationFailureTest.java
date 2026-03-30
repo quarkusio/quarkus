@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.quarkus.vertx.http.security.AuthorizationPolicy;
 import io.quarkus.websockets.next.OnTextMessage;
@@ -22,7 +22,7 @@ import io.vertx.ext.web.RoutingContext;
 class HttpUpgradeAuthorizationPolicyOnMethodValidationFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(PolicyOnMethodEndpoint.class, CustomPolicy.class))
             .assertException(t -> assertThat(t.getMessage())

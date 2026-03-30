@@ -37,12 +37,12 @@ import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryLogRecordExpo
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryLogRecordExporterProvider;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class OtelLoggingTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .addClasses(JBossLoggingBean.class)
@@ -54,7 +54,8 @@ public class OtelLoggingTest {
                                     "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
                             .add(new StringAsset(
                                     "quarkus.otel.logs.enabled=true\n" +
-                                            "quarkus.otel.traces.enabled=true\n"),
+                                            "quarkus.otel.traces.enabled=true\n" +
+                                            "quarkus.log.category.\"io.quarkus.opentelemetry\".level=INFO\n"),
                                     "application.properties"));
 
     @Inject

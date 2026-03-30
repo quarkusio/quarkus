@@ -16,7 +16,7 @@ import io.quarkus.smallrye.graphql.client.deployment.other.MyEnvSource;
 import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientBuildConfig;
 import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientConfig;
 import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientsConfig;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.graphql.client.typesafe.api.GraphQLClientApi;
 
 public class GraphQLClientEnvVarConfigTest {
@@ -25,7 +25,7 @@ public class GraphQLClientEnvVarConfigTest {
     private static final String CONFIG_KEY = "key";
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyGraphQLClient.class, MyEnvSource.class)
                     .addAsServiceProvider(ConfigSource.class, MyEnvSource.class));

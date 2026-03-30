@@ -19,12 +19,12 @@ import io.quarkus.hibernate.reactive.rest.data.panache.deployment.entity.EmptyLi
 import io.quarkus.hibernate.reactive.rest.data.panache.deployment.entity.Item;
 import io.quarkus.hibernate.reactive.rest.data.panache.deployment.security.PermissionCheckerBean;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class SecuredPanacheEntityResourceTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Collection.class, AbstractEntity.class, AbstractItem.class,
                             Item.class, CollectionsResource.class,

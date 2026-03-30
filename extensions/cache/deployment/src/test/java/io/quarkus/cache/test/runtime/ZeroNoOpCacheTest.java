@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.cache.CacheManager;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * This test checks that no exception is thrown when a {@link CacheManager} method is called while the extension is disabled
@@ -19,7 +19,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ZeroNoOpCacheTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest().withApplicationRoot((jar) -> jar
             .addAsResource(new StringAsset("quarkus.cache.enabled=false"), "application.properties"));
 
     @Inject

@@ -16,12 +16,12 @@ import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.deployment.TemplatePathExcludeBuildItem;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class TemplatePathExcludeBuildItemTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addAsResource(new StringAsset("{@String name} Hi {name.nonexistent}!"), "templates/hi.txt")
                     .addAsResource(new StringAsset("Hello {name}!"), "templates/hello.txt"))

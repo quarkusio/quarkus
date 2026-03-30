@@ -3,11 +3,11 @@ package io.quarkus.logging;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class LoggingWithPanacheGeneratedTest {
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(GeneratedBean.class, NoStackTraceTestException.class))
             .overrideConfigKey("quarkus.log.category.\"io.quarkus.logging\".min-level", "TRACE")

@@ -39,15 +39,15 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.restassured.RestAssured;
 import io.restassured.filter.cookie.CookieFilter;
 
 public abstract class AbstractFormAuthCookiesTestCase {
 
-    protected static QuarkusUnitTest createQuarkusApp(String applicationProperties, Class<?>... classes) {
-        return new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+    protected static QuarkusExtensionTest createQuarkusApp(String applicationProperties, Class<?>... classes) {
+        return new QuarkusExtensionTest().setArchiveProducer(new Supplier<>() {
             @Override
             public JavaArchive get() {
                 var javaArchive = ShrinkWrap.create(JavaArchive.class)

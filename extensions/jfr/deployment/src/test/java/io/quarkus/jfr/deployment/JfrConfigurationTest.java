@@ -8,12 +8,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.jfr.runtime.internal.config.JfrRuntimeConfig;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class JfrConfigurationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .overrideConfigKey("quarkus.jfr.enabled", "false")
             .overrideConfigKey("quarkus.jfr.rest.enabled", "false")
             .overrideConfigKey("quarkus.jfr.runtime.enabled", "false");

@@ -14,7 +14,7 @@ import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.graphql.client.typesafe.api.GraphQLClientApi;
 
 /**
@@ -24,7 +24,7 @@ import io.smallrye.graphql.client.typesafe.api.GraphQLClientApi;
 public class TypesafeGraphQLClientMapTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MapClientApi.class, MapApi.class, Foo.class, ComplexToComplexMapWrapper.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));

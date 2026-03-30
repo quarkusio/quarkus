@@ -15,11 +15,11 @@ import com.mongodb.client.MongoClient;
 import io.quarkus.mongodb.MongoClientName;
 import io.quarkus.mongodb.panache.common.MongoEntity;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class MultipleMongoClientsTest {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .overrideConfigKey("quarkus.mongodb.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar
                     .addAsResource("named-clients.properties"));

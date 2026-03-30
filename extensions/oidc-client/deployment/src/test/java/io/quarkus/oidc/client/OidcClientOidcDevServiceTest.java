@@ -2,7 +2,7 @@ package io.quarkus.oidc.client;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * This test uses OIDC Client extension with Dev Services for OIDC.
@@ -10,6 +10,6 @@ import io.quarkus.test.QuarkusUnitTest;
 public class OidcClientOidcDevServiceTest extends AbstractOidcClientDevServiceTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = createQuarkusUnitTest("oidc-client-oidc-dev-service-test.properties");
+    static final QuarkusExtensionTest test = createQuarkusExtensionTest("oidc-client-oidc-dev-service-test.properties");
 
 }

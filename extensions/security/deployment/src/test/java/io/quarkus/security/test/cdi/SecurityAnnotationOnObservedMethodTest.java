@@ -16,12 +16,12 @@ import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.test.utils.AuthData;
 import io.quarkus.security.test.utils.IdentityMock;
 import io.quarkus.security.test.utils.SecurityTestUtils;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class SecurityAnnotationOnObservedMethodTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(StartupMethodBean.class, IdentityMock.class, PermitAllEagerAppBean.class,
                             AuthData.class, SecurityTestUtils.class, EagerAppBean.class))

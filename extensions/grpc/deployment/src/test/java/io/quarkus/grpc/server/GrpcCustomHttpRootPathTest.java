@@ -14,7 +14,7 @@ import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.examples.helloworld.HelloRequestOrBuilder;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.server.services.HelloService;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Test to check whether grpc service is still accessible when
@@ -24,7 +24,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class GrpcCustomHttpRootPathTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(GreeterGrpc.class, GreeterGrpc.GreeterBlockingStub.class,
                             HelloService.class, HelloRequest.class, HelloReply.class,

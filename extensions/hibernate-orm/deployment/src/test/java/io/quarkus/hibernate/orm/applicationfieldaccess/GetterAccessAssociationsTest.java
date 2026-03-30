@@ -30,7 +30,7 @@ import org.hibernate.LazyInitializationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Checks that access to fields through getters by the application works correctly for all association types.
@@ -40,7 +40,7 @@ public class GetterAccessAssociationsTest {
     private static final String CONTAINED_VALUE = "someValue";
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(ContainingEntity.class)
                     .addClass(AccessDelegate.class))

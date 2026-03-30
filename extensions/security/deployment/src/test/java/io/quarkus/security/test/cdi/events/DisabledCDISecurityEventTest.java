@@ -24,7 +24,7 @@ import io.quarkus.security.test.cdi.app.denied.unnanotated.BeanWithNoSecurityAnn
 import io.quarkus.security.test.cdi.app.denied.unnanotated.BeanWithSecurityAnnotations;
 import io.quarkus.security.test.utils.IdentityMock;
 import io.quarkus.security.test.utils.SecurityTestUtils;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class DisabledCDISecurityEventTest {
 
@@ -42,7 +42,7 @@ public class DisabledCDISecurityEventTest {
     Event<SecurityEvent> producer;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(BeanWithNoSecurityAnnotations.class, BeanWithSecurityAnnotations.class,
                             SecurityTestUtils.class, IdentityMock.class, SecurityEventObserver.class,

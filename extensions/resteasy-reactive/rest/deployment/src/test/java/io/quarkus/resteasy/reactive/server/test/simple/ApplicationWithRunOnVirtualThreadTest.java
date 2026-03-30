@@ -16,7 +16,7 @@ import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.resteasy.reactive.server.spi.TargetJavaVersionBuildItem;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.RunOnVirtualThread;
@@ -25,7 +25,7 @@ import io.smallrye.common.annotation.RunOnVirtualThread;
 public class ApplicationWithRunOnVirtualThreadTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             // we need this to make sure that the build doesn't fail because of the target bytecode version being JDK 17
             .addBuildChainCustomizer(buildChainBuilder -> buildChainBuilder.addBuildStep(context -> {
                 context.produce(new TargetJavaVersionBuildItem(new DummyTargetJavaVersion()));

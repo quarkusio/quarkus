@@ -17,7 +17,7 @@ import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.security.webauthn.WebAuthnCredentialRecord;
 import io.quarkus.security.webauthn.WebAuthnRunTimeConfig;
 import io.quarkus.security.webauthn.WebAuthnUserProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.security.webauthn.WebAuthnEndpointHelper;
 import io.quarkus.test.security.webauthn.WebAuthnHardware;
@@ -31,7 +31,7 @@ import io.vertx.core.json.JsonObject;
 public class WebAuthnAndBasicAuthnTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(WebAuthnManualTestUserProvider.class, WebAuthnTestUserProvider.class, WebAuthnHardware.class,
                             TestResource.class, ManualResource.class, TestUtil.class, TestIdentityProvider.class,

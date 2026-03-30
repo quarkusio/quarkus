@@ -57,7 +57,6 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
         try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(runnerJar,
                 packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null),
                 executorService)) {
-            final Map<String, String> seen = new HashMap<>();
             final StringBuilder classPath = new StringBuilder();
             final Map<String, List<byte[]>> services = new HashMap<>();
 
@@ -78,6 +77,8 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
             archiveCreator.addManifest(manifest);
 
             copyApplicationContent(archiveCreator, services, ignoredEntriesPredicate);
+
+            writeConcatenatedEntries(archiveCreator, services);
         }
         runnerJar.toFile().setReadable(true, false);
     }

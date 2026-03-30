@@ -7,12 +7,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.scheduling.annotation.Scheduled;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class UnsupportedFixedDelayParamTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .setExpectedException(IllegalArgumentException.class)
             .withApplicationRoot((jar) -> jar
                     .addClasses(UnsupportedFixedDelayParamTest.InvalidBean.class));

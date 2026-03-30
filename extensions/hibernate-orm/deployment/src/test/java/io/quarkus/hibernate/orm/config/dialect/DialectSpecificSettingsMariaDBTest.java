@@ -13,7 +13,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.builder.Version;
 import io.quarkus.hibernate.orm.MyEntity;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Test Maria DB Dialect specific settings with MariaDB DBKind
@@ -21,7 +21,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class DialectSpecificSettingsMariaDBTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(MyEntity.class)
                     .addAsResource("application-start-offline-mariadb-dialect.properties", "application.properties"))

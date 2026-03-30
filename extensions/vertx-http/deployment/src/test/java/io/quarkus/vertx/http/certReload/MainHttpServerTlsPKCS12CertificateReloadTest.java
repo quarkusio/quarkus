@@ -24,7 +24,7 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.vertx.http.runtime.options.TlsCertificateReloader;
 import io.smallrye.certs.Format;
@@ -52,7 +52,7 @@ public class MainHttpServerTlsPKCS12CertificateReloadTest {
     public static final File temp = new File("target/test-certificates-" + UUID.randomUUID());
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(MyBean.class))
             .overrideConfigKey("quarkus.http.insecure-requests", "redirect")
             .overrideConfigKey("quarkus.http.ssl.certificate.reload-period", "30s")

@@ -2,7 +2,7 @@ package io.quarkus.hibernate.orm.panache.kotlin.deployment.test.config
 
 import io.quarkus.arc.Arc
 import io.quarkus.hibernate.orm.panache.kotlin.deployment.test.MyEntity
-import io.quarkus.test.QuarkusUnitTest
+import io.quarkus.test.QuarkusExtensionTest
 import org.jboss.shrinkwrap.api.spec.JavaArchive
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
@@ -12,7 +12,7 @@ import jakarta.persistence.EntityManagerFactory
 class ConfigEnabledFalseTest {
     companion object {
         @RegisterExtension
-        val config = QuarkusUnitTest()
+        val config = QuarkusExtensionTest()
             .withApplicationRoot { jar: JavaArchive -> jar.addClass(MyEntity::class.java) }
             .withConfigurationResource("application-test.properties")
             // We shouldn't get any build error caused by Panache consuming build items that are not produced

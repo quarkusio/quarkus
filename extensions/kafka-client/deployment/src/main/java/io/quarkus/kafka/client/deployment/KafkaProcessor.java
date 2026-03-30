@@ -51,6 +51,7 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
@@ -162,6 +163,21 @@ public class KafkaProcessor {
     }
 
     @BuildStep
+    void removeAppInfoJmxRegistration(KafkaBuildTimeConfig config,
+            BuildProducer<BytecodeTransformerBuildItem> transformers,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfig) {
+        if (config.jmxEnabled()) {
+            return;
+        }
+        transformers.produce(new BytecodeTransformerBuildItem.Builder()
+                .setClassToTransform("org.apache.kafka.common.utils.AppInfoParser")
+                .setCacheable(true)
+                .setVisitorFunction((className, classVisitor) -> new AppInfoClassVisitor(classVisitor))
+                .build());
+        runtimeConfig.produce(new RunTimeConfigurationDefaultBuildItem("kafka.metric.reporters", ""));
+    }
+
+    @BuildStep
     void silenceUnwantedConfigLogs(BuildProducer<LogCleanupFilterBuildItem> logCleanupFilters) {
         String[] ignoredConfigProperties = { "wildfly.sasl.relax-compliance", "ssl.endpoint.identification.algorithm" };
 
@@ -222,6 +238,7 @@ public class KafkaProcessor {
             CombinedIndexBuildItem indexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod,
+            BuildProducer<ReflectiveClassConditionBuildItem> reflectiveClassCondition,
             BuildProducer<ServiceProviderBuildItem> serviceProviders,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxies,
             Capabilities capabilities,
@@ -249,9 +266,11 @@ public class KafkaProcessor {
                 .reason(getClass().getName() + " OAuthBearerSaslClient classes")
                 .build());
 
-        // This is done to avoid loading jose4j classes when not needed, as DefaultJwtValidator is the default validator used by Kafka clients if no other validator is specified.
-        reflectiveMethod.produce(new ReflectiveMethodBuildItem(getClass().getName() + " DefaultJwtValidator class",
-                DefaultJwtValidator.class.getName(), "<init>", new String[0]));
+        // Register DefaultJwtValidator only when jose4j is present to avoid NoClassDefFoundError
+        // with GraalVM 25's --future-defaults=complete-reflection-types flag
+        reflectiveClassCondition.produce(new ReflectiveClassConditionBuildItem(
+                DefaultJwtValidator.class.getName(),
+                "org.jose4j.keys.resolvers.VerificationKeyResolver"));
 
         for (Class<?> i : BUILT_INS) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(i.getName())

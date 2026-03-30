@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.TransactionTestUtils;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Checks that final field write access is not replaced with a call to an internal Hibernate ORM method
@@ -32,7 +32,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class HibernateEntityEnhancerFinalFieldTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(TransactionTestUtils.class)
                     .addClasses(

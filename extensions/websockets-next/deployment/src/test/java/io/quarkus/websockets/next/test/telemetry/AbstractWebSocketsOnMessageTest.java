@@ -43,7 +43,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.WebSocketConnector;
 import io.quarkus.websockets.next.test.telemetry.ExpectedServerEndpointResponse.DoubleEchoExpectedServerEndpointResponse;
@@ -59,8 +59,8 @@ import io.vertx.core.http.WebSocketConnectOptions;
 
 public abstract class AbstractWebSocketsOnMessageTest {
 
-    static QuarkusUnitTest createQuarkusUnitTest(String endpointsPackage) {
-        return new QuarkusUnitTest()
+    static QuarkusExtensionTest createQuarkusExtensionTest(String endpointsPackage) {
+        return new QuarkusExtensionTest()
                 .withApplicationRoot(root -> root
                         .addPackage(endpointsPackage)
                         .addClasses(WSClient.class, Connection.class, MetricsAsserter.class,

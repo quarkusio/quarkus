@@ -17,7 +17,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.cache.CacheInvalidate;
 import io.quarkus.cache.CacheInvalidateAll;
 import io.quarkus.cache.deployment.exception.PrivateMethodTargetException;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * This class tests {@link DeploymentException} causes related to caching annotations on private methods.
@@ -25,7 +25,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class PrivateMethodExceptionsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(TestResource.class)
                     // These checks are only useful if Arc's more generic check is disabled.
                     .addAsResource(new StringAsset("quarkus.arc.fail-on-intercepted-private-method=false"),

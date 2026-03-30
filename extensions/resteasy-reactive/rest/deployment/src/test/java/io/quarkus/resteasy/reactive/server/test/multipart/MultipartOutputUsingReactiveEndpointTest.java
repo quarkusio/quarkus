@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.resteasy.reactive.server.test.multipart.other.OtherPackageFormDataBase;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Multi;
 
 /**
@@ -23,7 +23,7 @@ import io.smallrye.mutiny.Multi;
 public class MultipartOutputUsingReactiveEndpointTest extends AbstractMultipartTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(MultipartOutputReactiveResource.class, OtherPackageFormDataBase.class))
             .setExpectedException(DeploymentException.class);;

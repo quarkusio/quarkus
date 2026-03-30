@@ -13,14 +13,14 @@ import org.eclipse.microprofile.health.Liveness;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
 
 class HealthCheckOnManagementInterfaceDisabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyCheck.class))
             .overrideConfigKey("quarkus.management.enabled", "false");

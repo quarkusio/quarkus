@@ -32,13 +32,13 @@ import io.quarkus.cache.infinispan.runtime.InfinispanCacheImpl;
 import io.quarkus.cache.infinispan.runtime.InfinispanCacheInfo;
 import io.quarkus.infinispan.client.Remote;
 import io.quarkus.logging.Log;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
 
 public class InfinispanCacheTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withEmptyApplication()
             .withConfigurationResource("empty-application-infinispan-client.properties");
 

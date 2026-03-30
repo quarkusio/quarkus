@@ -3,7 +3,7 @@ name: Quarkus Deploy Snapshots
 permissions:
   contents: read
   issues: write
-  packages: read
+  packages: write
 
 on:
   schedule:
@@ -55,9 +55,7 @@ jobs:
             ${{ steps.cache-key.outputs.m2-monthly-cache-key }}-
       - name: Build and Deploy
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
-          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ./mvnw -e -B --no-transfer-progress --settings .github/release-settings.xml \
             -Dnjord.autoPublish \

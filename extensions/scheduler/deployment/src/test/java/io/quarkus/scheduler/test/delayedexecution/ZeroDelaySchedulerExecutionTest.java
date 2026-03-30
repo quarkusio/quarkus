@@ -14,13 +14,13 @@ import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.DelayedExecution;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.Scheduler;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 // see https://github.com/quarkusio/quarkus/issues/52784
 public class ZeroDelaySchedulerExecutionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root.addClasses(Jobs.class));
 
     @Test

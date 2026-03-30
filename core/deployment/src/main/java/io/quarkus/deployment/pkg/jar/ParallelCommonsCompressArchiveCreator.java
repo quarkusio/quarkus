@@ -33,6 +33,7 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntryRequest;
 import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 import org.apache.commons.compress.parallel.InputStreamSupplier;
+import org.jboss.logging.Logger;
 
 /**
  * This ArchiveCreator may not be used to build Uberjars.
@@ -43,6 +44,8 @@ import org.apache.commons.compress.parallel.InputStreamSupplier;
  * and allow getting it/setting it again, and adding it first in close().
  */
 public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
+
+    private static final Logger LOG = Logger.getLogger(ParallelCommonsCompressArchiveCreator.class);
 
     private static final Set<String> MANIFESTS = Set.of("META-INF/MANIFEST.MF", "META-INF\\MANIFEST.MF");
     private static final Set<String> VERSIONS = Set.of("META-INF/versions/", "META-INF\\versions\\");
@@ -110,21 +113,39 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
         addDirectoryEntry(new ZipArchiveEntry(directory));
     }
 
+    /**
+     * First-write wins, subsequent additions of the same file will generate a warning.
+     * <p>
+     * Use {@link #addFileIfNotExists(Path, String, String)} if you expect a second write to be an expected behavior.
+     * It has the same first-write wins behavior but won't generate a warning.
+     */
     @Override
     public void addFile(Path origin, String target, String source) throws IOException {
         doAddFile(toInputStreamSupplier(origin), target, source);
     }
 
+    /**
+     * First-write wins, subsequent additions of the same file will generate a warning.
+     * <p>
+     * Use {@link #addFileIfNotExists(byte[], String, String)} if you expect a second write to be an expected behavior.
+     * It has the same first-write wins behavior but won't generate a warning.
+     */
     @Override
     public void addFile(byte[] bytes, String target, String source) throws IOException {
         doAddFile(toInputStreamSupplier(bytes), target, source);
     }
 
+    /**
+     * First-write wins, subsequent additions of the same file will generate a warning.
+     */
     @Override
     public void addFile(List<byte[]> bytes, String target, String source) throws IOException {
         addFile(joinWithNewlines(bytes), target, source);
     }
 
+    /**
+     * First-write wins but don't generate a warning if an entry with this name already exists.
+     */
     @Override
     public void addFileIfNotExists(Path origin, String target, String source) throws IOException {
         if (addedFiles.containsKey(target)) {
@@ -134,6 +155,9 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
         addFile(origin, target, source);
     }
 
+    /**
+     * First-write wins but don't generate a warning if an entry with this name already exists.
+     */
     @Override
     public void addFileIfNotExists(byte[] bytes, String target, String source) throws IOException {
         if (addedFiles.containsKey(target)) {
@@ -146,6 +170,13 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
     private void doAddFile(InputStreamSupplier inputStreamSupplier, String target, String source) throws IOException {
         // the MANIFEST.MF file is handled separately as it need to be the first entry of the jar
         if (MANIFESTS.contains(target)) {
+            return;
+        }
+
+        String existingSource = addedFiles.get(target);
+        if (existingSource != null) {
+            LOG.warn("Duplicate entry '" + target + "': already added from '" + existingSource
+                    + "', ignoring entry from '" + source + "'");
             return;
         }
 

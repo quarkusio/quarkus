@@ -25,7 +25,7 @@ import org.testcontainers.containers.GenericContainer;
 
 import io.quarkus.cache.redis.runtime.RedisCacheImpl;
 import io.quarkus.cache.redis.runtime.RedisCacheInfo;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.core.json.Json;
@@ -41,7 +41,7 @@ class RedisCacheImplTest {
     private static final Supplier<Boolean> BLOCKING_ALLOWED = () -> false;
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest();
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest();
 
     @Inject
     Vertx vertx;

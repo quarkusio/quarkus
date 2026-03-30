@@ -23,7 +23,7 @@ import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.opentelemetry.deployment.common.TestUtil;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.ext.web.Router;
@@ -31,7 +31,7 @@ import io.vertx.ext.web.Router;
 public class VertxHttpInstrumentationDisabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
+    static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addClasses(Events.class, TestUtil.class, TestSpanExporter.class,
                             TestSpanExporterProvider.class)

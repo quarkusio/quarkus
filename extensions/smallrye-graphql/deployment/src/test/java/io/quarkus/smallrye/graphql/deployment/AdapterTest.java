@@ -1,7 +1,5 @@
 package io.quarkus.smallrye.graphql.deployment;
 
-import static io.quarkus.smallrye.graphql.deployment.AbstractGraphQLTest.MEDIATYPE_JSON;
-
 import java.util.LinkedList;
 import java.util.List;
 
@@ -12,7 +10,7 @@ import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.smallrye.graphql.api.AdaptWith;
 import io.smallrye.graphql.api.Adapter;
@@ -23,7 +21,7 @@ import io.smallrye.graphql.api.Adapter;
 public class AdapterTest extends AbstractGraphQLTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(AdapterApi.class, Person.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));

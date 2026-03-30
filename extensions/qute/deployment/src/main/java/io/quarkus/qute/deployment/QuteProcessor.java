@@ -2116,6 +2116,7 @@ public class QuteProcessor {
                                         Set.copyOf(method.getMatchNames()),
                                         method.getMatchRegex(), method.getParams()));
                     }
+                    extensionMethods.sort(Comparator.comparing(e -> e.method().toString()));
                     String generatedType = extensionMethodGenerator.generateNamespaceResolver(
                             priorityEntry.getValue().get(0).getMethod().declaringClass(), nsEntry.getKey(),
                             priorityEntry.getKey(), extensionMethods);

@@ -363,7 +363,8 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
             }
         }
 
-        for (Map.Entry<DotName, DotName> mapping : customResultTypeNames.entrySet()) {
+        for (Map.Entry<DotName, DotName> mapping : customResultTypeNames.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey()).toList()) {
             DotName interfaceName = mapping.getKey();
             DotName implName = mapping.getValue();
             generateCustomResultTypes(interfaceName, implName, customResultTypes.get(implName));
@@ -406,7 +407,8 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
 
     private ResultHandle generateParametersObject(Map<String, Integer> namedParameterToIndex, MethodCreator methodCreator) {
         ResultHandle parameters = methodCreator.newInstance(MethodDescriptor.ofConstructor(Parameters.class));
-        for (Map.Entry<String, Integer> entry : namedParameterToIndex.entrySet()) {
+        for (Map.Entry<String, Integer> entry : namedParameterToIndex.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey()).toList()) {
             methodCreator.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(Parameters.class, "and", Parameters.class,
                             String.class, Object.class),
@@ -494,7 +496,8 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
             }
 
             // Add static methods to convert from Object[] to this type
-            for (Map.Entry<String, List<String>> queryMethod : queryMethods.entrySet()) {
+            for (Map.Entry<String, List<String>> queryMethod : queryMethods.entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey()).toList()) {
                 try (MethodCreator convert = implClassCreator.getMethodCreator("convert_" + queryMethod.getKey(),
                         implName.toString(), Object[].class.getName())) {
                     convert.setModifiers(Modifier.STATIC | Modifier.PUBLIC);

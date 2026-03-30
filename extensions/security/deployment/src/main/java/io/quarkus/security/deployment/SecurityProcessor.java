@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -905,8 +906,8 @@ public class SecurityProcessor {
         classPredicate.produce(new ApplicationClassPredicateBuildItem(new SecurityCheckStorageAppPredicate()));
 
         RuntimeValue<SecurityCheckStorageBuilder> builder = recorder.newBuilder();
-        for (Map.Entry<MethodInfo, SecurityCheck> methodEntry : securityChecksItem.securityChecks
-                .entrySet()) {
+        for (Map.Entry<MethodInfo, SecurityCheck> methodEntry : securityChecksItem.securityChecks.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey(Comparator.comparing(MethodInfo::toString))).toList()) {
             MethodInfo method = methodEntry.getKey();
             String[] params = new String[method.parametersCount()];
             for (int i = 0; i < method.parametersCount(); ++i) {
@@ -1082,7 +1083,8 @@ public class SecurityProcessor {
         Map<Set<String>, SecurityCheck> cache = new HashMap<>();
         final AtomicInteger keyIndex = new AtomicInteger(0);
         final AtomicBoolean hasRolesAllowedCheckWithConfigExp = new AtomicBoolean(false);
-        for (Map.Entry<MethodInfo, String[]> entry : methodToRoles.entrySet()) {
+        for (Map.Entry<MethodInfo, String[]> entry : methodToRoles.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey(Comparator.comparing(MethodInfo::toString))).toList()) {
             final MethodInfo methodInfo = entry.getKey();
             result.put(methodInfo,
                     computeRolesAllowedCheck(cache, hasRolesAllowedCheckWithConfigExp, keyIndex, recorder, entry.getValue()));
@@ -1090,28 +1092,30 @@ public class SecurityProcessor {
 
         if (!registerClassSecurityCheckBuildItems.isEmpty()) {
             var classStorageBuilder = new ClassStorageBuilder();
-            registerClassSecurityCheckBuildItems.forEach(item -> {
-                var securityAnnotationName = item.getSecurityAnnotationInstance().name();
+            registerClassSecurityCheckBuildItems.stream()
+                    .sorted(Comparator.comparing(item -> item.getClassName().toString())).forEach(item -> {
+                        var securityAnnotationName = item.getSecurityAnnotationInstance().name();
 
-                final SecurityCheck securityCheck;
-                if (DENY_ALL.equals(securityAnnotationName)) {
-                    securityCheck = recorder.denyAll();
-                } else if (PERMIT_ALL.equals(securityAnnotationName)) {
-                    securityCheck = recorder.permitAll();
-                } else if (AUTHENTICATED.equals(securityAnnotationName)) {
-                    securityCheck = recorder.authenticated();
-                } else if (ROLES_ALLOWED.equals(securityAnnotationName)) {
-                    var allowedRoles = item.getSecurityAnnotationInstance().value().asStringArray();
-                    securityCheck = computeRolesAllowedCheck(cache, hasRolesAllowedCheckWithConfigExp, keyIndex, recorder,
-                            allowedRoles);
-                } else if (PERMISSIONS_ALLOWED.equals(securityAnnotationName)) {
-                    securityCheck = Objects.requireNonNull(classNameToPermCheck.get(item.getClassName()));
-                } else {
-                    throw new IllegalStateException("Found unknown security annotation: " + securityAnnotationName);
-                }
+                        final SecurityCheck securityCheck;
+                        if (DENY_ALL.equals(securityAnnotationName)) {
+                            securityCheck = recorder.denyAll();
+                        } else if (PERMIT_ALL.equals(securityAnnotationName)) {
+                            securityCheck = recorder.permitAll();
+                        } else if (AUTHENTICATED.equals(securityAnnotationName)) {
+                            securityCheck = recorder.authenticated();
+                        } else if (ROLES_ALLOWED.equals(securityAnnotationName)) {
+                            var allowedRoles = item.getSecurityAnnotationInstance().value().asStringArray();
+                            securityCheck = computeRolesAllowedCheck(cache, hasRolesAllowedCheckWithConfigExp, keyIndex,
+                                    recorder,
+                                    allowedRoles);
+                        } else if (PERMISSIONS_ALLOWED.equals(securityAnnotationName)) {
+                            securityCheck = Objects.requireNonNull(classNameToPermCheck.get(item.getClassName()));
+                        } else {
+                            throw new IllegalStateException("Found unknown security annotation: " + securityAnnotationName);
+                        }
 
-                classStorageBuilder.addSecurityCheck(item.getClassName(), securityCheck);
-            });
+                        classStorageBuilder.addSecurityCheck(item.getClassName(), securityCheck);
+                    });
             classSecurityCheckStorageProducer.produce(classStorageBuilder.build());
         }
 

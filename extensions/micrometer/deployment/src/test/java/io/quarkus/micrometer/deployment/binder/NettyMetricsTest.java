@@ -168,11 +168,11 @@ public class NettyMetricsTest {
     @Timeout(60L)
     public void testEventExecutorMetricsValues() throws Exception {
         VertxInternal vi = (VertxInternal) vertx;
-        assertEventGroup(vi.getEventLoopGroup());
-        assertEventGroup(vi.getAcceptorEventLoopGroup());
+        assertEventGroup(vi.getEventLoopGroup(), "eventLoop");
+        assertEventGroup(vi.getAcceptorEventLoopGroup(), "acceptor");
     }
 
-    private void assertEventGroup(EventLoopGroup group) throws Exception {
+    private void assertEventGroup(EventLoopGroup group, String expectedExecutorTag) throws Exception {
         int tasks = 0;
         for (EventExecutor ee : group) {
             tasks++;
@@ -198,7 +198,7 @@ public class NettyMetricsTest {
         List<Meter> meters = registry.getMeters();
         // this would return 1 for everyone
         for (EventExecutor eventLoop : group) {
-            checkMetrics(meters, eventLoop, 1);
+            checkMetrics(meters, eventLoop, 1, expectedExecutorTag);
         }
         waitCollectingMeasures.countDown();
         for (Future<Future<?>> pendingTaskCompleted : pendingTasksCompleted) {
@@ -206,22 +206,24 @@ public class NettyMetricsTest {
         }
         // this would return 0 for everyone
         for (EventExecutor eventLoop : group) {
-            checkMetrics(meters, eventLoop, 0);
+            checkMetrics(meters, eventLoop, 0, expectedExecutorTag);
         }
     }
 
-    private void checkMetrics(List<Meter> meters, EventExecutor executor, int expected) {
+    private void checkMetrics(List<Meter> meters, EventExecutor executor, int expected, String expectedExecutorTag) {
         if (executor instanceof SingleThreadEventExecutor) {
             SingleThreadEventExecutor stee = (SingleThreadEventExecutor) executor;
 
             int pendingTasks = stee.pendingTasks();
             Assertions.assertEquals(expected, pendingTasks);
 
-            Tag tag = Tag.of("name", stee.threadProperties().name());
-            Set<Tag> tags = Set.of(tag);
+            Tag nameTag = Tag.of("name", stee.threadProperties().name());
+            Tag executorTag = Tag.of("executor", expectedExecutorTag);
+            Set<Tag> tags = Set.of(nameTag, executorTag);
 
             Double metricsValue = getValue(meters, tags);
-            Assertions.assertNotNull(metricsValue);
+            Assertions.assertNotNull(metricsValue,
+                    "Expected gauge with tags " + tags + " but not found");
             int mvInt = metricsValue.intValue();
             Assertions.assertEquals(expected, mvInt);
         }

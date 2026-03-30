@@ -561,9 +561,7 @@ class VertxHttpProcessor {
                 eventLoopCount.getEventLoopCount(),
                 websocketSubProtocols.stream().map(bi -> bi.getWebsocketSubProtocols())
                         .collect(Collectors.toList()),
-                launchMode.isAuxiliaryApplication(),
-                !capabilities.isPresent(Capability.VERTX_WEBSOCKETS)
-                        && !capabilities.isPresent(Capability.WEBSOCKETS_NEXT));
+                launchMode.isAuxiliaryApplication(), !capabilities.isPresent(Capability.VERTX_WEBSOCKETS));
     }
 
     @BuildStep

@@ -36,7 +36,6 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
 
     public static final String EXTENSION_DESCRIPTOR_TASK_NAME = "extensionDescriptor";
     public static final String VALIDATE_EXTENSION_TASK_NAME = "validateExtension";
-    private static final String DEPLOYMENT_CLASSPATH_CONFIGURATION_NAME = "quarkusDeploymentClasspath";
 
     public static final String QUARKUS_ANNOTATION_PROCESSOR = "io.quarkus:quarkus-extension-processor";
 
@@ -88,21 +87,9 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
                         javaPlugin -> addAnnotationProcessorDependency(deploymentProject));
 
                 validateExtensionTask.configure(task -> {
-                    // Create a local resolvable configuration that depends on the deployment project.
-                    // This avoids cross-project configuration resolution issues in Gradle 9.x.
-                    Configuration deploymentClasspath = project.getConfigurations()
-                            .findByName(DEPLOYMENT_CLASSPATH_CONFIGURATION_NAME);
-                    if (deploymentClasspath == null) {
-                        deploymentClasspath = project.getConfigurations().create(DEPLOYMENT_CLASSPATH_CONFIGURATION_NAME);
-                        deploymentClasspath.setCanBeConsumed(false);
-                        deploymentClasspath.setCanBeResolved(true);
-                        deploymentClasspath.setTransitive(true);
-                        // Add project dependency on deployment module
-                        project.getDependencies().add(DEPLOYMENT_CLASSPATH_CONFIGURATION_NAME,
-                                project.getDependencies().project(
-                                        java.util.Map.of("path", deploymentProject.getPath())));
-                    }
-                    task.setDeploymentModuleClasspath(deploymentClasspath);
+                    Configuration deploymentModuleClasspath = deploymentProject.getConfigurations()
+                            .getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
+                    task.setDeploymentModuleClasspath(deploymentModuleClasspath);
                 });
 
                 deploymentProject.getTasks().withType(Test.class).configureEach(test -> {

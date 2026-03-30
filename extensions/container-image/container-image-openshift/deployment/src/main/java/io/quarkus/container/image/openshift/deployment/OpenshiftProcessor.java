@@ -210,7 +210,6 @@ public class OpenshiftProcessor {
             BuildProducer<DecoratorBuildItem> decorator) {
         containerImageInfo.registry.ifPresent(registry -> {
             final String name = applicationInfo.getName();
-            final String imageStreamName = Optional.ofNullable(containerImageInfo.getName()).orElse(name);
             final String serviceAccountName = applicationInfo.getName();
             String repositoryWithRegistry = registry + "/" + containerImageInfo.getRepository();
 
@@ -220,11 +219,7 @@ public class OpenshiftProcessor {
                 decorator.produce(new DecoratorBuildItem(OPENSHIFT, new ApplyDockerImageOutputToBuildConfigDecorator(
                         applicationInfo.getName(), containerImageInfo.getImage(), imagePushSecret)));
             } else if (registry.contains(OPENSHIFT_INTERNAL_REGISTRY)) {
-                // when using an internal registry ensure that the build config and image stream
-                // are in sync with the configuration given in `quarkus.container-image.image` or `quarkus.container-image.name`
-                decorator.produce(new DecoratorBuildItem(OPENSHIFT, new ApplyImageNameDecorator(name, imageStreamName)));
-                decorator.produce(new DecoratorBuildItem(OPENSHIFT,
-                        new ApplyImageStreamNameToBuildConfigDecorator(name, imageStreamName, containerImageInfo.getTag())));
+                //no special handling of secrets is really needed.
             } else if (containerImageInfo.username.isPresent() && containerImageInfo.password.isPresent()) {
                 String imagePushSecret = applicationInfo.getName() + "-push-secret";
                 decorator.produce(new DecoratorBuildItem(OPENSHIFT,

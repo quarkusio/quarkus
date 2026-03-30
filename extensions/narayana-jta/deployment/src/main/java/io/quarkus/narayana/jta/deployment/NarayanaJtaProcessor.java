@@ -189,8 +189,7 @@ class NarayanaJtaProcessor {
     @Record(RUNTIME_INIT)
     @Consume(NarayanaInitBuildItem.class)
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
-    public void startRecoveryService(NarayanaJtaRecorder recorder, List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
-            ShutdownContextBuildItem shutdownContextBuildItem) {
+    public void startRecoveryService(NarayanaJtaRecorder recorder, List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems) {
         Map<String, String> configuredDataSourcesConfigKeys = jdbcDataSourceBuildItems.stream()
                 .map(j -> j.getName())
                 .collect(Collectors.toMap(Function.identity(),
@@ -200,10 +199,7 @@ class NarayanaJtaProcessor {
                 .map(j -> j.getName())
                 .collect(Collectors.toSet());
 
-        boolean xaResourcesPresent = jdbcDataSourceBuildItems.stream()
-                .anyMatch(JdbcDataSourceBuildItem::isXaEnabled);
-        recorder.startRecoveryService(configuredDataSourcesConfigKeys, dataSourcesWithTransactionIntegration,
-                xaResourcesPresent, shutdownContextBuildItem);
+        recorder.startRecoveryService(configuredDataSourcesConfigKeys, dataSourcesWithTransactionIntegration);
     }
 
     @BuildStep(onlyIf = IsTest.class)

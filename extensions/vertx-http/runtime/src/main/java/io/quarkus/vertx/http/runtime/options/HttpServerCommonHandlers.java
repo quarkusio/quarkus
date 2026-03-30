@@ -98,19 +98,10 @@ public class HttpServerCommonHandlers {
             if (proxyCheckBuilder == null) {
                 // no proxy check => we do not restrict who can send `X-Forwarded` or `X-Forwarded-*` headers
                 final TrustedProxyCheck allowAllProxyCheck = allowAll();
-                return new Handler<>() {
+                return new Handler<HttpServerRequest>() {
                     @Override
                     public void handle(HttpServerRequest event) {
-                        ForwardedServerRequestWrapper wrapper;
-                        try {
-                            wrapper = new ForwardedServerRequestWrapper(event, forwardingProxyOptions, allowAllProxyCheck);
-                            @SuppressWarnings("unused")
-                            var unused = wrapper.authority();
-                        } catch (IllegalArgumentException e) {
-                            event.response().setStatusCode(400).end();
-                            return;
-                        }
-                        root.handle(wrapper);
+                        root.handle(new ForwardedServerRequestWrapper(event, forwardingProxyOptions, allowAllProxyCheck));
                     }
                 };
             } else {

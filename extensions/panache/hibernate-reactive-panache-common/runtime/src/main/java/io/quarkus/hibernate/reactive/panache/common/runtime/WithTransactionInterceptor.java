@@ -1,16 +1,11 @@
 package io.quarkus.hibernate.reactive.panache.common.runtime;
 
-import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.TRANSACTIONAL_METHOD_KEY;
-import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.WITH_TRANSACTION_METHOD_KEY;
-
 import jakarta.annotation.Priority;
 import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InvocationContext;
 
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
-import io.smallrye.mutiny.Uni;
-import io.vertx.core.Context;
 
 @WithTransaction
 @Interceptor
@@ -22,33 +17,15 @@ public class WithTransactionInterceptor extends AbstractUniInterceptor {
         // Bindings are validated at build time - method-level binding declared on a method that does not return Uni results in a build failure
         // However, a class-level binding implies that methods that do not return Uni are just a no-op
         if (isUniReturnType(context)) {
-            Context vertxContext = SessionOperations.vertxContext();
-            if (vertxContext.getLocal(TRANSACTIONAL_METHOD_KEY) != null) {
-                return Uni.createFrom().failure(
-                        new UnsupportedOperationException(
-                                "Calling a method annotated with @WithTransaction from a method annotated with @Transactional is not supported. "
-                                        + "Use either @Transactional or @WithSessionOnDemand/@WithSession/@WithTransaction, "
-                                        + "but not both, throughout your whole application."));
-            }
-
-            // Annotate current method so that we can validate mixing of @WithTransaction and @Transactional
-            vertxContext.putLocal(WITH_TRANSACTION_METHOD_KEY, true);
-
             WithTransaction withTransaction = getAnnotation(context);
             String persistenceUnitName = withTransaction.value();
             if (withTransaction.stateless()) {
-                return SessionOperations.withStatelessTransaction(persistenceUnitName, () -> proceedUni(context))
-                        .eventually(() -> clearWithTransactionMethod(vertxContext));
+                return SessionOperations.withStatelessTransaction(persistenceUnitName, () -> proceedUni(context));
             } else {
-                return SessionOperations.withTransaction(persistenceUnitName, () -> proceedUni(context))
-                        .eventually(() -> clearWithTransactionMethod(vertxContext));
+                return SessionOperations.withTransaction(persistenceUnitName, () -> proceedUni(context));
             }
         }
         return context.proceed();
-    }
-
-    private static boolean clearWithTransactionMethod(Context vertxContext) {
-        return vertxContext.removeLocal(WITH_TRANSACTION_METHOD_KEY);
     }
 
     private WithTransaction getAnnotation(InvocationContext context) {

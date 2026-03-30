@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Assertions;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.hibernate.orm.panache.Panache;
-import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.constraint.Assert;
 
 @Path("/context")
@@ -153,7 +152,6 @@ public class ContextEndpoint {
     @Transactional
     @GET
     @Path("/transaction")
-    @Blocking // To trigger the Narayana Blocking Interceptor
     public CompletionStage<String> transactionTest() throws SystemException {
         CompletableFuture<String> ret = all.completedFuture("OK");
 
@@ -179,7 +177,6 @@ public class ContextEndpoint {
     @Transactional
     @GET
     @Path("/transaction-tc")
-    @Blocking // To trigger the Narayana Blocking Interceptor
     public CompletionStage<String> transactionThreadContextTest() throws SystemException {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         CompletableFuture<String> ret = allTc.withContextCapture(CompletableFuture.completedFuture("OK"));
@@ -206,7 +203,6 @@ public class ContextEndpoint {
     @Transactional
     @GET
     @Path("/transaction2")
-    @Blocking // To trigger the Narayana Blocking Interceptor
     public CompletionStage<String> transactionTest2() throws SystemException {
         CompletableFuture<String> ret = all.completedFuture("OK");
 
@@ -223,7 +219,6 @@ public class ContextEndpoint {
     @Transactional
     @GET
     @Path("/transaction3")
-    @Blocking // To trigger the Narayana Blocking Interceptor
     public CompletionStage<String> transactionTest3() throws SystemException {
         CompletableFuture<String> ret = all
                 .failedFuture(new WebApplicationException(Response.status(Response.Status.CONFLICT).build()));
@@ -239,7 +234,6 @@ public class ContextEndpoint {
     @Transactional
     @GET
     @Path("/transaction4")
-    @Blocking // To trigger the Narayana Blocking Interceptor
     public String transactionTest4() throws SystemException {
         // check that the third transaction was not committed
         Assertions.assertEquals(1, ContextEntity.count());
@@ -252,7 +246,6 @@ public class ContextEndpoint {
     @Transactional
     @GET
     @Path("/transaction-new")
-    @Blocking // To trigger the Narayana Blocking Interceptor
     public CompletionStage<String> transactionNewTest() throws SystemException {
         CompletableFuture<String> ret = all.completedFuture("OK");
 

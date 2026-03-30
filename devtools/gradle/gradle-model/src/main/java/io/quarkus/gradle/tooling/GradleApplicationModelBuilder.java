@@ -1,7 +1,6 @@
 package io.quarkus.gradle.tooling;
 
 import static io.quarkus.gradle.tooling.ToolingUtils.getClassesOutputDir;
-import static io.quarkus.gradle.tooling.dependency.DependencyDataCollector.declaredDependencyCollectorEnabled;
 import static io.quarkus.gradle.tooling.dependency.DependencyUtils.getArtifactCoords;
 import static io.quarkus.gradle.tooling.dependency.DependencyUtils.getKey;
 
@@ -35,7 +34,6 @@ import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.initialization.IncludedBuild;
-import org.gradle.api.logging.Logger;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskCollection;
@@ -62,7 +60,6 @@ import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
-import io.quarkus.gradle.tooling.dependency.DependencyDataCollector;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -109,7 +106,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         final LaunchMode mode = LaunchMode.valueOf(parameter.getMode());
 
         final ApplicationDeploymentClasspathBuilder classpathBuilder = new ApplicationDeploymentClasspathBuilder(project, mode);
-        final Configuration runtimeConfig = classpathBuilder.getRuntimeConfiguration();
+        final Configuration classpathConfig = classpathBuilder.getRuntimeConfiguration();
         final Configuration deploymentConfig = classpathBuilder.getDeploymentConfiguration();
         final PlatformImports platformImports = classpathBuilder.getPlatformImports();
 
@@ -122,17 +119,13 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             }
         }
 
-        final DependencyDataCollector collector = new DependencyDataCollector(project);
-        // we only collect from deployment config, since it is a superset of the runtime config.
-        final Map<ArtifactKey, DependencyDataCollector.DeclaredDepsResult> declaredDeps = collector
-                .collectDeclaredDependencies(project, deploymentConfig);
         final ResolvedDependencyBuilder appArtifact = getProjectArtifact(project, workspaceDiscovery);
         final ApplicationModelBuilder modelBuilder = new ApplicationModelBuilder()
                 .setAppArtifact(appArtifact)
                 .addReloadableWorkspaceModule(appArtifact.getKey())
                 .setPlatformImports(platformImports);
 
-        collectDependencies(runtimeConfig.getResolvedConfiguration(), runtimeConfig.getIncoming(), workspaceDiscovery,
+        collectDependencies(classpathConfig.getResolvedConfiguration(), classpathConfig.getIncoming(), workspaceDiscovery,
                 project, modelBuilder, appArtifact.getWorkspaceModule().mutable());
         collectExtensionDependencies(project, deploymentConfig, modelBuilder);
         for (var dep : modelBuilder.getDependencies()) {
@@ -141,14 +134,6 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             }
         }
         addCompileOnly(project, classpathBuilder, modelBuilder);
-
-        if (declaredDependencyCollectorEnabled(project)) {
-            Logger logger = project.getLogger();
-            DependencyDataCollector.setDirectDeps(appArtifact, modelBuilder, declaredDeps, logger);
-            for (var dep : modelBuilder.getDependencies()) {
-                DependencyDataCollector.setDirectDeps(dep, modelBuilder, declaredDeps, logger);
-            }
-        }
 
         return modelBuilder.build();
     }
@@ -365,7 +350,8 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                 dep = toDependency(a);
                 modelBuilder.addDependency(dep);
             }
-        } else {
+        }
+        if (dep != null) {
             dep.setDeploymentCp();
             dep.clearFlag(DependencyFlags.RELOADABLE);
         }
@@ -414,7 +400,6 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                         .setRuntimeCp()
                         .setDeploymentCp();
                 processQuarkusDependency(artifactBuilder, modelBuilder);
-                // depInfoCollector is not used to handle artifact dependencies at this point.
                 modelBuilder.addDependency(artifactBuilder);
             }
         }

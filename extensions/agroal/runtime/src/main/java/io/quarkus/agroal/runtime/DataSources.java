@@ -258,14 +258,13 @@ public class DataSources {
             TransactionIntegration txIntegration = new NarayanaTransactionIntegration(transactionManager,
                     transactionSynchronizationRegistry, null, false,
                     dataSourceJdbcBuildTimeConfig.transactions() == io.quarkus.agroal.runtime.TransactionIntegration.XA
-                            && transactionRuntimeConfig.enableRecovery().orElse(true)
+                            && transactionRuntimeConfig.enableRecovery()
                                     ? xaResourceRecoveryRegistry
                                     : null);
             if (dataSourceJdbcBuildTimeConfig.transactions() == io.quarkus.agroal.runtime.TransactionIntegration.XA
-                    && !transactionRuntimeConfig.enableRecovery().orElse(true)) {
+                    && !transactionRuntimeConfig.enableRecovery()) {
                 log.warnv(
-                        "Datasource {0} enables XA but transaction recovery is disabled."
-                                + " Data may be lost if the application is terminated abruptly",
+                        "Datasource {0} enables XA but transaction recovery is not enabled. Please enable transaction recovery by setting quarkus.transaction-manager.enable-recovery=true, otherwise data may be lost if the application is terminated abruptly",
                         dataSourceName);
             }
             poolConfiguration.transactionIntegration(txIntegration);

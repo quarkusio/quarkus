@@ -29,7 +29,6 @@ import org.junit.jupiter.api.Assertions;
 import io.quarkus.arc.Arc;
 import io.quarkus.context.test.RequestBean;
 import io.quarkus.hibernate.orm.panache.Panache;
-import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.constraint.Assert;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -200,7 +199,6 @@ public class MutinyContextEndpoint {
     @Transactional
     @GET
     @Path("/transaction-uni")
-    @Blocking // To trigger the Narayana Blocking Interceptor
     public Uni<String> contextPropagationWithTxAndUni() throws SystemException {
         SomeEntity.deleteAll();
         Uni<String> ret = Uni.createFrom().item("OK");
@@ -228,7 +226,6 @@ public class MutinyContextEndpoint {
     @Transactional
     @GET
     @Path("/transaction-uni-cs")
-    @Blocking // To trigger the Narayana Blocking Interceptor
     public Uni<String> contextPropagationWithTxAndUniCreatedFromCS() throws SystemException {
         Uni<String> ret = Uni.createFrom().completionStage(all.completedFuture("OK"));
         SomeOtherEntity entity = new SomeOtherEntity();
@@ -255,7 +252,6 @@ public class MutinyContextEndpoint {
     @Transactional
     @GET
     @Path("/transaction-tc-uni")
-    @Blocking // To trigger the Narayana Blocking Interceptor
     public Uni<String> transactionPropagationWithThreadContextAndUniCreatedFromCS() throws SystemException {
         CompletableFuture<String> ret = allTc.withContextCapture(CompletableFuture.completedFuture("OK"));
         SomeEntity entity = new SomeEntity();
@@ -282,7 +278,6 @@ public class MutinyContextEndpoint {
     @Transactional
     @GET
     @Path("/transaction2-uni")
-    @Blocking // To trigger the Narayana Blocking Interceptor
     public Uni<String> transactionTest2() {
         Uni<String> ret = Uni.createFrom().item("OK");
 
@@ -299,7 +294,6 @@ public class MutinyContextEndpoint {
     @Transactional
     @GET
     @Path("/transaction2-uni-cs")
-    @Blocking // To trigger the Narayana Blocking Interceptor
     public Uni<String> transactionTest2WithUniCreatedFromCS() {
         Uni<String> ret = Uni.createFrom().completionStage(all.completedFuture("OK"));
 
@@ -316,7 +310,6 @@ public class MutinyContextEndpoint {
     @Transactional
     @GET
     @Path("/transaction3-uni")
-    @Blocking // To trigger the Narayana Blocking Interceptor
     public Uni<String> transactionTest3() {
         Uni<String> ret = Uni.createFrom()
                 .failure(new WebApplicationException(Response.status(Response.Status.CONFLICT).build()));
@@ -332,7 +325,6 @@ public class MutinyContextEndpoint {
     @Transactional
     @GET
     @Path("/transaction3-uni-cs")
-    @Blocking // To trigger the Narayana Blocking Interceptor
     public Uni<String> transactionTest3WithUniCreatedFromCS() {
         CompletableFuture<String> future = all
                 .failedFuture(new WebApplicationException(Response.status(Response.Status.CONFLICT).build()));
@@ -349,7 +341,6 @@ public class MutinyContextEndpoint {
     @Transactional
     @GET
     @Path("/transaction4")
-    @Blocking // To trigger the Narayana Blocking Interceptor
     public String transactionTest4() {
         // check that the third transaction was not committed
         Assertions.assertEquals(1, SomeEntity.count());
@@ -362,7 +353,6 @@ public class MutinyContextEndpoint {
     @Transactional
     @GET
     @Path("/transaction4-cs")
-    @Blocking // To trigger the Narayana Blocking Interceptor
     public String transactionTest4CS() {
         // check that the third transaction was not committed
         Assertions.assertEquals(1, SomeOtherEntity.count());
@@ -375,7 +365,6 @@ public class MutinyContextEndpoint {
     @Transactional
     @GET
     @Path("/transaction-new-sync")
-    @Blocking // To trigger the Narayana Blocking Interceptor
     public Uni<String> newTransactionPropagationSynchronous() throws SystemException {
         Uni<String> ret = Uni.createFrom().item("OK");
         Transaction t1 = Panache.getTransactionManager().getTransaction();
@@ -391,7 +380,6 @@ public class MutinyContextEndpoint {
     @Transactional
     @GET
     @Path("/transaction-new-uni")
-    @Blocking // To trigger the Narayana Blocking Interceptor
     public Uni<String> newTransactionPropagationWithUni() throws SystemException {
         Person entity = new Person();
         entity.name = "Stef";
@@ -425,7 +413,6 @@ public class MutinyContextEndpoint {
     @Transactional
     @GET
     @Path("/transaction-uni-2")
-    @Blocking // To trigger the Narayana Blocking Interceptor
     public Uni<String> transactionPropagationWithUni() {
         Uni<String> ret = Uni.createFrom().item("OK");
         // now delete both entities
@@ -436,7 +423,6 @@ public class MutinyContextEndpoint {
     @Transactional
     @GET
     @Path("/transaction-multi")
-    @Blocking // To trigger the Narayana Blocking Interceptor
     public Multi<String> transactionPropagationWithMulti() throws SystemException {
         Person entity = new Person();
         entity.name = "Stef";
@@ -470,7 +456,6 @@ public class MutinyContextEndpoint {
     @Transactional
     @GET
     @Path("/transaction-multi-2")
-    @Blocking // To trigger the Narayana Blocking Interceptor
     public Flow.Publisher<String> transactionPropagationWithMulti2() {
         Multi<String> ret = Multi.createFrom().item("OK");
         // now delete both entities

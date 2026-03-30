@@ -8,6 +8,9 @@ import jakarta.transaction.Transaction;
 import jakarta.transaction.TransactionManager;
 import jakarta.transaction.Transactional;
 
+import io.quarkus.runtime.BlockingOperationControl;
+import io.quarkus.runtime.BlockingOperationNotAllowedException;
+
 /**
  * @author paul.robinson@redhat.com 25/05/2013
  */
@@ -23,11 +26,9 @@ public class TransactionalInterceptorRequiresNew extends TransactionalIntercepto
     @Override
     @AroundInvoke
     public Object intercept(InvocationContext ic) throws Exception {
-        if (willReactiveTransactionalInterceptorRun()) {
-            return ic.proceed();
+        if (!BlockingOperationControl.isBlockingAllowed()) {
+            throw new BlockingOperationNotAllowedException("Cannot start a JTA transaction from the IO thread.");
         }
-
-        checkBlockingAllowed();
         return super.intercept(ic);
     }
 

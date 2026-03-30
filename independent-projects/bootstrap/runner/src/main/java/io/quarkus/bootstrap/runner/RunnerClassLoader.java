@@ -55,9 +55,6 @@ public final class RunnerClassLoader extends ClassLoader {
     //Protected by synchronization on the above field, as they are related.
     private boolean postBootPhase = false;
 
-    @SuppressWarnings("FieldCanBeLocal") // needs to be a field for CraC to work
-    private final CracResource resource;
-
     RunnerClassLoader(ClassLoader parent, Map<String, ClassLoadingResource[]> resourceDirectoryMap,
             Set<String> parentFirstPackages,
             List<String> fullyIndexedDirectories, Map<String, ClassLoadingResource[]> fullyIndexedResourcesIndexMap,
@@ -74,10 +71,7 @@ public final class RunnerClassLoader extends ClassLoader {
         this.transformedBytecode = transformedBytecode;
 
         if (CracSupport.isEnabled()) {
-            resource = new CracResource();
-            org.crac.Core.getGlobalContext().register(resource);
-        } else {
-            resource = null;
+            org.crac.Core.getGlobalContext().register(new CracResource());
         }
     }
 

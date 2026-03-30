@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -412,13 +411,13 @@ public class GrpcClientProcessor {
             superfluousInterceptors.remove(interceptorClassName);
         }
 
-        Set<Class<?>> perClientInterceptors = new LinkedHashSet<>();
+        Set<Class<?>> perClientInterceptors = new HashSet<>();
         for (String perClientInterceptor : interceptors.nonGlobalInterceptors) {
             reflectiveClassBuildItemBuildProducer
                     .produce(ReflectiveClassBuildItem.builder(perClientInterceptor).constructors(false).build());
             perClientInterceptors.add(recorderContext.classProxy(perClientInterceptor));
         }
-        Set<Class<?>> globalInterceptors = new LinkedHashSet<>();
+        Set<Class<?>> globalInterceptors = new HashSet<>();
         for (String globalInterceptor : interceptors.globalInterceptors) {
             reflectiveClassBuildItemBuildProducer
                     .produce(ReflectiveClassBuildItem.builder(globalInterceptor).constructors(false).build());

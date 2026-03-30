@@ -1,8 +1,6 @@
 package io.quarkus.hibernate.reactive.panache.common.runtime;
 
 import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
-import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.SESSION_ON_DEMAND_KEY;
-import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.TRANSACTIONAL_METHOD_KEY;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -73,6 +71,9 @@ public final class SessionOperations {
         return new BaseKey<>(Mutiny.StatelessSession.class, implementor.getUuid());
     }
 
+    // This key is used to indicate that reactive sessions should be opened lazily/on-demand (when needed) in the current vertx context
+    private static final String SESSION_ON_DEMAND_KEY = "hibernate.reactive.panache.sessionOnDemand";
+
     // This key is used to keep track of the Set<String> sessions (managed or stateless) created on demand
     private static final String SESSION_ON_DEMAND_OPENED_KEY = "hibernate.reactive.panache.sessionOnDemandOpened";
 
@@ -88,15 +89,6 @@ public final class SessionOperations {
      */
     static <T> Uni<T> withSessionOnDemand(Supplier<Uni<T>> work) {
         Context context = vertxContext();
-
-        if (context.getLocal(TRANSACTIONAL_METHOD_KEY) != null) {
-            return Uni.createFrom().failure(
-                    new UnsupportedOperationException(
-                            "Calling a method annotated with @WithSessionOnDemand from a method annotated with @Transactional is not supported. "
-                                    + "Use either @Transactional or @WithSessionOnDemand/@WithSession/@WithTransaction, "
-                                    + "but not both, throughout your whole application."));
-        }
-
         if (context.getLocal(SESSION_ON_DEMAND_KEY) != null) {
             // context already marked - no need to set the key and close the session
             return work.get();
@@ -426,8 +418,7 @@ public final class SessionOperations {
      */
     public static Mutiny.Session getCurrentSession(String persistenceUnitName) {
         Context context = vertxContext();
-        Key<Mutiny.Session> value = SESSION_KEY_MAP.getValue(persistenceUnitName);
-        Mutiny.Session current = context.getLocal(value);
+        Mutiny.Session current = context.getLocal(SESSION_KEY_MAP.getValue(persistenceUnitName));
         if (current != null && current.isOpen()) {
             return current;
         }
@@ -452,7 +443,7 @@ public final class SessionOperations {
      * @throws IllegalStateException If no vertx context is found or is not a safe context as mandated by the
      *         {@link VertxContextSafetyToggle}
      */
-    public static Context vertxContext() {
+    private static Context vertxContext() {
         Context context = Vertx.currentContext();
         if (context != null) {
             VertxContextSafetyToggle.validateContextIfExists(ERROR_MSG, ERROR_MSG);

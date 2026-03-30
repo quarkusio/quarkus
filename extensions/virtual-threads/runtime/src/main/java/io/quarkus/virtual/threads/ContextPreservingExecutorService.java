@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
-import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.internal.ContextInternal;
 
 /**
  * Delegating executor service implementation preserving the Vert.x context on {@link #execute(Runnable)}

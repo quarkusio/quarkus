@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.quarkus.enforcer.test</groupId>
+    <artifactId>dependency-alignment-dependencies-test</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <properties>
+        <!-- Use a real Hibernate ORM version that exists in Maven Central -->
+        <hibernate-orm.version>6.4.0.Final</hibernate-orm.version>
+
+        <!-- These dependencies are found in hibernate-spatial's <dependencies> section, not <dependencyManagement> -->
+        <geolatte.version>1.8.0</geolatte.version> <!-- Wrong: should be 1.8.2 -->
+        <jboss-logging.version>3.5.0.Final</jboss-logging.version> <!-- Correct: matches hibernate-spatial -->
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.geolatte</groupId>
+            <artifactId>geolatte-geom</artifactId>
+            <version>${geolatte.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.logging</groupId>
+            <artifactId>jboss-logging</artifactId>
+            <version>${jboss-logging.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>@enforcer-api.version@</version>
+                <executions>
+                    <execution>
+                        <id>test-dependency-fallback</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <dependencyAlignmentRule implementation="io.quarkus.enforcer.DependencyAlignmentRule">
+                                    <referenceArtifact>org.hibernate.orm:hibernate-spatial:${hibernate-orm.version}</referenceArtifact>
+                                    <dependencies>
+                                        <dependency>
+                                            <artifact>org.geolatte:geolatte-geom</artifact>
+                                        </dependency>
+                                        <dependency>
+                                            <artifact>org.jboss.logging:jboss-logging</artifact>
+                                        </dependency>
+                                    </dependencies>
+                                </dependencyAlignmentRule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>@project.groupId@</groupId>
+                        <artifactId>@project.artifactId@</artifactId>
+                        <version>@project.version@</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        </plugins>
+    </build>
+</project>

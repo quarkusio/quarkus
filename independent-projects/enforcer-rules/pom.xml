@@ -36,6 +36,7 @@
         <enforcer-api.version>3.0.0-M3</enforcer-api.version>
         <maven-invoker-plugin.version>3.9.1</maven-invoker-plugin.version>
         <maven-core.version>3.9.12</maven-core.version>
+        <aether.version>1.1.0</aether.version>
 
         <!--
            Supported Maven versions, interpreted as a version range (Also defined in build-parent)
@@ -69,6 +70,12 @@
                     <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.aether</groupId>
+            <artifactId>aether-api</artifactId>
+            <version>${aether.version}</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 

@@ -29,7 +29,7 @@ import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.net.KeyStoreOptions;
 import io.vertx.core.net.PemKeyCertOptions;
-import io.vertx.core.net.SSLOptions;
+import io.vertx.core.net.ServerSSLOptions;
 
 /**
  * Utility class to handle TLS certificate reloading.
@@ -61,10 +61,10 @@ public class TlsCertificateReloader {
             useRegistry = true;
         }
 
-        SSLOptions ssl = null;
+        ServerSSLOptions ssl = null;
         TlsConfiguration tlsConfiguration = null;
         if (!useRegistry) {
-            ssl = options.getSslOptions();
+            ssl = (ServerSSLOptions) options.getSslOptions();
             if (ssl == null) {
                 throw new IllegalArgumentException("Unable to configure TLS reloading - TLS/SSL is not enabled on the server");
             }
@@ -90,18 +90,18 @@ public class TlsCertificateReloader {
 
         boolean reloadFromRegistry = useRegistry;
         TlsConfiguration registryConfiguration = tlsConfiguration;
-        SSLOptions nonRegistryOptions = ssl;
+        ServerSSLOptions nonRegistryOptions = ssl;
         Supplier<CompletionStage<Boolean>> task = new Supplier<CompletionStage<Boolean>>() {
             @Override
             public CompletionStage<Boolean> get() {
 
                 // We are reading files - must be done on a worker thread.
-                Future<Boolean> future = vertx.executeBlocking(new Callable<SSLOptions>() {
+                Future<Boolean> future = vertx.executeBlocking(new Callable<ServerSSLOptions>() {
                     @Override
-                    public SSLOptions call() throws Exception {
+                    public ServerSSLOptions call() throws Exception {
                         if (reloadFromRegistry) {
                             if (registryConfiguration.reload()) {
-                                return registryConfiguration.getSSLOptions();
+                                return registryConfiguration.getServerSSLOptions();
                             } else {
                                 return null;
                             }
@@ -114,9 +114,9 @@ public class TlsCertificateReloader {
                         }
                     }
                 }, true)
-                        .flatMap(new Function<SSLOptions, Future<Boolean>>() {
+                        .flatMap(new Function<ServerSSLOptions, Future<Boolean>>() {
                             @Override
-                            public Future<Boolean> apply(SSLOptions res) {
+                            public Future<Boolean> apply(ServerSSLOptions res) {
                                 if (res != null) {
                                     return server.updateSSLOptions(res);
                                 } else {
@@ -179,8 +179,8 @@ public class TlsCertificateReloader {
         return CompletableFuture.allOf(futures);
     }
 
-    private static SSLOptions reloadFileContent(SSLOptions ssl, ServerSslConfig sslConfig) throws IOException {
-        var copy = new SSLOptions(ssl);
+    private static ServerSSLOptions reloadFileContent(ServerSSLOptions ssl, ServerSslConfig sslConfig) throws IOException {
+        var copy = new ServerSSLOptions(ssl);
 
         final List<Path> keys = new ArrayList<>();
         final List<Path> certificates = new ArrayList<>();

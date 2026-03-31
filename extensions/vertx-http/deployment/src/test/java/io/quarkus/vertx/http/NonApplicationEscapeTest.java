@@ -28,7 +28,6 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
-import io.vertx.ext.web.client.predicate.ResponsePredicate;
 
 public class NonApplicationEscapeTest {
     private static final String APP_PROPS = "" +
@@ -86,8 +85,7 @@ public class NonApplicationEscapeTest {
 
         WebClient.create(vertx)
                 .get(uri.getPort(), uri.getHost(), "/non-app-absolute")
-                .expect(ResponsePredicate.SC_OK)
-                .send(ar -> {
+                .send().onComplete(ar -> {
                     if (ar.succeeded()) {
                         HttpResponse<Buffer> response = ar.result();
                         result.set(response.bodyAsString());
@@ -107,8 +105,7 @@ public class NonApplicationEscapeTest {
 
         WebClient.create(vertx)
                 .get(uri.getPort(), uri.getHost(), "/non-app-absolute?query=true")
-                .expect(ResponsePredicate.SC_OK)
-                .send(ar -> {
+                .send().onComplete(ar -> {
                     if (ar.succeeded()) {
                         HttpResponse<Buffer> response = ar.result();
                         result.set(response.bodyAsString());

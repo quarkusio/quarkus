@@ -42,7 +42,6 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.net.JdkSSLEngineOptions;
 import io.vertx.core.net.KeyCertOptions;
-import io.vertx.core.net.TCPSSLOptions;
 import io.vertx.core.net.TrafficShapingOptions;
 import io.vertx.core.net.TrustOptions;
 
@@ -183,7 +182,6 @@ public class HttpServerOptionsUtils {
         serverOptions.setEnabledSecureTransportProtocols(sslConfig.protocols());
         serverOptions.setSsl(true);
         serverOptions.setSni(sslConfig.sni());
-        setJdkHeapBufferPooling(serverOptions);
     }
 
     /**
@@ -229,7 +227,6 @@ public class HttpServerOptionsUtils {
 
     public static void applyTlsConfigurationToHttpServerOptions(TlsConfiguration bucket, HttpServerOptions serverOptions) {
         serverOptions.setSsl(true);
-        setJdkHeapBufferPooling(serverOptions);
 
         KeyCertOptions keyStoreOptions = bucket.getKeyStoreOptions();
         TrustOptions trustStoreOptions = bucket.getTrustStoreOptions();
@@ -241,7 +238,7 @@ public class HttpServerOptionsUtils {
         }
         serverOptions.setSni(bucket.usesSni());
 
-        var other = bucket.getSSLOptions();
+        var other = bucket.getServerSSLOptions();
         serverOptions.setSslHandshakeTimeout(other.getSslHandshakeTimeout());
         serverOptions.setSslHandshakeTimeoutUnit(other.getSslHandshakeTimeoutUnit());
         for (String suite : other.getEnabledCipherSuites()) {
@@ -254,20 +251,6 @@ public class HttpServerOptionsUtils {
             serverOptions.setUseAlpn(false);
         }
         serverOptions.setEnabledSecureTransportProtocols(other.getEnabledSecureTransportProtocols());
-    }
-
-    private static void setJdkHeapBufferPooling(TCPSSLOptions tcpSslOptions) {
-        if (!JDK_SSL_BUFFER_POOLING) {
-            return;
-        }
-        var engineOption = tcpSslOptions.getSslEngineOptions();
-        if (engineOption == null) {
-            var jdkEngineOptions = new JdkSSLEngineOptions();
-            jdkEngineOptions.setPooledHeapBuffers(true);
-            tcpSslOptions.setSslEngineOptions(jdkEngineOptions);
-        } else if (engineOption instanceof JdkSSLEngineOptions jdkEngineOptions) {
-            jdkEngineOptions.setPooledHeapBuffers(true);
-        }
     }
 
     public static Optional<String> getCredential(Optional<String> password, Map<String, String> credentials,

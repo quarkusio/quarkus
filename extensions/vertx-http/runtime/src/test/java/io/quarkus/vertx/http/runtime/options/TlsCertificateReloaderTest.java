@@ -56,6 +56,8 @@ class TlsCertificateReloaderTest {
     void initCertReloadingAction_periodBelow30Seconds_throws() {
         ServerSslConfig sslConfig = mockSslConfigWithReloadPeriod(Duration.ofSeconds(29));
         HttpServerOptions options = new HttpServerOptions();
+        options.setSsl(true);
+        options.setKeyCertOptions(new io.vertx.core.net.PemKeyCertOptions());
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> TlsCertificateReloader.initCertReloadingAction(
@@ -84,6 +86,8 @@ class TlsCertificateReloaderTest {
     void initCertReloadingAction_periodOf1Second_throws() {
         ServerSslConfig sslConfig = mockSslConfigWithReloadPeriod(Duration.ofSeconds(1));
         HttpServerOptions options = new HttpServerOptions();
+        options.setSsl(true);
+        options.setKeyCertOptions(new io.vertx.core.net.PemKeyCertOptions());
 
         assertThrows(IllegalArgumentException.class,
                 () -> TlsCertificateReloader.initCertReloadingAction(
@@ -94,6 +98,8 @@ class TlsCertificateReloaderTest {
     void initCertReloadingAction_noReloadPeriod_returnsMinusOne() {
         ServerSslConfig sslConfig = mockSslConfigWithReloadPeriod(null);
         HttpServerOptions options = new HttpServerOptions();
+        options.setSsl(true);
+        options.setKeyCertOptions(new io.vertx.core.net.PemKeyCertOptions());
 
         long result = TlsCertificateReloader.initCertReloadingAction(
                 vertx, server, options, sslConfig, registry, Optional.empty());

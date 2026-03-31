@@ -18,7 +18,7 @@ public class VertxEventBusProducer {
     Vertx vertx;
 
     public void register(@Observes StartupEvent ev) {
-        router.get("/").handler(rc -> vertx.eventBus().<String> request("my-address", "", m -> {
+        router.get("/").handler(rc -> vertx.eventBus().<String> request("my-address", "").onComplete(m -> {
             if (m.failed()) {
                 rc.response().end("failed");
             } else {

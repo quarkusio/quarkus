@@ -247,7 +247,7 @@ public class CORSFilter implements Handler<RoutingContext> {
                         request.absoluteURI(), origin);
                 return false;
             }
-            if (substringMatch(origin, request.scheme().length() + 3, request.host(), true)) {
+            if (substringMatch(origin, request.scheme().length() + 3, request.authority().toString(), true)) {
                 //they are a simple match
                 return true;
             }

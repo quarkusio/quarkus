@@ -18,7 +18,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.http.impl.MimeMapping;
+import io.vertx.core.http.MimeMapping;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.StaticHandler;
 
@@ -87,7 +87,7 @@ public class DevStaticHandler implements Handler<RoutingContext> {
         compressIfNeeded(httpBuildTimeConfig, compressMediaTypes, context, path);
 
         if (generatedFilesResources.containsKey(path)) {
-            context.vertx().fileSystem().readFile(generatedFilesResources.get(path), r -> {
+            context.vertx().fileSystem().readFile(generatedFilesResources.get(path)).onComplete(r -> {
                 if (r.succeeded()) {
                     handleAsyncResultSucceeded(context, r.result(), path);
                 } else {
@@ -97,16 +97,11 @@ public class DevStaticHandler implements Handler<RoutingContext> {
             return;
         }
 
-        context.vertx().executeBlocking(future -> {
-            try {
-                byte[] content = getClasspathResourceContent(path);
-                future.complete(content);
-            } catch (Exception e) {
-                future.fail(e);
-            }
-        }, asyncResult -> {
+        context.vertx().<byte[]> executeBlocking(() -> {
+            return getClasspathResourceContent(path);
+        }).onComplete(asyncResult -> {
             if (asyncResult.succeeded()) {
-                byte[] result = (byte[]) asyncResult.result();
+                byte[] result = asyncResult.result();
                 handleAsyncResultSucceeded(context, result == null ? null : Buffer.buffer(result), path);
             } else {
                 context.fail(asyncResult.cause());
@@ -121,7 +116,7 @@ public class DevStaticHandler implements Handler<RoutingContext> {
             beforeNextHandler(this.currentClassLoader, context);
             return;
         }
-        String contentType = MimeMapping.getMimeTypeForFilename(path);
+        String contentType = MimeMapping.mimeTypeForFilename(path);
         if (contentType != null) {
             if (contentType.startsWith("text")) {
                 context.response().putHeader(HttpHeaders.CONTENT_TYPE, contentType + ";charset=" + defaultEncoding);
@@ -148,10 +143,8 @@ public class DevStaticHandler implements Handler<RoutingContext> {
             LOG.warnf("The resource '%s' does not exist on classpath", resourceName);
             return null;
         }
-        try {
-            try (InputStream inputStream = resource.openStream()) {
-                return inputStream.readAllBytes();
-            }
+        try (InputStream inputStream = resource.openStream()) {
+            return inputStream.readAllBytes();
         } catch (IOException e) {
             LOG.error("Error while reading file from Classpath for path " + resourceName, e);
             return null;

@@ -345,7 +345,7 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
         @Override
         public boolean test(String path) {
-            return path.startsWith("META-INF/maven/");
+            return path.startsWith("META-INF/maven/") || path.startsWith("META-INF/license/");
         }
     }
 }

@@ -194,4 +194,38 @@ class QuarkusCommandHandlersTest {
         Assertions.assertEquals(1, matches.getExtensions().size());
 
     }
+
+    @Test
+    void testWeakPartialMatchIsNotAutoSelected() {
+        Extension e1 = Extension.builder()
+                .setArtifact(ArtifactCoords.jar("io.quarkiverse.groovy", "quarkus-groovy-junit5", "1.0"))
+                .setName("Quarkus - Groovy - JUnit 5");
+
+        Extension e2 = Extension.builder()
+                .setArtifact(ArtifactCoords.jar("org.acme", "quarkus-rest", "1.0"))
+                .setName("REST");
+
+        List<Extension> extensions = asList(e1, e2);
+        SelectionResult matches = selectExtensions("junit", extensions, false);
+        Assertions.assertFalse(matches.matches());
+        Assertions.assertEquals(1, matches.getExtensions().size());
+    }
+
+    @Test
+    void testStrongPartialMatchIsAutoSelected() {
+        Extension e1 = Extension.builder()
+                .setArtifact(ArtifactCoords.jar("org.acme", "quarkus-foo-bar", "1.0"))
+                .setName("Foo Bar Extension");
+
+        Extension e2 = Extension.builder()
+                .setArtifact(ArtifactCoords.jar("org.acme", "quarkus-baz", "1.0"))
+                .setName("Baz Extension");
+
+        List<Extension> extensions = asList(e1, e2);
+        SelectionResult matches = selectExtensions("foo", extensions, false);
+        Assertions.assertTrue(matches.matches());
+        Assertions.assertEquals(1, matches.getExtensions().size());
+        Assertions.assertEquals("quarkus-foo-bar",
+                matches.getExtensions().iterator().next().getArtifact().getArtifactId());
+    }
 }

@@ -151,9 +151,7 @@ final class QuarkusCommandHandlers {
                             || extension.getArtifact().getArtifactId().toLowerCase().contains(q)
                             || getShortName(extension).toLowerCase().contains(q))
                     .forEach(e -> matches.putIfAbsent(e.getArtifact().getKey(), e));
-            // Even if we have a single partial match, if the name, artifactId and short names are ambiguous, so not
-            // consider it as a match.
-            if (matches.size() == 1 && returnOnExactMatch) {
+            if (matches.size() == 1 && returnOnExactMatch && isStrongPartialMatch(matches.values().iterator().next(), q)) {
                 return new SelectionResult(matches.values(), true);
             }
 
@@ -200,6 +198,12 @@ final class QuarkusCommandHandlers {
     private static boolean matchesArtifactId(String artifactId, String q) {
         return artifactId.equalsIgnoreCase(q) ||
                 artifactId.equalsIgnoreCase("quarkus-" + q);
+    }
+
+    private static boolean isStrongPartialMatch(Extension extension, String q) {
+        String artifactId = extension.getArtifact().getArtifactId().toLowerCase();
+        String stripped = artifactId.startsWith("quarkus-") ? artifactId.substring("quarkus-".length()) : artifactId;
+        return stripped.startsWith(q) || extension.getName().toLowerCase().startsWith(q);
     }
 
 }

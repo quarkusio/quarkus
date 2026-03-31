@@ -16,10 +16,10 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.mailer.runtime.MutinyMailerImpl;
 import io.smallrye.mutiny.Multi;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.FileSystemException;
 import io.vertx.core.file.OpenOptions;
 import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.core.buffer.Buffer;
 
 class AttachmentTest {
 

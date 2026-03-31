@@ -543,8 +543,8 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
         // Set up try-catch block
         TryBlock tryBlock = inject.tryBlock();
 
-        // Load the parameter value
-        ResultHandle value = loadParameter(tryBlock, ctx, fieldInfo, param, paramType);
+        // Load the parameter value (handles both regular and multipart parameters)
+        ResultHandle value = loadParameter(tryBlock, ctx, fieldInfo, param, paramType, className);
 
         // For non-optional parameters, skip conversion/cast/store if value is null
         BytecodeCreator processBranch = tryBlock;
@@ -582,74 +582,52 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
     private void injectFormParameter(MethodCreator inject, String className, FieldInfo fieldInfo,
             ServerIndexedParameter param, Map<String, AssignableResultHandle> recordVars, boolean isRecord,
             Map<FieldInfo, ServerIndexedParameter> partTypes) {
-        // Check if this is a multipart parameter
-        MultipartFormParamExtractor.Type multipartType = getMultipartFormType(param);
-        if (multipartType != null) {
-            // Handle multipart parameter
-            injectMultipartParameter(inject, className, fieldInfo, param, recordVars, isRecord, multipartType, partTypes);
-        } else {
-            // Handle regular form parameter (use converter path)
-            injectParameterWithConverter(inject, className, fieldInfo, param, recordVars, isRecord, ParameterType.FORM);
-        }
+        // Both multipart and regular form parameters go through the same path with try-catch, optional handling, etc.
+        injectParameterWithConverter(inject, className, fieldInfo, param, recordVars, isRecord, ParameterType.FORM);
     }
 
-    private void injectMultipartParameter(MethodCreator inject, String className, FieldInfo fieldInfo,
-            ServerIndexedParameter param, Map<String, AssignableResultHandle> recordVars, boolean isRecord,
-            MultipartFormParamExtractor.Type multipartType, Map<FieldInfo, ServerIndexedParameter> partTypes) {
-        ResultHandle ctx = inject.getMethodParam(0);
-        ResultHandle thisRef = isRecord ? null : inject.getThis();
-        ResultHandle requestCtx = inject.checkCast(ctx, ResteasyReactiveRequestContext.class);
-        ResultHandle paramName = inject.load(param.getName());
-
+    private ResultHandle loadMultipartParameter(BytecodeCreator method, ResultHandle requestCtx,
+            ResultHandle paramName, FieldInfo fieldInfo, ServerIndexedParameter param,
+            MultipartFormParamExtractor.Type multipartType, String className) {
         ResultHandle value;
         switch (multipartType) {
             case String:
-                value = invokeMultipartSupport(inject, requestCtx, paramName, param.isSingle(),
+                value = invokeMultipartSupport(method, requestCtx, paramName, param.isSingle(),
                         "getString", String.class);
                 break;
             case ByteArray:
-                value = invokeMultipartSupport(inject, requestCtx, paramName, param.isSingle(),
+                value = invokeMultipartSupport(method, requestCtx, paramName, param.isSingle(),
                         "getByteArray", byte[].class);
                 break;
             case InputStream:
-                value = invokeMultipartSupport(inject, requestCtx, paramName, param.isSingle(),
+                value = invokeMultipartSupport(method, requestCtx, paramName, param.isSingle(),
                         "getInputStream", InputStream.class);
                 break;
             case FileUpload:
                 if (param.getName().equals(FileUpload.ALL)) {
                     // Special case: FileUpload.ALL returns all uploads
-                    value = inject.invokeStaticMethod(
+                    value = method.invokeStaticMethod(
                             MethodDescriptor.ofMethod(MultipartSupport.class, "getFileUploads",
                                     List.class, ResteasyReactiveRequestContext.class),
                             requestCtx);
                 } else {
-                    value = invokeMultipartSupport(inject, requestCtx, paramName, param.isSingle(),
+                    value = invokeMultipartSupport(method, requestCtx, paramName, param.isSingle(),
                             "getFileUpload", DefaultFileUpload.class);
                 }
                 break;
             case File:
-                value = loadMultipartFile(inject, requestCtx, paramName, param.isSingle());
+                value = loadMultipartFile(method, requestCtx, paramName, param.isSingle());
                 break;
             case Path:
-                value = loadMultipartPath(inject, requestCtx, paramName, param.isSingle());
+                value = loadMultipartPath(method, requestCtx, paramName, param.isSingle());
                 break;
             case PartType:
-                value = loadMultipartPartType(inject, className, fieldInfo, param, requestCtx, paramName);
+                value = loadMultipartPartType(method, className, fieldInfo, param, requestCtx, paramName);
                 break;
             default:
                 throw new RuntimeException("Unknown multipart type: " + multipartType);
         }
-
-        // Store the value
-        String fieldTypeName = fieldInfo.type().name().toString();
-        if (isRecord) {
-            AssignableResultHandle var = recordVars.get(fieldInfo.name());
-            inject.assign(var, value);
-        } else {
-            inject.writeInstanceField(
-                    FieldDescriptor.of(className.replace('/', '.'), fieldInfo.name(), fieldTypeName),
-                    thisRef, value);
-        }
+        return value;
     }
 
     private ResultHandle loadMultipartFile(BytecodeCreator method, ResultHandle requestCtx,
@@ -816,7 +794,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
     }
 
     private ResultHandle loadParameter(BytecodeCreator method, ResultHandle ctx, FieldInfo fieldInfo,
-            ServerIndexedParameter param, ParameterType paramType) {
+            ServerIndexedParameter param, ParameterType paramType, String className) {
         ResultHandle paramName = method.load(param.getName());
 
         // Determine method name and parameters based on type
@@ -827,10 +805,19 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
         ResultHandle value;
         switch (paramType) {
             case FORM:
-                methodDesc = MethodDescriptor.ofMethod(ResteasyReactiveInjectionContext.class, "getFormParameter",
-                        Object.class, String.class, boolean.class, boolean.class);
-                value = method.invokeInterfaceMethod(methodDesc, ctx, paramName,
-                        method.load(param.isSingle()), method.load(encoded));
+                // Check if this is a multipart parameter
+                MultipartFormParamExtractor.Type multipartType = getMultipartFormType(param);
+                if (multipartType != null) {
+                    // Handle multipart parameter loading
+                    ResultHandle requestCtx = method.checkCast(ctx, ResteasyReactiveRequestContext.class);
+                    value = loadMultipartParameter(method, requestCtx, paramName, fieldInfo, param, multipartType, className);
+                } else {
+                    // Handle regular form parameter
+                    methodDesc = MethodDescriptor.ofMethod(ResteasyReactiveInjectionContext.class, "getFormParameter",
+                            Object.class, String.class, boolean.class, boolean.class);
+                    value = method.invokeInterfaceMethod(methodDesc, ctx, paramName,
+                            method.load(param.isSingle()), method.load(encoded));
+                }
                 break;
             case HEADER:
                 methodDesc = MethodDescriptor.ofMethod(ResteasyReactiveInjectionContext.class, "getHeader",

@@ -88,6 +88,88 @@ BuildTimeActionBuildItem createBuildTimeActions() {
 
 By default this resource will be disabled, and the user has to enable it in Dev UI. You can change this default by adding `.enableMcpFunctionByDefault()` in the builder method.
 
+=== Extension skills
+
+Extensions can ship a `quarkus-skill.md` file to provide AI coding agents with extension-specific coding guidelines, testing patterns, and common pitfalls. During the Quarkus build, all skill files are automatically discovered, composed with extension metadata (name, description, guide URL), and aggregated into a single `io.quarkus:quarkus-extension-skills` JAR following the https://agentskills.io/specification[Agent Skills specification]. This JAR is published to Maven Central with each Quarkus release and is compatible with https://www.skillsjars.com[SkillsJars].
+
+==== Adding a skill file to your extension
+
+Place a `quarkus-skill.md` file in your extension's deployment module at:
+
+[source]
+----
+my-extension/deployment/src/main/resources/META-INF/quarkus-skill.md
+----
+
+That's it. No pom.xml changes are needed. The Quarkus build automatically discovers all `quarkus-skill.md` files across all extensions and aggregates them into the `quarkus-extension-skills` artifact.
+
+If your extension's runtime module has a `description` field in `META-INF/quarkus-extension.yaml`, it will be included in the composed skill's YAML frontmatter to help AI agents discover and understand your extension. While optional, providing a description is recommended:
+
+[source,yaml]
+----
+name: "My Extension"
+description: "A concise description of what this extension does"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  guide: "https://quarkus.io/guides/my-extension"
+----
+
+The file should contain concise, actionable Markdown content. Focus on what an AI agent needs to know to use your extension correctly:
+
+- **Key patterns** — how to use the main APIs, annotations, and CDI beans.
+- **Testing** — how to write tests using `@QuarkusTest`, Dev Services, and extension-specific test utilities.
+- **Common pitfalls** — mistakes that agents (and developers) frequently make.
+
+Example for a hypothetical extension:
+
+[source,markdown]
+----
+### Data Access
+
+- Inject `MyClient` with `@Inject` — it is an `@ApplicationScoped` CDI bean.
+- Use `client.query("...")` for read operations.
+- Always wrap write operations in `@Transactional`.
+
+### Testing
+
+- Use `@QuarkusTest` — Dev Services starts a backing service automatically.
+- Inject `MyClient` in tests for direct assertions.
+
+### Common Pitfalls
+
+- Do NOT create `MyClient` manually with `new` — always let CDI inject it.
+- Do NOT set the connection URL without a `%prod.` profile prefix — this disables Dev Services.
+----
+
+==== What gets composed
+
+The skill file content is **not** shipped as-is. During the Quarkus build, the `aggregate-skills` goal scans the source tree for all `quarkus-skill.md` files and composes each one with extension metadata to produce a `SKILL.md` file at `META-INF/skills/{extension-name}/SKILL.md` inside the aggregated JAR. The composed document follows the https://agentskills.io/specification[Agent Skills specification] and includes:
+
+1. **YAML frontmatter** — the skill name, extension description from `quarkus-extension.yaml`, license, and guide URL as structured metadata for agent discovery.
+2. **Skill body** — the patterns, testing guidelines, and pitfalls authored by the extension developer.
+
+Example of a composed `SKILL.md`:
+
+[source,markdown]
+----
+---
+name: quarkus-my-extension
+description: "A brief description of the extension from quarkus-extension.yaml"
+license: Apache-2.0
+metadata:
+  guide: https://quarkus.io/guides/my-extension
+---
+
+### Data Access
+...
+----
+
+==== What NOT to put in the skill file
+
+- **Extension description or guide links** — these are automatically added from `quarkus-extension.yaml`.
+- **Configuration properties** — reference the guide instead. A link is auto-generated.
+- **Obvious instructions** — focus on Quarkus-specific patterns and gotchas, not generic advice.
+
 === MCP tools
 
 A tool corresponds to a method that a client can call. Any JSON‑RPC method can be exposed as a tool by supplying descriptions on the method and its parameters.

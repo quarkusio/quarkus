@@ -85,4 +85,22 @@ public class OpenApiResourceSecuredAtMethodLevel {
         return "secret";
     }
 
+    @GET
+    @Path("/test-security/methodLevel/5")
+    @PermissionsAllowed("secure:read")
+    @PermissionsAllowed("secure:write")
+    public String secureEndpoint6MultiplePermissionsAllowed() {
+        return "secret";
+    }
+
+    @GET
+    @Path("/test-security/methodLevel/6")
+    @PermissionsAllowed.List({
+            @PermissionsAllowed("secure:read"),
+            @PermissionsAllowed("secure:write")
+    })
+    public String secureEndpoint7PermissionsAllowedList() {
+        return "secret";
+    }
+
 }

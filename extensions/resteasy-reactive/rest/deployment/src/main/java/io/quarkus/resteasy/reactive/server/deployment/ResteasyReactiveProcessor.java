@@ -70,6 +70,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
+import org.jboss.logmanager.Level;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.core.SingletonBeanFactory;
 import org.jboss.resteasy.reactive.common.model.InjectableBean;
@@ -99,6 +100,7 @@ import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
+import org.jboss.resteasy.reactive.server.handlers.ParameterHandler;
 import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.server.model.DelegatingServerRestHandler;
@@ -151,6 +153,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.RecordableConstructorBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -297,6 +300,14 @@ public class ResteasyReactiveProcessor {
     @BuildStep
     MethodScannerBuildItem responseHeaderSupport() {
         return new MethodScannerBuildItem(new ResponseHeaderMethodScanner());
+    }
+
+    @BuildStep
+    void configureLogLevels(BuildProducer<LogCategoryBuildItem> producer, LaunchModeBuildItem launchMode) {
+        if (!launchMode.getLaunchMode().isDevOrTest()) {
+            return;
+        }
+        producer.produce(new LogCategoryBuildItem(ParameterHandler.class.getName(), Level.DEBUG));
     }
 
     @BuildStep

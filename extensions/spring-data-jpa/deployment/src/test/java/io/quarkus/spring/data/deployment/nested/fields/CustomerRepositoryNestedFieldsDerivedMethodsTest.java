@@ -64,11 +64,11 @@ class CustomerRepositoryNestedFieldsDerivedMethodsTest {
         QueryArgumentException exception = assertThrows(QueryArgumentException.class,
                 () -> customerRepository.findAllByAddressCountry("Spain"));
         assertThat(exception).hasMessageContaining(
-                "Argument to query parameter has an incompatible type (java.lang.String is not assignable to io.quarkus.spring.data.deployment.Customer$Country)");
+                "incompatible type (argument [Spain] is not assignable to io.quarkus.spring.data.deployment.Customer$Country");
         assertThrows(QueryArgumentException.class,
                 () -> customerRepository.findAllByAddress_Country("Spain"));
         assertThat(exception).hasMessageContaining(
-                "Argument to query parameter has an incompatible type (java.lang.String is not assignable to io.quarkus.spring.data.deployment.Customer$Country)");
+                "incompatible type (argument [Spain] is not assignable to io.quarkus.spring.data.deployment.Customer$Country");
 
     }
 

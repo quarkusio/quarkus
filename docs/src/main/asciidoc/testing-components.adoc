@@ -303,6 +303,9 @@ By default, only the config properties from `application.properties` and propert
 System properties and ENV variables are _not_ included in the test config by default.
 However, you can use `@QuarkusComponentTest#useSystemConfigSources()` or `QuarkusComponentTestExtensionBuilder#useSystemConfigSources()` to configure this behavior.
 
+Similarly, discovered config sources such as `application.yaml` are _not_ included by default.
+You can use `@QuarkusComponentTest#useDiscoveredConfigSources()` or `QuarkusComponentTestExtensionBuilder#useDiscoveredConfigSources()` to include them.
+
 == Panache entities using the active record pattern
 
 If you are using the active record pattern you cannot easily leverage `Mockito#mockStatic()` to mock static methods declared on `PanacheEntityBase`.

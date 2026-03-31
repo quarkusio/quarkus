@@ -1532,7 +1532,7 @@ public class DevMojo extends AbstractMojo {
                     .setRemoteRepositories(repos)
                     .setWorkspaceDiscovery(true)
                     .setPreferPomsFromWorkspace(true)
-                    .setCurrentProject(project.getFile().toString())
+                    .setCurrentProject(QuarkusBootstrapProvider.getOriginalPomFile(project).toString())
                     .setEffectiveModelBuilder(BootstrapMavenContextConfig.getEffectiveModelBuilderProperty(projectProperties))
                     .setRootProjectDir(rootProjectDir);
             // to support Maven plugins and extensions manipulating POM files

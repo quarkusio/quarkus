@@ -844,7 +844,7 @@ private final io.vertx.core.http.HttpServer server;
 
 public void onCertificateUpdate(@Observes CertificateUpdatedEvent reload) {
     if ("name".equals(event.getName())) {
-        server.updateSSLOptions(reload.tlsConfiguration().getSSLOptions());
+        server.updateSSLOptions(reload.tlsConfiguration().getServerSSLOptions());
         // Or update the SSLContext.
     }
 

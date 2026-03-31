@@ -53,15 +53,15 @@ public class DefaultSSLOptionsTest {
         assertThat(def.isTrustAll()).isFalse();
         assertThat(def.getHostnameVerificationAlgorithm()).isEmpty();
 
-        assertThat(def.getSSLOptions().getKeyCertOptions()).isNotNull();
-        assertThat(def.getSSLOptions().getTrustOptions()).isNotNull();
+        assertThat(def.getServerSSLOptions().getKeyCertOptions()).isNotNull();
+        assertThat(def.getServerSSLOptions().getTrustOptions()).isNotNull();
 
-        assertThat(def.getSSLOptions().isUseAlpn()).isTrue();
-        assertThat(def.getSSLOptions().getEnabledCipherSuites()).contains("TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256");
+        assertThat(def.getServerSSLOptions().isUseAlpn()).isTrue();
+        assertThat(def.getServerSSLOptions().getEnabledCipherSuites()).contains("TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256");
 
-        assertThat(def.getSSLOptions().getEnabledSecureTransportProtocols()).containsExactly("TLSv1.3");
-        assertThat(def.getSSLOptions().getSslHandshakeTimeoutUnit()).isEqualTo(TimeUnit.SECONDS);
-        assertThat(def.getSSLOptions().getSslHandshakeTimeout()).isEqualTo(20);
+        assertThat(def.getServerSSLOptions().getEnabledSecureTransportProtocols()).containsExactly("TLSv1.3");
+        assertThat(def.getServerSSLOptions().getSslHandshakeTimeoutUnit()).isEqualTo(TimeUnit.SECONDS);
+        assertThat(def.getServerSSLOptions().getSslHandshakeTimeout()).isEqualTo(20);
     }
 
 }

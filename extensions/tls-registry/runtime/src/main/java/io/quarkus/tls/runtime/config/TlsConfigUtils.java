@@ -14,6 +14,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.WebSocketClientOptions;
 import io.vertx.core.net.ClientOptionsBase;
+import io.vertx.core.net.ClientSSLOptions;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.SSLOptions;
 import io.vertx.core.net.TCPSSLOptions;
@@ -55,23 +56,9 @@ public class TlsConfigUtils {
     }
 
     /**
-     * Configure the {@link TCPSSLOptions} with the given {@link TlsConfiguration}.
-     *
-     * @param options the options to configure
-     * @param configuration the configuration to use
+     * Apply common SSL properties from a {@link SSLOptions} to a {@link TCPSSLOptions}.
      */
-    public static void configure(TCPSSLOptions options, TlsConfiguration configuration) {
-        options.setSsl(true);
-        if (configuration.getTrustStoreOptions() != null) {
-            options.setTrustOptions(configuration.getTrustStoreOptions());
-        }
-
-        // For mTLS:
-        if (configuration.getKeyStoreOptions() != null) {
-            options.setKeyCertOptions(configuration.getKeyStoreOptions());
-        }
-
-        SSLOptions sslOptions = configuration.getSSLOptions();
+    private static void applySSLOptions(TCPSSLOptions options, SSLOptions sslOptions) {
         if (sslOptions != null) {
             options.setSslHandshakeTimeout(sslOptions.getSslHandshakeTimeout());
             options.setSslHandshakeTimeoutUnit(sslOptions.getSslHandshakeTimeoutUnit());
@@ -95,16 +82,43 @@ public class TlsConfigUtils {
     }
 
     /**
-     * Configure the {@link ClientOptionsBase} with the given {@link TlsConfiguration}.
+     * Configure the {@link TCPSSLOptions} with the given {@link TlsConfiguration}.
+     * Uses server-side SSL options.
      *
      * @param options the options to configure
      * @param configuration the configuration to use
      */
-    public static void configure(ClientOptionsBase options, TlsConfiguration configuration) {
-        configure((TCPSSLOptions) options, configuration);
-        if (configuration.isTrustAll()) {
-            options.setTrustAll(true);
+    public static void configure(TCPSSLOptions options, TlsConfiguration configuration) {
+        options.setSsl(true);
+        if (configuration.getTrustStoreOptions() != null) {
+            options.setTrustOptions(configuration.getTrustStoreOptions());
         }
+
+        // For mTLS:
+        if (configuration.getKeyStoreOptions() != null) {
+            options.setKeyCertOptions(configuration.getKeyStoreOptions());
+        }
+
+        applySSLOptions(options, configuration.getServerSSLOptions());
+    }
+
+    /**
+     * Apply client-side SSL options (trust, keycert, trustAll) from {@link ClientSSLOptions} to a {@link ClientOptionsBase}.
+     */
+    private static ClientSSLOptions applyClientSSLOptions(ClientOptionsBase options, TlsConfiguration configuration) {
+        options.setSsl(true);
+        ClientSSLOptions sslOptions = configuration.getClientSSLOptions();
+        if (sslOptions != null) {
+            if (sslOptions.getTrustOptions() != null) {
+                options.setTrustOptions(sslOptions.getTrustOptions());
+            }
+            if (sslOptions.getKeyCertOptions() != null) {
+                options.setKeyCertOptions(sslOptions.getKeyCertOptions());
+            }
+            options.setTrustAll(sslOptions.isTrustAll());
+        }
+        applySSLOptions(options, sslOptions);
+        return sslOptions;
     }
 
     /**
@@ -114,9 +128,9 @@ public class TlsConfigUtils {
      * @param configuration the configuration to use
      */
     public static void configure(NetClientOptions options, TlsConfiguration configuration) {
-        configure((ClientOptionsBase) options, configuration);
-        if (configuration.getHostnameVerificationAlgorithm().isPresent()) {
-            options.setHostnameVerificationAlgorithm(configuration.getHostnameVerificationAlgorithm().get());
+        ClientSSLOptions sslOptions = applyClientSSLOptions(options, configuration);
+        if (sslOptions != null && sslOptions.getHostnameVerificationAlgorithm() != null) {
+            options.setHostnameVerificationAlgorithm(sslOptions.getHostnameVerificationAlgorithm());
         }
     }
 
@@ -127,13 +141,12 @@ public class TlsConfigUtils {
      * @param configuration the configuration to use
      */
     public static void configure(HttpClientOptions options, TlsConfiguration configuration) {
-        configure((ClientOptionsBase) options, configuration);
-        options.setForceSni(configuration.usesSni());
-        if (configuration.getHostnameVerificationAlgorithm().isPresent()
-                && configuration.getHostnameVerificationAlgorithm().get().equals("NONE")) {
-            // Only disable hostname verification if the algorithm is explicitly set to NONE
+        ClientSSLOptions sslOptions = applyClientSSLOptions(options, configuration);
+        if (sslOptions != null && sslOptions.getHostnameVerificationAlgorithm() != null
+                && sslOptions.getHostnameVerificationAlgorithm().equals("NONE")) {
             options.setVerifyHost(false);
         }
+        options.setForceSni(configuration.usesSni());
     }
 
     /**
@@ -143,10 +156,9 @@ public class TlsConfigUtils {
      * @param configuration the configuration to use
      */
     public static void configure(WebSocketClientOptions options, TlsConfiguration configuration) {
-        configure((ClientOptionsBase) options, configuration);
-        if (configuration.getHostnameVerificationAlgorithm().isPresent()
-                && configuration.getHostnameVerificationAlgorithm().get().equals("NONE")) {
-            // Only disable hostname verification if the algorithm is explicitly set to NONE
+        ClientSSLOptions sslOptions = applyClientSSLOptions(options, configuration);
+        if (sslOptions != null && sslOptions.getHostnameVerificationAlgorithm() != null
+                && sslOptions.getHostnameVerificationAlgorithm().equals("NONE")) {
             options.setVerifyHost(false);
         }
     }

@@ -23,8 +23,10 @@ import io.quarkus.tls.runtime.config.TlsBucketConfig;
 import io.quarkus.tls.runtime.config.TlsConfigUtils;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.net.ClientSSLOptions;
 import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.SSLOptions;
+import io.vertx.core.net.ServerSSLOptions;
 import io.vertx.core.net.TrustOptions;
 
 public class VertxCertificateHolder implements TlsConfiguration {
@@ -109,9 +111,7 @@ public class VertxCertificateHolder implements TlsConfiguration {
         return sslContext;
     }
 
-    @Override
-    public synchronized SSLOptions getSSLOptions() {
-        SSLOptions options = new SSLOptions();
+    private synchronized void populateCommonSSLOptions(SSLOptions options) {
         options.setKeyCertOptions(getKeyStoreOptions());
         options.setTrustOptions(getTrustStoreOptions());
         options.setUseAlpn(config().alpn());
@@ -128,7 +128,24 @@ public class VertxCertificateHolder implements TlsConfiguration {
         for (String cipher : config().cipherSuites().orElse(Collections.emptyList())) {
             options.addEnabledCipherSuite(cipher);
         }
+    }
 
+    @Override
+    public synchronized ServerSSLOptions getServerSSLOptions() {
+        ServerSSLOptions options = new ServerSSLOptions();
+        populateCommonSSLOptions(options);
+        if (config.keyStore().isPresent()) {
+            options.setSni(config.keyStore().get().sni());
+        }
+        return options;
+    }
+
+    @Override
+    public synchronized ClientSSLOptions getClientSSLOptions() {
+        ClientSSLOptions options = new ClientSSLOptions();
+        populateCommonSSLOptions(options);
+        options.setTrustAll(isTrustAll());
+        config.hostnameVerificationAlgorithm().ifPresent(options::setHostnameVerificationAlgorithm);
         return options;
     }
 

@@ -3,6 +3,12 @@ package io.quarkus.opentelemetry.deployment;
 import static io.quarkus.bootstrap.classloading.QuarkusClassLoader.isClassPresentAtRuntime;
 import static io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem.SPI_ROOT;
 import static io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder.OPEN_TELEMETRY_DRIVER;
+import static io.quarkus.opentelemetry.runtime.resource.KubernetesResourceProvider.CONTAINER_NAME_ENV;
+import static io.quarkus.opentelemetry.runtime.resource.KubernetesResourceProvider.DEPLOYMENT_NAME_ENV;
+import static io.quarkus.opentelemetry.runtime.resource.KubernetesResourceProvider.NAMESPACE_ENV;
+import static io.quarkus.opentelemetry.runtime.resource.KubernetesResourceProvider.NODE_NAME_ENV;
+import static io.quarkus.opentelemetry.runtime.resource.KubernetesResourceProvider.POD_NAME_ENV;
+import static io.quarkus.opentelemetry.runtime.resource.KubernetesResourceProvider.POD_UID_ENV;
 import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
@@ -37,6 +43,7 @@ import io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporter
 import io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSamplerProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider;
+import io.opentelemetry.sdk.resources.Resource;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
@@ -65,6 +72,8 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.opentelemetry.OpenTelemetryDestroyer;
 import io.quarkus.opentelemetry.deployment.metric.MetricsEnabled;
@@ -132,6 +141,39 @@ public class OpenTelemetryProcessor {
                 .scope(Singleton.class)
                 .setRuntimeInit()
                 .done();
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    SyntheticBeanBuildItem kubernetesResource(OpenTelemetryRecorder recorder) {
+        return SyntheticBeanBuildItem.configure(Resource.class)
+                .types(Resource.class)
+                .supplier(recorder.kubernetesResource())
+                .scope(Singleton.class)
+                .setRuntimeInit()
+                .done();
+    }
+
+    @BuildStep
+    void kubernetesEnvVars(
+            List<KubernetesResourceMetadataBuildItem> resourceMetadata,
+            ApplicationInfoBuildItem appInfo,
+            BuildProducer<KubernetesEnvBuildItem> envProducer) {
+        if (resourceMetadata.isEmpty()) {
+            return;
+        }
+        // Downward API fieldRef-based env vars
+        envProducer.produce(KubernetesEnvBuildItem.createFromField(NAMESPACE_ENV, "metadata.namespace", null));
+        envProducer.produce(KubernetesEnvBuildItem.createFromField(POD_NAME_ENV, "metadata.name", null));
+        envProducer.produce(KubernetesEnvBuildItem.createFromField(POD_UID_ENV, "metadata.uid", null));
+        envProducer.produce(KubernetesEnvBuildItem.createFromField(NODE_NAME_ENV, "spec.nodeName", null));
+        // Static env vars — values resolved from K8s extension metadata and application info
+        envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(CONTAINER_NAME_ENV, appInfo.getName(), null));
+        String deploymentName = resourceMetadata.stream()
+                .findFirst()
+                .map(KubernetesResourceMetadataBuildItem::getName)
+                .orElse(appInfo.getName());
+        envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(DEPLOYMENT_NAME_ENV, deploymentName, null));
     }
 
     @BuildStep

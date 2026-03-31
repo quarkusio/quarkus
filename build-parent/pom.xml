@@ -90,6 +90,7 @@
         <mariadb.image>docker.io/library/mariadb:12.1</mariadb.image>
         <db2.image>icr.io/db2_community/db2:12.1.0.0</db2.image>
         <mssql.image>mcr.microsoft.com/mssql/server:2022-latest</mssql.image>
+        <mssql.image.aarch64>mcr.microsoft.com/azure-sql-edge:latest</mssql.image.aarch64>
         <mysql.image>docker.io/library/mysql:9.5</mysql.image>
         <oracle.image>docker.io/gvenzl/oracle-free:23-slim-faststart</oracle.image>
         <mongo.image>docker.io/library/mongo:7.0</mongo.image>
@@ -1171,7 +1172,7 @@
                 <!-- See
                 https://github.com/microsoft/mssql-docker/issues/668 and https://stackoverflow.com/questions/65398641/docker-connect-sql-server-container-non-zero-code-1/66919852#66919852.
                 The MS SQL image segfaults on ARM. Azure Edge is not fully compatible, but it is better than not running the tests at all. -->
-                <mssql.image>mcr.microsoft.com/azure-sql-edge:latest</mssql.image>
+                <mssql.image>${mssql.image.aarch64}</mssql.image>
             </properties>
         </profile>
     </profiles>

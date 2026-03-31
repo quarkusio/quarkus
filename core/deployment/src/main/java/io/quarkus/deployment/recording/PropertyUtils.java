@@ -32,7 +32,7 @@ final class PropertyUtils {
 
             Map<String, Method> getters = new HashMap<>();
             Map<String, Method> isGetters = new HashMap<>();
-            Map<String, Method> setters = new HashMap<>();
+            Map<String, List<Method>> setters = new HashMap<>();
             for (Method i : methods) {
                 if (i.getName().startsWith("get") && i.getName().length() > 3 && i.getParameterCount() == 0
                         && i.getReturnType() != void.class) {
@@ -49,7 +49,7 @@ final class PropertyUtils {
                     isGetters.put(name, i);
                 } else if (i.getName().startsWith("set") && i.getName().length() > 3 && i.getParameterCount() == 1) {
                     String name = Character.toLowerCase(i.getName().charAt(3)) + i.getName().substring(4);
-                    setters.put(name, i);
+                    setters.computeIfAbsent(name, k -> new ArrayList<>()).add(i);
                 }
             }
 
@@ -62,7 +62,7 @@ final class PropertyUtils {
                 if (get == null) {
                     get = isGetters.get(i); // If there is no "get" getter, use the "is" getter
                 }
-                Method set = setters.get(i);
+                Method set = selectBestSetter(get, setters.get(i));
                 if (get == null) {
                     ret.add(new Property(i, get, set, set.getParameterTypes()[0]));
                 } else if (set == null) {
@@ -83,6 +83,31 @@ final class PropertyUtils {
             return ret.toArray(new Property[ret.size()]);
         }
     };
+
+    private static Method selectBestSetter(Method getter, List<Method> candidates) {
+        if (candidates == null || candidates.isEmpty()) {
+            return null;
+        }
+        if (candidates.size() == 1 || getter == null) {
+            return candidates.get(0);
+        }
+        Class<?> getterType = getter.getReturnType();
+        // prefer exact match
+        for (Method m : candidates) {
+            if (m.getParameterTypes()[0] == getterType) {
+                return m;
+            }
+        }
+        // then prefer assignable match
+        for (Method m : candidates) {
+            Class<?> setterType = m.getParameterTypes()[0];
+            if (getterType.isAssignableFrom(setterType) || setterType.isAssignableFrom(getterType)) {
+                return m;
+            }
+        }
+        // fallback to first
+        return candidates.get(0);
+    }
 
     public static Property[] getPropertyDescriptors(Object param) {
         return CACHE.computeIfAbsent(param.getClass(), FUNCTION);

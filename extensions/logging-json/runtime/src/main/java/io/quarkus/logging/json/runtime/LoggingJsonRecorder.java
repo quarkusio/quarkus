@@ -10,6 +10,7 @@ import static io.quarkus.logging.json.runtime.JsonFormatter.AdditionalKey.TRACE;
 import static io.quarkus.logging.json.runtime.JsonFormatter.AdditionalKey.TRACE_SAMPLED;
 
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -29,6 +30,7 @@ import io.quarkus.logging.json.runtime.JsonLogConfig.JsonConfig;
 import io.quarkus.runtime.ApplicationConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.logging.NamedHandlerType;
 
 @Recorder
 public class LoggingJsonRecorder {
@@ -55,6 +57,27 @@ public class LoggingJsonRecorder {
 
     public RuntimeValue<Optional<Formatter>> initializeSocketJsonLogging() {
         return getFormatter(runtimeConfig.getValue().socketJson());
+    }
+
+    public RuntimeValue<Map<NamedHandlerType, Map<String, Optional<Formatter>>>> initializeNamedJsonLogging() {
+        JsonLogConfig config = runtimeConfig.getValue();
+        Map<NamedHandlerType, Map<String, Optional<Formatter>>> result = new EnumMap<>(NamedHandlerType.class);
+        result.put(NamedHandlerType.CONSOLE, collectFormatters(config.jsonConsoleHandlers()));
+        result.put(NamedHandlerType.FILE, collectFormatters(config.jsonFileHandlers()));
+        result.put(NamedHandlerType.SYSLOG, collectFormatters(config.jsonSyslogHandlers()));
+        result.put(NamedHandlerType.SOCKET, collectFormatters(config.jsonSocketHandlers()));
+        return new RuntimeValue<>(result);
+    }
+
+    private Map<String, Optional<Formatter>> collectFormatters(
+            Map<String, ? extends JsonLogConfig.JsonHandlerConfig> handlers) {
+        Map<String, Optional<Formatter>> formatters = new HashMap<>();
+        handlers.forEach((name, config) -> {
+            if (config.json().enabled().isPresent()) {
+                formatters.put(name, getFormatter(config.json()).getValue());
+            }
+        });
+        return formatters;
     }
 
     private RuntimeValue<Optional<Formatter>> getFormatter(JsonConfig config) {

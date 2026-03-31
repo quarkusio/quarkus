@@ -29,13 +29,13 @@
         <resteasy-microprofile.version>3.0.1.Final</resteasy-microprofile.version>
         <resteasy-spring-web.version>3.2.0.Final</resteasy-spring-web.version>
         <resteasy.version>6.2.15.Final</resteasy.version>
-        <opentelemetry-instrumentation.version>2.23.0-alpha</opentelemetry-instrumentation.version> <!-- OTel SDk 1.55.0-->
-        <opentelemetry-semconv.version>1.37.0-alpha</opentelemetry-semconv.version>
+        <opentelemetry-instrumentation.version>2.25.0-alpha</opentelemetry-instrumentation.version> <!-- OTel SDk 1.59.0-->
+        <opentelemetry-semconv.version>1.40.0-alpha</opentelemetry-semconv.version>
         <quarkus-http.version>5.4.0</quarkus-http.version>
         <micrometer.version>1.16.3</micrometer.version><!-- keep in sync with hdrhistogram: https://central.sonatype.com/artifact/io.micrometer/micrometer-core -->
         <hdrhistogram.version>2.2.2</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
-        <graphql-java.version>24.3</graphql-java.version> <!-- keep in sync with smallrye-graphql -->
+        <graphql-java.version>25.0</graphql-java.version> <!-- keep in sync with smallrye-graphql -->
         <microprofile-config-api.version>3.1</microprofile-config-api.version>
         <microprofile-health-api.version>4.0.1</microprofile-health-api.version>
         <microprofile-context-propagation.version>1.3</microprofile-context-propagation.version>
@@ -49,7 +49,7 @@
         <smallrye-config.version>3.16.0</smallrye-config.version>
         <smallrye-health.version>4.3.0</smallrye-health.version>
         <smallrye-open-api.version>4.2.4</smallrye-open-api.version>
-        <smallrye-graphql.version>2.17.0</smallrye-graphql.version>
+        <smallrye-graphql.version>2.18.0</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.11.0</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.3</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.3.0</smallrye-context-propagation.version>
@@ -99,7 +99,7 @@
         <narayana-lra.version>1.1.0.Final</narayana-lra.version>
         <agroal.version>3.0.1</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
-        <elasticsearch-opensource-components.version>9.2.3</elasticsearch-opensource-components.version>
+        <elasticsearch-opensource-components.version>9.3.2</elasticsearch-opensource-components.version>
         <rxjava.version>2.2.21</rxjava.version>
         <wildfly.openssl-java.version>2.2.5.Final</wildfly.openssl-java.version>
         <wildfly.openssl-linux.version>2.2.2.SP01</wildfly.openssl-linux.version>

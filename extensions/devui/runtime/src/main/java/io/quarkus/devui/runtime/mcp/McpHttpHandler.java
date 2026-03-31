@@ -123,8 +123,7 @@ public class McpHttpHandler implements Handler<RoutingContext> {
                 if (jsonRpcRouter.isEnabled(jsonRpcRequest)) {
                     jsonRpcRouter.route(jsonRpcRequest, writer);
                 } else {
-                    codec.writeErrorResponse(writer, jsonRpcRequest.getId(), methodName,
-                            new McpMethodNotEnabledException("Method not enabled"));
+                    codec.writeMethodNotFoundResponse(writer, jsonRpcRequest.getId(), methodName);
                 }
             }
         });

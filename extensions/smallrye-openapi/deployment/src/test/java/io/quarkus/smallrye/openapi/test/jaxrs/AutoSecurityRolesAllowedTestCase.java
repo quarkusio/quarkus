@@ -75,6 +75,8 @@ class AutoSecurityRolesAllowedTestCase {
                 .body("paths.'/resource2/test-security/annotated/documented'.get.security", defaultSecurity)
                 .body("paths.'/resource2/test-security/methodLevel/3'.get.security", defaultSecurityScheme("admin"))
                 .body("paths.'/resource2/test-security/methodLevel/4'.get.security", defaultSecurity)
+                .body("paths.'/resource2/test-security/methodLevel/5'.get.security", defaultSecurity)
+                .body("paths.'/resource2/test-security/methodLevel/6'.get.security", defaultSecurity)
                 .and()
                 // OpenApiResourceSecuredAtClassLevel
                 .body("paths.'/resource2/test-security/classLevel/1'.get.security", defaultSecurityScheme("user1"))
@@ -172,6 +174,18 @@ class AutoSecurityRolesAllowedTestCase {
                         Matchers.equalTo("Not Authorized"))
                 .and()
                 .body("paths.'/resource2/test-security/methodLevel/4'.get.responses.403.description",
+                        Matchers.equalTo("Not Allowed"))
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/5'.get.responses.401.description",
+                        Matchers.equalTo("Not Authorized"))
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/5'.get.responses.403.description",
+                        Matchers.equalTo("Not Allowed"))
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/6'.get.responses.401.description",
+                        Matchers.equalTo("Not Authorized"))
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/6'.get.responses.403.description",
                         Matchers.equalTo("Not Allowed"))
                 .and()
                 .body("paths.'/resource3/test-security/classLevel-2/1'.get.responses.401.description",

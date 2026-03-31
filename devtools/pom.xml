@@ -28,5 +28,6 @@
         <module>cli-common</module>
         <module>cli</module>
         <module>config-doc-maven-plugin</module>
+        <module>extension-skills</module>
     </modules>
 </project>

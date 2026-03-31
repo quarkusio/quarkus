@@ -2,9 +2,11 @@ package io.quarkus.vertx.http.runtime.devmode;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -204,12 +206,23 @@ public class ConfigDescriptionsManagerUnitTest {
         }
     }
 
+    private List<Config> configs = new CopyOnWriteArrayList<>();
+
     private ConfigHandle setupConfig(Map<String, String> config) {
         Config cfg = ConfigProviderResolver.instance().getBuilder()
                 .withSources(new PropertiesConfigSource(config, MAP, 1))
                 .build();
+        configs.add(cfg);
         ConfigProviderResolver.instance().registerConfig(cfg, Thread.currentThread().getContextClassLoader());
         return new ConfigHandle(cfg);
+    }
+
+    @AfterEach
+    void tearDown() {
+        for (Config config : configs) {
+            ConfigProviderResolver.instance().releaseConfig(config);
+        }
+        configs.clear();
     }
 
     public ConfigDescription find(ConfigDescriptionsManager manager, String key) {

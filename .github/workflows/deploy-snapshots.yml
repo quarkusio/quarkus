@@ -6,8 +6,6 @@ permissions:
   packages: write
 
 on:
-  schedule:
-    - cron: '0 0 * * *'
   workflow_dispatch:
 
 env:
@@ -23,18 +21,18 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: main
+          ref: '4.0'
       - name: Get SHA
         id: quarkus-sha
         run: |
           echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
       - name: Generate cache key
         id: cache-key
         run: |

@@ -6,13 +6,13 @@ permissions:
   packages: read
 
 on:
-  # the build for main is run periodically and cancelled if there are no changes since the last run
+  # the build for 4.0 is run periodically and cancelled if there are no changes since the last run
   schedule:
     - cron: '0 */12 * * *'
   push:
     branches-ignore:
       - 'dependabot/**'
-      - 'main'
+      - '4.0'
     paths-ignore:
       - '*.adoc'
       - '*.md'
@@ -102,7 +102,7 @@ env:
   # This may be a lot better with maven 4, but with maven 3, excluding a project does not exclude its children, and it's not possible to include a project and explicitly exclude some children; compensate by doing excludes the low-tech way, at the shell level
   JVM_TEST_INTEGRATION_TESTS_SELECTOR: "-f integration-tests -pl !gradle -pl !maven -pl !devmode -pl !devtools"
   JVM_TEST_NORMAL_TESTS_SELECTOR: "-pl !docs -Dno-test-modules"
-  #PTS_MAVEN_ARGS: "-Ddevelocity.pts.enabled=${{ github.event_name == 'pull_request' && github.base_ref == 'main' && 'true' || 'false' }}"
+  #PTS_MAVEN_ARGS: "-Ddevelocity.pts.enabled=${{ github.event_name == 'pull_request' && github.base_ref == '4.0' && 'true' || 'false' }}"
   PTS_MAVEN_ARGS: ""
   DB_USER: hibernate_orm_test
   DB_PASSWORD: hibernate_orm_test
@@ -150,7 +150,7 @@ jobs:
     needs: [ approval ]
     runs-on: ubuntu-latest
     # Skip main in forks
-    if: github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')
+    if: github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/4.0')
     steps:
       - name: Build
         run: sleep 30
@@ -160,7 +160,7 @@ jobs:
     runs-on: ubuntu-latest
     # Skip main in forks
     # Skip draft PRs, rerun as soon as its removed
-    if: (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')) && (
+    if: (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/4.0')) && (
            github.event_name != 'pull_request' || (
              github.event.pull_request.draft == false &&
              github.event.pull_request.state != 'closed' &&
@@ -226,22 +226,22 @@ jobs:
           else
             echo "common-maven-args=${COMMON_MAVEN_ARGS}" >> $GITHUB_OUTPUT
           fi
-      # Handle scheduled workflow runs for main branch of quarkusio/quarkus:
+      # Handle scheduled workflow runs for 4.0 branch of quarkusio/quarkus:
       # - we download the previous sha from the last successful scheduled run
       # - we compare it with current and skip the build if there are no changes
       # Note: gh needs the repository around to be able to resolve it
       - name: Checkout repository
-        if: github.event_name == 'schedule' && github.ref_name == 'main' && github.repository == 'quarkusio/quarkus'
+        if: github.event_name == 'schedule' && github.ref_name == '4.0' && github.repository == 'quarkusio/quarkus'
         uses: actions/checkout@v6
       - name: Download previous scheduled build SHA
-        if: github.event_name == 'schedule' && github.ref_name == 'main' && github.repository == 'quarkusio/quarkus'
+        if: github.event_name == 'schedule' && github.ref_name == '4.0' && github.repository == 'quarkusio/quarkus'
         id: download-previous-sha
         continue-on-error: true
         run: |
           # Find the most recent successful scheduled workflow run
           RUN_ID=$(gh run list \
             --workflow=ci-actions-incremental.yml \
-            --branch=main \
+            --branch=4.0 \
             --event=schedule \
             --status=completed \
             --limit=20 \
@@ -263,9 +263,9 @@ jobs:
         run: |
           # Default: always run CI for non-scheduled events
           if [ "${{ github.event_name }}" != "schedule" ] || \
-             [ "${{ github.ref_name }}" != "main" ] || \
+             [ "${{ github.ref_name }}" != "4.0" ] || \
              [ "${{ github.repository }}" != "quarkusio/quarkus" ]; then
-            echo "Not a scheduled main run - CI will proceed"
+            echo "Not a scheduled 4.0 run - CI will proceed"
             echo "run-ci-build=true" >> $GITHUB_OUTPUT
             exit 0
           fi
@@ -287,21 +287,21 @@ jobs:
             echo "run-ci-build=true" >> $GITHUB_OUTPUT
           fi
       - name: Save current build SHA for next run
-        if: github.event_name == 'schedule' && github.ref_name == 'main' && github.repository == 'quarkusio/quarkus'
+        if: github.event_name == 'schedule' && github.ref_name == '4.0' && github.repository == 'quarkusio/quarkus'
         run: echo "${{ github.sha }}" > main-last-build-sha.txt
       - name: Upload build SHA artifact
-        if: github.event_name == 'schedule' && github.ref_name == 'main' && github.repository == 'quarkusio/quarkus'
+        if: github.event_name == 'schedule' && github.ref_name == '4.0' && github.repository == 'quarkusio/quarkus'
         uses: actions/upload-artifact@v7
         with:
           name: main-last-build-sha
           path: main-last-build-sha.txt
           retention-days: 30
 
-  build-jdk17:
-    name: "Initial JDK 17 Build"
+  build-jdk21:
+    name: "Initial JDK 21 Build"
     needs: [ configure ]
     if: needs.configure.outputs.run-ci-build == 'true'
-    runs-on: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest-large'].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners['ubuntu-latest-large'].runsOn, 'initial-jdk-17') || 'ubuntu-latest' }}
+    runs-on: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest-large'].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners['ubuntu-latest-large'].runsOn, 'initial-jdk-21') || 'ubuntu-latest' }}
     env:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn && 'true' || 'false' }}
@@ -312,8 +312,8 @@ jobs:
       - uses: runs-on/action@v2
       - name: Gradle Enterprise environment
         run: |
-          echo "GE_TAGS=jdk-17" >> "$GITHUB_ENV"
-          echo "GE_CUSTOM_VALUES=gh-job-name=Initial JDK 17 Build" >> "$GITHUB_ENV"
+          echo "GE_TAGS=jdk-21" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=Initial JDK 21 Build" >> "$GITHUB_ENV"
       - uses: actions/checkout@v6
         with:
           # this is important for GIB to work
@@ -324,11 +324,11 @@ jobs:
         run: .github/ci-prerequisites.sh
       - name: Print disk usage before build
         run: .github/ci-disk-usage.sh
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
       - name: Restore Maven Repository
         uses: actions/cache/restore@v5
         if: github.event_name != 'push' || github.actor == 'dependabot[bot]'
@@ -355,9 +355,9 @@ jobs:
         if: github.event_name == 'pull_request' || github.event_name == 'push' && github.repository != 'quarkusio/quarkus'
         with:
           path: ~/.m2/.develocity/build-cache
-          key: develocity-cache-Initial JDK 17 Build-${{ github.event.pull_request.number || github.event.ref }}-${{ github.event.pull_request.head.sha || github.event.head }}
+          key: develocity-cache-Initial JDK 21 Build-${{ github.event.pull_request.number || github.event.ref }}-${{ github.event.pull_request.head.sha || github.event.head }}
           restore-keys: |
-            develocity-cache-Initial JDK 17 Build-${{ github.event.pull_request.number || github.event.ref }}-
+            develocity-cache-Initial JDK 21 Build-${{ github.event.pull_request.number || github.event.ref }}-
       - name: Verify native-tests.json
         run: ./.github/verify-tests-json.sh native-tests.json integration-tests/
       - name: Verify virtual-threads-tests.json
@@ -366,7 +366,7 @@ jobs:
         uses: gradle/develocity-actions/setup-maven@v2.1
         with:
           capture-strategy: ON_DEMAND
-          job-name: "Initial JDK 17 Build"
+          job-name: "Initial JDK 21 Build"
           add-pr-comment: false
           add-job-summary: false
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
@@ -386,7 +386,7 @@ jobs:
           PUSH_BRANCH: ${{ github.event_name == 'push' && github.ref_name }}
           GIB_DISABLED: ${{ needs.configure.outputs.maven-disable-gib }}
         run: |
-          if [[ "$GIB_DISABLED" == "true" ]] || [[ "$PUSH_BRANCH" =~ ^main|[0-9]+\.[0-9]+$ ]] || [[ "$PULL_REQUEST_HEAD" =~ ^.*backport.*$ ]]; then
+          if [[ "$GIB_DISABLED" == "true" ]] || [[ "$PUSH_BRANCH" =~ ^4\.0|[0-9]+\.[0-9]+$ ]] || [[ "$PULL_REQUEST_HEAD" =~ ^.*backport.*$ ]]; then
             GIB_ARGS=''
             GIB_IMPACTED='_all_'
           else
@@ -401,10 +401,10 @@ jobs:
               # - the current branch is a backport branch targeting some released branch like 1.10 (merge target is not main)
               GIB_ARGS+=" -Dgib.referenceBranch=origin/$PULL_REQUEST_BASE -Dgib.disableIfReferenceBranchMatches='origin/\d+\.\d+'"
             else
-              # No PR means the merge target is uncertain so fetch & use main of quarkusio/quarkus, *unless*:
-              # - the current branch is main or some released branch like 1.10
-              # - the current branch is a backport branch which is going to target some released branch like 1.10 (merge target is not main)
-              GIB_ARGS+=" -Dgib.referenceBranch=refs/remotes/quarkusio/main -Dgib.fetchReferenceBranch -Dgib.disableIfBranchMatches='main|\d+\.\d+|.*backport.*'"
+              # No PR means the merge target is uncertain so fetch & use 4.0 of quarkusio/quarkus, *unless*:
+              # - the current branch is 4.0 or some released branch like 1.10
+              # - the current branch is a backport branch which is going to target some released branch like 1.10 (merge target is not 4.0)
+              GIB_ARGS+=" -Dgib.referenceBranch=refs/remotes/quarkusio/4.0 -Dgib.fetchReferenceBranch -Dgib.disableIfBranchMatches='4\\.0|\d+\.\d+|.*backport.*'"
             fi
 
             # mvnw just for creating gib-impacted.log ("validate" should not waste much time if not incremental at all, e.g. on main)
@@ -456,7 +456,7 @@ jobs:
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: "build-reports-${{ github.run_attempt }}-Initial JDK 17 Build"
+          name: "build-reports-${{ github.run_attempt }}-Initial JDK 21 Build"
           path: |
             build-reports.zip
           retention-days: 7
@@ -464,9 +464,9 @@ jobs:
   calculate-test-jobs:
     name: Calculate Test Jobs
     runs-on: ubuntu-latest
-    needs: build-jdk17
+    needs: build-jdk21
     env:
-      GIB_IMPACTED_MODULES: ${{ needs.build-jdk17.outputs.gib_impacted }}
+      GIB_IMPACTED_MODULES: ${{ needs.build-jdk21.outputs.gib_impacted }}
     outputs:
       native_matrix: ${{ steps.calc-native-matrix.outputs.matrix }}
       jvm_matrix: ${{ steps.calc-jvm-matrix.outputs.matrix }}
@@ -529,7 +529,7 @@ jobs:
   jvm-tests:
     name: ${{ matrix.java.name }}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [configure, build-jdk21, calculate-test-jobs]
     if: needs.calculate-test-jobs.outputs.jvm_matrix
     timeout-minutes: 400
     env:
@@ -693,7 +693,7 @@ jobs:
   maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [configure, build-jdk21, calculate-test-jobs]
     env:
       MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
@@ -712,14 +712,6 @@ jobs:
             os-name: "ubuntu-latest",
             tag: "maven-jdk-25",
             runs-on: true
-          }
-          - {
-            name: "17 Windows",
-            java-version: 17,
-            java-distribution: "temurin",
-            os-name: "windows-latest",
-            tag: "maven-jdk-17-windows",
-            runs-on: false
           }
           - {
             name: "25 Semeru",
@@ -778,7 +770,7 @@ jobs:
           CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
         # Despite the pre-calculated run_maven flag, GIB has to be re-run here to figure out the exact submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl 'integration-tests/maven' -pl 'integration-tests/devmode' ${{ needs.build-jdk17.outputs.gib_args }}
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl 'integration-tests/maven' -pl 'integration-tests/devmode' ${{ needs.build-jdk21.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
@@ -816,7 +808,7 @@ jobs:
   gradle-tests:
     name: Gradle Tests - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [configure, build-jdk21, calculate-test-jobs]
     env:
       # leave more space for the actual gradle execution (which is just wrapped by maven)
       MAVEN_OPTS: -Xmx1g
@@ -835,13 +827,6 @@ jobs:
             os-name: "ubuntu-latest",
             tag: "gradle-jdk-25",
             runs-on: true
-          }
-          - {
-            name: "17 Windows",
-            java-version: 17,
-            os-name: "windows-latest",
-            tag: "gradle-jdk-17-windows",
-            runs-on: false
           }
     steps:
       - uses: runs-on/action@v2
@@ -913,7 +898,7 @@ jobs:
   devtools-tests:
     name: Devtools Tests - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'small')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'small')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [configure, build-jdk21, calculate-test-jobs]
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.run_devtools == 'true'
     env:
@@ -931,14 +916,6 @@ jobs:
             os-name: "ubuntu-latest",
             tag: "devtools-jdk-25",
             runs-on: true
-          }
-          - {
-            name: "17 Windows",
-            java-version: 17,
-            java-distribution: "temurin",
-            os-name: "windows-latest",
-            tag: "devtools-jdk-17-windows",
-            runs-on: false
           }
           - {
             name: "25 Semeru",
@@ -1022,7 +999,7 @@ jobs:
   kubernetes-tests:
     name: Kubernetes Tests - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [configure, build-jdk21, calculate-test-jobs]
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.run_kubernetes == 'true'
     env:
@@ -1040,14 +1017,6 @@ jobs:
             os-name: "ubuntu-latest",
             tag: "kubernetes-jdk-25",
             runs-on: true
-          }
-          - {
-            name: "17 Windows",
-            java-version: 17,
-            java-distribution: "temurin",
-            os-name: "windows-latest",
-            tag: "kubernetes-jdk-25-windows",
-            runs-on: false
           }
           - {
             name: "25 Semeru",
@@ -1131,7 +1100,7 @@ jobs:
   quickstarts-tests:
     name: Quickstarts Compilation - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [configure, build-jdk21, calculate-test-jobs]
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.run_quickstarts == 'true'
     env:
@@ -1195,7 +1164,7 @@ jobs:
             }
 
             const branch = process.env.GITHUB_BASE_REF ? process.env.GITHUB_BASE_REF : process.env.GITHUB_REF_NAME
-            if (branch == 'main') {
+            if (branch == '4.0') {
               return 'development'
             } else {
               return branch
@@ -1230,7 +1199,7 @@ jobs:
   platform-tests:
     name: Platform Tests - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [configure, build-jdk21, calculate-test-jobs]
     # Skip main in forks
     if: ${{ contains( github.event.pull_request.labels.*.name, 'ci/test-platform') }}
     env:
@@ -1290,12 +1259,12 @@ jobs:
           result-encoding: string
           script: |
             if (process.env.GITHUB_REPOSITORY != 'quarkusio/quarkus') {
-              return 'main'
+              return '4.0'
             }
 
             const branch = process.env.GITHUB_BASE_REF ? process.env.GITHUB_BASE_REF : process.env.GITHUB_REF_NAME
-            if (branch == 'main') {
-              return 'main'
+            if (branch == '4.0') {
+              return '4.0'
             } else {
               return branch
             }
@@ -1329,7 +1298,7 @@ jobs:
   virtual-thread-native-tests:
     name: Native Tests - Virtual Thread - ${{matrix.category}}
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.os-name, 'large')].runsOn, matrix.tag) || matrix.os-name }}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [configure, build-jdk21, calculate-test-jobs]
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.virtual_threads_matrix != '{}'
     env:
@@ -1409,7 +1378,7 @@ jobs:
 
   tcks-test:
     name: MicroProfile TCKs Tests
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [configure, build-jdk21, calculate-test-jobs]
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.run_tcks == 'true'
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest-large'].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners['ubuntu-latest-large'].runsOn, 'microprofile-tcks') || 'ubuntu-latest' }}
@@ -1465,7 +1434,7 @@ jobs:
           CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
         # Despite the pre-calculated run_tcks flag, GIB has to be re-run here to figure out the exact tcks submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS -Dtcks -pl tcks -amd clean install ${{ needs.build-jdk17.outputs.gib_args }}
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS -Dtcks -pl tcks -amd clean install ${{ needs.build-jdk21.outputs.gib_args }}
       - name: Verify resteasy-reative dependencies
         # note: ideally, this would be run _before_ mvnw but that would required building tcks/resteasy-reactive in two steps
         run: ./tcks/resteasy-reactive/update-dependencies.sh $COMMON_MAVEN_ARGS
@@ -1499,7 +1468,7 @@ jobs:
 
   native-tests:
     name: Native Tests - ${{matrix.category}}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [configure, build-jdk21, calculate-test-jobs]
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.os-name, 'large')].runsOn, matrix.tag) || matrix.os-name }}
     env:
       # leave more space for the actual native compilation and execution
@@ -1642,7 +1611,7 @@ jobs:
 
   native-tests-stats-upload:
     name: Upload build stats to collector
-    if: ${{ always() && github.repository == 'quarkusio/quarkus' && endsWith(github.ref, '/main') && github.event_name != 'pull_request' && needs.native-tests.result != 'skipped' && needs.native-tests.result != 'cancelled' }}
+    if: ${{ always() && github.repository == 'quarkusio/quarkus' && endsWith(github.ref, '/4.0') && github.event_name != 'pull_request' && needs.native-tests.result != 'skipped' && needs.native-tests.result != 'cancelled' }}
     needs:
       - native-tests
     runs-on: ubuntu-latest
@@ -1656,7 +1625,7 @@ jobs:
         env:
           UPLOAD_TOKEN: ${{ secrets.UPLOAD_COLLECTOR_TOKEN }}
           COLLECTOR_URL: https://collector.foci.life/api/v1/image-stats
-          TAG: quarkus-main-ci
+          TAG: quarkus-4.0-ci
         shell: bash
         run: |
           cat > ./runner-info.json <<EOF
@@ -1703,7 +1672,7 @@ jobs:
   build-report:
     runs-on: ubuntu-latest
     name: Build report
-    needs: [configure,build-jdk17,jvm-tests,maven-tests,gradle-tests,devtools-tests,kubernetes-tests,quickstarts-tests,platform-tests,tcks-test,native-tests,virtual-thread-native-tests]
+    needs: [configure,build-jdk21,jvm-tests,maven-tests,gradle-tests,devtools-tests,kubernetes-tests,quickstarts-tests,platform-tests,tcks-test,native-tests,virtual-thread-native-tests]
     if: always() && needs.configure.outputs.run-ci-build == 'true'
     steps:
       - uses: runs-on/action@v2

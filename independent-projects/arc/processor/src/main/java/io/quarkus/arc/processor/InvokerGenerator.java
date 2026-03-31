@@ -14,7 +14,6 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -660,8 +659,8 @@ public class InvokerGenerator extends AbstractGenerator {
 
         List<TransformerMethod> matching = new ArrayList<>();
         List<TransformerMethod> notMatching = new ArrayList<>();
-        for (Entry<MethodSignatureKey, MethodInfo> seenMethod : seenMethods.entrySet()) {
-            TransformerMethod candidate = new TransformerMethod(seenMethod.getValue(), assignability);
+        for (MethodInfo seenMethod : seenMethods.values()) {
+            TransformerMethod candidate = new TransformerMethod(seenMethod, assignability);
             if (candidate.matches(transformer, expectedType)) {
                 matching.add(candidate);
             } else {

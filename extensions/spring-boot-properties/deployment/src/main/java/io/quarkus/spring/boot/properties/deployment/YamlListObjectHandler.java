@@ -129,7 +129,8 @@ class YamlListObjectHandler {
             if (!fieldNameMap.isEmpty()) {
                 MethodCreator getFieldNameMap = cc.getMethodCreator("getFieldNameMap", Map.class);
                 ResultHandle resultHandle = getFieldNameMap.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
-                for (Map.Entry<String, String> entry : fieldNameMap.entrySet()) {
+                for (Map.Entry<String, String> entry : fieldNameMap.entrySet().stream()
+                        .sorted(Map.Entry.comparingByKey()).toList()) {
                     getFieldNameMap.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(HashMap.class, "put", Object.class, Object.class, Object.class),
                             resultHandle, getFieldNameMap.load(entry.getKey()), getFieldNameMap.load(entry.getValue()));

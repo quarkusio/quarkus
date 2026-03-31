@@ -50,7 +50,7 @@ public class FakeSmtpServer {
         int port = ssl ? 1465 : 1587;
         nsOptions.setPort(port);
         JksOptions jksOptions = new JksOptions().setPath(keystore).setPassword("password");
-        nsOptions.setKeyStoreOptions(jksOptions);
+        nsOptions.setKeyCertOptions(jksOptions);
         if (ssl) {
             nsOptions.setSsl(true);
         }
@@ -125,7 +125,7 @@ public class FakeSmtpServer {
                             vertx.setTimer(closeWaitTime * 1000L, v -> socket.closeAndForget());
                         }
                     }
-                }).handle(b.getDelegate()));
+                }).handle(b));
             }
         });
 

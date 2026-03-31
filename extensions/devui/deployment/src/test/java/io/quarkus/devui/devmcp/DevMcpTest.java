@@ -261,6 +261,32 @@ public class DevMcpTest {
     }
 
     @Test
+    public void testUnsupportedMethodReturnsMethodNotFound() {
+        String jsonBody = """
+                    {
+                      "jsonrpc": "2.0",
+                      "id": 8,
+                      "method": "prompts/list"
+                    }
+                """;
+
+        RestAssured
+                .given()
+                .contentType(ContentType.JSON)
+                .body(jsonBody)
+                .when()
+                .post("/q/dev-mcp")
+                .then()
+                .statusCode(200)
+                .log().all()
+                .body("id", CoreMatchers.equalTo(8))
+                .body("jsonrpc", CoreMatchers.equalTo("2.0"))
+                .body("error.code", CoreMatchers.equalTo(-32601))
+                .body("error.message", CoreMatchers.containsString("prompts/list"));
+
+    }
+
+    @Test
     public void testResourcesReadWithInvalidUri() {
         String jsonBody = """
                     {

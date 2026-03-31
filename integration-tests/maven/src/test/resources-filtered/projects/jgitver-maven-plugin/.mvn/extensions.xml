@@ -1,0 +1,7 @@
+<extensions>
+    <extension>
+        <groupId>fr.brouillard.oss</groupId>
+        <artifactId>jgitver-maven-plugin</artifactId>
+        <version>1.9.0</version>
+    </extension>
+</extensions>

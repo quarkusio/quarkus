@@ -402,6 +402,10 @@ public class DevModeCommandLineBuilder {
         //Useful for AgentBasedModulesReconfigurer; should we use -agent and load it explicitly?
         jvmOptionsBuilder.addXxOption("EnableDynamicAgentLoading", "true");
 
+        // Jansi is on the dev mode classpath for terminal/console support and calls System.load
+        // to load native libraries, which requires native access on JDK 22+
+        jvmOptionsBuilder.add("enable-native-access", "ALL-UNNAMED");
+
         setJvmOptions();
         args.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
         args.add("--add-opens=java.base/java.lang.invoke=ALL-UNNAMED");

@@ -33,6 +33,14 @@ public class DevModeCommandLineBuilderTest {
     }
 
     @Test
+    public void enableNativeAccessAlwaysPresent() throws Exception {
+        // --enable-native-access=ALL-UNNAMED must be set even without extensions,
+        // because Jansi (used for dev mode terminal support) calls System.load
+        var args = getCliArguments();
+        assertThat(args).contains("--enable-native-access=ALL-UNNAMED");
+    }
+
+    @Test
     public void extensionSetsJvmOptionWithValue() throws Exception {
 
         final ExtensionDevModeConfig acmeMagic = new ExtensionDevModeConfig(

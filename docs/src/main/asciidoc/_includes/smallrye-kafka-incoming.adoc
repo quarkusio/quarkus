@@ -33,6 +33,14 @@ Type: _long_ | false |
 
 Type: _boolean_ | false | `false`
 
+| [.no-hyphens]#*health-topic-verification-readiness-disabled*# | Whether the topic verification is disabled for the readiness health check.
+
+Type: _boolean_ | false | `false`
+
+| [.no-hyphens]#*health-topic-verification-startup-disabled*# | Whether the topic verification is disabled for the startup health check.
+
+Type: _boolean_ | false | `false`
+
 | [.no-hyphens]#*health-topic-verification-timeout*# | During the startup and readiness health check, the connector connects to the broker and retrieves the list of topics. This attribute specifies the maximum duration (in ms) for the retrieval. If exceeded, the channel is considered not-ready.
 
 Type: _long_ | false | `2000`
@@ -41,7 +49,7 @@ Type: _long_ | false | `2000`
 
 Type: _boolean_ | false | `true`
 
-| [.no-hyphens]#*client-id-prefix*# | Prefix for Kafka client `client.id` attribute. If defined configured or generated `client.id` will be prefixed with the given value, otherwise `kafka-consumer-` is the prefix.
+| [.no-hyphens]#*client-id-prefix*# | Prefix for Kafka client `client.id` attribute. If defined configured or generated `client.id` will be prefixed with the given value.
 
 Type: _string_ | false |
 
@@ -53,7 +61,7 @@ Type: _string_ | false |
 
 Type: _string_ | false |
 
-| [.no-hyphens]#*checkpoint.unsynced-state-max-age.ms*# | While using the `checkpoint` commit-strategy, specify the max age in milliseconds that the processing state must be persisted before the connector is marked as unhealthy. Setting this attribute to `0` disables this monitoring.
+| [.no-hyphens]#*checkpoint.unsynced-state-max-age.ms*# | While using the `checkpoint` commit-strategy, specify the max age in milliseconds that the processing state must be persisted before the connector is marked as unhealthy. Setting this attribute to 0 disables this monitoring.
 
 Type: _int_ | false | `10000`
 
@@ -72,6 +80,10 @@ Type: _string_ | false |
 | [.no-hyphens]#*pattern*# | Indicate that the `topic` property is a regular expression. Must be used with the `topic` property. Cannot be used with the `topics` property
 
 Type: _boolean_ | false | `false`
+
+| [.no-hyphens]#*assign-seek*# | Assign partitions and optionally seek to offsets, instead of subscribing to topics. A comma-separating list of triplets in form of `<topic>:\|<partition>\|:<offset>` to assign statically to the consumer and seek to the given offsets. Offset `0` seeks to beginning and offset `-1` seeks to the end of the topic-partition. If the topic is omitted the configured topic will be used. If the offset is omitted partitions are assigned to the consumer but won't be seeked to offset.
+
+Type: _string_ | false |
 
 | [.no-hyphens]#*key.deserializer*# | The deserializer classname used to deserialize the record's key
 
@@ -104,7 +116,7 @@ Type: _string_ | false |
 
 Type: _boolean_ | false | `false`
 
-| [.no-hyphens]#*retry*# | Whether the connection to the broker is re-attempted in case of failure
+| [.no-hyphens]#*retry*# | Whether or not the connection to the broker is re-attempted in case of failure
 
 Type: _boolean_ | false | `true`
 
@@ -124,7 +136,7 @@ Type: _boolean_ | false | `false`
 
 Type: _string_ | false | `latest`
 
-| [.no-hyphens]#*failure-strategy*# | Specify the failure strategy to apply when a message produced from a record is acknowledged negatively (nack). Values can be `fail` (default), `ignore`, or `dead-letter-queue`
+| [.no-hyphens]#*failure-strategy*# | Specify the failure strategy to apply when a message produced from a record is acknowledged negatively (nack). Values can be `fail` (default), `ignore`, `dead-letter-queue`, or `delayed-retry-topic`
 
 Type: _string_ | false | `fail`
 
@@ -132,11 +144,23 @@ Type: _string_ | false | `fail`
 
 Type: _string_ | false |
 
+| [.no-hyphens]#*ordered*# | Configures ordering guarantees for concurrent processing. Possible values: `key` for per-key sequential processing, or `partition` for per-partition sequential processing. Requires `@Blocking(ordered = false)` for concurrency. Works with any commit strategy.
+
+Type: _string_ | false |
+
+| [.no-hyphens]#*ordered.max-concurrency*# | Maximum number of groups (keys or partitions) that can be processed concurrently. Defaults to `max.poll.records`.
+
+Type: _int_ | false |
+
 | [.no-hyphens]#*throttled.unprocessed-record-max-age.ms*# | While using the `throttled` commit-strategy, specify the max age in milliseconds that an unprocessed message can be before the connector is marked as unhealthy. Setting this attribute to 0 disables this monitoring.
 
 Type: _int_ | false | `60000`
 
 | [.no-hyphens]#*dead-letter-queue.topic*# | When the `failure-strategy` is set to `dead-letter-queue` indicates on which topic the record is sent. Defaults is `dead-letter-topic-$channel`
+
+Type: _string_ | false |
+
+| [.no-hyphens]#*dead-letter-queue.producer-client-id*# | When the `failure-strategy` is set to `dead-letter-queue` indicates what client id the generated producer should use. Defaults is `kafka-dead-letter-topic-producer-$client-id`
 
 Type: _string_ | false |
 
@@ -148,11 +172,23 @@ Type: _string_ | false |
 
 Type: _string_ | false |
 
-| [.no-hyphens]#*partitions*# | The number of partitions to be consumed concurrently. The connector creates the specified amount of Kafka consumers. It should match the number of partition of the targeted topic
+| [.no-hyphens]#*delayed-retry-topic.topics*# | When the `failure-strategy` is set to `delayed-retry-topic` indicates topics to use. If not set the source channel name is used, with 10, 20 and 50 seconds delayed topics.
+
+Type: _string_ | false |
+
+| [.no-hyphens]#*delayed-retry-topic.max-retries*# | When the `failure-strategy` is set to `delayed-retry-topic` indicates the maximum number of retries. If higher than the number of delayed retry topics, last topic is used.
+
+Type: _int_ | false |
+
+| [.no-hyphens]#*delayed-retry-topic.timeout*# | When the `failure-strategy` is set to `delayed-retry-topic` indicates the global timeout per record.
+
+Type: _int_ | false | `120000`
+
+| [.no-hyphens]#*partitions*# | _deprecated_ - The number of partitions to be consumed concurrently. The connector creates the specified amount of Kafka consumers. It should match the number of partition of the targeted topic. Deprecated: Use `concurrency` channel attribute instead.
 
 Type: _int_ | false | `1`
 
-| [.no-hyphens]#*requests*# | When `partitions` is greater than 1, this attribute allows configuring how many records are requested by each consumer every time.
+| [.no-hyphens]#*requests*# | _deprecated_ - When `partitions` is greater than 1, this attribute allows configuring how many records are requested by each consumers every time. Deprecated: Use `concurrency` channel attribute instead.
 
 Type: _int_ | false | `128`
 
@@ -172,7 +208,7 @@ Type: _string_ | false |
 
 Type: _boolean_ | false | `true`
 
-| [.no-hyphens]#*graceful-shutdown*# | Whether a graceful shutdown should be attempted when the application terminates.
+| [.no-hyphens]#*graceful-shutdown*# | Whether or not a graceful shutdown should be attempted when the application terminates.
 
 Type: _boolean_ | false | `true`
 
@@ -191,5 +227,21 @@ Type: _boolean_ | false | `false`
 | [.no-hyphens]#*max-queue-size-factor*# | Multiplier factor to determine maximum number of records queued for processing, using `max.poll.records` * `max-queue-size-factor`. Defaults to 2. In `batch` mode `max.poll.records` is considered `1`.
 
 Type: _int_ | false | `2`
+
+| [.no-hyphens]#*share-group*# | Whether to use Kafka Share Groups for consumption. When enabled, the consumer will use a ShareConsumer which provides cooperative record processing across multiple consumers without explicit partition assignment.
+
+Type: _boolean_ | false | `false`
+
+| [.no-hyphens]#*share-group.failure-acknowledgement-type*# | Default acknowledgement type to apply to the record, when the message is nacked.
+
+Type: _string_ | false | `release`
+
+| [.no-hyphens]#*share-group.failure-deserialization-acknowledgement-type*# | Default acknowledgement type to apply to the record, when the message is nacked because of failure on deserialization.
+
+Type: _string_ | false | `reject`
+
+| [.no-hyphens]#*share-group.unprocessed-record-max-age.ms*# | While using share groups, specify the max age in milliseconds that an unprocessed record can be before the connector reports a failure. Setting this attribute to 0 disables this monitoring.
+
+Type: _int_ | false | `60000`
 
 |===

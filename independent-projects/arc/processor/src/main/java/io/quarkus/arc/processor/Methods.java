@@ -5,12 +5,10 @@ import static io.quarkus.arc.processor.KotlinUtils.isNoninterceptableKotlinMetho
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -24,6 +22,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodSignatureKey;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
@@ -61,15 +60,15 @@ final class Methods {
         return (method.flags() & BRIDGE) != 0;
     }
 
-    static void addDelegatingMethods(IndexView index, ClassInfo classInfo, Map<MethodKey, MethodInfo> methods,
-            Map<String, Set<MethodKey>> methodsFromWhichToRemoveFinal, boolean transformUnproxyableClasses) {
+    static void addDelegatingMethods(IndexView index, ClassInfo classInfo, Map<MethodSignatureKey, MethodInfo> methods,
+            Map<String, Set<MethodDescriptor>> methodsFromWhichToRemoveFinal, boolean transformUnproxyableClasses) {
         if (classInfo != null) {
             // First methods declared on the class
             for (MethodInfo method : classInfo.methods()) {
                 if (skipForClientProxy(method, transformUnproxyableClasses, methodsFromWhichToRemoveFinal)) {
                     continue;
                 }
-                methods.putIfAbsent(new Methods.MethodKey(method), method);
+                methods.putIfAbsent(method.signatureKey(), method);
             }
             // Methods declared on superclasses
             if (classInfo.superClassType() != null) {
@@ -92,7 +91,7 @@ final class Methods {
     }
 
     private static boolean skipForClientProxy(MethodInfo method, boolean transformUnproxyableClasses,
-            Map<String, Set<MethodKey>> methodsFromWhichToRemoveFinal) {
+            Map<String, Set<MethodDescriptor>> methodsFromWhichToRemoveFinal) {
         if (Modifier.isStatic(method.flags()) || Modifier.isPrivate(method.flags())) {
             return true;
         }
@@ -109,7 +108,7 @@ final class Methods {
             if (!className.startsWith("java.")) {
                 if (transformUnproxyableClasses && methodsFromWhichToRemoveFinal != null) {
                     methodsFromWhichToRemoveFinal.computeIfAbsent(className, (k) -> new HashSet<>())
-                            .add(new MethodKey(method));
+                            .add(MethodDescriptor.of(method));
                     return false;
                 }
                 // in case we want to transform classes but are unable to, we log a WARN
@@ -153,7 +152,7 @@ final class Methods {
     }
 
     static Set<MethodInfo> addInterceptedMethodCandidates(BeanDeployment beanDeployment, ClassInfo targetClass,
-            BindingsDiscovery bindingsDiscovery, Map<MethodKey, Set<AnnotationInstance>> candidates,
+            BindingsDiscovery bindingsDiscovery, Map<MethodSignatureKey, BeanInfo.InterceptedMethodCandidate> candidates,
             List<AnnotationInstance> classLevelBindings, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
             boolean transformUnproxyableClasses, boolean hasAroundInvokes) {
         return addInterceptedMethodCandidates(beanDeployment, targetClass, targetClass, bindingsDiscovery, candidates,
@@ -166,17 +165,17 @@ final class Methods {
 
     private static Set<MethodInfo> addInterceptedMethodCandidates(BeanDeployment beanDeployment, ClassInfo classInfo,
             ClassInfo originalClassInfo, BindingsDiscovery bindingsDiscovery,
-            Map<MethodKey, Set<AnnotationInstance>> candidates,
+            Map<MethodSignatureKey, BeanInfo.InterceptedMethodCandidate> candidates,
             Set<AnnotationInstance> classLevelBindings, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
             boolean transformUnproxyableClasses, SubclassSkipPredicate skipPredicate, boolean ignoreMethodLevelBindings,
-            Set<MethodKey> noClassInterceptorsMethods, boolean targetHasAroundInvokes) {
+            Set<MethodSignatureKey> noClassInterceptorsMethods, boolean targetHasAroundInvokes) {
 
-        Set<MethodKey> methodsFromWhichToRemoveFinal = new HashSet<>();
+        Set<MethodDescriptor> methodsFromWhichToRemoveFinal = new HashSet<>();
         Set<MethodInfo> finalMethodsFoundAndNotChanged = new HashSet<>();
         skipPredicate.startProcessing(classInfo, originalClassInfo);
 
         for (MethodInfo method : classInfo.methods()) {
-            MethodKey methodKey = new MethodKey(method);
+            MethodSignatureKey methodKey = method.signatureKey();
             if (candidates.containsKey(methodKey)) {
                 continue;
             }
@@ -186,7 +185,7 @@ final class Methods {
                     ignoreMethodLevelBindings, method, methodKey, noClassInterceptorsMethods, bindingsDiscovery);
             boolean possiblyIntercepted = !bindings.isEmpty() || targetHasAroundInvokes;
             if (!possiblyIntercepted) {
-                candidates.put(methodKey, bindings);
+                candidates.put(methodKey, new BeanInfo.InterceptedMethodCandidate(method, bindings));
                 continue;
             }
             if (skipPredicate.test(method)) {
@@ -195,14 +194,14 @@ final class Methods {
             boolean addToCandidates = true;
             if (Modifier.isFinal(method.flags())) {
                 if (transformUnproxyableClasses && !isNoninterceptableKotlinMethod(method)) {
-                    methodsFromWhichToRemoveFinal.add(new MethodKey(method));
+                    methodsFromWhichToRemoveFinal.add(MethodDescriptor.of(method));
                 } else {
                     addToCandidates = false;
                     finalMethodsFoundAndNotChanged.add(method);
                 }
             }
             if (addToCandidates) {
-                candidates.put(methodKey, bindings);
+                candidates.put(methodKey, new BeanInfo.InterceptedMethodCandidate(method, bindings));
             }
         }
         skipPredicate.methodsProcessed();
@@ -237,7 +236,8 @@ final class Methods {
 
     private static Set<AnnotationInstance> mergeBindings(BeanDeployment beanDeployment, ClassInfo classInfo,
             Set<AnnotationInstance> classLevelBindings, boolean ignoreMethodLevelBindings, MethodInfo method,
-            MethodKey methodKey, Set<MethodKey> noClassInterceptorsMethods, BindingsDiscovery bindingsDiscovery) {
+            MethodSignatureKey methodKey, Set<MethodSignatureKey> noClassInterceptorsMethods,
+            BindingsDiscovery bindingsDiscovery) {
 
         if (bindingsDiscovery.hasAnnotation(method, DotNames.NO_CLASS_INTERCEPTORS)
                 || noClassInterceptorsMethods.contains(methodKey)) {
@@ -321,73 +321,23 @@ final class Methods {
         return result;
     }
 
-    static class MethodKey {
-
-        private static final DotName[] NO_PARAMS = new DotName[0];
-
-        final String name;
-        final DotName[] params;
-        final DotName returnType;
-        final MethodInfo method; // this is intentionally ignored for equals/hashCode
-        private final int hashCode;
-
-        public MethodKey(MethodInfo method) {
-            this.method = Objects.requireNonNull(method, "Method must not be null");
-            this.name = method.name();
-            this.returnType = method.returnType().name();
-            if (method.parametersCount() == 0) {
-                this.params = NO_PARAMS;
-            } else {
-                this.params = new DotName[method.parametersCount()];
-                for (int i = 0; i < method.parametersCount(); i++) {
-                    this.params[i] = method.parameterType(i).name();
-                }
-            }
-
-            // the Map can be resized several times so it's worth caching the hashCode
-            this.hashCode = buildHashCode(this.name, this.params, this.returnType);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (!(o instanceof MethodKey methodKey))
-                return false;
-            return Objects.equals(name, methodKey.name)
-                    && Arrays.equals(params, methodKey.params)
-                    && Objects.equals(returnType, methodKey.returnType);
-        }
-
-        @Override
-        public int hashCode() {
-            return hashCode;
-        }
-
-        private static int buildHashCode(String name, DotName[] params, DotName returnType) {
-            int result = Objects.hashCode(name);
-            result = 31 * result + Arrays.hashCode(params);
-            result = 31 * result + Objects.hashCode(returnType);
-            return result;
-        }
-    }
-
     /**
      * Note that this in fact <em>does not</em> detect method overrides. It is only useful
      * to skip processing of a method in case a method with the same name and signature
      * has already been processed. (Same name and signature does not mean override!)
      */
-    static boolean isOverriden(Methods.MethodKey method, Set<Methods.MethodKey> previousMethods) {
+    static boolean isOverridden(MethodSignatureKey method, Set<MethodSignatureKey> previousMethods) {
         return previousMethods.contains(method);
     }
 
-    static void addDelegateTypeMethods(IndexView index, ClassInfo delegateTypeClass, Set<MethodKey> methods) {
+    static void addDelegateTypeMethods(IndexView index, ClassInfo delegateTypeClass,
+            Map<MethodSignatureKey, MethodInfo> methods) {
         if (delegateTypeClass != null) {
             for (MethodInfo method : delegateTypeClass.methods()) {
                 if (skipForDelegateSubclass(method)) {
                     continue;
                 }
-                methods.add(new MethodKey(method));
+                methods.put(method.signatureKey(), method);
             }
             // Interfaces
             for (Type interfaceType : delegateTypeClass.interfaceTypes()) {
@@ -416,18 +366,20 @@ final class Methods {
 
     static class RemoveFinalFromMethod implements BiFunction<String, ClassVisitor, ClassVisitor> {
 
-        private final Set<MethodKey> methodsFromWhichToRemoveFinal;
+        private final Set<MethodDescriptor> methodsFromWhichToRemoveFinal;
 
-        public RemoveFinalFromMethod(Set<MethodKey> methodsFromWhichToRemoveFinal) {
+        public RemoveFinalFromMethod(Set<MethodDescriptor> methodsFromWhichToRemoveFinal) {
             this.methodsFromWhichToRemoveFinal = methodsFromWhichToRemoveFinal;
         }
 
         @Override
         public ClassVisitor apply(String className, ClassVisitor classVisitor) {
             ClassTransformer transformer = new ClassTransformer(className);
-            for (MethodKey key : methodsFromWhichToRemoveFinal) {
-                LOGGER.debug("Final modifier removed from method " + key.name + " of class " + className);
-                transformer.modifyMethod(MethodDescriptor.of(key.method)).removeModifiers(Opcodes.ACC_FINAL);
+            for (MethodDescriptor method : methodsFromWhichToRemoveFinal) {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debugf("Final modifier removed from method %s of class %s", method, className);
+                }
+                transformer.modifyMethod(method).removeModifiers(Opcodes.ACC_FINAL);
             }
             return transformer.applyTo(classVisitor);
         }
@@ -659,5 +611,4 @@ final class Methods {
         // do _not_ compare `owner` here
         return d1.name().equals(d2.name()) && d1.type().equals(d2.type());
     }
-
 }

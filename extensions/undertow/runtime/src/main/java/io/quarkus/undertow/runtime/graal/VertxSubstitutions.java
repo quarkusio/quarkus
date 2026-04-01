@@ -1,12 +1,15 @@
 package io.quarkus.undertow.runtime.graal;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.function.BooleanSupplier;
 
 import com.oracle.svm.core.annotate.Delete;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
-import io.vertx.core.ServiceHelper;
+import io.vertx.core.impl.ServiceHelper;
 import io.vertx.core.spi.JsonFactory;
 import io.vertx.core.spi.json.JsonCodec;
 
@@ -20,16 +23,18 @@ final class Target_io_vertx_core_json_Json {
 
     @Substitute
     public static io.vertx.core.spi.JsonFactory load() {
-        io.vertx.core.spi.JsonFactory factory = ServiceHelper.loadFactoryOrNull(io.vertx.core.spi.JsonFactory.class);
-        if (factory == null) {
-            factory = new JsonFactory() {
+        List<JsonFactory> factories = new ArrayList<>(ServiceHelper.loadFactories(io.vertx.core.spi.JsonFactory.class));
+        factories.sort(Comparator.comparingInt(JsonFactory::order));
+        if (!factories.isEmpty()) {
+            return factories.iterator().next();
+        } else {
+            return new JsonFactory() {
                 @Override
                 public JsonCodec codec() {
                     return null;
                 }
             };
         }
-        return factory;
     }
 }
 

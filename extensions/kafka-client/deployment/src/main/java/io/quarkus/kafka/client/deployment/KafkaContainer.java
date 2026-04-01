@@ -33,7 +33,7 @@ public class KafkaContainer extends GenericContainer<KafkaContainer> implements 
     static final String[] COMMAND = {
             "sh",
             "-c",
-            "while [ ! -f " + STARTER_SCRIPT + " ]; do sleep 0.1; done; " + STARTER_SCRIPT,
+            "while [ ! -x " + STARTER_SCRIPT + " ]; do sleep 0.1; done; " + STARTER_SCRIPT,
     };
 
     static final WaitStrategy WAIT_STRATEGY = Wait.forLogMessage(".*Transitioning from RECOVERY to RUNNING.*", 1);
@@ -103,11 +103,53 @@ public class KafkaContainer extends GenericContainer<KafkaContainer> implements 
         String kafkaAdvertisedListeners = String.join(",", advertisedListeners);
 
         String command = "#!/bin/bash\n";
-        // exporting KAFKA_ADVERTISED_LISTENERS with the container hostname
         command += String.format("export KAFKA_ADVERTISED_LISTENERS=%s\n", kafkaAdvertisedListeners);
-
-        command += "/etc/kafka/docker/run \n";
+        command += nativeLaunchScript();
         copyFileToContainer(Transferable.of(command, 0777), STARTER_SCRIPT);
+    }
+
+    /**
+     * Generates a shell snippet that detects whether the container runs a native image
+     * and, if so, launches Kafka directly with {@code -Duser.name} / {@code -Duser.home} flags
+     * to work around a gcompat {@code getpwuid} segfault on Alpine (KAFKA-20314).
+     * For JVM images the original {@code /etc/kafka/docker/run} entrypoint is used as-is.
+     */
+    static String nativeLaunchScript() {
+        String userOpts = "-Duser.name=appuser -Duser.home=/home/appuser";
+        return "if [ -f /opt/kafka/kafka.Kafka ]; then\n" +
+        // source config scripts (normally done by /etc/kafka/docker/run)
+                "  . /etc/kafka/docker/bash-config\n" +
+                "  . /etc/kafka/docker/configureDefaults\n" +
+                "  . /etc/kafka/docker/configure\n" +
+                // JMX setup (mirrors /etc/kafka/docker/launch)
+                "  if [ -z \"${KAFKA_JMX_OPTS-}\" ]; then\n" +
+                "    export KAFKA_JMX_OPTS=\"-Dcom.sun.management.jmxremote=true" +
+                " -Dcom.sun.management.jmxremote.authenticate=false" +
+                " -Dcom.sun.management.jmxremote.ssl=false\"\n" +
+                "  fi\n" +
+                "  export KAFKA_JMX_HOSTNAME=${KAFKA_JMX_HOSTNAME:-$(hostname -i | cut -d' ' -f1)}\n" +
+                "  if [ \"${KAFKA_JMX_PORT-}\" ]; then\n" +
+                "    export JMX_PORT=$KAFKA_JMX_PORT\n" +
+                "    export KAFKA_JMX_OPTS=\"$KAFKA_JMX_OPTS" +
+                " -Djava.rmi.server.hostname=$KAFKA_JMX_HOSTNAME" +
+                " -Dcom.sun.management.jmxremote.local.only=false" +
+                " -Dcom.sun.management.jmxremote.rmi.port=$JMX_PORT" +
+                " -Dcom.sun.management.jmxremote.port=$JMX_PORT\"\n" +
+                "  fi\n" +
+                // setup
+                "  /opt/kafka/kafka.Kafka " + userOpts + " setup" +
+                " --default-configs-dir /etc/kafka/docker" +
+                " --mounted-configs-dir /mnt/shared/config" +
+                " --final-configs-dir /opt/kafka/config 2>&1 || true\n" +
+                // start
+                "  KAFKA_LOG4J_CMD_OPTS=\"-Dkafka.logs.dir=/opt/kafka/logs/" +
+                " -Dlog4j2.configurationFile=file:/opt/kafka/config/log4j2.yaml\"\n" +
+                "  exec /opt/kafka/kafka.Kafka " + userOpts + " start" +
+                " --config /opt/kafka/config/server.properties" +
+                " $KAFKA_LOG4J_CMD_OPTS $KAFKA_JMX_OPTS ${KAFKA_OPTS-}\n" +
+                "else\n" +
+                "  exec /etc/kafka/docker/run\n" +
+                "fi\n";
     }
 
     public KafkaContainer withPort(int fixedPort) {

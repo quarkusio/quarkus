@@ -1207,7 +1207,7 @@ Access is granted if at least one of them successfully provides `SecurityIdentit
 
 ==== Use inclusive authentication to enable path-based authentication
 
-By default, Quarkus only supports <<use-annotations-for-path-based-auth>> for one authentication mechanism selected with annotation per REST endpoint.
+By default, Quarkus only supports <<use-annotations-for-path-based-auth,path-based authentication>> for one authentication mechanism selected with annotation per REST endpoint.
 If more than one authentication mechanism must be used for the <<path-based-authentication>>, you can write a custom `HttpAuthenticationMechanism` as documented in the xref:security-customization.adoc#dealing-with-more-than-one-http-auth-mechanisms[Dealing with more than one HttpAuthenticationMechanism] section of the Security Tips and Tricks guide.
 Another option is to enable <<inclusive-authentication>> in the lax mode and write a custom `HttpSecurityPolicy` or `PermissionChecker` that verifies that all registered HTTP authentication mechanisms created their mechanism-specific `SecurityIdentity`.
 

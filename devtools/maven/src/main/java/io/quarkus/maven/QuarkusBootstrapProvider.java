@@ -86,15 +86,7 @@ public class QuarkusBootstrapProvider implements Closeable {
                 continue;
             }
             final Model model = getRawModel(mp);
-            config.addProvidedModule(mp.getFile().toPath(), model, mp.getModel());
-            // The Maven Model API determines the project directory as the directory containing the POM file.
-            // However, in case when plugins manipulating POMs store their results elsewhere
-            // (such as the flatten plugin storing the flattened POM under the target directory),
-            // both the base directory and the directory containing the POM file should be added to the map.
-            var pomDir = mp.getFile().getParentFile();
-            if (!pomDir.equals(mp.getBasedir())) {
-                config.addProvidedModule(mp.getBasedir().toPath().resolve("pom.xml"), model, mp.getModel());
-            }
+            config.addProvidedModule(model.getPomFile().toPath(), model, mp.getModel());
         }
     }
 
@@ -144,8 +136,30 @@ public class QuarkusBootstrapProvider implements Closeable {
             // since the flatten plugin may remove the test dependencies from the POM
             model.setDependencies(mp.getDependencies());
         }
-        model.setPomFile(mp.getFile());
+        // The Maven Model API determines a project directory as a directory containing the POM file.
+        // However, in case when plugins manipulating POMs store their results elsewhere
+        // (such as the flatten plugin storing the flattened POM under the target directory or jgitver extension
+        // storing a modified POM in the tmp directory), the project's base directory will be different from
+        // the directory containing the project's POM file. In this case, we associate the raw model with
+        // the original POM file for the workspace discovery to work.
+        model.setPomFile(getOriginalPomFile(mp));
         return model;
+    }
+
+    /**
+     * Returns original POM file for a given project.
+     *
+     * @param mp Maven project
+     * @return original POM file for a project
+     */
+    static File getOriginalPomFile(MavenProject mp) {
+        if (!mp.getBasedir().equals(mp.getFile().getParentFile())) {
+            final File originalPom = new File(mp.getBasedir(), "pom.xml");
+            if (originalPom.exists()) {
+                return originalPom;
+            }
+        }
+        return mp.getFile();
     }
 
     private static String getBootstrapProviderId(ArtifactKey moduleKey, String bootstrapId) {
@@ -251,7 +265,7 @@ public class QuarkusBootstrapProvider implements Closeable {
                             // it's important to pass user settings in case the process was not launched using the original mvn script,
                             // for example, using org.codehaus.plexus.classworlds.launcher.Launcher
                             .setUserSettings(mojo.mavenSession().getRequest().getUserSettingsFile())
-                            .setCurrentProject(mojo.mavenProject().getFile().toString())
+                            .setCurrentProject(getOriginalPomFile(mojo.mavenProject()).toString())
                             .setPreferPomsFromWorkspace(true)
                             // pass the repositories since Maven extensions could manipulate repository configs
                             .setRemoteRepositories(mojo.remoteRepositories())

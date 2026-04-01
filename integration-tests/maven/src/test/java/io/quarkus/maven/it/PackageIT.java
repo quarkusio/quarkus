@@ -258,6 +258,18 @@ public class PackageIT extends MojoTestBase {
         createAndVerifyUberJarJarPackaging();
     }
 
+    /**
+     * Make sure the build works with jgitver-maven-plugin updating the project version
+     * and storing modified POMs in the tmp directory.
+     */
+    @Test
+    public void testJGitVerMavenPlugin() throws Exception {
+        testDir = initProject("projects/jgitver-maven-plugin");
+        running = new RunningInvoker(testDir, false);
+        final MavenProcessInvocationResult result = running.execute(List.of("package"), Map.of());
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+    }
+
     private void createAndVerifyUberJar() throws IOException, MavenInvocationException, InterruptedException {
         Properties p = new Properties();
         p.setProperty("quarkus.package.jar.type", "uber-jar");

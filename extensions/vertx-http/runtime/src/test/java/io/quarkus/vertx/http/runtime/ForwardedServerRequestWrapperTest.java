@@ -16,8 +16,8 @@ import org.mockito.quality.Strictness;
 
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.http.impl.HttpServerRequestInternal;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
+import io.vertx.core.internal.http.HttpServerRequestInternal;
 import io.vertx.core.net.HostAndPort;
 import io.vertx.core.net.SocketAddress;
 
@@ -32,10 +32,9 @@ class ForwardedServerRequestWrapperTest {
     void setUp() {
         mockRequest = Mockito.mock(HttpServerRequestInternal.class, Answers.RETURNS_DEEP_STUBS);
 
-        MultiMap headers = new HeadersMultiMap();
+        MultiMap headers = HeadersMultiMap.httpHeaders();
         when(mockRequest.headers()).thenReturn(headers);
         when(mockRequest.scheme()).thenReturn("http");
-        when(mockRequest.host()).thenReturn("localhost");
         when(mockRequest.uri()).thenReturn("/original");
         when(mockRequest.method()).thenReturn(HttpMethod.GET);
         when(mockRequest.path()).thenReturn("/original");
@@ -121,13 +120,13 @@ class ForwardedServerRequestWrapperTest {
 
         String absoluteURI = wrapper.absoluteURI();
 
-        assertEquals("http://localhost/new/path?q=1", absoluteURI);
+        assertEquals("http://localhost:8080/new/path?q=1", absoluteURI);
     }
 
     @Test
     void absoluteURIWhenNotModifiedDelegatesToForwardedParser() {
         String absoluteURI = wrapper.absoluteURI();
-        assertEquals("http://localhost/original", absoluteURI);
+        assertEquals("http://localhost:8080/original", absoluteURI);
     }
 
     @Test
@@ -159,7 +158,7 @@ class ForwardedServerRequestWrapperTest {
 
     @Test
     void hostReturnsForwardedParserHost() {
-        assertEquals("localhost", wrapper.host());
+        assertEquals("localhost", wrapper.authority().host());
     }
 
     @Test

@@ -47,6 +47,7 @@ import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.cors.CORSConfig;
 import io.quarkus.vertx.http.security.MTLS;
+import io.smallrye.common.vertx.ContextLocals;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.CompositeException;
 import io.smallrye.mutiny.Uni;
@@ -331,7 +332,7 @@ public class HttpSecurityRecorder {
             if (propagateRoutingContext) {
                 Context context = Vertx.currentContext();
                 if (context != null && VertxContext.isDuplicatedContext(context)) {
-                    context.putLocal(HttpSecurityUtils.ROUTING_CONTEXT_ATTRIBUTE, event);
+                    ContextLocals.put(HttpSecurityUtils.ROUTING_CONTEXT_ATTRIBUTE, event);
                 }
             }
             //we put the authenticator into the routing context so it can be used by other systems
@@ -437,7 +438,8 @@ public class HttpSecurityRecorder {
                             public void accept(SecurityIdentity identity, Throwable throwable, Boolean aBoolean) {
                                 if (identity != null) {
                                     //when the result is evaluated we set the user, even if it is evaluated lazily
-                                    event.setUser(new QuarkusHttpUser(identity));
+                                    ((io.vertx.ext.web.impl.UserContextInternal) event.userContext())
+                                            .setUser(new QuarkusHttpUser(identity));
                                 } else if (throwable != null) {
                                     //handle the auth failure
                                     //this can be customised

@@ -16,7 +16,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
@@ -80,16 +79,6 @@ public class AbstractResponseWrapperTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void writeBufferWithHandler_delegates() {
-        Buffer buf = mock(Buffer.class);
-        Handler<AsyncResult<Void>> handler = mock(Handler.class);
-
-        wrapper.write(buf, handler);
-        verify(delegate).write(buf, handler);
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
     void writeString_delegatesAndReturnsFuture() {
         Future<Void> future = mock(Future.class);
         when(delegate.write("hello")).thenReturn(future);
@@ -116,14 +105,6 @@ public class AbstractResponseWrapperTest {
 
         assertSame(future, wrapper.end());
         verify(delegate).end();
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    void endWithHandler_delegates() {
-        Handler<AsyncResult<Void>> handler = mock(Handler.class);
-        wrapper.end(handler);
-        verify(delegate).end(handler);
     }
 
     @Test
@@ -403,10 +384,13 @@ public class AbstractResponseWrapperTest {
     }
 
     @Test
-    void writeContinue_delegatesAndReturnsThis() {
-        HttpServerResponse result = wrapper.writeContinue();
+    @SuppressWarnings("unchecked")
+    void writeContinue_delegatesAndReturnsFuture() {
+        Future<Void> future = mock(Future.class);
+        when(delegate.writeContinue()).thenReturn(future);
+
+        assertSame(future, wrapper.writeContinue());
         verify(delegate).writeContinue();
-        assertSame(wrapper, result);
     }
 
     @Test
@@ -420,25 +404,10 @@ public class AbstractResponseWrapperTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
-    void sendFileWithHandler_delegatesAndReturnsThis() {
-        Handler<AsyncResult<Void>> handler = mock(Handler.class);
-        HttpServerResponse result = wrapper.sendFile("file.txt", handler);
-        verify(delegate).sendFile("file.txt", handler);
-        assertSame(wrapper, result);
-    }
-
-    @Test
-    @SuppressWarnings("deprecation")
-    void close_delegates() {
-        wrapper.close();
-        verify(delegate).close();
-    }
-
-    @Test
     void reset_delegates() {
-        when(delegate.reset()).thenReturn(true);
-        assertTrue(wrapper.reset());
+        when(delegate.reset()).thenReturn(Future.succeededFuture());
+        Future<Void> result = wrapper.reset();
         verify(delegate).reset();
+        assertSame(delegate.reset(), result);
     }
 }

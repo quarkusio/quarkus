@@ -6,8 +6,8 @@ import java.util.Set;
 import org.jboss.logging.Logger;
 
 import io.vertx.core.http.HttpHeaders;
-import io.vertx.core.http.impl.MimeMapping;
-import io.vertx.core.net.impl.URIDecoder;
+import io.vertx.core.http.MimeMapping;
+import io.vertx.core.internal.net.RFC3986;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.StaticHandler;
 
@@ -49,7 +49,8 @@ public final class RoutingUtils {
     /**
      * Get the normalized and decoded path:
      * - normalize based on RFC3986
-     * - convert % encoded characters to their non encoded form (using {@link URIDecoder#decodeURIComponent})
+     * - convert % encoded characters to their non encoded form (using
+     * {@link RFC3986#decodeURIComponent(String, boolean)})
      * - invalid if the path contains '?' (query section of the path)
      *
      * @param ctx the RoutingContext
@@ -63,7 +64,7 @@ public final class RoutingUtils {
         if (normalizedPath.indexOf('%') == -1) {
             return normalizedPath;
         }
-        return URIDecoder.decodeURIComponent(normalizedPath);
+        return RFC3986.decodeURIComponent(normalizedPath, false);
     }
 
     /**
@@ -107,7 +108,7 @@ public final class RoutingUtils {
             return false;
         }
         final String resourcePath = path.endsWith("/") ? path + StaticHandler.DEFAULT_INDEX_PAGE : path;
-        final String contentType = MimeMapping.getMimeTypeForFilename(resourcePath);
+        final String contentType = MimeMapping.mimeTypeForFilename(resourcePath);
         return contentType != null && compressMediaTypes.contains(contentType);
     }
 }

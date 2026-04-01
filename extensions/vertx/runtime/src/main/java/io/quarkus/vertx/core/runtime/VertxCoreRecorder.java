@@ -261,7 +261,7 @@ public class VertxCoreRecorder {
             }
         };
         var bootstrap = VertxBootstrap.create()
-                .options(options)
+                .options(options.setDisableTCCL(true))
                 .executorServiceFactory(new QuarkusExecutorFactory(conf, launchMode))
                 .threadFactory(vertxThreadFactory);
 

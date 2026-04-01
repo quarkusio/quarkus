@@ -10,6 +10,7 @@ modules := """
     extensions/mutiny
     extensions/netty
     extensions/vertx
+    extensions/vertx-http
     extensions/tls-registry
     extensions/mailer
     """

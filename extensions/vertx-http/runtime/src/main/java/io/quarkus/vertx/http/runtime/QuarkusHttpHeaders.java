@@ -35,7 +35,33 @@ import io.vertx.core.http.impl.HttpUtils;
  */
 public final class QuarkusHttpHeaders extends HttpHeaders implements MultiMap {
 
+    /**
+     * JVM system property that disables HTTP headers validation, replaces the removed
+     * {@code HttpHeaders.DISABLE_HTTP_HEADERS_VALIDATION} constant from Vert.x 4.
+     */
+    private static final boolean DISABLE_HTTP_HEADERS_VALIDATION = Boolean.getBoolean("vertx.disableHttpHeadersValidation");
+
     private Map<Class<?>, Object> contextObjects;
+
+    @Override
+    public QuarkusHttpHeaders copy() {
+        return (QuarkusHttpHeaders) copy(true);
+    }
+
+    @Override
+    public MultiMap copy(boolean writeable) {
+        QuarkusHttpHeaders copy = new QuarkusHttpHeaders();
+        copy.setAll((MultiMap) this);
+        if (this.contextObjects != null) {
+            copy.contextObjects = new java.util.HashMap<>(this.contextObjects);
+        }
+        return copy;
+    }
+
+    @Override
+    public boolean isMutable() {
+        return true;
+    }
 
     @Override
     public MultiMap setAll(MultiMap headers) {
@@ -477,7 +503,7 @@ public final class QuarkusHttpHeaders extends HttpHeaders implements MultiMap {
         @Override
         public CharSequence setValue(CharSequence value) {
             Objects.requireNonNull(value, "value");
-            if (!io.vertx.core.http.HttpHeaders.DISABLE_HTTP_HEADERS_VALIDATION) {
+            if (!DISABLE_HTTP_HEADERS_VALIDATION) {
                 HttpUtils.validateHeaderValue(value);
             }
             CharSequence oldValue = this.value;
@@ -530,7 +556,7 @@ public final class QuarkusHttpHeaders extends HttpHeaders implements MultiMap {
     }
 
     private void add0(int h, int i, final CharSequence name, final CharSequence value) {
-        if (!io.vertx.core.http.HttpHeaders.DISABLE_HTTP_HEADERS_VALIDATION) {
+        if (!DISABLE_HTTP_HEADERS_VALIDATION) {
             HttpUtils.validateHeader(name, value);
         }
         // Update the hash table.

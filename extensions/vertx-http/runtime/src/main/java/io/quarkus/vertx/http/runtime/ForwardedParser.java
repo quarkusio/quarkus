@@ -29,7 +29,8 @@ import java.util.regex.Pattern;
 import org.jboss.logging.Logger;
 
 import io.netty.util.AsciiString;
-import io.vertx.core.http.impl.HttpServerRequestInternal;
+import io.smallrye.common.vertx.ContextLocals;
+import io.vertx.core.internal.http.HttpServerRequestInternal;
 import io.vertx.core.net.HostAndPort;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.net.impl.SocketAddressImpl;
@@ -130,7 +131,7 @@ class ForwardedParser {
         calculated = true;
         remoteAddress = delegate.remoteAddress();
         scheme = delegate.scheme();
-        setHostAndPort(delegate.host(), port);
+        setHostAndPort(delegate.authority() != null ? delegate.authority().toString() : null, port);
         uri = delegate.uri();
 
         boolean isProxyAllowed = trustedProxyCheck.isProxyAllowed();
@@ -196,7 +197,7 @@ class ForwardedParser {
     }
 
     private void storeForwarded(Forwarded forwarded) {
-        delegate.context().putLocal(ForwardedInfo.CONTEXT_KEY, forwarded);
+        ContextLocals.put(ForwardedInfo.CONTEXT_KEY, forwarded);
     }
 
     private Forwarded processForwarded() {

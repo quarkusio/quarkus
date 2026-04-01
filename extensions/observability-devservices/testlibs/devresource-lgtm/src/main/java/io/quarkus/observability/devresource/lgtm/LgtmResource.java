@@ -95,6 +95,9 @@ public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
             case ContainerConstants.GRAFANA_PORT:
                 containerConfigs.put("grafana.endpoint", String.format("http://%s:%s", host, publicPort));
                 break;
+            case ContainerConstants.TEMPO_MCP_PORT:
+                containerConfigs.put("tempo-mcp.endpoint", String.format("http://%s:%s", host, publicPort));
+                break;
             case ContainerConstants.OTEL_HTTP_EXPORTER_PORT:
                 if (catalog != null && catalog.hasMicrometerOtlp()) {
 
@@ -134,6 +137,7 @@ public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
         Map<String, String> containerConfigs = new HashMap<>();
 
         containerConfigs.putAll(config(ContainerConstants.GRAFANA_PORT, host));
+        containerConfigs.putAll(config(ContainerConstants.TEMPO_MCP_PORT, host));
         containerConfigs.putAll(config(ContainerConstants.OTEL_HTTP_EXPORTER_PORT, host));
         // Iff GRPC is the OTLP protocol, overwrite the otel-collector.url we just wrote with the correct grpc one, and set up the otlp endpoints
         if (ContainerConstants.OTEL_GRPC_PROTOCOL.equals(container.getOtlpProtocol())) {

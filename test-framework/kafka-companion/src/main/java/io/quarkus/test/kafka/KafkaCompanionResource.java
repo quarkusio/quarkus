@@ -6,6 +6,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+
 import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion;
@@ -28,10 +30,9 @@ public class KafkaCompanionResource implements QuarkusTestResourceLifecycleManag
         Map<String, String> devServicesProperties = context.devServicesProperties();
         String bootstrapServers = devServicesProperties.get("kafka.bootstrap.servers");
         if (bootstrapServers == null) {
-            bootstrapServers = System.getProperty("kafka.bootstrap.servers");
-        }
-        if (bootstrapServers == null) {
-            bootstrapServers = System.getenv("KAFKA_BOOTSTRAP_SERVERS");
+            bootstrapServers = ConfigProvider.getConfig()
+                    .getOptionalValue("kafka.bootstrap.servers", String.class)
+                    .orElse(null);
         }
         if (bootstrapServers != null) {
             kafkaCompanion = new KafkaCompanion(bootstrapServers);

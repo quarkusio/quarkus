@@ -404,6 +404,10 @@ public interface ExtensionsService {
 }
 ----
 
+CAUTION: When configuring the REST client to use `RestResponse` as the return type,
+you need to disable the xref:rest-client.adoc#disabling-the-default-mapper[Quarkus REST client default exception mapper],
+so that no `WebApplicationException` will be thrown when the response status code is not in the successful range (2xx).
+
 NOTE: You can also use the Jakarta REST type link:{jaxrsapi}/jakarta/ws/rs/core/Response.html[`Response`] but it is
 not strongly typed to your entity.
 

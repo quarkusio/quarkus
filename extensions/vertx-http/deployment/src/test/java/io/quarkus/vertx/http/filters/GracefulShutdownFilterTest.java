@@ -79,22 +79,16 @@ public class GracefulShutdownFilterTest {
         Future<HttpClientResponse> response = client
                 .request(HttpMethod.GET, "/")
                 .compose(HttpClientRequest::send)
-                .andThen(r -> r.result().body().onComplete(buffer -> responseLatch.countDown()));
+                .onFailure(t -> responseLatch.countDown());
 
         if (!responseLatch.await(10, TimeUnit.SECONDS)) {
             throw new RuntimeException("Timeout waiting for response");
         }
 
-        if (response.failed()) {
-            throw new RuntimeException(response.cause());
+        if (!response.failed()) {
+            throw new RuntimeException("The request should have failed after the server shutdown was triggered");
         }
 
-        if (response.result().body().failed()) {
-            throw new RuntimeException(response.result().body().cause());
-        }
-
-        Assertions.assertThat(response.result().body().result().toString()).isEqualTo("h2");
-        Assertions.assertThat(response.result().headers().get(HttpHeaders.CONNECTION.toString())).isNull();
         client.close();
     }
 

@@ -2062,6 +2062,46 @@ public class TestEndpoint {
 
     @WithTransaction
     @GET
+    @Path("projection-aggregate-function")
+    public Uni<String> testProjectionWithAggregateFunction() {
+        // Clean up and setup test data
+        return Cat.deleteAll()
+                .chain(() -> CatOwner.deleteAll())
+                .chain(() -> {
+                    CatOwner owner1 = new CatOwner("Owner1");
+                    return owner1.persist()
+                            .chain(() -> {
+                                CatOwner owner2 = new CatOwner("Owner2");
+                                return owner2.persist()
+                                        .chain(() -> {
+                                            Cat cat1 = new Cat("Cat1", owner1, 5.0);
+                                            return cat1.persist();
+                                        })
+                                        .chain(() -> {
+                                            Cat cat2 = new Cat("Cat2", owner1, 7.0);
+                                            return cat2.persist();
+                                        })
+                                        .chain(() -> {
+                                            Cat cat3 = new Cat("Cat3", owner2, 3.0);
+                                            return cat3.persist();
+                                        });
+                            });
+                })
+                .chain(() -> Cat.find("FROM Cat c GROUP BY c.owner ORDER BY c.owner.name")
+                        .project(CatOwnerWeightDto.class)
+                        .list())
+                .invoke(results -> {
+                    Assertions.assertEquals(2, results.size());
+                    Assertions.assertEquals("Owner1", results.get(0).ownerName());
+                    Assertions.assertEquals(12.0, results.get(0).totalWeight());
+                    Assertions.assertEquals("Owner2", results.get(1).ownerName());
+                    Assertions.assertEquals(3.0, results.get(1).totalWeight());
+                })
+                .replaceWith("OK");
+    }
+
+    @WithTransaction
+    @GET
     @Path("model3")
     public Uni<String> testModel3() {
         return Person.count()

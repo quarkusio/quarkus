@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.quarkus.enforcer.test</groupId>
+    <artifactId>dependency-alignment-bom-test</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <properties>
+        <!-- Use a real Hibernate ORM version that exists in Maven Central -->
+        <hibernate-orm.version>6.4.0.Final</hibernate-orm.version>
+
+        <!-- These versions should match what's in hibernate-platform:6.4.0.Final -->
+        <bytebuddy.version>1.14.0</bytebuddy.version> <!-- Wrong: should be 1.14.7 -->
+        <antlr.version>4.10.1</antlr.version> <!-- Wrong: should be 4.13.0 -->
+        <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version> <!-- Correct: matches hibernate-platform -->
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>net.bytebuddy</groupId>
+                <artifactId>byte-buddy</artifactId>
+                <version>${bytebuddy.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.antlr</groupId>
+                <artifactId>antlr4</artifactId>
+                <version>${antlr.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.persistence</groupId>
+                <artifactId>jakarta.persistence-api</artifactId>
+                <version>${jakarta.persistence-api.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>@enforcer-api.version@</version>
+                <executions>
+                    <execution>
+                        <id>test-bom-alignment</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <dependencyAlignmentRule implementation="io.quarkus.enforcer.DependencyAlignmentRule">
+                                    <referenceArtifact>org.hibernate.orm:hibernate-platform:${hibernate-orm.version}</referenceArtifact>
+                                    <dependencies>
+                                        <dependency>
+                                            <artifact>net.bytebuddy:byte-buddy</artifact>
+                                        </dependency>
+                                        <dependency>
+                                            <artifact>org.antlr:antlr4</artifact>
+                                        </dependency>
+                                        <dependency>
+                                            <artifact>jakarta.persistence:jakarta.persistence-api</artifact>
+                                        </dependency>
+                                    </dependencies>
+                                </dependencyAlignmentRule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>@project.groupId@</groupId>
+                        <artifactId>@project.artifactId@</artifactId>
+                        <version>@project.version@</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        </plugins>
+    </build>
+</project>

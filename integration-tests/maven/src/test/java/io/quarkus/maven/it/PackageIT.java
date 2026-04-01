@@ -7,8 +7,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -217,6 +220,35 @@ public class PackageIT extends MojoTestBase {
     }
 
     @Test
+    public void testUberJarServiceFileConcatenation()
+            throws MavenInvocationException, IOException, InterruptedException {
+        testDir = initProject("projects/uberjar-otel-services-check");
+
+        Properties p = new Properties();
+        p.setProperty("quarkus.package.jar.type", "uber-jar");
+
+        running = new RunningInvoker(testDir, false);
+        final MavenProcessInvocationResult result = running.execute(List.of("package", "-DskipTests"),
+                Map.of(), p);
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+
+        final File targetDir = getTargetDir();
+        List<File> jars = getFilesEndingWith(targetDir, ".jar");
+        assertThat(jars).hasSize(1);
+
+        String serviceFilePath = "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider";
+        List<String> serviceEntries = getServiceFileEntries(jars.get(0), serviceFilePath);
+
+        assertThat(serviceEntries)
+                .contains("io.quarkus.opentelemetry.runtime.metrics.spi.MetricsExporterCDIProvider",
+                        "io.opentelemetry.exporter.otlp.internal.OtlpMetricExporterProvider");
+        // verify no blank lines (which would indicate improper concatenation)
+        for (String entry : serviceEntries) {
+            assertThat(entry).isNotBlank();
+        }
+    }
+
+    @Test
     public void testPackageWorksWhenUberjarIsTrueJarPackaging()
             throws MavenInvocationException, IOException, InterruptedException {
         testDir = initProject("projects/uberjar-check-jar-packaging");
@@ -224,6 +256,18 @@ public class PackageIT extends MojoTestBase {
         createAndVerifyUberJarJarPackaging();
         // ensure that subsequent package without clean also works
         createAndVerifyUberJarJarPackaging();
+    }
+
+    /**
+     * Make sure the build works with jgitver-maven-plugin updating the project version
+     * and storing modified POMs in the tmp directory.
+     */
+    @Test
+    public void testJGitVerMavenPlugin() throws Exception {
+        testDir = initProject("projects/jgitver-maven-plugin");
+        running = new RunningInvoker(testDir, false);
+        final MavenProcessInvocationResult result = running.execute(List.of("package"), Map.of());
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
     }
 
     private void createAndVerifyUberJar() throws IOException, MavenInvocationException, InterruptedException {
@@ -514,6 +558,22 @@ public class PackageIT extends MojoTestBase {
             while ((e = zis.getNextEntry()) != null) {
                 zis.closeEntry();
             }
+        }
+    }
+
+    private List<String> getServiceFileEntries(File jar, String serviceFilePath) throws IOException {
+        try (JarFile jarFile = new JarFile(jar)) {
+            ZipEntry entry = jarFile.getEntry(serviceFilePath);
+            assertThat(entry).as("Service file %s should exist in the uber jar", serviceFilePath).isNotNull();
+            List<String> lines = new ArrayList<>();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(jarFile.getInputStream(entry), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    lines.add(line);
+                }
+            }
+            return lines;
         }
     }
 }

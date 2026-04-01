@@ -873,7 +873,7 @@ public class SmallRyeOpenApiProcessor {
 
     private List<String> getPermissionsAllowedMethodReferences(OpenApiSecurityTransformer securityTransformer) {
         return securityTransformer
-                .getAnnotations(DotName.createSimple(PermissionsAllowed.class))
+                .getAnnotationsWithRepeatable(DotName.createSimple(PermissionsAllowed.class))
                 .stream()
                 .flatMap(t -> getMethods(t, securityTransformer.getIndex()))
                 .map(e -> createUniqueMethodReference(e.getKey().classInfo(), e.getKey().method()))
@@ -1559,6 +1559,18 @@ public class SmallRyeOpenApiProcessor {
             }
 
             @Override
+            public Collection<AnnotationInstance> getAnnotationsWithRepeatable(DotName securityAnnotationName) {
+                if (securityTransformer != null) {
+                    return securityTransformer.getAnnotationsWithRepeatable(securityAnnotationName);
+                }
+                // the annotation definition may not be in the index if the security extension is not on the classpath
+                if (index.getClassByName(securityAnnotationName) == null) {
+                    return Collections.emptyList();
+                }
+                return index.getAnnotationsWithRepeatable(securityAnnotationName, index);
+            }
+
+            @Override
             public IndexView getIndex() {
                 return index;
             }
@@ -1568,6 +1580,8 @@ public class SmallRyeOpenApiProcessor {
     private interface OpenApiSecurityTransformer {
 
         Collection<AnnotationInstance> getAnnotations(DotName securityAnnotationName);
+
+        Collection<AnnotationInstance> getAnnotationsWithRepeatable(DotName securityAnnotationName);
 
         IndexView getIndex();
 

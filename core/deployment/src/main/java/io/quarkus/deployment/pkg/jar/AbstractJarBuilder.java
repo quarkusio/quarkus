@@ -7,7 +7,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -151,7 +150,10 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
                 if (Files.isDirectory(pathEntry.getValue())) {
                     archiveCreator.addDirectory(pathEntry.getKey());
                 } else {
-                    archiveCreator.addFile(pathEntry.getValue(), pathEntry.getKey());
+                    // it's an expected behavior that there might be already an entry for
+                    // an application file as transformed classes have been added first
+                    // and should take precedence
+                    archiveCreator.addFileIfNotExists(pathEntry.getValue(), pathEntry.getKey());
                 }
             }
         } catch (RuntimeException re) {
@@ -163,22 +165,32 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
         }
     }
 
+    /**
+     * Copy application content to the archive.
+     * <p>
+     * The order of operations is important here: higher priority content is added first
+     * so that it takes precedence over lower priority content (first-write-wins in the archive creator).
+     * <p>
+     * Note: concatenated entries (services, etc.) are collected into a map but NOT written to the archive.
+     * Callers are responsible for writing them after all sources have been collected
+     * (see {@link #writeConcatenatedEntries(ArchiveCreator, Map)}).
+     */
     protected void copyApplicationContent(ArchiveCreator archiveCreator,
             Map<String, List<byte[]>> concatenatedEntries,
             Predicate<String> ignoredEntriesPredicate)
             throws IOException {
 
-        // Collect all transformed file names so we skip the originals during copyFiles.
-        // The transformed versions are added later in this method and should replace the originals.
-        Predicate<String> combinedIgnorePredicate = createCombinedIgnorePredicate(ignoredEntriesPredicate);
+        // transformed classes first (highest priority - these replace the original classes)
+        for (Set<TransformedClassesBuildItem.TransformedClass> transformed : transformedClasses
+                .getTransformedClassesByJar().values()) {
+            for (TransformedClassesBuildItem.TransformedClass i : transformed) {
+                if (i.getData() != null) {
+                    archiveCreator.addFile(i.getData(), i.getFileName());
+                }
+            }
+        }
 
-        // the order of operations is important here as we override elements in order
-        copyFiles(applicationArchives.getRootArchive(), archiveCreator, concatenatedEntries, combinedIgnorePredicate);
-
-        //TODO: this is probably broken in gradle
-        //        if (Files.exists(augmentOutcome.getConfigDir())) {
-        //            copyFiles(augmentOutcome.getConfigDir(), runnerZipFs, services);
-        //        }
+        // then, generated classes and resources
         for (GeneratedClassBuildItem i : generatedClasses) {
             String fileName = fromClassNameToResourceName(i.internalName());
             archiveCreator.addFile(i.getClassData(), fileName, ArchiveCreator.CURRENT_APPLICATION);
@@ -195,30 +207,15 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
             archiveCreator.addFile(i.getData(), i.getName(), ArchiveCreator.CURRENT_APPLICATION);
         }
 
-        for (Set<TransformedClassesBuildItem.TransformedClass> transformed : transformedClasses
-                .getTransformedClassesByJar().values()) {
-            for (TransformedClassesBuildItem.TransformedClass i : transformed) {
-                if (i.getData() != null) {
-                    archiveCreator.addFile(i.getData(), i.getFileName());
-                }
-            }
-        }
+        // then the root archive files, note that in the case of Uberjars, dependencies will be added last
+        copyFiles(applicationArchives.getRootArchive(), archiveCreator, concatenatedEntries, ignoredEntriesPredicate);
+    }
 
+    protected static void writeConcatenatedEntries(ArchiveCreator archiveCreator,
+            Map<String, List<byte[]>> concatenatedEntries) throws IOException {
         for (Map.Entry<String, List<byte[]>> entry : concatenatedEntries.entrySet()) {
             archiveCreator.addFile(entry.getValue(), entry.getKey());
         }
-    }
-
-    private Predicate<String> createCombinedIgnorePredicate(Predicate<String> ignoredEntriesPredicate) {
-        Set<String> transformedFileNames = transformedClasses.getTransformedClassesByJar().values()
-                .stream()
-                .flatMap(Collection::stream)
-                .filter(tc -> tc.getData() != null)
-                .map(TransformedClassesBuildItem.TransformedClass::getFileName)
-                .collect(Collectors.toSet());
-        return transformedFileNames.isEmpty()
-                ? ignoredEntriesPredicate
-                : path -> ignoredEntriesPredicate.test(path) || transformedFileNames.contains(path);
     }
 
     protected static Manifest createManifest(PackageConfig config, ResolvedDependency appArtifact,

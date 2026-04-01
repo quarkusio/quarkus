@@ -102,14 +102,31 @@ public class VertxCoreRecorder {
         this.shutdownConfig = shutdownConfig;
     }
 
+    public RuntimeValue<Runnable> registerVertxMdcContextLocal() {
+        // Force the initialization of the VertxMDC class to register the context local
+        return new RuntimeValue<>(() -> VertxMDC.values());
+    }
+
+    public RuntimeValue<Runnable> registerVertxContextLocal() {
+        // Force the initialization of the VertxContext class to register the context local
+        return new RuntimeValue<>(() -> VertxContext.isOnDuplicatedContext());
+    }
+
     public Supplier<Vertx> configureVertx(LaunchMode launchMode, ShutdownContext shutdown,
             List<Consumer<VertxOptions>> customizers, List<VertxServiceProvider> vertxServiceProviders,
-            List<VerticleFactory> verticleFactories, ExecutorService executorProxy) {
+            List<VerticleFactory> verticleFactories, ExecutorService executorProxy,
+            List<RuntimeValue<Runnable>> contextLocalRegistrations) {
         // The wrapper previously here to prevent the executor to be shutdown prematurely is moved to higher level to the io.quarkus.runtime.ExecutorRecorder
         QuarkusExecutorFactory.sharedExecutor = executorProxy;
+
+        // Register the context local, must be done before the Vert.x initialization.
+        List<Runnable> registrations = contextLocalRegistrations.stream()
+                .map(RuntimeValue::getValue)
+                .toList();
+
         if (launchMode != LaunchMode.DEVELOPMENT) {
             vertx = new VertxSupplier(launchMode, vertxConfig.getValue(), customizers, threadPoolConfig.getValue(), shutdown,
-                    vertxServiceProviders, verticleFactories);
+                    vertxServiceProviders, verticleFactories, registrations);
             // we need this to be part of the last shutdown tasks because closing it early (basically before Arc)
             // could cause problem to beans that rely on Vert.x and contain shutdown tasks
             shutdown.addLastShutdownTask(new Runnable() {
@@ -123,7 +140,7 @@ public class VertxCoreRecorder {
         } else {
             if (vertx == null) {
                 vertx = new VertxSupplier(launchMode, vertxConfig.getValue(), customizers, threadPoolConfig.getValue(),
-                        shutdown, vertxServiceProviders, verticleFactories);
+                        shutdown, vertxServiceProviders, verticleFactories, registrations);
             } else if (vertx.v != null) {
                 tryCleanTccl();
             }
@@ -215,7 +232,7 @@ public class VertxCoreRecorder {
     public static Vertx initialize(VertxConfiguration conf, VertxOptionsCustomizer customizer,
             ThreadPoolConfig threadPoolConfig, ShutdownContext shutdown,
             LaunchMode launchMode, List<VertxServiceProvider> vertxServiceProviders,
-            List<VerticleFactory> verticleFactories) {
+            List<VerticleFactory> verticleFactories, List<Runnable> contextLocalRegistrations) {
 
         VertxOptions options = new VertxOptions();
 
@@ -228,11 +245,10 @@ public class VertxCoreRecorder {
             customizer.customize(options);
         }
 
-        // Preload locals
-        // Just touch them to preload the class
-        // TODO Find a better approach.
-        VertxContext.isOnDuplicatedContext();
-        VertxMDC.values();
+        // Run context local registrations before creating the Vert.x instance
+        for (Runnable registration : contextLocalRegistrations) {
+            registration.run();
+        }
 
         Vertx vertx;
 
@@ -630,7 +646,7 @@ public class VertxCoreRecorder {
 
     public static Supplier<Vertx> recoverFailedStart(VertxConfiguration config, ThreadPoolConfig threadPoolConfig) {
         return vertx = new VertxSupplier(LaunchMode.DEVELOPMENT, config, Collections.emptyList(), threadPoolConfig, null,
-                List.of(), List.of());
+                List.of(), List.of(), List.of());
 
     }
 
@@ -649,12 +665,14 @@ public class VertxCoreRecorder {
         final ShutdownContext shutdown;
         final List<VertxServiceProvider> vertxServiceProviders;
         final List<VerticleFactory> verticleFactories;
+        final List<Runnable> contextLocalRegistrations;
         Vertx v;
 
         VertxSupplier(LaunchMode launchMode, VertxConfiguration config, List<Consumer<VertxOptions>> customizers,
                 ThreadPoolConfig threadPoolConfig,
                 ShutdownContext shutdown,
-                List<VertxServiceProvider> vertxServiceProviders, List<VerticleFactory> verticleFactories) {
+                List<VertxServiceProvider> vertxServiceProviders, List<VerticleFactory> verticleFactories,
+                List<Runnable> contextLocalRegistrations) {
             this.launchMode = launchMode;
             this.config = config;
             this.customizer = new VertxOptionsCustomizer(customizers);
@@ -662,13 +680,14 @@ public class VertxCoreRecorder {
             this.shutdown = shutdown;
             this.vertxServiceProviders = vertxServiceProviders;
             this.verticleFactories = verticleFactories;
+            this.contextLocalRegistrations = contextLocalRegistrations;
         }
 
         @Override
         public synchronized Vertx get() {
             if (v == null) {
                 v = initialize(config, customizer, threadPoolConfig, shutdown, launchMode, vertxServiceProviders,
-                        verticleFactories);
+                        verticleFactories, contextLocalRegistrations);
             }
             return v;
         }

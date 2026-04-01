@@ -52,11 +52,13 @@ import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.mutiny.deployment.MutinyRuntimeInitBuildItem;
 import io.quarkus.netty.deployment.EventLoopSupplierBuildItem;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.VertxOptionsCustomizer;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.VertxLogDelegateFactory;
 import io.quarkus.vertx.core.runtime.context.SafeVertxContextInterceptor;
 import io.quarkus.vertx.deployment.VertxBuildConfig;
+import io.quarkus.vertx.deployment.spi.ContextLocalRegistrationBuildItem;
 import io.quarkus.vertx.mdc.provider.LateBoundMDCProvider;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
@@ -132,6 +134,14 @@ class VertxCoreProcessor {
     }
 
     @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void registerInternalContextLocals(VertxCoreRecorder recorder,
+            BuildProducer<ContextLocalRegistrationBuildItem> registrations) {
+        registrations.produce(new ContextLocalRegistrationBuildItem(recorder.registerVertxMdcContextLocal()));
+        registrations.produce(new ContextLocalRegistrationBuildItem(recorder.registerVertxContextLocal()));
+    }
+
+    @BuildStep
     @Produce(ServiceStartBuildItem.class)
     @Record(value = ExecutionTime.RUNTIME_INIT)
     CoreVertxBuildItem build(
@@ -139,6 +149,7 @@ class VertxCoreProcessor {
             LaunchModeBuildItem launchMode,
             ShutdownContextBuildItem shutdown,
             List<VertxOptionsConsumerBuildItem> vertxOptionsConsumers,
+            List<ContextLocalRegistrationBuildItem> contextLocalRegistrations,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<EventLoopSupplierBuildItem> eventLoops,
             ExecutorBuildItem executorBuildItem,
@@ -152,12 +163,17 @@ class VertxCoreProcessor {
                 .map(VertxOptionsConsumerBuildItem::getConsumer)
                 .toList();
 
+        List<RuntimeValue<Runnable>> registrations = contextLocalRegistrations.stream()
+                .map(ContextLocalRegistrationBuildItem::getRegistration)
+                .toList();
+
         // resolve the services at build time
         List<VertxServiceProvider> vertxServiceProviders = loadServices(VertxServiceProvider.class);
         List<VerticleFactory> verticleFactories = loadServices(VerticleFactory.class);
 
         Supplier<Vertx> vertx = recorder.configureVertx(launchMode.getLaunchMode(), shutdown, consumers,
-                vertxServiceProviders, verticleFactories, executorBuildItem.getExecutorProxy());
+                vertxServiceProviders, verticleFactories, executorBuildItem.getExecutorProxy(),
+                registrations);
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(Vertx.class)
                 .types(Vertx.class)
                 .scope(Singleton.class)

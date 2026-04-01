@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -64,12 +65,13 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
     private static final String INIT_CONVERTER_FIELD_NAME = "__quarkus_converter__";
     private static final String INJECT_METHOD_NAME = "__quarkus_rest_inject";
 
-    private final Map<FieldInfo, ServerIndexedParameter> fieldExtractors;
+    private final LinkedHashMap<FieldInfo, ServerIndexedParameter> fieldExtractors;
     private final boolean superTypeIsInjectable;
     private final boolean requireCreateBeanParams;
     private final IndexView indexView;
 
-    public ClassInjectorTransformer(Map<FieldInfo, ServerIndexedParameter> fieldExtractors, boolean superTypeIsInjectable,
+    public ClassInjectorTransformer(LinkedHashMap<FieldInfo, ServerIndexedParameter> fieldExtractors,
+            boolean superTypeIsInjectable,
             boolean requireCreateBeanParams, IndexView indexView) {
         this.fieldExtractors = fieldExtractors;
         this.superTypeIsInjectable = superTypeIsInjectable;
@@ -92,7 +94,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
         }
 
         // Collect part types for multipart PartType parameters
-        Map<FieldInfo, ServerIndexedParameter> partTypes = new HashMap<>();
+        LinkedHashMap<FieldInfo, ServerIndexedParameter> partTypes = new LinkedHashMap<>();
         for (Entry<FieldInfo, ServerIndexedParameter> entry : fieldExtractors.entrySet()) {
             FieldInfo fieldInfo = entry.getKey();
             ServerIndexedParameter extractor = entry.getValue();

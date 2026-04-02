@@ -113,7 +113,6 @@ public class ContinuousTestingProcessor {
                         throw new RuntimeException(e);
                     }
                 })
-                .enableMcpFunctionByDefault()
                 .build();
     }
 
@@ -139,7 +138,6 @@ public class ContinuousTestingProcessor {
                         throw new RuntimeException(e);
                     }
                 })
-                .enableMcpFunctionByDefault()
                 .build();
     }
 
@@ -160,7 +158,6 @@ public class ContinuousTestingProcessor {
                         throw new RuntimeException(e);
                     }
                 })
-                .enableMcpFunctionByDefault()
                 .build();
     }
 
@@ -262,7 +259,6 @@ public class ContinuousTestingProcessor {
                         throw new RuntimeException(e);
                     }
                 })
-                .enableMcpFunctionByDefault()
                 .build();
     }
 
@@ -282,7 +278,6 @@ public class ContinuousTestingProcessor {
         actions.actionBuilder()
                 .methodName("getTestResults")
                 .description("Get the results of a Continuous testing test run")
-                .enableMcpFunctionByDefault()
                 .function(ignored -> {
                     TestRunResults continuousTestingResults = continuousTestingResults(launchModeBuildItem);
                     if (continuousTestingResults != null) {

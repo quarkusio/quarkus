@@ -724,6 +724,21 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         return ret;
     }
 
+    /**
+     * Compile and detect changed application and test classes for one-shot test execution.
+     * Returns a merged ClassScanResult, or null if no changes were detected.
+     */
+    public ClassScanResult checkForChangedClassesForTests() {
+        ClassScanResult appChanges = checkForChangedClasses(compiler, DevModeContext.ModuleInfo::getMain, false, test, true);
+        ClassScanResult testChanges = new ClassScanResult();
+        if (testSupport != null && testSupport.getCompiler() != null) {
+            testChanges = checkForChangedClasses(testSupport.getCompiler(),
+                    s -> s.getTest().orElse(DevModeContext.EMPTY_COMPILATION_UNIT), false, test, true);
+        }
+        ClassScanResult merged = ClassScanResult.merge(testChanges, appChanges);
+        return merged.isChanged() ? merged : null;
+    }
+
     private void collectRecompilationTargets(DotName changedDependency, Set<DotName> knownRecompilationTargets) {
         Deque<DotName> toResolve = new ArrayDeque<>();
         toResolve.add(changedDependency);

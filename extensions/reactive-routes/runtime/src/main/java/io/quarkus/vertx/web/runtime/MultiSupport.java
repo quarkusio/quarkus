@@ -13,7 +13,6 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import io.vertx.ext.web.RoutingContext;
 
-@SuppressWarnings("ReactiveStreamsSubscriberImplementation")
 public class MultiSupport {
 
     private MultiSupport() {
@@ -44,7 +43,7 @@ public class MultiSupport {
     }
 
     public static void subscribeString(Multi<String> multi, RoutingContext rc) {
-        subscribeBuffer(multi.map(s -> Buffer.buffer(s)), rc);
+        subscribeBuffer(multi.map(Buffer::buffer), rc);
     }
 
     private static void onWriteDone(Subscription subscription, AsyncResult<Void> ar, RoutingContext rc) {
@@ -69,7 +68,7 @@ public class MultiSupport {
 
             @Override
             public void onNext(Buffer item) {
-                response.write(item, new Handler<AsyncResult<Void>>() {
+                response.write(item).onComplete(new Handler<AsyncResult<Void>>() {
                     @Override
                     public void handle(AsyncResult<Void> ar) {
                         onWriteDone(upstream, ar, rc);
@@ -90,15 +89,6 @@ public class MultiSupport {
                 response.end();
             }
         });
-    }
-
-    public static void subscribeMutinyBuffer(Multi<io.vertx.mutiny.core.buffer.Buffer> multi, RoutingContext rc) {
-        subscribeBuffer(multi.map(new Function<io.vertx.mutiny.core.buffer.Buffer, Buffer>() {
-            @Override
-            public Buffer apply(io.vertx.mutiny.core.buffer.Buffer b) {
-                return b.getDelegate();
-            }
-        }), rc);
     }
 
     public static void subscribeObject(Multi<Object> multi, RoutingContext rc) {

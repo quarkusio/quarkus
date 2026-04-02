@@ -27,7 +27,6 @@ public class CompletionStageRouteTest {
     public void testCsRoute() {
         when().get("/hello").then().statusCode(200).body(is("Hello world!"));
         when().get("/hello-buffer").then().statusCode(200).body(is("Buffer"));
-        when().get("/hello-mutiny-buffer").then().statusCode(200).body(is("Mutiny Buffer"));
 
         when().get("/person").then().statusCode(200)
                 .body("name", is("neo"))
@@ -57,11 +56,6 @@ public class CompletionStageRouteTest {
         @Route(path = "hello-buffer")
         CompletionStage<Buffer> helloWithBuffer(RoutingContext context) {
             return CompletableFuture.completedFuture(Buffer.buffer("Buffer"));
-        }
-
-        @Route(path = "hello-mutiny-buffer")
-        CompletionStage<io.vertx.mutiny.core.buffer.Buffer> helloWithMutinyBuffer(RoutingContext context) {
-            return CompletableFuture.completedFuture(io.vertx.mutiny.core.buffer.Buffer.buffer("Mutiny Buffer"));
         }
 
         @Route(path = "failure")

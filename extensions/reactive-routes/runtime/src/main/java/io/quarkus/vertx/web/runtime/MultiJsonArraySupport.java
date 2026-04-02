@@ -13,7 +13,6 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import io.vertx.ext.web.RoutingContext;
 
-@SuppressWarnings("ReactiveStreamsSubscriberImplementation")
 public class MultiJsonArraySupport {
 
     private MultiJsonArraySupport() {
@@ -57,7 +56,7 @@ public class MultiJsonArraySupport {
                 } else {
                     toBeWritten = Buffer.buffer(",").appendBuffer(item);
                 }
-                response.write(toBeWritten, new Handler<AsyncResult<Void>>() {
+                response.write(toBeWritten).onComplete(new Handler<AsyncResult<Void>>() {
                     @Override
                     public void handle(AsyncResult<Void> ar) {
                         onWriteDone(upstream, ar, rc);

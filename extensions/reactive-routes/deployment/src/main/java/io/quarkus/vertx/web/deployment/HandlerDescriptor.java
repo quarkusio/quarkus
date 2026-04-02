@@ -106,11 +106,6 @@ class HandlerDescriptor {
         return type != null && type.name().equals(DotNames.BUFFER);
     }
 
-    boolean isPayloadMutinyBuffer() {
-        Type type = getPayloadType();
-        return type != null && type.name().equals(DotNames.MUTINY_BUFFER);
-    }
-
     boolean isFailureHandler() {
         return failureHandler;
     }

@@ -17,6 +17,7 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
@@ -176,6 +177,10 @@ public abstract class JacksonCodeGenerator {
         }
     }
 
+    private static final DotName COLLECTION_NAME = DotName.createSimple(Collection.class);
+    private static final DotName SET_NAME = DotName.createSimple(Set.class);
+    private static final DotName MAP_NAME = DotName.createSimple(Map.class);
+
     protected FieldKind registerTypeToBeGenerated(Type fieldType, String typeName) {
         if (fieldType instanceof TypeVariable) {
             return FieldKind.TYPE_VARIABLE;
@@ -186,17 +191,16 @@ public abstract class JacksonCodeGenerator {
         }
         if (fieldType instanceof ParameterizedType pType) {
             if (pType.arguments().size() == 1) {
-                if (typeName.equals("java.util.List") || typeName.equals("java.util.Collection")
-                        || typeName.equals("java.lang.Iterable")) {
-                    registerTypeToBeGenerated(pType.arguments().get(0));
-                    return FieldKind.LIST;
-                }
-                if (typeName.equals("java.util.Set")) {
+                if (isAssignableTo(typeName, SET_NAME)) {
                     registerTypeToBeGenerated(pType.arguments().get(0));
                     return FieldKind.SET;
                 }
+                if (typeName.equals("java.lang.Iterable") || isAssignableTo(typeName, COLLECTION_NAME)) {
+                    registerTypeToBeGenerated(pType.arguments().get(0));
+                    return FieldKind.LIST;
+                }
             }
-            if (pType.arguments().size() == 2 && typeName.equals("java.util.Map")) {
+            if (pType.arguments().size() == 2 && isAssignableTo(typeName, MAP_NAME)) {
                 registerTypeToBeGenerated(pType.arguments().get(0));
                 registerTypeToBeGenerated(pType.arguments().get(1));
                 return FieldKind.MAP;
@@ -204,6 +208,27 @@ public abstract class JacksonCodeGenerator {
         }
         registerTypeToBeGenerated(typeName);
         return FieldKind.OBJECT;
+    }
+
+    private boolean isAssignableTo(String typeName, DotName targetName) {
+        if (typeName.equals(targetName.toString())) {
+            return true;
+        }
+        ClassInfo classInfo = jandexIndex.getClassByName(typeName);
+        if (classInfo == null) {
+            return false;
+        }
+        // check superclass
+        if (classInfo.superName() != null && isAssignableTo(classInfo.superName().toString(), targetName)) {
+            return true;
+        }
+        // check interfaces
+        for (DotName iface : classInfo.interfaceNames()) {
+            if (isAssignableTo(iface.toString(), targetName)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void registerTypeToBeGenerated(Type type) {

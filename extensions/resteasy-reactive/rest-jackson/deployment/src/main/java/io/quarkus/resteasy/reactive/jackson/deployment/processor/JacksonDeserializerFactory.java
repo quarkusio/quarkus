@@ -31,8 +31,10 @@ import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.BeanProperty;
 import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
@@ -174,6 +176,10 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
  *                 case "content":
  *                     dataItem.setContent(context.readTreeAsValue(jsonNode, this.valueTypes[0]));
  *                     break;
+ *                 default:
+ *                     if (context.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)) {
+ *                         throw new JsonMappingException("Unrecognized field \"" + field + "\"");
+ *                     }
  *             }
  *         }
  *
@@ -285,8 +291,39 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 .invokeInterfaceMethod(ofMethod(Map.Entry.class, "getKey", Object.class), mapEntry);
         Switch.StringSwitch strSwitch = fieldReader.stringSwitch(fieldName);
 
-        return deserializeFields(deserData, deserData.methodCreator.getMethodParam(1), objHandle, fieldValue,
+        // save constructor field names before deserializeFields modifies the set
+        Set<String> ctorFields = Set.copyOf(deserData.constructorFields);
+
+        ResultHandle deserializationContext = deserData.methodCreator.getMethodParam(1);
+        boolean result = deserializeFields(deserData, deserializationContext, objHandle, fieldValue,
                 deserData.constructorFields, strSwitch);
+
+        // add no-op cases for constructor fields (already deserialized in createDeserializedObject)
+        for (String ctorField : ctorFields) {
+            strSwitch.caseOf(ctorField, bytecode -> {
+            });
+        }
+
+        strSwitch.defaultCase(bytecode -> {
+            ResultHandle failOnUnknown = bytecode.invokeVirtualMethod(
+                    ofMethod(DeserializationContext.class, "isEnabled", boolean.class, DeserializationFeature.class),
+                    deserializationContext,
+                    bytecode.readStaticField(FieldDescriptor.of(DeserializationFeature.class,
+                            "FAIL_ON_UNKNOWN_PROPERTIES", DeserializationFeature.class)));
+            BytecodeCreator trueBranch = bytecode.ifTrue(failOnUnknown).trueBranch();
+            ResultHandle message = trueBranch.invokeVirtualMethod(
+                    ofMethod(String.class, "concat", String.class, String.class),
+                    trueBranch.load("Unrecognized field \""),
+                    trueBranch.invokeVirtualMethod(
+                            ofMethod(String.class, "concat", String.class, String.class),
+                            trueBranch.checkCast(fieldName, String.class),
+                            trueBranch.load("\"")));
+            ResultHandle exception = trueBranch.newInstance(
+                    MethodDescriptor.ofConstructor(JsonMappingException.class, String.class), message);
+            trueBranch.throwException(exception);
+        });
+
+        return result;
     }
 
     private BranchResult iteratorHasNext(BytecodeCreator creator, ResultHandle iterator) {
@@ -418,8 +455,9 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 ResultHandle typeFactory = bytecode.invokeVirtualMethod(getTypeFactory, deserializationContext);
                 MethodDescriptor constructCollectionType = ofMethod(TypeFactory.class,
                         "constructCollectionType", CollectionType.class, Class.class, Class.class);
+                Class<?> concreteCollectionType = concreteCollectionType(fieldTypeName, fieldKind);
                 yield bytecode.invokeVirtualMethod(constructCollectionType, typeFactory,
-                        bytecode.loadClass(fieldKind == FieldKind.SET ? HashSet.class : ArrayList.class),
+                        bytecode.loadClass(concreteCollectionType),
                         bytecode.loadClass(listType.name().toString()));
             }
             case MAP -> {
@@ -443,6 +481,17 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         MethodDescriptor readTreeAsValue = ofMethod(DeserializationContext.class, "readTreeAsValue",
                 Object.class, JsonNode.class, fieldKind.isGeneric() ? JavaType.class : Class.class);
         return bytecode.invokeVirtualMethod(readTreeAsValue, deserializationContext, valueNode, typeHandle);
+    }
+
+    private static Class<?> concreteCollectionType(String fieldTypeName, FieldKind fieldKind) {
+        try {
+            Class<?> declared = Class.forName(fieldTypeName);
+            if (!declared.isInterface() && !Modifier.isAbstract(declared.getModifiers())) {
+                return declared;
+            }
+        } catch (ClassNotFoundException ignored) {
+        }
+        return fieldKind == FieldKind.SET ? HashSet.class : ArrayList.class;
     }
 
     private void writeValueToObject(ClassInfo classInfo, ResultHandle objHandle, FieldSpecs fieldSpecs,

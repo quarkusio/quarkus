@@ -33,6 +33,7 @@ public class SimpleJsonTest extends AbstractSimpleJsonTest {
                             .addAsResource(new StringAsset("admin-expression=admin\n" +
                                     "user-expression=user\n" +
                                     "birth-date-roles=alice,bob\n" +
+                                    "quarkus.jackson.fail-on-unknown-properties=true\n" +
                                     "quarkus.rest.jackson.optimization.enable-reflection-free-serializers=false\n"),
                                     "application.properties");
                 }

@@ -4,9 +4,11 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
@@ -24,6 +26,7 @@ import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.core.json.JsonWriteFeature;
@@ -597,4 +600,25 @@ public class SimpleJsonResource extends SuperClass<Person> {
         }
     }
 
+    public record GreetingRequest(@JsonProperty("name") String name) {
+    }
+
+    public record LinkedListBatchRequest(@JsonProperty("items") LinkedList<GreetingRequest> items) {
+    }
+
+    @POST
+    @Path("/linkedlist-batch")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String linkedListBatch(LinkedListBatchRequest request) {
+        String values = request.items().stream()
+                .map(GreetingRequest::name)
+                .collect(Collectors.joining(","));
+        return "{\"values\":\"" + values + "\"}";
+    }
+
+    @POST
+    @Path("/greeting")
+    public String greeting(GreetingRequest request) {
+        return "{\"message\":\"Hello " + request.name() + "\"}";
+    }
 }

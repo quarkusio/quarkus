@@ -228,7 +228,14 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
 
     @Override
     public Set<String> getContributors() {
-        return metadata.getContributors();
+        Set<String> contributors = metadata.getContributors();
+        if (contributors.isEmpty()) {
+            // Even with no entities, we need at least one contributor so that
+            // SchemaManagementToolCoordinator processes the configured schema actions
+            // (e.g. executing import.sql). See https://github.com/quarkusio/quarkus/issues/53413
+            return Set.of("no-entities");
+        }
+        return contributors;
     }
 
     //All methods from org.hibernate.engine.spi.Mapping, the parent of Metadata:

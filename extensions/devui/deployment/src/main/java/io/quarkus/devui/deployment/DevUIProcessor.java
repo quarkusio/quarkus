@@ -546,10 +546,9 @@ public class DevUIProcessor {
                         EnumSet<Usage> usage = EnumSet.noneOf(Usage.class);
                         AnnotationInstance jsonRpcUsageAnnotation = method.annotation(DotName.createSimple(JsonRpcUsage.class));
                         if (jsonRpcUsageAnnotation != null) {
-                            AnnotationInstance[] usageArray = jsonRpcUsageAnnotation.value().asNestedArray();
+                            String[] usageArray = jsonRpcUsageAnnotation.value().asEnumArray();
 
-                            for (AnnotationInstance usageInstance : usageArray) {
-                                String usageStr = usageInstance.value().asEnum();
+                            for (String usageStr : usageArray) {
                                 usage.add(Usage.valueOf(usageStr));
                             }
                         }

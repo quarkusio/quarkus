@@ -54,6 +54,7 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.RequestBody;
 import io.vertx.ext.web.RoutingContext;
 
 class Methods {
@@ -67,10 +68,11 @@ class Methods {
     static final MethodDesc REQUEST_GET_PARAM = MethodDesc.of(HttpServerRequest.class, "getParam", String.class, String.class);
     static final MethodDesc REQUEST_GET_HEADER = MethodDesc.of(HttpServerRequest.class, "getHeader",
             String.class, String.class);
-    static final MethodDesc GET_BODY = MethodDesc.of(RoutingContext.class, "getBody", Buffer.class);
-    static final MethodDesc GET_BODY_AS_STRING = MethodDesc.of(RoutingContext.class, "getBodyAsString", String.class);
-    static final MethodDesc GET_BODY_AS_JSON = MethodDesc.of(RoutingContext.class, "getBodyAsJson", JsonObject.class);
-    static final MethodDesc GET_BODY_AS_JSON_ARRAY = MethodDesc.of(RoutingContext.class, "getBodyAsJsonArray", JsonArray.class);
+    static final MethodDesc BODY = MethodDesc.of(RoutingContext.class, "body", RequestBody.class);
+    static final MethodDesc REQUEST_BODY_BUFFER = MethodDesc.of(RequestBody.class, "buffer", Buffer.class);
+    static final MethodDesc REQUEST_BODY_AS_STRING = MethodDesc.of(RequestBody.class, "asString", String.class);
+    static final MethodDesc REQUEST_BODY_AS_JSON_OBJECT = MethodDesc.of(RequestBody.class, "asJsonObject", JsonObject.class);
+    static final MethodDesc REQUEST_BODY_AS_JSON_ARRAY = MethodDesc.of(RequestBody.class, "asJsonArray", JsonArray.class);
     static final MethodDesc JSON_OBJECT_MAP_TO = MethodDesc.of(JsonObject.class, "mapTo", Object.class, Class.class);
     static final MethodDesc REQUEST_PARAMS = MethodDesc.of(HttpServerRequest.class, "params", MultiMap.class);
     static final MethodDesc REQUEST_HEADERS = MethodDesc.of(HttpServerRequest.class, "headers", MultiMap.class);
@@ -89,8 +91,6 @@ class Methods {
             void.class, Multi.class, RoutingContext.class);
     static final MethodDesc MULTI_SUBSCRIBE_BUFFER = MethodDesc.of(MultiSupport.class, "subscribeBuffer",
             void.class, Multi.class, RoutingContext.class);
-    static final MethodDesc MULTI_SUBSCRIBE_MUTINY_BUFFER = MethodDesc.of(MultiSupport.class, "subscribeMutinyBuffer",
-            void.class, Multi.class, RoutingContext.class);
     static final MethodDesc MULTI_SUBSCRIBE_OBJECT = MethodDesc.of(MultiSupport.class, "subscribeObject",
             void.class, Multi.class, RoutingContext.class);
 
@@ -98,8 +98,6 @@ class Methods {
     static final MethodDesc MULTI_SSE_SUBSCRIBE_STRING = MethodDesc.of(MultiSseSupport.class, "subscribeString",
             void.class, Multi.class, RoutingContext.class);
     static final MethodDesc MULTI_SSE_SUBSCRIBE_BUFFER = MethodDesc.of(MultiSseSupport.class, "subscribeBuffer",
-            void.class, Multi.class, RoutingContext.class);
-    static final MethodDesc MULTI_SSE_SUBSCRIBE_MUTINY_BUFFER = MethodDesc.of(MultiSseSupport.class, "subscribeMutinyBuffer",
             void.class, Multi.class, RoutingContext.class);
     static final MethodDesc MULTI_SSE_SUBSCRIBE_OBJECT = MethodDesc.of(MultiSseSupport.class, "subscribeObject",
             void.class, Multi.class, RoutingContext.class);
@@ -127,8 +125,6 @@ class Methods {
     static final MethodDesc END_WITH_BUFFER = MethodDesc.of(HttpServerResponse.class, "end", Future.class, Buffer.class);
     static final MethodDesc SET_STATUS = MethodDesc.of(HttpServerResponse.class, "setStatusCode",
             HttpServerResponse.class, Integer.TYPE);
-    static final MethodDesc MUTINY_GET_DELEGATE = MethodDesc.of(io.vertx.mutiny.core.buffer.Buffer.class, "getDelegate",
-            Buffer.class);
 
     static final MethodDesc JSON_ENCODE = MethodDesc.of(Json.class, "encode", String.class, Object.class);
 
@@ -200,7 +196,7 @@ class Methods {
     }
 
     static MethodDesc getEndMethodForContentType(HandlerDescriptor descriptor) {
-        if (descriptor.isPayloadBuffer() || descriptor.isPayloadMutinyBuffer()) {
+        if (descriptor.isPayloadBuffer()) {
             return END_WITH_BUFFER;
         }
         return END_WITH_STRING;

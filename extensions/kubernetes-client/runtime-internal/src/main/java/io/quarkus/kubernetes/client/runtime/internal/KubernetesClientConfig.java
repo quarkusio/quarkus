@@ -5,15 +5,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
-import io.smallrye.config.WithDefault;
 
 @ConfigMapping(prefix = "quarkus.kubernetes-client")
-@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
-public interface KubernetesClientBuildConfig {
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+public interface KubernetesClientConfig {
 
     /**
      * Whether the client should trust a self-signed certificate if so presented by the API server
@@ -24,12 +22,6 @@ public interface KubernetesClientBuildConfig {
      * URL of the Kubernetes API server
      */
     Optional<String> apiServerUrl();
-
-    /**
-     * Use api-server-url instead.
-     */
-    @Deprecated(forRemoval = true)
-    Optional<String> masterUrl();
 
     /**
      * Default namespace to use
@@ -153,17 +145,4 @@ public interface KubernetesClientBuildConfig {
      */
     Optional<List<String>> noProxy();
 
-    /**
-     * Enable the generation of the RBAC manifests. If enabled and no other role binding are provided using the properties
-     * `quarkus.kubernetes.rbac.`, it will generate a default role binding using the role "view" and the application
-     * service account.
-     */
-    @WithDefault("true")
-    boolean generateRbac();
-
-    /**
-     * Dev Services
-     */
-    @ConfigDocSection(generated = true)
-    KubernetesDevServicesBuildTimeConfig devservices();
 }

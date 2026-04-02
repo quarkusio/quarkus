@@ -5,7 +5,7 @@ import java.util.Map;
 import io.quarkus.redis.datasource.hash.ReactiveTransactionalHashCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveTransactionalHashCommandsImpl<K, F, V> extends AbstractTransactionalCommands
         implements ReactiveTransactionalHashCommands<K, F, V> {

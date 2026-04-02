@@ -27,7 +27,7 @@ import io.quarkus.redis.datasource.topk.ReactiveTransactionalTopKCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.quarkus.redis.datasource.value.ReactiveTransactionalValueCommands;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Command;
+import io.vertx.redis.client.Command;
 
 public class ReactiveTransactionalRedisDataSourceImpl implements ReactiveTransactionalRedisDataSource {
 
@@ -197,11 +197,5 @@ public class ReactiveTransactionalRedisDataSourceImpl implements ReactiveTransac
                     return r;
                 })
                 .replaceWithVoid();
-    }
-
-    @Override
-    public Uni<Void> execute(io.vertx.redis.client.Command command, String... args) {
-        nonNull(command, "command");
-        return execute(new Command(command), args);
     }
 }

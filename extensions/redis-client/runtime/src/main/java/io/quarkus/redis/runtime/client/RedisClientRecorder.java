@@ -31,10 +31,10 @@ import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.mutiny.redis.client.RedisAPI;
-import io.vertx.mutiny.redis.client.Request;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Request;
 
 @Recorder
 public class RedisClientRecorder {

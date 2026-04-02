@@ -3,7 +3,7 @@ package io.quarkus.redis.runtime.datasource;
 import io.quarkus.redis.datasource.set.ReactiveTransactionalSetCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveTransactionalSetCommandsImpl<K, V> extends AbstractTransactionalCommands
         implements ReactiveTransactionalSetCommands<K, V> {

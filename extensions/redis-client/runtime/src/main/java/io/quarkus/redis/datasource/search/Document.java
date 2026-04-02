@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import io.vertx.core.json.JsonObject;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 /**
  * Represents a document containing in the response of a {@code ft.search} command.

@@ -10,9 +10,9 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.redis.datasource.list.ListCommands;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
-import io.vertx.mutiny.redis.client.Command;
-import io.vertx.mutiny.redis.client.Request;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Request;
+import io.vertx.redis.client.Response;
 
 public class CustomCommandsTest extends DatasourceTestBase {
 

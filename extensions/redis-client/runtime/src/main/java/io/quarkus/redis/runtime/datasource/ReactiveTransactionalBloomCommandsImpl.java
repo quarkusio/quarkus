@@ -5,7 +5,7 @@ import io.quarkus.redis.datasource.bloom.BfReserveArgs;
 import io.quarkus.redis.datasource.bloom.ReactiveTransactionalBloomCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveTransactionalBloomCommandsImpl<K, V> extends AbstractTransactionalCommands
         implements ReactiveTransactionalBloomCommands<K, V> {

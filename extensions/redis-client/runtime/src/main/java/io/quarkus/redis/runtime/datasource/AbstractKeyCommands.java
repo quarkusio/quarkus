@@ -5,8 +5,8 @@ import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.positive;
 import static io.smallrye.mutiny.helpers.ParameterValidation.positiveOrZero;
-import static io.vertx.mutiny.redis.client.Command.EXPIRETIME;
-import static io.vertx.mutiny.redis.client.Command.PEXPIRETIME;
+import static io.vertx.redis.client.Command.EXPIRETIME;
+import static io.vertx.redis.client.Command.PEXPIRETIME;
 
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
@@ -20,8 +20,8 @@ import io.quarkus.redis.datasource.keys.ExpireArgs;
 import io.quarkus.redis.datasource.keys.RedisKeyNotFoundException;
 import io.quarkus.redis.datasource.keys.RedisValueType;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Command;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Response;
 
 class AbstractKeyCommands<K> extends AbstractRedisCommands {
 

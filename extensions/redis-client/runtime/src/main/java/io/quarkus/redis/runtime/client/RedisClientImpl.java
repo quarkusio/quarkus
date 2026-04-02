@@ -5,10 +5,10 @@ import java.util.List;
 
 import io.quarkus.redis.client.RedisClient;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.mutiny.redis.client.RedisAPI;
-import io.vertx.mutiny.redis.client.Request;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Request;
 import io.vertx.redis.client.Response;
 
 class RedisClientImpl implements RedisClient {
@@ -1053,11 +1053,7 @@ class RedisClientImpl implements RedisClient {
         return await(redisAPI.zunionstore(args));
     }
 
-    private Response await(Uni<io.vertx.mutiny.redis.client.Response> mutinyResponse) {
-        io.vertx.mutiny.redis.client.Response response = mutinyResponse.await().atMost(timeout);
-        if (response == null) {
-            return null;
-        }
-        return response.getDelegate();
+    private Response await(Uni<Response> response) {
+        return response.await().atMost(timeout);
     }
 }

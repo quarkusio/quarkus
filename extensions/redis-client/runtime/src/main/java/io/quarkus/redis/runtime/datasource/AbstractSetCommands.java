@@ -10,8 +10,8 @@ import java.util.List;
 import java.util.Set;
 
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Command;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Response;
 
 class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
 

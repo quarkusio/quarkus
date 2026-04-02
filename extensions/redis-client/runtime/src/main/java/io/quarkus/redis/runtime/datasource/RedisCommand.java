@@ -4,9 +4,9 @@ import java.util.List;
 
 import io.quarkus.redis.datasource.RedisCommandExtraArguments;
 import io.quarkus.redis.datasource.codecs.Codec;
-import io.vertx.mutiny.core.buffer.Buffer;
-import io.vertx.mutiny.redis.client.Command;
-import io.vertx.mutiny.redis.client.Request;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Request;
 
 public class RedisCommand {
 
@@ -83,10 +83,10 @@ public class RedisCommand {
     }
 
     public void putNullable(byte[] encoded) {
-        if (encoded == null) {
-            this.request.nullArg();
-        } else {
+        if (encoded != null) {
             this.request.arg(encoded);
+        } else {
+            this.request.arg("null");
         }
     }
 

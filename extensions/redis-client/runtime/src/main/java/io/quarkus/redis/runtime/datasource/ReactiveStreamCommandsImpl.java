@@ -24,7 +24,7 @@ import io.quarkus.redis.datasource.stream.XReadArgs;
 import io.quarkus.redis.datasource.stream.XReadGroupArgs;
 import io.quarkus.redis.datasource.stream.XTrimArgs;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 import io.vertx.redis.client.ResponseType;
 
 public class ReactiveStreamCommandsImpl<K, F, V> extends AbstractStreamCommands<K, F, V>

@@ -25,7 +25,7 @@ import io.quarkus.redis.datasource.timeseries.SampleGroup;
 import io.quarkus.redis.datasource.timeseries.SeriesSample;
 import io.quarkus.redis.datasource.timeseries.TimeSeriesRange;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 import io.vertx.redis.client.ResponseType;
 
 public class ReactiveTimeSeriesCommandsImpl<K> extends AbstractTimeSeriesCommands<K>

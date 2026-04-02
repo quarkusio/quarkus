@@ -3,7 +3,6 @@ package io.quarkus.redis.runtime.client;
 import java.util.List;
 
 import io.vertx.codegen.annotations.Nullable;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.redis.client.Redis;
@@ -35,46 +34,14 @@ public class ObservableRedis implements Redis {
     }
 
     @Override
-    public Redis connect(Handler<AsyncResult<RedisConnection>> handler) {
-        this.redis.connect(ar -> {
-            if (ar.failed()) {
-                handler.handle(Future.failedFuture(ar.cause()));
-            } else {
-                handler.handle(Future.succeededFuture(new ObservableRedisConnection(ar.result())));
-            }
-        });
-        return this;
-    }
-
-    @Override
-    public Redis send(Request command, Handler<AsyncResult<@Nullable Response>> onSend) {
-        long begin = System.nanoTime();
-        redis.send(command, ar -> {
-            report(System.nanoTime() - begin, ar.succeeded());
-            onSend.handle(ar);
-        });
-        return this;
-    }
-
-    @Override
-    public Redis batch(List<Request> commands, Handler<AsyncResult<List<@Nullable Response>>> onSend) {
-        long begin = System.nanoTime();
-        redis.batch(commands, ar -> {
-            report(System.nanoTime() - begin, ar.succeeded());
-            onSend.handle(ar);
-        });
-        return this;
-    }
-
-    @Override
     public Future<RedisConnection> connect() {
         return redis.connect()
                 .map(ObservableRedisConnection::new);
     }
 
     @Override
-    public void close() {
-        redis.close();
+    public Future<Void> close() {
+        return redis.close();
     }
 
     @Override

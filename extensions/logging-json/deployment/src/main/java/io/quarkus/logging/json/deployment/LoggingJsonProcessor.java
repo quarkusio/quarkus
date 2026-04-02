@@ -1,5 +1,7 @@
 package io.quarkus.logging.json.deployment;
 
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
@@ -8,6 +10,7 @@ import io.quarkus.deployment.builditem.LogFileFormatBuildItem;
 import io.quarkus.deployment.builditem.LogNamedHandlerFormatBuildItem;
 import io.quarkus.deployment.builditem.LogSocketFormatBuildItem;
 import io.quarkus.deployment.builditem.LogSyslogFormatBuildItem;
+import io.quarkus.logging.json.runtime.JsonProvider;
 import io.quarkus.logging.json.runtime.LoggingJsonRecorder;
 
 public final class LoggingJsonProcessor {
@@ -40,5 +43,10 @@ public final class LoggingJsonProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     public LogNamedHandlerFormatBuildItem setUpNamedFormatters(LoggingJsonRecorder recorder) {
         return new LogNamedHandlerFormatBuildItem(recorder.initializeNamedJsonLogging());
+    }
+
+    @BuildStep
+    void unremovableProviders(BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(JsonProvider.class));
     }
 }

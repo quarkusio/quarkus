@@ -1,16 +1,21 @@
 package io.quarkus.awt.it;
 
 import static io.quarkus.awt.it.enums.ColorSpaceEnum.CS_DEFAULT;
+import static java.awt.Font.PLAIN;
 import static java.awt.image.BufferedImage.TYPE_3BYTE_BGR;
 import static java.awt.image.BufferedImage.TYPE_BYTE_BINARY;
 import static javax.imageio.ImageWriteParam.MODE_DEFAULT;
 
 import java.awt.AlphaComposite;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.GraphicsEnvironment;
 import java.awt.Transparency;
 import java.awt.color.ColorSpace;
+import java.awt.font.FontRenderContext;
+import java.awt.font.LineBreakMeasurer;
+import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
 import java.awt.image.ComponentColorModel;
@@ -18,6 +23,8 @@ import java.awt.image.WritableRaster;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.AttributedCharacterIterator;
+import java.text.AttributedString;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
@@ -233,6 +240,27 @@ public class ImageResource {
     public Response fonts() {
         return Response.ok().entity(Arrays.toString(
                 GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames())).build();
+    }
+
+    /**
+     * Uses a layout that forces the initialization of sun.font.HBShaper.
+     */
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("/fonts-shaper")
+    public Response fontsShaper() {
+        // Devanagari, "नमस्ते" "Namastē, Hello..."
+        final String complexText = "Quarkus Mandrel \u0928\u092E\u0938\u094D\u0924\u0947";
+        final AttributedString attrStr = new AttributedString(complexText);
+        attrStr.addAttribute(TextAttribute.FONT, new Font("DejaVu Sans Mono X", PLAIN, 16));
+        final AttributedCharacterIterator paragraph = attrStr.getIterator();
+        final LineBreakMeasurer measurer = new LineBreakMeasurer(paragraph, new FontRenderContext(null, true, true));
+        // use it
+        measurer.setPosition(paragraph.getBeginIndex());
+        final int nextOffset = measurer.nextOffset(50.0f);
+        return Response
+                .ok("HBShaper invoked successfully. Computed next offset: " + nextOffset)
+                .build();
     }
 
     /**

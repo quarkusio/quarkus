@@ -12,7 +12,7 @@ import jakarta.interceptor.InvocationContext;
 
 import io.quarkus.arc.ArcInvocationContext;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
-import io.vertx.core.http.impl.HttpServerRequestInternal;
+import io.vertx.core.internal.http.HttpServerRequestInternal;
 import io.vertx.ext.web.RoutingContext;
 
 @SuppressWarnings("unused")

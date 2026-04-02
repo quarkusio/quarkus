@@ -110,14 +110,14 @@ public class VertxBlockingOutput implements VertxOutput {
     public CompletionStage<Void> writeNonBlocking(ByteBuf data, boolean last) {
         CompletableFuture<Void> ret = new CompletableFuture<>();
         if (last && data == null) {
-            request.response().end(handler(ret));
+            request.response().end().onComplete(handler(ret));
             return ret;
         }
         Buffer buffer = createBuffer(data);
         if (last) {
-            request.response().end(buffer, handler(ret));
+            request.response().end(buffer).onComplete(handler(ret));
         } else {
-            request.response().write(buffer, handler(ret));
+            request.response().write(buffer).onComplete(handler(ret));
         }
         //no need to free 'data', the write will handle this
         return ret;

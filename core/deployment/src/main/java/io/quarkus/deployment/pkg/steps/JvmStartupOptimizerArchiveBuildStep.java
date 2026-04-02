@@ -44,6 +44,10 @@ public class JvmStartupOptimizerArchiveBuildStep {
     public static final String CLASSES_LIST_FILE_NAME = "classes.lst";
     private static final String CONTAINER_IMAGE_BASE_BUILD_DIR = "/tmp/quarkus";
 
+    private static boolean isSemeru() {
+        return System.getProperty("java.runtime.name", "").toLowerCase(java.util.Locale.ROOT).contains("semeru");
+    }
+
     @BuildStep
     public void requested(PackageConfig packageConfig,
             LaunchModeBuildItem launchMode,
@@ -112,10 +116,11 @@ public class JvmStartupOptimizerArchiveBuildStep {
                 return switch (typeOpt.get()) {
                     case AOT -> JvmStartupOptimizerArchiveType.AOT;
                     case AppCDS -> JvmStartupOptimizerArchiveType.AppCDS;
-                    case AUTO -> determineTypeFromJavaVersion(javaVersion);
+                    case SCC -> JvmStartupOptimizerArchiveType.SCC;
+                    case AUTO -> determineTypeAutomatically(javaVersion);
                 };
             }
-            return determineTypeFromJavaVersion(javaVersion);
+            return determineTypeAutomatically(javaVersion);
         }
         // now check the old config
         PackageConfig.JarConfig.AppcdsConfig appcdsConfig = jarConfig.appcds();
@@ -123,8 +128,13 @@ public class JvmStartupOptimizerArchiveBuildStep {
                 : JvmStartupOptimizerArchiveType.AppCDS;
     }
 
-    private JvmStartupOptimizerArchiveType determineTypeFromJavaVersion(
+    private JvmStartupOptimizerArchiveType determineTypeAutomatically(
             CompiledJavaVersionBuildItem.JavaVersion javaVersion) {
+        if (isSemeru()) {
+            log.debugf("Selecting %s as the startup file optimizer type since the JVM is Semeru",
+                    JvmStartupOptimizerArchiveType.SCC);
+            return JvmStartupOptimizerArchiveType.SCC;
+        }
         if (javaVersion.isJava25OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
             log.debugf("Selecting %s as the startup file optimizer type since the project is targeting JDK 25+",
                     JvmStartupOptimizerArchiveType.AOT);
@@ -168,7 +178,8 @@ public class JvmStartupOptimizerArchiveBuildStep {
         if (archiveType == JvmStartupOptimizerArchiveType.AppCDS) {
             archivePath = createAppCDSFromExit(jarResult, outputTarget, javaBinPath, containerImage,
                     isFastJar);
-        } else if (archiveType == JvmStartupOptimizerArchiveType.AOT) {
+        } else if (archiveType == JvmStartupOptimizerArchiveType.AOT
+                || archiveType == JvmStartupOptimizerArchiveType.SCC) {
             List<String> additionalJvmArguments = new ArrayList<>();
             if (packageConfig.jar().aot().additionalRecordingArgs().isPresent()) {
                 additionalJvmArguments.addAll(packageConfig.jar().aot().additionalRecordingArgs().get());
@@ -177,7 +188,13 @@ public class JvmStartupOptimizerArchiveBuildStep {
                     && jvmStartupOptimizerArchiveContainerImage.get().getAdditionalJvmArgs().isPresent()) {
                 additionalJvmArguments.addAll(jvmStartupOptimizerArchiveContainerImage.get().getAdditionalJvmArgs().get());
             }
-            archivePath = createAot(jarResult, outputTarget, javaBinPath, containerImage, isFastJar, additionalJvmArguments);
+            if (archiveType == JvmStartupOptimizerArchiveType.AOT) {
+                archivePath = createAot(jarResult, outputTarget, javaBinPath, containerImage, isFastJar,
+                        additionalJvmArguments);
+            } else {
+                archivePath = createScc(jarResult, outputTarget, javaBinPath, containerImage, isFastJar,
+                        additionalJvmArguments);
+            }
         } else {
             throw new IllegalStateException("Unsupported archive type: " + archiveType);
         }
@@ -195,6 +212,13 @@ public class JvmStartupOptimizerArchiveBuildStep {
                                 "run the application jar from its directory and also add the '-XX:SharedArchiveFile=app-cds.jsa' "
                                 +
                                 "JVM flag.\nMoreover, make sure to use the exact same Java version (%s) to run the application as was used to build it.",
+                        System.getProperty("java.version"));
+            } else if (archiveType == JvmStartupOptimizerArchiveType.SCC) {
+                log.infof(
+                        "To ensure they are loaded properly, " +
+                                "run the application jar from its directory and also add the '-Xshareclasses:name=quarkus-app,cacheDir=app-scc,readonly' "
+                                +
+                                "JVM flag.\nMoreover, make sure to use the same OpenJ9 JVM version (%s) to run the application as was used to build it.",
                         System.getProperty("java.version"));
             } else {
                 log.infof(
@@ -361,6 +385,55 @@ public class JvmStartupOptimizerArchiveBuildStep {
         return command;
     }
 
+    /**
+     * @return The path of the created app-scc directory or null if the directory was not created
+     */
+    private Path createScc(JarBuildItem jarResult,
+            OutputTargetBuildItem outputTarget, String javaBinPath, String containerImage,
+            boolean isFastJar, List<String> additionalJvmArguments) {
+        ArchivePathsContainer sccPaths = ArchivePathsContainer.sccFromQuarkusJar(jarResult.getPath());
+        Path workingDirectory = sccPaths.workingDirectory;
+        Path sccDir = sccPaths.resultingFile;
+
+        List<String> javaArgs = new ArrayList<>();
+        javaArgs.add("-Xshareclasses:name=quarkus-app,cacheDir=" + sccDir.getFileName().toString());
+        javaArgs.addAll(additionalJvmArguments);
+        javaArgs.add(String.format("-D%s=true", MainClassBuildStep.GENERATE_APP_CDS_SYSTEM_PROPERTY));
+        if (log.isDebugEnabled()) {
+            javaArgs.add("-Xshareclasses:verboseIO");
+        }
+        javaArgs.add("-jar");
+
+        List<String> command;
+        if (containerImage != null) {
+            List<String> dockerRunCommand = dockerRunCommands(outputTarget, containerImage,
+                    isFastJar ? CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + FastJarFormat.DEFAULT_FAST_JAR_DIRECTORY_NAME
+                            : CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + jarResult.getPath().getFileName().toString());
+            command = new ArrayList<>(dockerRunCommand.size() + 1 + javaArgs.size());
+            command.addAll(dockerRunCommand);
+            command.add("java");
+            command.addAll(javaArgs);
+            if (isFastJar) {
+                command.add(FastJarFormat.QUARKUS_RUN_JAR);
+            } else {
+                command.add(jarResult.getPath().getFileName().toString());
+            }
+        } else {
+            command = new ArrayList<>(2 + javaArgs.size());
+            command.add(javaBinPath);
+            command.addAll(javaArgs);
+            if (isFastJar) {
+                command
+                        .add(jarResult.getLibraryDir().getParent().resolve(FastJarFormat.QUARKUS_RUN_JAR)
+                                .getFileName().toString());
+            } else {
+                command.add(jarResult.getPath().getFileName().toString());
+            }
+        }
+
+        return launchArchiveCreateCommand(workingDirectory, sccDir, command);
+    }
+
     private Path launchArchiveCreateCommand(Path workingDirectory, Path archivePath, List<String> command) {
         if (log.isDebugEnabled()) {
             log.debugf("Launching command: '%s'", String.join(" ", command));
@@ -430,6 +503,20 @@ public class JvmStartupOptimizerArchiveBuildStep {
 
         public static ArchivePathsContainer aotFromQuarkusJar(Path jar) {
             return doCreate(jar, "app.aot");
+        }
+
+        public static ArchivePathsContainer sccFromQuarkusJar(Path jar) {
+            Path workingDirectory = jar.getParent();
+            Path sccDir = workingDirectory.resolve("app-scc");
+            if (sccDir.toFile().exists()) {
+                try {
+                    IoUtils.recursiveDelete(sccDir);
+                } catch (Exception e) {
+                    log.debugf(e, "Unable to delete existing 'app-scc' directory.");
+                }
+            }
+            sccDir.toFile().mkdirs();
+            return new ArchivePathsContainer(workingDirectory, sccDir);
         }
 
         private static ArchivePathsContainer doCreate(Path jar, String fileName) {

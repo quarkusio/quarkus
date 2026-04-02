@@ -111,6 +111,7 @@ public class OidcClientBuildStep {
     void produceNamedOidcClientBeans(OidcClientRecorder recorder, OidcClientNamesBuildItem oidcClientNames,
             BuildProducer<SyntheticBeanBuildItem> syntheticBean) {
         oidcClientNames.oidcClientNames().stream()
+                .sorted()
                 .map(clientName -> syntheticNamedOidcClientBeanFor(clientName, recorder))
                 .forEach(syntheticBean::produce);
     }

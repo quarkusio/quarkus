@@ -109,6 +109,7 @@ import io.quarkus.kubernetes.spi.RoleRef;
 import io.quarkus.kubernetes.spi.Subject;
 import io.quarkus.kubernetes.spi.Targetable;
 
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
 
     protected abstract int priority();
@@ -149,6 +150,25 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
             resourceMeta.produce(
                     new KubernetesResourceMetadataBuildItem(clusterType(), drk.getGroup(), drk.getVersion(), drk.getKind(),
                             name));
+        }
+    }
+
+    protected DeploymentResourceKind defaultDeploymentKind() {
+        return DeploymentResourceKind.Deployment;
+    }
+
+    protected void deploymentKindDecorators(DecoratorsContext context, Capabilities capabilities) {
+        final var deploymentKind = deploymentResourceKind(capabilities);
+        final var name = context.name();
+        final var defaultDeploymentKind = defaultDeploymentKind();
+
+        switch (deploymentKind) {
+            case Deployment -> context.add(new AddDeploymentResourceDecorator(name, defaultDeploymentKind));
+            case Job -> context.add(new AddJobResourceDecorator(name, config().job(), defaultDeploymentKind));
+            case CronJob ->
+                context.add(new AddCronJobResourceDecorator(name, config().cronJob(), defaultDeploymentKind));
+            case StatefulSet ->
+                context.add(new AddStatefulSetResourceDecorator(name, defaultDeploymentKind));
         }
     }
 

@@ -1,47 +1,26 @@
 
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT;
-
 import java.util.HashMap;
 import java.util.List;
-import java.util.function.Function;
 
-import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
 import io.fabric8.kubernetes.api.model.Container;
-import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.api.model.KubernetesListFluent;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 import io.fabric8.kubernetes.api.model.apps.DeploymentFluent;
 
-public class AddDeploymentResourceDecorator extends ResourceProvidingDecorator<KubernetesListFluent<?>> {
-
-    private final String name;
-    private final PlatformConfiguration config;
-
-    public AddDeploymentResourceDecorator(String name, PlatformConfiguration config) {
-        this.name = name;
-        this.config = config;
+public class AddDeploymentResourceDecorator extends BaseAddDeploymentResourceDecorator<Deployment, DeploymentBuilder, Void> {
+    public AddDeploymentResourceDecorator(String name, DeploymentResourceKind toRemove) {
+        super(name, DeploymentResourceKind.Deployment, null, toRemove);
     }
 
     @Override
-    public void visit(KubernetesListFluent<?> list) {
-        DeploymentBuilder builder = list.buildItems().stream()
-                .filter(this::containsDeploymentResource)
-                .map(replaceExistingDeploymentResource(list))
-                .findAny()
-                .orElseGet(this::createDeploymentResource)
-                .accept(DeploymentBuilder.class, this::initDeploymentResourceWithDefaults);
-
-        list.addToItems(builder.build());
+    protected DeploymentBuilder builderWithName(String name) {
+        return new DeploymentBuilder().withNewMetadata().withName(name).endMetadata();
     }
 
-    private boolean containsDeploymentResource(HasMetadata metadata) {
-        return DEPLOYMENT.equalsIgnoreCase(metadata.getKind()) && name.equals(metadata.getMetadata().getName());
-    }
-
-    private void initDeploymentResourceWithDefaults(DeploymentBuilder builder) {
+    @Override
+    protected void initBuilderWithDefaults(DeploymentBuilder builder, Void config) {
         DeploymentFluent<?>.SpecNested<DeploymentBuilder> spec = builder.editOrNewSpec();
 
         spec.editOrNewSelector()
@@ -68,25 +47,14 @@ public class AddDeploymentResourceDecorator extends ResourceProvidingDecorator<K
         }
         // - container
         if (!containsContainerWithName(spec)) {
-            spec.editTemplate().editSpec().addNewContainer().withName(name).endContainer().endSpec().endTemplate();
+            spec.editTemplate().editSpec().addNewContainer().withName(name()).endContainer().endSpec().endTemplate();
         }
 
         spec.endSpec();
     }
 
-    private DeploymentBuilder createDeploymentResource() {
-        return new DeploymentBuilder().withNewMetadata().withName(name).endMetadata();
-    }
-
-    private Function<HasMetadata, DeploymentBuilder> replaceExistingDeploymentResource(KubernetesListFluent<?> list) {
-        return metadata -> {
-            list.removeFromItems(metadata);
-            return new DeploymentBuilder((Deployment) metadata);
-        };
-    }
-
     private boolean containsContainerWithName(DeploymentFluent<?>.SpecNested<DeploymentBuilder> spec) {
         List<Container> containers = spec.buildTemplate().getSpec().getContainers();
-        return containers != null && containers.stream().anyMatch(c -> name.equals(c.getName()));
+        return containers != null && containers.stream().anyMatch(c -> name().equals(c.getName()));
     }
 }

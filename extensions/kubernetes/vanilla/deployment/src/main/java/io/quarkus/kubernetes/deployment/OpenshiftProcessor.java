@@ -92,6 +92,11 @@ public class OpenshiftProcessor extends BaseKubeProcessor<AddPortToOpenshiftConf
     }
 
     @Override
+    protected DeploymentResourceKind defaultDeploymentKind() {
+        return DeploymentResourceKind.DeploymentConfig;
+    }
+
+    @Override
     protected boolean enabled() {
         List<String> targets = KubernetesConfigUtil.getConfiguredDeploymentTargets();
         return targets.contains(deploymentTarget());
@@ -276,25 +281,7 @@ public class OpenshiftProcessor extends BaseKubeProcessor<AddPortToOpenshiftConf
 
         context.addToAnyTarget(new ApplyResolveNamesImagePolicyDecorator());
 
-        DeploymentResourceKind deploymentKind = config.getDeploymentResourceKind(capabilities);
-        switch (deploymentKind) {
-            case Deployment:
-                context.add(new RemoveDeploymentConfigResourceDecorator(name));
-                context.add(new AddDeploymentResourceDecorator(name, config));
-                break;
-            case StatefulSet:
-                context.add(new RemoveDeploymentConfigResourceDecorator(name));
-                context.add(new AddStatefulSetResourceDecorator(name, config));
-                break;
-            case Job:
-                context.add(new RemoveDeploymentConfigResourceDecorator(name));
-                context.add(new AddJobResourceDecorator(name, config.job()));
-                break;
-            case CronJob:
-                context.add(new RemoveDeploymentConfigResourceDecorator(name));
-                context.add(new AddCronJobResourceDecorator(name, config.cronJob()));
-                break;
-        }
+        deploymentKindDecorators(context, capabilities);
 
         if (config.route() != null) {
             for (Map.Entry<String, String> annotation : config.route().annotations().entrySet()) {

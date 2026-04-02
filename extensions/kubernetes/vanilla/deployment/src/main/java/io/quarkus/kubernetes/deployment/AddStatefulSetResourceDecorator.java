@@ -1,48 +1,27 @@
 
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.kubernetes.deployment.Constants.STATEFULSET;
-
 import java.util.HashMap;
 import java.util.List;
-import java.util.function.Function;
 
-import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
-import io.dekorate.utils.Strings;
 import io.fabric8.kubernetes.api.model.Container;
-import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.api.model.KubernetesListFluent;
 import io.fabric8.kubernetes.api.model.apps.StatefulSet;
 import io.fabric8.kubernetes.api.model.apps.StatefulSetBuilder;
 import io.fabric8.kubernetes.api.model.apps.StatefulSetFluent;
+import io.quarkus.runtime.util.StringUtil;
 
-public class AddStatefulSetResourceDecorator extends ResourceProvidingDecorator<KubernetesListFluent<?>> {
-
-    private final String name;
-    private final PlatformConfiguration config;
-
-    public AddStatefulSetResourceDecorator(String name, PlatformConfiguration config) {
-        this.name = name;
-        this.config = config;
+public class AddStatefulSetResourceDecorator extends BaseAddDeploymentResourceDecorator<StatefulSet, StatefulSetBuilder, Void> {
+    public AddStatefulSetResourceDecorator(String name, DeploymentResourceKind toRemove) {
+        super(name, DeploymentResourceKind.StatefulSet, null, toRemove);
     }
 
     @Override
-    public void visit(KubernetesListFluent<?> list) {
-        StatefulSetBuilder builder = list.buildItems().stream()
-                .filter(this::containsStatefulSetResource)
-                .map(replaceExistingStatefulSetResource(list))
-                .findAny()
-                .orElseGet(this::createStatefulSetResource)
-                .accept(StatefulSetBuilder.class, this::initStatefulSetResourceWithDefaults);
-
-        list.addToItems(builder.build());
+    protected StatefulSetBuilder builderWithName(String name) {
+        return new StatefulSetBuilder().withNewMetadata().withName(name).endMetadata();
     }
 
-    private boolean containsStatefulSetResource(HasMetadata metadata) {
-        return STATEFULSET.equalsIgnoreCase(metadata.getKind()) && name.equals(metadata.getMetadata().getName());
-    }
-
-    private void initStatefulSetResourceWithDefaults(StatefulSetBuilder builder) {
+    @Override
+    protected void initBuilderWithDefaults(StatefulSetBuilder builder, Void config) {
         StatefulSetFluent<?>.SpecNested<StatefulSetBuilder> spec = builder.editOrNewSpec();
 
         spec.editOrNewSelector()
@@ -60,8 +39,8 @@ public class AddStatefulSetResourceDecorator extends ResourceProvidingDecorator<
             spec.withReplicas(1);
         }
         // - service name
-        if (Strings.isNullOrEmpty(spec.getServiceName())) {
-            spec.withServiceName(name);
+        if (StringUtil.isNullOrEmpty(spec.getServiceName())) {
+            spec.withServiceName(name());
         }
         // - match labels
         if (spec.buildSelector().getMatchLabels() == null) {
@@ -73,25 +52,14 @@ public class AddStatefulSetResourceDecorator extends ResourceProvidingDecorator<
         }
         // - container
         if (!containsContainerWithName(spec)) {
-            spec.editTemplate().editSpec().addNewContainer().withName(name).endContainer().endSpec().endTemplate();
+            spec.editTemplate().editSpec().addNewContainer().withName(name()).endContainer().endSpec().endTemplate();
         }
 
         spec.endSpec();
     }
 
-    private StatefulSetBuilder createStatefulSetResource() {
-        return new StatefulSetBuilder().withNewMetadata().withName(name).endMetadata();
-    }
-
-    private Function<HasMetadata, StatefulSetBuilder> replaceExistingStatefulSetResource(KubernetesListFluent<?> list) {
-        return metadata -> {
-            list.removeFromItems(metadata);
-            return new StatefulSetBuilder((StatefulSet) metadata);
-        };
-    }
-
     private boolean containsContainerWithName(StatefulSetFluent<?>.SpecNested<StatefulSetBuilder> spec) {
         List<Container> containers = spec.buildTemplate().getSpec().getContainers();
-        return containers == null || containers.stream().anyMatch(c -> name.equals(c.getName()));
+        return containers == null || containers.stream().anyMatch(c -> name().equals(c.getName()));
     }
 }

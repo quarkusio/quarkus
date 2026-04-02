@@ -18,8 +18,9 @@ public class DefaultAsyncObserverExceptionHandler implements AsyncObserverExcept
     @Override
     public void handle(Throwable throwable, ObserverMethod<?> observerMethod, EventContext<?> eventContext) {
         LOG.errorf(
-                "Failure occurred while notifying an async %s for event of type %s \n- please enable debug logging to see the full stack trace",
-                observerMethod, eventContext.getMetadata().getType().getTypeName());
+                "Failure occurred while notifying an async %s for event of type %s"
+                        + "\n- to see the full stack trace, add quarkus.log.category.\"%s\".level=DEBUG to your application.properties",
+                observerMethod, eventContext.getMetadata().getType().getTypeName(), LOG.getName());
         LOG.debugf(throwable, "Failure occurred while notifying an async %s for event of type %s",
                 observerMethod, eventContext.getMetadata().getType().getTypeName());
     }

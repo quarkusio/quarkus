@@ -1059,7 +1059,8 @@ public class BeanProcessor {
                 String info = appDescriptions.stream().limit(limit).map(d -> "\t- " + d).collect(Collectors.joining(",\n"));
                 if (appDescriptions.size() > limit) {
                     info += "\n\t- and " + (appDescriptions.size() - limit)
-                            + " more - please enable debug logging to see the full list";
+                            + " more - to see the full list, add quarkus.log.category.\""
+                            + LOGGER.getName() + "\".level=DEBUG to your application.properties";
                 }
                 LOGGER.infof(
                         "Found unrecommended usage of private members (use package-private instead) in application beans:%n%s",

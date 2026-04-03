@@ -120,4 +120,16 @@ public class ImageGeometryFontsTest {
                 "Not all expected fonts were found: " + expected + ". " +
                         "These fonts were found though: " + Arrays.toString(actual));
     }
+
+    @Test
+    void testHBShaper() {
+        final String response = given()
+                .when()
+                .get("/fonts-shaper")
+                .then()
+                .statusCode(200)
+                .extract().asString();
+        Assertions.assertTrue(response.contains("HBShaper invoked successfully"),
+                "Expected HBShaper to process text successfully, but got: " + response);
+    }
 }

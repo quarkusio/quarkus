@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.sqlclient.Pool;
 
 public class MultipleDataSourcesAndPgPoolCreatorsTest {
@@ -49,7 +50,7 @@ public class MultipleDataSourcesAndPgPoolCreatorsTest {
 
         public CompletionStage<Void> verify() {
             CompletableFuture<Void> cf = new CompletableFuture<>();
-            pgClient.query("SELECT 1").execute(ar -> {
+            pgClient.query("SELECT 1").execute().onComplete(ar -> {
                 if (ar.failed()) {
                     cf.completeExceptionally(ar.cause());
                 } else {
@@ -69,7 +70,7 @@ public class MultipleDataSourcesAndPgPoolCreatorsTest {
 
         public CompletionStage<Void> verify() {
             CompletableFuture<Void> cf = new CompletableFuture<>();
-            pgClient.query("SELECT 1").execute(ar -> {
+            pgClient.query("SELECT 1").execute().onComplete(ar -> {
                 if (ar.failed()) {
                     cf.completeExceptionally(ar.cause());
                 } else {
@@ -83,10 +84,11 @@ public class MultipleDataSourcesAndPgPoolCreatorsTest {
     @Singleton
     public static class DefaultPgPoolCreator implements PgPoolCreator {
 
+        // TODO Improve input to be able to direction retrieve the right options?
         @Override
         public Pool create(Input input) {
-            assertEquals(10, input.pgConnectOptionsList().get(0).getPipeliningLimit()); // validate that the bean has been called for the proper datasource
-            return Pool.pool(input.vertx(), input.pgConnectOptionsList().get(0).setHost("localhost").setPort(5431),
+            assertEquals(10, ((PgConnectOptions) input.connectOptionsList().get(0)).getPipeliningLimit()); // validate that the bean has been called for the proper datasource
+            return Pool.pool(input.vertx(), input.connectOptionsList().get(0).setHost("localhost").setPort(5431),
                     input.poolOptions());
         }
     }
@@ -97,8 +99,9 @@ public class MultipleDataSourcesAndPgPoolCreatorsTest {
 
         @Override
         public Pool create(Input input) {
-            assertEquals(7, input.pgConnectOptionsList().get(0).getPipeliningLimit()); // validate that the bean has been called for the proper datasource
-            return Pool.pool(input.vertx(), input.pgConnectOptionsList().get(0).setHost("localhost").setPort(5431),
+            assertEquals(7, ((PgConnectOptions) input.connectOptionsList().get(0)).getPipeliningLimit()); // validate that the bean has been called for the proper datasource
+            return Pool.pool(input.vertx(),
+                    ((PgConnectOptions) input.connectOptionsList().get(0)).setHost("localhost").setPort(5431),
                     input.poolOptions());
         }
     }

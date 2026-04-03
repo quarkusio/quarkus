@@ -24,7 +24,7 @@ public @interface ReactiveDataSource {
 
     String value();
 
-    public class ReactiveDataSourceLiteral extends AnnotationLiteral<ReactiveDataSource> implements ReactiveDataSource {
+    class ReactiveDataSourceLiteral extends AnnotationLiteral<ReactiveDataSource> implements ReactiveDataSource {
 
         private String name;
 

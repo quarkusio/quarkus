@@ -9,13 +9,25 @@
         <version>4.0.999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-reactive-datasource-spi</artifactId>
+    <artifactId>quarkus-reactive-datasource-deployment-spi</artifactId>
     <name>Quarkus - Reactive Datasource - SPI</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-datasource-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-sql-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
     </dependencies>
 </project>

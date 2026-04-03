@@ -78,10 +78,10 @@
         <bytebuddy.version>1.18.7</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
         <geolatte.version>1.10</geolatte.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
         <hibernate-models.version>1.1.0</hibernate-models.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
-        <hibernate-reactive.version>3.3.0.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
+        <hibernate-reactive.version>3.3.1.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
         <hibernate-validator.version>9.1.0.Final</hibernate-validator.version>
         <hibernate-search.version>8.3.0.Final</hibernate-search.version>
-        <hibernate-tools.version>7.2.6.Final</hibernate-tools.version>
+        <hibernate-tools.version>7.2.9.Final</hibernate-tools.version>
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
         <grpc.version>1.79.0</grpc.version> <!-- when updating, verify if following versions should not be updated too: -->

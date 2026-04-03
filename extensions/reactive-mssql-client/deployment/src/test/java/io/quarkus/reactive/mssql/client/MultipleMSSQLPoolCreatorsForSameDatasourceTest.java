@@ -8,7 +8,9 @@ import jakarta.inject.Singleton;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.reactive.datasource.PoolCreator;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.vertx.mssqlclient.MSSQLConnectOptions;
 import io.vertx.sqlclient.Pool;
 
 public class MultipleMSSQLPoolCreatorsForSameDatasourceTest {
@@ -29,11 +31,11 @@ public class MultipleMSSQLPoolCreatorsForSameDatasourceTest {
     }
 
     @Singleton
-    public static class AnotherMSSQLPoolCreator implements MSSQLPoolCreator {
+    public static class AnotherMSSQLPoolCreator implements PoolCreator {
 
         @Override
         public Pool create(Input input) {
-            return Pool.pool(input.vertx(), input.msSQLConnectOptions(), input.poolOptions());
+            return Pool.pool(input.vertx(), (MSSQLConnectOptions) input.connectOptionsList().get(0), input.poolOptions());
         }
     }
 

@@ -43,6 +43,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-health-spi</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-tls-registry-deployment-spi</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>

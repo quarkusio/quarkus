@@ -15,7 +15,6 @@ import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.test.QuarkusExtensionTest;
-import io.vertx.mssqlclient.MSSQLPool;
 import io.vertx.sqlclient.Pool;
 
 public class ConfigActiveFalseNamedDatasourceDynamicInjectionTest {
@@ -35,14 +34,6 @@ public class ConfigActiveFalseNamedDatasourceDynamicInjectionTest {
     @ReactiveDataSource("ds-1")
     InjectableInstance<io.vertx.mutiny.sqlclient.Pool> mutinyPool;
 
-    @Inject
-    @ReactiveDataSource("ds-1")
-    InjectableInstance<MSSQLPool> vendorPool;
-
-    @Inject
-    @ReactiveDataSource("ds-1")
-    InjectableInstance<io.vertx.mutiny.mssqlclient.MSSQLPool> mutinyVendorPool;
-
     @Test
     public void pool() {
         doTest(pool, Pool::getConnection);
@@ -51,16 +42,6 @@ public class ConfigActiveFalseNamedDatasourceDynamicInjectionTest {
     @Test
     public void mutinyPool() {
         doTest(mutinyPool, io.vertx.mutiny.sqlclient.Pool::getConnection);
-    }
-
-    @Test
-    public void vendorPool() {
-        doTest(vendorPool, Pool::getConnection);
-    }
-
-    @Test
-    public void mutinyVendorPool() {
-        doTest(mutinyVendorPool, io.vertx.mutiny.sqlclient.Pool::getConnection);
     }
 
     private <T> void doTest(InjectableInstance<T> instance, Consumer<T> action) {

@@ -69,7 +69,7 @@
         <plexus-cipher.version>2.0</plexus-cipher.version>
         <plexus-interpolation.version>1.26</plexus-interpolation.version>
         <plexus-sec-dispatcher.version>2.0</plexus-sec-dispatcher.version>
-        <plexus-utils.version>3.5.1</plexus-utils.version>
+        <plexus-utils.version>3.6.1</plexus-utils.version>
         <smallrye-common.version>2.17.0</smallrye-common.version>
         <smallrye-beanbag.version>1.6.1</smallrye-beanbag.version>
         <gradle-tooling.version>9.3.1</gradle-tooling.version>

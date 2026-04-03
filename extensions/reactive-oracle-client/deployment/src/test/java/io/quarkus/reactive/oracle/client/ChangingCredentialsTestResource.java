@@ -4,17 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
 import io.quarkus.runtime.StartupEvent;
+import io.quarkus.vertx.web.Route;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.sqlclient.Pool;
 
-@Path("/test")
 public class ChangingCredentialsTestResource {
 
     @Inject
@@ -28,14 +23,12 @@ public class ChangingCredentialsTestResource {
         client.query("GRANT CREATE SESSION TO user2").executeAndAwait();
     }
 
-    @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    public Uni<Response> connect() {
+    @Route(path = "/test", methods = Route.HttpMethod.GET)
+    Uni<String> connect() {
         return client.query("SELECT USER FROM DUAL").execute()
                 .map(rowSet -> {
                     assertEquals(1, rowSet.size());
-                    return Response.ok(rowSet.iterator().next().getString(0)).build();
+                    return rowSet.iterator().next().getString(0);
                 }).eventually(credentialsProvider::changeProperties);
     }
-
 }

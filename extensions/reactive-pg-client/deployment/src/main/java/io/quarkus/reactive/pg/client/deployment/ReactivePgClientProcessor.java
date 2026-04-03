@@ -29,6 +29,7 @@ import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig
 import io.quarkus.reactive.datasource.spi.ReactivePoolBuildItem;
 import io.quarkus.reactive.pg.client.runtime.PgPoolRecorder;
 import io.quarkus.reactive.pg.client.runtime.PostgreSQLServiceBindingConverter;
+import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.vertx.pgclient.spi.PgDriver;
@@ -58,6 +59,7 @@ class ReactivePgClientProcessor {
             VertxBuildItem vertx,
             EventLoopCountBuildItem eventLoopCount,
             ShutdownContextBuildItem shutdown,
+            Optional<TlsRegistryBuildItem> tlsRegistryBuildItem,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
@@ -73,7 +75,8 @@ class ReactivePgClientProcessor {
             }
 
             Function<SyntheticCreationalContext<Pool>, Pool> poolFunction = recorder.configurePgPool(vertx.getVertx(),
-                    eventLoopCount.getEventLoopCount(), dataSourceName, shutdown);
+                    eventLoopCount.getEventLoopCount(), dataSourceName, shutdown,
+                    tlsRegistryBuildItem.map(TlsRegistryBuildItem::registry).orElse(null));
             pools.produce(new ReactivePoolBuildItem(dataSourceName, TYPE, poolFunction, HEALTH_CHECK_SQL));
         }
 

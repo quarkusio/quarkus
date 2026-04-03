@@ -6,12 +6,18 @@ import static io.quarkus.reactive.datasource.runtime.UnitisedTime.unitised;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+
+import org.jboss.logging.Logger;
 
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
+import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.vertx.core.runtime.config.JksConfiguration;
 import io.quarkus.vertx.core.runtime.config.PemKeyCertConfiguration;
 import io.quarkus.vertx.core.runtime.config.PemTrustCertConfiguration;
@@ -31,6 +37,8 @@ import io.vertx.sqlclient.impl.Utils;
  * Used by all DB-specific recorders (PG, MySQL, MSSQL, Oracle, DB2).
  */
 public final class ReactivePoolUtil {
+
+    private static final Logger log = Logger.getLogger(ReactivePoolUtil.class);
 
     private ReactivePoolUtil() {
     }
@@ -120,8 +128,57 @@ public final class ReactivePoolUtil {
     /**
      * Apply SSL/TLS, reconnect, and hostname verification settings from the generic reactive
      * datasource config to connect options.
+     * <p>
+     * When a named TLS configuration is set via {@code tls-configuration-name}, it takes precedence
+     * over manual SSL properties (trust-certificate-*, key-certificate-*, trust-all, hostname-verification-algorithm).
      */
     public static void configureSsl(SqlConnectOptions connectOptions,
+            DataSourceReactiveRuntimeConfig config,
+            TlsConfigurationRegistry tlsRegistry) {
+        if (config.tlsConfigurationName().isPresent()) {
+            String tlsConfigName = config.tlsConfigurationName().get();
+            if (tlsRegistry == null) {
+                throw new ConfigurationException(
+                        "TLS configuration name '" + tlsConfigName + "' is set but the TLS registry is not available.");
+            }
+            Optional<TlsConfiguration> maybeTlsConfig = tlsRegistry.get(tlsConfigName);
+            if (maybeTlsConfig.isEmpty()) {
+                throw new ConfigurationException("Unable to find the TLS configuration '" + tlsConfigName
+                        + "' for the reactive datasource.");
+            }
+            TlsConfiguration tlsConfig = maybeTlsConfig.get();
+            ClientSSLOptions sslOptions = tlsConfig.getClientSSLOptions();
+            if (sslOptions == null) {
+                sslOptions = new ClientSSLOptions();
+            }
+            connectOptions.setSslOptions(sslOptions);
+
+            if (hasManualSslProperties(config)) {
+                log.warn("Manual SSL properties (trust-certificate-*, key-certificate-*, trust-all,"
+                        + " hostname-verification-algorithm) are ignored when a named TLS configuration"
+                        + " (tls-configuration-name=" + tlsConfigName + ") is set.");
+            }
+        } else {
+            configureManualSsl(connectOptions, config);
+        }
+
+        connectOptions.setReconnectAttempts(config.reconnectAttempts());
+        connectOptions.setReconnectInterval(config.reconnectInterval().toMillis());
+    }
+
+    private static boolean hasManualSslProperties(DataSourceReactiveRuntimeConfig config) {
+        return config.trustAll()
+                || config.trustCertificatePem().enabled()
+                || (config.trustCertificatePem().certs().isPresent() && !config.trustCertificatePem().certs().get().isEmpty())
+                || config.trustCertificateJks().enabled()
+                || config.trustCertificatePfx().enabled()
+                || config.keyCertificatePem().enabled()
+                || config.keyCertificateJks().enabled()
+                || config.keyCertificatePfx().enabled()
+                || !"NONE".equalsIgnoreCase(config.hostnameVerificationAlgorithm());
+    }
+
+    private static void configureManualSsl(SqlConnectOptions connectOptions,
             DataSourceReactiveRuntimeConfig config) {
         ClientSSLOptions sslOptions = connectOptions.getSslOptions();
         if (sslOptions == null) {
@@ -146,7 +203,16 @@ public final class ReactivePoolUtil {
         }
 
         connectOptions.setSslOptions(sslOptions);
+    }
 
+    /**
+     * @deprecated Use {@link #configureSsl(SqlConnectOptions, DataSourceReactiveRuntimeConfig, TlsConfigurationRegistry)}
+     *             to support the TLS registry.
+     */
+    @Deprecated(forRemoval = true)
+    public static void configureSsl(SqlConnectOptions connectOptions,
+            DataSourceReactiveRuntimeConfig config) {
+        configureManualSsl(connectOptions, config);
         connectOptions.setReconnectAttempts(config.reconnectAttempts());
         connectOptions.setReconnectInterval(config.reconnectInterval().toMillis());
     }

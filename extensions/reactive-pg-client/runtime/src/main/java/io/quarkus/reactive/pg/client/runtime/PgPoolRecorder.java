@@ -20,6 +20,7 @@ import io.quarkus.reactive.datasource.runtime.ReactivePoolUtil;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.internal.VertxInternal;
@@ -52,7 +53,8 @@ public class PgPoolRecorder {
     }
 
     public Function<SyntheticCreationalContext<Pool>, Pool> configurePgPool(RuntimeValue<Vertx> vertx,
-            Supplier<Integer> eventLoopCount, String dataSourceName, ShutdownContext shutdown) {
+            Supplier<Integer> eventLoopCount, String dataSourceName, ShutdownContext shutdown,
+            Supplier<TlsConfigurationRegistry> tlsRegistrySupplier) {
         return new Function<>() {
             @Override
             public Pool apply(SyntheticCreationalContext<Pool> context) {
@@ -62,6 +64,7 @@ public class PgPoolRecorder {
                         runtimeConfig.getValue().dataSources().get(dataSourceName),
                         reactiveRuntimeConfig.getValue().dataSources().get(dataSourceName).reactive(),
                         reactivePostgreRuntimeConfig.getValue().dataSources().get(dataSourceName).reactive().postgresql(),
+                        tlsRegistrySupplier != null ? tlsRegistrySupplier.get() : null,
                         context);
 
                 shutdown.addShutdownTask(pool::close);
@@ -76,10 +79,11 @@ public class PgPoolRecorder {
             DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig,
+            TlsConfigurationRegistry tlsRegistry,
             SyntheticCreationalContext<Pool> context) {
         PoolOptions poolOptions = ReactivePoolUtil.toPoolOptions(eventLoopCount, dataSourceReactiveRuntimeConfig);
         List<PgConnectOptions> pgConnectOptionsList = toPgConnectOptions(dataSourceName, dataSourceRuntimeConfig,
-                dataSourceReactiveRuntimeConfig, dataSourceReactivePostgreSQLConfig);
+                dataSourceReactiveRuntimeConfig, dataSourceReactivePostgreSQLConfig, tlsRegistry);
         Supplier<Future<SqlConnectOptions>> databasesSupplier = ReactivePoolUtil.toDatabasesSupplier(pgConnectOptionsList,
                 dataSourceRuntimeConfig, PgConnectOptions::new);
         return createPool(vertx, poolOptions, pgConnectOptionsList, dataSourceName, databasesSupplier, context);
@@ -87,7 +91,8 @@ public class PgPoolRecorder {
 
     private List<PgConnectOptions> toPgConnectOptions(String dataSourceName, DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
-            DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig) {
+            DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig,
+            TlsConfigurationRegistry tlsRegistry) {
         List<PgConnectOptions> pgConnectOptionsList = new ArrayList<>();
 
         if (dataSourceReactiveRuntimeConfig.url().isPresent()) {
@@ -122,11 +127,14 @@ public class PgPoolRecorder {
                     throw new IllegalArgumentException(
                             "quarkus.datasource.reactive.hostname-verification-algorithm must be specified under verify-full sslmode");
                 }
+            } else if (dataSourceReactiveRuntimeConfig.tlsConfigurationName().isPresent()) {
+                // Auto-enable SSL mode when a named TLS configuration is set
+                pgConnectOptions.setSslMode(SslMode.REQUIRE);
             }
 
             pgConnectOptions.setUseLayer7Proxy(dataSourceReactivePostgreSQLConfig.useLayer7Proxy());
 
-            ReactivePoolUtil.configureSsl(pgConnectOptions, dataSourceReactiveRuntimeConfig);
+            ReactivePoolUtil.configureSsl(pgConnectOptions, dataSourceReactiveRuntimeConfig, tlsRegistry);
 
             dataSourceReactiveRuntimeConfig.additionalProperties().forEach(pgConnectOptions::addProperty);
 

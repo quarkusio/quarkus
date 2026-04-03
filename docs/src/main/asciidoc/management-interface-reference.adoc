@@ -237,6 +237,24 @@ Health probes (using HTTP actions) and Prometheus scrape URLs are configured usi
 Until https://github.com/knative/serving/issues/8471[KNative#8471] is resolved, you cannot use the management interface, as KNative does not support containers will multiple exposed ports.
 ====
 
+== CORS filter
+
+To make your Quarkus management interface accessible to another application running on a different domain, you need to configure cross-origin resource sharing (CORS).
+For more information about the CORS filter that Quarkus provides, see the Quarkus xref:security-cors.adoc#cors-filter[CORS filter] section of the "Cross-origin resource sharing" guide.
+
+The management interface uses the same CORS filter mechanism as the main HTTP server, but with separate configuration under `quarkus.management.cors.*`.
+
+For example, to allow requests from a specific origin:
+
+[source, properties]
+----
+quarkus.management.enabled=true
+quarkus.management.cors.enabled=true
+quarkus.management.cors.origins=http://example.com
+----
+
+When CORS is enabled without configuring specific origins, only same-origin requests are allowed.
+
 == Security
 
 Security for the management endpoints exposed in the separate HTTP server needs to be enabled explicitly like in the example below:

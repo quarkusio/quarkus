@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.vertx.http.runtime.BodyConfig;
@@ -13,6 +14,7 @@ import io.quarkus.vertx.http.runtime.HeaderConfig;
 import io.quarkus.vertx.http.runtime.ProxyConfig;
 import io.quarkus.vertx.http.runtime.ServerLimitsConfig;
 import io.quarkus.vertx.http.runtime.ServerSslConfig;
+import io.quarkus.vertx.http.runtime.cors.CORSConfig;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
@@ -63,6 +65,12 @@ public interface ManagementConfig {
      */
     @WithDefault("true")
     boolean hostEnabled();
+
+    /**
+     * The CORS config
+     */
+    @ConfigDocSection(generated = true)
+    CORSConfig cors();
 
     /**
      * The SSL config

@@ -42,7 +42,7 @@ public class TrackConfigChangesMojo extends QuarkusBootstrapMojo {
      * Skip the execution of this mojo
      */
     @Parameter(defaultValue = "false", property = "quarkus.track-config-changes.skip")
-    boolean skip = false;
+    boolean skipConfigChangesTracking = false;
 
     @Parameter(property = "launchMode")
     String mode;
@@ -79,7 +79,7 @@ public class TrackConfigChangesMojo extends QuarkusBootstrapMojo {
 
     @Override
     protected boolean beforeExecute() throws MojoExecutionException, MojoFailureException {
-        if (skip) {
+        if (skipConfigChangesTracking) {
             getLog().info("Skipping config dump");
             return false;
         }

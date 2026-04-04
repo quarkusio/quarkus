@@ -456,13 +456,13 @@ public class MainClassBuildStep {
             Collection<ClassInfo> impls = index
                     .getAllKnownImplementors(QUARKUS_APPLICATION);
             ClassInfo classByName = index.getClassByName(DotName.createSimple(mainClassName));
-            if (classByName != null && Modifier.isAbstract(classByName.flags())) {
-                throw new RuntimeException(
-                        "The selected @QuarkusMain class '" + mainClassName
-                                + "' is abstract and cannot be instantiated. "
-                                + "Use a concrete class or set 'quarkus.package.main-class' to specify a different entry point.");
-            }
             if (classByName != null) {
+                if (Modifier.isAbstract(classByName.flags())) {
+                    throw new RuntimeException(
+                            "The selected @QuarkusMain class '" + mainClassName
+                                    + "' is abstract and cannot be instantiated. "
+                                    + "Use a concrete class or set 'quarkus.package.main-class' to specify a different entry point.");
+                }
                 mainClassMethod = classByName
                         .method("main", STRING_ARRAY);
             }

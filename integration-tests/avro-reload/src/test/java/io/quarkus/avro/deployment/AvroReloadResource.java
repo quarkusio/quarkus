@@ -8,6 +8,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
 import test.Level;
+import test.NamedSchemaRecord;
 import test.PrivacyImport;
 import test.ProtocolPrivacy;
 
@@ -28,6 +29,16 @@ public class AvroReloadResource {
     @Path("/avdl")
     public String getAvailableLevel() {
         return Arrays.stream(Level.values()).map(String::valueOf).collect(joining(","));
+    }
+
+    @GET
+    @Path("/named-schema")
+    public String getNamedSchemaFields() {
+        NamedSchemaRecord record = NamedSchemaRecord.newBuilder()
+                .setName("test")
+                .setDescription("test description")
+                .build();
+        return record.getName() + "," + record.getDescription();
     }
 
 }

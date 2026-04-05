@@ -32,6 +32,7 @@ import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
+import io.quarkus.deployment.pkg.builditem.JarTreeShakeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveRequestedBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
@@ -106,6 +107,7 @@ public class JarResultBuildStep {
             List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchiveBuildItems,
             MainClassBuildItem mainClassBuildItem,
             Optional<JvmStartupOptimizerArchiveRequestedBuildItem> jvmStartupOptimizerArchiveRequested,
+            JarTreeShakeBuildItem treeShakeResult,
             ExecutorService buildExecutor)
             throws Exception {
 
@@ -130,7 +132,8 @@ public class JarResultBuildStep {
                     uberJarMergedResourceBuildItems,
                     uberJarIgnoredResourceBuildItems,
                     buildExecutor,
-                    jvmRequirements).build();
+                    jvmRequirements,
+                    treeShakeResult).build();
             case LEGACY_JAR -> new LegacyThinJarBuilder(curateOutcomeBuildItem,
                     outputTargetBuildItem,
                     applicationInfo,
@@ -142,7 +145,8 @@ public class JarResultBuildStep {
                     generatedResources,
                     removedArtifactKeys,
                     buildExecutor,
-                    jvmRequirements).build();
+                    jvmRequirements,
+                    treeShakeResult).build();
             case FAST_JAR, MUTABLE_JAR -> new FastJarBuilder(curateOutcomeBuildItem,
                     outputTargetBuildItem,
                     applicationInfo,
@@ -156,7 +160,8 @@ public class JarResultBuildStep {
                     parentFirstArtifactKeys,
                     removedArtifactKeys,
                     buildExecutor,
-                    jvmRequirements).build();
+                    jvmRequirements,
+                    treeShakeResult).build();
             case AOT_JAR -> new AotFastJarBuilder(curateOutcomeBuildItem,
                     outputTargetBuildItem,
                     applicationInfo,
@@ -170,7 +175,8 @@ public class JarResultBuildStep {
                     parentFirstArtifactKeys,
                     removedArtifactKeys,
                     buildExecutor,
-                    jvmRequirements).build();
+                    jvmRequirements,
+                    treeShakeResult).build();
         };
     }
 
@@ -189,6 +195,7 @@ public class JarResultBuildStep {
             List<GeneratedResourceBuildItem> generatedResources,
             MainClassBuildItem mainClassBuildItem,
             ClassLoadingConfig classLoadingConfig,
+            JarTreeShakeBuildItem treeShakeResult,
             ExecutorService buildExecutor,
             ResolvedJVMRequirements jvmRequirements) throws Exception {
 
@@ -204,7 +211,8 @@ public class JarResultBuildStep {
                 nativeImageResources,
                 getRemovedArtifactKeys(classLoadingConfig),
                 buildExecutor,
-                jvmRequirements).build();
+                jvmRequirements,
+                treeShakeResult).build();
     }
 
     // the idea here is to just dump the class names of the generated and transformed classes into a file

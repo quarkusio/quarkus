@@ -435,11 +435,6 @@
                 <version>${plexus-sec-dispatcher.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.codehaus.plexus</groupId>
-                <artifactId>plexus-utils</artifactId>
-                <version>${plexus-utils.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.graalvm.sdk</groupId>
                 <artifactId>nativeimage</artifactId>
                 <version>${graal-sdk.version}</version>

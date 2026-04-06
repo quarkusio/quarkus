@@ -204,12 +204,16 @@ public class VertxHttpRecorder {
         }
 
         private boolean uriValid(HttpServerRequest httpServerRequest) {
+            String uri = httpServerRequest.uri();
+            if (uri == null) { // it's not clear how this can happen, but it can
+                return false;
+            }
             if (DISABLE_URI_VALIDATION) {
                 return true;
             }
             try {
                 // we simply need to know if the URI is valid
-                new URI(httpServerRequest.uri());
+                new URI(uri);
                 return true;
             } catch (URISyntaxException e) {
                 return false;

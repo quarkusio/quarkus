@@ -94,7 +94,7 @@ In short, posting a large PR the day before the release won't work.
 
 Quarkus depends on a lot of third party dependencies that we try to keep up to date.
 
-We partially rely on Dependabot for https://github.com/quarkusio/quarkus/blob/main/.github/dependabot.yml[a curated list of dependencies].
+We partially rely on Renovate for https://github.com/quarkusio/quarkus/blob/main/.github/renovate.json5[a curated list of dependencies].
 
 Some dependencies are critical for Quarkus and quite complex.
 Good examples would be Netty, Vert.x or Hibernate ORM.

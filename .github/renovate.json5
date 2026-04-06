@@ -1,0 +1,382 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+
+  // ── Global settings ──────────────────────────────────────────────────
+  "timezone": "Europe/Paris",
+  "dependencyDashboard": true,
+  // Dependabot rebase-strategy: disabled → never auto-rebase
+  "rebaseWhen": "never",
+  // Default schedule – overridden per branch/manager below
+  "schedule": ["after 4pm and before 5pm every weekday"],
+  // Global PR limit (highest from Dependabot was 20 for main/maven)
+  "prConcurrentLimit": 20,
+  "prHourlyLimit": 4,
+  // Operate on all four target branches
+  "baseBranches": ["main", "3.20", "3.27", "3.33"],
+  // Only these managers are needed
+  "enabledManagers": ["maven", "gradle", "github-actions"],
+
+  "packageRules": [
+
+    // ════════════════════════════════════════════════════════════════════
+    //  LABELS
+    // ════════════════════════════════════════════════════════════════════
+    {
+      "description": "Label Maven & Gradle PRs with area/dependencies",
+      "matchManagers": ["maven", "gradle"],
+      "addLabels": ["area/dependencies"]
+    },
+    {
+      "description": "Label GitHub Actions PRs with area/infra",
+      "matchManagers": ["github-actions"],
+      "addLabels": ["area/infra"]
+    },
+
+    // ════════════════════════════════════════════════════════════════════
+    //  SCHEDULES PER BRANCH / MANAGER
+    // ════════════════════════════════════════════════════════════════════
+    {
+      "description": "LTS branches: run at 23:00",
+      "matchBaseBranches": ["3.20", "3.27", "3.33"],
+      "schedule": ["after 11pm and before 11:30pm every weekday"]
+    },
+    {
+      "description": "Gradle: run at 21:00",
+      "matchManagers": ["gradle"],
+      "matchFileNames": ["devtools/gradle/**"],
+      "schedule": ["after 9pm and before 9:30pm every weekday"]
+    },
+    {
+      "description": "GitHub Actions: run at 00:30",
+      "matchManagers": ["github-actions"],
+      "schedule": ["after 12:30am and before 1am every weekday"]
+    },
+
+    // ════════════════════════════════════════════════════════════════════
+    //  MAIN BRANCH – MAVEN ALLOW-LIST
+    //  Dependabot used an allow-list (only listed deps get PRs).
+    //  Renovate enables everything by default, so we disable all Maven
+    //  deps on main first, then re-enable the allowed ones.
+    // ════════════════════════════════════════════════════════════════════
+    {
+      "description": "main: disable all Maven deps by default (allow-list strategy)",
+      "matchManagers": ["maven"],
+      "matchBaseBranches": ["main"],
+      "enabled": false
+    },
+    {
+      "description": "main: re-enable the curated allow-list of Maven dependencies",
+      "matchManagers": ["maven"],
+      "matchBaseBranches": ["main"],
+      "matchPackagePatterns": [
+        // RESTEasy
+        "^org\\.jboss\\.resteasy:",
+        "^org\\.jboss\\.resteasy\\.microprofile:",
+        "^org\\.jboss\\.resteasy\\.spring:",
+        // ActiveMQ
+        "^org\\.apache\\.activemq:",
+        // Flyway
+        "^org\\.flywaydb:",
+        // Liquibase
+        "^org\\.liquibase:",
+        "^org\\.liquibase\\.ext:",
+        // Misc
+        "^org\\.freemarker:freemarker$",
+        "^org\\.apache\\.httpcomponents:",
+        "^org\\.apache\\.james:apache-mime4j$",
+        "^org\\.quartz-scheduler:quartz$",
+        "^com\\.cronutils:cron-utils$",
+        "^org\\.eclipse:yasson$",
+        "^org\\.yaml:snakeyaml$",
+        "^com\\.google\\.guava:guava$",
+        // Logging
+        "^org\\.jboss\\.logging:",
+        "^org\\.jboss\\.logmanager:",
+        "^org\\.apache\\.logging\\.log4j:",
+        "^org\\.slf4j:",
+        // ASM
+        "^org\\.ow2\\.asm:",
+        // Jakarta EL
+        "^org\\.glassfish:jakarta-el$",
+        // Jib
+        "^com\\.google\\.cloud\\.tools:jib-core$",
+        // JBoss
+        "^org\\.jboss\\.threads:jboss-threads$",
+        "^org\\.jboss\\.marshalling:",
+        "^org\\.wildfly\\.common:",
+        // Quarkus
+        "^io\\.quarkus[\\.:]",
+        // Keycloak
+        "^org\\.keycloak:",
+        // Elytron
+        "^org\\.wildfly\\.security:",
+        "^org\\.wildfly\\.openssl:",
+        // JDBC Drivers
+        "^org\\.postgresql:postgresql$",
+        "^org\\.mariadb\\.jdbc:mariadb-java-client$",
+        "^com\\.mysql:mysql-connector-j$",
+        "^com\\.ibm\\.db2:jcc$",
+        // Kafka
+        "^org\\.apache\\.kafka:",
+        "^io\\.strimzi:kafka-oauth-client$",
+        "^io\\.strimzi:strimzi-test-container$",
+        "^com\\.nimbusds:nimbus-jose-jwt$",
+        "^io\\.apicurio:",
+        // Scala
+        "^org\\.scala-lang:",
+        "^net\\.alchim31\\.maven:scala-maven-plugin$",
+        // SmallRye
+        "^io\\.smallrye:",
+        "^io\\.smallrye\\.beanbag:",
+        "^io\\.smallrye\\.common:",
+        "^io\\.smallrye\\.config:",
+        "^io\\.smallrye\\.reactive:",
+        // RxJava 2
+        "^io\\.reactivex\\.rxjava2:rxjava$",
+        // Hibernate
+        "^org\\.hibernate:",
+        "^org\\.hibernate\\.",
+        // Test deps
+        "^org\\.htmlunit:htmlunit$",
+        "^io\\.rest-assured:",
+        "^org\\.hamcrest:hamcrest$",
+        "^org\\.junit:junit-bom$",
+        "^org\\.junit\\.jupiter:",
+        "^org\\.junit\\.platform:",
+        "^org\\.assertj:assertj-core$",
+        "^org\\.testcontainers:",
+        "^org\\.mockito:",
+        "^org\\.awaitility:awaitility$",
+        "^com\\.thoughtworks\\.xstream:xstream$",
+        "^org\\.jacoco:",
+        // Maven plugins
+        "^org\\.apache\\.maven\\.plugins:",
+        "^org\\.codehaus\\.mojo:",
+        "^io\\.fabric8:docker-maven-plugin$",
+        "^net\\.revelc\\.code\\.formatter:formatter-maven-plugin$",
+        "^net\\.revelc\\.code:impsort-maven-plugin$",
+        "^eu\\.maveniverse\\.maven\\.njord:",
+        "^io\\.github\\.gitflow-incremental-builder:",
+        // Narayana
+        "^org\\.jboss\\.narayana\\.jta:",
+        "^org\\.jboss\\.narayana\\.jts:",
+        "^org\\.jboss\\.narayana\\.stm:",
+        "^org\\.jboss\\.narayana\\.lra:",
+        // Agroal
+        "^io\\.agroal:",
+        // WireMock
+        "^org\\.wiremock:wiremock$",
+        "^org\\.wiremock:wiremock-standalone$",
+        "^uk\\.co\\.automatictester:wiremock-maven-plugin$",
+        // Picocli
+        "^info\\.picocli:",
+        // Caffeine
+        "^com\\.github\\.ben-manes\\.caffeine:caffeine$",
+        // Jackson
+        "^com\\.fasterxml\\.jackson:jackson-bom$",
+        "^com\\.fasterxml:classmate$",
+        // AWS
+        "^com\\.amazonaws:",
+        // Azure
+        "^com\\.microsoft\\.azure\\.functions:",
+        // Apache Commons
+        "^commons-io:commons-io$",
+        "^org\\.apache\\.commons:",
+        "^commons-codec:commons-codec$",
+        // Micrometer
+        "^io\\.micrometer:micrometer-bom$",
+        // BouncyCastle
+        "^org\\.bouncycastle:",
+        // Logstash
+        "^biz\\.paluch\\.logging:logstash-gelf$",
+        // MongoDB
+        "^org\\.mongodb:",
+        "^de\\.flapdoodle\\.embed:",
+        // Avro
+        "^org\\.apache\\.avro:",
+        // gRPC
+        "^io\\.grpc:",
+        "^com\\.google\\.api\\.grpc:proto-google-common-protos$",
+        // Jaeger
+        "^io\\.jaegertracing:",
+        // Kotlin
+        "^org\\.jetbrains\\.kotlin:kotlin-bom$",
+        "^org\\.jetbrains\\.kotlinx:",
+        "^org\\.jetbrains\\.dokka:",
+        "^org\\.jetbrains:",
+        // MicroProfile TCKs
+        "^org\\.eclipse\\.microprofile\\.",
+        // Dev UI web deps
+        "^org\\.mvnpm[\\.:]",
+        // Elasticsearch
+        "^org\\.elasticsearch\\.client:elasticsearch-rest-client$",
+        "^org\\.elasticsearch\\.client:elasticsearch-rest-client-sniffer$",
+        "^co\\.elastic\\.clients:elasticsearch-java$",
+        // Gradle extensions
+        "^com\\.gradle:",
+        // Others
+        "^com\\.puppycrawl\\.tools:checkstyle$",
+        "^com\\.google\\.cloud\\.functions:",
+        "^com\\.google\\.code\\.gson:gson$",
+        "^com\\.google\\.errorprone:",
+        "^com\\.google\\.http-client:",
+        "^io\\.dekorate:servicebinding-annotations$",
+        "^org\\.aesh:readline$",
+        "^org\\.checkerframework:checker-qual$",
+        "^org\\.jboss\\.metadata:jboss-metadata-web$",
+        "^com\\.unboundid:unboundid-ldapsdk$",
+        "^org\\.commonmark:commonmark$",
+        "^org\\.asciidoctor:asciidoctorj$",
+        "^com\\.github\\.javaparser:javaparser-core$",
+        "^org\\.jboss\\.jdeparser:jdeparser$",
+        "^com\\.h2database:h2$",
+        "^org\\.crac:crac$",
+        "^com\\.dajudge\\.kindcontainer:kindcontainer$",
+        "^jakarta\\.",
+        "^org\\.eclipse\\.",
+        "^org\\.glassfish\\.",
+        "^org\\.apache\\.groovy:",
+        "^org\\.apache\\.qpid:",
+        "^org\\.bitbucket\\.b_c:jose4j$",
+        "^io\\.fabric8:maven-model-helper$",
+        "^org\\.codejive:java-properties$",
+        "^org\\.json:json$"
+      ],
+      "enabled": true
+    },
+
+    // ════════════════════════════════════════════════════════════════════
+    //  LTS BRANCHES (3.20, 3.27, 3.33) – MAVEN ALLOW-LIST
+    //  Only Hibernate deps are allowed on these branches.
+    // ════════════════════════════════════════════════════════════════════
+    {
+      "description": "LTS: disable all Maven deps by default",
+      "matchManagers": ["maven"],
+      "matchBaseBranches": ["3.20", "3.27", "3.33"],
+      "enabled": false
+    },
+    {
+      "description": "LTS: re-enable only Hibernate dependencies",
+      "matchManagers": ["maven"],
+      "matchBaseBranches": ["3.20", "3.27", "3.33"],
+      "matchPackagePatterns": [
+        "^org\\.hibernate\\.orm:",
+        "^org\\.hibernate\\.reactive:",
+        "^org\\.hibernate\\.validator:",
+        "^org\\.hibernate\\.search:"
+      ],
+      "enabled": true
+    },
+
+    // ════════════════════════════════════════════════════════════════════
+    //  GROUPING – Hibernate
+    // ════════════════════════════════════════════════════════════════════
+    {
+      "description": "main: group Hibernate ORM/Search/Reactive/Tool updates together",
+      "matchBaseBranches": ["main"],
+      "groupName": "Hibernate",
+      "matchPackagePatterns": [
+        "^org\\.hibernate\\.orm",
+        "^org\\.hibernate\\.reactive",
+        "^org\\.hibernate\\.search",
+        "^org\\.hibernate\\.tool"
+      ]
+    },
+    {
+      "description": "LTS: group Hibernate ORM/Search/Reactive/Validator updates together",
+      "matchBaseBranches": ["3.20", "3.27", "3.33"],
+      "groupName": "Hibernate",
+      "matchPackagePatterns": [
+        "^org\\.hibernate\\.orm",
+        "^org\\.hibernate\\.reactive",
+        "^org\\.hibernate\\.search",
+        "^org\\.hibernate\\.validator"
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════
+    //  IGNORE RULES – Unconditionally disabled dependencies
+    // ════════════════════════════════════════════════════════════════════
+    {
+      "description": "Fully ignore org.hibernate.common (aligned with Hibernate artifacts)",
+      "matchPackagePatterns": ["^org\\.hibernate\\.common:"],
+      "enabled": false
+    },
+    {
+      "description": "Fully ignore org.hibernate.models (aligned with Hibernate artifacts)",
+      "matchPackagePatterns": ["^org\\.hibernate\\.models:"],
+      "enabled": false
+    },
+
+    // ════════════════════════════════════════════════════════════════════
+    //  IGNORE RULES – Major/minor only (main branch)
+    // ════════════════════════════════════════════════════════════════════
+    {
+      "description": "main: ignore major+minor for MicroProfile TCKs",
+      "matchBaseBranches": ["main"],
+      "matchPackagePatterns": [
+        "^org\\.eclipse\\.microprofile\\.config:microprofile-config-tck$",
+        "^org\\.eclipse\\.microprofile\\.context-propagation:microprofile-context-propagation-tck$",
+        "^org\\.eclipse\\.microprofile\\.fault-tolerance:microprofile-fault-tolerance-tck$",
+        "^org\\.eclipse\\.microprofile\\.graphql:microprofile-graphql-tck$",
+        "^org\\.eclipse\\.microprofile\\.health:microprofile-health-tck$",
+        "^org\\.eclipse\\.microprofile\\.jwt:microprofile-jwt-auth-tck$",
+        "^org\\.eclipse\\.microprofile\\.reactive\\.messaging:microprofile-reactive-messaging-tck$",
+        "^org\\.eclipse\\.microprofile\\.openapi:microprofile-openapi-tck$",
+        "^org\\.eclipse\\.microprofile\\.rest\\.client:microprofile-rest-client-tck$"
+      ],
+      "matchUpdateTypes": ["major", "minor"],
+      "enabled": false
+    },
+    {
+      "description": "main: ignore major+minor for Hibernate",
+      "matchBaseBranches": ["main"],
+      "matchPackagePatterns": [
+        "^org\\.hibernate:",
+        "^org\\.hibernate\\."
+      ],
+      "matchUpdateTypes": ["major", "minor"],
+      "enabled": false
+    },
+    {
+      "description": "main: ignore major+minor for Apache Kafka",
+      "matchBaseBranches": ["main"],
+      "matchPackagePatterns": ["^org\\.apache\\.kafka:"],
+      "matchUpdateTypes": ["major", "minor"],
+      "enabled": false
+    },
+    {
+      "description": "main: ignore major for Elasticsearch",
+      "matchBaseBranches": ["main"],
+      "matchPackagePatterns": [
+        "^org\\.elasticsearch\\.client:elasticsearch-rest-client$",
+        "^org\\.elasticsearch\\.client:elasticsearch-rest-client-sniffer$",
+        "^co\\.elastic\\.clients:elasticsearch-java$"
+      ],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
+      "description": "main: ignore major+minor for Expressly (tightly coupled with Jakarta Validation / Hibernate Validator)",
+      "matchBaseBranches": ["main"],
+      "matchPackagePatterns": ["^org\\.glassfish\\.expressly:expressly$"],
+      "matchUpdateTypes": ["major", "minor"],
+      "enabled": false
+    },
+
+    // ════════════════════════════════════════════════════════════════════
+    //  IGNORE RULES – Major/minor only (LTS branches)
+    // ════════════════════════════════════════════════════════════════════
+    {
+      "description": "LTS: ignore major+minor for all Hibernate",
+      "matchBaseBranches": ["3.20", "3.27", "3.33"],
+      "matchPackagePatterns": ["^org\\.hibernate\\.*:"],
+      "matchUpdateTypes": ["major", "minor"],
+      "enabled": false
+    }
+  ]
+}
+

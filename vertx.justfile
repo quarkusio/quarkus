@@ -21,7 +21,7 @@ list := shell("for dir in $1; do find \"$dir\" -name pom.xml -exec dirname {} \\
 
 quickly:
     @echo "Building modules: {{list}}"
-    MAVEN_OPTS=-XX:-MaxFDLimit mvn -T4 -pl {{list}} -am clean install -Dquickly
+    mvn -T4 -pl {{list}} -am clean install -Dquickly
 
 test:
     @echo "Testing modules: {{list}}"

@@ -33,7 +33,8 @@ public interface DevServicesBuildTimeConfig {
      *
      * * DB2: `{db2-image}`
      * * MariaDB: `{mariadb-image}`
-     * * Microsoft SQL Server: `{mssql-image}`
+     * * Microsoft SQL Server: `{mssql-image}` +
+     * On ARM (aarch64),`{mssql-image-aarch64}` is used instead, because the standard MS SQL Server image does not run on ARM.
      * * MySQL: `{mysql-image}`
      * * Oracle Express Edition: `{oracle-image}`
      * * PostgreSQL: `{postgres-image}`

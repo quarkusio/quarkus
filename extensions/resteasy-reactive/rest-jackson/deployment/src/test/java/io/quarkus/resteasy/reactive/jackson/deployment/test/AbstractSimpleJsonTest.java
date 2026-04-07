@@ -9,6 +9,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -1016,5 +1017,29 @@ public abstract class AbstractSimpleJsonTest {
                 .body("doubleInstance", Matchers.nullValue())
                 .body("booleanPrimitive", Matchers.equalTo(false))
                 .body("booleanInstance", Matchers.nullValue());
+    }
+
+    @Test
+    void testShouldDeserializePolymorphicItems() {
+        RestAssured
+                .with()
+                .body("{\"items\": [{\"name\": \"world\"}]}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/linkedlist-batch")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("values", CoreMatchers.is("world"));
+    }
+
+    @Test
+    void testShouldRejectUnknownFields() {
+        RestAssured
+                .with()
+                .body("{\"name\": \"world\", \"evil\": \"data\"}")
+                .contentType("application/json")
+                .post("/simple/greeting")
+                .then()
+                .statusCode(400);
     }
 }

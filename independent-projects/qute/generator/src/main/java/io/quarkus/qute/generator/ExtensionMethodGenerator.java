@@ -14,9 +14,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
@@ -262,8 +264,8 @@ public class ExtensionMethodGenerator extends AbstractGenerator {
                     // First group extension methods by number of _evaluated_ params, e.g.:
                     // 0 -> [ping(), pong()]
                     // 1 -> [ping(int a), ping(String name), pong(boolean val)]
-                    Map<Integer, List<NamespaceExtensionMethodInfo>> byNumberOfParams = new HashMap<>();
-                    Map<Integer, List<NamespaceExtensionMethodInfo>> varargsByMinParams = new HashMap<>();
+                    Map<Integer, List<NamespaceExtensionMethodInfo>> byNumberOfParams = new TreeMap<>();
+                    Map<Integer, List<NamespaceExtensionMethodInfo>> varargsByMinParams = new TreeMap<>();
                     for (NamespaceExtensionMethodInfo em : extensionMethods) {
                         int count = em.params().evaluated().size();
                         List<NamespaceExtensionMethodInfo> matching = byNumberOfParams.get(count);
@@ -294,8 +296,8 @@ public class ExtensionMethodGenerator extends AbstractGenerator {
                         // "ping" -> [ping(int a), ping(String name)]
                         // Keep in mind that extension methods may have a special name matching config,
                         // e.g. TemplateExtension#matchNames()
-                        Map<String, List<NamespaceExtensionMethodInfo>> matchingName = new HashMap<>();
-                        Map<Set<String>, List<NamespaceExtensionMethodInfo>> matchingNames = new HashMap<>();
+                        Map<String, List<NamespaceExtensionMethodInfo>> matchingName = new LinkedHashMap<>();
+                        Map<Set<String>, List<NamespaceExtensionMethodInfo>> matchingNames = new LinkedHashMap<>();
                         int numberOfParams = e.getKey();
                         List<NamespaceExtensionMethodInfo> extensionMethodForParams = e.getValue();
 
@@ -373,7 +375,7 @@ public class ExtensionMethodGenerator extends AbstractGenerator {
                             bc.block(nested -> {
                                 // Test that any of the names matches
                                 nested.block(nested2 -> {
-                                    for (String matchName : matchNames) {
+                                    for (String matchName : matchNames.stream().sorted().toList()) {
                                         nested2.if_(nested2.objEquals(name, Const.of(matchName)),
                                                 namesMatch -> namesMatch.break_(nested2));
                                     }
@@ -437,7 +439,7 @@ public class ExtensionMethodGenerator extends AbstractGenerator {
                                 } else if (em.matchesNames()) {
                                     // Test that any of the names matches
                                     nested.block(nested2 -> {
-                                        for (String matchName : em.matchNames()) {
+                                        for (String matchName : em.matchNames().stream().sorted().toList()) {
                                             nested2.if_(nested2.objEquals(name, Const.of(matchName)),
                                                     namesMatch -> namesMatch.break_(nested2));
                                         }

@@ -1,53 +1,26 @@
 
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.kubernetes.deployment.Constants.CRONJOB;
-
 import java.util.HashMap;
 import java.util.List;
-import java.util.function.Function;
 
-import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
-import io.dekorate.utils.Strings;
 import io.fabric8.kubernetes.api.model.Container;
-import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.api.model.KubernetesListFluent;
 import io.fabric8.kubernetes.api.model.batch.v1.CronJob;
 import io.fabric8.kubernetes.api.model.batch.v1.CronJobBuilder;
 import io.fabric8.kubernetes.api.model.batch.v1.CronJobFluent;
 
-public class AddCronJobResourceDecorator extends ResourceProvidingDecorator<KubernetesListFluent<?>> {
-
-    private final String name;
-    private final CronJobConfig config;
-
-    public AddCronJobResourceDecorator(String name, CronJobConfig config) {
-        this.name = name;
-        this.config = config;
+public class AddCronJobResourceDecorator extends BaseAddDeploymentResourceDecorator<CronJob, CronJobBuilder, CronJobConfig> {
+    public AddCronJobResourceDecorator(String name, CronJobConfig config, DeploymentResourceKind toRemove) {
+        super(name, DeploymentResourceKind.CronJob, config, toRemove);
     }
 
     @Override
-    public void visit(KubernetesListFluent<?> list) {
-        CronJobBuilder builder = list.buildItems().stream()
-                .filter(this::containsCronJobResource)
-                .map(replaceExistingCronJobResource(list))
-                .findAny()
-                .orElseGet(this::createCronJobResource)
-                .accept(CronJobBuilder.class, this::initCronJobResourceWithDefaults);
-
-        if (Strings.isNullOrEmpty(builder.buildSpec().getSchedule())) {
-            throw new IllegalArgumentException(
-                    "When generating a CronJob resource, you need to specify a schedule CRON expression.");
-        }
-
-        list.addToItems(builder.build());
+    protected CronJobBuilder builderWithName(String name) {
+        return new CronJobBuilder().withNewMetadata().withName(name).endMetadata();
     }
 
-    private boolean containsCronJobResource(HasMetadata metadata) {
-        return CRONJOB.equalsIgnoreCase(metadata.getKind()) && name.equals(metadata.getMetadata().getName());
-    }
-
-    private void initCronJobResourceWithDefaults(CronJobBuilder builder) {
+    @Override
+    protected void initBuilderWithDefaults(CronJobBuilder builder, CronJobConfig config) {
         CronJobFluent<?>.SpecNested<CronJobBuilder> spec = builder.editOrNewSpec();
 
         var jobTemplateSpec = spec
@@ -74,12 +47,19 @@ public class AddCronJobResourceDecorator extends ResourceProvidingDecorator<Kube
         }
         // - container
         if (!containsContainerWithName(spec)) {
-            jobTemplateSpec.editTemplate().editSpec().addNewContainer().withName(name).endContainer().endSpec().endTemplate();
+            jobTemplateSpec.editTemplate().editSpec().addNewContainer().withName(name()).endContainer().endSpec().endTemplate();
         }
 
         spec.withSuspend(config.suspend());
         spec.withConcurrencyPolicy(config.concurrencyPolicy().name());
+
         config.schedule().ifPresent(spec::withSchedule);
+        // check that we end up with a schedule, either from existing resource or configuration
+        final var schedule = spec.getSchedule();
+        if (schedule == null || schedule.isBlank()) {
+            throw new IllegalArgumentException(
+                    "When generating a CronJob resource, you need to specify a schedule CRON expression.");
+        }
         config.successfulJobsHistoryLimit().ifPresent(spec::withSuccessfulJobsHistoryLimit);
         config.failedJobsHistoryLimit().ifPresent(spec::withFailedJobsHistoryLimit);
         config.startingDeadlineSeconds().ifPresent(spec::withStartingDeadlineSeconds);
@@ -97,17 +77,6 @@ public class AddCronJobResourceDecorator extends ResourceProvidingDecorator<Kube
         spec.endSpec();
     }
 
-    private CronJobBuilder createCronJobResource() {
-        return new CronJobBuilder().withNewMetadata().withName(name).endMetadata();
-    }
-
-    private Function<HasMetadata, CronJobBuilder> replaceExistingCronJobResource(KubernetesListFluent<?> list) {
-        return metadata -> {
-            list.removeFromItems(metadata);
-            return new CronJobBuilder((CronJob) metadata);
-        };
-    }
-
     private boolean containsContainerWithName(CronJobFluent<?>.SpecNested<CronJobBuilder> spec) {
         var jobTemplate = spec.buildJobTemplate();
         if (jobTemplate == null
@@ -118,6 +87,6 @@ public class AddCronJobResourceDecorator extends ResourceProvidingDecorator<Kube
         }
 
         List<Container> containers = jobTemplate.getSpec().getTemplate().getSpec().getContainers();
-        return containers == null || containers.stream().anyMatch(c -> name.equals(c.getName()));
+        return containers == null || containers.stream().anyMatch(c -> name().equals(c.getName()));
     }
 }

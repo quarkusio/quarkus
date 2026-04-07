@@ -233,8 +233,13 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
     private static byte[] joinWithNewlines(List<byte[]> lines) {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             for (byte[] line : lines) {
+                if (line.length == 0) {
+                    continue;
+                }
                 out.write(line);
-                out.write('\n');
+                if (line[line.length - 1] != '\n') {
+                    out.write('\n');
+                }
             }
             return out.toByteArray();
         } catch (Exception e) {

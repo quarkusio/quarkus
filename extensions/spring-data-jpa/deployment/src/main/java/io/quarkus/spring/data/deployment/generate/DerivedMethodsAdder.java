@@ -282,7 +282,8 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
                 }
             }
         }
-        for (Map.Entry<DotName, DotName> mapping : customResultTypeImplNames.entrySet()) {
+        for (Map.Entry<DotName, DotName> mapping : customResultTypeImplNames.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey()).toList()) {
             DotName interfaceName = mapping.getKey();
             DotName implName = mapping.getValue();
             generateCustomResultTypes(interfaceName, implName, entityClassInfo, customResultTypes.get(implName));

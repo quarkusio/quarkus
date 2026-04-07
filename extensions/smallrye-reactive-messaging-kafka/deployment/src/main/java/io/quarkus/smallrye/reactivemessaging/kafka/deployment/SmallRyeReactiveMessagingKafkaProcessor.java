@@ -225,8 +225,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             BuildProducer<RunTimeConfigurationDefaultBuildItem> config,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflection) {
-        Map<String, Result> alreadyGeneratedSerializers = new HashMap<>();
-        Map<String, Result> alreadyGeneratedDeserializers = new HashMap<>();
+        Map<String, String> alreadyGeneratedSerializers = new HashMap<>();
+        Map<String, String> alreadyGeneratedDeserializers = new HashMap<>();
         for (AnnotationInstance annotation : discovery.findRepeatableAnnotationsOnMethods(DotNames.INCOMING)) {
             String channelName = annotation.value().asString();
             if (!discovery.isKafkaConnector(channelsManagedByConnectors, true, channelName)) {
@@ -334,7 +334,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     private void processIncomingType(DefaultSerdeDiscoveryState discovery,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> config, Type incomingType, String channelName,
             BuildProducer<GeneratedClassBuildItem> generatedClass, BuildProducer<ReflectiveClassBuildItem> reflection,
-            Map<String, Result> alreadyGeneratedDeserializers, Map<String, Result> alreadyGeneratedSerializers) {
+            Map<String, String> alreadyGeneratedDeserializers, Map<String, String> alreadyGeneratedSerializers) {
         extractKeyValueType(incomingType, (key, value, isBatchType) -> {
             Result keyDeserializer = deserializerFor(discovery, key, true, channelName, generatedClass, reflection,
                     alreadyGeneratedDeserializers, alreadyGeneratedSerializers);
@@ -552,7 +552,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
     private void processOutgoingType(DefaultSerdeDiscoveryState discovery, Type outgoingType,
             BiConsumer<Result, Result> serializerAcceptor, BuildProducer<GeneratedClassBuildItem> generatedClass,
-            BuildProducer<ReflectiveClassBuildItem> reflection, Map<String, Result> alreadyGeneratedSerializer) {
+            BuildProducer<ReflectiveClassBuildItem> reflection, Map<String, String> alreadyGeneratedSerializer) {
         extractKeyValueType(outgoingType, (key, value, isBatch) -> {
             Result keySerializer = serializerFor(discovery, key, generatedClass, reflection,
                     alreadyGeneratedSerializer);
@@ -872,8 +872,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             String channelName,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflection,
-            Map<String, Result> alreadyGeneratedDeserializers,
-            Map<String, Result> alreadyGeneratedSerializers) {
+            Map<String, String> alreadyGeneratedDeserializers,
+            Map<String, String> alreadyGeneratedSerializers) {
         Result result = serializerDeserializerFor(discovery, type, false);
         if (result != null && !result.exists) {
             // avoid returning Result.nonexistent() to callers, they expect a non-null Result to always be known
@@ -883,27 +883,27 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         // also, only generate the serializer/deserializer for classes and only generate once
         if (result == null && type != null && generatedClass != null && type.kind() == Type.Kind.CLASS) {
             // Check if already generated
-            result = alreadyGeneratedDeserializers.get(type.name().toString());
-            if (result == null) {
-                String clazz = JacksonSerdeGenerator.generateDeserializer(generatedClass, type);
+            String generatedDeserializerClassName = alreadyGeneratedDeserializers.get(type.name().toString());
+            if (generatedDeserializerClassName == null) {
+                generatedDeserializerClassName = JacksonSerdeGenerator.generateDeserializer(generatedClass, type);
+                alreadyGeneratedDeserializers.put(type.name().toString(), generatedDeserializerClassName);
                 LOGGER.infof("Generating Jackson deserializer for type %s", type.name().toString());
                 // Deserializers are access by reflection.
                 reflection.produce(
-                        ReflectiveClassBuildItem.builder(clazz)
+                        ReflectiveClassBuildItem.builder(generatedDeserializerClassName)
                                 .reason(getClass().getName())
                                 .methods().build());
-                alreadyGeneratedDeserializers.put(type.name().toString(), result);
-                // if the channel has a DLQ config generate a serializer as well
-                if (hasDLQConfig(channelName, discovery.getConfig())) {
-                    Result serializer = serializerFor(discovery, type, generatedClass, reflection, alreadyGeneratedSerializers);
-                    if (serializer != null) {
-                        result = Result.of(clazz)
-                                .with(key, "dead-letter-queue.key.serializer", serializer.value)
-                                .with(!key, "dead-letter-queue.value.serializer", serializer.value);
-                    }
-                } else {
-                    result = Result.of(clazz);
+            }
+            // if the channel has a DLQ config generate a serializer as well
+            if (hasDLQConfig(channelName, discovery.getConfig())) {
+                Result serializer = serializerFor(discovery, type, generatedClass, reflection, alreadyGeneratedSerializers);
+                if (serializer != null) {
+                    result = Result.of(generatedDeserializerClassName)
+                            .with(key, "dead-letter-queue.key.serializer", serializer.value)
+                            .with(!key, "dead-letter-queue.value.serializer", serializer.value);
                 }
+            } else {
+                result = Result.of(generatedDeserializerClassName);
             }
         }
         return result;
@@ -912,7 +912,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     private Result serializerFor(DefaultSerdeDiscoveryState discovery, Type type,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflection,
-            Map<String, Result> alreadyGeneratedSerializers) {
+            Map<String, String> alreadyGeneratedSerializers) {
         Result result = serializerDeserializerFor(discovery, type, true);
         if (result != null && !result.exists) {
             // avoid returning Result.nonexistent() to callers, they expect a non-null Result to always be known
@@ -922,18 +922,18 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         // also, only generate the serializer/deserializer for classes and only generate once
         if (result == null && type != null && generatedClass != null && type.kind() == Type.Kind.CLASS) {
             // Check if already generated
-            result = alreadyGeneratedSerializers.get(type.name().toString());
-            if (result == null) {
-                String clazz = JacksonSerdeGenerator.generateSerializer(generatedClass, type);
+            String generatedSerializerClassName = alreadyGeneratedSerializers.get(type.name().toString());
+            if (generatedSerializerClassName == null) {
+                generatedSerializerClassName = JacksonSerdeGenerator.generateSerializer(generatedClass, type);
+                alreadyGeneratedSerializers.put(type.name().toString(), generatedSerializerClassName);
                 LOGGER.infof("Generating Jackson serializer for type %s", type.name().toString());
                 // Serializers are access by reflection.
                 reflection.produce(
-                        ReflectiveClassBuildItem.builder(clazz)
+                        ReflectiveClassBuildItem.builder(generatedSerializerClassName)
                                 .reason(getClass().getName())
                                 .methods().build());
-                result = Result.of(clazz);
-                alreadyGeneratedSerializers.put(type.name().toString(), result);
             }
+            result = Result.of(generatedSerializerClassName);
         }
 
         return result;

@@ -206,6 +206,80 @@ public class DevMcpTest {
     }
 
     @Test
+    public void testGetLastExceptionToolAvailable() {
+        String jsonBody = """
+                    {
+                      "jsonrpc": "2.0",
+                      "id": 3,
+                      "method": "tools/list"
+                    }
+                """;
+
+        RestAssured
+                .given()
+                .contentType(ContentType.JSON)
+                .body(jsonBody)
+                .when()
+                .post("/q/dev-mcp")
+                .then()
+                .statusCode(200)
+                .body("result.tools.name", CoreMatchers.hasItem("devui-exceptions_getLastException"))
+                .body("result.tools.name", CoreMatchers.hasItem("devui-exceptions_clearLastException"));
+    }
+
+    @Test
+    public void testGetLastExceptionNoException() {
+        String jsonBody = """
+                    {
+                      "jsonrpc": "2.0",
+                      "id": 10,
+                      "method": "tools/call",
+                      "params": {
+                        "name": "devui-exceptions_getLastException",
+                        "arguments": {}
+                      }
+                    }
+                """;
+
+        RestAssured
+                .given()
+                .contentType(ContentType.JSON)
+                .body(jsonBody)
+                .when()
+                .post("/q/dev-mcp")
+                .then()
+                .statusCode(200)
+                .body("id", CoreMatchers.equalTo(10))
+                .body("result.content.text", CoreMatchers.hasItem(CoreMatchers.containsString("\"hasException\" : false")));
+    }
+
+    @Test
+    public void testClearLastException() {
+        String jsonBody = """
+                    {
+                      "jsonrpc": "2.0",
+                      "id": 11,
+                      "method": "tools/call",
+                      "params": {
+                        "name": "devui-exceptions_clearLastException",
+                        "arguments": {}
+                      }
+                    }
+                """;
+
+        RestAssured
+                .given()
+                .contentType(ContentType.JSON)
+                .body(jsonBody)
+                .when()
+                .post("/q/dev-mcp")
+                .then()
+                .statusCode(200)
+                .body("id", CoreMatchers.equalTo(11))
+                .body("result.content.text", CoreMatchers.hasItem(CoreMatchers.containsString("\"cleared\" : true")));
+    }
+
+    @Test
     public void testResourcesList() {
         String jsonBody = """
                     {

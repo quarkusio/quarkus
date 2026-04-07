@@ -5,9 +5,10 @@ import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -73,10 +74,10 @@ public class StockMethodsAdder {
         Set<MethodInfo> methodsOfExtendedSpringDataRepositories = methodsOfExtendedSpringDataRepositories(
                 repositoryToImplement);
         Set<MethodInfo> stockMethodsAddedToInterface = stockMethodsAddedToInterface(repositoryToImplement);
-        Set<MethodInfo> allMethodsToBeImplemented = new HashSet<>(methodsOfExtendedSpringDataRepositories);
+        Set<MethodInfo> allMethodsToBeImplemented = new LinkedHashSet<>(methodsOfExtendedSpringDataRepositories);
         allMethodsToBeImplemented.addAll(stockMethodsAddedToInterface);
 
-        Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult = new HashMap<>();
+        Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult = new LinkedHashMap<>();
         for (MethodInfo methodInfo : allMethodsToBeImplemented) {
             allMethodsToBeImplementedToResult.put(GenerationUtil.toMethodDescriptor(generatedClassName, methodInfo), false);
         }
@@ -1027,7 +1028,7 @@ public class StockMethodsAdder {
     // to their interface declaration without having to make their repository extend any of those
     // this is done so users have the ability to add only what they need
     private Set<MethodInfo> stockMethodsAddedToInterface(ClassInfo repositoryToImplement) {
-        Set<MethodInfo> result = new HashSet<>();
+        Set<MethodInfo> result = new LinkedHashSet<>();
 
         Set<MethodInfo> allSpringDataRepositoryMethods = allSpringDataRepositoryMethods();
         for (MethodInfo method : repositoryToImplement.methods()) {

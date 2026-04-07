@@ -2,7 +2,6 @@ package io.quarkus.smallrye.reactivemessaging.pulsar.deployment;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.context.Dependent;
@@ -121,6 +120,6 @@ public class SyntheticBeanBuilder {
     String generateId(Type type, String targetType) {
         String baseName = type.name().withoutPackagePrefix();
         return baseName + "_" + targetType + "Schema_"
-                + HashUtil.sha1(Long.toString(UUID.randomUUID().getMostSignificantBits()));
+                + HashUtil.sha1(type.name().toString());
     }
 }

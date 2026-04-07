@@ -30,6 +30,7 @@ import io.quarkus.bootstrap.app.QuarkusBootstrap.Mode;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.deployment.dev.ClassScanResult;
 import io.quarkus.deployment.dev.CompilationProvider;
 import io.quarkus.deployment.dev.DevModeContext;
@@ -484,6 +485,132 @@ public class TestSupport implements TestController {
             }
         }
 
+    }
+
+    /**
+     * Run all tests synchronously on the calling thread and return the results.
+     * Initializes test infrastructure if needed, without requiring continuous testing to be started.
+     */
+    public TestRunResults runAllTestsSynchronously() {
+        return runTestsSynchronouslyInternal(null, null);
+    }
+
+    /**
+     * Run tests affected by recent code changes synchronously and return the results.
+     * Uses RuntimeUpdatesProcessor to detect changed classes and TestClassUsages to filter affected tests.
+     * On cold start (no prior test run), falls back to running all tests.
+     */
+    public TestRunResults runAffectedTestsSynchronously() {
+        ClassScanResult classScanResult = RuntimeUpdatesProcessor.INSTANCE.checkForChangedClassesForTests();
+        if (classScanResult != null) {
+            return runTestsSynchronouslyInternal(classScanResult, null);
+        }
+        // no changes detected, run all
+        return runTestsSynchronouslyInternal(null, null);
+    }
+
+    /**
+     * Run a specific test synchronously and return the results.
+     *
+     * @param testSelection test class name (e.g. com.example.MyTest) or class+method (e.g. com.example.MyTest#myMethod)
+     */
+    public TestRunResults runSpecificTestSynchronously(String testSelection) {
+        String prefix = "maven:";
+        if (context.getProjectDir() != null) {
+            Path projectDir = context.getProjectDir().toPath();
+            if (BuildToolHelper.BuildTool.GRADLE.exists(projectDir)) {
+                prefix = "gradle:";
+            }
+        }
+        String selection = prefix + testSelection;
+        return runTestsSynchronouslyInternal(null, selection);
+    }
+
+    private synchronized TestRunResults runTestsSynchronouslyInternal(ClassScanResult classScanResult,
+            String specificSelection) {
+        init();
+        final ClassScanResult effectiveScanResult = classScanResult;
+        final long runId = COUNTER.incrementAndGet();
+        handleApplicationPropertiesChange();
+        List<Runnable> runnables = new ArrayList<>();
+        List<TestRunListener> testRunListeners = new ArrayList<>();
+        for (var i : testListeners) {
+            i.testRunStarted(testRunListeners::add);
+        }
+        long start = System.currentTimeMillis();
+        final AtomicLong testCount = new AtomicLong();
+        List<TestRunResults> allResults = new ArrayList<>();
+        for (var module : moduleRunners) {
+            runnables.add(module.prepare(effectiveScanResult, false, runId, new TestRunListener() {
+                @Override
+                public void runStarted(long toRun) {
+                    testCount.addAndGet(toRun);
+                }
+
+                @Override
+                public void testComplete(TestResult result) {
+                    for (var i : testRunListeners) {
+                        i.testComplete(result);
+                    }
+                }
+
+                @Override
+                public void runComplete(TestRunResults results) {
+                    allResults.add(results);
+                }
+
+                @Override
+                public void runAborted() {
+                    for (var i : testRunListeners) {
+                        i.runAborted();
+                    }
+                }
+
+                @Override
+                public void testStarted(TestIdentifier testIdentifier, String className) {
+                    for (var i : testRunListeners) {
+                        i.testStarted(testIdentifier, className);
+                    }
+                }
+
+            }, specificSelection));
+        }
+        for (var i : testRunListeners) {
+            i.runStarted(testCount.get());
+        }
+        for (var i : runnables) {
+            try {
+                i.run();
+            } catch (Exception e) {
+                log.error("Failed to run test module", e);
+            }
+        }
+        Map<String, TestClassResult> aggregate = new HashMap<>();
+        for (var i : allResults) {
+            aggregate.putAll(i.getResults());
+        }
+        TestRunResults results = new TestRunResults(runId, effectiveScanResult, effectiveScanResult == null, start,
+                System.currentTimeMillis(), aggregate);
+        testRunResults = results;
+        if (!closed) {
+            for (var i : testRunListeners) {
+                i.runComplete(results);
+            }
+        }
+        return results;
+    }
+
+    /**
+     * Check if test class usage data has been populated from a prior test run.
+     * When false, runAffectedTests will fall back to running all tests.
+     */
+    public boolean hasTestClassUsageData() {
+        for (var module : moduleRunners) {
+            if (module.hasTestClassUsageData()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void addListener(TestListener listener) {

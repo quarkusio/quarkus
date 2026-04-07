@@ -82,7 +82,8 @@ public class ConfigurationPropertiesBuildStep {
                         classInfo, configPropertiesMetadata.getPrefix(),
                         configPropertiesMetadata.getNamingStrategy(),
                         interfaceToGeneratedClass);
-                for (Map.Entry<DotName, GeneratedClass> entry : interfaceToGeneratedClass.entrySet()) {
+                for (Map.Entry<DotName, GeneratedClass> entry : interfaceToGeneratedClass.entrySet().stream()
+                        .sorted(Map.Entry.comparingByKey()).toList()) {
                     interfaceConfigPropertiesUtil.addProducerMethodForInterfaceConfigProperties(entry.getKey(),
                             configPropertiesMetadata.getPrefix(), entry.getValue());
                 }

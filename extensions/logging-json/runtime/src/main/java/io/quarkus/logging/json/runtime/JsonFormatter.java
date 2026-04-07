@@ -7,6 +7,7 @@ import static io.quarkus.logging.json.runtime.JsonLogConfig.AdditionalFieldConfi
 import static java.util.Optional.ofNullable;
 
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,16 +17,20 @@ import java.util.Set;
 
 import jakarta.enterprise.inject.spi.CDI;
 
+import org.jboss.logging.Logger;
 import org.jboss.logmanager.ExtLogRecord;
 
 import io.quarkus.logging.json.runtime.JsonLogConfig.JsonConfig.LogFormat;
 
 public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter {
 
+    private static final Logger LOG = Logger.getLogger(JsonFormatter.class);
+
     private Set<String> excludedKeys;
     private Map<String, AdditionalField> additionalFields;
     private LogFormat logFormat = LogFormat.DEFAULT;
     private String tracePrefix = "";
+    private List<JsonProvider> discoveredProviders = Collections.emptyList();
     private volatile List<JsonProvider> jsonProviders;
 
     public enum AdditionalKey {
@@ -109,6 +114,10 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         this.additionalFields = additionalFields;
     }
 
+    public void setDiscoveredProviders(List<JsonProvider> providers) {
+        this.discoveredProviders = List.copyOf(providers);
+    }
+
     public void setLogFormat(LogFormat logFormat) {
         this.logFormat = logFormat;
     }
@@ -163,13 +172,14 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         if (jsonProviders != null) {
             return jsonProviders;
         }
+        List<JsonProvider> result = new ArrayList<>(discoveredProviders);
         try {
-            List<JsonProvider> result = CDI.current().select(JsonProvider.class).stream().toList();
-            jsonProviders = result;
-            return result;
-        } catch (Exception ignored) {
-            return Collections.emptyList();
+            CDI.current().select(JsonProvider.class).forEach(result::add);
+            jsonProviders = Collections.unmodifiableList(result);
+        } catch (Throwable ignored) {
+            LOG.debug("CDI not available, JsonProvider CDI beans will not be loaded");
         }
+        return result;
     }
 
     private void addToGenerator(Map<String, AdditionalField> fields, Generator generator) throws Exception {

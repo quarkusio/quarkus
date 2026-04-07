@@ -29,6 +29,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc-deployment</artifactId>
+            <optional>true</optional>
         </dependency>
         <!-- test dependencies -->
         <dependency>

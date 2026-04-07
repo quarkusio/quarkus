@@ -6,9 +6,17 @@ import io.quarkus.logging.json.runtime.JsonFormatter.JsonLogGenerator;
 
 /**
  * Provides a mechanism to add custom JSON fields to log records on a per-record basis.
- * Implementations of this interface should be CDI beans.
- * They will be called for each log record during JSON formatting, allowing dynamic,
+ * Implementations will be called for each log record during JSON formatting, allowing dynamic,
  * per-record injection of custom JSON keys and values.
+ * <p>
+ * Implementations can be registered in two ways:
+ * <ul>
+ * <li>Via the Java {@link java.util.ServiceLoader} mechanism by creating a
+ * {@code META-INF/services/io.quarkus.logging.json.runtime.JsonProvider} file listing the
+ * fully-qualified class names of all implementations.</li>
+ * <li>As CDI beans (e.g. {@code @ApplicationScoped}) when running in a CDI environment such as
+ * Quarkus with the Arc extension.</li>
+ * </ul>
  */
 public interface JsonProvider {
 

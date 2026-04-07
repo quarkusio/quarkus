@@ -291,7 +291,8 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                                 // In the future we can inject scopes here.
                                 Set<String> dropInstrumentationScopes = Set.of(
                                         "io.opentelemetry.sdk.trace",
-                                        "io.opentelemetry.sdk.logs");
+                                        "io.opentelemetry.sdk.logs",
+                                        "io.opentelemetry.sdk.metrics");
                                 for (String target : dropInstrumentationScopes) {
                                     SdkMeterProviderUtil.addMeterConfiguratorCondition(
                                             meterProviderBuilder,

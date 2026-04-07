@@ -62,6 +62,8 @@ public class PathMatchingHttpSecurityPolicyTest {
             quarkus.http.auth.permission.inner-wildcard6.policy=deny
             quarkus.http.auth.permission.baz.paths=/api/baz
             quarkus.http.auth.permission.baz.policy=authenticated
+            quarkus.http.auth.permission.baz-percent-enc.policy=authenticated
+            quarkus.http.auth.permission.baz-percent-enc.paths=/api/baz%3Bv=1.1
             quarkus.http.auth.permission.static-resource.paths=/static-file.html
             quarkus.http.auth.permission.static-resource.policy=authenticated
             quarkus.http.auth.permission.fubar.paths=/api/fubar/baz*
@@ -145,6 +147,37 @@ public class PathMatchingHttpSecurityPolicyTest {
         assurePath("/api/now/sally/i/dont-know", 200);
     }
 
+    @Test
+    public void testInnerWildcardPathWithMatrix() {
+        assurePath("/api;/any-value;/bar;", 401);
+        assurePath("/api;param/any-value;param/bar;param", 401);
+        assurePath("/api;/any-value;/bar;", 401);
+        assurePath("/api;param/any-value;param/bar;param", 401);
+        assurePath("/api;/next;/any-value;/prev;", 401);
+        assurePath("/api;param/next;param/any-value;param/prev;param", 401);
+        assurePath("/api;/one;/two;/three;/four;", 401);
+        assurePath("/api;param/one;param/two;param/three;param/four;param", 401);
+        assurePath("/api;////any-value;//////bar;", 401);
+        assurePath("/api;param////any-value;param//////bar;param", 401);
+        assurePath("/api;/next;///////any-value;////prev;", 401);
+        assurePath("/api;param/next;param///////any-value;param////prev;param", 401);
+        assurePath("////api;//one;/two;//three;////four;?door=wood", 401);
+        assurePath("////api;param//one;param/two;param//three;param////four;param?door=wood", 401);
+        assurePath("/api;/one;/three;/four;/five;", 401);
+        assurePath("/api;param/one;param/three;param/four;param/five;param", 401);
+        assurePath("/api;/one;/3;/4;/five;", 401);
+        assurePath("/api;param/one;param/3;param/4;param/five;param", 401);
+        assurePath("////api;/one;///3;/4;/five;", 401);
+        assurePath("////api;param/one;param///3;param/4;param/five;param", 401);
+        assurePath("/api;/now;/sadly;/i;/dont-know;", 401);
+        assurePath("/api;param/now;param/sadly;param/i;param/dont-know;param", 401);
+        assurePath("/api;/now;/sadly;///i;/dont-know;", 401);
+        assurePath("/api;param/now;param/sadly;param///i;param/dont-know;param", 401);
+        assurePath("/api/one/three/jamaica/five", 200);
+        assurePath("/api/one/three/jamaica/football", 200);
+        assurePath("/api/now/sally/i/dont-know", 200);
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {
             // path policy without wildcard
@@ -167,11 +200,57 @@ public class PathMatchingHttpSecurityPolicyTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
+            // path policy without wildcard
+            "/api;/foo;//bar;", "/api;/foo;///bar;", "/api;/foo;////bar;", "/api;/foo;/////bar;", "//api;/foo;/bar;",
+            "///api;/foo;/bar;",
+            "////api;/foo;/bar;", "//api;//foo;//bar;", "//api;/foo;//bar;",
+            "/api;param/foo;param//bar;param", "/api;param/foo;param///bar;param", "/api;param/foo;param////bar;param",
+            "/api;param/foo;param/////bar;param", "//api;param/foo;param/bar;param", "///api;param/foo;param/bar;param",
+            "////api;param/foo;param/bar;param", "//api;param//foo;param//bar;param", "//api;param/foo;param//bar;param",
+            // path policy with wildcard
+            "/api;/fubar;/baz;", "/api;/fubar;/baz;/;", "/api;/fubar;/baz;//;", "/api;/fubar;/baz;/.", "/api;/fubar;/baz;////.",
+            "/api;/fubar;/baz;/bar;",
+            "/api;param/fubar;param/baz;param", "/api;param/fubar;param/baz;param/", "/api;param/fubar;param/baz;param//",
+            "/api;param/fubar;param/baz;param/.", "/api;param/fubar;param/baz;param////.",
+            "/api;param/fubar;param/baz;param/bar;param",
+            // routes defined for exact paths
+            "/api;/baz;", "//api;/baz;", "///api;////baz;", "/api;//baz;",
+            "/api;param/baz;param", "//api;param/baz;param", "///api;param////baz;param", "/api;param//baz;param",
+            // zero length path
+            "/;?one=two",
+            "/;param?one=two",
+            // empty segments only are match with path policy for '/'
+            "/;", "///;", "////;", "/////;",
+            "/;param", "///;param", "////;param", "/////;param"
+    })
+    public void testEmptyPathSegmentsWithMatrix(String path) {
+        assurePath(path, 401);
+        assurePathAuthenticated(path);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
             "/api/foo/./bar", "/../api/foo///bar", "/api/./foo/.///bar", "/api/foo/./////bar", "/api/fubar/baz/.",
             "/..///api/foo/bar", "////../../api/foo/bar", "/./api//foo//bar", "//api/foo/./bar",
             "/.", "/..", "/./", "/..//", "/.///", "/..////", "/./////"
     })
     public void testDotPathSegments(String path) {
+        assurePath(path, 401);
+        assurePathAuthenticated(path);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "/api;/foo;/./bar;", "/../api;/foo;///bar;", "/api;/./foo;/.///bar;", "/api;/foo;/./////bar;",
+            "/api;/fubar;/baz;/.",
+            "/api;param/foo;param/./bar;param", "/../api;param/foo;param///bar;param", "/api;param/./foo;param/.///bar;param",
+            "/api;param/foo;param/./////bar;param", "/api;param/fubar;param/baz;param/.",
+            "/..///api;/foo;/bar;", "////../../api;/foo;/bar;", "/./api;//foo;//bar;", "//api;/foo;/./bar;",
+            "/..///api;param/foo;param/bar;param", "////../../api;param/foo;param/bar;param",
+            "/./api;param//foo;param//bar;param",
+            "//api;param/foo;param/./bar;param"
+    })
+    public void testDotPathSegmentsWithMatrix(String path) {
         assurePath(path, 401);
         assurePathAuthenticated(path);
     }
@@ -185,10 +264,87 @@ public class PathMatchingHttpSecurityPolicyTest {
         assurePathAuthenticated(path);
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "/static-file.html;", "//static-file.html;", "///static-file.html;",
+            "/static-file.html;param", "//static-file.html;param", "///static-file.html;param"
+    })
+    public void testStaticResourceWithParam(String path) {
+        assurePath(path, 401);
+        assurePathAuthenticated(path);
+    }
+
+    @Test
+    public void testExactPathWithMatrixParams() {
+        // /api/baz policy = authenticated; matrix params must not bypass it
+        assurePath("/api/baz;v=1.1", 401);
+        assurePath("/api/baz;", 401);
+        assurePath("/api/baz;a=1;b=2", 401);
+        assurePathAuthenticated("/api/baz;v=1.1");
+        assurePathAuthenticated("/api/baz;");
+
+        // /api/foo/bar policy = authenticated; matrix on intermediate and last segments
+        assurePath("/api/foo;x=1/bar", 401);
+        assurePath("/api/foo/bar;y=2", 401);
+        assurePath("/api/foo;x=1/bar;y=2", 401);
+        assurePathAuthenticated("/api/foo;x=1/bar");
+        assurePathAuthenticated("/api/foo/bar;y=2");
+        assurePathAuthenticated("/api/foo;x=1/bar;y=2");
+    }
+
+    @Test
+    public void testEncodedSemicolon() {
+        // /api/baz policy = authenticated; matrix params must not bypass it
+        assurePath("/api/baz;v=1.1", 401);
+        assurePathAuthenticated("/api/baz;v=1.1");
+        // %3B is not matrix parameter therefore requires a dedicated policy
+        assurePath("/api/baz%3Bv=1.1", 401);
+        assurePathAuthenticated("/api/baz%3Bv=1.1");
+    }
+
+    @Test
+    public void testWildcardSuffixPathWithMatrixParams() {
+        // /api/fubar/baz* policy = authenticated
+
+        assurePath("/api/fubar/baz;v=1", 401);
+        assurePath("/api/fubar;x=1/baz", 401);
+        assurePath("/api/fubar/baz/extra;v=1", 401);
+        assurePathAuthenticated("/api/fubar/baz;v=1");
+        assurePathAuthenticated("/api/fubar;x=1/baz");
+    }
+
+    @Test
+    public void testStaticResourceWithMatrixParams() {
+        // /static-file.html policy = authenticated
+        assurePath("/static-file.html;v=1", 401);
+        assurePathAuthenticated("/static-file.html;v=1");
+    }
+
+    @Test
+    public void testRootPathWithMatrixParams() {
+        // / policy = authenticated
+        assurePath("/;v=1", 401);
+        assurePath("/;", 401);
+        assurePathAuthenticated("/;v=1");
+    }
+
+    @Test
+    public void testPermittedPathWithMatrixParams() {
+        // /api* policy = permit; must still be permitted with matrix params
+        assurePath("/api/something;v=1", 200);
+        assurePath("/api;v=1/something", 200);
+    }
+
+    @Test
+    public void testMatrixParamsWithMultipleSlashes() {
+        assurePath("//api;x=1//baz;y=2", 401);
+        assurePath("///api;x=1/foo;y=2/bar;z=3", 401);
+        assurePathAuthenticated("//api;x=1//baz;y=2");
+        assurePathAuthenticated("///api;x=1/foo;y=2/bar;z=3");
+    }
+
     @Test
     public void testMiscellaneousPaths() {
-        // /api/baz with segment indicating version shouldn't match /api/baz path policy
-        assurePath("/api/baz;v=1.1", 200);
         // /api/baz/ is different resource than secured /api/baz, but we secure both when there is not more specific exact path pattern
         assurePath("/api/baz/", 401);
     }
@@ -260,10 +416,6 @@ public class PathMatchingHttpSecurityPolicyTest {
 
     private void assurePathAuthenticated(String path) {
         assurePath(path, 200, null, "test", null);
-    }
-
-    private void assurePathAuthenticated(String path, String body) {
-        assurePath(path, 200, body, "test", null);
     }
 
     private void assurePath(String path, int expectedStatusCode, String body, String auth, String header) {

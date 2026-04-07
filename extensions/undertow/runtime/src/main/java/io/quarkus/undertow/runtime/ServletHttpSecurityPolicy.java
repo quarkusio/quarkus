@@ -6,6 +6,7 @@ import jakarta.inject.Singleton;
 
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.smallrye.mutiny.Uni;
 import io.undertow.servlet.api.Deployment;
 import io.undertow.servlet.api.SecurityInfo;
@@ -25,7 +26,7 @@ public class ServletHttpSecurityPolicy implements HttpSecurityPolicy {
     public Uni<CheckResult> checkPermission(RoutingContext request, Uni<SecurityIdentity> identity,
             AuthorizationRequestContext requestContext) {
 
-        String requestPath = request.normalizedPath();
+        String requestPath = HttpSecurityUtils.pathWithoutMatrixParams(request.normalizedPath());
         if (!requestPath.startsWith(contextPath)) {
             //anything outside the context path we don't have anything to do with
             return CheckResult.permit();

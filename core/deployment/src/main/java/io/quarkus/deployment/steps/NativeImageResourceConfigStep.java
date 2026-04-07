@@ -4,7 +4,8 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.regex.Pattern;
+
+import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.json.Json;
 import io.quarkus.bootstrap.json.Json.JsonArrayBuilder;
@@ -18,7 +19,13 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourcePatternsBu
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 
+/**
+ * Schema used:
+ * https://github.com/graalvm/graalvm-community-jdk25u/blob/master/docs/reference-manual/native-image/assets/reachability-metadata-schema-v1.2.0.json
+ */
 public class NativeImageResourceConfigStep {
+
+    private static final Logger log = Logger.getLogger(NativeImageResourceConfigStep.class);
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void generateResourceConfig(BuildProducer<GeneratedResourceBuildItem> resourceConfig,
@@ -26,60 +33,75 @@ public class NativeImageResourceConfigStep {
             List<NativeImageResourceBundleBuildItem> resourceBundles,
             List<NativeImageResourceBuildItem> resources,
             List<ServiceProviderBuildItem> serviceProviderBuildItems) {
-        JsonObjectBuilder root = Json.object();
 
-        JsonObjectBuilder resourcesJs = Json.object();
-        JsonArrayBuilder includes = Json.array();
-        JsonArrayBuilder excludes = Json.array();
+        final JsonArrayBuilder resourcesArray = Json.array();
 
         for (NativeImageResourceBuildItem i : resources) {
             for (String path : i.getResources()) {
-                JsonObjectBuilder pat = Json.object();
-                pat.put("pattern", Pattern.quote(path));
-                includes.add(pat);
+                resourcesArray.add(Json.object().put("glob", escapeGlob(path)));
             }
         }
 
         for (ServiceProviderBuildItem i : serviceProviderBuildItems) {
-            includes.add(Json.object().put("pattern", Pattern.quote(i.serviceDescriptorFile())));
+            resourcesArray.add(Json.object().put("glob", escapeGlob(i.serviceDescriptorFile())));
         }
 
-        for (NativeImageResourcePatternsBuildItem resourcePatternsItem : resourcePatterns) {
-            addListToJsonArray(includes, resourcePatternsItem.getIncludePatterns());
-            addListToJsonArray(excludes, resourcePatternsItem.getExcludePatterns());
-        }
-        resourcesJs.put("includes", includes);
-        resourcesJs.put("excludes", excludes);
-        root.put("resources", resourcesJs);
-
-        JsonArrayBuilder bundles = Json.array();
-        for (NativeImageResourceBundleBuildItem i : resourceBundles) {
-            JsonObjectBuilder bundle = Json.object();
-            String moduleName = i.getModuleName();
-            StringBuilder sb = new StringBuilder();
-            if (moduleName != null) {
-                sb.append(moduleName).append(":");
+        for (NativeImageResourcePatternsBuildItem i : resourcePatterns) {
+            final List<String> legacyRegexes = i.getIncludePatterns();
+            if (legacyRegexes != null && !legacyRegexes.isEmpty()) {
+                log.errorf("GraalVM reachability-metadata no longer supports Regex resource patterns. "
+                        + "Extension must migrate from .includePattern() to .includeGlob(). Offending regexes: "
+                        + legacyRegexes);
             }
-            sb.append(i.getBundleName().replace("/", "."));
-            bundle.put("name", sb.toString());
-            bundles.add(bundle);
+
+            final List<String> globs = i.getIncludeGlobs();
+            final String module = i.getModule();
+
+            if (globs != null) {
+                for (String glob : globs) {
+                    final JsonObjectBuilder globObj = Json.object().put("glob", glob);
+                    // wire up the new module support to the JSON output for resources buried in modules
+                    if (module != null && !module.isEmpty()) {
+                        globObj.put("module", module);
+                    }
+                    resourcesArray.add(globObj);
+                }
+            }
+
+            final List<String> excludes = i.getExcludePatterns();
+            if (excludes != null && !excludes.isEmpty()) {
+                log.warnf("Resource excludes are not supported in GraalVM reachability-metadata. "
+                        + "Ignored these exclude patterns: %s", excludes);
+            }
         }
-        root.put("bundles", bundles);
+
+        for (NativeImageResourceBundleBuildItem i : resourceBundles) {
+            final String moduleName = i.getModuleName();
+            final String bundleName = i.getBundleName().replace("/", ".");
+            // if module is present, "moduleName:bundleName" inside the "bundle" string is expected
+            final String name = (moduleName != null && !moduleName.isEmpty())
+                    ? moduleName + ":" + bundleName
+                    : bundleName;
+            resourcesArray.add(Json.object().put("bundle", name));
+        }
+
+        if (resourcesArray.isEmpty()) {
+            return;
+        }
+
+        final JsonObjectBuilder root = Json.object().put("resources", resourcesArray);
 
         try (StringWriter writer = new StringWriter()) {
             root.appendTo(writer);
-            resourceConfig.produce(new GeneratedResourceBuildItem("META-INF/native-image/resource-config.json",
+            resourceConfig.produce(new GeneratedResourceBuildItem(
+                    "META-INF/native-image/resource/reachability-metadata.json",
                     writer.toString().getBytes(StandardCharsets.UTF_8)));
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void addListToJsonArray(JsonArrayBuilder array, List<String> patterns) {
-        for (String pattern : patterns) {
-            JsonObjectBuilder pat = Json.object();
-            pat.put("pattern", pattern);
-            array.add(pat);
-        }
+    private static String escapeGlob(final String path) {
+        return path.replace("*", "\\*");
     }
 }

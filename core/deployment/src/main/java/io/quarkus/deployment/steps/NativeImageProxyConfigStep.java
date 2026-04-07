@@ -14,26 +14,36 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 
+/**
+ * Schema used:
+ * https://github.com/graalvm/graalvm-community-jdk25u/blob/master/docs/reference-manual/native-image/assets/reachability-metadata-schema-v1.2.0.json
+ */
 public class NativeImageProxyConfigStep {
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void generateProxyConfig(BuildProducer<GeneratedResourceBuildItem> proxyConfig,
             List<NativeImageProxyDefinitionBuildItem> proxies) {
-        JsonArrayBuilder root = Json.array();
-
-        for (NativeImageProxyDefinitionBuildItem proxy : proxies) {
-            JsonArrayBuilder interfaces = Json.array();
-            for (String cl : proxy.getClasses()) {
-                interfaces.add(cl);
-            }
-            JsonObjectBuilder proxyJson = Json.object();
-            proxyJson.put("interfaces", interfaces);
-            root.add(proxyJson);
+        if (proxies.isEmpty()) {
+            return;
         }
 
+        final JsonArrayBuilder reflectionArray = Json.array();
+
+        for (NativeImageProxyDefinitionBuildItem proxy : proxies) {
+            final JsonArrayBuilder interfaces = Json.array();
+            interfaces.addAll(proxy.getClasses());
+            final JsonObjectBuilder proxyTypeObj = Json.object();
+            proxyTypeObj.put("proxy", interfaces);
+            final JsonObjectBuilder reflectionEntry = Json.object();
+            reflectionEntry.put("type", proxyTypeObj);
+            reflectionArray.add(reflectionEntry);
+        }
+
+        final JsonObjectBuilder root = Json.object();
+        root.put("reflection", reflectionArray);
         try (StringWriter writer = new StringWriter()) {
             root.appendTo(writer);
-            proxyConfig.produce(new GeneratedResourceBuildItem("META-INF/native-image/proxy-config.json",
+            proxyConfig.produce(new GeneratedResourceBuildItem("META-INF/native-image/proxy/reachability-metadata.json",
                     writer.toString().getBytes(StandardCharsets.UTF_8)));
         } catch (IOException e) {
             throw new RuntimeException(e);

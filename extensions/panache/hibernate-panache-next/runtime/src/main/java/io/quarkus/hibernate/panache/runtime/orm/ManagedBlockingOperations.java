@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import jakarta.data.Order;
 import jakarta.persistence.LockModeType;
 
 import org.hibernate.Session;
@@ -12,7 +13,7 @@ import org.hibernate.StatelessSession;
 
 import io.quarkus.hibernate.panache.blocking.PanacheBlockingQuery;
 import io.quarkus.hibernate.panache.runtime.spi.PanacheBlockingOperations;
-import io.quarkus.panache.common.Sort;
+import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
 
 public class ManagedBlockingOperations implements PanacheBlockingOperations {
 
@@ -127,8 +128,8 @@ public class ManagedBlockingOperations implements PanacheBlockingOperations {
     }
 
     @Override
-    public PanacheBlockingQuery<?> find(Class<?> entityClass, String query, Sort sort, Object... params) {
-        return DELEGATE.find(entityClass, query, sort, params);
+    public PanacheBlockingQuery<?> find(Class<?> entityClass, String query, Order<?> order, Object... params) {
+        return DELEGATE.find(entityClass, query, PanacheJpaUtil.toSort(order), params);
     }
 
     @Override
@@ -137,8 +138,8 @@ public class ManagedBlockingOperations implements PanacheBlockingOperations {
     }
 
     @Override
-    public PanacheBlockingQuery<?> find(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
-        return DELEGATE.find(entityClass, query, sort, params);
+    public PanacheBlockingQuery<?> find(Class<?> entityClass, String query, Order<?> order, Map<String, Object> params) {
+        return DELEGATE.find(entityClass, query, PanacheJpaUtil.toSort(order), params);
     }
 
     @Override
@@ -147,8 +148,8 @@ public class ManagedBlockingOperations implements PanacheBlockingOperations {
     }
 
     @Override
-    public PanacheBlockingQuery<?> findAll(Class<?> entityClass, Sort sort) {
-        return DELEGATE.findAll(entityClass, sort);
+    public PanacheBlockingQuery<?> findAll(Class<?> entityClass, Order<?> order) {
+        return DELEGATE.findAll(entityClass, PanacheJpaUtil.toSort(order));
     }
 
     @Override
@@ -157,8 +158,8 @@ public class ManagedBlockingOperations implements PanacheBlockingOperations {
     }
 
     @Override
-    public List<?> list(Class<?> entityClass, String query, Sort sort, Object... params) {
-        return DELEGATE.list(entityClass, query, sort, params);
+    public List<?> list(Class<?> entityClass, String query, Order<?> order, Object... params) {
+        return DELEGATE.list(entityClass, query, PanacheJpaUtil.toSort(order), params);
     }
 
     @Override
@@ -167,8 +168,8 @@ public class ManagedBlockingOperations implements PanacheBlockingOperations {
     }
 
     @Override
-    public List<?> list(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
-        return DELEGATE.list(entityClass, query, sort, params);
+    public List<?> list(Class<?> entityClass, String query, Order<?> order, Map<String, Object> params) {
+        return DELEGATE.list(entityClass, query, PanacheJpaUtil.toSort(order), params);
     }
 
     @Override
@@ -177,8 +178,8 @@ public class ManagedBlockingOperations implements PanacheBlockingOperations {
     }
 
     @Override
-    public List<?> listAll(Class<?> entityClass, Sort sort) {
-        return DELEGATE.listAll(entityClass, sort);
+    public List<?> listAll(Class<?> entityClass, Order<?> order) {
+        return DELEGATE.listAll(entityClass, PanacheJpaUtil.toSort(order));
     }
 
     @Override
@@ -242,8 +243,8 @@ public class ManagedBlockingOperations implements PanacheBlockingOperations {
     }
 
     @Override
-    public Stream<?> stream(Class<?> entityClass, String query, Sort sort, Object... params) {
-        return DELEGATE.stream(entityClass, query, sort, params);
+    public Stream<?> stream(Class<?> entityClass, String query, Order<?> order, Object... params) {
+        return DELEGATE.stream(entityClass, query, PanacheJpaUtil.toSort(order), params);
     }
 
     @Override
@@ -252,13 +253,13 @@ public class ManagedBlockingOperations implements PanacheBlockingOperations {
     }
 
     @Override
-    public Stream<?> stream(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
-        return DELEGATE.stream(entityClass, query, sort, params);
+    public Stream<?> stream(Class<?> entityClass, String query, Order<?> order, Map<String, Object> params) {
+        return DELEGATE.stream(entityClass, query, PanacheJpaUtil.toSort(order), params);
     }
 
     @Override
-    public Stream<?> streamAll(Class<?> entityClass, Sort sort) {
-        return DELEGATE.streamAll(entityClass, sort);
+    public Stream<?> streamAll(Class<?> entityClass, Order<?> order) {
+        return DELEGATE.streamAll(entityClass, PanacheJpaUtil.toSort(order));
     }
 
     @Override

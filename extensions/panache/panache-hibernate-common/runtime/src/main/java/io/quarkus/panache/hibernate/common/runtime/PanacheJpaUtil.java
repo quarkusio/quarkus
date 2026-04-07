@@ -191,6 +191,45 @@ public class PanacheJpaUtil {
         return sb.toString();
     }
 
+    /**
+     * Convert Jakarta Data Order to Panache Sort.
+     * <p>
+     * Note: This conversion loses the {@code ignoreCase} flag from Jakarta Data Sort,
+     * as Panache Sort does not support case-insensitive sorting. Users needing
+     * case-insensitive sorting should use {@code @Query} methods with the HQL
+     * {@code LOWER()} function directly.
+     *
+     * @param order the Jakarta Data order, may be null
+     * @return the Panache Sort, or null if order is null
+     */
+    public static Sort toSort(jakarta.data.Order<?> order) {
+        if (order == null) {
+            return null;
+        }
+
+        if (order.sorts().isEmpty()) {
+            return Sort.empty();
+        }
+
+        Sort result = null;
+        for (jakarta.data.Sort<?> jdSort : order.sorts()) {
+            String property = jdSort.property();
+            Sort.Direction direction = jdSort.isAscending()
+                    ? Sort.Direction.Ascending
+                    : Sort.Direction.Descending;
+
+            if (result == null) {
+                result = Sort.by(property, direction);
+            } else {
+                result = result.and(property, direction);
+            }
+
+            // Note: ignoreCase flag is lost in conversion since Panache Sort doesn't support it
+        }
+
+        return result;
+    }
+
     private static StringBuilder escapeColumnName(String columnName) {
         StringBuilder sb = new StringBuilder();
         String[] path = columnName.split("\\.");

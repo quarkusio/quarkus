@@ -8,6 +8,7 @@ import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessaging
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -359,9 +360,18 @@ public class SmallRyeReactiveMessagingProcessor {
             channelConfigurations.add(it.getChannelConfig());
         }
 
+        // sort the recorder parameters for reproducible bytecode generation
+        mediatorConfigurations.sort(Comparator.comparing(QuarkusMediatorConfiguration::getBeanId)
+                .thenComparing(QuarkusMediatorConfiguration::getMethodName));
+        workerConfigurations.sort(Comparator.comparing(WorkerConfiguration::getClassName)
+                .thenComparing(WorkerConfiguration::getMethodName));
+        List<EmitterConfiguration> sortedEmitterConfigurations = emittersConfigurations.values().stream()
+                .sorted(Comparator.comparing(EmitterConfiguration::name))
+                .toList();
+        channelConfigurations.sort(Comparator.comparing(c -> c.channelName));
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(SmallRyeReactiveMessagingContext.class)
                 .supplier(recorder.createContext(mediatorConfigurations, workerConfigurations,
-                        new ArrayList<>(emittersConfigurations.values()), channelConfigurations))
+                        sortedEmitterConfigurations, channelConfigurations))
                 .done());
     }
 

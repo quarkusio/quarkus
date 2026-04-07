@@ -38,6 +38,11 @@ public class ModuleTestRunner {
     }
 
     Runnable prepare(ClassScanResult classScanResult, boolean reRunFailures, long runId, TestRunListener listener) {
+        return prepare(classScanResult, reRunFailures, runId, listener, null);
+    }
+
+    Runnable prepare(ClassScanResult classScanResult, boolean reRunFailures, long runId, TestRunListener listener,
+            String specificSelection) {
 
         var old = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(testApplication.getOrCreateAugmentClassLoader());
@@ -56,7 +61,7 @@ public class ModuleTestRunner {
                         .setExcludeTags(testSupport.excludeTags)
                         .setInclude(testSupport.include)
                         .setExclude(testSupport.exclude)
-                        .setSpecificSelection(testSupport.specificSelection)
+                        .setSpecificSelection(specificSelection != null ? specificSelection : testSupport.specificSelection)
                         .setIncludeEngines(testSupport.includeEngines)
                         .setExcludeEngines(testSupport.excludeEngines)
                         .setTestType(testSupport.testType)
@@ -103,5 +108,9 @@ public class ModuleTestRunner {
 
     public TestState getTestState() {
         return testState;
+    }
+
+    public boolean hasTestClassUsageData() {
+        return testClassUsages.hasData();
     }
 }

@@ -89,6 +89,7 @@ import io.quarkus.vertx.http.HttpServerStart;
 import io.quarkus.vertx.http.HttpsServerStart;
 import io.quarkus.vertx.http.ManagementInterface;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig.InsecureRequests;
+import io.quarkus.vertx.http.runtime.cors.CORSFilter;
 import io.quarkus.vertx.http.runtime.devmode.RemoteSyncHandler;
 import io.quarkus.vertx.http.runtime.devmode.VertxHttpHotReplacementSetup;
 import io.quarkus.vertx.http.runtime.filters.Filter;
@@ -136,7 +137,6 @@ import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
-import io.vertx.ext.web.handler.CorsHandler;
 
 @Recorder
 public class VertxHttpRecorder {
@@ -204,12 +204,16 @@ public class VertxHttpRecorder {
         }
 
         private boolean uriValid(HttpServerRequest httpServerRequest) {
+            String uri = httpServerRequest.uri();
+            if (uri == null) { // it's not clear how this can happen, but it can
+                return false;
+            }
             if (DISABLE_URI_VALIDATION) {
                 return true;
             }
             try {
                 // we simply need to know if the URI is valid
-                new URI(httpServerRequest.uri());
+                new URI(uri);
                 return true;
             } catch (URISyntaxException e) {
                 return false;
@@ -588,8 +592,10 @@ public class VertxHttpRecorder {
 
             mr.route().order(RouteConstants.ROUTE_ORDER_BODY_HANDLER_MANAGEMENT)
                     .handler(createBodyHandlerForManagementInterface());
-            // We can use "*" here as the management interface is not expected to be used publicly.
-            mr.route().order(RouteConstants.ROUTE_ORDER_CORS_MANAGEMENT).handler(CorsHandler.create().addOrigin("*"));
+            if (managementConfig.getValue().cors().enabled()) {
+                mr.route().order(RouteConstants.ROUTE_ORDER_CORS_MANAGEMENT)
+                        .handler(new CORSFilter(managementConfig.getValue().cors()));
+            }
 
             HttpServerCommonHandlers.applyFilters(managementConfig.getValue().filter(), mr);
             for (Filter filter : managementInterfaceFilterList) {

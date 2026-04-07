@@ -5,6 +5,7 @@ import static io.quarkus.security.spi.SecurityTransformerBuildItem.createSecurit
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -238,7 +239,8 @@ class SpringSecurityProcessor {
          * For each meta-annotation add the value of @PreAuthorize to the method tracking map
          */
         Set<DotName> classesInNeedOfAnnotationTransformation = new HashSet<>();
-        for (ClassInfo metaAnnotation : metaAnnotations.values()) {
+        for (ClassInfo metaAnnotation : metaAnnotations.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey()).map(Map.Entry::getValue).toList()) {
             for (AnnotationInstance instance : index.getIndex().getAnnotations(metaAnnotation.name())) {
                 if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
                     continue;
@@ -286,7 +288,7 @@ class SpringSecurityProcessor {
         Map<DotName, Set<FieldInfo>> stringPropertiesInNeedOfGeneratedAccessors = new HashMap<>();
 
         for (Map.Entry<MethodInfo, AnnotationInstance> entry : springPreAuthorizeAnnotatedMethods.getMethodToInstanceMap()
-                .entrySet()) {
+                .entrySet().stream().sorted(Comparator.comparing(e -> e.getKey().toString())).toList()) {
             AnnotationInstance instance = entry.getValue();
             MethodInfo methodInfo = entry.getKey();
             String value = instance.value().asString().trim();
@@ -342,7 +344,8 @@ class SpringSecurityProcessor {
         if (!stringPropertiesInNeedOfGeneratedAccessors.isEmpty()) {
             GeneratedBeanGizmoAdaptor classOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
             Set<String> generatedBeanClassNames = new HashSet<>(stringPropertiesInNeedOfGeneratedAccessors.keySet().size());
-            for (Map.Entry<DotName, Set<FieldInfo>> entry : stringPropertiesInNeedOfGeneratedAccessors.entrySet()) {
+            for (Map.Entry<DotName, Set<FieldInfo>> entry : stringPropertiesInNeedOfGeneratedAccessors.entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey()).toList()) {
                 String generateClassName = StringPropertyAccessorGenerator.generate(entry.getKey(), entry.getValue(),
                         classOutput);
                 generatedBeanClassNames.add(generateClassName);
@@ -371,7 +374,7 @@ class SpringSecurityProcessor {
                 new GeneratedClassGizmoAdaptor(generatedClasses, true));
 
         for (Map.Entry<MethodInfo, AnnotationInstance> entry : springPreAuthorizeAnnotatedMethods.getMethodToInstanceMap()
-                .entrySet()) {
+                .entrySet().stream().sorted(Comparator.comparing(e -> e.getKey().toString())).toList()) {
             AnnotationInstance instance = entry.getValue();
 
             MethodInfo methodInfo = entry.getKey();

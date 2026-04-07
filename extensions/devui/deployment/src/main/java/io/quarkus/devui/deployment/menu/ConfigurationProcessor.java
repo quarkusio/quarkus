@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -35,7 +36,9 @@ import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.dev.config.CurrentConfig;
 import io.quarkus.dev.console.DevConsoleManager;
+import io.quarkus.devui.deployment.ExtensionsBuildItem;
 import io.quarkus.devui.deployment.InternalPageBuildItem;
+import io.quarkus.devui.deployment.extension.Extension;
 import io.quarkus.devui.runtime.config.ConfigDescriptionBean;
 import io.quarkus.devui.runtime.config.ConfigDevUIRecorder;
 import io.quarkus.devui.runtime.config.ConfigJsonRPCService;
@@ -79,6 +82,7 @@ public class ConfigurationProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void registerConfigs(List<ConfigDescriptionBuildItem> configDescriptionBuildItems,
             Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig,
+            ExtensionsBuildItem extensionsBuildItem,
             ConfigDevUIRecorder recorder) {
 
         List<ConfigDescription> configDescriptions = new ArrayList<>();
@@ -99,6 +103,26 @@ public class ConfigurationProcessor {
         }
 
         recorder.registerConfigs(configDescriptions, devServicesConfig);
+        recorder.registerExtensionConfigFilters(buildExtensionConfigFilterMap(extensionsBuildItem));
+    }
+
+    private Map<String, List<String>> buildExtensionConfigFilterMap(ExtensionsBuildItem extensionsBuildItem) {
+        Map<String, List<String>> configFilterMap = new HashMap<>();
+        for (Extension extension : extensionsBuildItem.getActiveExtensions()) {
+            List<String> configFilter = extension.getConfigFilter();
+            if (configFilter != null && !configFilter.isEmpty()) {
+                String name = extension.getName();
+                if (name != null && !name.isBlank()) {
+                    configFilterMap.put(name.toLowerCase(Locale.ROOT), configFilter);
+                }
+                String shortName = extension.getShortName();
+                if (shortName != null && !shortName.isBlank()
+                        && !shortName.equalsIgnoreCase(name)) {
+                    configFilterMap.put(shortName.toLowerCase(Locale.ROOT), configFilter);
+                }
+            }
+        }
+        return configFilterMap;
     }
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)

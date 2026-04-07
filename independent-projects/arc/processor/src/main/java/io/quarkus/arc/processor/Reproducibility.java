@@ -10,7 +10,9 @@ import java.util.function.IntFunction;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationInstanceEquivalenceProxy;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
 import io.smallrye.common.annotation.SuppressForbidden;
@@ -25,6 +27,7 @@ public class Reproducibility {
     static final Comparator<BeanInfo> BEAN_COMPARATOR = Comparator.comparing(BeanInfo::getIdentifier);
     static final Comparator<ObserverInfo> OBSERVER_COMPARATOR = Comparator.comparing(ObserverInfo::getIdentifier);
     static final Comparator<Type> TYPE_COMPARATOR = Comparator.comparing(Type::name).thenComparing(Type::toString);
+    static final Comparator<ClassInfo> CLASS_COMPARATOR = Comparator.comparing(c -> c.name().toString());
     static final Comparator<AnnotationInstance> ANNOTATION_COMPARATOR = Comparator.comparing(AnnotationInstance::name)
             .thenComparing(it -> it.toString());
     static final Comparator<AnnotationInstanceEquivalenceProxy> ANNOTATION_PROXY_COMPARATOR = Comparator
@@ -35,6 +38,10 @@ public class Reproducibility {
             .comparing(InjectionPointInfo::getType, TYPE_COMPARATOR)
             .thenComparing(InjectionPointInfo::getRequiredQualifiers,
                     setComparator(ANNOTATION_COMPARATOR, AnnotationInstance[]::new));
+    static final Comparator<MethodInfo> METHOD_COMPARATOR = Comparator
+            .comparing(MethodInfo::name)
+            .thenComparing(MethodInfo::parameterTypes, listComparator(TYPE_COMPARATOR))
+            .thenComparing(MethodInfo::returnType, TYPE_COMPARATOR);
 
     // this is relatively sane only for tiny sets, which is the case here
     private static <T> Comparator<Set<T>> setComparator(Comparator<T> comparator, IntFunction<T[]> toArray) {
@@ -51,6 +58,20 @@ public class Reproducibility {
                 }
             }
             return Integer.compare(aArray.length, bArray.length);
+        };
+    }
+
+    // this is relatively sane only for tiny lists, which is the case here
+    private static <T> Comparator<List<T>> listComparator(Comparator<T> comparator) {
+        return (a, b) -> {
+            int len = Math.min(a.size(), b.size());
+            for (int i = 0; i < len; i++) {
+                int cmp = comparator.compare(a.get(i), b.get(i));
+                if (cmp != 0) {
+                    return cmp;
+                }
+            }
+            return Integer.compare(a.size(), b.size());
         };
     }
 
@@ -89,6 +110,14 @@ public class Reproducibility {
 
     static List<InjectionPointInfo> orderedInjectionPoints(Collection<InjectionPointInfo> injectionPoints) {
         return ordered(injectionPoints, INJECTION_POINT_COMPARATOR);
+    }
+
+    static List<ClassInfo> orderedClasses(Collection<ClassInfo> classes) {
+        return ordered(classes, CLASS_COMPARATOR);
+    }
+
+    static List<MethodInfo> orderedMethods(Collection<MethodInfo> methods) {
+        return ordered(methods, METHOD_COMPARATOR);
     }
 
     private static <T> List<T> ordered(Collection<T> collection, Comparator<? super T> comparator) {

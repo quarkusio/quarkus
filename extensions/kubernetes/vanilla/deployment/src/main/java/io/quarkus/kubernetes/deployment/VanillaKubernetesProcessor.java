@@ -135,6 +135,7 @@ public class VanillaKubernetesProcessor extends BaseVanillaKubernetesProcessor {
         return super.computeEffectiveServiceAccounts(applicationInfo, serviceAccountsFromExtensions, decorators);
     }
 
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     @BuildStep
     public List<DecoratorBuildItem> createDecorators(ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget, Capabilities capabilities,
@@ -233,21 +234,6 @@ public class VanillaKubernetesProcessor extends BaseVanillaKubernetesProcessor {
                             .build()));
                 }
             }
-        }
-    }
-
-    private void deploymentKindDecorators(DecoratorsContext context, Capabilities capabilities) {
-        final var deploymentKind = deploymentResourceKind(capabilities);
-        final var name = context.name();
-        if (deploymentKind != DeploymentResourceKind.Deployment) {
-            context.add(new RemoveDeploymentResourceDecorator(name));
-        }
-        if (deploymentKind == DeploymentResourceKind.StatefulSet) {
-            context.add(new AddStatefulSetResourceDecorator(name, config));
-        } else if (deploymentKind == DeploymentResourceKind.Job) {
-            context.add(new AddJobResourceDecorator(name, config.job()));
-        } else if (deploymentKind == DeploymentResourceKind.CronJob) {
-            context.add(new AddCronJobResourceDecorator(name, config.cronJob()));
         }
     }
 

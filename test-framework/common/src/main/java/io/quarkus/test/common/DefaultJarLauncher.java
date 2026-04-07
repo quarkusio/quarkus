@@ -31,8 +31,6 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
     private static final String JAVA_HOME_SYS = "java.home";
     private static final String JAVA_HOME_ENV = "JAVA_HOME";
     private static final String VERTX_HTTP_RECORDER = "io.quarkus.vertx.http.runtime.VertxHttpRecorder";
-    private static final String AOT_FILE_NAME = "app.aot";
-    private static final String AOT_CONF_FILE_NAME = "app.aotconf";
 
     static boolean HTTP_PRESENT;
 
@@ -54,8 +52,10 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
     private List<String> argLine;
     private Map<String, String> env;
     private Path jarPath;
-    private boolean generateAotFile;
-    private List<String> additionalRecordingArgs;
+    private List<String> recordingArgs;
+    private List<String> postCloseCommand;
+    private Optional<Path> aotResultPath;
+    private String aotResultDescription;
 
     private final Map<String, String> systemProps = new HashMap<>();
     private Process quarkusProcess;
@@ -73,8 +73,10 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         this.argLine = initContext.argLine();
         this.env = initContext.env();
         this.jarPath = initContext.jarPath();
-        this.generateAotFile = initContext.generateAotFile();
-        this.additionalRecordingArgs = initContext.additionalRecordingArgs();
+        this.recordingArgs = initContext.recordingArgs();
+        this.postCloseCommand = initContext.postCloseCommand();
+        this.aotResultPath = initContext.aotResultPath();
+        this.aotResultDescription = initContext.aotResultDescription();
     }
 
     @Override
@@ -120,10 +122,8 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         if (!argLine.isEmpty()) {
             args.addAll(argLine);
         }
-        if (generateAotFile) {
-            args.add("-XX:AOTMode=record");
-            args.add("-XX:AOTConfiguration=%s".formatted(jarPath.resolveSibling(AOT_CONF_FILE_NAME)));
-            args.addAll(additionalRecordingArgs);
+        if (!recordingArgs.isEmpty()) {
+            args.addAll(recordingArgs);
         }
         if (HTTP_PRESENT) {
             args.add("-Dquarkus.http.port=" + httpPort);
@@ -191,64 +191,66 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
     @Override
     public void close() {
         LauncherUtil.destroyProcess(quarkusProcess, getAdjustedShutdownTimeout());
-        if (generateAotFile) {
-            Path aotConfFile = jarPath.resolveSibling(AOT_CONF_FILE_NAME);
-            if (Files.exists(aotConfFile)) {
-                createAotFileFromAotConfFile(aotConfFile);
+        if (!postCloseCommand.isEmpty()) {
+            runPostCloseCommand(postCloseCommand);
+        }
+        if (aotResultPath.isPresent()) {
+            var path = aotResultPath.get();
+            if (Files.exists(path)) {
+                log.infof("%s '%s' created", aotResultDescription, path.toAbsolutePath());
             } else {
-                log.debug("AOT conf file not found");
+                log.debug("Expected AOT result not found: " + path);
             }
+        }
+
+        // Clean up intermediate AOT config file if present
+        try {
+            Files.deleteIfExists(jarPath.resolveSibling("app.aotconf"));
+        } catch (IOException e) {
+            log.debug("Unable to delete AOT config file", e);
         }
     }
 
     private Duration getAdjustedShutdownTimeout() {
-        return shutdownTimeout.plus(generateAotFile ? Duration.ofMinutes(1) : Duration.ofSeconds(10));
+        return shutdownTimeout.plus(!recordingArgs.isEmpty() ? Duration.ofMinutes(1) : Duration.ofSeconds(10));
     }
 
-    private void createAotFileFromAotConfFile(Path aotConfigFile) {
-        List<String> args = new ArrayList<>();
-        args.add(determineJavaPath());
+    private void runPostCloseCommand(List<String> baseCommand) {
+        // The base command contains only the AOT-specific flags.
+        // We prepend java binary and argLine, then append runtime system props,
+        // -jar, jar path, and program args.
+        List<String> command = new ArrayList<>();
+        command.add(determineJavaPath());
         if (!argLine.isEmpty()) {
-            args.addAll(argLine);
+            command.addAll(argLine);
         }
-        args.add("-XX:AOTMode=create");
-        args.add("-XX:AOTConfiguration=%s".formatted(aotConfigFile));
-        Path aotFile = jarPath.resolveSibling(AOT_FILE_NAME);
-        args.add("-XX:AOTCache=%s".formatted(aotFile));
+        command.addAll(baseCommand);
         if (HTTP_PRESENT) {
-            args.add("-Dquarkus.http.port=" + httpPort);
-            args.add("-Dquarkus.http.ssl-port=" + httpsPort);
-            args.add("-Dtest.url=" + LauncherUtil.generateTestUrl());
+            command.add("-Dquarkus.http.port=" + httpPort);
+            command.add("-Dquarkus.http.ssl-port=" + httpsPort);
+            command.add("-Dtest.url=" + LauncherUtil.generateTestUrl());
         }
-        args.add("-Dquarkus.log.file.path=" + logFile.toAbsolutePath());
-        args.add("-Dquarkus.log.file.enabled=true");
-        args.add("-Dquarkus.log.category.\"io.quarkus\".level=INFO");
+        command.add("-Dquarkus.log.file.path=" + logFile.toAbsolutePath());
+        command.add("-Dquarkus.log.file.enabled=true");
+        command.add("-Dquarkus.log.category.\"io.quarkus\".level=INFO");
         if (testProfile != null) {
-            args.add("-Dquarkus.profile=" + testProfile);
+            command.add("-Dquarkus.profile=" + testProfile);
         }
         for (Map.Entry<String, String> e : systemProps.entrySet()) {
-            args.add("-D" + e.getKey() + "=" + e.getValue());
+            command.add("-D" + e.getKey() + "=" + e.getValue());
         }
-        args.add("-jar");
-        args.add(jarPath.toAbsolutePath().toString());
-        args.addAll(programArgs);
+        command.add("-jar");
+        command.add(jarPath.toAbsolutePath().toString());
+        command.addAll(programArgs);
 
+        log.debugf("Running post-close command: %s", String.join(" ", command));
         try {
-            var unused = new ProcessBuilder(args)
+            var unused = new ProcessBuilder(command)
                     .redirectOutput(ProcessBuilder.Redirect.DISCARD)
                     .redirectError(ProcessBuilder.Redirect.DISCARD)
-                    .redirectError(ProcessBuilder.Redirect.DISCARD)
                     .start().waitFor(20, TimeUnit.SECONDS);
-            if (Files.exists(aotFile)) {
-                log.infof("AOT file '%s' created", aotFile.toAbsolutePath());
-            }
-            try {
-                Files.deleteIfExists(aotConfigFile);
-            } catch (IOException e) {
-                log.debug("Unable to delete AOT config file", e);
-            }
         } catch (Exception e) {
-            log.warn("Unable to create AOT file", e);
+            log.warn("Post-close command failed", e);
         }
     }
 

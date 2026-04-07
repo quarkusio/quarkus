@@ -2,6 +2,7 @@ package io.quarkus.test.junit;
 
 import static io.quarkus.runtime.LaunchMode.NORMAL;
 import static io.quarkus.runtime.configuration.ConfigSourceOrdinal.INTEGRATION_TEST;
+import static io.quarkus.test.common.ListeningAddress.LISTENING_ADDRESS;
 import static io.quarkus.test.junit.ArtifactTypeUtil.isContainer;
 import static io.quarkus.test.junit.ArtifactTypeUtil.isJar;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
@@ -14,6 +15,7 @@ import static io.quarkus.test.junit.IntegrationTestUtil.handleDevServices;
 import static io.quarkus.test.junit.IntegrationTestUtil.readQuarkusArtifactProperties;
 import static io.quarkus.test.junit.IntegrationTestUtil.startLauncher;
 import static io.quarkus.test.junit.TestResourceUtil.TestResourceManagerReflections.copyEntriesFromProfile;
+import static java.util.Optional.empty;
 
 import java.io.Closeable;
 import java.io.File;
@@ -129,7 +131,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             // Inject of ValueRegistry and Config done IntegrationTestUtil.doProcessTestInstance
 
             ValueRegistry valueRegistry = ValueRegistryInjector.get(context);
-            Optional<ListeningAddress> listeningAddress = valueRegistry.get(ListeningAddress.LISTENING_ADDRESS);
+            Optional<ListeningAddress> listeningAddress = valueRegistry.get(LISTENING_ADDRESS);
             listeningAddress.ifPresent(new Consumer<ListeningAddress>() {
                 @Override
                 public void accept(ListeningAddress listeningAddress) {
@@ -314,10 +316,12 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
 
             // Start Quarkus, capture the listening port if available and register it in ValueRegistry
             Optional<ListeningAddress> listeningAddress = startLauncher(launcher, additionalProperties);
-            listeningAddress.ifPresent(address -> {
-                address.register(valueRegistry, newConfig);
-                valueRegistry.register(ListeningAddress.LISTENING_ADDRESS, listeningAddress);
-            });
+            if (listeningAddress.isPresent()) {
+                listeningAddress.get().register(valueRegistry, newConfig);
+                valueRegistry.register(LISTENING_ADDRESS, listeningAddress);
+            } else {
+                valueRegistry.register(LISTENING_ADDRESS, Optional.empty());
+            }
 
             testHttpEndpointProviders = TestHttpEndpointProvider.load();
 

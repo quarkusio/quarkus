@@ -1,5 +1,10 @@
 package io.quarkus.awt.deployment;
 
+import static io.quarkus.deployment.builditem.nativeimage.FfmType.ADDRESS;
+import static io.quarkus.deployment.builditem.nativeimage.FfmType.FLOAT;
+import static io.quarkus.deployment.builditem.nativeimage.FfmType.INT;
+import static io.quarkus.deployment.builditem.nativeimage.FfmType.LONG;
+import static io.quarkus.deployment.builditem.nativeimage.FfmType.VOID;
 import static io.quarkus.runtime.graal.GraalVM.Version.CURRENT;
 
 import java.util.ArrayList;
@@ -15,6 +20,8 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.FfmDowncallBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.FfmUpcallBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessMethodBuildItem;
@@ -106,7 +113,8 @@ class AwtProcessor {
                 "sun.java2d.loops.SetDrawRectANY",
                 "sun.java2d.loops.SetFillPathANY",
                 "sun.java2d.loops.SetFillRectANY",
-                "sun.java2d.loops.SetFillSpansANY"
+                "sun.java2d.loops.SetFillSpansANY",
+                "sun.font.HBShaper"
         ).methods().build();
         //@formatter:on
     }
@@ -372,5 +380,49 @@ class AwtProcessor {
                 .map(RuntimeInitializedPackageBuildItem::new)
                 .forEach(runtimeInitilizedPackages::produce);
         //@formatter:on
+    }
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    void setupFfmReachability(
+            BuildProducer<FfmDowncallBuildItem> downcalls,
+            BuildProducer<FfmUpcallBuildItem> upcalls,
+            NativeImageRunnerBuildItem nativeImageRunnerBuildItem) {
+        final GraalVM.Version v;
+        if (nativeImageRunnerBuildItem.getBuildRunner() instanceof NoopNativeImageBuildRunner) {
+            v = CURRENT;
+            log.warnf("native-image is not installed. " +
+                    "Using the default %s version as a reference to build native-sources step.", v.getVersionAsString());
+        } else {
+            v = nativeImageRunnerBuildItem.getBuildRunner().getGraalVMVersion();
+        }
+        // Not needed with older GraalVM
+        if (v.compareTo(GraalVM.Version.VERSION_25_0_0) >= 0) {
+            // Downcalls
+            // malloc
+            downcalls.produce(new FfmDowncallBuildItem(ADDRESS, LONG));
+            // HBCreateFace
+            downcalls.produce(new FfmDowncallBuildItem(ADDRESS, ADDRESS));
+            // HBDisposeFace
+            downcalls.produce(new FfmDowncallBuildItem(VOID, ADDRESS));
+            // jdk_hb_shape
+            downcalls.produce(new FfmDowncallBuildItem(VOID, FLOAT, ADDRESS, ADDRESS, ADDRESS, INT, INT, INT, INT, INT, FLOAT,
+                    FLOAT, INT, INT, ADDRESS, ADDRESS));
+            // HBCreateFontFuncs
+            downcalls.produce(new FfmDowncallBuildItem(ADDRESS, ADDRESS, ADDRESS, ADDRESS, ADDRESS, ADDRESS));
+
+            // Upcalls
+            // getFontTableData
+            upcalls.produce(new FfmUpcallBuildItem(INT, INT, ADDRESS));
+            // get_variation_glyph
+            upcalls.produce(new FfmUpcallBuildItem(INT, ADDRESS, ADDRESS, INT, INT, ADDRESS, ADDRESS));
+            // get_nominal_glyph
+            upcalls.produce(new FfmUpcallBuildItem(INT, ADDRESS, ADDRESS, INT, ADDRESS, ADDRESS));
+            // get_glyph_h_advance & get_glyph_v_advance
+            upcalls.produce(new FfmUpcallBuildItem(INT, ADDRESS, ADDRESS, INT, ADDRESS));
+            // get_contour_pt_stub
+            upcalls.produce(new FfmUpcallBuildItem(INT, ADDRESS, ADDRESS, INT, INT, ADDRESS, ADDRESS, ADDRESS));
+            // store_layout_results_stub
+            upcalls.produce(new FfmUpcallBuildItem(VOID, INT, INT, INT, FLOAT, FLOAT, FLOAT, INT, INT, ADDRESS, ADDRESS));
+        }
     }
 }

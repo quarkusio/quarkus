@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -99,6 +100,7 @@ import io.quarkus.runtime.configuration.DisableableConfigSource;
 import io.quarkus.runtime.configuration.QuarkusConfigValue;
 import io.quarkus.runtime.configuration.RuntimeConfigBuilder;
 import io.quarkus.runtime.configuration.StaticInitConfigBuilder;
+import io.smallrye.config.Config;
 import io.smallrye.config.ConfigMappingInterface;
 import io.smallrye.config.ConfigMappingLoader;
 import io.smallrye.config.ConfigMappingMetadata;
@@ -578,6 +580,12 @@ public class ConfigGenerationBuildStep {
     private static final MethodDescriptor BUILDER_CUSTOMIZER = MethodDescriptor.ofMethod(SmallRyeConfigBuilderCustomizer.class,
             "configBuilder",
             void.class, SmallRyeConfigBuilder.class);
+    private static final MethodDescriptor WITH_SHARED_BUILDER = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
+            "withSharedBuilder",
+            void.class, SmallRyeConfigBuilder.class);
+    private static final MethodDescriptor WITH_PROFILES = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
+            "withProfiles",
+            void.class, SmallRyeConfigBuilder.class, List.class);
     private static final MethodDescriptor WITH_DEFAULTS = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
             "withDefaultValues",
             void.class, SmallRyeConfigBuilder.class, Map.class);
@@ -633,6 +641,10 @@ public class ConfigGenerationBuildStep {
     private static final MethodDescriptor ENSURE_LOADED = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
             "ensureLoaded",
             void.class, String.class);
+    private static final MethodDescriptor LIST_NEW = MethodDescriptor.ofConstructor(ArrayList.class);
+    private static final MethodDescriptor LIST_ADD = MethodDescriptor.ofMethod(ArrayList.class,
+            "add",
+            boolean.class, Object.class);
     private static final MethodDescriptor MAP_NEW = MethodDescriptor.ofConstructor(HashMap.class, int.class);
     private static final MethodDescriptor MAP_PUT = MethodDescriptor.ofMethod(HashMap.class,
             "put",
@@ -688,8 +700,7 @@ public class ConfigGenerationBuildStep {
 
             // init build and runtime fixed mappings
             ResultHandle configBuilder = clinit.newInstance(NEW_BUILDER);
-            clinit.invokeStaticMethod(MethodDescriptor.ofMethod(AbstractConfigBuilder.class, "withSharedBuilder", void.class,
-                    SmallRyeConfigBuilder.class), configBuilder);
+            clinit.invokeStaticMethod(WITH_SHARED_BUILDER, configBuilder);
             for (String converter : converters) {
                 ClassInfo converterClass = combinedIndex.getComputingIndex().getClassByName(converter);
                 Type type = getConverterType(converterClass, combinedIndex);
@@ -706,7 +717,17 @@ public class ConfigGenerationBuildStep {
             }
             clinit.invokeStaticMethod(WITH_BUILDER, configBuilder, clinit.newInstance(
                     MethodDescriptor.ofConstructor("io.quarkus.runtime.generated.BuildTimeRunTimeFixedConfigSourceBuilder")));
+
+            List<String> profiles = new ArrayList<>(Config.get().getProfiles());
+            Collections.reverse(profiles);
+            ResultHandle list = clinit.newInstance(LIST_NEW);
+            for (String profile : profiles) {
+                clinit.invokeVirtualMethod(LIST_ADD, list, clinit.load(profile));
+            }
+            clinit.invokeStaticMethod(WITH_PROFILES, configBuilder, list);
+
             ResultHandle config = clinit.invokeVirtualMethod(BUILD, configBuilder);
+
             int mappingIndex = 0;
             for (ConfigClass mapping : staticMappings) {
                 FieldDescriptor mappingField = classCreator.getFieldCreator("mapping$" + mappingIndex++, mapping.getType())

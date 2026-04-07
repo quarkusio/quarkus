@@ -25,17 +25,23 @@ public class ConfigDevUIRecorder {
 
     private static List<ConfigDescription> configDescriptions;
     private static Set<String> devServicesConfig;
+    private static Map<String, List<String>> extensionConfigFilters;
 
     public void registerConfigs(final List<ConfigDescription> configDescriptions, final Set<String> devServicesConfig) {
         ConfigDevUIRecorder.configDescriptions = configDescriptions;
         ConfigDevUIRecorder.devServicesConfig = devServicesConfig;
     }
 
+    public void registerExtensionConfigFilters(final Map<String, List<String>> extensionConfigFilters) {
+        ConfigDevUIRecorder.extensionConfigFilters = extensionConfigFilters;
+    }
+
     public Supplier<ConfigDescriptionBean> configDescriptionBean() {
         return new Supplier<>() {
             @Override
             public ConfigDescriptionBean get() {
-                return new ConfigDescriptionBean(calculate(configDescriptions, devServicesConfig));
+                return new ConfigDescriptionBean(calculate(configDescriptions, devServicesConfig),
+                        extensionConfigFilters != null ? extensionConfigFilters : Map.of());
             }
         };
     }

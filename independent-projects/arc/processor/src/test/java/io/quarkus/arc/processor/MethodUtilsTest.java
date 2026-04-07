@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodSignatureKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -29,76 +30,76 @@ public class MethodUtilsTest {
                 Top.class, Middle.class, Middle2.class, Bottom.class);
     }
 
-    private Set<Methods.MethodKey> gatherMethodsFromClasses(Class<?>... classes) {
+    private Set<MethodSignatureKey> gatherMethodsFromClasses(Class<?>... classes) {
         return Arrays.stream(classes)
                 .map(index::getClassByName)
                 .map(ClassInfo::methods)
                 .flatMap(List::stream)
-                .map(Methods.MethodKey::new)
+                .map(MethodInfo::signatureKey)
                 .collect(Collectors.toSet());
     }
 
     @Test
     public void shouldFindDirectOverriding() {
-        Set<Methods.MethodKey> methods = gatherMethodsFromClasses(SomeClass.class);
+        Set<MethodSignatureKey> methods = gatherMethodsFromClasses(SomeClass.class);
 
         MethodInfo parentMethod = index.getClassByName(SuperClass.class).firstMethod("fromSuperClass");
 
-        assertThat(Methods.isOverriden(new Methods.MethodKey(parentMethod), methods)).isTrue();
+        assertThat(Methods.isOverridden(parentMethod.signatureKey(), methods)).isTrue();
     }
 
     @Test
     public void shouldFindGenericOverriding() {
-        Set<Methods.MethodKey> methods = gatherMethodsFromClasses(SomeClass.class, SuperClass.class);
+        Set<MethodSignatureKey> methods = gatherMethodsFromClasses(SomeClass.class, SuperClass.class);
 
         MethodInfo genericMethod = index.getClassByName(SuperSuperClass.class).firstMethod("generic");
 
-        assertThat(Methods.isOverriden(new Methods.MethodKey(genericMethod), methods)).isTrue();
+        assertThat(Methods.isOverridden(genericMethod.signatureKey(), methods)).isTrue();
     }
 
     @Test
     public void shouldNotFindNonOverridenFromSuperClass() {
-        Set<Methods.MethodKey> methods = gatherMethodsFromClasses(SomeClass.class);
+        Set<MethodSignatureKey> methods = gatherMethodsFromClasses(SomeClass.class);
 
         MethodInfo parentMethod = index.getClassByName(SuperClass.class).firstMethod("notOverridenFromSuperClass");
 
-        assertThat(Methods.isOverriden(new Methods.MethodKey(parentMethod), methods)).isFalse();
+        assertThat(Methods.isOverridden(parentMethod.signatureKey(), methods)).isFalse();
     }
 
     @Test
     public void shouldNotFindNonGenericNonOverridenFromSuperSuperClass() {
-        Set<Methods.MethodKey> methods = gatherMethodsFromClasses(SomeClass.class, SuperClass.class);
+        Set<MethodSignatureKey> methods = gatherMethodsFromClasses(SomeClass.class, SuperClass.class);
 
         MethodInfo parentMethod = index.getClassByName(SuperSuperClass.class).firstMethod("notOverridenNonGeneric");
 
-        assertThat(Methods.isOverriden(new Methods.MethodKey(parentMethod), methods)).isFalse();
+        assertThat(Methods.isOverridden(parentMethod.signatureKey(), methods)).isFalse();
     }
 
     @Test
     public void shouldNotFindGenericNonOverridenFromSuperSuperClass() {
-        Set<Methods.MethodKey> methods = gatherMethodsFromClasses(SomeClass.class, SuperClass.class);
+        Set<MethodSignatureKey> methods = gatherMethodsFromClasses(SomeClass.class, SuperClass.class);
 
         MethodInfo parentMethod = index.getClassByName(SuperSuperClass.class).firstMethod("notOverridenGeneric");
 
-        assertThat(Methods.isOverriden(new Methods.MethodKey(parentMethod), methods)).isFalse();
+        assertThat(Methods.isOverridden(parentMethod.signatureKey(), methods)).isFalse();
     }
 
     @Test
     public void shouldNotFindAlmostMatchingGeneric() {
-        Set<Methods.MethodKey> methods = gatherMethodsFromClasses(SomeClass.class, SuperClass.class);
+        Set<MethodSignatureKey> methods = gatherMethodsFromClasses(SomeClass.class, SuperClass.class);
 
         MethodInfo parentMethod = index.getClassByName(SuperSuperClass.class).firstMethod("almostMatchingGeneric");
 
-        assertThat(Methods.isOverriden(new Methods.MethodKey(parentMethod), methods)).isFalse();
+        assertThat(Methods.isOverridden(parentMethod.signatureKey(), methods)).isFalse();
     }
 
     @Test
     public void shouldFindOverridenInTheMiddleOfHierarchy() {
-        Set<Methods.MethodKey> methods = gatherMethodsFromClasses(SomeClass.class, SuperClass.class, SuperSuperClass.class);
+        Set<MethodSignatureKey> methods = gatherMethodsFromClasses(SomeClass.class, SuperClass.class, SuperSuperClass.class);
 
         MethodInfo parentMethod = index.getClassByName(TheRoot.class).firstMethod("generic");
 
-        assertThat(Methods.isOverriden(new Methods.MethodKey(parentMethod), methods)).isTrue();
+        assertThat(Methods.isOverridden(parentMethod.signatureKey(), methods)).isTrue();
     }
 
     public static class SomeClass extends SuperClass<Boolean> {

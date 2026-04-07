@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -44,6 +45,7 @@ public final class EngineBuilder {
     boolean useAsyncTimeout;
     final List<EngineListener> listeners;
     boolean enableTracing;
+    ParserConfigurator parserConfigurator;
 
     EngineBuilder() {
         this.sectionHelperFactories = new HashMap<>();
@@ -59,6 +61,12 @@ public final class EngineBuilder {
         this.timeout = 10_000;
         this.useAsyncTimeout = true;
         this.listeners = new ArrayList<>();
+        this.parserConfigurator = new ParserConfigurator() {
+            @Override
+            public ParserConfig getConfig(String templateId, Optional<Variant> variant) {
+                return ParserConfig.DEFAULT;
+            }
+        };
     }
 
     /**
@@ -351,6 +359,19 @@ public final class EngineBuilder {
     }
 
     /**
+     * The configurator is used to obtain a config before a template is parsed.
+     * <p>
+     * Unlike with {@link #addParserHook(ParserHook)} there can be only one parser configurator registered.
+     *
+     * @param configurator
+     * @return self
+     */
+    public EngineBuilder configureParser(ParserConfigurator configurator) {
+        this.parserConfigurator = Objects.requireNonNull(configurator);
+        return this;
+    }
+
+    /**
      *
      * @return a new engine instance
      */
@@ -389,6 +410,18 @@ public final class EngineBuilder {
 
         default void engineBuilt(Engine engine) {
         }
+
+    }
+
+    public interface ParserConfigurator {
+
+        /**
+         *
+         * @param templateId
+         * @param variant
+         * @return the config, never {@code null}
+         */
+        ParserConfig getConfig(String templateId, Optional<Variant> variant);
 
     }
 

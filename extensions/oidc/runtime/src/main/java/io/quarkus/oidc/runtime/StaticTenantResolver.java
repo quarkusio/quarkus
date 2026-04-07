@@ -17,6 +17,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TenantResolver;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.quarkus.vertx.http.runtime.security.ImmutablePathMatcher;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonObject;
@@ -91,7 +92,7 @@ final class StaticTenantResolver {
 
         @Override
         public String resolve(RoutingContext context) {
-            String[] pathSegments = context.request().path().split("/");
+            String[] pathSegments = HttpSecurityUtils.pathWithoutMatrixParams(context.normalizedPath()).split("/");
             if (pathSegments.length > 0) {
                 String lastPathSegment = pathSegments[pathSegments.length - 1];
                 if (tenantConfigBean.getStaticTenant(lastPathSegment) != null) {
@@ -124,10 +125,11 @@ final class StaticTenantResolver {
 
         @Override
         public String resolve(RoutingContext context) {
-            String tenantId = staticTenantPaths.match(context.normalizedPath()).getValue();
+            String canonicalPath = HttpSecurityUtils.pathWithoutMatrixParams(context.normalizedPath());
+            String tenantId = staticTenantPaths.match(canonicalPath).getValue();
             if (tenantId != null) {
                 LOG.debugf(
-                        "Tenant id '%s' is selected on the '%s' request path", tenantId, context.normalizedPath());
+                        "Tenant id '%s' is selected on the '%s' request path", tenantId, canonicalPath);
                 return tenantId;
             }
             return null;

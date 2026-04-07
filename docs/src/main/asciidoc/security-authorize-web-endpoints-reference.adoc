@@ -30,6 +30,19 @@ xref:security-customization.adoc#security-identity-customization[Security Identi
 
 Permissions are defined in the Quarkus configuration by permission sets, each specifying a policy for access control.
 
+[NOTE]
+====
+Configured HTTP security policy must not contain a semicolon ';' character in its `paths` property.
+Use <<custom-http-security-policy>> when a security policy decision depends on a presence of certain matrix parameters in the request path.
+====
+
+[IMPORTANT]
+====
+Be careful with creating complex, possibly overlapping HTTP security policy path expressions.
+Make sure your HTTP policy configuration is thoroughly tested.
+If you work with Jakarta RESTful Web Services (JAX-RS) and need to create complex security policies, consider using <<standard-security-annotations>> instead.
+====
+
 .{project-name} policies summary
 [options="header"]
 |===

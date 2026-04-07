@@ -5,8 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.security.KeyStoreException;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
+import java.util.Map;
 
-import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -15,25 +16,27 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
-import io.smallrye.common.annotation.Identifier;
-import io.vertx.core.net.PemTrustOptions;
 
 @Certificates(baseDir = "target/certs", certificates = {
-        @Certificate(name = "test-formats", password = "password", formats = { Format.JKS, Format.PEM, Format.PKCS12 })
+        @Certificate(name = "test-credentials-provider", password = "secret123!", formats = { Format.PKCS12 })
 })
-public class NamedTrustStoreProviderProducerTest {
+public class OtherTrustStoreCredentialsProviderTest {
 
     private static final String configuration = """
-            # no configuration by default
+            quarkus.tls.trust-store.other.type=PKCS12
+            quarkus.tls.trust-store.other.path=target/certs/test-credentials-provider-truststore.p12
+            quarkus.tls.trust-store.credentials-provider.name=tls
             """;
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
+                    .addClass(MyCredentialProvider.class)
                     .add(new StringAsset(configuration), "application.properties"));
 
     @Inject
@@ -42,15 +45,11 @@ public class NamedTrustStoreProviderProducerTest {
     @Test
     void test() throws KeyStoreException, CertificateParsingException {
         TlsConfiguration def = certificates.getDefault().orElseThrow();
-        TlsConfiguration named = certificates.get("http").orElseThrow();
 
-        assertThat(def.getTrustStoreOptions()).isNull();
-        assertThat(def.getTrustStore()).isNull();
+        assertThat(def.getTrustStoreOptions()).isNotNull();
+        assertThat(def.getTrustStore()).isNotNull();
 
-        assertThat(named.getTrustStoreOptions()).isNotNull();
-        assertThat(named.getTrustStore()).isNotNull();
-
-        X509Certificate certificate = (X509Certificate) named.getTrustStore().getCertificate("cert-0");
+        X509Certificate certificate = (X509Certificate) def.getTrustStore().getCertificate("test-credentials-provider");
         assertThat(certificate).isNotNull();
         assertThat(certificate.getSubjectAlternativeNames()).anySatisfy(l -> {
             assertThat(l.get(0)).isEqualTo(2);
@@ -58,20 +57,11 @@ public class NamedTrustStoreProviderProducerTest {
         });
     }
 
-    static class TrustStoreProviderFactory {
-
-        @Produces
-        @Identifier("http")
-        TrustStoreProvider trustStoreProvider() {
-            return vertx -> {
-                var options = new PemTrustOptions()
-                        .addCertPath("target/certs/test-formats-ca.crt");
-                try {
-                    return new TrustStoreAndTrustOptions(options.loadKeyStore(vertx), options);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            };
+    @ApplicationScoped
+    public static class MyCredentialProvider implements CredentialsProvider {
+        @Override
+        public Map<String, String> getCredentials(String credentialsProviderName) {
+            return Map.of(CredentialsProvider.PASSWORD_PROPERTY_NAME, "secret123!");
         }
     }
 }

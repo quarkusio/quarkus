@@ -19,11 +19,18 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.tls.KeyStoreAndKeyCertOptions;
+import io.quarkus.tls.KeyStoreFactory;
+import io.quarkus.tls.KeyStoreProvider;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
+import io.quarkus.tls.TrustStoreAndTrustOptions;
+import io.quarkus.tls.TrustStoreFactory;
+import io.quarkus.tls.TrustStoreProvider;
 import io.quarkus.tls.runtime.config.TlsBucketConfig;
 import io.quarkus.tls.runtime.config.TlsConfig;
 import io.quarkus.tls.runtime.keystores.JKSKeyStores;
+import io.quarkus.tls.runtime.keystores.OtherKeyStores;
 import io.quarkus.tls.runtime.keystores.P12KeyStores;
 import io.quarkus.tls.runtime.keystores.PemKeyStores;
 import io.smallrye.common.annotation.Identifier;
@@ -147,6 +154,14 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
                     return P12KeyStores.verifyP12KeyStore(config, vertx, name);
                 } else if (config.jks().isPresent()) {
                     return JKSKeyStores.verifyJKSKeyStore(config, vertx, name);
+                } else if (config.other().isPresent()) {
+                    var otherConfig = config.other().get();
+                    try (var factoryInstance = lookupFactory(KeyStoreFactory.class, otherConfig.type())) {
+                        if (factoryInstance.isAvailable()) {
+                            return factoryInstance.get().createKeyStore(otherConfig, vertx, name);
+                        }
+                    }
+                    return OtherKeyStores.verifyOtherKeyStore(config, name);
                 }
             }
 
@@ -171,6 +186,14 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
                     return P12KeyStores.verifyP12TrustStoreStore(config, vertx, name);
                 } else if (config.jks().isPresent()) {
                     return JKSKeyStores.verifyJKSTrustStoreStore(config, vertx, name);
+                } else if (config.other().isPresent()) {
+                    var otherConfig = config.other().get();
+                    try (var factoryInstance = lookupFactory(TrustStoreFactory.class, otherConfig.type())) {
+                        if (factoryInstance.isAvailable()) {
+                            return factoryInstance.get().createTrustStore(otherConfig, vertx, name);
+                        }
+                    }
+                    return OtherKeyStores.verifyOtherTrustStore(config, name);
                 }
             }
 
@@ -240,6 +263,25 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
         if (instances.size() > 1) {
             throw new AmbiguousResolutionException(
                     "multiple beans with type " + type.getName() + " found for TLS configuration " + bucketName);
+        }
+        if (instances.isEmpty()) {
+            return new InstanceHandle<T>() {
+                @Override
+                public T get() {
+                    return null;
+                }
+            };
+        }
+        return instances.get(0);
+    }
+
+    static <T> InstanceHandle<T> lookupFactory(Class<T> type, String typeName) {
+        var container = Arc.container();
+        var qualifier = Identifier.Literal.of(typeName);
+        var instances = container.listAll(type, qualifier);
+        if (instances.size() > 1) {
+            throw new AmbiguousResolutionException(
+                    "multiple factory beans with type " + type.getName() + " found for keystore type '" + typeName + "'");
         }
         if (instances.isEmpty()) {
             return new InstanceHandle<T>() {

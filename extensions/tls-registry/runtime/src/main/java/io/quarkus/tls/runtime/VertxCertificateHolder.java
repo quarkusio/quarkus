@@ -18,7 +18,9 @@ import javax.net.ssl.TrustManagerFactory;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.tls.KeyStoreAndKeyCertOptions;
 import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TrustStoreAndTrustOptions;
 import io.quarkus.tls.runtime.config.TlsBucketConfig;
 import io.quarkus.tls.runtime.config.TlsConfigUtils;
 import io.vertx.core.Vertx;

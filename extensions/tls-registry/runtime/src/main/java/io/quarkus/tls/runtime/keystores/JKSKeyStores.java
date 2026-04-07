@@ -8,8 +8,8 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 
-import io.quarkus.tls.runtime.KeyStoreAndKeyCertOptions;
-import io.quarkus.tls.runtime.TrustStoreAndTrustOptions;
+import io.quarkus.tls.KeyStoreAndKeyCertOptions;
+import io.quarkus.tls.TrustStoreAndTrustOptions;
 import io.quarkus.tls.runtime.config.JKSKeyStoreConfig;
 import io.quarkus.tls.runtime.config.JKSTrustStoreConfig;
 import io.quarkus.tls.runtime.config.KeyStoreConfig;

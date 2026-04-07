@@ -4,8 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.AmbiguousResolutionException;
-import jakarta.enterprise.inject.Produces;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -20,20 +18,25 @@ import io.smallrye.certs.junit5.Certificates;
 import io.vertx.core.Vertx;
 
 @Certificates(baseDir = "target/certs", certificates = {
-        @Certificate(name = "test-formats", password = "password", formats = { Format.JKS, Format.PEM, Format.PKCS12 })
+        @Certificate(name = "test-formats", password = "password", formats = { Format.PKCS12 })
 })
-public class AmbiguousDefaultTrustStoreProviderTest {
+public class TooManyKeyStoreConfiguredProviderAndOtherTest {
 
     private static final String configuration = """
-            # no configuration by default
+            quarkus.tls.key-store.other.type=PKCS12
+            quarkus.tls.key-store.other.path=target/certs/test-formats-keystore.p12
+            quarkus.tls.key-store.other.password=password
             """;
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
+                    .addClass(TestKeyStoreProvider.class)
                     .add(new StringAsset(configuration), "application.properties"))
             .assertException(t -> {
-                assertThat(t).isInstanceOf(AmbiguousResolutionException.class);
+                assertThat(t)
+                        .hasMessageContaining(
+                                "cannot be configured with a provider and PEM, PKCS12, JKS, or other at the same time");
             });
 
     @Test
@@ -41,21 +44,10 @@ public class AmbiguousDefaultTrustStoreProviderTest {
         fail("This test should not be called");
     }
 
-    static class TrustStoreProviderFactory {
-
-        @Produces
-        TrustStoreProvider trustStoreProvider() {
-            // this method should never be called
-            return null;
-        }
-    }
-
     @ApplicationScoped
-    static class TestTrustStoreProvider implements TrustStoreProvider {
-
+    static class TestKeyStoreProvider implements KeyStoreProvider {
         @Override
-        public TrustStoreAndTrustOptions getTrustStore(Vertx vertx) {
-            // this method should never be called
+        public KeyStoreAndKeyCertOptions getKeyStore(Vertx vertx) {
             return null;
         }
     }

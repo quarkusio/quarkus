@@ -6,7 +6,6 @@ import java.security.KeyStoreException;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 
-import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -17,18 +16,23 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.certs.Format;
+import io.smallrye.certs.junit5.Alias;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
-import io.smallrye.common.annotation.Identifier;
-import io.vertx.core.net.PemTrustOptions;
 
 @Certificates(baseDir = "target/certs", certificates = {
-        @Certificate(name = "test-formats", password = "password", formats = { Format.JKS, Format.PEM, Format.PKCS12 })
+        @Certificate(name = "test-alias-p12", password = "password", formats = { Format.PKCS12 }, aliases = {
+                @Alias(name = "alias1", password = "alias-password", subjectAlternativeNames = "dns:acme.org"),
+                @Alias(name = "alias2", password = "alias-password-2", subjectAlternativeNames = "dns:example.com") })
 })
-public class NamedTrustStoreProviderProducerTest {
+public class DefaultOtherKeyStoreWithAliasTest {
 
     private static final String configuration = """
-            # no configuration by default
+            quarkus.tls.key-store.other.type=PKCS12
+            quarkus.tls.key-store.other.path=target/certs/test-alias-p12-keystore.p12
+            quarkus.tls.key-store.other.password=password
+            quarkus.tls.key-store.other.alias=alias1
+            quarkus.tls.key-store.other.alias-password=alias-password
             """;
 
     @RegisterExtension
@@ -42,36 +46,15 @@ public class NamedTrustStoreProviderProducerTest {
     @Test
     void test() throws KeyStoreException, CertificateParsingException {
         TlsConfiguration def = certificates.getDefault().orElseThrow();
-        TlsConfiguration named = certificates.get("http").orElseThrow();
 
-        assertThat(def.getTrustStoreOptions()).isNull();
-        assertThat(def.getTrustStore()).isNull();
+        assertThat(def.getKeyStoreOptions()).isNotNull();
+        assertThat(def.getKeyStore()).isNotNull();
 
-        assertThat(named.getTrustStoreOptions()).isNotNull();
-        assertThat(named.getTrustStore()).isNotNull();
-
-        X509Certificate certificate = (X509Certificate) named.getTrustStore().getCertificate("cert-0");
+        X509Certificate certificate = (X509Certificate) def.getKeyStore().getCertificate("alias1");
         assertThat(certificate).isNotNull();
         assertThat(certificate.getSubjectAlternativeNames()).anySatisfy(l -> {
             assertThat(l.get(0)).isEqualTo(2);
-            assertThat(l.get(1)).isEqualTo("localhost");
+            assertThat(l.get(1)).isEqualTo("dns:acme.org");
         });
-    }
-
-    static class TrustStoreProviderFactory {
-
-        @Produces
-        @Identifier("http")
-        TrustStoreProvider trustStoreProvider() {
-            return vertx -> {
-                var options = new PemTrustOptions()
-                        .addCertPath("target/certs/test-formats-ca.crt");
-                try {
-                    return new TrustStoreAndTrustOptions(options.loadKeyStore(vertx), options);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            };
-        }
     }
 }

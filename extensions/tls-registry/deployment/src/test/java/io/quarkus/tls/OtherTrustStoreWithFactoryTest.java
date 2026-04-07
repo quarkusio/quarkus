@@ -2,11 +2,13 @@ package io.quarkus.tls;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.FileInputStream;
+import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 
-import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -20,20 +22,23 @@ import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 import io.smallrye.common.annotation.Identifier;
-import io.vertx.core.net.PemTrustOptions;
+import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.net.JksOptions;
 
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "test-formats", password = "password", formats = { Format.JKS, Format.PEM, Format.PKCS12 })
 })
-public class NamedTrustStoreProviderProducerTest {
+public class OtherTrustStoreWithFactoryTest {
 
     private static final String configuration = """
-            # no configuration by default
+            quarkus.tls.trust-store.other.type=test-custom
             """;
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
+                    .addClass(TestTrustStoreFactory.class)
                     .add(new StringAsset(configuration), "application.properties"));
 
     @Inject
@@ -42,15 +47,11 @@ public class NamedTrustStoreProviderProducerTest {
     @Test
     void test() throws KeyStoreException, CertificateParsingException {
         TlsConfiguration def = certificates.getDefault().orElseThrow();
-        TlsConfiguration named = certificates.get("http").orElseThrow();
 
-        assertThat(def.getTrustStoreOptions()).isNull();
-        assertThat(def.getTrustStore()).isNull();
+        assertThat(def.getTrustStoreOptions()).isNotNull();
+        assertThat(def.getTrustStore()).isNotNull();
 
-        assertThat(named.getTrustStoreOptions()).isNotNull();
-        assertThat(named.getTrustStore()).isNotNull();
-
-        X509Certificate certificate = (X509Certificate) named.getTrustStore().getCertificate("cert-0");
+        X509Certificate certificate = (X509Certificate) def.getTrustStore().getCertificate("test-formats");
         assertThat(certificate).isNotNull();
         assertThat(certificate.getSubjectAlternativeNames()).anySatisfy(l -> {
             assertThat(l.get(0)).isEqualTo(2);
@@ -58,20 +59,25 @@ public class NamedTrustStoreProviderProducerTest {
         });
     }
 
-    static class TrustStoreProviderFactory {
-
-        @Produces
-        @Identifier("http")
-        TrustStoreProvider trustStoreProvider() {
-            return vertx -> {
-                var options = new PemTrustOptions()
-                        .addCertPath("target/certs/test-formats-ca.crt");
-                try {
-                    return new TrustStoreAndTrustOptions(options.loadKeyStore(vertx), options);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+    @ApplicationScoped
+    @Identifier("test-custom")
+    public static class TestTrustStoreFactory implements TrustStoreFactory {
+        @Override
+        public TrustStoreAndTrustOptions createTrustStore(OtherTrustStoreConfiguration config, Vertx vertx, String name) {
+            try {
+                KeyStore ks = KeyStore.getInstance("PKCS12");
+                try (var fis = new FileInputStream("target/certs/test-formats-truststore.p12")) {
+                    ks.load(fis, "password".toCharArray());
                 }
-            };
+                byte[] data = java.nio.file.Files.readAllBytes(
+                        java.nio.file.Path.of("target/certs/test-formats-truststore.p12"));
+                var options = new JksOptions()
+                        .setValue(Buffer.buffer(data))
+                        .setPassword("password");
+                return new TrustStoreAndTrustOptions(ks, options);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }

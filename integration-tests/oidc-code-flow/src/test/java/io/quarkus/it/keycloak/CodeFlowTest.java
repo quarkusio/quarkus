@@ -1366,8 +1366,8 @@ public class CodeFlowTest {
     @Test
     public void testInvalidPath() throws IOException {
         try (final WebClient webClient = createWebClient()) {
-            HtmlPage page = webClient.getPage("http://localhost:8081/index.html;/checktterer");
-            assertEquals("/index.html;/checktterer", getStateCookieSavedPath(webClient, null));
+            HtmlPage page = webClient.getPage("http://localhost:8081/index.html/checktterer");
+            assertEquals("/index.html/checktterer", getStateCookieSavedPath(webClient, null));
 
             assertEquals("Sign in to quarkus", page.getTitleText());
 
@@ -1378,6 +1378,7 @@ public class CodeFlowTest {
 
             try {
                 page = loginForm.getButtonByName("login").click();
+                fail("404 is expected");
             } catch (FailingHttpStatusCodeException ex) {
                 assertEquals(404, ex.getStatusCode());
             }

@@ -47,6 +47,23 @@ public class VertxEventBusConsumerRecorder {
 
     private static final Logger LOGGER = Logger.getLogger(VertxEventBusConsumerRecorder.class.getName());
 
+    /**
+     * Context local key used by blocking EventBus consumer handlers to signal that
+     * the tracer's {@code sendResponse()} should defer scope closing and span ending.
+     * When set to {@code true} on the Vert.x context, the tracer stores a cleanup
+     * {@link Runnable} under {@link #DEFERRED_TRACE_CLEANUP_KEY} instead of closing immediately.
+     *
+     * @see <a href="https://github.com/eclipse-vertx/vert.x/issues/6021">eclipse-vertx/vert.x#6021</a>
+     */
+    public static final String DEFER_SEND_RESPONSE_KEY = "quarkus.otel.defer-send-response";
+
+    /**
+     * Context local key where the deferred cleanup {@link Runnable} is stored by the tracer.
+     * The worker thread must retrieve and run this to properly close the OTel scope
+     * and end the span.
+     */
+    public static final String DEFERRED_TRACE_CLEANUP_KEY = "quarkus.otel.deferred-trace-cleanup";
+
     static volatile Vertx vertx;
     static volatile List<MessageConsumer<?>> messageConsumers;
 
@@ -126,6 +143,16 @@ public class VertxEventBusConsumerRecorder {
                                 // message.
                                 setCurrentContextSafe(true);
                                 if (blocking) {
+                                    ContextInternal currentContext = (ContextInternal) Vertx.currentContext();
+                                    // For fire-and-forget messages (no reply address), signal the tracer
+                                    // to defer sendResponse() so the OTel context remains available
+                                    // in the worker thread. Without this, Vert.x's
+                                    // InboundDeliveryContext.execute() calls sendResponse() on the event
+                                    // loop right after dispatch() returns, closing the OTel scope before
+                                    // the worker thread runs.
+                                    if (m.replyAddress() == null) {
+                                        currentContext.putLocal(DEFER_SEND_RESPONSE_KEY, Boolean.TRUE);
+                                    }
                                     if (runOnVirtualThread) {
                                         VirtualThreadsRecorder.getCurrent().execute(new Runnable() {
                                             @Override
@@ -139,11 +166,13 @@ public class VertxEventBusConsumerRecorder {
                                                     } else {
                                                         m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
                                                     }
+                                                } finally {
+                                                    runDeferredTraceCleanup(currentContext);
                                                 }
                                             }
                                         });
                                     } else {
-                                        Future<Void> future = Vertx.currentContext().executeBlocking(new Callable<Void>() {
+                                        Future<Void> future = currentContext.executeBlocking(new Callable<Void>() {
                                             @Override
                                             public Void call() {
                                                 try {
@@ -155,6 +184,8 @@ public class VertxEventBusConsumerRecorder {
                                                     } else {
                                                         m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
                                                     }
+                                                } finally {
+                                                    runDeferredTraceCleanup(currentContext);
                                                 }
                                                 return null;
                                             }
@@ -209,6 +240,25 @@ public class VertxEventBusConsumerRecorder {
             return (RuntimeException) e;
         } else {
             return new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Runs the deferred trace cleanup stored by the tracer's {@code sendResponse()}.
+     * This closes the OTel scope and ends the span from the worker thread,
+     * ensuring the OTel context was available during handler execution.
+     *
+     * @see <a href="https://github.com/eclipse-vertx/vert.x/issues/6021">eclipse-vertx/vert.x#6021</a>
+     */
+    static void runDeferredTraceCleanup(ContextInternal ctx) {
+        Runnable cleanup = ctx.getLocal(DEFERRED_TRACE_CLEANUP_KEY);
+        if (cleanup != null) {
+            ctx.removeLocal(DEFERRED_TRACE_CLEANUP_KEY);
+            try {
+                cleanup.run();
+            } catch (Throwable e) {
+                LOGGER.warn("Unable to run deferred trace cleanup", e);
+            }
         }
     }
 

@@ -39,7 +39,7 @@ public class ManagementInterfaceBasicAuthTest {
                             quarkus.management.enabled=true
                             quarkus.management.auth.enabled=true
                             quarkus.management.auth.policy.r1.roles-allowed=admin
-                            quarkus.management.auth.permission.roles1.paths=/admin
+                            quarkus.management.auth.permission.roles1.paths=/q/metrics
                             quarkus.management.auth.permission.roles1.policy=r1
                             """), "application.properties");
         }
@@ -70,12 +70,49 @@ public class ManagementInterfaceBasicAuthTest {
     }
 
     @Test
-    public void testBasicAuthFailure() {
+    public void testBasicAuthFailureWithoutPassword() {
+        RestAssured
+                .given()
+                .redirects().follow(false)
+                .get(metrics)
+                .then()
+                .assertThat()
+                .statusCode(401);
+
+    }
+
+    @Test
+    public void testBasicAuthFailureWithoutPasswordWithMatrix() {
+        RestAssured
+                .given()
+                .redirects().follow(false)
+                .get(metrics.toString() + ";a=a1")
+                .then()
+                .assertThat()
+                .statusCode(404); // instead of 401
+
+    }
+
+    @Test
+    public void testBasicAuthFailureWrongPassword() {
         RestAssured
                 .given()
                 .auth().preemptive().basic("admin", "wrongpassword")
                 .redirects().follow(false)
                 .get(metrics)
+                .then()
+                .assertThat()
+                .statusCode(401);
+
+    }
+
+    @Test
+    public void testBasicAuthFailureWrongPasswordWithMatrix() {
+        RestAssured
+                .given()
+                .auth().preemptive().basic("admin", "wrongpassword")
+                .redirects().follow(false)
+                .get(metrics + ";a=a1")
                 .then()
                 .assertThat()
                 .statusCode(401);

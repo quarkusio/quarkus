@@ -13,7 +13,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.InactiveBeanException;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.test.QuarkusExtensionTest;
-import io.vertx.mssqlclient.MSSQLPool;
 import io.vertx.sqlclient.Pool;
 
 public class ConfigUrlMissingDefaultDatasourceDynamicInjectionTest {
@@ -29,12 +28,6 @@ public class ConfigUrlMissingDefaultDatasourceDynamicInjectionTest {
     @Inject
     InjectableInstance<io.vertx.mutiny.sqlclient.Pool> mutinyPool;
 
-    @Inject
-    InjectableInstance<MSSQLPool> vendorPool;
-
-    @Inject
-    InjectableInstance<io.vertx.mutiny.mssqlclient.MSSQLPool> mutinyVendorPool;
-
     @Test
     public void pool() {
         doTest(pool, pool1 -> pool1.getConnection().toCompletionStage().toCompletableFuture().join());
@@ -43,16 +36,6 @@ public class ConfigUrlMissingDefaultDatasourceDynamicInjectionTest {
     @Test
     public void mutinyPool() {
         doTest(mutinyPool, pool1 -> pool1.getConnection().subscribe().asCompletionStage().join());
-    }
-
-    @Test
-    public void vendorPool() {
-        doTest(vendorPool, MSSQLPool -> MSSQLPool.getConnection().toCompletionStage().toCompletableFuture().join());
-    }
-
-    @Test
-    public void mutinyVendorPool() {
-        doTest(mutinyVendorPool, MSSQLPool -> MSSQLPool.getConnection().subscribe().asCompletionStage().join());
     }
 
     private <T> void doTest(InjectableInstance<T> instance, Consumer<T> action) {

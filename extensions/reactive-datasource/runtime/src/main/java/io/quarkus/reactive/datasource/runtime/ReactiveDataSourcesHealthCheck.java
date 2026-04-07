@@ -1,5 +1,6 @@
-package io.quarkus.reactive.pg.client.runtime.health;
+package io.quarkus.reactive.datasource.runtime;
 
+import java.util.Map;
 import java.util.Set;
 
 import jakarta.annotation.PostConstruct;
@@ -12,17 +13,14 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.datasource.runtime.DataSourceSupport;
-import io.quarkus.reactive.datasource.runtime.ReactiveDataSourceUtil;
-import io.quarkus.reactive.datasource.runtime.ReactiveDatasourceHealthCheck;
-import io.quarkus.reactive.pg.client.runtime.PgPoolSupport;
 import io.vertx.sqlclient.Pool;
 
 @Readiness
 @ApplicationScoped
-class ReactivePgDataSourcesHealthCheck extends ReactiveDatasourceHealthCheck {
+class ReactiveDataSourcesHealthCheck extends ReactiveDatasourceHealthCheck {
 
-    public ReactivePgDataSourcesHealthCheck() {
-        super("Reactive PostgreSQL connections health check", "SELECT 1");
+    public ReactiveDataSourcesHealthCheck() {
+        super("Reactive datasource connections health check", "SELECT 1");
     }
 
     @PostConstruct
@@ -30,18 +28,17 @@ class ReactivePgDataSourcesHealthCheck extends ReactiveDatasourceHealthCheck {
         ArcContainer container = Arc.container();
         DataSourceSupport dataSourceSupport = container.instance(DataSourceSupport.class).get();
         Set<String> excludedNames = dataSourceSupport.getHealthCheckExcludedNames();
-        PgPoolSupport pgPoolSupport = container.instance(PgPoolSupport.class).get();
-        Set<String> pgPoolNames = pgPoolSupport.getPgPoolNames();
+        ReactivePoolsHealthConfig healthConfig = container.instance(ReactivePoolsHealthConfig.class).get();
+        Map<String, String> healthSqlMap = healthConfig.getHealthCheckSqlByDatasource();
         for (InstanceHandle<Pool> handle : container.select(Pool.class, Any.Literal.INSTANCE).handles()) {
             if (!handle.getBean().isActive()) {
                 continue;
             }
             String poolName = ReactiveDataSourceUtil.dataSourceName(handle.getBean());
-            if (!pgPoolNames.contains(poolName) || excludedNames.contains(poolName)) {
+            if (excludedNames.contains(poolName) || !healthSqlMap.containsKey(poolName)) {
                 continue;
             }
-            addPool(poolName, handle.get());
+            addPool(poolName, handle.get(), healthSqlMap.get(poolName));
         }
     }
-
 }

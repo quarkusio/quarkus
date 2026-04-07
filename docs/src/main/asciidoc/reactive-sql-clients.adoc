@@ -694,7 +694,7 @@ Pool additional1Client;
 
 @Inject
 @ReactiveDataSource("additional2")
-MySQLPool additional2Client;
+Pool additional2Client;
 ----
 <1> Injecting the client for the default datasource does not require anything special.
 <2> For a named datasource, you use the `@ReactiveDataSource` CDI qualifier with the datasource name as its value.
@@ -789,57 +789,56 @@ For example, you could ensure connections are recycled after 60 minutes:
 quarkus.datasource.reactive.max-lifetime=PT60M
 ----
 
+== TLS configuration
+
+All reactive SQL clients support TLS configuration through the Quarkus TLS registry.
+You can reference a named TLS configuration using the `tls-configuration-name` property:
+
+[source,properties]
+----
+quarkus.tls.my-db-tls.trust-store.pem.certs=server.crt
+quarkus.datasource.reactive.tls-configuration-name=my-db-tls
+----
+
+When a named TLS configuration is set, SSL is automatically enabled for the connection.
+For databases that support SSL modes (PostgreSQL and MariaDB/MySQL), the SSL mode is set to `require`/`required`.
+For IBM Db2 and Microsoft SQL Server, the `ssl` flag is set to `true`.
+
+NOTE: When a named TLS configuration is set, manual SSL properties (`trust-certificate-*`, `key-certificate-*`, `trust-all`, `hostname-verification-algorithm`) are ignored.
+
+For more information about the TLS registry, see the xref:tls-registry-reference.adoc[TLS Registry Reference guide].
+
 == Customizing pool creation
 
 Sometimes, the database connection pool cannot be configured only by declaration.
 
 For example, you might have to read a specific file only present in production, or retrieve configuration data from a proprietary configuration server.
 
-In this case, you can customize pool creation by creating a class implementing an interface which depends on the target database:
-
-[cols="30,70"]
-|===
-|Database |Pool creator class name
-
-|IBM Db2
-|`io.quarkus.reactive.db2.client.DB2PoolCreator`
-
-|MariaDB/MySQL
-|`io.quarkus.reactive.mysql.client.MySQLPoolCreator`
-
-|Microsoft SQL Server
-|`io.quarkus.reactive.mssql.client.MSSQLPoolCreator`
-
-|Oracle
-|`io.quarkus.reactive.oracle.client.OraclePoolCreator`
-
-|PostgreSQL
-|`io.quarkus.reactive.pg.client.PgPoolCreator`
-|===
-
-Here's an example for PostgreSQL:
+In this case, you can customize pool creation by creating a class implementing `io.quarkus.reactive.datasource.PoolCreator`:
 
 [source,java]
 ----
 import jakarta.inject.Singleton;
 
-import io.quarkus.reactive.pg.client.PgPoolCreator;
-import io.vertx.pgclient.PgConnectOptions;
+import io.quarkus.reactive.datasource.PoolCreator;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PoolOptions;
+import io.vertx.sqlclient.SqlConnectOptions;
 
 @Singleton
-public class CustomPgPoolCreator implements PgPoolCreator {
+public class CustomPoolCreator implements PoolCreator {
 
     @Override
     public Pool create(Input input) {
-        PgConnectOptions connectOptions = input.pgConnectOptions();
+        SqlConnectOptions connectOptions = input.connectOptionsList().get(0);
         PoolOptions poolOptions = input.poolOptions();
         // Customize connectOptions, poolOptions or both, as required
         return Pool.pool(input.vertx(), connectOptions, poolOptions);
     }
 }
 ----
+
+For a named datasource, annotate the bean with `@ReactiveDataSource("datasource-name")`.
 
 == Pipelining
 

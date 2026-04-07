@@ -121,6 +121,14 @@ public interface DataSourceReactiveRuntimeConfig {
     String hostnameVerificationAlgorithm();
 
     /**
+     * The name of the TLS configuration to use.
+     * <p>
+     * If set, the TLS configuration with the given name is used for SSL/TLS.
+     * When set, manual trust/key certificate properties are ignored.
+     */
+    Optional<String> tlsConfigurationName();
+
+    /**
      * The maximum time a connection remains unused in the pool before it is closed.
      */
     @ConfigDocDefault("no timeout")

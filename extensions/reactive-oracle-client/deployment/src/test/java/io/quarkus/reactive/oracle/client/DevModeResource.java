@@ -1,56 +1,40 @@
 package io.quarkus.reactive.oracle.client;
 
-import java.sql.SQLException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-
 import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
+import io.quarkus.vertx.web.Route;
+import io.vertx.ext.web.RoutingContext;
 import io.vertx.oracleclient.OracleException;
 import io.vertx.sqlclient.Pool;
 
-@Path("/dev")
 public class DevModeResource {
 
     @Inject
     Pool client;
 
-    @GET
-    @Path("/error")
-    @Produces(MediaType.TEXT_PLAIN)
-    public CompletionStage<Response> checkConnectionFailure() throws SQLException {
-        CompletableFuture<Response> future = new CompletableFuture<>();
-        client.query("SELECT 1 FROM DUAL").execute(ar -> {
+    @Route(path = "/dev/error", methods = Route.HttpMethod.GET)
+    void checkConnectionFailure(RoutingContext rc) {
+        client.query("SELECT 1 FROM DUAL").execute().onComplete(ar -> {
             Class<?> expectedExceptionClass = OracleException.class;
             if (ar.succeeded()) {
-                future.complete(Response.serverError().entity("Expected SQL query to fail").build());
+                rc.response().setStatusCode(500).end("Expected SQL query to fail");
             } else if (!expectedExceptionClass.isAssignableFrom(ar.cause().getClass())) {
-                future.complete(Response.serverError()
-                        .entity("Expected " + expectedExceptionClass + ", got " + ar.cause().getClass()).build());
+                rc.response().setStatusCode(500)
+                        .end("Expected " + expectedExceptionClass + ", got " + ar.cause().getClass());
             } else {
-                future.complete(Response.ok().build());
+                rc.response().setStatusCode(200).end();
             }
         });
-        return future;
     }
 
-    @GET
-    @Path("/connected")
-    @Produces(MediaType.TEXT_PLAIN)
-    public CompletionStage<Response> checkConnectionSuccess() throws SQLException {
-        CompletableFuture<Response> future = new CompletableFuture<>();
-        client.query("SELECT 1 FROM DUAL").execute(ar -> {
+    @Route(path = "/dev/connected", methods = Route.HttpMethod.GET)
+    void checkConnectionSuccess(RoutingContext rc) {
+        client.query("SELECT 1 FROM DUAL").execute().onComplete(ar -> {
             if (ar.succeeded()) {
-                future.complete(Response.ok().build());
+                rc.response().setStatusCode(200).end();
             } else {
-                future.complete(Response.serverError().entity(ar.cause().getMessage()).build());
+                rc.response().setStatusCode(500).end(ar.cause().getMessage());
             }
         });
-        return future;
     }
 }

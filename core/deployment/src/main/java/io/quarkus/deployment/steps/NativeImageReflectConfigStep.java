@@ -3,6 +3,7 @@ package io.quarkus.deployment.steps;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,6 +25,10 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 
+/**
+ * Schema used:
+ * https://github.com/graalvm/graalvm-community-jdk25u/blob/master/docs/reference-manual/native-image/assets/reachability-metadata-schema-v1.2.0.json
+ */
 public class NativeImageReflectConfigStep {
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
@@ -38,8 +43,8 @@ public class NativeImageReflectConfigStep {
 
         final Map<String, ReflectionInfo> reflectiveClasses = new LinkedHashMap<>();
         final Set<String> forcedNonWeakClasses = new HashSet<>();
-        for (ForceNonWeakReflectiveClassBuildItem nonWeakReflectiveClassBuildItem : nonWeakReflectiveClassBuildItems) {
-            forcedNonWeakClasses.add(nonWeakReflectiveClassBuildItem.getClassName());
+        for (ForceNonWeakReflectiveClassBuildItem nonWeak : nonWeakReflectiveClassBuildItems) {
+            forcedNonWeakClasses.add(nonWeak.getClassName());
         }
         for (ReflectiveClassBuildItem i : reflectiveClassBuildItems) {
             addReflectiveClass(reflectiveClasses, forcedNonWeakClasses, i);
@@ -50,102 +55,83 @@ public class NativeImageReflectConfigStep {
         for (ReflectiveMethodBuildItem i : reflectiveMethods) {
             addReflectiveMethod(reflectiveClasses, i);
         }
-
         for (ServiceProviderBuildItem i : serviceProviderBuildItems) {
             for (String provider : i.providers()) {
-                // Register the nullary constructor
                 addReflectiveMethod(reflectiveClasses,
                         new ReflectiveMethodBuildItem("Class registered as provider", provider, "<init>", new String[0]));
-                // Register public provider() method for lookkup to avoid throwing a MissingReflectionRegistrationError at run time.
-                // See ServiceLoader#loadProvider and ServiceLoader#findStaticProviderMethod.
                 addReflectiveMethod(reflectiveClasses,
-                        new ReflectiveMethodBuildItem("Class registered as provider", true, provider, "provider",
-                                new String[0]));
+                        new ReflectiveMethodBuildItem("Class registered as provider", true, provider, "provider"));
             }
         }
-
-        // Perform this as last step, since it augments the already added reflective classes
         for (ReflectiveClassConditionBuildItem i : reflectiveClassConditionBuildItems) {
             reflectiveClasses.computeIfPresent(i.getClassName(), (key, value) -> {
                 value.typeReachable = i.getTypeReachable();
                 return value;
             });
         }
+        if (reflectiveClasses.isEmpty()) {
+            return;
+        }
 
-        JsonArrayBuilder root = Json.array();
+        final JsonArrayBuilder reflectionArray = Json.array();
+
         for (Map.Entry<String, ReflectionInfo> entry : reflectiveClasses.entrySet()) {
-            JsonObjectBuilder json = Json.object();
-
-            json.put("name", entry.getKey());
-
-            ReflectionInfo info = entry.getValue();
-            JsonArrayBuilder methodsArray = Json.array();
-            JsonArrayBuilder queriedMethodsArray = Json.array();
+            final JsonObjectBuilder json = Json.object().put("type", entry.getKey());
+            final ReflectionInfo info = entry.getValue();
+            final JsonArrayBuilder methodsArray = Json.array();
             if (info.typeReachable != null) {
-                json.put("condition", Json.object().put("typeReachable", info.typeReachable));
+                json.put("condition", Json.object().put("typeReached", info.typeReachable));
             }
-            if (info.constructors) {
+            if (info.constructors || info.queryConstructors) {
                 json.put("allDeclaredConstructors", true);
-            } else {
-                if (info.queryConstructors) {
-                    json.put("queryAllDeclaredConstructors", true);
-                }
-                if (!info.ctorSet.isEmpty()) {
-                    extractToJsonArray(info.ctorSet, methodsArray);
-                }
+            } else if (!info.ctorSet.isEmpty()) {
+                extractToJsonArray(info.ctorSet, methodsArray);
             }
             if (info.publicConstructors) {
                 json.put("allPublicConstructors", true);
             }
-            if (info.methods) {
+            if (info.methods || info.queryMethods) {
                 json.put("allDeclaredMethods", true);
             } else {
-                if (info.queryMethods) {
-                    json.put("queryAllDeclaredMethods", true);
-                }
                 if (!info.methodSet.isEmpty()) {
                     extractToJsonArray(info.methodSet, methodsArray);
                 }
                 if (!info.queriedMethodSet.isEmpty()) {
-                    extractToJsonArray(info.queriedMethodSet, queriedMethodsArray);
+                    extractToJsonArray(info.queriedMethodSet, methodsArray);
                 }
             }
             if (!methodsArray.isEmpty()) {
                 json.put("methods", methodsArray);
             }
-            if (!queriedMethodsArray.isEmpty()) {
-                json.put("queriedMethods", queriedMethodsArray);
-            }
-
             if (info.fields) {
                 json.put("allDeclaredFields", true);
             } else if (!info.fieldSet.isEmpty()) {
-                JsonArrayBuilder fieldsArray = Json.array();
+                final JsonArrayBuilder fieldsArray = Json.array();
                 for (String fieldName : info.fieldSet) {
                     fieldsArray.add(Json.object().put("name", fieldName));
                 }
                 json.put("fields", fieldsArray);
             }
-            if (info.classes) {
-                json.put("allDeclaredClasses", true);
-            }
             if (info.unsafeAllocated) {
                 json.put("unsafeAllocated", true);
             }
-            if (nativeConfig.includeReasonsInConfigFiles() && info.reasons != null) {
-                JsonArrayBuilder reasonsArray = Json.array();
-                for (String reason : info.reasons) {
-                    reasonsArray.add(reason);
-                }
-                json.put("reasons", reasonsArray);
+            if (info.serialization) {
+                json.put("serializable", true);
             }
-
-            root.add(json);
+            if (nativeConfig.includeReasonsInConfigFiles() && info.reasons != null && !info.reasons.isEmpty()) {
+                final JsonArrayBuilder reasonsArray = Json.array();
+                reasonsArray.addAll(info.reasons);
+                json.put("reason", reasonsArray);
+            }
+            reflectionArray.add(json);
         }
+
+        final JsonObjectBuilder root = Json.object().put("reflection", reflectionArray);
 
         try (StringWriter writer = new StringWriter()) {
             root.appendTo(writer);
-            reflectConfig.produce(new GeneratedResourceBuildItem("META-INF/native-image/reflect-config.json",
+            reflectConfig.produce(new GeneratedResourceBuildItem(
+                    "META-INF/native-image/reflect/reachability-metadata.json",
                     writer.toString().getBytes(StandardCharsets.UTF_8)));
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -154,33 +140,27 @@ public class NativeImageReflectConfigStep {
 
     private static void extractToJsonArray(Set<ReflectiveMethodBuildItem> methodSet, JsonArrayBuilder methodsArray) {
         for (ReflectiveMethodBuildItem method : methodSet) {
-            JsonObjectBuilder methodObject = Json.object();
-            methodObject.put("name", method.getName());
-            JsonArrayBuilder paramsArray = Json.array();
-            for (int i = 0; i < method.getParams().length; ++i) {
-                paramsArray.add(method.getParams()[i]);
-            }
-            methodObject.put("parameterTypes", paramsArray);
-            methodsArray.add(methodObject);
+            final JsonArrayBuilder paramsArray = Json.array();
+            Collections.addAll(paramsArray, method.getParams());
+            methodsArray.add(Json.object()
+                    .put("name", method.getName())
+                    .put("parameterTypes", paramsArray));
         }
     }
 
-    public void addReflectiveMethod(Map<String, ReflectionInfo> reflectiveClasses, ReflectiveMethodBuildItem methodInfo) {
-        String cl = methodInfo.getDeclaringClass();
-        ReflectionInfo existing = reflectiveClasses.get(cl);
-        if (existing == null) {
-            reflectiveClasses.put(cl, existing = new ReflectionInfo());
-        }
-        if (methodInfo.getName().equals("<init>")) {
+    private static void addReflectiveMethod(Map<String, ReflectionInfo> reflectiveClasses,
+            ReflectiveMethodBuildItem methodInfo) {
+        final ReflectionInfo existing = reflectiveClasses
+                .computeIfAbsent(methodInfo.getDeclaringClass(),
+                        k -> new ReflectionInfo());
+        if ("<init>".equals(methodInfo.getName())) {
             existing.ctorSet.add(methodInfo);
+        } else if (methodInfo.isQueryOnly()) {
+            existing.queriedMethodSet.add(methodInfo);
         } else {
-            if (methodInfo.isQueryOnly()) {
-                existing.queriedMethodSet.add(methodInfo);
-            } else {
-                existing.methodSet.add(methodInfo);
-            }
+            existing.methodSet.add(methodInfo);
         }
-        String reason = methodInfo.getReason();
+        final String reason = methodInfo.getReason();
         if (reason != null) {
             if (existing.reasons == null) {
                 existing.reasons = new HashSet<>();
@@ -189,56 +169,38 @@ public class NativeImageReflectConfigStep {
         }
     }
 
-    public void addReflectiveClass(Map<String, ReflectionInfo> reflectiveClasses, Set<String> forcedNonWeakClasses,
+    private static void addReflectiveClass(Map<String, ReflectionInfo> reflectiveClasses,
+            Set<String> forcedNonWeakClasses,
             ReflectiveClassBuildItem classBuildItem) {
         for (String cl : classBuildItem.getClassNames()) {
-            ReflectionInfo existing = reflectiveClasses.get(cl);
-            if (existing == null) {
-                String typeReachable = (!forcedNonWeakClasses.contains(cl) && classBuildItem.isWeak()) ? cl : null;
-                reflectiveClasses.put(cl, new ReflectionInfo(classBuildItem, typeReachable));
-            } else {
-                if (classBuildItem.isConstructors()) {
-                    existing.constructors = true;
+            final ReflectionInfo existing = reflectiveClasses.computeIfAbsent(cl, k -> {
+                final String typeReachable = (!forcedNonWeakClasses.contains(k) && classBuildItem.isWeak()) ? k : null;
+                return new ReflectionInfo(classBuildItem, typeReachable);
+            });
+            existing.constructors |= classBuildItem.isConstructors();
+            existing.queryConstructors |= classBuildItem.isQueryConstructors();
+            existing.publicConstructors |= classBuildItem.isPublicConstructors();
+            existing.methods |= classBuildItem.isMethods();
+            existing.queryMethods |= classBuildItem.isQueryMethods();
+            existing.fields |= classBuildItem.isFields();
+            existing.classes |= classBuildItem.isClasses();
+            existing.serialization |= classBuildItem.isSerialization();
+            existing.unsafeAllocated |= classBuildItem.isUnsafeAllocated();
+            final String reason = classBuildItem.getReason();
+            if (reason != null) {
+                if (existing.reasons == null) {
+                    existing.reasons = new HashSet<>();
                 }
-                if (classBuildItem.isQueryConstructors()) {
-                    existing.queryConstructors = true;
-                }
-                if (classBuildItem.isMethods()) {
-                    existing.methods = true;
-                }
-                if (classBuildItem.isQueryMethods()) {
-                    existing.queryMethods = true;
-                }
-                if (classBuildItem.isFields()) {
-                    existing.fields = true;
-                }
-                if (classBuildItem.isClasses()) {
-                    existing.classes = true;
-                }
-                if (classBuildItem.isSerialization()) {
-                    existing.serialization = true;
-                }
-                if (classBuildItem.isUnsafeAllocated()) {
-                    existing.unsafeAllocated = true;
-                }
-                if (classBuildItem.getReason() != null) {
-                    if (existing.reasons == null) {
-                        existing.reasons = new HashSet<>();
-                    }
-                    existing.reasons.add(classBuildItem.getReason());
-                }
+                existing.reasons.add(reason);
             }
         }
     }
 
-    public void addReflectiveField(Map<String, ReflectionInfo> reflectiveClasses, ReflectiveFieldBuildItem fieldInfo) {
-        String cl = fieldInfo.getDeclaringClass();
-        ReflectionInfo existing = reflectiveClasses.get(cl);
-        if (existing == null) {
-            reflectiveClasses.put(cl, existing = new ReflectionInfo());
-        }
+    private static void addReflectiveField(Map<String, ReflectionInfo> reflectiveClasses, ReflectiveFieldBuildItem fieldInfo) {
+        final ReflectionInfo existing = reflectiveClasses.computeIfAbsent(fieldInfo.getDeclaringClass(),
+                k -> new ReflectionInfo());
         existing.fieldSet.add(fieldInfo.getName());
-        String reason = fieldInfo.getReason();
+        final String reason = fieldInfo.getReason();
         if (reason != null) {
             if (existing.reasons == null) {
                 existing.reasons = new HashSet<>();
@@ -248,21 +210,14 @@ public class NativeImageReflectConfigStep {
     }
 
     static final class ReflectionInfo {
-        boolean constructors;
-        boolean publicConstructors;
-        boolean queryConstructors;
-        boolean methods;
-        boolean queryMethods;
-        boolean fields;
-        boolean classes;
-        boolean serialization;
-        boolean unsafeAllocated;
+        boolean constructors, publicConstructors, queryConstructors;
+        boolean methods, queryMethods, fields, classes, serialization, unsafeAllocated;
         Set<String> reasons = null;
         String typeReachable;
-        Set<String> fieldSet = new HashSet<>();
-        Set<ReflectiveMethodBuildItem> methodSet = new HashSet<>();
-        Set<ReflectiveMethodBuildItem> queriedMethodSet = new HashSet<>();
-        Set<ReflectiveMethodBuildItem> ctorSet = new HashSet<>();
+        final Set<String> fieldSet = new HashSet<>();
+        final Set<ReflectiveMethodBuildItem> methodSet = new HashSet<>();
+        final Set<ReflectiveMethodBuildItem> queriedMethodSet = new HashSet<>();
+        final Set<ReflectiveMethodBuildItem> ctorSet = new HashSet<>();
 
         private ReflectionInfo() {
         }
@@ -279,10 +234,9 @@ public class NativeImageReflectConfigStep {
             this.serialization = classBuildItem.isSerialization();
             this.unsafeAllocated = classBuildItem.isUnsafeAllocated();
             if (classBuildItem.getReason() != null) {
-                reasons = new HashSet<>();
-                reasons.add(classBuildItem.getReason());
+                this.reasons = new HashSet<>();
+                this.reasons.add(classBuildItem.getReason());
             }
         }
     }
-
 }

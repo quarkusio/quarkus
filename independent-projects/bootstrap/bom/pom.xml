@@ -169,6 +169,11 @@
                 </exclusions>
             </dependency>
             <dependency>
+                <groupId>org.codehaus.plexus</groupId>
+                <artifactId>plexus-utils</artifactId>
+                <version>${plexus-utils.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.maven</groupId>
                 <artifactId>maven-settings</artifactId>
                 <version>${maven-core.version}</version>
@@ -428,11 +433,6 @@
                 <groupId>org.codehaus.plexus</groupId>
                 <artifactId>plexus-sec-dispatcher</artifactId>
                 <version>${plexus-sec-dispatcher.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.codehaus.plexus</groupId>
-                <artifactId>plexus-utils</artifactId>
-                <version>${plexus-utils.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.graalvm.sdk</groupId>

@@ -134,7 +134,7 @@ public class VertxCoreProducerTest {
                 }));
 
         VertxCoreRecorder.initialize(configuration, customizers, new DefaultThreadPoolConfig(), null, LaunchMode.TEST,
-                List.of(), List.of(), List.of());
+                List.of());
     }
 
     @Test
@@ -148,7 +148,7 @@ public class VertxCoreProducerTest {
                     }
                 }));
         Vertx v = VertxCoreRecorder.initialize(new DefaultVertxConfiguration(), customizers, new DefaultThreadPoolConfig(),
-                null, LaunchMode.TEST, List.of(), List.of(), List.of());
+                null, LaunchMode.TEST, List.of());
         Assertions.assertTrue(called.get(), "Customizer should get called during initialization");
     }
 
@@ -163,7 +163,7 @@ public class VertxCoreProducerTest {
                         Assertions.assertEquals(cacheDir, vertxOptions.getFileSystemOptions().getFileCacheDir());
                     }));
             VertxCoreRecorder.initialize(new DefaultVertxConfiguration(), customizers, new DefaultThreadPoolConfig(),
-                    null, LaunchMode.TEST, List.of(), List.of(), List.of());
+                    null, LaunchMode.TEST, List.of());
         } finally {
             System.clearProperty(SysProps.FILE_CACHE_DIR.name);
         }

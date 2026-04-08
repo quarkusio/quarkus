@@ -83,6 +83,7 @@ import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.impl.VertxImpl;
+import io.vertx.core.spi.VertxServiceProvider;
 
 class VertxProcessor {
 
@@ -298,9 +299,10 @@ class VertxProcessor {
     }
 
     @BuildStep
-    void registerNativeImageResources(BuildProducer<NativeImageResourceBuildItem> resources) {
-        // Accessed by io.vertx.core.impl.VertxBuilder.<init>
-        resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.vertx.core.spi.VertxServiceProvider"));
+    void registerNativeImageResources(BuildProducer<NativeImageResourceBuildItem> resources,
+            BuildProducer<ServiceProviderBuildItem> serviceProviders) {
+        // Accessed by io.vertx.core.impl.VertxBuilder.<init> via ServiceLoader
+        serviceProviders.produce(ServiceProviderBuildItem.allProvidersFromClassPath(VertxServiceProvider.class.getName()));
         // Accessed by io.vertx.core.impl.VertxImpl.<init>
         resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.vertx.core.spi.VerticleFactory"));
     }

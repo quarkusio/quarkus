@@ -1,6 +1,6 @@
 package io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx;
 
-import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DB_NAMESPACE;
+import static io.opentelemetry.semconv.DbAttributes.DB_NAMESPACE;
 import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DbSystemNameIncubatingValues.REDIS;
 import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INSTRUMENTATION_NAME;
 
@@ -16,7 +16,6 @@ import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
-import io.opentelemetry.instrumentation.api.internal.AttributesExtractorUtil;
 import io.opentelemetry.instrumentation.api.semconv.network.NetworkAttributesExtractor;
 import io.opentelemetry.instrumentation.api.semconv.network.NetworkAttributesGetter;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
@@ -231,7 +230,9 @@ public class RedisClientInstrumenterVertxTracer implements
         @Override
         public void onStart(AttributesBuilder attributes, io.opentelemetry.context.Context parentContext,
                 CommandTrace request) {
-            AttributesExtractorUtil.internalSet(attributes, DB_NAMESPACE, request.dbIndex());
+            if (request.dbIndex() != null) {
+                attributes.put(DB_NAMESPACE, request.dbIndex());
+            }
         }
 
         @Override

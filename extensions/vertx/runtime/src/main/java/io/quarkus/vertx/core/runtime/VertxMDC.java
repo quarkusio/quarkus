@@ -19,9 +19,7 @@ import io.vertx.core.spi.context.storage.ContextLocal;
 public enum VertxMDC implements MDCProvider {
     INSTANCE;
 
-    @SuppressWarnings("unchecked")
-    public static final ContextLocal<ConcurrentHashMap<String, Object>> MDC_LOCAL = (ContextLocal<ConcurrentHashMap<String, Object>>) (ContextLocal<?>) ContextLocal
-            .registerLocal(ConcurrentHashMap.class, ConcurrentHashMap::new);
+    public static final ContextLocal<ConcurrentHashMap<String, Object>> MDC_LOCAL = VertxMDCServiceProvider.MDC_LOCAL;
 
     final InheritableThreadLocal<Map<String, Object>> inheritableThreadLocalMap = new InheritableThreadLocal<>() {
         @Override

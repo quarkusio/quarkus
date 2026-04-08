@@ -34,7 +34,7 @@ public class VertxCoreRecorderConfigurationTest {
         AtomicReference<VertxOptions> captured = new AtomicReference<>();
         VertxOptionsCustomizer customizer = new VertxOptionsCustomizer(List.of(captured::set));
         VertxCoreRecorder.initialize(config, customizer, threadPoolConfig, null, LaunchMode.TEST,
-                List.of(), List.of(), List.of());
+                List.of());
         return captured.get();
     }
 

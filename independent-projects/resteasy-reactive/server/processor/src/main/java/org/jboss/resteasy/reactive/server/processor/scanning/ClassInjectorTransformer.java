@@ -289,7 +289,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                     case CONTEXT:
                         // already set by CDI for non-records
                         if (isRecord) {
-                            injectContextParameter(injectMethod, fieldInfo, ctxParamIndex);
+                            injectContextParameterForRecord(injectMethod, fieldInfo, fieldIndex, ctxParamIndex);
                         }
                         break;
                     case FORM:
@@ -489,7 +489,8 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             }
         }
 
-        private void injectContextParameter(MethodVisitor injectMethod, FieldInfo fieldInfo, int ctxParamIndex) {
+        private void injectContextParameterForRecord(MethodVisitor injectMethod, FieldInfo fieldInfo, int fieldIndex,
+                int ctxParamIndex) {
             // ctx param
             injectMethod.visitVarInsn(Opcodes.ALOAD, ctxParamIndex);
             // type
@@ -498,6 +499,8 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             injectMethod.visitMethodInsn(Opcodes.INVOKEINTERFACE, QUARKUS_REST_INJECTION_CONTEXT_BINARY_NAME,
                     "getContextParameter",
                     "(Ljava/lang/Class;)Ljava/lang/Object;", true);
+            // store our param field
+            injectMethod.visitVarInsn(AsmUtil.getStoreOpcode(fieldInfo.type()), fieldIndex);
         }
 
         private void generateMultipartFormFields(FieldInfo fieldInfo, ServerIndexedParameter extractor) {

@@ -11,6 +11,8 @@ import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.InterceptorBindings;
+import io.quarkus.reactive.transaction.ReactiveResource;
+import io.quarkus.reactive.transaction.runtime.pool.TransactionalContextPool;
 import io.quarkus.transaction.annotations.Rollback;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.mutiny.Uni;
@@ -27,10 +29,6 @@ import io.vertx.sqlclient.Transaction;
  * has its own class as the QuarkusReactiveTransaction is a binding type so requires exact match
  */
 public abstract class TransactionalInterceptorBase {
-
-    // Used in this class and in TransactionalContextPool to store and get
-    // the connection with the lazily created Transaction inside the Vert.x Context
-    public static final String CURRENT_CONNECTION_KEY = "reactive.transaction.currentConnection";
 
     // This key is used to indicate the method was annotated with @Transactional
     // And will open a session and a transaction lazily when the first operation requires a reactive session
@@ -127,18 +125,19 @@ public abstract class TransactionalInterceptorBase {
     }
 
     private Uni<?> closeConnection() {
-        SqlConnection connection = connectionFromContext();
-        if (connection == null) {
+        Future<Void> closeFuture = TransactionalContextPool.closeAndClearCurrentConnection();
+        if (closeFuture == null) {
             // io/quarkus/hibernate/reactive/transaction/DisableJTATransactionTest.java:38
             LOG.tracef("Connection doesn't exist, nothing to do here");
             return Uni.createFrom().nullItem();
         }
+        SqlConnection connection = connectionFromContext();
         LOG.tracef("Closing the connection %s", connection);
-        return toUni(connection.close());
+        return toUni(closeFuture);
     }
 
     SqlConnection connectionFromContext() {
-        return Vertx.currentContext().getLocal(CURRENT_CONNECTION_KEY);
+        return TransactionalContextPool.getCurrentConnectionFromVertxContext();
     }
 
     // Based on org/hibernate/reactive/pool/impl/SqlClientConnection.java:305

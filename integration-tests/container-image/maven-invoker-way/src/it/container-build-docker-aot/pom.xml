@@ -67,7 +67,7 @@
               <execution>
                 <goals>
                   <goal>build</goal>
-                  <goal>build-aot-enhanced-container-image</goal>
+                  <goal>build-enhanced-artifact</goal>
                 </goals>
               </execution>
             </executions>

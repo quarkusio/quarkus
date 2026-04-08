@@ -3,6 +3,7 @@ package io.quarkus.deployment.pkg.steps;
 import static io.quarkus.runtime.graal.GraalVM.Distribution.GRAALVM;
 import static io.quarkus.runtime.graal.GraalVM.Distribution.LIBERICA;
 import static io.quarkus.runtime.graal.GraalVM.Distribution.MANDREL;
+import static io.quarkus.runtime.graal.GraalVM.Distribution.ORACLE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.stream.Stream;
@@ -153,7 +154,7 @@ public class GraalVMTest {
                 + "Java(TM) SE Runtime Environment Oracle GraalVM 22-dev+25.1 (build 22+25-jvmci-b01)\n"
                 + "Java HotSpot(TM) 64-Bit Server VM Oracle GraalVM 22-dev+25.1 (build 22+25-jvmci-b01, mixed mode, sharing)")
                 .split("\\n")));
-        assertThat(graalVMEE22Dev.toString()).contains(GRAALVM.name());
+        assertThat(graalVMEE22Dev.toString()).contains(ORACLE.name());
         assertThat(graalVMEE22Dev.getVersionAsString()).isEqualTo("24.0-dev");
         assertThat(graalVMEE22Dev.javaVersion.toString()).isEqualTo("22+25-jvmci-b01");
         assertThat(graalVMEE22Dev.javaVersion.feature()).isEqualTo(22);
@@ -166,7 +167,7 @@ public class GraalVMTest {
                 + "OpenJDK Runtime Environment Oracle GraalVM 24-dev.ea+10.1 (build 24-ea+10-1076)\n"
                 + "OpenJDK 64-Bit Server VM Oracle GraalVM 24-dev.ea+10.1 (build 24-ea+10-1076, mixed mode, sharing)")
                 .split("\\n")));
-        assertThat(graalVMEA24Dev.toString()).contains(GRAALVM.name());
+        assertThat(graalVMEA24Dev.toString()).contains(ORACLE.name());
         assertThat(graalVMEA24Dev.getVersionAsString()).isEqualTo("24.2-dev");
         assertThat(graalVMEA24Dev.javaVersion.toString()).isEqualTo("24-ea+10-1076");
         assertThat(graalVMEA24Dev.javaVersion.feature()).isEqualTo(24);

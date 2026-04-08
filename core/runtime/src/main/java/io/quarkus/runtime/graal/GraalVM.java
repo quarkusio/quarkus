@@ -49,6 +49,9 @@ public final class GraalVM {
             if (versionMatcher.find()) {
                 String vendor = versionMatcher.group(VENDOR_PREFIX_GROUP);
                 if (GRAALVM_CE_VERS_PREFIX.equals(vendor) || ORACLE_GRAALVM_VERS_PREFIX.equals(vendor)) {
+                    Distribution dist = ORACLE_GRAALVM_VERS_PREFIX.equals(vendor)
+                            ? Distribution.ORACLE
+                            : Distribution.GRAALVM;
                     String version = versionMatcher.group(VERSION_GROUP);
                     String[] tokens = version.split("\\.", 3);
                     String jdkFeature = tokens[0];
@@ -60,7 +63,7 @@ public final class GraalVM {
                     }
                     // For JDK 26+ there is no more version mapping use the JDK version
                     String versionMapping = Version.GRAAL_MAPPING.getOrDefault(jdkFeature, version);
-                    return new Version(value, versionMapping, jdkVers, Distribution.GRAALVM);
+                    return new Version(value, versionMapping, jdkVers, dist);
                 } else if (LIBERICA_NIK_VERS_PREFIX.equals(vendor)) {
                     return new Version(value, versionMatcher.group(VERSION_GROUP), Distribution.LIBERICA);
                 } else if (MANDREL_VERS_PREFIX.equals(vendor)) {
@@ -266,6 +269,7 @@ public final class GraalVM {
 
     public enum Distribution {
         GRAALVM,
+        ORACLE,
         LIBERICA,
         MANDREL;
     }

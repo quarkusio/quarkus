@@ -523,7 +523,7 @@ Using `./mvnw` is often not practical in this case as you might want to call the
 
 ##### Justfile
 
-As a convenience, we have a [justfile](.justfile)) that provides the suggested set of aliases to use to build Quarkus using [just](https://just.systems/).
+As a convenience, we have a [justfile](.justfile) that provides the suggested set of aliases to use to build Quarkus using [just](https://just.systems/).
 
 Run `just -l` to see the list of aliases.
 

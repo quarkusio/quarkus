@@ -38,7 +38,11 @@ dependencies {
 {#if input.selected-extensions-ga.contains('io.quarkus:quarkus-hibernate-panache-next')}
     annotationProcessor 'org.hibernate.orm:hibernate-processor'
 {/if}
+{#if quarkus.version == null || quarkus.version.compareVersionTo("3.30.999") > 0}
     testImplementation 'io.quarkus:quarkus-junit'
+{#else}
+    testImplementation 'io.quarkus:quarkus-junit5'
+{/if}
 {#for dep in test-dependencies}
     testImplementation '{dep}'
 {/for}

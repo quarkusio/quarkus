@@ -1,8 +1,3 @@
-# For most projects, this workflow file will not need changing; you simply need
-# to commit it to your repository.
-#
-# You may wish to alter this file to override the set of languages analyzed,
-# or to provide custom queries or build logic.
 name: "CodeQL Security Scan"
 
 permissions:
@@ -10,53 +5,55 @@ permissions:
   security-events: write
 
 on:
-
-  schedule:
-    - cron: '0 3 * * 0'
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
     if: github.repository == 'quarkusio/quarkus'
-
-    strategy:
-      fail-fast: false
-      matrix:
-        # Override automatic language detection by changing the below list
-        # Supported options are ['csharp', 'cpp', 'go', 'java', 'javascript', 'python']
-        language: ['java']
-        # Learn more...
-        # https://docs.github.com/en/github/finding-security-vulnerabilities-and-errors-in-your-code/configuring-code-scanning#overriding-automatic-language-detection
+    timeout-minutes: 120
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v6
-      with:
-        fetch-depth: 1
-        ref: main
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - name: Reclaim Disk Space
+      run: .github/ci-prerequisites.sh
     - name: Setup Java JDK
-      uses: actions/setup-java@v5
+      uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
       with:
         distribution: temurin
         java-version: 17
+    - name: Generate cache key
+      id: cache-key
+      run: |
+        CURRENT_BRANCH="${{ github.repository != 'quarkusio/quarkus' && 'fork' || github.base_ref || github.ref_name }}"
+        CURRENT_MONTH=$(/bin/date -u "+%Y-%m")
+        CURRENT_WEEK=$(/bin/date -u "+%Y-%U")
+        echo "m2-monthly-cache-key=m2-cache-${CURRENT_MONTH}" >> $GITHUB_OUTPUT
+        echo "m2-monthly-branch-cache-key=m2-cache-${CURRENT_MONTH}-${CURRENT_BRANCH}" >> $GITHUB_OUTPUT
+        echo "m2-cache-key=m2-cache-${CURRENT_MONTH}-${CURRENT_BRANCH}-${CURRENT_WEEK}" >> $GITHUB_OUTPUT
+    - name: Restore Maven Repository
+      uses: actions/cache/restore@v5
+      with:
+        path: ~/.m2/repository
+        key: ${{ steps.cache-key.outputs.m2-cache-key }}
+        restore-keys: |
+          ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}-
+          ${{ steps.cache-key.outputs.m2-monthly-cache-key }}-
 
-    # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v4
       with:
-        languages: ${{ matrix.language }}
-        # If you wish to specify custom queries, you can do so here or in a config file.
-        # By default, queries listed here will override any specified in a config file.
-        # Prefix the list here with "+" to use these queries and those in the config file.
-        # queries: ./path/to/local/query, your-org/your-repo/queries@main
+        languages: java-kotlin
+        queries: security-extended
 
-    # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
-    # If this step fails, then you should remove it and run the build manually (see below)
-
-    - if: matrix.language == 'java'
-      name: Build Java
-      run: ./mvnw -B --settings .github/mvn-settings.xml -Dquickly-ci install
+    - name: Build
+      run: |
+        ./mvnw -T1C -e -B --settings .github/mvn-settings.xml --fail-at-end -DskipTests -DskipITs -Denforcer.skip -DskipDocs -Dforbiddenapis.skip -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-test-modules install
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v4

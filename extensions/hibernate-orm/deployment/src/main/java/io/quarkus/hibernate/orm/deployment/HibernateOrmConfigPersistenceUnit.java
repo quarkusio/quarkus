@@ -716,6 +716,7 @@ public interface HibernateOrmConfigPersistenceUnit {
         /**
          * The maximum time before an object of the cache is considered expired.
          */
+        @ConfigDocDefault("100s")
         Optional<Duration> maxIdle();
     }
 
@@ -724,6 +725,7 @@ public interface HibernateOrmConfigPersistenceUnit {
         /**
          * The maximum number of objects kept in memory in the cache.
          */
+        @ConfigDocDefault("10000")
         OptionalLong objectCount();
     }
 

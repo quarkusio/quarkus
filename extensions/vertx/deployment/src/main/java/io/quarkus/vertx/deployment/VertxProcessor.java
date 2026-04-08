@@ -58,7 +58,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.PreInitRunnableBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
@@ -76,7 +75,6 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.vertx.ConsumeEvent;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
-import io.quarkus.vertx.core.runtime.init.UUIDRandomPreInitRunnable;
 import io.quarkus.vertx.deployment.spi.EventConsumerInvokerCustomizerBuildItem;
 import io.quarkus.vertx.runtime.EventConsumerInfo;
 import io.quarkus.vertx.runtime.VertxEventBusConsumerRecorder;
@@ -94,15 +92,6 @@ class VertxProcessor {
     @BuildStep
     void featureAndCapability(BuildProducer<FeatureBuildItem> feature, BuildProducer<CapabilityBuildItem> capability) {
         feature.produce(new FeatureBuildItem(Feature.VERTX));
-    }
-
-    /**
-     * Hopefully, we will be able to get rid of this once we find a solution for
-     * https://github.com/eclipse-vertx/vert.x/pull/5450.
-     */
-    @BuildStep
-    public PreInitRunnableBuildItem preInitPlatformDependent() {
-        return PreInitRunnableBuildItem.runnable(UUIDRandomPreInitRunnable.class.getName());
     }
 
     @BuildStep

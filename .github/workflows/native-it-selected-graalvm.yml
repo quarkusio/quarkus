@@ -77,7 +77,7 @@ jobs:
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Set up JDK 17
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: temurin
           java-version: 17
@@ -166,7 +166,7 @@ jobs:
       - name: Tar .m2/repository/io/quarkus
         run: tar -czf m2-io-quarkus.tgz -C ~ .m2/repository/io/quarkus
       - name: Upload .m2/repository/io/quarkus
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: m2-io-quarkus
           path: m2-io-quarkus.tgz
@@ -181,7 +181,7 @@ jobs:
               'target/gradle-build-scan-url.txt' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         if: always()
         with:
           name: "build-reports-Initial JDK 17 Build"
@@ -246,20 +246,20 @@ jobs:
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: m2-io-quarkus
           path: .
       - name: Extract .m2/repository/io/quarkus
         run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Set up JDK 21
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: temurin
           java-version: 21
       - name: Setup GraalVM
         id: setup-graalvm
-        uses: graalvm/setup-graalvm@v1
+        uses: graalvm/setup-graalvm@60c26726de13f8b90771df4bc1641a52a3159994 # v1.5.2
         with:
           java-version: ${{ inputs.NATIVE_COMPILER_VERSION }}
           distribution: ${{ inputs.NATIVE_COMPILER }}
@@ -294,7 +294,7 @@ jobs:
               'integration-tests/virtual-threads/target/gradle-build-scan-url.txt' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         if: always()
         with:
           name: "build-reports-Virtual Thread Support Tests Native - ${{matrix.category}}"
@@ -325,13 +325,13 @@ jobs:
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Set up JDK 17
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: temurin
           java-version: 17
       - name: Setup GraalVM
         id: setup-graalvm
-        uses: graalvm/setup-graalvm@v1
+        uses: graalvm/setup-graalvm@60c26726de13f8b90771df4bc1641a52a3159994 # v1.5.2
         with:
           java-version: ${{ inputs.NATIVE_COMPILER_VERSION }}
           distribution: ${{ inputs.NATIVE_COMPILER }}
@@ -351,7 +351,7 @@ jobs:
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: m2-io-quarkus
           path: .
@@ -367,7 +367,7 @@ jobs:
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
           develocity-token-expiry: 6
       - name: Cache Quarkus metadata
-        uses: actions/cache@v5
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: '**/.quarkus/quarkus-prod-config-dump'
           key: ${{ needs.build-jdk17.outputs.quarkus-metadata-cache-key }}
@@ -382,7 +382,7 @@ jobs:
         if: failure()
         run: find . -type d -name '*-reports' -o -wholename '*/build/reports/tests/functionalTest' -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         if: failure()
         with:
           name: test-reports-native-${{matrix.category}}
@@ -398,7 +398,7 @@ jobs:
               'target/gradle-build-scan-url.txt' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         if: always()
         with:
           name: "build-reports-Native Tests - ${{matrix.category}}"
@@ -416,7 +416,7 @@ jobs:
         with:
           path: build-reports-artifacts
       - name: Set up JDK 17
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: temurin
           java-version: 17

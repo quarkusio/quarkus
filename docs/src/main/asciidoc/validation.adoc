@@ -594,7 +594,7 @@ Quarkus provides a default `ValidatorFactory` that you can customize using confi
 This `ValidatorFactory` is carefully initialized to support native executables
 using a bootstrap that is Quarkus-specific.
 
-Creating a `ValidatorFactory` by yourself it not supported in native executables
+Creating a `ValidatorFactory` by yourself is not supported in native executables
 and if you try to do so,
 you will get an  error similar to `jakarta.validation.NoProviderFoundException: Unable to create a Configuration, because no
 Jakarta Bean Validation provider could be found. Add a provider like Hibernate Validator (RI) to your

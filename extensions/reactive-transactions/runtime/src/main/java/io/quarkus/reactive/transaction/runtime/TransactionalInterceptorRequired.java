@@ -8,8 +8,6 @@ import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InvocationContext;
 import jakarta.transaction.Transactional;
 
-import io.quarkus.reactive.transaction.ReactiveResource;
-
 @Transactional(Transactional.TxType.REQUIRED)
 @Interceptor
 @Priority(Interceptor.Priority.PLATFORM_BEFORE + 300)

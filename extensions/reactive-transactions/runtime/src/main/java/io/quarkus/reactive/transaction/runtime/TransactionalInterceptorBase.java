@@ -11,7 +11,6 @@ import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.InterceptorBindings;
-import io.quarkus.reactive.transaction.ReactiveResource;
 import io.quarkus.reactive.transaction.runtime.pool.TransactionalContextPool;
 import io.quarkus.transaction.annotations.Rollback;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
@@ -112,12 +111,19 @@ public abstract class TransactionalInterceptorBase {
                 .onItem().invoke(() -> LOG.tracef("Flushed the session before commit/rollback"))
                 .onItemOrFailure().call((result, exception) -> {
                     if (exception != null) {
-                        SqlConnection connection = connectionFromContext();
-                        return actualRollback(connection.transaction(), exception).invoke(() -> {
-                            // onItemOrFailure() will still propagate the chain even with an execption
-                            // we need to rethrow it to make sure the reactive chain fails
-                            throw new RuntimeException("Transaction rolled back due to: ", exception);
-                        });
+                        Uni<SqlConnection> connectionUni = connectionFromContext();
+                        if (connectionUni == null) {
+                            LOG.tracef("Transaction doesn't exist, cannot rollback, propagating original exception");
+                            return Uni.createFrom().failure(
+                                    new RuntimeException("Transaction rolled back due to: ", exception));
+                        }
+                        return connectionUni
+                                .onItem()
+                                .transformToUni(connection -> actualRollback(connection.transaction(), exception).invoke(() -> {
+                                    // onItemOrFailure() will still propagate the chain even with an execption
+                                    // we need to rethrow it to make sure the reactive chain fails
+                                    throw new RuntimeException("Transaction rolled back due to: ", exception);
+                                }));
                     } else {
                         return commit();
                     }
@@ -131,19 +137,22 @@ public abstract class TransactionalInterceptorBase {
             LOG.tracef("Connection doesn't exist, nothing to do here");
             return Uni.createFrom().nullItem();
         }
-        SqlConnection connection = connectionFromContext();
-        LOG.tracef("Closing the connection %s", connection);
-        return toUni(closeFuture);
+        return toUni(closeFuture)
+                .invoke(connection -> LOG.tracef("Closing the connection %s", connection));
     }
 
-    SqlConnection connectionFromContext() {
-        return TransactionalContextPool.getCurrentConnectionFromVertxContext();
+    Uni<SqlConnection> connectionFromContext() {
+        Future<? extends SqlConnection> future = TransactionalContextPool.getCurrentConnectionFromVertxContext();
+        if (future == null) {
+            return null;
+        }
+        return toUni(future);
     }
 
     // Based on org/hibernate/reactive/pool/impl/SqlClientConnection.java:305
     Uni<Void> commit() {
-        SqlConnection connection = connectionFromContext();
-        if (connection == null || connection.transaction() == null) {
+        Uni<SqlConnection> connectionUni = connectionFromContext();
+        if (connectionUni == null) {
             // This might happen if the method is annotated with @Transactional but doesn't flush
             // i.e. a single persist without an explicit .flush()
             // We then avoid committing the transaction here, and we rely on Hibernate Reactive
@@ -152,28 +161,40 @@ public abstract class TransactionalInterceptorBase {
             return Uni.createFrom().nullItem();
         }
 
-        return toUni(connection.transaction().commit())
-                .onFailure().invoke(() -> LOG.tracef("Failed to commit transaction: %s", connection))
-                .invoke(() -> LOG.tracef("Transaction committed: %s", connection));
+        return connectionUni
+                .onItem().transformToUni(connection -> {
+                    if (connection.transaction() == null) {
+                        LOG.tracef("Transaction doesn't exist, so won't commit here");
+                        return Uni.createFrom().nullItem();
+                    }
+                    return toUni(connection.transaction().commit())
+                            .onFailure().invoke(() -> LOG.tracef("Failed to commit transaction: %s", connection))
+                            .invoke(() -> LOG.tracef("Transaction committed: %s", connection));
+                });
     }
 
-    private static <T> Uni<T> toUni(Future<T> future) {
+    private static <T> Uni<T> toUni(Future<? extends T> future) {
         return Uni.createFrom()
                 .emitter(emitter -> future.onComplete(emitter::complete, emitter::fail));
     }
 
     Uni<Void> rollbackOnCancel() {
-        SqlConnection connection = connectionFromContext();
-        Transaction transaction = connection.transaction();
-        return toUni(transaction.rollback())
-                .onFailure().invoke(() -> LOG.tracef("Failed to rollback transaction on cancellation: %s", connection))
-                .invoke(() -> LOG.tracef("Transaction rolled back due to cancellation: %s", transaction));
+        Uni<SqlConnection> connectionUni = connectionFromContext();
+        if (connectionUni == null) {
+            LOG.tracef("Transaction doesn't exist, so won't roll back");
+            return Uni.createFrom().nullItem();
+        }
+        return connectionUni.onItem().transformToUni(connection -> {
+            Transaction transaction = connection.transaction();
+            return toUni(transaction.rollback())
+                    .onFailure()
+                    .invoke(() -> LOG.tracef("Failed to rollback transaction on cancellation: %s", connection))
+                    .invoke(() -> LOG.tracef("Transaction rolled back due to cancellation: %s", transaction));
+        });
     }
 
     // Based on org/hibernate/reactive/pool/impl/SqlClientConnection.java:314
     Uni<Void> rollbackOrCommitBasedOnException(Context context, Transactional annotation, Throwable exception) {
-        SqlConnection connection = connectionFromContext();
-
         for (Class<?> dontRollbackOnClass : annotation.dontRollbackOn()) {
             if (dontRollbackOnClass.isAssignableFrom(exception.getClass())) {
                 LOG.trace("Avoid rollback due to `dontRollbackOn` on `@Transactional` annotation, committing instead");
@@ -181,32 +202,41 @@ public abstract class TransactionalInterceptorBase {
             }
         }
 
-        for (Class<?> rollbackOnClass : annotation.rollbackOn()) {
-            if (rollbackOnClass.isAssignableFrom(exception.getClass())) {
-                LOG.tracef(
-                        "Rollback the transaction due to exception class %s included in `rollbackOn` field on `@Transactional` annotation",
-                        exception.getClass());
-                return actualRollback(connection.transaction(), exception);
-            }
+        Uni<SqlConnection> connectionUni = connectionFromContext();
+        if (connectionUni == null) {
+            LOG.tracef("Transaction doesn't exist, so won't commit or roll back");
+            return Uni.createFrom().nullItem();
         }
+        return connectionUni
+                .onItem().transformToUni(connection -> {
+                    for (Class<?> rollbackOnClass : annotation.rollbackOn()) {
+                        if (rollbackOnClass.isAssignableFrom(exception.getClass())) {
+                            LOG.tracef(
+                                    "Rollback the transaction due to exception class %s included in `rollbackOn` field on `@Transactional` annotation",
+                                    exception.getClass());
+                            return actualRollback(connection.transaction(), exception);
+                        }
+                    }
 
-        Rollback rollbackAnnotation = exception.getClass().getAnnotation(Rollback.class);
-        if (rollbackAnnotation != null) {
-            if (rollbackAnnotation.value()) {
-                LOG.tracef("Rollback the transaction as the exception class %s is annotated with `@Rollback` annotation",
-                        exception.getClass());
-                return actualRollback(connection.transaction(), exception);
-            } else {
-                LOG.tracef(
-                        "Do not rollback the transaction as the exception class %s is annotated with `@Rollback(false)` annotation",
-                        exception.getClass());
-                return invokeBeforeCommitAndCommit(context);
-            }
-        }
+                    Rollback rollbackAnnotation = exception.getClass().getAnnotation(Rollback.class);
+                    if (rollbackAnnotation != null) {
+                        if (rollbackAnnotation.value()) {
+                            LOG.tracef(
+                                    "Rollback the transaction as the exception class %s is annotated with `@Rollback` annotation",
+                                    exception.getClass());
+                            return actualRollback(connection.transaction(), exception);
+                        } else {
+                            LOG.tracef(
+                                    "Do not rollback the transaction as the exception class %s is annotated with `@Rollback(false)` annotation",
+                                    exception.getClass());
+                            return invokeBeforeCommitAndCommit(context);
+                        }
+                    }
 
-        // Default behavior: rollback for RuntimeException and Error (unchecked exceptions)
-        // Note: Mutiny wraps checked exceptions in CompletionException, so they appear as RuntimeException here
-        return actualRollback(connection.transaction(), exception);
+                    // Default behavior: rollback for RuntimeException and Error (unchecked exceptions)
+                    // Note: Mutiny wraps checked exceptions in CompletionException, so they appear as RuntimeException here
+                    return actualRollback(connection.transaction(), exception);
+                });
     }
 
     private Uni<Void> actualRollback(Transaction transaction, Throwable exception) {

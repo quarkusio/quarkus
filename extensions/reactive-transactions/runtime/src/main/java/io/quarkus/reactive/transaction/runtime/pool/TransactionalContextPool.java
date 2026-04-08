@@ -1,6 +1,5 @@
 package io.quarkus.reactive.transaction.runtime.pool;
 
-import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.CURRENT_CONNECTION_KEY;
 import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.TRANSACTIONAL_METHOD_KEY;
 
 import java.util.function.Function;
@@ -28,7 +27,7 @@ public class TransactionalContextPool implements Pool {
 
     private static final Logger LOG = Logger.getLogger(TransactionalContextPool.class);
 
-    // Key to store the wrapped connection for reuse by multiple sessions
+    // Key to store the connection holder for reuse by multiple sessions
     private static final String CURRENT_CONNECTION_KEY = "reactive.transaction.currentConnection";
 
     private final Pool delegate;
@@ -42,27 +41,10 @@ public class TransactionalContextPool implements Pool {
         if (!shouldOpenTransaction()) {
             delegate.getConnection(handler);
         } else {
-            // Check if a connection already exists in the context (from a previous session in the same transaction)
-            TransactionalContextConnection existingConnection = getCurrentConnectionFromVertxContext();
-            if (existingConnection != null) {
-                LOG.tracef("Reusing existing wrapped connection from context: %s", existingConnection);
-                handler.handle(Future.succeededFuture(existingConnection));
-                return;
-            }
-            delegate.getConnection(result -> {
-                if (result.failed()) {
-                    handler.handle(result);
-                    return;
-                }
-                var connection = result.result();
-                connection.begin()
-                        .map(transaction -> {
-                            TransactionalContextConnection wrappedConnection = new TransactionalContextConnection(connection);
-                            storeConnectionInVertxContext(connection, wrappedConnection);
-                            return (SqlConnection) wrappedConnection;
-                        })
-                        .andThen(handler);
-            });
+            getOrCreateConnectionHolder()
+                    .getConnection()
+                    .map(conn -> (SqlConnection) conn)
+                    .onComplete(handler);
         }
     }
 
@@ -71,35 +53,36 @@ public class TransactionalContextPool implements Pool {
         if (!shouldOpenTransaction()) {
             return delegate.getConnection();
         } else {
-            // Check if a connection already exists in the context (from a previous session in the same transaction)
-            TransactionalContextConnection existingConnection = getCurrentConnectionFromVertxContext();
-            if (existingConnection != null) {
-                LOG.tracef("Reusing existing wrapped connection from context: %s", existingConnection);
-                return Future.succeededFuture(existingConnection);
-            }
-            return delegate.getConnection()
-                    .compose(connection -> {
-                        LOG.tracef("New connection, about to start transaction: %s", connection);
-                        return connection.begin().map(t -> {
-                            LOG.tracef("Transaction started: %s", connection);
-                            TransactionalContextConnection wrappedConnection = new TransactionalContextConnection(connection);
-                            storeConnectionInVertxContext(connection, wrappedConnection);
-                            return (SqlConnection) wrappedConnection;
-                        });
-                    });
+            return getOrCreateConnectionHolder()
+                    .getConnection()
+                    .map(conn -> (SqlConnection) conn);
         }
     }
 
-    private static void storeConnectionInVertxContext(SqlConnection rawConnection,
-            TransactionalContextConnection wrappedConnection) {
+    /**
+     * Gets or creates the ConnectionHolder for the current context.
+     * The holder ensures only one connection is created even with concurrent access.
+     */
+    private ConnectionHolder getOrCreateConnectionHolder() {
         Context context = Vertx.currentContext();
-        // Store wrapped connection for reuse by other sessions and to retrieve delegate for closing
-        context.putLocal(CURRENT_CONNECTION_KEY, wrappedConnection);
+        ConnectionHolder holder = context.getLocal(CURRENT_CONNECTION_KEY);
+        if (holder == null) {
+            holder = new ConnectionHolder(delegate);
+            context.putLocal(CURRENT_CONNECTION_KEY, holder);
+        }
+        return holder;
     }
 
-    public static TransactionalContextConnection getCurrentConnectionFromVertxContext() {
+    public static Future<? extends SqlConnection> getCurrentConnectionFromVertxContext() {
         Context context = Vertx.currentContext();
-        return context != null ? context.getLocal(CURRENT_CONNECTION_KEY) : null;
+        if (context == null) {
+            return null;
+        }
+        ConnectionHolder holder = context.getLocal(CURRENT_CONNECTION_KEY);
+        if (holder == null) {
+            return null;
+        }
+        return holder.connectionPromise.future();
     }
 
     /**
@@ -109,17 +92,21 @@ public class TransactionalContextPool implements Pool {
      * @return a Future that completes when the connection is closed, or null if no connection exists
      */
     public static Future<Void> closeAndClearCurrentConnection() {
-        TransactionalContextConnection wrappedConnection = getCurrentConnectionFromVertxContext();
-        if (wrappedConnection == null) {
+        Context context = Vertx.currentContext();
+        if (context == null) {
             return null;
         }
-        SqlConnection delegateConnection = wrappedConnection.getDelegate();
-        return delegateConnection.close().andThen(ar -> {
-            Context context = Vertx.currentContext();
-            if (context != null) {
-                context.removeLocal(CURRENT_CONNECTION_KEY);
-            }
-        });
+        ConnectionHolder holder = context.getLocal(CURRENT_CONNECTION_KEY);
+        if (holder == null) {
+            return null;
+        }
+        // Wait for the connection to be available, then close it
+        return holder.connectionPromise.future()
+                .compose(wrappedConnection -> {
+                    SqlConnection delegateConnection = wrappedConnection.getDelegate();
+                    return delegateConnection.close();
+                })
+                .andThen(ar -> context.removeLocal(CURRENT_CONNECTION_KEY));
     }
 
     private boolean shouldOpenTransaction() {

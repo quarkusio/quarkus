@@ -40,27 +40,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-apache-httpclient</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-netty</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-qute</artifactId>
-        </dependency>
-        <!--
-        Somehow, we need this as otherwise you end up with:
-        java.lang.ClassNotFoundException: io.netty.handler.codec.http2.DefaultHttp2FrameWriter
-        as we try to initialize them at runtime anyway
-        which is weird because the NettyProcessor correctly checks if the HTTP2 support is around.
-        Note that if you drop this dependency, the native image build will finish,
-        but the native image will be all broken.
-        -->
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-codec-http2</artifactId>
         </dependency>
         <dependency>
             <groupId>io.smallrye.common</groupId>
@@ -86,7 +66,7 @@
             <artifactId>smallrye-config-crypto</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- This dependency is here to make sure the build order is correct-->
+        <!-- These test scoped dependencies are here to make sure the build order is correct-->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-picocli-deployment</artifactId>
@@ -103,32 +83,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jackson-deployment</artifactId>
-            <type>pom</type>
-            <scope>test</scope>
-            <version>${project.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-netty-deployment</artifactId>
-            <type>pom</type>
-            <scope>test</scope>
-            <version>${project.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-apache-httpclient-deployment</artifactId>
             <type>pom</type>
             <scope>test</scope>
             <version>${project.version}</version>

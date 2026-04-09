@@ -239,7 +239,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
 
         // For records, create instance and return it
         if (isRecord) {
-            List<RecordComponentInfo> components = classInfo.unsortedRecordComponents();
+            List<RecordComponentInfo> components = classInfo.recordComponentsInDeclarationOrder();
             ResultHandle[] args = new ResultHandle[components.size()];
             String[] paramTypes = new String[components.size()];
 

@@ -33,6 +33,7 @@ import io.quarkus.vertx.http.runtime.ServerSslConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig.InsecureRequests;
+import io.quarkus.vertx.http.runtime.WebsocketServerConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.vertx.core.buffer.Buffer;
@@ -284,6 +285,17 @@ public class HttpServerOptionsUtils {
         httpServerOptions.setTcpCork(httpConfig.tcpCork());
         httpServerOptions.setAcceptBacklog(httpConfig.acceptBacklog());
         httpServerOptions.setTcpFastOpen(httpConfig.tcpFastOpen());
+        httpServerOptions.setTcpUserTimeout((int) httpConfig.tcpUserTimeout().toMillis());
+        httpServerOptions.setSoLinger(httpConfig.soLinger());
+        if (httpConfig.sendBufferSize().isPresent()) {
+            httpServerOptions.setSendBufferSize(httpConfig.sendBufferSize().getAsInt());
+        }
+        if (httpConfig.receiveBufferSize().isPresent()) {
+            httpServerOptions.setReceiveBufferSize(httpConfig.receiveBufferSize().getAsInt());
+        }
+        httpServerOptions.setReadIdleTimeout((int) httpConfig.readIdleTimeout().toMillis());
+        httpServerOptions.setWriteIdleTimeout((int) httpConfig.writeIdleTimeout().toMillis());
+        httpServerOptions.setCompressionContentSizeThreshold(httpConfig.compressionContentSizeThreshold());
         httpServerOptions.setCompressionSupported(httpBuildTimeConfig.enableCompression());
         if (httpBuildTimeConfig.compressionLevel().isPresent()) {
             httpServerOptions.setCompressionLevel(httpBuildTimeConfig.compressionLevel().getAsInt());
@@ -360,6 +372,11 @@ public class HttpServerOptionsUtils {
 
         httpServerOptions.setUseProxyProtocol(httpConfig.proxy().useProxyProtocol());
         configureTrafficShapingIfEnabled(httpServerOptions, httpConfig);
+
+        // WebSocket options
+        httpConfig.websocketServer().maxFrameSize().ifPresent(httpServerOptions::setMaxWebSocketFrameSize);
+        httpConfig.websocketServer().maxMessageSize().ifPresent(httpServerOptions::setMaxWebSocketMessageSize);
+        applyWebSocketOptions(httpServerOptions, httpConfig.websocketServer());
     }
 
     private static void configureTrafficShapingIfEnabled(HttpServerOptions httpServerOptions,
@@ -416,6 +433,33 @@ public class HttpServerOptionsUtils {
         options.setHandle100ContinueAutomatically(managementConfig.handle100ContinueAutomatically());
 
         options.setUseProxyProtocol(managementConfig.proxy().useProxyProtocol());
+
+        options.setTcpUserTimeout((int) managementConfig.tcpUserTimeout().toMillis());
+        options.setSoLinger(managementConfig.soLinger());
+        if (managementConfig.sendBufferSize().isPresent()) {
+            options.setSendBufferSize(managementConfig.sendBufferSize().getAsInt());
+        }
+        if (managementConfig.receiveBufferSize().isPresent()) {
+            options.setReceiveBufferSize(managementConfig.receiveBufferSize().getAsInt());
+        }
+        options.setReadIdleTimeout((int) managementConfig.readIdleTimeout().toMillis());
+        options.setWriteIdleTimeout((int) managementConfig.writeIdleTimeout().toMillis());
+        options.setCompressionContentSizeThreshold(managementConfig.compressionContentSizeThreshold());
+
+        // WebSocket options
+        managementConfig.websocketServer().maxFrameSize().ifPresent(options::setMaxWebSocketFrameSize);
+        managementConfig.websocketServer().maxMessageSize().ifPresent(options::setMaxWebSocketMessageSize);
+        applyWebSocketOptions(options, managementConfig.websocketServer());
+    }
+
+    private static void applyWebSocketOptions(HttpServerOptions options, WebsocketServerConfig ws) {
+        options.setPerFrameWebSocketCompressionSupported(ws.perFrameCompression());
+        options.setPerMessageWebSocketCompressionSupported(ws.perMessageCompression());
+        options.setWebSocketCompressionLevel(ws.compressionLevel());
+        options.setWebSocketAllowServerNoContext(ws.allowServerNoContext());
+        options.setWebSocketPreferredClientNoContext(ws.preferredClientNoContext());
+        options.setWebSocketClosingTimeout(ws.closingTimeout());
+        options.setAcceptUnmaskedFrames(ws.acceptUnmaskedFrames());
     }
 
     static byte[] getFileContent(Path path) throws IOException {

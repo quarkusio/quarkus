@@ -364,7 +364,7 @@ public class VertxCoreRecorder {
         options.setInternalBlockingPoolSize(conf.internalBlockingPoolSize());
         blockingThreadPoolSize = conf.internalBlockingPoolSize();
 
-        options.setBlockedThreadCheckInterval(conf.warningExceptionTime().toMillis());
+        options.setBlockedThreadCheckInterval(conf.blockedThreadCheckInterval().toMillis());
         if (conf.eventLoopsPoolSize().isPresent()) {
             options.setEventLoopPoolSize(conf.eventLoopsPoolSize().getAsInt());
         } else {
@@ -380,6 +380,9 @@ public class VertxCoreRecorder {
         options.setWarningExceptionTime(conf.warningExceptionTime().toNanos());
 
         options.setPreferNativeTransport(conf.preferNativeTransport());
+
+        options.setDisableTCCL(true);
+        options.setUseDaemonThread(false);
 
         return options;
     }

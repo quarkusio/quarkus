@@ -1,7 +1,7 @@
 package io.quarkus.hibernate.reactive.panache.common.runtime;
 
-import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.TRANSACTIONAL_METHOD_KEY;
-import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.WITH_TRANSACTION_METHOD_KEY;
+import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.TRANSACTIONAL_METHOD_KEY;
+import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.WITH_TRANSACTION_METHOD_KEY;
 
 import jakarta.annotation.Priority;
 import jakarta.interceptor.AroundInvoke;

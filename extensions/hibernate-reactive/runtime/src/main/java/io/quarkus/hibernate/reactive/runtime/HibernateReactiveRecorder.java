@@ -1,7 +1,7 @@
 package io.quarkus.hibernate.reactive.runtime;
 
-import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.PERSISTENCE_UNIT_NAME_KEY;
-import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.TRANSACTIONAL_METHOD_KEY;
+import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.PERSISTENCE_UNIT_NAME_KEY;
+import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.TRANSACTIONAL_METHOD_KEY;
 
 import java.util.List;
 import java.util.Locale;

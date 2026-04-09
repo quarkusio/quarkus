@@ -1,4 +1,4 @@
-package io.quarkus.reactive.transaction;
+package io.quarkus.reactive.transaction.runtime;
 
 import jakarta.annotation.Priority;
 import jakarta.interceptor.AroundInvoke;
@@ -6,10 +6,10 @@ import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InvocationContext;
 import jakarta.transaction.Transactional;
 
-@Transactional(Transactional.TxType.SUPPORTS)
+@Transactional(Transactional.TxType.NOT_SUPPORTED)
 @Interceptor
 @Priority(Interceptor.Priority.PLATFORM_BEFORE + 300)
-public class TransactionalInterceptorSupports extends TransactionalInterceptorBase {
+public class TransactionalInterceptorNotSupported extends TransactionalInterceptorBase {
 
     @AroundInvoke
     public Object intercept(InvocationContext ic) throws Exception {

@@ -58,7 +58,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
     private static MethodHandle reactiveInterceptorShouldRun() {
         try {
-            Class<?> vertxContext = Class.forName("io.quarkus.reactive.transaction.TransactionalInterceptorBase", true,
+            Class<?> vertxContext = Class.forName("io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase", true,
                     Thread.currentThread().getContextClassLoader());
             return MethodHandles.publicLookup().findStatic(vertxContext, "reactiveInterceptorShouldRun",
                     MethodType.methodType(boolean.class));

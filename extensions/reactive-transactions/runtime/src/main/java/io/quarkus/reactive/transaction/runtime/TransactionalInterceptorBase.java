@@ -1,4 +1,4 @@
-package io.quarkus.reactive.transaction;
+package io.quarkus.reactive.transaction.runtime;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;

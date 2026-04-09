@@ -1,4 +1,4 @@
-package io.quarkus.reactive.transaction;
+package io.quarkus.reactive.transaction.runtime;
 
 import jakarta.annotation.Priority;
 import jakarta.interceptor.AroundInvoke;

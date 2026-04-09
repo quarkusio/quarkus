@@ -241,6 +241,11 @@ public class VertxCoreProducerTest {
         }
 
         @Override
+        public Duration blockedThreadCheckInterval() {
+            return Duration.ofSeconds(1);
+        }
+
+        @Override
         public AddressResolverConfiguration resolver() {
             return new AddressResolverConfiguration() {
 

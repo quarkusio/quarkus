@@ -114,6 +114,15 @@ public interface VertxConfiguration {
     AddressResolverConfiguration resolver();
 
     /**
+     * The interval of the blocked thread checker.
+     * The blocked thread checker periodically checks if any event loop or worker thread
+     * has been blocked for longer than the configured thresholds
+     * ({@code max-event-loop-execute-time} and {@code max-worker-execute-time}).
+     */
+    @WithDefault("1s")
+    Duration blockedThreadCheckInterval();
+
+    /**
      * Enable or disable native transport
      */
     @WithDefault("false")

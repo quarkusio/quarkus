@@ -27,7 +27,7 @@ public interface KafkaDevServicesBuildTimeConfig {
     /**
      * Kafka dev service container type.
      * <p>
-     * Redpanda, Strimzi and kafka-native container providers are supported. Default is redpanda.
+     * Redpanda, Strimzi, kafka-native and upstream kafka container providers are supported. Default is upstream-kafka-native.
      * <p>
      * For Redpanda:
      * See https://docs.redpanda.com/current/get-started/quick-start/ and https://hub.docker.com/r/redpandadata/redpanda
@@ -38,15 +38,20 @@ public interface KafkaDevServicesBuildTimeConfig {
      * For Kafka Native:
      * See https://github.com/ozangunalp/kafka-native and https://quay.io/repository/ogunalp/kafka-native
      * <p>
-     * Note that Strimzi and Kafka Native images are launched in Kraft mode.
+     * For Upstream Kafka:
+     * See https://hub.docker.com/r/apache/kafka and https://hub.docker.com/r/apache/kafka-native
+     * <p>
      */
-    @WithDefault("redpanda")
+    @WithDefault("upstream-kafka-native")
     Provider provider();
 
     enum Provider {
         REDPANDA("docker.io/redpandadata/redpanda:v24.1.2"),
-        STRIMZI("quay.io/strimzi-test-container/test-container:0.114.0-kafka-4.1.1"),
-        KAFKA_NATIVE("quay.io/ogunalp/kafka-native:latest");
+        STRIMZI("quay.io/strimzi-test-container/test-container:0.115.0-kafka-4.2.0"),
+        @Deprecated(forRemoval = true)
+        KAFKA_NATIVE("quay.io/ogunalp/kafka-native:latest"),
+        UPSTREAM_KAFKA("docker.io/apache/kafka:4.2.0"),
+        UPSTREAM_KAFKA_NATIVE("docker.io/apache/kafka-native:4.2.0");
 
         private final String defaultImageName;
 

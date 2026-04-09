@@ -39,6 +39,7 @@ import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.devservices.common.StartableContainer;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.strimzi.test.container.StrimziKafkaCluster;
 import io.strimzi.test.container.StrimziKafkaContainer;
 
 /**
@@ -98,7 +99,7 @@ public class DevServicesKafkaProcessor {
     private Startable createContainer(DevServicesComposeProjectBuildItem composeProjectBuildItem,
             KafkaDevServicesBuildTimeConfig config, boolean useSharedNetwork,
             LaunchModeBuildItem launchMode) {
-        Startable startable = switch (config.provider()) {
+        return switch (config.provider()) {
             case REDPANDA -> new RedpandaKafkaContainer(DockerImageName.parse(config.effectiveImageName())
                     .asCompatibleSubstituteFor("redpandadata/redpanda"),
                     config.port().orElse(0),
@@ -108,31 +109,44 @@ public class DevServicesKafkaProcessor {
                     .withEnv(config.containerEnv())
                     .withSharedServiceLabel(launchMode.getLaunchMode(), config.serviceName());
             case STRIMZI -> {
-                StrimziKafkaContainer strimzi = new StrimziKafkaContainer(config.effectiveImageName())
-                        .withNodeId(1)
-                        .withBrokerId(1)
-                        .waitForRunning();
-                String hostName = ConfigureUtil.configureNetwork(strimzi,
-                        composeProjectBuildItem.getDefaultNetworkId(), useSharedNetwork, "kafka");
-                if (useSharedNetwork) {
-                    strimzi.withBootstrapServers(c -> String.format("PLAINTEXT://%s:%s", hostName, KAFKA_PORT));
-                }
-                if (config.port().isPresent() && config.port().get() != 0) {
-                    strimzi.withPort(config.port().get());
-                }
-                strimzi.withEnv(config.containerEnv());
-                strimzi.withKafkaConfigurationMap(config.strimzi().serverConfigs());
-                configureSharedServiceLabel(strimzi, launchMode.getLaunchMode(), DEV_SERVICE_LABEL, config.serviceName());
+                StrimziKafkaCluster cluster = new StrimziKafkaCluster.StrimziKafkaClusterBuilder()
+                        .withImage(config.effectiveImageName())
+                        .withContainerCustomizer(strimzi -> {
+                            String hostName = ConfigureUtil.configureNetwork(strimzi,
+                                    composeProjectBuildItem.getDefaultNetworkId(), useSharedNetwork, "kafka");
+                            if (useSharedNetwork) {
+                                strimzi.withBootstrapServers(c -> String.format("PLAINTEXT://%s:%s", hostName, KAFKA_PORT));
+                            }
+                            if (config.port().isPresent() && config.port().get() != 0) {
+                                strimzi.withPort(config.port().get());
+                            }
+                            strimzi.withEnv(config.containerEnv());
+                            strimzi.withKafkaConfigurationMap(config.strimzi().serverConfigs());
+                            configureSharedServiceLabel(strimzi, launchMode.getLaunchMode(), DEV_SERVICE_LABEL,
+                                    config.serviceName());
+                        })
+                        .build();
+                StrimziKafkaContainer strimzi = cluster.getBrokers().stream().findFirst().get();
                 yield new StartableContainer<>(strimzi, StrimziKafkaContainer::getBootstrapServers);
             }
-            case KAFKA_NATIVE -> new KafkaNativeContainer(DockerImageName.parse(config.effectiveImageName()),
-                    config.port().orElse(0),
-                    composeProjectBuildItem.getDefaultNetworkId(),
-                    useSharedNetwork)
-                    .withEnv(config.containerEnv())
-                    .withSharedServiceLabel(launchMode.getLaunchMode(), config.serviceName());
+            case KAFKA_NATIVE -> {
+                log.warnf("`kafka-native` provider is deprecated and will be removed in future versions. " +
+                        "Please switch to upstream-kafka-native provider.");
+                yield new KafkaNativeContainer(DockerImageName.parse(config.effectiveImageName()),
+                        config.port().orElse(0),
+                        composeProjectBuildItem.getDefaultNetworkId(),
+                        useSharedNetwork)
+                        .withEnv(config.containerEnv())
+                        .withSharedServiceLabel(launchMode.getLaunchMode(), config.serviceName());
+            }
+            case UPSTREAM_KAFKA, UPSTREAM_KAFKA_NATIVE ->
+                new KafkaContainer(DockerImageName.parse(config.effectiveImageName()),
+                        composeProjectBuildItem.getDefaultNetworkId(),
+                        useSharedNetwork)
+                        .withPort(config.port().orElse(0))
+                        .withEnv(config.containerEnv())
+                        .withSharedServiceLabel(launchMode.getLaunchMode(), config.serviceName());
         };
-        return startable;
     }
 
     public void logStartedAndCreateTopicPartitions(String bootstrapServers, KafkaDevServicesBuildTimeConfig configuration) {

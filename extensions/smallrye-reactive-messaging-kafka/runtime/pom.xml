@@ -46,6 +46,11 @@
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>nativeimage</artifactId>
+            <scope>provided</scope>
+        </dependency>
         <!-- TODO: remove this after upgrading to kafka-clients that already depends on the new lz4 groupId -->
         <dependency>
             <groupId>at.yawk.lz4</groupId>

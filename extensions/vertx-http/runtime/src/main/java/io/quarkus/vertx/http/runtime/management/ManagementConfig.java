@@ -3,6 +3,7 @@ package io.quarkus.vertx.http.runtime.management;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.ConfigDocSection;
@@ -14,6 +15,7 @@ import io.quarkus.vertx.http.runtime.HeaderConfig;
 import io.quarkus.vertx.http.runtime.ProxyConfig;
 import io.quarkus.vertx.http.runtime.ServerLimitsConfig;
 import io.quarkus.vertx.http.runtime.ServerSslConfig;
+import io.quarkus.vertx.http.runtime.WebsocketServerConfig;
 import io.quarkus.vertx.http.runtime.cors.CORSConfig;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
@@ -144,6 +146,53 @@ public interface ManagementConfig {
      * Holds configuration related with proxy addressing forward.
      */
     ProxyConfig proxy();
+
+    /**
+     * WebSocket Server configuration.
+     */
+    @ConfigDocSection
+    WebsocketServerConfig websocketServer();
+
+    /**
+     * TCP user timeout (linux native transport only). 0 means disabled.
+     */
+    @WithDefault("0s")
+    Duration tcpUserTimeout();
+
+    /**
+     * Socket linger timeout in seconds. -1 means disabled.
+     */
+    @WithDefault("-1")
+    int soLinger();
+
+    /**
+     * Socket send buffer size. When not set, the OS default is used.
+     */
+    OptionalInt sendBufferSize();
+
+    /**
+     * Socket receive buffer size. When not set, the OS default is used.
+     */
+    OptionalInt receiveBufferSize();
+
+    /**
+     * Read-specific idle timeout. 0 means disabled.
+     */
+    @WithDefault("0s")
+    Duration readIdleTimeout();
+
+    /**
+     * Write-specific idle timeout. 0 means disabled.
+     */
+    @WithDefault("0s")
+    Duration writeIdleTimeout();
+
+    /**
+     * Minimum response body size (in bytes) to trigger compression.
+     * 0 means compress everything when compression is enabled.
+     */
+    @WithDefault("0")
+    int compressionContentSizeThreshold();
 
     default int determinePort(LaunchMode launchMode) {
         return launchMode == LaunchMode.TEST ? testPort() : port();

@@ -226,6 +226,51 @@ public interface VertxHttpConfig {
     boolean tcpFastOpen();
 
     /**
+     * TCP user timeout (linux native transport only). 0 means disabled.
+     */
+    @WithDefault("0s")
+    Duration tcpUserTimeout();
+
+    /**
+     * Socket linger timeout in seconds. -1 means disabled.
+     */
+    @WithDefault("-1")
+    int soLinger();
+
+    /**
+     * Socket send buffer size. When not set, the OS default is used.
+     */
+    OptionalInt sendBufferSize();
+
+    /**
+     * Socket receive buffer size. When not set, the OS default is used.
+     */
+    OptionalInt receiveBufferSize();
+
+    /**
+     * Read-specific idle timeout. 0 means disabled.
+     * <p>
+     * Unlike the general {@link #idleTimeout()}, this timeout only considers read activity.
+     */
+    @WithDefault("0s")
+    Duration readIdleTimeout();
+
+    /**
+     * Write-specific idle timeout. 0 means disabled.
+     * <p>
+     * Unlike the general {@link #idleTimeout()}, this timeout only considers write activity.
+     */
+    @WithDefault("0s")
+    Duration writeIdleTimeout();
+
+    /**
+     * Minimum response body size (in bytes) to trigger compression.
+     * 0 means compress everything when compression is enabled.
+     */
+    @WithDefault("0")
+    int compressionContentSizeThreshold();
+
+    /**
      * The accept backlog, this is how many connections can be waiting to be accepted before connections start being rejected
      */
     @WithDefault("-1")

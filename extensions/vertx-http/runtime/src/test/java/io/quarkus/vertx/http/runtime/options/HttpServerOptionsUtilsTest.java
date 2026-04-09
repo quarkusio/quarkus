@@ -28,6 +28,7 @@ import io.quarkus.vertx.http.runtime.TrafficShapingConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig.InsecureRequests;
+import io.quarkus.vertx.http.runtime.WebsocketServerConfig;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.core.http.HttpServerOptions;
 
@@ -359,6 +360,26 @@ class HttpServerOptionsUtilsTest {
         ProxyConfig proxy = mock(ProxyConfig.class);
         when(proxy.useProxyProtocol()).thenReturn(false);
         when(config.proxy()).thenReturn(proxy);
+
+        when(config.tcpUserTimeout()).thenReturn(Duration.ZERO);
+        when(config.soLinger()).thenReturn(-1);
+        when(config.sendBufferSize()).thenReturn(OptionalInt.empty());
+        when(config.receiveBufferSize()).thenReturn(OptionalInt.empty());
+        when(config.readIdleTimeout()).thenReturn(Duration.ZERO);
+        when(config.writeIdleTimeout()).thenReturn(Duration.ZERO);
+        when(config.compressionContentSizeThreshold()).thenReturn(0);
+
+        WebsocketServerConfig ws = mock(WebsocketServerConfig.class);
+        when(ws.maxFrameSize()).thenReturn(Optional.empty());
+        when(ws.maxMessageSize()).thenReturn(Optional.empty());
+        when(ws.perFrameCompression()).thenReturn(true);
+        when(ws.perMessageCompression()).thenReturn(true);
+        when(ws.compressionLevel()).thenReturn(6);
+        when(ws.allowServerNoContext()).thenReturn(false);
+        when(ws.preferredClientNoContext()).thenReturn(false);
+        when(ws.closingTimeout()).thenReturn(10);
+        when(ws.acceptUnmaskedFrames()).thenReturn(false);
+        when(config.websocketServer()).thenReturn(ws);
 
         return config;
     }

@@ -50,7 +50,7 @@ import io.quarkus.kubernetes.client.runtime.KubernetesClientObjectMapperProducer
 import io.quarkus.kubernetes.client.runtime.KubernetesClientProducer;
 import io.quarkus.kubernetes.client.runtime.KubernetesConfigProducer;
 import io.quarkus.kubernetes.client.runtime.KubernetesSerializationProducer;
-import io.quarkus.kubernetes.client.runtime.internal.KubernetesClientBuildConfig;
+import io.quarkus.kubernetes.client.runtime.internal.KubernetesClientBuildTimeConfig;
 import io.quarkus.kubernetes.client.spi.KubernetesClientCapabilityBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 
@@ -98,7 +98,7 @@ public class KubernetesClientProcessor {
 
     @BuildStep
     public void process(ApplicationIndexBuildItem applicationIndex, CombinedIndexBuildItem combinedIndexBuildItem,
-            KubernetesClientBuildConfig kubernetesClientConfig,
+            KubernetesClientBuildTimeConfig kubernetesClientBuildTimeConfig,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             BuildProducer<FeatureBuildItem> featureProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
@@ -110,7 +110,7 @@ public class KubernetesClientProcessor {
         featureProducer.produce(new FeatureBuildItem(Feature.KUBERNETES_CLIENT));
 
         kubernetesClientCapabilityProducer
-                .produce(new KubernetesClientCapabilityBuildItem(kubernetesClientConfig.generateRbac()));
+                .produce(new KubernetesClientCapabilityBuildItem(kubernetesClientBuildTimeConfig.generateRbac()));
 
         // register fully (and not weakly) for reflection watchers, informers and custom resources
         final Set<DotName> watchedClasses = new HashSet<>();

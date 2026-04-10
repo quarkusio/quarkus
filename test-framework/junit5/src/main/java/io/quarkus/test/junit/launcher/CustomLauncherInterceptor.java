@@ -2,6 +2,7 @@ package io.quarkus.test.junit.launcher;
 
 import java.util.Optional;
 
+import org.jboss.logging.Logger;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.platform.launcher.LauncherDiscoveryListener;
 import org.junit.platform.launcher.LauncherDiscoveryRequest;
@@ -17,6 +18,7 @@ public class CustomLauncherInterceptor
         implements LauncherDiscoveryListener, LauncherSessionListener, TestExecutionListener {
 
     private static final Class<? extends ClassOrderer> DESIRED_CLASS_ORDERER = QuarkusClassOrderer.class;
+    private static final Logger log = Logger.getLogger(CustomLauncherInterceptor.class);
 
     private static FacadeClassLoader facadeLoader = null;
     // Also use a static variable to store a 'first' starting state that we can reset to
@@ -129,7 +131,8 @@ public class CustomLauncherInterceptor
             if (orderer.isEmpty() || !orderer.get().equals(DESIRED_CLASS_ORDERER.getName())) {
                 if (facadeLoader.hasMultipleClassLoaders()) {
                     String message = getFailureMessageForJUnitMisconfiguration(orderer);
-                    throw new IllegalStateException(message);
+                    // This is likely to be quite a serious problem for tests, but as this is a maintenance stream, be conservative
+                    log.warn(message);
                 }
             }
         }
@@ -137,8 +140,8 @@ public class CustomLauncherInterceptor
 
     private static String getFailureMessageForJUnitMisconfiguration(Optional<String> orderer) {
         String generalExplanation = """
-                Critical failure. Quarkus tests would fail with corrupted application errors.
-                The reason is that they would not run in the right order, because the Quarkus JUnit configuration has been overridden.
+                Critical problem. Quarkus tests are likely to fail with corrupted application errors.
+                The reason is that they will not run in the right order, because the Quarkus JUnit configuration has been overridden.
                 When there are multiple test profiles or resources, Quarkus uses a JUnit ClassOrderer to sort tests so that test with the same profile run one after each other.
                 Running tests with a different sorting risks tests running on an application that has been cleaned up.
                 """;
@@ -146,7 +149,7 @@ public class CustomLauncherInterceptor
         String message;
         if (orderer.isPresent()) {
             message = String.format(
-                    "%sTo set a test order while preserving the Quarkus required sorting, please set use the Quarkus configuration to set junit.quarkus.orderer.secondary-orderer=%s, and remove the junit-platform.properties (if any) from the classpath.",
+                    "%sTo set a test order while preserving the Quarkus required sorting, please use the Quarkus configuration to set junit.quarkus.orderer.secondary-orderer=%s, and remove the junit-platform.properties (if any) from the classpath.",
                     generalExplanation, orderer.get());
         } else {
             message = String.format(

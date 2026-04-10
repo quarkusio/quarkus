@@ -22,11 +22,36 @@ include::{includes}/prerequisites.adoc[]
 * An xref:building-my-first-extension.adoc[extension structure] in place
 * A containerised version of your external service (not all Dev Services rely on containers, but most do)
 
+
+If your extension provides APIs for connecting to an external service, it's a good idea to provide a Dev Service implementation.
+This allows your extension to be used for development and testing in a frictionless way, without the hassle of standing up and configuring external services.
+
+== Key concepts
+
+=== Concept: Understanding the service lifecycle
+
+Dev Services can be created by an extension, or the extension can discover and re-use external services.
+
+==== Starting and stopping services
+
+For both discovered and owned services, the services are prepared at build time.
+Discovered services are already started, and will not be started or stopped by the Dev Services infrastructure.
+For an owned service, the service is started by the Quarkus framework after the build, and before runtime.
+Extension code should never start or stop a service directly.
+Instead, extensions provide a `Startable` to a service builder, so that Quarkus can manage the lifecycle.
+
+==== Reuse
+
+Services can be re-used between test profiles and across live reload restarts, or a fresh service can be created each time.
+The extension implementation controls how much reuse there is by setting a `serviceConfig(Object)` with a uniqueness key each build.
+
 == Creating a Dev Service
 
-If your extension provides APIs for connecting to an external service, it's a good idea to provide a dev service implementation.
+=== Dependencies
 
-First, you must add the following dependency to the build file, in your xref:writing-extensions.adoc#project-setup[deployement] module :
+Add the following dependencies to your extension's build file.
+
+In your xref:writing-extensions.adoc#project-setup[deployment] module:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
@@ -43,77 +68,171 @@ First, you must add the following dependency to the build file, in your xref:wri
 implementation("io.quarkus:quarkus-devservices-deployment")
 ----
 
-Then, add a new build step into the extension processor class that returns a `DevServicesResultBuildItem`.
-Here, the https://hub.docker.com/_/hello-world[`hello-world`] image is used, but you should set up the right image for your service.
+In your runtime module:
 
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-devservices</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-devservices")
+----
+
+=== Implementing a `Startable`
+
+Provide an implementation of `io.quarkus.deployment.builditem.Startable` which knows how to start and stop the service.
+For container-based services, extending `GenericContainer` and implementing `Startable` is the recommended pattern.
+In that case, `GenericContainer` already provides a `start()` method, so the only method that needs to be implemented is `close()` (which can delegate to the superclass).
+
+For example, a minimal `Startable` implementation might look something like this:
 [source,java]
 ----
-@BuildStep(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
-public DevServicesResultBuildItem createContainer() {
-    DockerImageName dockerImageName = DockerImageName.parse("hello-world");
-    GenericContainer container = new GenericContainer<>(dockerImageName)
-                                     .withExposedPorts(SERVICE_PORT, OTHER_SERVICE_PORT)
-                                     .waitingFor(Wait.forLogMessage(".*Started.*", 1))
-                                     .withReuse(true);
+private static class MyContainer extends GenericContainer<MyContainer>
+        implements Startable {
 
-    container.start();
+    public MyContainer(String imageName) {
+        super(imageName);
+    }
 
-    String newUrl = "http://%s:%d".formatted(container.getHost(),
-            container.getMappedPort(SERVICE_PORT));
-    Map<String, String> configOverrides = Map.of("some-service.base-url", newUrl);
+    @Override
+    public void close() {
+        super.close();
+    }
 
-    return new DevServicesResultBuildItem.RunningDevService(FEATURE,
-            container.getContainerId(),
-            container::close,
-            configOverrides).toBuildItem();
+    @Override
+    public String getConnectionInfo() {
+        return getHost() + ":" + getPort();
+    }
+
+    @Override
+    public String getContainerId() {
+        return super.getContainerId();
+    }
 }
+
 ----
-
-With this code, you should be able to see your container starting if you add your extension to a test application and run `quarkus dev`.
-However, the application will not be able to connect to it, because no ports are exposed.
-To expose ports, add `withExposedPorts` to the container construction.
-For example,
-
-[source,java]
-----
-GenericContainer container = new GenericContainer<>(dockerImageName)
-                                 .withExposedPorts(SERVICE_PORT, OTHER_SERVICE_PORT);
-----
-
-`Testcontainers` will map these ports to random ports on the host.
-This avoids port conflicts, but presents a new problem – how do applications connect to the service in the container?
-
-To allow applications to connect, the extension should override the default configuration for the service with the mapped ports.
-This must be done after starting the container.
-For example,
-
-[source,java]
-----
-container.start();
-String serviceUrl = "http://%s:%d".formatted(container.getHost(),
-        container.getMappedPort(SERVICE_PORT));
-Map<String, String> configOverrides = Map.of("some-service.base-url",
-    serviceUrl);
-----
-
-Other configuration overrides may be included in the same map.
 
 == Waiting for the container to start
 
-You should add a `.waitingFor` call to the container construction, to wait for the container to start.
-For example
+You should add a `.waitingFor` call to the container, to wait for it to be ready.
+This is typically done in the `configure()` method of the `GenericContainer` subclass.
+For example:
 
 [source,java]
 ----
-container.waitingFor(Wait.forLogMessage(".*Started.*", 1));
+waitingFor(Wait.forLogMessage(".*Started.*", 1));
 ----
 
 Waiting for a port to be open is another option.
 See the link:https://java.testcontainers.org/features/startup_and_waits/[Testcontainers documentation] for a full discussion on wait strategies.
 
+
+=== Configuring ports
+
+If you're extending `GenericContainer`, you should also tell TestContainers what ports to expose.
+This is also typically done in the `configure()` override.
+For example:
+
+[source,java]
+----
+    @Override
+    protected void configure() {
+        super.configure();
+
+        if (fixedExposedPort.isPresent()) {
+            addFixedExposedPort(fixedExposedPort.getAsInt(), SERVICE_PORT);
+        } else {
+            addExposedPort(SERVICE_PORT);
+        }
+
+        waitingFor(Wait.forLogMessage(".*Started.*", 1));
+    }
+
+    public int getPort() {
+        if (fixedExposedPort.isPresent()) {
+            return fixedExposedPort.getAsInt();
+        }
+        return super.getFirstMappedPort();
+    }
+
+}
+----
+By default, TestContainers will map service ports to random ones on the host.
+In the above code, users can configure a fixed port for the container image, which is then passed to `MyContainer` as a `fixedExposedPort` `OptionalInt`.
+Allowing users to set a fixed port makes it easier to attach external tools to the running container, but increases the risk of port conflicts.
+
+=== Declaring a Build Step
+
+Add a build step that returns a `DevServicesResultBuildItem`, using the `owned()` builder.
+Do *not* call `start()` on the `Startable` – Quarkus will start it at the right time.
+
+[source,java]
+----
+@BuildStep(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
+public DevServicesResultBuildItem createContainer(MyConfig config) {
+    return DevServicesResultBuildItem.owned()
+            .feature(FEATURE)
+            .serviceConfig(config)
+            .startable(() -> new MyContainer(
+                    config.imageName(),
+                    config.port()))
+            .configProvider(
+                    Map.of("some-service.base-url",
+                            s -> "http://" + s.getConnectionInfo()))
+            .build();
+}
+----
+
+With this code, you should be able to see your container starting if you add your extension to a test application and run `quarkus dev`.
+
+To allow applications to connect to the service, the build step needs to provide configuration overrides.
+This is done lazily, since the actual service port is usually only known at runtime.
+To configure the port, use `.configProvider(
+Map.of("the-config-key-for-the-base-url",
+s -> "http://" + s.getConnectionInfo())`.
+
+If you need to tell the application where the service is living without using Quarkus configuration,
+you can pass information about the service using
+https://quarkus.io/guides/writing-extensions#injecting-configuration-into-recorders[recorders].
+
+
+=== Understanding the builder
+
+The `owned()` builder has several methods.
+Not all are required, but `feature()`, `serviceConfig()`, `startable()`, and `configProvider()` are needed in most cases.
+
+`feature(String)`::
+Identifies the owning feature. Used for identification and lifecycle management.
+
+`serviceName(String)`::
+If the feature provides multiple Dev Services, this distinguishes them. Optional.
+
+`serviceConfig(Object)`::
+The configuration object for this service. It is compared reflectively to the previous configuration on each restart.
+If the config has changed, the service is restarted; if it is the same, the running service is reused. This controls service reuse, and should be considered carefully.
+
+`startable(Supplier<S>)`::
+A supplier that creates the `Startable` instance. The service is created at build time, but it is not started until the right point during Quarkus startup.
+
+`configProvider(Map<String, Function<T, String>>)`::
+Provides configuration values that are only known after the service is started, such as mapped ports.
+The key in the map is the config property name; the value is a function that receives the started `Startable` and returns the config value.
++
+For config values that are known at build time, use `config(Map<String, String>)` instead.
+
+`postStartHook(Consumer<T>)`::
+An action to perform after the service starts. Any methods used here will be invoked at runtime, not build time, and will affect startup times. Optional.
+
 == Configuring the Dev Service
 
-To configure the Dev Service launch process, your build step can accept a `ConfigPhase.BUILD_TIME` config class in its constructor.
+To configure the Dev Service launch process, your build step can accept a `ConfigPhase.BUILD_TIME` config class.
 For example,
 
 [source,java]
@@ -122,30 +241,77 @@ For example,
 public DevServicesResultBuildItem createContainer(MyConfig config) {}
 ----
 
-You may wish to use this config to set a fixed port, or set an image name, for example.
-
-[source,java]
-----
-if (config.port.isPresent()) {
-    String portBinding = "%d:%d".formatted(config.port.get(), SERVICE_PORT);
-    container.setPortBindings(List.of(portBinding));
-}
-----
+You may wish to use this config to set a fixed port, or set an image name.
+Pass the config object to `serviceConfig()` on the builder so that Quarkus can detect config changes and restart the service when needed.
 
 == Controlling re-use
 
 In dev mode, with live reload, Quarkus may restart frequently.
 By default, this will also restart test containers.
 Quarkus restarts are usually very fast, but containers may take much longer to restart.
-To prevent containers restarting on every code change, you can mark the container as reusable:
+
+Re-use of services between live reloads is handled centrally by Quarkus based on the `serviceConfig()` value.
+If the config object passed to `serviceConfig()` is the same as the previous run (compared reflectively), the running service is reused.
+If it has changed, the service is restarted.
+
+It is an anti-pattern (and unlikely to work) to use static fields on the processor to store service state or handle service reuse.
+
+== Discovered services
+
+Rather than starting services, the Dev Services infrastructure can be used to surface existing external services, not managed by Quarkus.
+To make an externally-managed service available for use as a Dev Service, use the `discovered()` builder instead:
 
 [source,java]
 ----
-container.withReuse(true);
+return DevServicesResultBuildItem.discovered()
+        .feature(FEATURE)
+        .containerId(existingContainerId)
+        .config(Map.of("some-service.base-url", existingUrl))
+        .build();
 ----
 
-Some Dev Services implement sophisticated reuse logic in which they track the state of the container in the processor itself.
-You may need this if your service has more complex requirements, or needs sharing across instances.
+== Integrating with the Dev UI
+
+It is a nice practice to include links to your Dev Service(s) on the Dev UI card for your extension.
+This is particularly useful when the service has been started on a random port, and users might want to connect to an admin console.
+Because the service url is not known at build time, the `dynamicUrlJsonRPCMethodName` method should be used, link:/guides/dev-ui#runtime-external-links[passing in an RPC method name].
+
+
+[source,java]
+----
+   @BuildStep(onlyIf = IsDevelopment.class)
+   public CardPageBuildItem pages(List<SomeRelevantBuildItem> containers) {
+      CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
+
+      for (SomeRelevantBuildItem container : containers) {
+         cardPageBuildItem.addPage(Page.externalPageBuilder("My Extension Name")
+               .dynamicUrlJsonRPCMethodName("getMyUrl")
+               .staticLabel(container.label());
+      }
+
+      return cardPageBuildItem;
+   }
+----
+
+If needed, you can also pass through parameters on the method call. For example,
+
+[source,java]
+----
+     .dynamicUrlJsonRPCMethodName("getMyUrl", Map.of("name", "service-name", "configKey", "some-key")
+----
+
+You will need to use a build step to register the providing class:
+
+[source,java]
+----
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    public JsonRPCProvidersBuildItem createJsonRPCService() {
+     return new JsonRPCProvidersBuildItem(MyJsonRPCService.class, BuiltinScope.SINGLETON.getName());
+    }
+----
+
+The `MyJsonRPCService` class with a `getMyUrl` method should live in your extension's runtime module.
+It can use injected configuration or injected beans to provide the url.
 
 == References
 

@@ -498,7 +498,7 @@ jobs:
         id: calc-native-matrix
         run: |
           echo "GIB_IMPACTED_MODULES: ${GIB_IMPACTED_MODULES}"
-          json=$(.github/filter-native-tests-json.sh native "${GIB_IMPACTED_MODULES}" | tr -d '\n')
+          json=$(.github/filter-integration-tests-json.sh native "${GIB_IMPACTED_MODULES}" | tr -d '\n')
           echo "${json}"
           echo "matrix=${json}" >> $GITHUB_OUTPUT
       - name: Calculate matrix from matrix-jvm-tests.json
@@ -511,7 +511,7 @@ jobs:
         id: calc-virtual-threads-matrix
         run: |
           echo "GIB_IMPACTED_MODULES: ${GIB_IMPACTED_MODULES}"
-          json=$(.github/filter-native-tests-json.sh virtual-threads "${GIB_IMPACTED_MODULES}" | tr -d '\n')
+          json=$(.github/filter-integration-tests-json.sh virtual-threads "${GIB_IMPACTED_MODULES}" | tr -d '\n')
           echo "${json}"
           echo "matrix=${json}" >> $GITHUB_OUTPUT
       - name: Calculate run flags

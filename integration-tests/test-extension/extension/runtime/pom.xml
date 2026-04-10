@@ -124,9 +124,9 @@
                                 <path>
                                     <groupId>io.quarkus</groupId>
                                     <artifactId>quarkus-extension-processor</artifactId>
-                                    <version>${project.version}</version>
                                 </path>
                             </annotationProcessorPaths>
+                            <annotationProcessorPathsUseDepMgmt>true</annotationProcessorPathsUseDepMgmt>
                             <compilerArgs>
                                 <arg>-AgenerateDoc=false</arg>
                             </compilerArgs>

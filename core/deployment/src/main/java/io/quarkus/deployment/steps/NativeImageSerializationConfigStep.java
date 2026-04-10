@@ -1,5 +1,7 @@
 package io.quarkus.deployment.steps;
 
+import static io.quarkus.deployment.steps.NativeImageFFMConfigStep.isGraalVm25OrNewer;
+
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
@@ -19,6 +21,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.LambdaCapturingTypeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 
 /**
@@ -34,7 +37,8 @@ public class NativeImageSerializationConfigStep {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void generateSerializationConfig(BuildProducer<GeneratedResourceBuildItem> serializationConfig,
             List<ReflectiveClassBuildItem> reflectiveClassBuildItems,
-            List<LambdaCapturingTypeBuildItem> lambdaCapturingTypeBuildItems) {
+            List<LambdaCapturingTypeBuildItem> lambdaCapturingTypeBuildItems,
+            NativeImageRunnerBuildItem nativeImageRunnerBuildItem) {
 
         final Set<String> serializableClasses = new HashSet<>();
 
@@ -71,12 +75,18 @@ public class NativeImageSerializationConfigStep {
         }
 
         final JsonObjectBuilder root = Json.object().put("reflection", reflectionArray);
-
         try (StringWriter writer = new StringWriter()) {
             root.appendTo(writer);
             serializationConfig.produce(new GeneratedResourceBuildItem(
                     "META-INF/native-image/serialization/reachability-metadata.json",
                     writer.toString().getBytes(StandardCharsets.UTF_8)));
+            if (!isGraalVm25OrNewer(nativeImageRunnerBuildItem)) {
+                // forces GraalVM/Mandrel 21 to locate the file
+                serializationConfig.produce(new GeneratedResourceBuildItem(
+                        "META-INF/native-image/serialization/native-image.properties",
+                        "Args = -H:+UnlockExperimentalVMOptions -H:ConfigurationResourceRoots=META-INF/native-image/serialization/ -H:-UnlockExperimentalVMOptions\n"
+                                .getBytes(StandardCharsets.UTF_8)));
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

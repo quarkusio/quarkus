@@ -1,5 +1,7 @@
 package io.quarkus.deployment.steps;
 
+import static io.quarkus.deployment.steps.NativeImageFFMConfigStep.isGraalVm25OrNewer;
+
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
@@ -23,6 +25,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
+import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 
 /**
@@ -39,10 +42,12 @@ public class NativeImageReflectConfigStep {
             List<ReflectiveClassBuildItem> reflectiveClassBuildItems,
             List<ForceNonWeakReflectiveClassBuildItem> nonWeakReflectiveClassBuildItems,
             List<ServiceProviderBuildItem> serviceProviderBuildItems,
-            List<ReflectiveClassConditionBuildItem> reflectiveClassConditionBuildItems) {
+            List<ReflectiveClassConditionBuildItem> reflectiveClassConditionBuildItems,
+            NativeImageRunnerBuildItem nativeImageRunnerBuildItem) {
 
         final Map<String, ReflectionInfo> reflectiveClasses = new LinkedHashMap<>();
         final Set<String> forcedNonWeakClasses = new HashSet<>();
+
         for (ForceNonWeakReflectiveClassBuildItem nonWeak : nonWeakReflectiveClassBuildItems) {
             forcedNonWeakClasses.add(nonWeak.getClassName());
         }
@@ -57,24 +62,30 @@ public class NativeImageReflectConfigStep {
         }
         for (ServiceProviderBuildItem i : serviceProviderBuildItems) {
             for (String provider : i.providers()) {
+                // Register the nullary constructor
                 addReflectiveMethod(reflectiveClasses,
                         new ReflectiveMethodBuildItem("Class registered as provider", provider, "<init>", new String[0]));
+                // Register public provider() method for lookkup to avoid throwing a MissingReflectionRegistrationError at run time.
+                // See ServiceLoader#loadProvider and ServiceLoader#findStaticProviderMethod.
                 addReflectiveMethod(reflectiveClasses,
                         new ReflectiveMethodBuildItem("Class registered as provider", true, provider, "provider"));
             }
         }
+
+        // Perform this as last step, since it augments the already added reflective classes
         for (ReflectiveClassConditionBuildItem i : reflectiveClassConditionBuildItems) {
             reflectiveClasses.computeIfPresent(i.getClassName(), (key, value) -> {
                 value.typeReachable = i.getTypeReachable();
                 return value;
             });
         }
+
         if (reflectiveClasses.isEmpty()) {
             return;
         }
 
         final JsonArrayBuilder reflectionArray = Json.array();
-
+        final boolean isGraalVm25OrNewer = isGraalVm25OrNewer(nativeImageRunnerBuildItem);
         for (Map.Entry<String, ReflectionInfo> entry : reflectiveClasses.entrySet()) {
             final JsonObjectBuilder json = Json.object().put("type", entry.getKey());
             final ReflectionInfo info = entry.getValue();
@@ -118,7 +129,8 @@ public class NativeImageReflectConfigStep {
             if (info.serialization) {
                 json.put("serializable", true);
             }
-            if (nativeConfig.includeReasonsInConfigFiles() && info.reasons != null && !info.reasons.isEmpty()) {
+            if (isGraalVm25OrNewer && nativeConfig.includeReasonsInConfigFiles() && info.reasons != null
+                    && !info.reasons.isEmpty()) {
                 final JsonArrayBuilder reasonsArray = Json.array();
                 reasonsArray.addAll(info.reasons);
                 json.put("reason", reasonsArray);
@@ -127,12 +139,18 @@ public class NativeImageReflectConfigStep {
         }
 
         final JsonObjectBuilder root = Json.object().put("reflection", reflectionArray);
-
         try (StringWriter writer = new StringWriter()) {
             root.appendTo(writer);
             reflectConfig.produce(new GeneratedResourceBuildItem(
                     "META-INF/native-image/reflect/reachability-metadata.json",
                     writer.toString().getBytes(StandardCharsets.UTF_8)));
+            if (!isGraalVm25OrNewer) {
+                // forces GraalVM/Mandrel 21 to locate the file
+                reflectConfig.produce(new GeneratedResourceBuildItem(
+                        "META-INF/native-image/reflect/native-image.properties",
+                        "Args = -H:+UnlockExperimentalVMOptions -H:ConfigurationResourceRoots=META-INF/native-image/reflect/ -H:-UnlockExperimentalVMOptions\n"
+                                .getBytes(StandardCharsets.UTF_8)));
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

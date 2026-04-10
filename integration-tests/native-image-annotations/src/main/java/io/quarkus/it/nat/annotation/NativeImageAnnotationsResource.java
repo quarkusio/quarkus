@@ -61,7 +61,7 @@ public class NativeImageAnnotationsResource {
     public String serializeProper() {
         try {
             /* @formatter:off
-             * GraalVM Static Analysis intercepts this exact string literal at build time
+             * GraalVM/Mandrel Static Analysis intercepts this exact string literal at build time
              * and registers the lambda for serialization.
              * See https://www.graalvm.org/latest/reference-manual/native-image/metadata/#serialization-metadata-registration-in-code
              * @formatter:on

@@ -1,5 +1,7 @@
 package io.quarkus.deployment.steps;
 
+import static io.quarkus.deployment.steps.NativeImageFFMConfigStep.isGraalVm25OrNewer;
+
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
@@ -17,6 +19,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourcePatternsBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 
 /**
@@ -32,18 +35,19 @@ public class NativeImageResourceConfigStep {
             List<NativeImageResourcePatternsBuildItem> resourcePatterns,
             List<NativeImageResourceBundleBuildItem> resourceBundles,
             List<NativeImageResourceBuildItem> resources,
-            List<ServiceProviderBuildItem> serviceProviderBuildItems) {
+            List<ServiceProviderBuildItem> serviceProviderBuildItems,
+            NativeImageRunnerBuildItem nativeImageRunnerBuildItem) {
 
         final JsonArrayBuilder resourcesArray = Json.array();
-
+        final boolean isGraalVm25OrNewer = isGraalVm25OrNewer(nativeImageRunnerBuildItem);
         for (NativeImageResourceBuildItem i : resources) {
             for (String path : i.getResources()) {
-                resourcesArray.add(Json.object().put("glob", escapeGlob(path)));
+                resourcesArray.add(Json.object().put("glob", escapeGlob(path, isGraalVm25OrNewer)));
             }
         }
 
         for (ServiceProviderBuildItem i : serviceProviderBuildItems) {
-            resourcesArray.add(Json.object().put("glob", escapeGlob(i.serviceDescriptorFile())));
+            resourcesArray.add(Json.object().put("glob", escapeGlob(i.serviceDescriptorFile(), isGraalVm25OrNewer)));
         }
 
         for (NativeImageResourcePatternsBuildItem i : resourcePatterns) {
@@ -60,7 +64,6 @@ public class NativeImageResourceConfigStep {
             if (globs != null) {
                 for (String glob : globs) {
                     final JsonObjectBuilder globObj = Json.object().put("glob", glob);
-                    // wire up the new module support to the JSON output for resources buried in modules
                     if (module != null && !module.isEmpty()) {
                         globObj.put("module", module);
                     }
@@ -78,7 +81,6 @@ public class NativeImageResourceConfigStep {
         for (NativeImageResourceBundleBuildItem i : resourceBundles) {
             final String moduleName = i.getModuleName();
             final String bundleName = i.getBundleName().replace("/", ".");
-            // if module is present, "moduleName:bundleName" inside the "bundle" string is expected
             final String name = (moduleName != null && !moduleName.isEmpty())
                     ? moduleName + ":" + bundleName
                     : bundleName;
@@ -90,18 +92,29 @@ public class NativeImageResourceConfigStep {
         }
 
         final JsonObjectBuilder root = Json.object().put("resources", resourcesArray);
-
         try (StringWriter writer = new StringWriter()) {
             root.appendTo(writer);
             resourceConfig.produce(new GeneratedResourceBuildItem(
                     "META-INF/native-image/resource/reachability-metadata.json",
                     writer.toString().getBytes(StandardCharsets.UTF_8)));
-        } catch (final IOException e) {
+            if (!isGraalVm25OrNewer) {
+                // forces GraalVM/Mandrel 21 to locate the file
+                resourceConfig.produce(new GeneratedResourceBuildItem(
+                        "META-INF/native-image/resource/native-image.properties",
+                        "Args = -H:+UnlockExperimentalVMOptions -H:ConfigurationResourceRoots=META-INF/native-image/resource/ -H:-UnlockExperimentalVMOptions\n"
+                                .getBytes(StandardCharsets.UTF_8)));
+            }
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static String escapeGlob(final String path) {
-        return path.replace("*", "\\*");
+    private static String escapeGlob(String path, boolean isGraalVm25OrNewer) {
+        // GraalVM/Mandrel 21's glob parser (ResourceConfigurationParser#globToRegex)
+        // treats '\' as a literal path char. Replacing '*' with '\*' causes
+        // GraalVM/Mandrel 21 to compile a broken regex that expects
+        // a backslash followed by a wildcard match e.g., \Q\\E[^/]*
+        // GraalVM 25+ correctly interprets '\*' as an escaped literal asterisk.
+        return isGraalVm25OrNewer ? path.replace("*", "\\*") : path;
     }
 }

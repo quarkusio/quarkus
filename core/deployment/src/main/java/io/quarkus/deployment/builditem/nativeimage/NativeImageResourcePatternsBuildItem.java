@@ -10,6 +10,24 @@ import org.jboss.logging.Logger;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.util.GlobUtil;
 
+/**
+ * A build item that indicates that a set of resource paths defined by globs should be
+ * included in the native image.
+ * <p>
+ * Globs passed to the {@code includeGlob*()} methods of the {@link Builder} are passed directly
+ * to the native image builder. See {@link NativeConfig.ResourcesConfig#includes} for the supported glob syntax.
+ * Note that legacy regular expression patterns and resource exclusions are no longer supported by the
+ * underlying GraalVM reachability metadata schema.
+ * <p>
+ * The globs are passed to the native image builder using {@code reachability-metadata.json}
+ * (conforming to {@code reachability-metadata-schema-v1.2.0.json}).
+ * <p>
+ * Related build items:
+ * <ul>
+ * <li>Use {@link NativeImageResourceBuildItem} if you need to add a single resource
+ * <li>Use {@link NativeImageResourceDirectoryBuildItem} if you need to add a directory of resources
+ * </ul>
+ */
 public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
 
     private static final Logger log = Logger.getLogger(NativeImageResourcePatternsBuildItem.class);
@@ -31,11 +49,19 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
         this.module = module;
     }
 
+    /**
+     * @return the list of excluded patterns.
+     * @deprecated Resource exclusion is not supported by {@code reachability-metadata.json}.
+     */
     @Deprecated(since = "3.29", forRemoval = true)
     public List<String> getExcludePatterns() {
         return excludePatterns;
     }
 
+    /**
+     * @return the list of included regular expression patterns.
+     * @deprecated Regular expressions are not supported by {@code reachability-metadata.json}. Use globs.
+     */
     @Deprecated(since = "3.29", forRemoval = true)
     public List<String> getIncludePatterns() {
         return includePatterns;
@@ -91,11 +117,14 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
         }
 
         private void warnExclude(String patternOrGlob) {
-            log.warnf("Resource excludes are no longer supported by GraalVM 25.0+ reachability-metadata.json. " +
+            log.warnf("Resource excludes are no longer supported by native-image's reachability-metadata.json. " +
                     "The exclude pattern '%s' ignored. Remove it from your configuration or extension.",
                     patternOrGlob);
         }
 
+        /**
+         * @deprecated Resource exclusion is not supported by {@code reachability-metadata.json}.
+         */
         @Deprecated(since = "3.29", forRemoval = true)
         public Builder excludeGlob(String glob) {
             warnExclude(glob);
@@ -103,6 +132,9 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
             return this;
         }
 
+        /**
+         * @deprecated Resource exclusion is not supported by {@code reachability-metadata.json}.
+         */
         @Deprecated(since = "3.29", forRemoval = true)
         public Builder excludeGlobs(Collection<String> globs) {
             for (String glob : globs) {
@@ -112,6 +144,9 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
             return this;
         }
 
+        /**
+         * @deprecated Resource exclusion is not supported by {@code reachability-metadata.json}.
+         */
         @Deprecated(since = "3.29", forRemoval = true)
         public Builder excludeGlobs(String... globs) {
             for (String glob : globs) {
@@ -121,6 +156,9 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
             return this;
         }
 
+        /**
+         * @deprecated Resource exclusion is not supported by {@code reachability-metadata.json}.
+         */
         @Deprecated(since = "3.29", forRemoval = true)
         public Builder excludePattern(String pattern) {
             warnExclude(pattern);
@@ -128,6 +166,9 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
             return this;
         }
 
+        /**
+         * @deprecated Resource exclusion is not supported by {@code reachability-metadata.json}.
+         */
         @Deprecated(since = "3.29", forRemoval = true)
         public Builder excludePatterns(Collection<String> patterns) {
             for (String pattern : patterns) {
@@ -137,6 +178,9 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
             return this;
         }
 
+        /**
+         * @deprecated Resource exclusion is not supported by {@code reachability-metadata.json}.
+         */
         @Deprecated(since = "3.29", forRemoval = true)
         public Builder excludePatterns(String... patterns) {
             for (String pattern : patterns) {
@@ -146,33 +190,66 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
             return this;
         }
 
+        /**
+         * Adds a glob pattern to select resource paths that should be included in the native-image.
+         * <p>
+         * Use a forward slash ({@code /}) as a path separator on all platforms. Globs must not start
+         * with a slash. See {@link NativeConfig.ResourcesConfig#includes} for the supported glob syntax.
+         *
+         * @param glob the glob pattern to add
+         * @return this {@link Builder}
+         */
         public Builder includeGlob(String glob) {
             includeGlobs.add(glob);
             return this;
         }
 
+        /**
+         * Adds a collection of glob patterns to include resources in the native-image.
+         *
+         * @param globs the glob patterns to add
+         * @return this {@link Builder}
+         */
         public Builder includeGlobs(Collection<String> globs) {
             includeGlobs.addAll(globs);
             return this;
         }
 
+        /**
+         * Adds multiple glob patterns to include resources in the native-image.
+         *
+         * @param globs the glob patterns to add
+         * @return this {@link Builder}
+         */
         public Builder includeGlobs(String... globs) {
             Collections.addAll(includeGlobs, globs);
             return this;
         }
 
+        /**
+         * @deprecated Regular expressions are not supported by {@code reachability-metadata.json}.
+         *             Use {@link #includeGlob(String)}.
+         */
         @Deprecated(since = "3.29", forRemoval = true)
         public Builder includePattern(String pattern) {
             includePatterns.add(pattern);
             return this;
         }
 
+        /**
+         * @deprecated Regular expressions are not supported by {@code reachability-metadata.json}.
+         *             Use {@link #includeGlobs(Collection)}.
+         */
         @Deprecated(since = "3.29", forRemoval = true)
         public Builder includePatterns(Collection<String> patterns) {
             includePatterns.addAll(patterns);
             return this;
         }
 
+        /**
+         * @deprecated Regular expressions are not supported by {@code reachability-metadata.json}.
+         *             Use {@link #includeGlobs(String...)}.
+         */
         @Deprecated(since = "3.29", forRemoval = true)
         public Builder includePatterns(String... patterns) {
             Collections.addAll(includePatterns, patterns);

@@ -1,5 +1,7 @@
 package io.quarkus.deployment.steps;
 
+import static io.quarkus.deployment.steps.NativeImageFFMConfigStep.isGraalVm25OrNewer;
+
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
@@ -20,6 +22,7 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessMethodBuildItem;
+import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 
 /**
@@ -32,7 +35,8 @@ public class NativeImageJNIConfigStep {
     void generateJniConfig(BuildProducer<GeneratedResourceBuildItem> jniConfig,
             List<JniRuntimeAccessBuildItem> jniRuntimeAccessibleClasses,
             List<JniRuntimeAccessFieldBuildItem> jniRuntimeAccessibleFields,
-            List<JniRuntimeAccessMethodBuildItem> jniRuntimeAccessibleMethods) {
+            List<JniRuntimeAccessMethodBuildItem> jniRuntimeAccessibleMethods,
+            NativeImageRunnerBuildItem nativeImageRunnerBuildItem) {
 
         if (jniRuntimeAccessibleClasses.isEmpty() && jniRuntimeAccessibleFields.isEmpty()
                 && jniRuntimeAccessibleMethods.isEmpty()) {
@@ -95,14 +99,26 @@ public class NativeImageJNIConfigStep {
 
             reflectionArray.add(json);
         }
-
+        final boolean isGraalVm25OrNewer = isGraalVm25OrNewer(nativeImageRunnerBuildItem);
         final JsonObjectBuilder root = Json.object();
-        root.put("reflection", reflectionArray);
+        if (isGraalVm25OrNewer) {
+            root.put("reflection", reflectionArray);
+        } else {
+            // GraalVM/Mandrel 21 uses the "jni" key for JNI metadata in reachability-metadata.json
+            root.put("jni", reflectionArray);
+        }
 
         try (StringWriter writer = new StringWriter()) {
             root.appendTo(writer);
             jniConfig.produce(new GeneratedResourceBuildItem("META-INF/native-image/jni/reachability-metadata.json",
                     writer.toString().getBytes(StandardCharsets.UTF_8)));
+            if (!isGraalVm25OrNewer) {
+                // forces GraalVM/Mandrel 21 to locate the file
+                jniConfig.produce(new GeneratedResourceBuildItem(
+                        "META-INF/native-image/jni/native-image.properties",
+                        "Args = -H:+UnlockExperimentalVMOptions -H:ConfigurationResourceRoots=META-INF/native-image/jni/ -H:-UnlockExperimentalVMOptions\n"
+                                .getBytes(StandardCharsets.UTF_8)));
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

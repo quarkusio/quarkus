@@ -5,6 +5,8 @@ import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.bootstrap.json.Json;
 import io.quarkus.bootstrap.json.Json.JsonArrayBuilder;
 import io.quarkus.bootstrap.json.Json.JsonObjectBuilder;
@@ -13,24 +15,37 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.FfmDowncallBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.FfmUpcallBuildItem;
+import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
+import io.quarkus.deployment.pkg.steps.NoopNativeImageBuildRunner;
+import io.quarkus.runtime.graal.GraalVM;
 
 /**
  * Creates reachability-metadata.json with:
  * https://www.graalvm.org/latest/reference-manual/native-image/native-code-interoperability/ffm-api/#registering-foreign-calls
  * https://www.graalvm.org/latest/reference-manual/native-image/metadata/#foreign-function-and-memory-api
  *
- * It does not handle anything else, i.e. it does not implement
- * https://github.com/quarkusio/quarkus/issues/41016
  */
 public class NativeImageFFMConfigStep {
 
-    @BuildStep
+    private static final Logger log = Logger.getLogger(NativeImageFFMConfigStep.class);
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void generateFfmConfig(BuildProducer<GeneratedResourceBuildItem> reachabilityMetadata,
             List<FfmDowncallBuildItem> downcalls,
-            List<FfmUpcallBuildItem> upcalls) {
+            List<FfmUpcallBuildItem> upcalls,
+            NativeImageRunnerBuildItem nativeImageRunnerBuildItem) {
+
         if (downcalls.isEmpty() && upcalls.isEmpty()) {
             return;
         }
+
+        if (!isGraalVm25OrNewer(nativeImageRunnerBuildItem)) {
+            log.warnf("FFM/FFI \"foreign\" config via reachability-metadata.json is not " +
+                    "supported on GraalVM/Mandrel older than 25. ");
+            return;
+        }
+
         final JsonObjectBuilder foreignJson = Json.object();
         if (!downcalls.isEmpty()) {
             final JsonArrayBuilder downcallsArray = Json.array();
@@ -73,5 +88,16 @@ public class NativeImageFFMConfigStep {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    static boolean isGraalVm25OrNewer(NativeImageRunnerBuildItem nativeImageRunnerBuildItem) {
+        final GraalVM.Version v;
+        if (nativeImageRunnerBuildItem.getBuildRunner() instanceof NoopNativeImageBuildRunner) {
+            v = GraalVM.Version.CURRENT;
+            log.warnf("native-image is not installed. Using the default %s version as a reference.", v.getVersionAsString());
+        } else {
+            v = nativeImageRunnerBuildItem.getBuildRunner().getGraalVMVersion();
+        }
+        return v.compareTo(GraalVM.Version.VERSION_25_0_0) >= 0;
     }
 }

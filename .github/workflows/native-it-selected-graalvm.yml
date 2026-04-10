@@ -204,7 +204,7 @@ jobs:
         id: calc-native-matrix
         run: |
           echo "GIB_IMPACTED_MODULES: ${GIB_IMPACTED_MODULES}"
-          json=$(.github/filter-native-tests-json.sh "${GIB_IMPACTED_MODULES}" | tr -d '\n')
+          json=$(.github/filter-native-tests-json.sh native "${GIB_IMPACTED_MODULES}" | tr -d '\n')
           # Remove Windows from the matrix
           json=$(echo $json | jq 'del(.include[] | select(."os-name" == "windows-latest"))')
           json=$(echo $json | tr -d '\n')
@@ -214,7 +214,7 @@ jobs:
         id: calc-virtual-threads-matrix
         run: |
           echo "GIB_IMPACTED_MODULES: ${GIB_IMPACTED_MODULES}"
-          json=$(.github/filter-virtual-threads-tests-json.sh "${GIB_IMPACTED_MODULES}" | tr -d '\n')
+          json=$(.github/filter-native-tests-json.sh virtual-threads "${GIB_IMPACTED_MODULES}" | tr -d '\n')
           # Remove Windows from the matrix
           json=$(echo $json | jq 'del(.include[] | select(."os-name" == "windows-latest"))')
           json=$(echo $json | tr -d '\n')

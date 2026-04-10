@@ -375,7 +375,7 @@ jobs:
       - name: Verify native-tests.json
         run: ./.github/verify-tests-json.sh native-tests.json integration-tests/
       - name: Verify virtual-threads-tests.json
-        run: ./.github/verify-tests-json.sh virtual-threads-tests.json integration-tests/virtual-threads/
+        run: ./.github/verify-tests-json.sh virtual-threads-tests.json integration-tests/
       - name: Setup Develocity Build Scan capture
         uses: gradle/develocity-actions/setup-maven@v2.1
         with:
@@ -498,7 +498,7 @@ jobs:
         id: calc-native-matrix
         run: |
           echo "GIB_IMPACTED_MODULES: ${GIB_IMPACTED_MODULES}"
-          json=$(.github/filter-native-tests-json.sh "${GIB_IMPACTED_MODULES}" | tr -d '\n')
+          json=$(.github/filter-native-tests-json.sh native "${GIB_IMPACTED_MODULES}" | tr -d '\n')
           echo "${json}"
           echo "matrix=${json}" >> $GITHUB_OUTPUT
       - name: Calculate matrix from matrix-jvm-tests.json
@@ -511,13 +511,13 @@ jobs:
         id: calc-virtual-threads-matrix
         run: |
           echo "GIB_IMPACTED_MODULES: ${GIB_IMPACTED_MODULES}"
-          json=$(.github/filter-virtual-threads-tests-json.sh "${GIB_IMPACTED_MODULES}" | tr -d '\n')
+          json=$(.github/filter-native-tests-json.sh virtual-threads "${GIB_IMPACTED_MODULES}" | tr -d '\n')
           echo "${json}"
           echo "matrix=${json}" >> $GITHUB_OUTPUT
       - name: Calculate run flags
         id: calc-run-flags
         run: |
-          run_devtools=true; run_gradle=true; run_maven=true; run_kubernetes=true; run_quickstarts=true; run_tcks=true
+          run_devtools=true; run_gradle=true; run_maven=true; run_kubernetes=true; run_quickstarts=true; run_tcks=true;
           if [ -z "${GIB_IMPACTED_MODULES}" ]
           then
             run_devtools=false; run_gradle=false; run_maven=false; run_kubernetes=false; run_quickstarts=false; run_tcks=false
@@ -1403,14 +1403,14 @@ jobs:
           CONTAINER_BUILD: ${{startsWith(matrix.os-name, 'windows') && 'false' || 'true'}}
           CAPTURE_BUILD_SCAN: true
         run: |
-          export LANG=en_US && ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS -f integration-tests/virtual-threads -pl "$TEST_MODULES" $NATIVE_TEST_MAVEN_ARGS -Dextra-args=--enable-preview -Dquarkus.native.container-build=true
+          export LANG=en_US && ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS -f integration-tests -pl "$TEST_MODULES" $NATIVE_TEST_MAVEN_ARGS -Dextra-args=--enable-preview -Dquarkus.native.container-build=true
       - name: Prepare build reports archive
         if: always()
         run: |
           7z a -tzip build-reports.zip -r \
-              'integration-tests/virtual-threads/**/target/*-reports/TEST-*.xml' \
-              'integration-tests/virtual-threads/target/build-report.json' \
-              'integration-tests/virtual-threads/target/gradle-build-scan-url.txt' \
+              'integration-tests/**/target/*-reports/TEST-*.xml' \
+              'integration-tests/**/target/build-report.json' \
+              'integration-tests/**/target/gradle-build-scan-url.txt' \
               LICENSE
       - name: Upload build reports
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0

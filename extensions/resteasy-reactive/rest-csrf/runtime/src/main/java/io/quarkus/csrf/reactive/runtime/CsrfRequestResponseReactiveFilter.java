@@ -18,8 +18,6 @@ import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestCo
 
 import io.quarkus.runtime.LaunchMode;
 import io.vertx.core.http.Cookie;
-import io.vertx.core.http.impl.CookieImpl;
-import io.vertx.core.http.impl.ServerCookie;
 import io.vertx.ext.web.RoutingContext;
 
 public class CsrfRequestResponseReactiveFilter {
@@ -264,7 +262,7 @@ public class CsrfRequestResponseReactiveFilter {
      * @return An Optional containing the token, or an empty Optional if the token cookie is not present or is invalid
      */
     private static String getCookieToken(RoutingContext routing, RestCsrfConfig config) {
-        Cookie cookie = routing.getCookie(config.cookieName());
+        Cookie cookie = routing.request().getCookie(config.cookieName());
 
         if (cookie == null) {
             LOG.debug("CSRF token cookie is not set");
@@ -281,7 +279,7 @@ public class CsrfRequestResponseReactiveFilter {
 
     private static void createCookie(String cookieTokenValue, RoutingContext routing, RestCsrfConfig config) {
 
-        ServerCookie cookie = new CookieImpl(config.cookieName(), cookieTokenValue);
+        Cookie cookie = Cookie.cookie(config.cookieName(), cookieTokenValue);
         cookie.setHttpOnly(config.cookieHttpOnly());
         cookie.setSecure(config.cookieForceSecure() || routing.request().isSSL());
         cookie.setMaxAge(config.cookieMaxAge().toSeconds());

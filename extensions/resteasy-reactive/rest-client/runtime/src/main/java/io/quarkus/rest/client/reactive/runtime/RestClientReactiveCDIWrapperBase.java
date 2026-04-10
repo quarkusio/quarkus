@@ -7,6 +7,7 @@ import jakarta.annotation.PreDestroy;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.NoClassInterceptors;
 import io.quarkus.runtime.MockedThroughWrapper;
 
@@ -25,7 +26,10 @@ public abstract class RestClientReactiveCDIWrapperBase<T extends Closeable> impl
         this.jaxrsInterface = jaxrsInterface;
         this.baseUriFromAnnotation = baseUriFromAnnotation;
         this.configKey = configKey;
-        if (!lazyDelegate) {
+        if (!lazyDelegate &&
+        // we don't want to create an instance when the instance is one of Arc's client proxies as this means
+        // that we would have multiple HTTP clients and could cause leaks
+                (!(this instanceof ClientProxy))) {
             constructDelegate();
         }
     }

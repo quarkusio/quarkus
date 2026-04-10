@@ -26,6 +26,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.impl.UserContextInternal;
 
 public class SecurityContextOverrideHandler implements ServerRestHandler {
 
@@ -120,7 +121,8 @@ public class SecurityContextOverrideHandler implements ServerRestHandler {
                         }
                     };
                     if (routingContext != null) {
-                        routingContext.setUser(new QuarkusHttpUser(newIdentity));
+                        ((UserContextInternal) routingContext.userContext())
+                                .setUser(new QuarkusHttpUser(newIdentity));
                     }
                     return newIdentity;
                 }

@@ -43,16 +43,15 @@ import io.netty.util.concurrent.ScheduledFuture;
 import io.quarkus.vertx.utils.NoBoundChecksBuffer;
 import io.quarkus.vertx.utils.VertxJavaIoContext;
 import io.quarkus.vertx.utils.VertxOutputStream;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.buffer.impl.VertxByteBufAllocator;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
-import io.vertx.core.http.impl.Http1xServerResponse;
+import io.vertx.core.impl.buffer.VertxByteBufAllocator;
+import io.vertx.core.internal.buffer.BufferInternal;
 import io.vertx.core.net.HostAndPort;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
@@ -241,7 +240,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
      *
      * The method is used by {@link ParameterExtractor}, which works with characteristics
      * such as parameter name, single/multiple values, and encoding. Since it's
-     * not always possible to distinguish between {@link Map} and {@link Multimap},
+     * not always possible to distinguish between {@link Map} and {@code Multimap},
      * the method returns a unified {@link Map<String, List<String>>} for handling
      * both cases downstream by {@link ParameterHandler}.
      *
@@ -287,9 +286,9 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public InputStream createInputStream() {
-        if (context.getBody() != null) {
-            byte[] data = new byte[context.getBody().length()];
-            context.getBody().getBytes(data);
+        if (context.body().buffer() != null) {
+            byte[] data = new byte[context.body().length()];
+            context.body().buffer().getBytes(data);
             return new ByteArrayInputStream(data);
         }
         return new VertxInputStream(context, getDeployment().getRuntimeConfiguration().readTimeout().toMillis(), this);
@@ -313,8 +312,8 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public ServerHttpResponse setReadListener(ReadCallback callback) {
-        if (context.getBody() != null) {
-            callback.data(context.getBody().getByteBuf().nioBuffer());
+        if (context.body().buffer() != null) {
+            callback.data(((BufferInternal) context.body().buffer()).getByteBuf().nioBuffer());
             callback.done();
             return this;
         }
@@ -395,13 +394,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     @Override
     public ServerHttpResponse end() {
         if (!response.ended()) {
-            if (response instanceof Http1xServerResponse) {
-                // Http1xServerResponse correctly handles a null handler
-                response.end((Handler<AsyncResult<Void>>) null);
-            } else {
-                // we don't know if other instances handle a null handler so just use the future form
-                response.end();
-            }
+            response.end();
         }
         return this;
     }
@@ -412,7 +405,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     }
 
     public ServerHttpResponse end(Buffer data) {
-        response.end(data, null);
+        response.end(data);
         return this;
     }
 
@@ -420,7 +413,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     public ServerHttpResponse end(byte[] data) {
         var buffer = VertxByteBufAllocator.POOLED_ALLOCATOR.directBuffer(data.length);
         buffer.writeBytes(data);
-        response.end(new NoBoundChecksBuffer(buffer), null);
+        response.end(new NoBoundChecksBuffer(buffer));
         return this;
     }
 
@@ -428,7 +421,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     public ServerHttpResponse end(String data) {
         var buffer = VertxByteBufAllocator.POOLED_ALLOCATOR.directBuffer(ByteBufUtil.utf8MaxBytes(data.length()));
         buffer.writeCharSequence(data, CharsetUtil.UTF_8);
-        response.end(new NoBoundChecksBuffer(buffer), null);
+        response.end(new NoBoundChecksBuffer(buffer));
         return this;
     }
 
@@ -478,14 +471,11 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public ServerHttpResponse write(byte[] data, Consumer<Throwable> asyncResultHandler) {
-        response.write(Buffer.buffer(data), new Handler<AsyncResult<Void>>() {
-            @Override
-            public void handle(AsyncResult<Void> event) {
-                if (event.failed()) {
-                    asyncResultHandler.accept(event.cause());
-                } else {
-                    asyncResultHandler.accept(null);
-                }
+        response.write(Buffer.buffer(data)).onComplete(event -> {
+            if (event.failed()) {
+                asyncResultHandler.accept(event.cause());
+            } else {
+                asyncResultHandler.accept(null);
             }
         });
         return this;
@@ -494,14 +484,11 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     @Override
     public CompletionStage<Void> write(byte[] data) {
         CompletableFuture<Void> ret = new CompletableFuture<>();
-        response.write(Buffer.buffer(data), new Handler<AsyncResult<Void>>() {
-            @Override
-            public void handle(AsyncResult<Void> event) {
-                if (event.failed()) {
-                    ret.completeExceptionally(event.cause());
-                } else {
-                    ret.complete(null);
-                }
+        response.write(Buffer.buffer(data)).onComplete(event -> {
+            if (event.failed()) {
+                ret.completeExceptionally(event.cause());
+            } else {
+                ret.complete(null);
             }
         });
         return ret;

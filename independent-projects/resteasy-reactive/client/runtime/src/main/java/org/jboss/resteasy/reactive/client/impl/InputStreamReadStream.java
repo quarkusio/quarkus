@@ -1,17 +1,16 @@
 package org.jboss.resteasy.reactive.client.impl;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.buffer.impl.VertxByteBufAllocator;
 import io.vertx.core.http.HttpClientRequest;
+import io.vertx.core.impl.buffer.VertxByteBufAllocator;
+import io.vertx.core.internal.buffer.BufferInternal;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.impl.InboundBuffer;
 
@@ -106,27 +105,17 @@ public class InputStreamReadStream implements ReadStream<Buffer> {
     }
 
     private void readChunk2() {
-        Future<Buffer> fut = vertx.executeBlocking(new Handler<>() {
-            @Override
-            public void handle(Promise<Buffer> p) {
-                if (bytes == null) {
-                    bytes = new byte[chunkSize];
-                }
-                int amount;
-                try {
-                    amount = is.read(bytes);
-                } catch (IOException e) {
-                    p.fail(e);
-                    return;
-                }
-                if (amount == -1) {
-                    p.complete();
-                } else {
-                    p.complete(
-                            Buffer.buffer(
-                                    VertxByteBufAllocator.DEFAULT.heapBuffer(amount, Integer.MAX_VALUE).writeBytes(bytes, 0,
-                                            amount)));
-                }
+        Future<Buffer> fut = vertx.executeBlocking(() -> {
+            if (bytes == null) {
+                bytes = new byte[chunkSize];
+            }
+            int amount = is.read(bytes);
+            if (amount == -1) {
+                return null;
+            } else {
+                return BufferInternal.buffer(
+                        VertxByteBufAllocator.DEFAULT.heapBuffer(amount, Integer.MAX_VALUE).writeBytes(bytes, 0,
+                                amount));
             }
         });
         fut.onComplete(new Handler<>() {

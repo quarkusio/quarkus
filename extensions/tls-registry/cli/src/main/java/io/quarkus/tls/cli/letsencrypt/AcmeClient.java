@@ -38,14 +38,24 @@ public class AcmeClient extends AcmeClientSpi {
     public AcmeClient(String managementUrl,
             String managementUser,
             String managementPassword,
-            String managementKey) {
+            String managementKey,
+            boolean insecureMode) {
         this.vertx = Vertx.vertx();
         LOGGER.infof("\uD83D\uDD35 Creating AcmeClient with %s", managementUrl);
 
         // It will need to become configurable to support mTLS, etc
         options = new WebClientOptions();
         if (managementUrl.startsWith("https://")) {
-            options.setSsl(true).setTrustAll(true).setVerifyHost(false);
+            options.setSsl(true);
+
+            // Only disable SSL validation if explicitly requested for development/testing
+            if (insecureMode) {
+                LOGGER.warn("⚠️  WARNING: SSL certificate validation is DISABLED");
+                LOGGER.warn("⚠️  This is INSECURE and should only be used for development/testing");
+                LOGGER.warn("⚠️  NEVER use --insecure flag in production environments");
+                options.setTrustAll(true).setVerifyHost(false);
+            }
+            // Otherwise, use system trust store for proper SSL validation (secure default)
         }
         this.managementClient = WebClient.create(vertx, options);
         if (managementUrl.endsWith("/q/lets-encrypt")) {

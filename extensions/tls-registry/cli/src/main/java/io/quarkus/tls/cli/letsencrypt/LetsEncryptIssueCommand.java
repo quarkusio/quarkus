@@ -50,9 +50,13 @@ public class LetsEncryptIssueCommand implements Callable<Integer> {
             "--staging" }, description = "Whether to use the staging environment of Let's Encrypt", defaultValue = "false")
     boolean staging;
 
+    @CommandLine.Option(names = {
+            "--insecure" }, description = "Disable SSL certificate validation for the management endpoint (INSECURE - development/testing only)", defaultValue = "false")
+    boolean insecure;
+
     @Override
     public Integer call() throws Exception {
-        AcmeClient client = new AcmeClient(managementUrl, managementUser, managementPassword, tlsConfigurationName);
+        AcmeClient client = new AcmeClient(managementUrl, managementUser, managementPassword, tlsConfigurationName, insecure);
 
         // Step 0 - Verification
         // - Make sure the .letsencrypt directory exists

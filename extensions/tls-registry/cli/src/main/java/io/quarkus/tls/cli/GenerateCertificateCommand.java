@@ -70,6 +70,11 @@ public class GenerateCertificateCommand implements Callable<Integer> {
     public Integer call() throws Exception {
         LOGGER.info("\uD83D\uDD0E Looking for the Quarkus Dev CA certificate...");
 
+        if ("password".equals(password)) {
+            LOGGER.warn("⚠️  WARNING: Using default password 'password' for keystore");
+            LOGGER.warn("⚠️  This is INSECURE for production use");
+        }
+
         if (!CA_FILE.exists() || !PK_FILE.exists() || selfSigned) {
             LOGGER.info("\uD83C\uDFB2 Quarkus Dev CA certificate not found. Generating a self-signed certificate...");
             generateSelfSignedCertificate();

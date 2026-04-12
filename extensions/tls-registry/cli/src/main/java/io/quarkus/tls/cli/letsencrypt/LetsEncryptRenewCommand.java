@@ -56,6 +56,11 @@ public class LetsEncryptRenewCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
+        if (insecure) {
+            AUDIT.error("SSL certificate validation DISABLED via --insecure flag for management endpoint: " + managementUrl);
+            AUDIT.error("This configuration is INSECURE and must not be used in production");
+        }
+
         AcmeClient client = new AcmeClient(managementUrl, managementUser, managementPassword, tlsConfigurationName, insecure);
 
         // Step 0 - Verification

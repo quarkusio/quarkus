@@ -1,5 +1,7 @@
 package io.quarkus.tls.cli.letsencrypt;
 
+import static io.quarkus.tls.cli.letsencrypt.LetsEncryptHelpers.AUDIT;
+
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -59,6 +61,8 @@ public class AcmeClient extends AcmeClientSpi {
 
             // Only disable SSL validation if explicitly requested for development/testing
             if (insecureMode) {
+                AUDIT.error("SSL certificate validation DISABLED for management endpoint: " + managementUrl);
+                AUDIT.error("This configuration is INSECURE and must not be used in production");
                 LOGGER.warn("⚠️  WARNING: SSL certificate validation is DISABLED");
                 LOGGER.warn("⚠️  This is INSECURE and should only be used for development/testing");
                 LOGGER.warn("⚠️  NEVER use --insecure flag in production environments");
@@ -79,7 +83,7 @@ public class AcmeClient extends AcmeClientSpi {
         this.managementKey = managementKey;
     }
 
-    private void checkRateLimit() {
+    private void checkRateLimit(String operation) {
         long now = System.currentTimeMillis();
         long windowStart = windowStartTime.get();
 
@@ -91,8 +95,10 @@ public class AcmeClient extends AcmeClientSpi {
 
         int currentCount = requestCount.incrementAndGet();
         if (currentCount > MAX_REQUESTS_PER_MINUTE) {
-            LOGGER.error("⚠️  Rate limit exceeded: " + currentCount + " requests in the last minute");
-            LOGGER.error("⚠️  Maximum allowed: " + MAX_REQUESTS_PER_MINUTE + " requests per minute");
+            AUDIT.warn("Rate limit exceeded - operation: " + operation + ", requests: " + currentCount + "/"
+                    + MAX_REQUESTS_PER_MINUTE + ", endpoint: " + challengeUrl);
+            LOGGER.warn("⚠️  Rate limit exceeded: " + currentCount + " requests in the last minute");
+            LOGGER.warn("⚠️  Maximum allowed: " + MAX_REQUESTS_PER_MINUTE + " requests per minute");
             throw new RuntimeException(
                     "Rate limit exceeded: too many ACME challenge requests. Wait 60 seconds and try again.");
         }
@@ -137,6 +143,7 @@ public class AcmeClient extends AcmeClientSpi {
         AcmeChallenge selectedChallenge = null;
         for (AcmeChallenge challenge : challenges) {
             if (challenge.getType() == AcmeChallenge.Type.HTTP_01) {
+                AUDIT.info("Selected HTTP-01 challenge for domain validation");
                 LOGGER.debug("HTTP 01 challenge is selected");
                 selectedChallenge = challenge;
                 break;
@@ -149,6 +156,7 @@ public class AcmeClient extends AcmeClientSpi {
         // ensure the token is valid before proceeding
         String token = selectedChallenge.getToken();
         if (!token.matches(TOKEN_REGEX)) {
+            AUDIT.error("Invalid challenge token format - rejecting");
             throw new RuntimeException("Invalid certificate authority challenge");
         }
 
@@ -156,7 +164,7 @@ public class AcmeClient extends AcmeClientSpi {
         String selectedChallengeString = selectedChallenge.getKeyAuthorization(account);
 
         // Check rate limit before uploading challenge
-        checkRateLimit();
+        checkRateLimit("challenge-upload");
 
         // respond to the http challenge
         if (managementClient != null) {
@@ -166,12 +174,15 @@ public class AcmeClient extends AcmeClientSpi {
             HttpRequest<Buffer> request = managementClient.getAbs(challengeUrl);
             request.addQueryParam("challenge-resource", token).addQueryParam("challenge-content", selectedChallengeString);
             addKeyAndUser(request);
+            AUDIT.info("Uploading challenge to management endpoint - token: " + token.substring(0, Math.min(8, token.length()))
+                    + "..., endpoint: " + challengeUrl);
             LOGGER.debugf("Sending token %s and challenge content to the management challenge endpoint", token,
                     selectedChallengeString);
 
             HttpResponse<Buffer> response = await(request.send());
 
             if (response.statusCode() != 204) {
+                AUDIT.error("Failed to upload challenge - status: " + response.statusCode() + ", endpoint: " + challengeUrl);
                 LOGGER.error("⚠️ Failed to upload challenge content to the management challenge endpoint, status code: "
                         + response.statusCode());
                 throw new RuntimeException("Failed to respond to certificate authority challenge");
@@ -197,7 +208,7 @@ public class AcmeClient extends AcmeClientSpi {
         LOGGER.debugf("Requesting the management challenge endpoint to delete a challenge resource %s", token);
 
         // Check rate limit before cleanup
-        checkRateLimit();
+        checkRateLimit("challenge-cleanup");
 
         HttpRequest<Buffer> request = managementClient.deleteAbs(challengeUrl);
         addKeyAndUser(request);
@@ -211,7 +222,8 @@ public class AcmeClient extends AcmeClientSpi {
         LOGGER.info(
                 "\uD83D\uDD35 Notifying management challenge endpoint that a new certificate chain and private key are ready");
 
-        checkRateLimit();
+        // Check rate limit before notification
+        checkRateLimit("certificate-notification");
 
         HttpRequest<Buffer> request = managementClient.postAbs(certsUrl);
         addKeyAndUser(request);
@@ -223,10 +235,13 @@ public class AcmeClient extends AcmeClientSpi {
 
     private void addKeyAndUser(HttpRequest<Buffer> request) {
         if (managementKey != null) {
+            AUDIT.info("Using API key authentication for management endpoint");
             request.addQueryParam("key", managementKey);
-        }
-        if (managementUser != null && managementPassword != null) {
+        } else if (managementUser != null && managementPassword != null) {
+            AUDIT.info("Using basic authentication for management endpoint (user: " + managementUser + ")");
             request.basicAuthentication(managementUser, managementPassword);
+        } else {
+            AUDIT.warn("No authentication credentials provided for management endpoint");
         }
     }
 

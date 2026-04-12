@@ -30,7 +30,12 @@ import io.vertx.core.json.JsonObject;
 
 public class LetsEncryptHelpers {
 
+    public static final String DEFAULT_ACME_URL = "https://acme-v02.api.letsencrypt.org/directory";
+    public static final String DEFAULT_ACME_STAGING_URL = "https://acme-staging-v02.api.letsencrypt.org/directory";
+    public static final String TLS_AUDIT_LOG = "io.quarkus.tls.audit";
+
     static Logger LOGGER = Logger.getLogger(LetsEncryptHelpers.class);
+    public static Logger AUDIT = Logger.getLogger(LetsEncryptHelpers.TLS_AUDIT_LOG);
 
     public static void writePrivateKeyAndCertificateChainsAsPem(PrivateKey pk, X509Certificate[] chain, File privateKeyFile,
             File certificateChainFile) throws Exception {
@@ -41,7 +46,10 @@ public class LetsEncryptHelpers {
             throw new IllegalArgumentException("The certificate chain cannot be null or empty");
         }
 
+        AUDIT.debug("Writing private key to file: " + privateKeyFile.getAbsolutePath());
         CertificateUtils.writePrivateKeyToPem(pk, null, privateKeyFile);
+
+        AUDIT.debug("Writing certificate chain to file: " + certificateChainFile.getAbsolutePath());
 
         if (chain.length == 1) {
             CertificateUtils.writeCertificateToPEM(chain[0], certificateChainFile);
@@ -76,9 +84,21 @@ public class LetsEncryptHelpers {
 
         // Use defaults if not specified
         String serverUrl = acmeServerUrl != null ? acmeServerUrl
-                : "https://acme-v02.api.letsencrypt.org/directory";
+                : DEFAULT_ACME_URL;
         String stagingServerUrl = acmeStagingServerUrl != null ? acmeStagingServerUrl
-                : "https://acme-staging-v02.api.letsencrypt.org/directory";
+                : DEFAULT_ACME_STAGING_URL;
+
+        // Warn about custom ACME servers (potential supply chain risk)
+        if (acmeServerUrl != null && !acmeServerUrl.equals(DEFAULT_ACME_URL)) {
+            AUDIT.warn("Using custom ACME server URL (not Let's Encrypt): " + acmeServerUrl);
+        }
+        if (acmeStagingServerUrl != null
+                && !acmeStagingServerUrl.equals(DEFAULT_ACME_STAGING_URL)) {
+            AUDIT.warn("Using custom ACME staging server URL: " + acmeStagingServerUrl);
+        }
+
+        AUDIT.info("Creating ACME account - email: " + contactEmail + ", staging: " + staging + ", server: "
+                + (staging ? stagingServerUrl : serverUrl));
 
         AcmeAccount acmeAccount = AcmeAccount.builder()
                 .setTermsOfServiceAgreed(true)
@@ -89,15 +109,18 @@ public class LetsEncryptHelpers {
 
         try {
             if (!acmeClient.createAccount(acmeAccount, staging)) {
+                AUDIT.info("ACME account already exists - email: " + contactEmail + ", staging: " + staging);
                 LOGGER.infof("\uD83D\uDD35 %s Let's Encrypt account %s already exists",
                         (staging ? "Staging" : "Production"),
                         contactEmail);
             } else {
+                AUDIT.info("ACME account created successfully - email: " + contactEmail + ", staging: " + staging);
                 LOGGER.infof("\uD83D\uDD35 %s Let's Encrypt account %s has been created",
                         (staging ? "Staging" : "Production"),
                         contactEmail);
             }
         } catch (AcmeException ex) {
+            AUDIT.error("Failed to create ACME account - email: " + contactEmail + ", staging: " + staging, ex);
             LOGGER.error("⚠️ Failed to create Let's Encrypt account");
             throw new RuntimeException(ex);
         }
@@ -138,6 +161,7 @@ public class LetsEncryptHelpers {
         // and require an account alias/id during operations requiring an account
         java.nio.file.Path accountPath = Paths.get(letsEncryptPath + "/account.json");
         try {
+            AUDIT.debug("Writing ACME account to file: " + accountPath.toString());
             Files.copy(new ByteArrayInputStream(accountJson.encode().getBytes(StandardCharsets.US_ASCII)), accountPath,
                     StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException ex) {
@@ -155,19 +179,31 @@ public class LetsEncryptHelpers {
             String acmeServerUrl,
             String acmeStagingServerUrl) {
         AcmeAccount acmeAccount = getAccount(letsEncryptPath, acmeServerUrl, acmeStagingServerUrl);
+
+        AUDIT.info("Requesting certificate - domain: " + domain + ", staging: " + staging + ", server: "
+                + (acmeServerUrl != null ? acmeServerUrl : "default"));
+
         X509CertificateChainAndSigningKey certChainAndPrivateKey;
         try {
             certChainAndPrivateKey = acmeClient.obtainCertificateChain(acmeAccount, staging, domain);
+            AUDIT.info("Certificate chain obtained successfully - domain: " + domain + ", chain-length: "
+                    + certChainAndPrivateKey.getCertificateChain().length);
         } catch (AcmeException t) {
-            throw new RuntimeException(t.getMessage());
+            AUDIT.error("Failed to obtain certificate - domain: " + domain + ", staging: " + staging, t);
+            throw new RuntimeException("Failed to obtain certificate: " + t.getMessage(), t);
         }
         LOGGER.info("\uD83D\uDD35 Certificate and private key issued, converting them to PEM files");
+
+        AUDIT.info("Writing certificate to: " + certChainPemLoc.getAbsolutePath());
+        AUDIT.info("Writing private key to: " + privateKeyPemLoc.getAbsolutePath());
 
         try {
             LetsEncryptHelpers.writePrivateKeyAndCertificateChainsAsPem(certChainAndPrivateKey.getSigningKey(),
                     certChainAndPrivateKey.getCertificateChain(), privateKeyPemLoc, certChainPemLoc);
         } catch (Exception ex) {
-            throw new RuntimeException("Failure to copy certificate pem");
+            AUDIT.error("Failed to write certificate files - cert: " + certChainPemLoc + ", key: "
+                    + privateKeyPemLoc, ex);
+            throw new RuntimeException("Failure to copy certificate pem: " + ex.getMessage(), ex);
         }
     }
 
@@ -176,9 +212,9 @@ public class LetsEncryptHelpers {
 
         // Use defaults if not specified
         String serverUrl = acmeServerUrl != null ? acmeServerUrl
-                : "https://acme-v02.api.letsencrypt.org/directory";
+                : DEFAULT_ACME_URL;
         String stagingServerUrl = acmeStagingServerUrl != null ? acmeStagingServerUrl
-                : "https://acme-staging-v02.api.letsencrypt.org/directory";
+                : DEFAULT_ACME_STAGING_URL;
 
         JsonObject json = readAccountJson(letsEncryptPath);
         AcmeAccount.Builder builder = AcmeAccount.builder().setTermsOfServiceAgreed(true)
@@ -252,6 +288,8 @@ public class LetsEncryptHelpers {
     public static void deactivateAccount(AcmeClient acmeClient, File letsEncryptPath, boolean staging,
             String acmeServerUrl, String acmeStagingServerUrl) throws IOException {
         AcmeAccount acmeAccount = getAccount(letsEncryptPath, acmeServerUrl, acmeStagingServerUrl);
+
+        AUDIT.info("Deactivating ACME account - staging: " + staging + ", account-path: " + letsEncryptPath);
         LOGGER.infof("Deactivating %s ACME account", (staging ? "staging" : "production"));
         acmeClient.deactivateAccount(acmeAccount, staging);
 
@@ -259,9 +297,9 @@ public class LetsEncryptHelpers {
 
         java.nio.file.Path accountPath = Paths.get(letsEncryptPath + "/account.json");
         Files.deleteIfExists(accountPath);
+        AUDIT.info("ACME account deactivated and account file deleted from: " + letsEncryptPath);
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     public static void adjustPermissions(File certFile, File keyFile) {
         // Certificate can be world-readable (public data)
         if (!certFile.setReadable(true, false)) {
@@ -272,9 +310,15 @@ public class LetsEncryptHelpers {
         }
 
         // Private key MUST be owner-only readable/writable (chmod 600)
-        keyFile.setReadable(false, false); // Remove group/world read
-        keyFile.setWritable(false, false); // Remove group/world write
-        keyFile.setExecutable(false, false); // Remove group/world execute
+        if (!keyFile.setReadable(false, false)) { // Remove group/world read
+            LOGGER.warnf("Failed to set key file readable only by the owner: %s", keyFile.getAbsolutePath());
+        }
+        if (!keyFile.setWritable(false, false)) { // Remove group/world write
+            LOGGER.warnf("Failed to set key file writable only by the owner : %s", keyFile.getAbsolutePath());
+        }
+        if (!keyFile.setExecutable(false, false)) { // Remove group/world execute
+            LOGGER.warnf("Failed to set key file executable by owner only: %s", keyFile.getAbsolutePath());
+        }
 
         // Then set owner-only permissions
         if (!keyFile.setReadable(true, true)) { // Owner-only read
@@ -286,6 +330,7 @@ public class LetsEncryptHelpers {
                     "This is a critical security requirement to protect the private key.");
         }
 
+        AUDIT.debug("Set secure permissions on private key file: " + keyFile.getAbsolutePath() + " (owner-only: rw-------)");
         LOGGER.debug("Set secure permissions on private key file (owner-only: rw-------)");
     }
 }

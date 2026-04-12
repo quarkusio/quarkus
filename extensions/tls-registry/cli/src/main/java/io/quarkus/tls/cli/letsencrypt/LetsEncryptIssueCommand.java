@@ -63,7 +63,7 @@ public class LetsEncryptIssueCommand implements Callable<Integer> {
     String acmeStagingServerUrl;
 
     @Override
-    public Integer call() throws Exception {
+    public Integer call() {
         AcmeClient client = new AcmeClient(managementUrl, managementUser, managementPassword, tlsConfigurationName, insecure);
 
         // Step 0 - Verification

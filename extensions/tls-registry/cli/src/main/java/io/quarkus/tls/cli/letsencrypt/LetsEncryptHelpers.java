@@ -90,7 +90,7 @@ public class LetsEncryptHelpers {
                         contactEmail);
             }
         } catch (AcmeException ex) {
-            LOGGER.error("⚠\uFE0F Failed to create Let's Encrypt account");
+            LOGGER.error("⚠️ Failed to create Let's Encrypt account");
             throw new RuntimeException(ex);
         }
 
@@ -241,18 +241,31 @@ public class LetsEncryptHelpers {
         Files.deleteIfExists(accountPath);
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     public static void adjustPermissions(File certFile, File keyFile) {
+        // Certificate can be world-readable (public data)
         if (!certFile.setReadable(true, false)) {
             LOGGER.error("Failed to set certificate file readable");
         }
         if (!certFile.setWritable(true, true)) {
-            LOGGER.error("Failed to set certificate file as not writable");
+            LOGGER.error("Failed to set certificate file writable by owner only");
         }
-        if (!keyFile.setReadable(true, false)) {
-            LOGGER.error("Failed to set key file as readable");
+
+        // Private key MUST be owner-only readable/writable (chmod 600)
+        keyFile.setReadable(false, false); // Remove group/world read
+        keyFile.setWritable(false, false); // Remove group/world write
+        keyFile.setExecutable(false, false); // Remove group/world execute
+
+        // Then set owner-only permissions
+        if (!keyFile.setReadable(true, true)) { // Owner-only read
+            throw new SecurityException("Failed to set private key file readable by owner only. " +
+                    "This is a critical security requirement to protect the private key.");
         }
-        if (!keyFile.setWritable(true, true)) {
-            LOGGER.error("Failed to set key file as not writable");
+        if (!keyFile.setWritable(true, true)) { // Owner-only write
+            throw new SecurityException("Failed to set private key file writable by owner only. " +
+                    "This is a critical security requirement to protect the private key.");
         }
+
+        LOGGER.debug("Set secure permissions on private key file (owner-only: rw-------)");
     }
 }

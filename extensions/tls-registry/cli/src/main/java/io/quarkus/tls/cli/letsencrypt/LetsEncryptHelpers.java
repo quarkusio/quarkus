@@ -69,13 +69,21 @@ public class LetsEncryptHelpers {
     public static String createAccount(AcmeClient acmeClient,
             String letsEncryptPath,
             boolean staging,
-            String contactEmail) {
-        LOGGER.infof("\uD83D\uDD35 Creating %s Let's Encrypt account", (staging ? "staging" : "production"));
+            String contactEmail,
+            String acmeServerUrl,
+            String acmeStagingServerUrl) {
+        LOGGER.infof("\uD83D\uDD35 Creating %s ACME account", (staging ? "staging" : "production"));
+
+        // Use defaults if not specified
+        String serverUrl = acmeServerUrl != null ? acmeServerUrl
+                : "https://acme-v02.api.letsencrypt.org/directory";
+        String stagingServerUrl = acmeStagingServerUrl != null ? acmeStagingServerUrl
+                : "https://acme-staging-v02.api.letsencrypt.org/directory";
 
         AcmeAccount acmeAccount = AcmeAccount.builder()
                 .setTermsOfServiceAgreed(true)
-                .setServerUrl("https://acme-v02.api.letsencrypt.org/directory") // TODO Should this be configurable?
-                .setStagingServerUrl("https://acme-staging-v02.api.letsencrypt.org/directory") // TODO Should this be configurable?
+                .setServerUrl(serverUrl)
+                .setStagingServerUrl(stagingServerUrl)
                 .setContactUrls(new String[] { "mailto:" + contactEmail })
                 .build();
 
@@ -143,8 +151,10 @@ public class LetsEncryptHelpers {
             boolean staging,
             String domain,
             File certChainPemLoc,
-            File privateKeyPemLoc) {
-        AcmeAccount acmeAccount = getAccount(letsEncryptPath);
+            File privateKeyPemLoc,
+            String acmeServerUrl,
+            String acmeStagingServerUrl) {
+        AcmeAccount acmeAccount = getAccount(letsEncryptPath, acmeServerUrl, acmeStagingServerUrl);
         X509CertificateChainAndSigningKey certChainAndPrivateKey;
         try {
             certChainAndPrivateKey = acmeClient.obtainCertificateChain(acmeAccount, staging, domain);
@@ -161,13 +171,19 @@ public class LetsEncryptHelpers {
         }
     }
 
-    private static AcmeAccount getAccount(File letsEncryptPath) {
+    private static AcmeAccount getAccount(File letsEncryptPath, String acmeServerUrl, String acmeStagingServerUrl) {
         LOGGER.debugf("Getting account from %s", letsEncryptPath);
+
+        // Use defaults if not specified
+        String serverUrl = acmeServerUrl != null ? acmeServerUrl
+                : "https://acme-v02.api.letsencrypt.org/directory";
+        String stagingServerUrl = acmeStagingServerUrl != null ? acmeStagingServerUrl
+                : "https://acme-staging-v02.api.letsencrypt.org/directory";
 
         JsonObject json = readAccountJson(letsEncryptPath);
         AcmeAccount.Builder builder = AcmeAccount.builder().setTermsOfServiceAgreed(true)
-                .setServerUrl("https://acme-v02.api.letsencrypt.org/directory")
-                .setStagingServerUrl("https://acme-staging-v02.api.letsencrypt.org/directory");
+                .setServerUrl(serverUrl)
+                .setStagingServerUrl(stagingServerUrl);
 
         String keyAlgorithm = json.getString("key-algorithm");
         builder.setKeyAlgorithmName(keyAlgorithm);
@@ -224,15 +240,19 @@ public class LetsEncryptHelpers {
             boolean staging,
             String domain,
             File certChainPemLoc,
-            File privateKeyPemLoc) {
-        LOGGER.infof("\uD83D\uDD35 Renewing %s Let's Encrypt certificate chain and private key",
+            File privateKeyPemLoc,
+            String acmeServerUrl,
+            String acmeStagingServerUrl) {
+        LOGGER.infof("\uD83D\uDD35 Renewing %s ACME certificate chain and private key",
                 (staging ? "staging" : "production"));
-        issueCertificate(acmeClient, letsEncryptPath, staging, domain, certChainPemLoc, privateKeyPemLoc);
+        issueCertificate(acmeClient, letsEncryptPath, staging, domain, certChainPemLoc, privateKeyPemLoc,
+                acmeServerUrl, acmeStagingServerUrl);
     }
 
-    public static void deactivateAccount(AcmeClient acmeClient, File letsEncryptPath, boolean staging) throws IOException {
-        AcmeAccount acmeAccount = getAccount(letsEncryptPath);
-        LOGGER.infof("Deactivating %s Let's Encrypt account", (staging ? "staging" : "production"));
+    public static void deactivateAccount(AcmeClient acmeClient, File letsEncryptPath, boolean staging,
+            String acmeServerUrl, String acmeStagingServerUrl) throws IOException {
+        AcmeAccount acmeAccount = getAccount(letsEncryptPath, acmeServerUrl, acmeStagingServerUrl);
+        LOGGER.infof("Deactivating %s ACME account", (staging ? "staging" : "production"));
         acmeClient.deactivateAccount(acmeAccount, staging);
 
         LOGGER.infof("Removing account file from %s", letsEncryptPath);

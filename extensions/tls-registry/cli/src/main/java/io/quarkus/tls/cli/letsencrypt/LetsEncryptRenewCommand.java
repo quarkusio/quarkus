@@ -46,6 +46,14 @@ public class LetsEncryptRenewCommand implements Callable<Integer> {
             "--insecure" }, description = "Disable SSL certificate validation for the management endpoint (INSECURE - development/testing only)", defaultValue = "false")
     boolean insecure;
 
+    @CommandLine.Option(names = {
+            "--acme-server-url" }, description = "Custom ACME production server URL (default: Let's Encrypt production)")
+    String acmeServerUrl;
+
+    @CommandLine.Option(names = {
+            "--acme-staging-server-url" }, description = "Custom ACME staging server URL (default: Let's Encrypt staging)")
+    String acmeStagingServerUrl;
+
     @Override
     public Integer call() throws Exception {
         AcmeClient client = new AcmeClient(managementUrl, managementUser, managementPassword, tlsConfigurationName, insecure);
@@ -74,7 +82,8 @@ public class LetsEncryptRenewCommand implements Callable<Integer> {
         }
 
         // Step 1 - Renew
-        renewCertificate(client, LETS_ENCRYPT_DIR, staging, domain, CERT_FILE, KEY_FILE);
+        renewCertificate(client, LETS_ENCRYPT_DIR, staging, domain, CERT_FILE, KEY_FILE, acmeServerUrl,
+                acmeStagingServerUrl);
         adjustPermissions(CERT_FILE, KEY_FILE);
 
         // Step 2 - Reload certificate

@@ -193,6 +193,7 @@
         <log4j2-api.version>2.25.4</log4j2-api.version>
         <avro.version>1.12.1</avro.version>
         <apicurio-registry.version>3.1.7</apicurio-registry.version>
+        <okio.version>3.16.4</okio.version> <!-- aligned to apicurio-registry-protobuf-serde-kafka -->
         <testcontainers.version>2.0.3</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
         <docker-java.version>3.7.0</docker-java.version> <!-- must be the version Testcontainers use: https://central.sonatype.com/artifact/org.testcontainers/testcontainers -->
         <!-- Check the compatibility matrix (https://github.com/opensearch-project/opensearch-testcontainers) before upgrading: -->
@@ -1804,6 +1805,16 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-apicurio-registry-protobuf</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-apicurio-registry-protobuf-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-confluent-registry-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -1830,6 +1841,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-confluent-registry-avro-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-confluent-registry-protobuf</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-confluent-registry-protobuf-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -3953,6 +3974,16 @@
                 <groupId>io.apicurio</groupId>
                 <artifactId>apicurio-registry-jsonschema-serde-kafka</artifactId>
                 <version>${apicurio-registry.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.apicurio</groupId>
+                <artifactId>apicurio-registry-protobuf-serde-kafka</artifactId>
+                <version>${apicurio-registry.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.squareup.okio</groupId>
+                <artifactId>okio-jvm</artifactId>
+                <version>${okio.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.apicurio</groupId>
@@ -6704,7 +6735,6 @@
                                 <!-- we don't want our BOM to enforce Okhttp dependencies -->
                                 <key>com.squareup.okhttp3:*</key>
                                 <key>com.squareup.okhttp:*</key>
-                                <key>com.squareup.okio:*</key>
 
                                 <!-- jboss-parent:40 still manages jdk-misc, but does not define version.jdk-misc anymore. -->
                                 <!-- We can just remove it because is not needed anyway. -->

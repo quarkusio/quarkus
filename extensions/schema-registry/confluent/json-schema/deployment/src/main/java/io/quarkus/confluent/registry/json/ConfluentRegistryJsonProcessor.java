@@ -11,6 +11,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageAllowIncompleteClasspathBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
@@ -62,6 +63,15 @@ public class ConfluentRegistryJsonProcessor {
     @BuildStep
     ExtensionSslNativeSupportBuildItem enableSslInNative() {
         return new ExtensionSslNativeSupportBuildItem(Feature.CONFLUENT_REGISTRY_JSON);
+    }
+
+    @BuildStep
+    NativeImageAllowIncompleteClasspathBuildItem allowIncompleteClasspath() {
+        // The mbknor-jackson-jsonschema library (transitive dep of kafka-json-schema-serializer)
+        // references javax.validation types that are not on the classpath.
+        // mbknor must remain on the classpath so that GraalVM can load JsonSchemaUtils
+        // (the target of ConfluentJsonSubstitutions), but javax.validation is banned in Quarkus.
+        return new NativeImageAllowIncompleteClasspathBuildItem("quarkus-confluent-registry-json-schema");
     }
 
     private Optional<ResolvedDependency> findConfluentSerde(Collection<ResolvedDependency> dependencies) {

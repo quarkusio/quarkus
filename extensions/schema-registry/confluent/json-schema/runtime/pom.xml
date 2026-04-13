@@ -27,7 +27,7 @@
         <dependency>
             <groupId>io.confluent</groupId>
             <artifactId>kafka-json-schema-serializer</artifactId>
-            <version>7.5.1</version>
+            <version>8.1.1</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.checkerframework</groupId>
@@ -41,6 +41,11 @@
                     <artifactId>validation-api</artifactId>
                     <groupId>javax.validation</groupId>
                 </exclusion>
+                <!-- Note: io.yokota:mbknor-jackson-jsonschema-java8 is kept on the classpath
+                     intentionally. It is needed for GraalVM native image class loading to resolve
+                     JsonSchemaUtils (the target of ConfluentJsonSubstitutions). The deployment
+                     processor uses NativeImageAllowIncompleteClasspathBuildItem to handle
+                     mbknor's unresolvable javax.validation references at native build time. -->
             </exclusions>
         </dependency>
         <!-- TODO: remove this after upgrading to kafka-clients that already depends on the new lz4 groupId -->

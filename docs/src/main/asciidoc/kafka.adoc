@@ -2090,6 +2090,10 @@ This is described in a dedicated guide: xref:kafka-schema-registry-avro.adoc[Usi
 
 This is described in a dedicated guide: xref:kafka-schema-registry-json-schema.adoc[Using Apache Kafka with Schema Registry and JSON Schema].
 
+== Protobuf Serialization
+
+This is described in a dedicated guide: xref:kafka-schema-registry-protobuf.adoc[Using Apache Kafka with Schema Registry and Protobuf].
+
 [[serialization-autodetection]]
 == Serializer/deserializer autodetection
 
@@ -2182,8 +2186,9 @@ Refer to <<jackson-serialization>> to write your own serializer/deserializer for
 
 == Using Schema Registry
 
-This is described in a dedicated guide for Avro: xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro].
-And a different one for JSON Schema: xref:kafka-schema-registry-json-schema.adoc[Using Apache Kafka with Schema Registry and JSON Schema].
+This is described in a dedicated guide for Avro: xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro],
+for JSON Schema: xref:kafka-schema-registry-json-schema.adoc[Using Apache Kafka with Schema Registry and JSON Schema],
+and for Protobuf: xref:kafka-schema-registry-protobuf.adoc[Using Apache Kafka with Schema Registry and Protobuf].
 
 
 [[kafka-health-check]]

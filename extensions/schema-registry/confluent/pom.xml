@@ -39,6 +39,7 @@
         <module>common</module>
         <module>avro</module>
         <module>json-schema</module>
+        <module>protobuf</module>
     </modules>
 
     <repositories>

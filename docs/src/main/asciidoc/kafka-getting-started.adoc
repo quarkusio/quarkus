@@ -314,8 +314,9 @@ For more options on message serialization, see xref:kafka.adoc#kafka-serializati
 
 We strongly suggest adopting a contract-first approach using a schema registry.
 To learn more about how to use Apache Kafka with the schema registry and Avro, follow the
-xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro] guide for Avro
-or you can follow the xref:kafka-schema-registry-json-schema.adoc[Using Apache Kafka with Schema Registry and JSON Schema] guide..
+xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro] guide for Avro,
+the xref:kafka-schema-registry-json-schema.adoc[Using Apache Kafka with Schema Registry and JSON Schema] guide for JSON Schema,
+or the xref:kafka-schema-registry-protobuf.adoc[Using Apache Kafka with Schema Registry and Protobuf] guide for Protobuf.
 ====
 
 == The HTML page

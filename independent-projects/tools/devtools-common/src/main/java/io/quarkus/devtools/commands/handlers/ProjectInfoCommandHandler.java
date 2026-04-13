@@ -101,7 +101,7 @@ public class ProjectInfoCommandHandler implements QuarkusCommandHandler {
                 for (PlatformInfo platform : providerInfo.values()) {
                     if (platform.getImported() == null) {
                         log.info(String.format(ITEM_FORMAT, "+",
-                                "[ " + MessageFormatter.green(platform.getImported().toCompactCoords()) + "]"));
+                                "[ " + MessageFormatter.green(platform.getRecommended().toCompactCoords()) + "]"));
                     }
                 }
                 recommendationsAvailable = true;

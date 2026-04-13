@@ -33,6 +33,7 @@ import jakarta.enterprise.util.Nonbinding;
 
 import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MutableAnnotationOverlay;
 
 import io.quarkus.arc.InjectableContext;
@@ -41,6 +42,7 @@ import io.quarkus.arc.impl.InstanceImpl;
 import io.quarkus.arc.impl.SyntheticCreationalContextImpl;
 import io.quarkus.arc.impl.bcextensions.ParametersImpl;
 import io.quarkus.arc.impl.bcextensions.SyntheticInjectionsImpl;
+import io.quarkus.arc.processor.AsyncHandlerInfo;
 import io.quarkus.arc.processor.BeanArchives;
 import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BeanDeploymentValidator;
@@ -55,6 +57,7 @@ import io.quarkus.arc.processor.ContextRegistrar;
 import io.quarkus.arc.processor.CustomAlterableContexts;
 import io.quarkus.arc.processor.CustomAlterableContexts.CustomAlterableContextInfo;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
+import io.quarkus.arc.processor.InvokerFactory;
 import io.quarkus.arc.processor.ObserverConfigurator;
 import io.quarkus.arc.processor.ObserverInfo;
 import io.quarkus.arc.processor.ObserverRegistrar;
@@ -720,9 +723,7 @@ public class ExtensionsEntryPoint {
      * <p>
      * It is a no-op if no {@link BuildCompatibleExtension} was found.
      */
-    public void runValidation(org.jboss.jandex.IndexView beanArchiveIndex,
-            Collection<io.quarkus.arc.processor.BeanInfo> allBeans,
-            Collection<io.quarkus.arc.processor.ObserverInfo> allObservers) {
+    public void runValidation(IndexView beanArchiveIndex, List<AsyncHandlerInfo> asyncHandlers) {
         if (invoker.isEmpty()) {
             return;
         }
@@ -730,8 +731,7 @@ public class ExtensionsEntryPoint {
         BuildServicesImpl.init(beanArchiveIndex, annotationOverlay);
 
         try {
-            new ExtensionPhaseValidation(invoker, beanArchiveIndex, errors, annotationOverlay,
-                    allBeans, allObservers).run();
+            new ExtensionPhaseValidation(invoker, beanArchiveIndex, errors, annotationOverlay, asyncHandlers).run();
         } finally {
             BuildServicesImpl.reset();
         }

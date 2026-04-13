@@ -2,6 +2,9 @@
 # The format of this file is documented here:
 # https://github.com/quarkusio/quarkus-github-bot#triage-issues
 features: [ALL]
+similarGitHubHandleCheck:
+  org: quarkusio
+  teams: [quarkus-push, quarkus-admin]
 develocity:
   enabled: true
   url: "https://ge.quarkus.io/"

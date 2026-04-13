@@ -57,11 +57,14 @@ import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.VertxLogDelegateFactory;
 import io.quarkus.vertx.core.runtime.context.SafeVertxContextInterceptor;
 import io.quarkus.vertx.deployment.VertxBuildConfig;
+import io.quarkus.vertx.deployment.spi.VertxBootstrapConsumerBuildItem;
+import io.quarkus.vertx.deployment.spi.VertxOptionsConsumerBuildItem;
 import io.quarkus.vertx.mdc.provider.LateBoundMDCProvider;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.impl.SysProps;
+import io.vertx.core.internal.VertxBootstrap;
 import io.vertx.core.spi.VerticleFactory;
 
 class VertxCoreProcessor {
@@ -137,6 +140,7 @@ class VertxCoreProcessor {
             VertxCoreRecorder recorder,
             LaunchModeBuildItem launchMode,
             ShutdownContextBuildItem shutdown,
+            List<VertxBootstrapConsumerBuildItem> vertxBootstrapConsumers,
             List<VertxOptionsConsumerBuildItem> vertxOptionsConsumers,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<EventLoopSupplierBuildItem> eventLoops,
@@ -146,14 +150,20 @@ class VertxCoreProcessor {
         // Override the Mutiny infrastructure ScheduledExecutorService to dispatch scheduled operations to a Vert.x timer
         recorder.wrapMainExecutorForMutiny(executorBuildItem.getExecutorProxy());
 
-        List<Consumer<VertxOptions>> consumers = vertxOptionsConsumers.stream()
+        List<Consumer<VertxBootstrap>> bootstrapCustomizer = vertxBootstrapConsumers.stream()
+                .sorted()
+                .map(VertxBootstrapConsumerBuildItem::getConsumer)
+                .toList();
+
+        List<Consumer<VertxOptions>> optionsCustomizer = vertxOptionsConsumers.stream()
                 .sorted()
                 .map(VertxOptionsConsumerBuildItem::getConsumer)
                 .toList();
 
         List<VerticleFactory> verticleFactories = loadServices(VerticleFactory.class);
 
-        Supplier<Vertx> vertx = recorder.configureVertx(launchMode.getLaunchMode(), shutdown, consumers,
+        Supplier<Vertx> vertx = recorder.configureVertx(launchMode.getLaunchMode(), shutdown,
+                bootstrapCustomizer, optionsCustomizer,
                 verticleFactories, executorBuildItem.getExecutorProxy());
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(Vertx.class)
                 .types(Vertx.class)

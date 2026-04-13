@@ -1,7 +1,7 @@
 package io.quarkus.vertx.core.runtime;
 
 import java.time.Duration;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -17,7 +17,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ThreadPoolConfig;
 import io.quarkus.runtime.configuration.DurationConverter;
-import io.quarkus.vertx.core.runtime.VertxCoreRecorder.VertxOptionsCustomizer;
+import io.quarkus.vertx.core.runtime.VertxCoreRecorder.VertxCustomizer;
 import io.quarkus.vertx.core.runtime.config.AddressResolverConfiguration;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.vertx.core.Vertx;
@@ -119,7 +119,7 @@ public class VertxCoreProducerTest {
             }
         };
 
-        VertxOptionsCustomizer customizers = new VertxOptionsCustomizer(Arrays.asList(
+        VertxCustomizer customizers = new VertxCustomizer(Collections.emptyList(), List.of(
                 new Consumer<VertxOptions>() {
                     @Override
                     public void accept(VertxOptions vertxOptions) {
@@ -140,7 +140,7 @@ public class VertxCoreProducerTest {
     @Test
     public void shouldInvokeCustomizers() {
         final AtomicBoolean called = new AtomicBoolean(false);
-        VertxOptionsCustomizer customizers = new VertxOptionsCustomizer(Arrays.asList(
+        VertxCustomizer customizers = new VertxCustomizer(Collections.emptyList(), List.of(
                 new Consumer<VertxOptions>() {
                     @Override
                     public void accept(VertxOptions vertxOptions) {
@@ -157,7 +157,7 @@ public class VertxCoreProducerTest {
         final String cacheDir = System.getProperty("user.dir");
         try {
             System.setProperty(SysProps.FILE_CACHE_DIR.name, cacheDir);
-            VertxOptionsCustomizer customizers = new VertxOptionsCustomizer(List.of(
+            VertxCustomizer customizers = new VertxCustomizer(Collections.emptyList(), List.of(
                     vertxOptions -> {
                         Assertions.assertNotNull(vertxOptions.getFileSystemOptions());
                         Assertions.assertEquals(cacheDir, vertxOptions.getFileSystemOptions().getFileCacheDir());

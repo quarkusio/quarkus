@@ -3,7 +3,9 @@ package io.quarkus.vertx.core.runtime;
 import java.time.Duration;
 import java.util.List;
 import java.util.OptionalInt;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -12,8 +14,9 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.vertx.core.runtime.VertxCoreRecorder.VertxOptionsCustomizer;
+import io.quarkus.vertx.core.runtime.VertxCoreRecorder.VertxCustomizer;
 import io.vertx.core.VertxOptions;
+import io.vertx.core.internal.VertxBootstrap;
 
 public class VertxCoreRecorderConfigurationTest {
 
@@ -32,7 +35,7 @@ public class VertxCoreRecorderConfigurationTest {
     private VertxOptions initializeAndCapture(VertxCoreProducerTest.DefaultVertxConfiguration config,
             VertxCoreProducerTest.DefaultThreadPoolConfig threadPoolConfig) {
         AtomicReference<VertxOptions> captured = new AtomicReference<>();
-        VertxOptionsCustomizer customizer = new VertxOptionsCustomizer(List.of(captured::set));
+        VertxCustomizer customizer = new VertxCustomizer(List.of(), List.of(captured::set));
         VertxCoreRecorder.initialize(config, customizer, threadPoolConfig, null, LaunchMode.TEST,
                 List.of());
         return captured.get();
@@ -138,5 +141,24 @@ public class VertxCoreRecorderConfigurationTest {
     public void defaultEventLoopPoolSizeIsNotExplicitlySet() {
         VertxOptions opts = initializeAndCapture(new VertxCoreProducerTest.DefaultVertxConfiguration());
         Assertions.assertTrue(opts.getEventLoopPoolSize() > 0);
+    }
+
+    @Test
+    public void shouldCallBootstrapCustomizer() {
+        AtomicBoolean bootstrapCustomized = new AtomicBoolean(false);
+        Consumer<VertxBootstrap> bootstrapConsumer = bootstrap -> {
+            Assertions.assertNotNull(bootstrap);
+            bootstrapCustomized.set(true);
+        };
+
+        AtomicReference<VertxOptions> captured = new AtomicReference<>();
+        VertxCustomizer customizer = new VertxCustomizer(
+                List.of(bootstrapConsumer), List.of(captured::set));
+        VertxCoreRecorder.initialize(new VertxCoreProducerTest.DefaultVertxConfiguration(),
+                customizer, new VertxCoreProducerTest.DefaultThreadPoolConfig(), null,
+                LaunchMode.TEST, List.of());
+
+        Assertions.assertTrue(bootstrapCustomized.get());
+        Assertions.assertNotNull(captured.get());
     }
 }

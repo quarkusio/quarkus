@@ -16,16 +16,16 @@ import io.vertx.core.VertxOptions;
  * after VertxConfiguration has been read and applied.
  */
 public final class VertxOptionsConsumerBuildItem extends MultiBuildItem implements Comparable<VertxOptionsConsumerBuildItem> {
-    private final Consumer<VertxOptions> optionsConsumer;
+    private final Consumer<VertxOptions> consumer;
     private final int priority;
 
-    public VertxOptionsConsumerBuildItem(Consumer<VertxOptions> optionsConsumer, int priority) {
-        this.optionsConsumer = optionsConsumer;
+    public VertxOptionsConsumerBuildItem(Consumer<VertxOptions> consumer, int priority) {
+        this.consumer = consumer;
         this.priority = priority;
     }
 
     public Consumer<VertxOptions> getConsumer() {
-        return optionsConsumer;
+        return consumer;
     }
 
     @Override

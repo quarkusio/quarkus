@@ -12,7 +12,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.VertxOptionsCustomizer;
 import io.vertx.core.VertxOptions;
-import io.vertx.mutiny.core.Vertx;
 
 public class VertxOptionsCustomizerTest {
 
@@ -20,9 +19,6 @@ public class VertxOptionsCustomizerTest {
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap
                     .create(JavaArchive.class).addClasses(MyCustomizer.class));
-
-    @Inject
-    Vertx vertx;
 
     @Inject
     MyCustomizer customizer;

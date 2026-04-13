@@ -426,6 +426,8 @@ public class VertxCoreRecorder {
         return cache;
     }
 
+    private static final int MAX_DEFAULT_EVENT_LOOP_THREADS = 16;
+
     private static int calculateDefaultIOThreads() {
         //we only allow one event loop per 10mb of ram at the most
         //it's hard to say what this number should be, but it is also obvious
@@ -434,7 +436,9 @@ public class VertxCoreRecorder {
         //We used to recommend a default of twice the number of cores,
         //but more recent developments seem to suggest matching the number of cores 1:1
         //being a more reasonable default. It also saves memory.
-        int recommended = ProcessorInfo.availableProcessors();
+        //We also cap the default to avoid creating too many event loops on machines with many cores,
+        //as this leads to excessive memory usage from Netty allocator arenas.
+        int recommended = Math.min(ProcessorInfo.availableProcessors(), MAX_DEFAULT_EVENT_LOOP_THREADS);
         long mem = Runtime.getRuntime().maxMemory();
         long memInMb = mem / (1024 * 1024);
         long maxAllowed = memInMb / 10;

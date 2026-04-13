@@ -64,6 +64,8 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.netty.BossEventLoopGroup;
 import io.quarkus.netty.MainEventLoopGroup;
+import io.quarkus.netty.runtime.DefaultNumDirectArenasGenerator;
+import io.quarkus.netty.runtime.DefaultNumHeapArenasGenerator;
 import io.quarkus.netty.runtime.EmptyByteBufStub;
 import io.quarkus.netty.runtime.MachineIdGenerator;
 import io.quarkus.netty.runtime.NettyRecorder;
@@ -88,13 +90,30 @@ class NettyProcessor {
     }
 
     @BuildStep
-    public SystemPropertyBuildItem limitArenaSize(NettyBuildTimeConfig config,
-            List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems) {
+    public void configureAllocator(NettyBuildTimeConfig config,
+            List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems,
+            BuildProducer<SystemPropertyBuildItem> systemProperties,
+            BuildProducer<GeneratedRuntimeSystemPropertyBuildItem> generatedSystemProperties) {
+        // Configure the chunk size via maxOrder
         String maxOrder = calculateMaxOrder(config.allocatorMaxOrder(), minMaxOrderBuildItems, true);
+        systemProperties.produce(new SystemPropertyBuildItem("io.netty.allocator.maxOrder", maxOrder));
 
-        //in native mode we limit the size of the epoll array
-        //if the array overflows the selector just moves the overflow to a map
-        return new SystemPropertyBuildItem("io.netty.allocator.maxOrder", maxOrder);
+        // Configure the number of arenas
+        if (config.allocatorNumHeapArenas().isPresent()) {
+            systemProperties.produce(new SystemPropertyBuildItem("io.netty.allocator.numHeapArenas",
+                    Integer.toString(config.allocatorNumHeapArenas().getAsInt())));
+        } else {
+            generatedSystemProperties.produce(new GeneratedRuntimeSystemPropertyBuildItem(
+                    "io.netty.allocator.numHeapArenas", DefaultNumHeapArenasGenerator.class));
+        }
+
+        if (config.allocatorNumDirectArenas().isPresent()) {
+            systemProperties.produce(new SystemPropertyBuildItem("io.netty.allocator.numDirectArenas",
+                    Integer.toString(config.allocatorNumDirectArenas().getAsInt())));
+        } else {
+            generatedSystemProperties.produce(new GeneratedRuntimeSystemPropertyBuildItem(
+                    "io.netty.allocator.numDirectArenas", DefaultNumDirectArenasGenerator.class));
+        }
     }
 
     @BuildStep

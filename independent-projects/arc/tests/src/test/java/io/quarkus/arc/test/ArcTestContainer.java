@@ -101,6 +101,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         private final List<Predicate<BeanInfo>> removalExclusions;
         private AlternativePriorities alternativePriorities;
         private final List<BuildCompatibleExtension> buildCompatibleExtensions;
+        private final List<Class<?>> asyncHandlers;
         private boolean strictCompatibility = false;
         private boolean optimizeContexts = false;
         private final List<Predicate<ClassInfo>> excludeTypes;
@@ -123,6 +124,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             beanDeploymentValidators = new ArrayList<>();
             removalExclusions = new ArrayList<>();
             buildCompatibleExtensions = new ArrayList<>();
+            asyncHandlers = new ArrayList<>();
             excludeTypes = new ArrayList<>();
         }
 
@@ -231,6 +233,11 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             return this;
         }
 
+        public final Builder asyncHandler(Class<?> asyncHandler) {
+            this.asyncHandlers.add(asyncHandler);
+            return this;
+        }
+
         public Builder strictCompatibility(boolean strictCompatibility) {
             this.strictCompatibility = strictCompatibility;
             return this;
@@ -285,6 +292,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
     private final AlternativePriorities alternativePriorities;
 
     private final List<BuildCompatibleExtension> buildCompatibleExtensions;
+    private final List<Class<?>> asyncHandlers;
 
     private final boolean strictCompatibility;
     private final boolean optimizeContexts;
@@ -313,6 +321,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         this.removalExclusions = Collections.emptyList();
         this.alternativePriorities = null;
         this.buildCompatibleExtensions = Collections.emptyList();
+        this.asyncHandlers = Collections.emptyList();
         this.strictCompatibility = false;
         this.optimizeContexts = false;
         this.excludeTypes = Collections.emptyList();
@@ -341,6 +350,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         this.removalExclusions = builder.removalExclusions;
         this.alternativePriorities = builder.alternativePriorities;
         this.buildCompatibleExtensions = builder.buildCompatibleExtensions;
+        this.asyncHandlers = builder.asyncHandlers;
         this.strictCompatibility = builder.strictCompatibility;
         this.optimizeContexts = builder.optimizeContexts;
         this.excludeTypes = builder.excludeTypes;
@@ -618,6 +628,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         injectionPointsTransformers.forEach(builder::addInjectionPointTransformer);
         observerTransformers.forEach(builder::addObserverTransformer);
         beanDeploymentValidators.forEach(builder::addBeanDeploymentValidator);
+        asyncHandlers.forEach(builder::addAsyncHandler);
         excludeTypes.forEach(builder::addExcludeType);
         builder.setRemoveUnusedBeans(removeUnusedBeans);
         for (Predicate<BeanInfo> exclusion : removalExclusions) {

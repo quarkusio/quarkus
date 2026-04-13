@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
@@ -22,6 +21,7 @@ public class InvokerInfo implements InjectionTargetInfo {
     final BeanInfo targetBean;
     final ClassInfo targetBeanClass;
     final MethodInfo method;
+    final AsyncHandlerInfo asyncHandler;
 
     final boolean instanceLookup;
     final boolean[] argumentLookups;
@@ -48,6 +48,7 @@ public class InvokerInfo implements InjectionTargetInfo {
         this.targetBean = builder.targetBean;
         this.targetBeanClass = builder.targetBeanClass;
         this.method = builder.targetMethod;
+        this.asyncHandler = builder.asyncHandler;
 
         this.instanceLookup = builder.instanceLookup;
         this.argumentLookups = builder.argumentLookups;
@@ -165,11 +166,30 @@ public class InvokerInfo implements InjectionTargetInfo {
     }
 
     boolean isAsynchronous() {
-        // TODO also Kotlin suspend functions, but that requires more elaborate code
-        DotName returnType = method.returnType().name();
-        return DotNames.COMPLETION_STAGE.equals(returnType)
-                || DotNames.UNI.equals(returnType)
-                || DotNames.MULTI.equals(returnType);
+        return asyncHandler != null;
+    }
 
+    boolean isAsynchronousReturnType() {
+        return asyncHandler != null && asyncHandler.returnType();
+    }
+
+    boolean isAsynchronousParameterType() {
+        return asyncHandler != null && !asyncHandler.returnType();
+    }
+
+    int asyncParameterPosition() {
+        if (!isAsynchronousParameterType()) {
+            throw new IllegalStateException("Not an asynchronous method with async parameter");
+        }
+
+        for (int i = 0; i < method.parametersCount(); i++) {
+            Type parameterType = method.parameterType(i);
+            if (asyncHandler.asyncType().equals(parameterType.name())) {
+                return i;
+            }
+        }
+
+        throw new IllegalStateException("Async parameter not found on " + method
+                + ", expected to find " + asyncHandler.asyncType());
     }
 }

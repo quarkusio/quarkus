@@ -163,6 +163,11 @@ public class PanacheFunctionalityTest {
         RestAssured.when().get("/test/testSortByNullPrecedence").then().body(is("OK"));
     }
 
+    @Test
+    public void testCaseInsensitiveSorting() {
+        RestAssured.when().get("/test/testCaseInsensitiveSorting").then().body(is("OK"));
+    }
+
     @DisabledOnIntegrationTest
     @RunOnVertxContext
     @Test

@@ -170,11 +170,22 @@ public class PanacheJpaUtil {
             Sort.Column column = sort.getColumns().get(i);
             if (i > 0)
                 sb.append(" , ");
+
+            // Get the column name (escaped or not)
+            String columnRef;
             if (sort.isEscapingEnabled()) {
-                sb.append(escapeColumnName(column.getName()));
+                columnRef = escapeColumnName(column.getName()).toString();
             } else {
-                sb.append(column.getName());
+                columnRef = column.getName();
             }
+
+            // Wrap in LOWER() if case-insensitive
+            if (column.isIgnoreCase()) {
+                sb.append("LOWER(").append(columnRef).append(")");
+            } else {
+                sb.append(columnRef);
+            }
+
             if (column.getDirection() != Sort.Direction.Ascending) {
                 sb.append(" DESC");
             }
@@ -193,11 +204,6 @@ public class PanacheJpaUtil {
 
     /**
      * Convert Jakarta Data Order to Panache Sort.
-     * <p>
-     * Note: This conversion loses the {@code ignoreCase} flag from Jakarta Data Sort,
-     * as Panache Sort does not support case-insensitive sorting. Users needing
-     * case-insensitive sorting should use {@code @Query} methods with the HQL
-     * {@code LOWER()} function directly.
      *
      * @param order the Jakarta Data order, may be null
      * @return the Panache Sort, or null if order is null
@@ -224,7 +230,10 @@ public class PanacheJpaUtil {
                 result = result.and(property, direction);
             }
 
-            // Note: ignoreCase flag is lost in conversion since Panache Sort doesn't support it
+            // Preserve ignoreCase flag from Jakarta Data
+            if (jdSort.ignoreCase()) {
+                result.getColumns().get(result.getColumns().size() - 1).setIgnoreCase();
+            }
         }
 
         return result;

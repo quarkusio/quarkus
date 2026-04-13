@@ -29,7 +29,12 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.FastThreadLocal;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.runtime.*;
+import io.quarkus.runtime.ExecutorRecorder;
+import io.quarkus.runtime.IOThreadDetector;
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.ShutdownContext;
+import io.quarkus.runtime.ThreadPoolConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.vertx.core.runtime.config.AddressResolverConfiguration;
@@ -223,7 +228,6 @@ public class VertxCoreRecorder {
             convertToVertxOptions(conf, options, threadPoolConfig, shutdown);
         }
 
-        // Allow extension customizers to do their thing
         if (customizer != null) {
             customizer.customize(options);
         }
@@ -263,7 +267,7 @@ public class VertxCoreRecorder {
 
     /**
      * Depending on the launch mode we may need to handle the TCCL differently.
-     *
+     * <p>
      * For dev mode it can change, so we don't want to capture the original TCCL (as this would be a leak). For other modes we
      * just want a fixed TCCL, and leaks are not an issue.
      *
@@ -665,21 +669,22 @@ public class VertxCoreRecorder {
     }
 
     public static class VertxOptionsCustomizer {
-        final List<Consumer<VertxOptions>> customizers;
+        final List<Consumer<VertxOptions>> optionCustomizers;
 
-        VertxOptionsCustomizer(List<Consumer<VertxOptions>> customizers) {
-            this.customizers = customizers;
+        VertxOptionsCustomizer(List<Consumer<VertxOptions>> optionCustomizers) {
+            this.optionCustomizers = optionCustomizers;
+            // Append runtime customizers at the end of the list.
             if (Arc.container() != null) {
                 List<InstanceHandle<io.quarkus.vertx.VertxOptionsCustomizer>> instances = Arc.container()
                         .listAll(io.quarkus.vertx.VertxOptionsCustomizer.class);
                 for (InstanceHandle<io.quarkus.vertx.VertxOptionsCustomizer> customizer : instances) {
-                    customizers.add(customizer.get());
+                    optionCustomizers.add(customizer.get());
                 }
             }
         }
 
         VertxOptions customize(VertxOptions options) {
-            for (Consumer<VertxOptions> x : customizers) {
+            for (Consumer<VertxOptions> x : optionCustomizers) {
                 x.accept(options);
             }
             return options;

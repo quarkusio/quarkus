@@ -1,6 +1,8 @@
-package io.quarkus.vertx.core.deployment;
+package io.quarkus.vertx.deployment.spi;
 
 import java.util.function.Consumer;
+
+import org.jboss.logging.Logger;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.vertx.core.VertxOptions;
@@ -28,6 +30,14 @@ public final class VertxOptionsConsumerBuildItem extends MultiBuildItem implemen
 
     @Override
     public int compareTo(VertxOptionsConsumerBuildItem o) {
-        return Integer.compare(this.priority, o.priority);
+        int priorityComparison = Integer.compare(this.priority, o.priority);
+        if (priorityComparison != 0) {
+            return priorityComparison;
+        }
+        Logger.getLogger(VertxOptionsConsumerBuildItem.class).warnf(
+                "Two VertxOptionsConsumerBuildItems have the same priority (%d). The order of execution is not guaranteed. " +
+                        "Consider using different priorities to ensure a deterministic order.",
+                this.priority);
+        return priorityComparison;
     }
 }

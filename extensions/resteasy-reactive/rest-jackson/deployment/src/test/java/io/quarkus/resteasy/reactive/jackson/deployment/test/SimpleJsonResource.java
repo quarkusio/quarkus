@@ -4,6 +4,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -606,10 +607,23 @@ public class SimpleJsonResource extends SuperClass<Person> {
     public record LinkedListBatchRequest(@JsonProperty("items") LinkedList<GreetingRequest> items) {
     }
 
+    public record DequeBatchRequest(@JsonProperty("items") Deque<GreetingRequest> items) {
+    }
+
     @POST
     @Path("/linkedlist-batch")
     @Produces(MediaType.APPLICATION_JSON)
     public String linkedListBatch(LinkedListBatchRequest request) {
+        String values = request.items().stream()
+                .map(GreetingRequest::name)
+                .collect(Collectors.joining(","));
+        return "{\"values\":\"" + values + "\"}";
+    }
+
+    @POST
+    @Path("/deque-batch")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String dequeBatch(DequeBatchRequest request) {
         String values = request.items().stream()
                 .map(GreetingRequest::name)
                 .collect(Collectors.joining(","));

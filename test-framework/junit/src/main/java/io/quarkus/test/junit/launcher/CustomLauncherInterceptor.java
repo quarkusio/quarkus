@@ -138,7 +138,7 @@ public class CustomLauncherInterceptor
             if (orderer.isEmpty() || !(orderer.get()
                     .equals(DESIRED_CLASS_ORDERER.getName())
                     || orderer.get().equals(CONFIG_SETTING_DESIRED_CLASS_ORDERER.getName()))) {
-                if (facadeLoader.hasMultipleClassLoaders()) {
+                if (facadeLoader != null && facadeLoader.hasMultipleClassLoaders()) {
                     String message = getFailureMessageForJUnitMisconfiguration(orderer);
                     throw new IllegalStateException(message);
                 }
@@ -157,7 +157,7 @@ public class CustomLauncherInterceptor
         String message;
         if (orderer.isPresent()) {
             message = String.format(
-                    "%sTo set a test order while preserving the Quarkus required sorting, please set use the Quarkus configuration to set junit.quarkus.orderer.secondary-orderer=%s, and remove the junit-platform.properties (if any) from the classpath.",
+                    "%sTo set a test order while preserving the Quarkus required sorting, please use the Quarkus configuration to set junit.quarkus.orderer.secondary-orderer=%s, and remove the junit-platform.properties (if any) from the classpath.",
                     generalExplanation, orderer.get());
         } else {
             message = String.format(

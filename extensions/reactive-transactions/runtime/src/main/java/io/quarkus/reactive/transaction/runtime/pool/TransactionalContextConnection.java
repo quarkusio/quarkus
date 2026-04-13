@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.reactive.runtime.customized;
+package io.quarkus.reactive.transaction.runtime.pool;
 
 import org.jboss.logging.Logger;
 
@@ -86,7 +86,8 @@ public class TransactionalContextConnection implements SqlConnection {
 
     @Override
     public void close(Handler<AsyncResult<Void>> handler) {
-        connection.close(handler);
+        LOG.tracef("Calling no-op close on TransactionalContextConnection it will close after the closing of session");
+        handler.handle(Future.succeededFuture());
     }
 
     @Override
@@ -113,5 +114,9 @@ public class TransactionalContextConnection implements SqlConnection {
     public Future<Void> close() {
         LOG.tracef("Calling no-op close on TransactionalContextConnection it will close after the closing of session");
         return Future.succeededFuture();
+    }
+
+    SqlConnection getDelegate() {
+        return connection;
     }
 }

@@ -14,6 +14,7 @@ import io.grpc.examples.helloworld.v2.HelloReply;
 import io.grpc.examples.helloworld.v2.HelloReplyOrBuilder;
 import io.grpc.examples.helloworld.v2.HelloRequest;
 import io.grpc.examples.helloworld.v2.HelloRequestOrBuilder;
+import io.grpc.examples.helloworld.v2.HelloWorldProtoV2;
 import io.grpc.examples.helloworld.v2.MutinyGreeterGrpc;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.test.QuarkusExtensionTest;
@@ -23,6 +24,7 @@ public class ProtoV2Test {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
+                    .addPackage(HelloWorldProtoV2.class.getPackage())
                     .addClasses(HelloServiceV2.class, MutinyGreeterGrpc.MutinyGreeterStub.class,
                             HelloReply.class, HelloRequest.class, MutinyGreeterGrpc.class, GreeterGrpc.class,
                             HelloRequestOrBuilder.class, HelloReplyOrBuilder.class))

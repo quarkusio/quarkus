@@ -19,6 +19,7 @@ import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloReplyOrBuilder;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.examples.helloworld.HelloRequestOrBuilder;
+import io.grpc.examples.helloworld.HelloWorldProto;
 import io.grpc.examples.helloworld.MutinyGreeterGrpc;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
@@ -46,7 +47,10 @@ public class RegularGrpcServiceWithSSLFromClasspathTest extends GrpcServiceTestB
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setFlatClassPath(true).setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(HelloService.class, TestService.class, AssertHelper.class,
+                            .addPackage(io.grpc.testing.integration.Test.class.getPackage())
+                            .addPackage(HelloService.class.getPackage())
+                            .addPackage(HelloWorldProto.class.getPackage())
+                            .addClasses(TestService.class, AssertHelper.class,
                                     GreeterGrpc.class, HelloRequest.class, HelloReply.class, MutinyGreeterGrpc.class,
                                     HelloRequestOrBuilder.class, HelloReplyOrBuilder.class,
                                     EmptyProtos.class, Messages.class, MutinyTestServiceGrpc.class,
@@ -60,7 +64,7 @@ public class RegularGrpcServiceWithSSLFromClasspathTest extends GrpcServiceTestB
         SslContext sslcontext = GrpcSslContexts.forClient()
                 .trustManager(new File("target/certs/grpc-tls-ca.crt"))
                 .build();
-        channel = NettyChannelBuilder.forAddress("localhost", 9001)
+        channel = NettyChannelBuilder.forAddress("localhost", 8444)
                 .sslContext(sslcontext)
                 .build();
     }

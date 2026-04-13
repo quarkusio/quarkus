@@ -23,7 +23,6 @@ import io.quarkus.test.QuarkusExtensionTest;
 public class GrpcServerInboundMessageTest {
 
     static String configuration = """
-            quarkus.grpc.server.use-separate-server=false
             quarkus.grpc.server.max-inbound-message-size=512000
             """;
 

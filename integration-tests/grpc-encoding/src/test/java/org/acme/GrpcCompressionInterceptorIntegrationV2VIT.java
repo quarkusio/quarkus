@@ -17,7 +17,7 @@ class GrpcCompressionInterceptorIntegrationV2VIT extends GrpcCompressionIntercep
     public static class GzipCompressionProfile implements QuarkusTestProfile {
         @Override
         public Map<String, String> getConfigOverrides() {
-            return Map.of("quarkus.grpc.server.use-separate-server", "false");
+            return Map.of();
         }
     }
 

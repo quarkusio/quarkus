@@ -21,7 +21,7 @@ import io.quarkus.grpc.server.services.HelloService;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.internal.ContextInternal;
 import io.vertx.mutiny.core.Context;
 import io.vertx.mutiny.core.Vertx;
 
@@ -60,7 +60,7 @@ public class MutinyClientInjectionTest {
         public String invoke(String s) {
             return service.sayHello(HelloRequest.newBuilder().setName(s).build())
                     .map(HelloReply::getMessage)
-                    .invoke(() -> assertThat(Vertx.currentContext()).isNull())
+                    .invoke(() -> assertThat(Vertx.currentContext()).isNotNull())
                     .await().atMost(Duration.ofSeconds(5));
         }
 

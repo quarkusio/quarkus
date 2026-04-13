@@ -406,7 +406,6 @@
                 <module>jfr-opentelemetry</module>
                 <!-- gRPC tests -->
                 <module>grpc-descriptor-sets</module>
-                <module>grpc-inprocess</module>
                 <module>grpc-vertx</module>
                 <module>grpc-tls</module>
                 <module>grpc-cli</module>

@@ -46,3 +46,4 @@ nb-configuration.xml
 **/.claude
 CLAUDE.local.md
 docs/superpowers
+extensions/grpc/deployment/java_pid*.hprof

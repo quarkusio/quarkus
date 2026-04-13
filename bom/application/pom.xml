@@ -4565,13 +4565,6 @@
                 <groupId>org.apache.kafka</groupId>
                 <artifactId>kafka-clients</artifactId>
                 <version>${kafka.version}</version>
-                <!-- TODO: remove the exclusion after upgrading to kafka-clients depending on the new lz4-java groupId (at.yawk.lz4) -->
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.lz4</groupId>
-                        <artifactId>lz4-java</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>at.yawk.lz4</groupId>

@@ -26,6 +26,8 @@ enum ExtensionMethodParameter {
 
     SYNTHETIC_COMPONENTS(DotNames.SYNTHETIC_COMPONENTS, false, ExtensionPhase.SYNTHESIS),
 
+    INVOKER_VALIDATION(DotNames.INVOKER_VALIDATION, false, ExtensionPhase.VALIDATION),
+
     MESSAGES(DotNames.MESSAGES, false, ExtensionPhase.DISCOVERY, ExtensionPhase.ENHANCEMENT,
             ExtensionPhase.REGISTRATION, ExtensionPhase.SYNTHESIS, ExtensionPhase.VALIDATION),
     TYPES(DotNames.TYPES, false, ExtensionPhase.ENHANCEMENT, ExtensionPhase.REGISTRATION,

@@ -251,6 +251,7 @@ public class InvokerBuilder {
     final BeanInfo targetBean;
     final ClassInfo targetBeanClass;
     final MethodInfo targetMethod;
+    final AsyncHandlerInfo asyncHandler;
 
     boolean instanceLookup;
     boolean[] argumentLookups;
@@ -265,11 +266,12 @@ public class InvokerBuilder {
     private final BeanDeployment beanDeployment;
     private final InjectionPointModifier injectionPointTransformer;
 
-    InvokerBuilder(BeanInfo targetBean, MethodInfo targetMethod, BeanDeployment beanDeployment,
-            InjectionPointModifier injectionPointTransformer) {
+    InvokerBuilder(BeanInfo targetBean, MethodInfo targetMethod, AsyncHandlerInfo asyncHandler,
+            BeanDeployment beanDeployment, InjectionPointModifier injectionPointTransformer) {
         this.targetBean = targetBean;
         this.targetBeanClass = targetBean.getImplClazz();
         this.targetMethod = targetMethod;
+        this.asyncHandler = asyncHandler;
 
         this.argumentTransformers = new InvocationTransformer[targetMethod.parametersCount()];
         this.argumentLookups = new boolean[targetMethod.parametersCount()];

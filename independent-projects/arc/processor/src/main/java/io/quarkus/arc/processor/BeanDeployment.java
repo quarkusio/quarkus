@@ -263,7 +263,7 @@ public class BeanDeployment {
         this.jtaCapabilities = builder.jtaCapabilities;
         this.strictCompatibility = builder.strictCompatibility;
         this.alternativePriorities = builder.alternativePriorities;
-        this.invokerFactory = new InvokerFactory(this, injectionPointTransformer);
+        this.invokerFactory = new InvokerFactory(this, injectionPointTransformer, builder.asyncHandlers);
     }
 
     ContextRegistrar.RegistrationContext registerCustomContexts(List<ContextRegistrar> contextRegistrars) {

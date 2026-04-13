@@ -2,6 +2,7 @@ module io.quarkus.arc {
     exports io.quarkus.arc;
     exports io.quarkus.arc.impl;
     exports io.quarkus.arc.impl.bcextensions;
+    exports io.quarkus.arc.impl.invoke;
 
     requires java.logging;
 

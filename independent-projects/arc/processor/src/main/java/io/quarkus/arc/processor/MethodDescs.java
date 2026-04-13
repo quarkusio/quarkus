@@ -19,6 +19,7 @@ import jakarta.enterprise.context.spi.Contextual;
 import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.inject.spi.EventContext;
 import jakarta.enterprise.inject.spi.EventMetadata;
+import jakarta.enterprise.invoke.AsyncHandler;
 import jakarta.interceptor.InvocationContext;
 
 import io.quarkus.arc.ActiveResult;
@@ -232,4 +233,13 @@ final class MethodDescs {
     static final MethodDesc ACTIVE_RESULT_REASON = MethodDesc.of(ActiveResult.class, "inactiveReason", String.class);
 
     static final MethodDesc ACTIVE_RESULT_CAUSE = MethodDesc.of(ActiveResult.class, "inactiveCause", ActiveResult.class);
+
+    static final MethodDesc ASYNC_HANDLER_RET_TRANSFORM = MethodDesc.of(AsyncHandler.ReturnType.class,
+            "transform", Object.class, Object.class, Runnable.class);
+
+    static final MethodDesc ASYNC_HANDLER_PARAM_TRANSFORM_ARGUMENT = MethodDesc.of(AsyncHandler.ParameterType.class,
+            "transformArgument", Object.class, Object.class, Runnable.class);
+
+    static final MethodDesc ASYNC_HANDLER_PARAM_TRANSFORM_RETURN_VALUE = MethodDesc.of(AsyncHandler.ParameterType.class,
+            "transformReturnValue", Object.class, Object.class, Runnable.class);
 }

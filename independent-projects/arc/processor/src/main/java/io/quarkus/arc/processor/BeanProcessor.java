@@ -199,7 +199,7 @@ public class BeanProcessor {
         customAlterableContexts.validate(validationContext, transformUnproxyableClasses, bytecodeTransformerConsumer);
         if (buildCompatibleExtensions != null) {
             buildCompatibleExtensions.runValidation(beanDeployment.getBeanArchiveIndex(),
-                    validationContext.get(Key.BEANS), validationContext.get(Key.OBSERVERS));
+                    beanDeployment.getInvokerFactory().getAsyncHandlers());
             buildCompatibleExtensions.registerValidationErrors(validationContext);
         }
         return validationContext;
@@ -213,6 +213,8 @@ public class BeanProcessor {
             Consumer<BytecodeTransformer> bytecodeTransformerConsumer, boolean detectUnusedFalsePositives,
             ExecutorService executor)
             throws IOException, InterruptedException, ExecutionException {
+
+        InvokerFactory invokerFactory = beanDeployment.getInvokerFactory();
 
         beanDeployment.resourceGenerationStarted();
 
@@ -278,8 +280,9 @@ public class BeanProcessor {
 
         InvokerGenerator invokerGenerator = new InvokerGenerator(generateSources,
                 applicationClassPredicate, beanDeployment, annotationLiterals, reflectionRegistration,
-                injectionPointAnnotationsPredicate);
+                injectionPointAnnotationsPredicate, name);
         Collection<InvokerInfo> invokers = beanDeployment.getInvokers();
+        List<AsyncHandlerInfo> asyncHandlers = invokerFactory.getAsyncHandlers();
 
         // this is different to `SubclassGenerator` in that it generates support classes
         // for interception of producer methods and synthetic beans and only supports
@@ -423,6 +426,12 @@ public class BeanProcessor {
                     }
                 }));
             }
+            primaryTasks.add(executor.submit(new Callable<Collection<Resource>>() {
+                @Override
+                public Collection<Resource> call() throws Exception {
+                    return invokerGenerator.generateAsyncHandlersSetup(asyncHandlers);
+                }
+            }));
 
             // Generate `_InjectableContext` subclasses for custom `AlterableContext`s
             for (CustomAlterableContextInfo info : alterableContexts) {
@@ -521,6 +530,7 @@ public class BeanProcessor {
             for (InvokerInfo invoker : invokers) {
                 resources.addAll(invokerGenerator.generate(invoker));
             }
+            resources.addAll(invokerGenerator.generateAsyncHandlersSetup(asyncHandlers));
 
             // Generate `_InjectableContext` subclasses for custom `AlterableContext`s
             for (CustomAlterableContextInfo info : alterableContexts) {
@@ -644,6 +654,7 @@ public class BeanProcessor {
         final List<StereotypeRegistrar> stereotypeRegistrars;
         final List<BeanDeploymentValidator> beanDeploymentValidators;
         final List<Consumer<BeanGenerator.SuppressConditionGeneration>> suppressConditionGenerators;
+        final List<Class<?>> asyncHandlers;
 
         boolean removeUnusedBeans = false;
         final List<Predicate<BeanInfo>> removalExclusions;
@@ -680,6 +691,7 @@ public class BeanProcessor {
             stereotypeRegistrars = new ArrayList<>();
             beanDeploymentValidators = new ArrayList<>();
             suppressConditionGenerators = new ArrayList<>();
+            asyncHandlers = new ArrayList<>();
 
             removeUnusedBeans = false;
             removalExclusions = new ArrayList<>();
@@ -991,6 +1003,19 @@ public class BeanProcessor {
          */
         public Builder addSuppressConditionGenerator(Consumer<BeanGenerator.SuppressConditionGeneration> generator) {
             this.suppressConditionGenerators.add(generator);
+            return this;
+        }
+
+        /**
+         * Registers a given async handler class. Note that it is possible to register multiple async handlers
+         * for the same async type, but this is going to lead to an error. It is recommended that at most one
+         * async handler is registered for a given async type.
+         *
+         * @param asyncHandler the async handler class, must not be {@code null}
+         * @return self
+         */
+        public Builder addAsyncHandler(Class<?> asyncHandler) {
+            this.asyncHandlers.add(asyncHandler);
             return this;
         }
 

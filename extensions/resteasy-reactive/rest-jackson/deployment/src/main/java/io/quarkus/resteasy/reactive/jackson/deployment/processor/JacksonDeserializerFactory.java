@@ -5,7 +5,6 @@ import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -38,8 +37,6 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.type.CollectionType;
-import com.fasterxml.jackson.databind.type.MapType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -453,12 +450,12 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 MethodDescriptor getTypeFactory = ofMethod(DeserializationContext.class, "getTypeFactory",
                         TypeFactory.class);
                 ResultHandle typeFactory = bytecode.invokeVirtualMethod(getTypeFactory, deserializationContext);
-                MethodDescriptor constructCollectionType = ofMethod(TypeFactory.class,
-                        "constructCollectionType", CollectionType.class, Class.class, Class.class);
-                Class<?> concreteCollectionType = concreteCollectionType(fieldTypeName, fieldKind);
-                yield bytecode.invokeVirtualMethod(constructCollectionType, typeFactory,
-                        bytecode.loadClass(concreteCollectionType),
-                        bytecode.loadClass(listType.name().toString()));
+                MethodDescriptor constructParametricType = ofMethod(TypeFactory.class,
+                        "constructParametricType", JavaType.class, Class.class, Class[].class);
+                ResultHandle paramTypes = bytecode.newArray(Class.class, 1);
+                bytecode.writeArrayValue(paramTypes, 0, bytecode.loadClass(listType.name().toString()));
+                yield bytecode.invokeVirtualMethod(constructParametricType, typeFactory,
+                        bytecode.loadClass(fieldTypeName), paramTypes);
             }
             case MAP -> {
                 Type keyType = ((ParameterizedType) fieldType).arguments().get(0);
@@ -466,10 +463,13 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 MethodDescriptor getTypeFactory = ofMethod(DeserializationContext.class, "getTypeFactory",
                         TypeFactory.class);
                 ResultHandle typeFactory = bytecode.invokeVirtualMethod(getTypeFactory, deserializationContext);
-                MethodDescriptor constructMapType = ofMethod(TypeFactory.class, "constructMapType",
-                        MapType.class, Class.class, Class.class, Class.class);
-                yield bytecode.invokeVirtualMethod(constructMapType, typeFactory, bytecode.loadClass(HashMap.class),
-                        bytecode.loadClass(keyType.name().toString()), bytecode.loadClass(valueType.name().toString()));
+                MethodDescriptor constructParametricType = ofMethod(TypeFactory.class,
+                        "constructParametricType", JavaType.class, Class.class, Class[].class);
+                ResultHandle paramTypes = bytecode.newArray(Class.class, 2);
+                bytecode.writeArrayValue(paramTypes, 0, bytecode.loadClass(keyType.name().toString()));
+                bytecode.writeArrayValue(paramTypes, 1, bytecode.loadClass(valueType.name().toString()));
+                yield bytecode.invokeVirtualMethod(constructParametricType, typeFactory,
+                        bytecode.loadClass(fieldTypeName), paramTypes);
             }
             default -> bytecode.loadClass(fieldTypeName);
         };
@@ -481,17 +481,6 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         MethodDescriptor readTreeAsValue = ofMethod(DeserializationContext.class, "readTreeAsValue",
                 Object.class, JsonNode.class, fieldKind.isGeneric() ? JavaType.class : Class.class);
         return bytecode.invokeVirtualMethod(readTreeAsValue, deserializationContext, valueNode, typeHandle);
-    }
-
-    private static Class<?> concreteCollectionType(String fieldTypeName, FieldKind fieldKind) {
-        try {
-            Class<?> declared = Class.forName(fieldTypeName);
-            if (!declared.isInterface() && !Modifier.isAbstract(declared.getModifiers())) {
-                return declared;
-            }
-        } catch (ClassNotFoundException ignored) {
-        }
-        return fieldKind == FieldKind.SET ? HashSet.class : ArrayList.class;
     }
 
     private void writeValueToObject(ClassInfo classInfo, ResultHandle objHandle, FieldSpecs fieldSpecs,

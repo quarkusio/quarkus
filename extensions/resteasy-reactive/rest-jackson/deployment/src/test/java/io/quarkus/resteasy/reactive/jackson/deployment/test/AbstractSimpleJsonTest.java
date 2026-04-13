@@ -1033,6 +1033,19 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    void testShouldDeserializeAbstractList() {
+        RestAssured
+                .with()
+                .body("{\"items\": [{\"name\": \"world\"}]}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/deque-batch")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("values", CoreMatchers.is("world"));
+    }
+
+    @Test
     void testShouldRejectUnknownFields() {
         RestAssured
                 .with()

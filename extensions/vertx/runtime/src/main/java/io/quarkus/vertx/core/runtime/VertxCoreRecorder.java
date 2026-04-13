@@ -11,7 +11,6 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -580,34 +579,48 @@ public class VertxCoreRecorder {
         return new ContextHandler<Object>() {
             @Override
             public Object captureContext() {
-                return Vertx.currentContext();
+                io.vertx.core.Context ctx = Vertx.currentContext();
+                if (ctx == null) {
+                    return null;
+                }
+                // Snapshot local context data and MDC at capture time (on the submitting
+                // thread) so that concurrent modifications to the original context after
+                // submission don't affect the dispatched task.
+                ConcurrentHashMap<String, Object> localSnapshot = new ConcurrentHashMap<>(
+                        VertxContext.localContextData(ctx));
+                ConcurrentHashMap<String, Object> mdcSnapshot = new ConcurrentHashMap<>(
+                        VertxMDC.MDC_LOCAL.get(ctx, ConcurrentHashMap::new));
+                return new Object[] { ctx, localSnapshot, mdcSnapshot };
             }
 
             @Override
             public void runWith(Runnable task, Object context) {
+                if (context == null) {
+                    task.run();
+                    return;
+                }
+                Object[] captured = (Object[]) context;
+                ContextInternal vertxContext = (ContextInternal) captured[0];
+                ConcurrentHashMap<String, Object> localSnapshot = (ConcurrentHashMap<String, Object>) captured[1];
+                ConcurrentHashMap<String, Object> mdcSnapshot = (ConcurrentHashMap<String, Object>) captured[2];
+
                 ContextInternal currentContext = (ContextInternal) Vertx.currentContext();
-                // Only do context handling if it's non-null
-                if (context != null && context != currentContext) {
-                    ContextInternal vertxContext = (ContextInternal) context;
-                    // The CDI contexts must not be propagated
-                    // First test if VertxCurrentContextFactory is actually used
-                    if (ignoredKeys != null) {
-                        // TODO We must also propagate the other context locals, but we cannot list them.
-                        ConcurrentMap<String, Object> local = VertxContext.localContextData(vertxContext);
-                        if (containsIgnoredKey(ignoredKeys, local)) {
-                            // Duplicate the context, copy the data, remove the request context
-                            vertxContext = (ContextInternal) vertxContext.duplicate();
-                            ConcurrentHashMap<String, Object> data = VertxContext.localContextData(vertxContext);
-                            data.putAll(local);
-                            ignoredKeys.forEach(data::remove);
-                            VertxContextSafetyToggle.setContextSafe(vertxContext, true);
-                        }
+                if (vertxContext != currentContext) {
+                    // Each dispatched task gets its own duplicate context to prevent
+                    // concurrent threads from clobbering each other's local context data
+                    ContextInternal taskContext = vertxContext.duplicate();
+                    VertxContext.localContextData(taskContext).putAll(localSnapshot);
+                    VertxMDC.MDC_LOCAL.get(taskContext, ConcurrentHashMap::new).putAll(mdcSnapshot);
+
+                    if (ignoredKeys != null && containsIgnoredKey(ignoredKeys, localSnapshot)) {
+                        ignoredKeys.forEach(VertxContext.localContextData(taskContext)::remove);
                     }
-                    vertxContext.beginDispatch();
+                    VertxContextSafetyToggle.setContextSafe(taskContext, true);
+                    taskContext.beginDispatch();
                     try {
                         task.run();
                     } finally {
-                        vertxContext.endDispatch(currentContext);
+                        taskContext.endDispatch(currentContext);
                     }
                 } else {
                     task.run();

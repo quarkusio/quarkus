@@ -111,13 +111,7 @@ public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOper
         if (instrumenter.shouldStart(parentContext, (REQ) request)) {
             io.opentelemetry.context.Context spanContext = instrumenter.start(parentContext,
                     writableHeaders((REQ) request, headers));
-            // Create a new scope with an empty termination callback.
-            Scope scope = new Scope() {
-                @Override
-                public void close() {
-
-                }
-            };
+            Scope scope = Scope.noop();
             return spanOperation(context, (REQ) request, toMultiMap(headers), spanContext, scope);
         }
 
@@ -174,7 +168,7 @@ public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOper
         if (headers instanceof MultiMap) {
             headersMultiMap = (MultiMap) headers;
         } else {
-            headersMultiMap = new HeadersMultiMap();
+            headersMultiMap = HeadersMultiMap.httpHeaders();
             for (final Map.Entry<String, String> header : headers) {
                 headersMultiMap.add(header.getKey(), header.getValue());
             }
@@ -183,12 +177,12 @@ public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOper
     }
 
     private static MultiMap toMultiMap(BiConsumer<String, String> headers) {
-        return new HeadersAdaptor(new HeadersMultiMap()) {
+        return new HeadersAdaptor(HeadersMultiMap.httpHeaders()) {
             @Override
-            public MultiMap set(final String name, final String value) {
-                MultiMap result = super.set(name, value);
+            public HeadersAdaptor set(final String name, final String value) {
+                super.set(name, value);
                 headers.accept(name, value);
-                return result;
+                return this;
             }
         };
     }

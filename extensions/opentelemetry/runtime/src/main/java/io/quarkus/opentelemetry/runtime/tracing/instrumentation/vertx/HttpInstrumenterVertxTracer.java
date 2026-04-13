@@ -10,6 +10,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
 import org.jboss.logging.Logger;
@@ -200,11 +201,13 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
         @Override
         public String get(final io.opentelemetry.context.Context context, final HttpRequestSpan requestSpan,
                 final HttpResponse response) {
+            Context ctx = requestSpan.getContext();
+            ConcurrentHashMap<String, Object> data = VertxContext.localContextData(ctx);
             // RESTEasy
-            String route = requestSpan.getContext().getLocal("UrlPathTemplate");
+            String route = (String) data.get("UrlPathTemplate");
             if (route == null) {
                 // Vert.x
-                route = requestSpan.getContext().getLocal("VertxRoute");
+                route = (String) data.get("VertxRoute");
             }
 
             if (route != null && route.length() >= 1) {
@@ -541,12 +544,12 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
 
         @Override
         public MultiMap headers() {
-            HeadersAdaptor headers = new HeadersAdaptor(new HeadersMultiMap()) {
+            HeadersAdaptor headers = new HeadersAdaptor(HeadersMultiMap.httpHeaders()) {
                 @Override
-                public MultiMap set(final String name, final String value) {
-                    MultiMap result = super.set(name, value);
+                public HeadersAdaptor set(final String name, final String value) {
+                    super.set(name, value);
                     WriteHeadersHttpRequest.this.headers.accept(name, value);
-                    return result;
+                    return this;
                 }
             };
             if (httpRequest.headers() != null) {

@@ -16,22 +16,19 @@ import io.grpc.Status;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
-import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.instrumentation.api.incubator.semconv.rpc.RpcClientAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
+import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
 import io.quarkus.grpc.GlobalInterceptor;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 
 @Singleton
 @GlobalInterceptor
 public class GrpcTracingClientInterceptor implements ClientInterceptor {
-    private final OpenTelemetry openTelemetry;
     private final Instrumenter<GrpcRequest, Status> instrumenter;
 
     public GrpcTracingClientInterceptor(final OpenTelemetry openTelemetry, final OTelRuntimeConfig runtimeConfig) {
-        this.openTelemetry = openTelemetry;
-
         InstrumenterBuilder<GrpcRequest, Status> builder = Instrumenter.builder(
                 openTelemetry,
                 INSTRUMENTATION_NAME,
@@ -43,7 +40,7 @@ public class GrpcTracingClientInterceptor implements ClientInterceptor {
                 .addAttributesExtractor(new GrpcStatusCodeExtractor())
                 .setSpanStatusExtractor(new GrpcSpanStatusExtractor());
 
-        this.instrumenter = builder.buildClientInstrumenter(GrpcTextMapSetter.INSTANCE);
+        this.instrumenter = builder.buildInstrumenter(SpanKindExtractor.alwaysClient());
     }
 
     @Override
@@ -55,61 +52,53 @@ public class GrpcTracingClientInterceptor implements ClientInterceptor {
         boolean shouldStart = instrumenter.shouldStart(parentContext, grpcRequest);
         if (shouldStart) {
             Context spanContext = instrumenter.start(parentContext, grpcRequest);
-            try (Scope ignored = spanContext.makeCurrent()) {
-                ClientCall<ReqT, RespT> clientCall = next.newCall(method, callOptions);
-                return new TracingClientCall<>(clientCall, spanContext, grpcRequest);
-            }
+            Scope scope = spanContext.makeCurrent();
+            ClientCall<ReqT, RespT> clientCall = next.newCall(method, callOptions);
+            return new TracingClientCall<>(clientCall, spanContext, scope, grpcRequest);
         }
 
         return next.newCall(method, callOptions);
     }
 
-    private enum GrpcTextMapSetter implements TextMapSetter<GrpcRequest> {
-        INSTANCE;
-
-        @Override
-        public void set(final GrpcRequest carrier, final String key, final String value) {
-            if (carrier != null && carrier.getMetadata() != null) {
-                carrier.getMetadata().put(Metadata.Key.of(key, Metadata.ASCII_STRING_MARSHALLER), value);
-            }
-        }
-    }
-
     private class TracingClientCallListener<ReqT> extends SimpleForwardingClientCallListener<ReqT> {
         private final Context spanContext;
+        private final Scope scope;
         private final GrpcRequest grpcRequest;
 
         public TracingClientCallListener(final ClientCall.Listener<ReqT> delegate, final Context spanContext,
-                final GrpcRequest grpcRequest) {
+                final Scope scope, final GrpcRequest grpcRequest) {
             super(delegate);
             this.spanContext = spanContext;
+            this.scope = scope;
             this.grpcRequest = grpcRequest;
         }
 
         @Override
         public void onClose(final Status status, final Metadata trailers) {
-            instrumenter.end(spanContext, grpcRequest, status, status.getCause());
+            try (scope) {
+                instrumenter.end(spanContext, grpcRequest, status, status.getCause());
+            }
             super.onClose(status, trailers);
         }
     }
 
     private class TracingClientCall<ReqT, RespT> extends ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT> {
         private final Context spanContext;
+        private final Scope scope;
         private final GrpcRequest grpcRequest;
 
         protected TracingClientCall(final ClientCall<ReqT, RespT> delegate, final Context spanContext,
-                final GrpcRequest grpcRequest) {
+                final Scope scope, final GrpcRequest grpcRequest) {
             super(delegate);
             this.spanContext = spanContext;
+            this.scope = scope;
             this.grpcRequest = grpcRequest;
         }
 
         @Override
         public void start(final Listener<RespT> responseListener, final Metadata headers) {
             GrpcRequest clientRequest = GrpcRequest.client(grpcRequest.getMethodDescriptor(), headers);
-            openTelemetry.getPropagators().getTextMapPropagator().inject(spanContext, clientRequest,
-                    GrpcTextMapSetter.INSTANCE);
-            super.start(new TracingClientCallListener<>(responseListener, spanContext, clientRequest), headers);
+            super.start(new TracingClientCallListener<>(responseListener, spanContext, scope, clientRequest), headers);
         }
     }
 }

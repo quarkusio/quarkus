@@ -32,7 +32,7 @@ import io.quarkus.opentelemetry.runtime.tracing.instrumentation.resteasy.OpenTel
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.PreExceptionMapperHandlerBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomContainerRequestFilterBuildItem;
-import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
+import io.quarkus.vertx.deployment.spi.VertxBootstrapConsumerBuildItem;
 
 @BuildSteps(onlyIf = TracerEnabled.class)
 public class InstrumentationProcessor {
@@ -112,21 +112,21 @@ public class InstrumentationProcessor {
 
     @BuildStep(onlyIfNot = MetricsExtensionAvailable.class, onlyIf = VertxHttpAvailable.class)
     @Record(ExecutionTime.STATIC_INIT)
-    VertxOptionsConsumerBuildItem vertxHttpMetricsOptions(InstrumentationRecorder recorder) {
-        return new VertxOptionsConsumerBuildItem(recorder.getVertxHttpMetricsOptions(), LIBRARY_AFTER + 1);
+    VertxBootstrapConsumerBuildItem vertxHttpMetrics(InstrumentationRecorder recorder) {
+        return new VertxBootstrapConsumerBuildItem(recorder.getVertxHttpMetrics(), LIBRARY_AFTER + 1);
     }
 
     @BuildStep(onlyIfNot = { MetricsExtensionAvailable.class, VertxHttpAvailable.class })
     @Record(ExecutionTime.STATIC_INIT)
-    VertxOptionsConsumerBuildItem vertxMetricsOptions(InstrumentationRecorder recorder) {
-        return new VertxOptionsConsumerBuildItem(recorder.getVertxMetricsOptions(), LIBRARY_AFTER + 1);
+    VertxBootstrapConsumerBuildItem vertxMetricsOptions(InstrumentationRecorder recorder) {
+        return new VertxBootstrapConsumerBuildItem(recorder.getVertxMetricsOptions(), LIBRARY_AFTER + 1);
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    VertxOptionsConsumerBuildItem vertxTracingOptions(
+    VertxBootstrapConsumerBuildItem vertxTracingOptions(
             InstrumentationRecorder recorder) {
-        return new VertxOptionsConsumerBuildItem(recorder.getVertxTracingOptions(), LIBRARY_AFTER);
+        return new VertxBootstrapConsumerBuildItem(recorder.processVertxBootstrap(), LIBRARY_AFTER);
     }
 
     // RESTEasy and Vert.x web

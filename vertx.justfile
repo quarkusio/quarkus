@@ -21,6 +21,8 @@ modules := """
     extensions/reactive-oracle-client
     extensions/reactive-pg-client
     extensions/redis-client
+    extensions/grpc
+    extensions/vertx-graphql
     """
 
 # Build the comma-separated list of directories containing a pom.xml

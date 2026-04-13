@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   build:
-    uses: quarkiverse/.github/.github/workflows/quarkus-ecosystem-ci.yml@main
+    uses: quarkusio/.github/.github/workflows/quarkus-ecosystem-ci.yml@main
     secrets: inherit
     with:
       ecosystem_ci_repo_path: quarkiverse-my-quarkiverse-ext

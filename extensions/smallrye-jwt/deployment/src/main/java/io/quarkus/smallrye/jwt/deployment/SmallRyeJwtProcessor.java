@@ -37,7 +37,6 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.security.deployment.JCAProviderBuildItem;
 import io.quarkus.smallrye.jwt.runtime.auth.BearerTokenAuthentication;
 import io.quarkus.smallrye.jwt.runtime.auth.JWTAuthMechanism;
@@ -137,7 +136,7 @@ class SmallRyeJwtProcessor {
      *
      * @return NativeImageResourceBuildItem
      */
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    @BuildStep
     void registerNativeImageResources(BuildProducer<NativeImageResourceBuildItem> nativeImageResource) {
         Config config = ConfigProvider.getConfig();
         registerKeyLocationResource(config, MP_JWT_VERIFY_KEY_LOCATION, nativeImageResource);

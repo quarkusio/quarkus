@@ -91,7 +91,7 @@ public class NativeImageBuildStep {
     public static final String APP_SOURCES = "app-sources";
     public static final String ARTIFACT_RESULT_TYPE = "native";
 
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    @BuildStep
     void nativeImageFeatures(BuildProducer<NativeImageFeatureBuildItem> features) {
         features.produce(new NativeImageFeatureBuildItem(NativeImageFeatureStep.GRAAL_FEATURE));
         features.produce(new NativeImageFeatureBuildItem(DisableLoggingFeature.class));

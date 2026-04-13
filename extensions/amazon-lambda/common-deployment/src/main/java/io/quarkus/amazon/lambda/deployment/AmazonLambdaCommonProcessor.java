@@ -81,7 +81,7 @@ public final class AmazonLambdaCommonProcessor {
         }
     }
 
-    @BuildStep(onlyIf = NativeBuild.class)
+    @BuildStep
     public void registerForSerialization(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(
                 FunctionError.class.getName()).build());

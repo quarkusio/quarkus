@@ -98,7 +98,7 @@ class LiquibaseMongodbProcessor {
                         LIQUIBASE_MONGODB_ARTIFACT.getGroupId(), LIQUIBASE_MONGODB_ARTIFACT.getArtifactId()));
     }
 
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    @BuildStep
     void nativeImageConfiguration(
             LiquibaseMongodbBuildTimeConfig liquibaseBuildConfig,
             CombinedIndexBuildItem combinedIndex,

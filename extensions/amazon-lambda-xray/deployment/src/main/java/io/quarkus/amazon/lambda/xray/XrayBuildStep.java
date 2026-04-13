@@ -6,10 +6,9 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBui
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
-import io.quarkus.deployment.pkg.steps.NativeBuild;
 
 public class XrayBuildStep {
-    @BuildStep(onlyIf = NativeBuild.class)
+    @BuildStep
     public void process(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition,
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitialized,

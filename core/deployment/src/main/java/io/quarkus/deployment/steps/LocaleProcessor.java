@@ -36,7 +36,7 @@ public class LocaleProcessor {
         //Adding sun.util.resources.TimeZoneNames is not necessary.
     }
 
-    @BuildStep(onlyIf = { NativeBuild.class, NonDefaultLocale.class })
+    @BuildStep(onlyIf = NonDefaultLocale.class)
     ReflectiveClassBuildItem setupReflectionClasses() {
         return ReflectiveClassBuildItem.builder("sun.util.resources.provider.SupplementaryLocaleDataProvider",
                 "sun.util.resources.provider.LocaleDataProvider").build();

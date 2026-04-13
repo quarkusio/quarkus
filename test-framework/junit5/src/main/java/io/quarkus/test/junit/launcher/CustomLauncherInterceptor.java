@@ -129,7 +129,7 @@ public class CustomLauncherInterceptor
             Optional<String> orderer = request.getConfigurationParameters().get("junit.jupiter.testclass.order.default");
 
             if (orderer.isEmpty() || !orderer.get().equals(DESIRED_CLASS_ORDERER.getName())) {
-                if (facadeLoader.hasMultipleClassLoaders()) {
+                if (facadeLoader != null && facadeLoader.hasMultipleClassLoaders()) {
                     String message = getFailureMessageForJUnitMisconfiguration(orderer);
                     // This is likely to be quite a serious problem for tests, but as this is a maintenance stream, be conservative
                     log.warn(message);

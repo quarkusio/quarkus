@@ -46,6 +46,7 @@ import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.enterprise.inject.spi.EventMetadata;
 import jakarta.enterprise.inject.spi.Extension;
 import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.enterprise.invoke.AsyncHandler;
 import jakarta.enterprise.util.Nonbinding;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
@@ -155,6 +156,8 @@ public final class DotNames {
     public static final DotName INTERCEPTION_PROXY = create(InterceptionProxy.class);
     public static final DotName BINDINGS_SOURCE = create(BindingsSource.class);
     public static final DotName WITH_CACHING = create(WithCaching.class);
+    public static final DotName ASYNC_HANDLER_RETURN_TYPE = create(AsyncHandler.ReturnType.class);
+    public static final DotName ASYNC_HANDLER_PARAMETER_TYPE = create(AsyncHandler.ParameterType.class);
 
     public static final DotName BOOLEAN = create(Boolean.class);
     public static final DotName BYTE = create(Byte.class);
@@ -165,6 +168,8 @@ public final class DotNames {
     public static final DotName LONG = create(Long.class);
     public static final DotName SHORT = create(Short.class);
     public static final DotName STRING = create(String.class);
+
+    public static final DotName RUNNABLE = create(Runnable.class);
 
     public static final DotName COMPLETION_STAGE = create(CompletionStage.class);
     public static final DotName UNI = create(Uni.class);

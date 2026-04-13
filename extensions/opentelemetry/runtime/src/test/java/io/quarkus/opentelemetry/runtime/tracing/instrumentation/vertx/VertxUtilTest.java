@@ -4,9 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Set;
 
-import javax.net.ssl.SSLPeerUnverifiedException;
-import javax.security.cert.X509Certificate;
-
 import org.junit.jupiter.api.Test;
 
 import io.netty.handler.codec.DecoderResult;
@@ -140,11 +137,6 @@ class VertxUtilTest {
             }
 
             @Override
-            public @Nullable String host() {
-                return "";
-            }
-
-            @Override
             public long bytesRead() {
                 return 0;
             }
@@ -156,7 +148,7 @@ class VertxUtilTest {
 
             @Override
             public MultiMap headers() {
-                HeadersMultiMap entries = new HeadersMultiMap();
+                HeadersMultiMap entries = HeadersMultiMap.httpHeaders();
                 entries.add("host", hostHeader);
                 return entries;
             }
@@ -174,11 +166,6 @@ class VertxUtilTest {
             @Override
             public MultiMap params(boolean semicolonIsNormalChar) {
                 return null;
-            }
-
-            @Override
-            public X509Certificate[] peerCertificateChain() throws SSLPeerUnverifiedException {
-                return new X509Certificate[0];
             }
 
             @Override

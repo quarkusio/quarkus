@@ -1,7 +1,9 @@
 package io.quarkus.opentelemetry.deployment.instrumentation;
 
 import static io.opentelemetry.api.common.AttributeKey.stringKey;
+import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
+import static io.opentelemetry.api.trace.SpanKind.SERVER;
 import static io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter.getSpanByKindAndParentId;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -56,7 +58,7 @@ public class GrpcOpenInstrumentationDisabledTest {
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider"))
             .withConfigurationResource("application-default.properties")
             .overrideConfigKey("quarkus.grpc.clients.hello.host", "localhost")
-            .overrideConfigKey("quarkus.grpc.clients.hello.port", "9001")
+            .overrideConfigKey("quarkus.grpc.clients.hello.port", "8081")
             .overrideConfigKey("quarkus.otel.instrument.grpc", "false");
 
     @Inject
@@ -78,10 +80,14 @@ public class GrpcOpenInstrumentationDisabledTest {
                 .await().atMost(Duration.ofSeconds(5));
         assertEquals("Hello ping", response);
 
-        List<SpanData> spans = spanExporter.getFinishedSpanItems(1);
-        assertEquals(1, spans.size());
+        // gRPC instrumentation is disabled, but HTTP spans are still created by the Vert.x HTTP tracer
+        List<SpanData> spans = spanExporter.getFinishedSpanItems(3);
+        assertEquals(3, spans.size());
 
-        SpanData internal = getSpanByKindAndParentId(spans, INTERNAL, "0000000000000000");
+        final SpanData httpClient = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
+        final SpanData httpServer = getSpanByKindAndParentId(spans, SERVER, httpClient.getSpanId());
+
+        SpanData internal = getSpanByKindAndParentId(spans, INTERNAL, httpServer.getSpanId());
         assertEquals("span.internal", internal.getName());
         assertEquals("value", internal.getAttributes().get(stringKey("grpc.internal")));
     }

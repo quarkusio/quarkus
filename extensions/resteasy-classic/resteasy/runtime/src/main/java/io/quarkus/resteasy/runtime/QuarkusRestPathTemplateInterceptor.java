@@ -12,6 +12,8 @@ import jakarta.interceptor.InvocationContext;
 
 import io.quarkus.arc.ArcInvocationContext;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.smallrye.common.vertx.VertxContext;
+import io.vertx.core.internal.ContextInternal;
 import io.vertx.core.internal.http.HttpServerRequestInternal;
 import io.vertx.ext.web.RoutingContext;
 
@@ -33,8 +35,8 @@ public class QuarkusRestPathTemplateInterceptor {
             // just leave routingContext as null
         }
         if ((annotation != null) && (routingContext != null)) {
-            ((HttpServerRequestInternal) request.getCurrent().request()).context().putLocal("UrlPathTemplate",
-                    annotation.value());
+            ContextInternal ctxt = ((HttpServerRequestInternal) request.getCurrent().request()).context();
+            VertxContext.localContextData(ctxt).put("UrlPathTemplate", annotation.value());
         }
         return context.proceed();
     }

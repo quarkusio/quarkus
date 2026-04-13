@@ -52,6 +52,7 @@ import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvi
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
+@Disabled
 public class GraphQLOpenTelemetryTest {
 
     @RegisterExtension

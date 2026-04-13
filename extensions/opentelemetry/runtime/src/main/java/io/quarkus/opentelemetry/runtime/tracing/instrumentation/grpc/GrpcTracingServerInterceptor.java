@@ -4,7 +4,6 @@ import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INST
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.Collections;
 
 import jakarta.inject.Singleton;
 
@@ -18,16 +17,18 @@ import io.grpc.Status;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
-import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.instrumentation.api.incubator.semconv.rpc.RpcServerAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
+import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
 import io.opentelemetry.instrumentation.api.semconv.network.NetworkAttributesExtractor;
 import io.opentelemetry.instrumentation.api.semconv.network.NetworkAttributesGetter;
 import io.opentelemetry.instrumentation.api.semconv.network.ServerAttributesExtractor;
 import io.opentelemetry.instrumentation.api.semconv.network.ServerAttributesGetter;
 import io.quarkus.grpc.GlobalInterceptor;
+import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
+import io.vertx.core.Vertx;
 
 @Singleton
 @GlobalInterceptor
@@ -50,7 +51,7 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
                 .addAttributesExtractor(new GrpcStatusCodeExtractor())
                 .setSpanStatusExtractor(new GrpcSpanStatusExtractor());
 
-        this.instrumenter = builder.buildServerInstrumenter(new GrpcTextMapGetter());
+        this.instrumenter = builder.buildInstrumenter(SpanKindExtractor.alwaysServer());
     }
 
     @Override
@@ -64,6 +65,7 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
         if (shouldStart) {
             Context spanContext = instrumenter.start(parentContext, grpcRequest);
             Scope scope = spanContext.makeCurrent();
+            QuarkusContextStorage.setContextOverride(Vertx.currentContext(), spanContext);
             TracingServerCall<ReqT, RespT> tracingServerCall = new TracingServerCall<>(call, spanContext, scope, grpcRequest);
             return new TracingServerCallListener<>(next.startCall(tracingServerCall, headers), spanContext, scope, grpcRequest);
         }
@@ -99,22 +101,6 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
                 return (InetSocketAddress) address;
             }
             return null;
-        }
-    }
-
-    private static class GrpcTextMapGetter implements TextMapGetter<GrpcRequest> {
-        @Override
-        public Iterable<String> keys(final GrpcRequest carrier) {
-            return carrier.getMetadata() != null ? carrier.getMetadata().keys() : Collections.emptySet();
-        }
-
-        @Override
-        public String get(final GrpcRequest carrier, final String key) {
-            if (carrier != null && carrier.getMetadata() != null) {
-                return carrier.getMetadata().get(Metadata.Key.of(key, Metadata.ASCII_STRING_MARSHALLER));
-            } else {
-                return null;
-            }
         }
     }
 
@@ -210,11 +196,13 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
                 super.close(status, trailers);
             } catch (Exception e) {
                 try (scope) {
+                    QuarkusContextStorage.clearContextOverride(Vertx.currentContext());
                     instrumenter.end(spanContext, grpcRequest, null, e);
                 }
                 throw e;
             }
             try (scope) {
+                QuarkusContextStorage.clearContextOverride(Vertx.currentContext());
                 instrumenter.end(spanContext, grpcRequest, status, status.getCause());
             }
         }

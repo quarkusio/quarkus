@@ -1,5 +1,6 @@
 package io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx;
 
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.net.SocketAddress;
@@ -40,7 +41,8 @@ public class OpenTelemetryVertxMetricsFactory implements VertxMetricsFactory {
         @Override
         public void requestRouted(final MetricRequest requestMetric, final String route) {
             if (route != null) {
-                requestMetric.getContext().ifPresent(context -> context.putLocal("VertxRoute", route));
+                requestMetric.getContext()
+                        .ifPresent(context -> context.getLocal(VertxContext.DATA_MAP_LOCAL).put("VertxRoute", route));
             }
         }
     }

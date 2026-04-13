@@ -35,8 +35,7 @@ import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.http.impl.HttpClientBuilderImpl;
-import io.vertx.core.impl.VertxInternal;
+import io.vertx.core.http.PoolOptions;
 import io.vertx.core.tracing.TracingPolicy;
 
 public final class VertxHttpSender implements HttpSender {
@@ -79,9 +78,9 @@ public final class VertxHttpSender implements HttpSender {
                 .setDefaultPort(getPort(baseUri))
                 .setTracingPolicy(TracingPolicy.IGNORE); // needed to avoid tracing the calls from this http client
         clientOptionsCustomizer.accept(httpClientOptions);
-        this.client = (new HttpClientBuilderImpl((VertxInternal) vertx))
+        this.client = vertx.httpClientBuilder()
                 .with(httpClientOptions)
-                .with(httpClientOptions.getPoolOptions())
+                .with(new PoolOptions()) // TODO Do we want to customize pool options?
                 .withConnectHandler(connection -> {
                     connection.exceptionHandler(thw -> {
                         throttlingLogger.log(Level.WARNING, "Connection handler exception: ", thw);
@@ -245,13 +244,12 @@ public final class VertxHttpSender implements HttpSender {
         @Override
         public void handle(HttpClientRequest request) {
 
-            HttpClientRequest clientRequest = request.response(new Handler<>() {
+            request.response().onComplete(new Handler<>() {
                 @Override
                 public void handle(AsyncResult<HttpClientResponse> callResult) {
                     if (callResult.succeeded()) {
                         HttpClientResponse clientResponse = callResult.result();
-                        Throwable cause = callResult.cause();
-                        clientResponse.body(new Handler<>() {
+                        clientResponse.body().onComplete(new Handler<>() {
                             @Override
                             public void handle(AsyncResult<Buffer> bodyResult) {
                                 if (bodyResult.succeeded()) {
@@ -306,13 +304,13 @@ public final class VertxHttpSender implements HttpSender {
                         }
                     }
                 }
-            })
-                    .putHeader("Content-Type", contentType);
+            });
+            request.putHeader("Content-Type", contentType);
 
             Buffer buffer = Buffer.buffer(requestBodyWriter.getContentLength());
             OutputStream os = new BufferOutputStream(buffer);
             if (compressionEnabled) {
-                clientRequest.putHeader("Content-Encoding", "gzip");
+                request.putHeader("Content-Encoding", "gzip");
                 try (var gzos = new GZIPOutputStream(os)) {
                     requestBodyWriter.writeMessage(gzos);
                 } catch (IOException e) {
@@ -328,11 +326,11 @@ public final class VertxHttpSender implements HttpSender {
 
             if (!headers.isEmpty()) {
                 for (var entry : headers.entrySet()) {
-                    clientRequest.putHeader(entry.getKey(), entry.getValue());
+                    request.putHeader(entry.getKey(), entry.getValue());
                 }
             }
 
-            clientRequest.send(buffer);
+            request.send(buffer);
         }
 
         public ClientRequestSuccessHandler newAttempt() {

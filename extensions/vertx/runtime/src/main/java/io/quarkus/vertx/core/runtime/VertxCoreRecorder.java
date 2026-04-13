@@ -592,15 +592,17 @@ public class VertxCoreRecorder {
                     // The CDI contexts must not be propagated
                     // First test if VertxCurrentContextFactory is actually used
                     if (ignoredKeys != null) {
-                        // TODO We must also propagate the other context locals, but we cannot list them.
                         ConcurrentMap<String, Object> local = VertxContext.localContextData(vertxContext);
                         if (containsIgnoredKey(ignoredKeys, local)) {
-                            // Duplicate the context, copy the data, remove the request context
+                            ConcurrentHashMap<String, Object> mdcData = vertxContext.getLocal(VertxMDC.MDC_LOCAL);
                             vertxContext = (ContextInternal) vertxContext.duplicate();
                             ConcurrentHashMap<String, Object> data = VertxContext.localContextData(vertxContext);
                             data.putAll(local);
                             ignoredKeys.forEach(data::remove);
                             VertxContextSafetyToggle.setContextSafe(vertxContext, true);
+                            if (mdcData != null && !mdcData.isEmpty()) {
+                                vertxContext.putLocal(VertxMDC.MDC_LOCAL, new ConcurrentHashMap<>(mdcData));
+                            }
                         }
                     }
                     vertxContext.beginDispatch();

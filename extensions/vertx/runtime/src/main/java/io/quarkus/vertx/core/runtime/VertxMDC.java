@@ -350,10 +350,9 @@ public enum VertxMDC implements MDCProvider {
 
         final Map<String, Object> carryover = new HashMap<>();
         final boolean hasDiscardKeys = discardMdcKeys == null || discardMdcKeys.isEmpty();
-        for (Map.Entry<String, Object> entry : VertxMDC.INSTANCE.getEntrySet()) {
+        for (Map.Entry<String, Object> entry : contextualDataMap(vertxContext).entrySet()) {
             final String key = entry.getKey();
             final Object value = entry.getValue();
-            // Not taking chances with null values
             if (key != null && value != null && (hasDiscardKeys || !discardMdcKeys.contains(key))) {
                 carryover.put(key, value);
             }

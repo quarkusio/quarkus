@@ -20,9 +20,7 @@ import io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx.SqlClientI
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.annotations.RuntimeInit;
-import io.vertx.core.VertxOptions;
-import io.vertx.core.metrics.MetricsOptions;
-import io.vertx.core.tracing.TracingOptions;
+import io.vertx.core.internal.VertxBootstrap;
 
 @Recorder
 public class InstrumentationRecorder {
@@ -41,14 +39,12 @@ public class InstrumentationRecorder {
 
     /* RUNTIME INIT */
     @RuntimeInit
-    public Consumer<VertxOptions> getVertxTracingOptions() {
+    public Consumer<VertxBootstrap> processVertxBootstrap() {
         if (runtimeConfig.getValue().sdkDisabled()) {
-            return vertxOptions -> {
+            return bootstrap -> {
             };
         }
-        TracingOptions tracingOptions = new TracingOptions()
-                .setFactory(FACTORY);
-        return vertxOptions -> vertxOptions.setTracingOptions(tracingOptions);
+        return bootstrap -> bootstrap.tracerFactory(FACTORY);
     }
 
     /* RUNTIME INIT */
@@ -78,19 +74,13 @@ public class InstrumentationRecorder {
     }
 
     /* STATIC INIT */
-    public Consumer<VertxOptions> getVertxHttpMetricsOptions() {
-        MetricsOptions metricsOptions = new MetricsOptions()
-                .setEnabled(true)
-                .setFactory(new OpenTelemetryVertxHttpMetricsFactory());
-        return vertxOptions -> vertxOptions.setMetricsOptions(metricsOptions);
+    public Consumer<VertxBootstrap> getVertxHttpMetrics() {
+        return bootstrap -> bootstrap.metricsFactory(new OpenTelemetryVertxHttpMetricsFactory());
     }
 
     /* STATIC INIT */
-    public Consumer<VertxOptions> getVertxMetricsOptions() {
-        MetricsOptions metricsOptions = new MetricsOptions()
-                .setEnabled(true)
-                .setFactory(new OpenTelemetryVertxMetricsFactory());
-        return vertxOptions -> vertxOptions.setMetricsOptions(metricsOptions);
+    public Consumer<VertxBootstrap> getVertxMetricsOptions() {
+        return bootstrap -> bootstrap.metricsFactory(new OpenTelemetryVertxMetricsFactory());
     }
 
 }

@@ -6,8 +6,6 @@ import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PEER_ADDRESS;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PEER_PORT;
-import static io.opentelemetry.semconv.ServerAttributes.SERVER_ADDRESS;
-import static io.opentelemetry.semconv.ServerAttributes.SERVER_PORT;
 import static io.opentelemetry.semconv.incubating.RpcIncubatingAttributes.RPC_GRPC_STATUS_CODE;
 import static io.opentelemetry.semconv.incubating.RpcIncubatingAttributes.RPC_METHOD;
 import static io.opentelemetry.semconv.incubating.RpcIncubatingAttributes.RPC_SERVICE;
@@ -65,6 +63,7 @@ import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporte
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.vertx.RunOnVertxContext;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
 
@@ -90,9 +89,9 @@ public class GrpcOpenTelemetryTest {
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider"))
             .withConfigurationResource("application-default.properties")
             .overrideConfigKey("quarkus.grpc.clients.greeter.host", "localhost")
-            .overrideConfigKey("quarkus.grpc.clients.greeter.port", "9001")
+            .overrideConfigKey("quarkus.grpc.clients.greeter.port", "8081")
             .overrideConfigKey("quarkus.grpc.clients.streaming.host", "localhost")
-            .overrideConfigKey("quarkus.grpc.clients.streaming.port", "9001");
+            .overrideConfigKey("quarkus.grpc.clients.streaming.port", "8081");
 
     @Inject
     TestSpanExporter spanExporter;
@@ -109,6 +108,7 @@ public class GrpcOpenTelemetryTest {
     }
 
     @Test
+    @RunOnVertxContext(duplicateContext = true, runOnEventLoop = false)
     void grpc() {
         String response = greeterStub.sayHello(
                 HelloRequest.newBuilder().setName("Naruto").build())
@@ -116,36 +116,45 @@ public class GrpcOpenTelemetryTest {
                 .await().atMost(Duration.ofSeconds(5));
         assertEquals("Hello Naruto", response);
 
-        List<SpanData> spans = spanExporter.getFinishedSpanItems(3);
-        assertEquals(3, spans.size());
+        List<SpanData> spans = spanExporter.getFinishedSpanItems(5);
+        assertEquals(5, spans.size());
 
-        final SpanData client = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
-        assertEquals("helloworld.Greeter/SayHello", client.getName());
-        assertEquals("grpc", client.getAttributes().get(RPC_SYSTEM));
-        assertEquals("helloworld.Greeter", client.getAttributes().get(RPC_SERVICE));
-        assertEquals("SayHello", client.getAttributes().get(RPC_METHOD));
-        assertEquals(Status.Code.OK.value(), client.getAttributes().get(RPC_GRPC_STATUS_CODE));
+        final SpanData grpcClient = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000",
+                span -> "grpc".equals(span.getAttributes().get(RPC_SYSTEM)));
+        assertEquals("helloworld.Greeter/SayHello", grpcClient.getName());
+        assertEquals("grpc", grpcClient.getAttributes().get(RPC_SYSTEM));
+        assertEquals("helloworld.Greeter", grpcClient.getAttributes().get(RPC_SERVICE));
+        assertEquals("SayHello", grpcClient.getAttributes().get(RPC_METHOD));
+        assertEquals(Status.Code.OK.value(), grpcClient.getAttributes().get(RPC_GRPC_STATUS_CODE));
 
-        final SpanData server = getSpanByKindAndParentId(spans, SERVER, client.getSpanId());
-        assertEquals("helloworld.Greeter/SayHello", server.getName());
-        assertEquals("grpc", server.getAttributes().get(RPC_SYSTEM));
-        assertEquals("helloworld.Greeter", server.getAttributes().get(RPC_SERVICE));
-        assertEquals("SayHello", server.getAttributes().get(RPC_METHOD));
-        assertEquals(Status.Code.OK.value(), server.getAttributes().get(RPC_GRPC_STATUS_CODE));
-        assertNotNull(server.getAttributes().get(SERVER_PORT));
-        assertNotNull(server.getAttributes().get(SERVER_ADDRESS));
-        assertNotNull(server.getAttributes().get(NETWORK_PEER_PORT));
-        assertNotNull(server.getAttributes().get(NETWORK_PEER_ADDRESS));
+        final SpanData httpClient = getSpanByKindAndParentId(spans, CLIENT, grpcClient.getSpanId(),
+                span -> span.getAttributes().get(RPC_SYSTEM) == null);
 
-        final SpanData internal = getSpanByKindAndParentId(spans, INTERNAL, server.getSpanId());
+        final SpanData httpServer = getSpanByKindAndParentId(spans, SERVER, httpClient.getSpanId(),
+                span -> span.getAttributes().get(RPC_SYSTEM) == null);
+
+        final SpanData grpcServer = getSpanByKindAndParentId(spans, SERVER, httpServer.getSpanId(),
+                span -> "grpc".equals(span.getAttributes().get(RPC_SYSTEM)));
+        assertEquals("helloworld.Greeter/SayHello", grpcServer.getName());
+        assertEquals("grpc", grpcServer.getAttributes().get(RPC_SYSTEM));
+        assertEquals("helloworld.Greeter", grpcServer.getAttributes().get(RPC_SERVICE));
+        assertEquals("SayHello", grpcServer.getAttributes().get(RPC_METHOD));
+        assertEquals(Status.Code.OK.value(), grpcServer.getAttributes().get(RPC_GRPC_STATUS_CODE));
+        assertNotNull(grpcServer.getAttributes().get(NETWORK_PEER_PORT));
+        assertNotNull(grpcServer.getAttributes().get(NETWORK_PEER_ADDRESS));
+
+        final SpanData internal = getSpanByKindAndParentId(spans, INTERNAL, grpcServer.getSpanId());
         assertEquals("span.internal", internal.getName());
         assertEquals("value", internal.getAttributes().get(stringKey("grpc.internal")));
 
-        assertEquals(internal.getTraceId(), server.getTraceId());
-        assertEquals(server.getTraceId(), client.getTraceId());
+        assertEquals(grpcClient.getTraceId(), httpClient.getTraceId());
+        assertEquals(httpClient.getTraceId(), httpServer.getTraceId());
+        assertEquals(httpServer.getTraceId(), grpcServer.getTraceId());
+        assertEquals(grpcServer.getTraceId(), internal.getTraceId());
     }
 
     @Test
+    @RunOnVertxContext(duplicateContext = true, runOnEventLoop = false)
     void error() {
         try {
             greeterStub.sayHello(HelloRequest.newBuilder().setName("error").build())
@@ -157,44 +166,57 @@ public class GrpcOpenTelemetryTest {
             assertTrue(true);
         }
 
-        List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
-        assertEquals(2, spans.size());
-
-        final SpanData client = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
-        assertEquals("helloworld.Greeter/SayHello", client.getName());
-        assertEquals("grpc", client.getAttributes().get(RPC_SYSTEM));
-        assertEquals("helloworld.Greeter", client.getAttributes().get(RPC_SERVICE));
-        assertEquals("SayHello", client.getAttributes().get(RPC_METHOD));
-
-        final SpanData server = getSpanByKindAndParentId(spans, SERVER, client.getSpanId());
-        assertEquals("helloworld.Greeter/SayHello", server.getName());
-        assertEquals("grpc", server.getAttributes().get(RPC_SYSTEM));
-        assertEquals("helloworld.Greeter", server.getAttributes().get(RPC_SERVICE));
-        assertEquals("SayHello", server.getAttributes().get(RPC_METHOD));
-        assertEquals(Status.Code.UNKNOWN.value(), server.getAttributes().get(RPC_GRPC_STATUS_CODE));
-        assertNotNull(server.getAttributes().get(SERVER_PORT));
-        assertNotNull(server.getAttributes().get(SERVER_ADDRESS));
-        assertEquals(Status.Code.UNKNOWN.value(), server.getAttributes().get(RPC_GRPC_STATUS_CODE));
-
-        assertEquals(server.getTraceId(), client.getTraceId());
-    }
-
-    @Test
-    void withCdi() {
-        assertEquals("Hello Naruto", helloBean.hello("Naruto"));
-
         List<SpanData> spans = spanExporter.getFinishedSpanItems(4);
         assertEquals(4, spans.size());
 
-        final SpanData first = getSpanByKindAndParentId(spans, INTERNAL, "0000000000000000");
-        final SpanData second = getSpanByKindAndParentId(spans, CLIENT, first.getSpanId());
-        final SpanData third = getSpanByKindAndParentId(spans, SERVER, second.getSpanId());
-        final SpanData fourth = getSpanByKindAndParentId(spans, INTERNAL, third.getSpanId());
+        final SpanData grpcClient = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000",
+                span -> "grpc".equals(span.getAttributes().get(RPC_SYSTEM)));
+        assertEquals("helloworld.Greeter/SayHello", grpcClient.getName());
+        assertEquals("grpc", grpcClient.getAttributes().get(RPC_SYSTEM));
+        assertEquals("helloworld.Greeter", grpcClient.getAttributes().get(RPC_SERVICE));
+        assertEquals("SayHello", grpcClient.getAttributes().get(RPC_METHOD));
 
-        assertThat(first.getTraceId()).isIn(second.getTraceId(), third.getTraceId(), fourth.getTraceId());
+        final SpanData httpClient = getSpanByKindAndParentId(spans, CLIENT, grpcClient.getSpanId(),
+                span -> span.getAttributes().get(RPC_SYSTEM) == null);
+
+        final SpanData httpServer = getSpanByKindAndParentId(spans, SERVER, httpClient.getSpanId(),
+                span -> span.getAttributes().get(RPC_SYSTEM) == null);
+
+        final SpanData grpcServer = getSpanByKindAndParentId(spans, SERVER, httpServer.getSpanId(),
+                span -> "grpc".equals(span.getAttributes().get(RPC_SYSTEM)));
+        assertEquals("helloworld.Greeter/SayHello", grpcServer.getName());
+        assertEquals("grpc", grpcServer.getAttributes().get(RPC_SYSTEM));
+        assertEquals("helloworld.Greeter", grpcServer.getAttributes().get(RPC_SERVICE));
+        assertEquals("SayHello", grpcServer.getAttributes().get(RPC_METHOD));
+        assertEquals(Status.Code.UNKNOWN.value(), grpcServer.getAttributes().get(RPC_GRPC_STATUS_CODE));
+        assertEquals(grpcClient.getTraceId(), grpcServer.getTraceId());
     }
 
     @Test
+    @RunOnVertxContext(duplicateContext = true, runOnEventLoop = false)
+    void withCdi() {
+        assertEquals("Hello Naruto", helloBean.hello("Naruto"));
+
+        List<SpanData> spans = spanExporter.getFinishedSpanItems(6);
+        assertEquals(6, spans.size());
+
+        final SpanData first = getSpanByKindAndParentId(spans, INTERNAL, "0000000000000000");
+        final SpanData grpcClient = getSpanByKindAndParentId(spans, CLIENT, first.getSpanId(),
+                span -> "grpc".equals(span.getAttributes().get(RPC_SYSTEM)));
+        final SpanData httpClient = getSpanByKindAndParentId(spans, CLIENT, grpcClient.getSpanId(),
+                span -> span.getAttributes().get(RPC_SYSTEM) == null);
+        final SpanData httpServer = getSpanByKindAndParentId(spans, SERVER, httpClient.getSpanId(),
+                span -> span.getAttributes().get(RPC_SYSTEM) == null);
+        final SpanData grpcServer = getSpanByKindAndParentId(spans, SERVER, httpServer.getSpanId(),
+                span -> "grpc".equals(span.getAttributes().get(RPC_SYSTEM)));
+        final SpanData internal = getSpanByKindAndParentId(spans, INTERNAL, grpcServer.getSpanId());
+
+        assertThat(first.getTraceId()).isIn(grpcClient.getTraceId(), httpClient.getTraceId(),
+                httpServer.getTraceId(), grpcServer.getTraceId(), internal.getTraceId());
+    }
+
+    @Test
+    @RunOnVertxContext(duplicateContext = true, runOnEventLoop = false)
     void streaming() {
         Multi<Item> request = Multi.createFrom().items(item("Goku"), item("Vegeta"), item("Piccolo"), item("Beerus"),
                 item("Whis"));
@@ -207,30 +229,37 @@ public class GrpcOpenTelemetryTest {
         assertTrue(items.contains("Hello Beerus"));
         assertTrue(items.contains("Hello Whis"));
 
-        List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
-        assertEquals(2, spans.size());
+        List<SpanData> spans = spanExporter.getFinishedSpanItems(4);
+        assertEquals(4, spans.size());
 
-        final SpanData client = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
-        assertEquals("streaming.Streaming/Pipe", client.getName());
-        assertEquals("grpc", client.getAttributes().get(RPC_SYSTEM));
-        assertEquals("streaming.Streaming", client.getAttributes().get(RPC_SERVICE));
-        assertEquals("Pipe", client.getAttributes().get(RPC_METHOD));
-        assertEquals(Status.Code.OK.value(), client.getAttributes().get(RPC_GRPC_STATUS_CODE));
+        final SpanData grpcClient = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000",
+                span -> "grpc".equals(span.getAttributes().get(RPC_SYSTEM)));
+        assertEquals("streaming.Streaming/Pipe", grpcClient.getName());
+        assertEquals("grpc", grpcClient.getAttributes().get(RPC_SYSTEM));
+        assertEquals("streaming.Streaming", grpcClient.getAttributes().get(RPC_SERVICE));
+        assertEquals("Pipe", grpcClient.getAttributes().get(RPC_METHOD));
+        assertEquals(Status.Code.OK.value(), grpcClient.getAttributes().get(RPC_GRPC_STATUS_CODE));
 
-        final SpanData server = getSpanByKindAndParentId(spans, SERVER, client.getSpanId());
-        assertEquals("streaming.Streaming/Pipe", server.getName());
-        assertEquals("grpc", server.getAttributes().get(RPC_SYSTEM));
-        assertEquals("streaming.Streaming", server.getAttributes().get(RPC_SERVICE));
-        assertEquals("Pipe", server.getAttributes().get(RPC_METHOD));
-        assertEquals(Status.Code.OK.value(), server.getAttributes().get(RPC_GRPC_STATUS_CODE));
-        assertNotNull(server.getAttributes().get(SERVER_PORT));
-        assertNotNull(server.getAttributes().get(SERVER_ADDRESS));
-        assertEquals("true", server.getAttributes().get(stringKey("grpc.service.propagated")));
+        final SpanData httpClient = getSpanByKindAndParentId(spans, CLIENT, grpcClient.getSpanId(),
+                span -> span.getAttributes().get(RPC_SYSTEM) == null);
 
-        assertEquals(server.getTraceId(), client.getTraceId());
+        final SpanData httpServer = getSpanByKindAndParentId(spans, SERVER, httpClient.getSpanId(),
+                span -> span.getAttributes().get(RPC_SYSTEM) == null);
+
+        final SpanData grpcServer = getSpanByKindAndParentId(spans, SERVER, httpServer.getSpanId(),
+                span -> "grpc".equals(span.getAttributes().get(RPC_SYSTEM)));
+        assertEquals("streaming.Streaming/Pipe", grpcServer.getName());
+        assertEquals("grpc", grpcServer.getAttributes().get(RPC_SYSTEM));
+        assertEquals("streaming.Streaming", grpcServer.getAttributes().get(RPC_SERVICE));
+        assertEquals("Pipe", grpcServer.getAttributes().get(RPC_METHOD));
+        assertEquals(Status.Code.OK.value(), grpcServer.getAttributes().get(RPC_GRPC_STATUS_CODE));
+        assertEquals("true", grpcServer.getAttributes().get(stringKey("grpc.service.propagated")));
+
+        assertEquals(grpcClient.getTraceId(), grpcServer.getTraceId());
     }
 
     @Test
+    @RunOnVertxContext(duplicateContext = true, runOnEventLoop = false)
     void streamingBlocking() {
         Multi<Item> request = Multi.createFrom().items(item("Goku"), item("Vegeta"), item("Piccolo"), item("Beerus"),
                 item("Whis"));
@@ -243,27 +272,33 @@ public class GrpcOpenTelemetryTest {
         assertTrue(items.contains("Hello Beerus"));
         assertTrue(items.contains("Hello Whis"));
 
-        List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
-        assertEquals(2, spans.size());
+        List<SpanData> spans = spanExporter.getFinishedSpanItems(4);
+        assertEquals(4, spans.size());
 
-        final SpanData client = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
-        assertEquals("streaming.Streaming/PipeBlocking", client.getName());
-        assertEquals("grpc", client.getAttributes().get(RPC_SYSTEM));
-        assertEquals("streaming.Streaming", client.getAttributes().get(RPC_SERVICE));
-        assertEquals("PipeBlocking", client.getAttributes().get(RPC_METHOD));
-        assertEquals(Status.Code.OK.value(), client.getAttributes().get(RPC_GRPC_STATUS_CODE));
+        final SpanData grpcClient = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000",
+                span -> "grpc".equals(span.getAttributes().get(RPC_SYSTEM)));
+        assertEquals("streaming.Streaming/PipeBlocking", grpcClient.getName());
+        assertEquals("grpc", grpcClient.getAttributes().get(RPC_SYSTEM));
+        assertEquals("streaming.Streaming", grpcClient.getAttributes().get(RPC_SERVICE));
+        assertEquals("PipeBlocking", grpcClient.getAttributes().get(RPC_METHOD));
+        assertEquals(Status.Code.OK.value(), grpcClient.getAttributes().get(RPC_GRPC_STATUS_CODE));
 
-        final SpanData server = getSpanByKindAndParentId(spans, SERVER, client.getSpanId());
-        assertEquals("streaming.Streaming/PipeBlocking", server.getName());
-        assertEquals("grpc", server.getAttributes().get(RPC_SYSTEM));
-        assertEquals("streaming.Streaming", server.getAttributes().get(RPC_SERVICE));
-        assertEquals("PipeBlocking", server.getAttributes().get(RPC_METHOD));
-        assertEquals(Status.Code.OK.value(), server.getAttributes().get(RPC_GRPC_STATUS_CODE));
-        assertNotNull(server.getAttributes().get(SERVER_PORT));
-        assertNotNull(server.getAttributes().get(SERVER_ADDRESS));
-        assertEquals("true", server.getAttributes().get(stringKey("grpc.service.propagated.blocking")));
+        final SpanData httpClient = getSpanByKindAndParentId(spans, CLIENT, grpcClient.getSpanId(),
+                span -> span.getAttributes().get(RPC_SYSTEM) == null);
 
-        assertEquals(server.getTraceId(), client.getTraceId());
+        final SpanData httpServer = getSpanByKindAndParentId(spans, SERVER, httpClient.getSpanId(),
+                span -> span.getAttributes().get(RPC_SYSTEM) == null);
+
+        final SpanData grpcServer = getSpanByKindAndParentId(spans, SERVER, httpServer.getSpanId(),
+                span -> "grpc".equals(span.getAttributes().get(RPC_SYSTEM)));
+        assertEquals("streaming.Streaming/PipeBlocking", grpcServer.getName());
+        assertEquals("grpc", grpcServer.getAttributes().get(RPC_SYSTEM));
+        assertEquals("streaming.Streaming", grpcServer.getAttributes().get(RPC_SERVICE));
+        assertEquals("PipeBlocking", grpcServer.getAttributes().get(RPC_METHOD));
+        assertEquals(Status.Code.OK.value(), grpcServer.getAttributes().get(RPC_GRPC_STATUS_CODE));
+        assertEquals("true", grpcServer.getAttributes().get(stringKey("grpc.service.propagated.blocking")));
+
+        assertEquals(grpcClient.getTraceId(), grpcServer.getTraceId());
     }
 
     @GrpcService

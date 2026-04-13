@@ -12,6 +12,7 @@ import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.context.Scope;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Vertx;
+import io.vertx.core.spi.context.storage.ContextLocal;
 
 /**
  * Bridges the OpenTelemetry ContextStorage with the Vert.x Context. The default OpenTelemetry ContextStorage (based in
@@ -24,6 +25,7 @@ public enum QuarkusContextStorage implements ContextStorage {
 
     private static final Logger log = Logger.getLogger(QuarkusContextStorage.class);
     private static final String OTEL_CONTEXT = QuarkusContextStorage.class.getName() + ".otelContext";
+    private static final ContextLocal<Context> CONTEXT_OVERRIDE = ContextLocal.registerLocal(Context.class);
 
     private static final ContextStorage FALLBACK_CONTEXT_STORAGE = MDCEnabledContextStorage.INSTANCE;
     static Vertx vertx;
@@ -70,7 +72,7 @@ public enum QuarkusContextStorage implements ContextStorage {
             log.debugv("Setting Otel context: {0}", OpenTelemetryUtil.getSpanData(otelToAttach));
         }
 
-        vertxContext.putLocal(OTEL_CONTEXT, otelToAttach);
+        VertxContext.localContextData(vertxContext).put(OTEL_CONTEXT, otelToAttach);
         OpenTelemetryUtil.setMDCData(otelToAttach, vertxContext);
 
         return new Scope() {
@@ -84,7 +86,7 @@ public enum QuarkusContextStorage implements ContextStorage {
                     // Different references can contain the same span data.
                     // Duplicated contexts can be duplicated.
                     Map<String, String> spanDataBefore = OpenTelemetryUtil.getSpanData(otelBefore);
-                    if (spanDataBefore != null && !spanDataBefore.isEmpty()) {
+                    if (!spanDataBefore.isEmpty()) {
                         log.debug(
                                 "Context in storage not the expected context, Scope.close was not called correctly. Details:" +
                                         " OTel context otelBefore: ref: " + System.identityHashCode(otelBefore) +
@@ -99,7 +101,7 @@ public enum QuarkusContextStorage implements ContextStorage {
                         log.debugv("Closing Otel context: {0}", OpenTelemetryUtil.getSpanData(otelToAttach));
                     }
                     OpenTelemetryUtil.clearMDCData(vertxContext);
-                    vertxContext.removeLocal(OTEL_CONTEXT);
+                    VertxContext.localContextData(vertxContext).remove(OTEL_CONTEXT);
                 } else {
                     if (log.isDebugEnabled()) {
                         log.debugv("Closing Otel context: {0} and restoring previous OTel context: {1}",
@@ -107,7 +109,8 @@ public enum QuarkusContextStorage implements ContextStorage {
                                 OpenTelemetryUtil.getSpanData(otelBeforeAttach));
                     }
                     OpenTelemetryUtil.setMDCData(otelBeforeAttach, vertxContext);
-                    vertxContext.putLocal(OTEL_CONTEXT, otelBeforeAttach);
+                    VertxContext.localContextData(vertxContext).put(OTEL_CONTEXT,
+                            otelBeforeAttach);
                 }
             }
 
@@ -130,7 +133,11 @@ public enum QuarkusContextStorage implements ContextStorage {
     public Context current() {
         io.vertx.core.Context current = getVertxContext();
         if (current != null) {
-            return current.getLocal(OTEL_CONTEXT);
+            Context override = current.getLocal(CONTEXT_OVERRIDE);
+            if (override != null) {
+                return override;
+            }
+            return (Context) VertxContext.localContextData(current).get(OTEL_CONTEXT);
         } else {
             return FALLBACK_CONTEXT_STORAGE.current();
         }
@@ -138,12 +145,40 @@ public enum QuarkusContextStorage implements ContextStorage {
 
     /**
      * Gets the OpenTelemetry Context in a Vert.x Context. The Vert.x Context has to be a duplicate context.
+     * Checks for a context override first (set by gRPC interceptors to survive SmallRye context propagation).
      *
      * @param vertxContext a Vert.x Context.
      * @return the OpenTelemetry Context if exists in the Vert.x Context or null.
      */
     public static Context getOtelContext(io.vertx.core.Context vertxContext) {
-        return vertxContext != null && isDuplicatedContext(vertxContext) ? vertxContext.getLocal(OTEL_CONTEXT) : null;
+        if (vertxContext == null || !isDuplicatedContext(vertxContext)) {
+            return null;
+        }
+        Context override = vertxContext.getLocal(CONTEXT_OVERRIDE);
+        if (override != null) {
+            return override;
+        }
+        return (Context) VertxContext.localContextData(vertxContext).get(OTEL_CONTEXT);
+    }
+
+    /**
+     * Sets an OTel context override on a Vert.x context. This override takes precedence over the normal
+     * OTEL_CONTEXT and survives SmallRye MicroProfile Context Propagation save/restore cycles.
+     * Used by gRPC interceptors whose makeCurrent() scopes get unwound by context propagation.
+     */
+    public static void setContextOverride(io.vertx.core.Context vertxContext, Context otelContext) {
+        if (vertxContext != null && isDuplicatedContext(vertxContext)) {
+            vertxContext.putLocal(CONTEXT_OVERRIDE, otelContext);
+        }
+    }
+
+    /**
+     * Clears the OTel context override from a Vert.x context.
+     */
+    public static void clearContextOverride(io.vertx.core.Context vertxContext) {
+        if (vertxContext != null) {
+            vertxContext.removeLocal(CONTEXT_OVERRIDE);
+        }
     }
 
     /**

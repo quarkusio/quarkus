@@ -124,7 +124,7 @@ public class CustomLauncherInterceptor
             // On the other hand, if the QuarkusTestExtension is registered by a service loader mechanism, it gets loaded after the discovery phase finishes,
             // so needs the TCCL to still be the facade classloader.
             // This compromise does mean you can't use the service loader mechanism to avoid having to use `@QuarkusTest` and also use Quarkus config in your own test extensions, but that combination is very unlikely.
-            if (!facadeLoader.isServiceLoaderMechanism()) {
+            if (facadeLoader != null && !facadeLoader.isServiceLoaderMechanism()) {
                 // Do not close the facade loader at this stage, because discovery finished may be called several times within a single run
                 // Ideally we would reset to what the TCCL was when we started discovery, but we can't,
                 // because the intercept method will have set something before the discovery start is triggered.

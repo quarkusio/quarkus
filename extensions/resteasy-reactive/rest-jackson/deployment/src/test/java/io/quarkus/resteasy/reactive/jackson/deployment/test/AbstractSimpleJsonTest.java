@@ -730,6 +730,33 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    public void testJsonAliasRecordEcho() {
+        // Test that @JsonAlias is respected when using the alias name
+        RestAssured
+                .with()
+                .body("{\"name\":\"John\",\"insurance_number\":\"INS-123\"}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/json-alias-record-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("John"))
+                .body("insuranceNumber", Matchers.is("INS-123"));
+
+        // Test that the original field name also still works
+        RestAssured
+                .with()
+                .body("{\"name\":\"Jane\",\"insuranceNumber\":\"INS-456\"}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/json-alias-record-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("Jane"))
+                .body("insuranceNumber", Matchers.is("INS-456"));
+    }
+
+    @Test
     public void testRecordWithEmptyConstructorEcho() {
         RestAssured
                 .with()

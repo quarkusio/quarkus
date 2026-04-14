@@ -26,6 +26,7 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -294,6 +295,7 @@ public abstract class JacksonCodeGenerator {
 
         final String fieldName;
         final String jsonName;
+        final String[] aliases;
         final Type fieldType;
 
         private final Map<String, AnnotationInstance> annotations = new HashMap<>();
@@ -321,6 +323,7 @@ public abstract class JacksonCodeGenerator {
             this.fieldType = fieldType();
             this.fieldName = fieldName();
             this.jsonName = jsonName(constructor);
+            this.aliases = jsonAliases();
         }
 
         FieldSpecs(MethodParameterInfo paramInfo) {
@@ -328,6 +331,7 @@ public abstract class JacksonCodeGenerator {
             this.fieldType = paramInfo.type();
             this.fieldName = paramInfo.name();
             this.jsonName = jsonName(null);
+            this.aliases = jsonAliases();
         }
 
         private void readAnnotations(AnnotationTarget target) {
@@ -346,6 +350,17 @@ public abstract class JacksonCodeGenerator {
                 return methodInfo.parameterType(0);
             }
             return methodInfo.returnType();
+        }
+
+        private String[] jsonAliases() {
+            AnnotationInstance jsonAlias = annotations.get(JsonAlias.class.getName());
+            if (jsonAlias != null) {
+                AnnotationValue value = jsonAlias.value();
+                if (value != null) {
+                    return value.asStringArray();
+                }
+            }
+            return new String[0];
         }
 
         private String jsonName(MethodInfo constructor) {
@@ -396,7 +411,8 @@ public abstract class JacksonCodeGenerator {
             if (ann.startsWith("com.fasterxml.jackson.")) {
                 return !ann.equals(JsonProperty.class.getName()) &&
                         !ann.equals(JsonIgnore.class.getName()) &&
-                        !ann.equals(JsonCreator.class.getName());
+                        !ann.equals(JsonCreator.class.getName()) &&
+                        !ann.equals(JsonAlias.class.getName());
             }
             return ann.startsWith("jakarta.persistence.");
         }

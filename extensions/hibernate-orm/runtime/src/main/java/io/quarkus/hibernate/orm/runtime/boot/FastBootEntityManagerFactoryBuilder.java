@@ -36,6 +36,7 @@ import io.quarkus.hibernate.orm.JsonFormat;
 import io.quarkus.hibernate.orm.XmlFormat;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
+import io.quarkus.hibernate.orm.runtime.SchemaToolingUtil;
 import io.quarkus.hibernate.orm.runtime.customized.BuiltinFormatMapperBehaviour;
 import io.quarkus.hibernate.orm.runtime.customized.JsonFormatterCustomizationCheck;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
@@ -58,6 +59,7 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
 
     protected final MultiTenancyStrategy multiTenancyStrategy;
     protected final boolean shouldApplySchemaMigration;
+    private final SchemaToolingUtil.PreparedImportScripts importScripts;
 
     public FastBootEntityManagerFactoryBuilder(
             QuarkusPersistenceUnitDescriptor puDescriptor,
@@ -65,7 +67,8 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
             StandardServiceRegistry standardServiceRegistry, RuntimeSettings runtimeSettings, Object validatorFactory,
             Object cdiBeanManager, MultiTenancyStrategy multiTenancyStrategy, boolean shouldApplySchemaMigration,
             BuiltinFormatMapperBehaviour builtinFormatMapperBehaviour,
-            JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck) {
+            JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck,
+            SchemaToolingUtil.PreparedImportScripts importScripts) {
         this.puDescriptor = puDescriptor;
         this.metadata = metadata;
         this.standardServiceRegistry = standardServiceRegistry;
@@ -76,6 +79,7 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         this.shouldApplySchemaMigration = shouldApplySchemaMigration;
         this.builtinFormatMapperBehaviour = builtinFormatMapperBehaviour;
         this.jsonFormatterCustomizationCheck = jsonFormatterCustomizationCheck;
+        this.importScripts = importScripts;
     }
 
     @Override
@@ -97,6 +101,8 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
                     metadata.getTypeConfiguration().getMetadataBuildingContext().getBootstrapContext());
         } catch (Exception e) {
             throw persistenceException("Unable to build Hibernate SessionFactory", e);
+        } finally {
+            closeImportScripts();
         }
     }
 
@@ -107,8 +113,16 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
 
     @Override
     public void generateSchema() {
-        throw new UnsupportedOperationException(
-                "This isn't used for schema generation - see SessionFactoryObserverForSchemaExport instead");
+        try {
+            throw new UnsupportedOperationException(
+                    "This isn't used for schema generation - see SessionFactoryObserverForSchemaExport instead");
+        } finally {
+            closeImportScripts();
+        }
+    }
+
+    protected final void closeImportScripts() {
+        importScripts.close();
     }
 
     protected PersistenceException persistenceException(String message, Exception cause) {

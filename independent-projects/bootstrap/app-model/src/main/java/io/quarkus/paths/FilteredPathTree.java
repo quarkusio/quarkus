@@ -35,7 +35,7 @@ public class FilteredPathTree implements PathTree {
     @Override
     public void walk(PathVisitor visitor) {
         original.walk(visit -> {
-            if (visit != null && filter.isVisible(visit.getRelativePath("/"))) {
+            if (visit != null && filter.isVisible(visit.getResourceName())) {
                 visitor.visitPath(visit);
             }
         });
@@ -44,7 +44,7 @@ public class FilteredPathTree implements PathTree {
     @Override
     public void walkRaw(PathVisitor visitor) {
         original.walkRaw(visit -> {
-            if (visit != null && filter.isVisible(visit.getRelativePath("/"))) {
+            if (visit != null && filter.isVisible(visit.getResourceName())) {
                 visitor.visitPath(visit);
             }
         });

@@ -30,6 +30,7 @@ import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
+import io.quarkus.deployment.pkg.builditem.JarTreeShakeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarIgnoredResourceBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarMergedResourceBuildItem;
@@ -61,6 +62,7 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
     private final List<UberJarMergedResourceBuildItem> mergedResources;
     private final List<UberJarIgnoredResourceBuildItem> ignoredResources;
+    private final JarTreeShakeBuildItem treeShakeResult;
 
     public UberJarBuilder(CurateOutcomeBuildItem curateOutcome,
             OutputTargetBuildItem outputTarget,
@@ -75,12 +77,14 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             List<UberJarMergedResourceBuildItem> mergedResources,
             List<UberJarIgnoredResourceBuildItem> ignoredResources,
             ExecutorService executorService,
-            ResolvedJVMRequirements jvmRequirements) {
+            ResolvedJVMRequirements jvmRequirements,
+            JarTreeShakeBuildItem treeShakeResult) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
                 generatedClasses, generatedResources, removedArtifactKeys, executorService, jvmRequirements);
 
         this.mergedResources = mergedResources;
         this.ignoredResources = ignoredResources;
+        this.treeShakeResult = treeShakeResult;
     }
 
     @Override
@@ -129,14 +133,25 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                     .setFlags(appArtifact.getFlags())
                     .build();
         }
-        final ApplicationManifestConfig manifestConfig = ApplicationManifestConfig.builder()
+        final ApplicationManifestConfig.Builder manifestBuilder = ApplicationManifestConfig.builder()
                 .setMainComponent(ApplicationComponent.builder()
                         .setPath(runnerJar)
                         .setResolvedDependency(appArtifact)
                         .build())
-                .setRunnerPath(runnerJar)
-                .addComponents(curateOutcome.getApplicationModel().getDependencies())
-                .build();
+                .setRunnerPath(runnerJar);
+        for (ResolvedDependency dep : curateOutcome.getApplicationModel().getDependencies()) {
+            final ApplicationComponent.Builder comp = ApplicationComponent.builder()
+                    .setResolvedDependency(dep);
+            if (!dep.getResolvedPaths().isEmpty()) {
+                comp.setPath(dep.getResolvedPaths().iterator().next());
+            }
+            String pedigree = treeShakeResult.computePedigree(dep.getKey());
+            if (pedigree != null) {
+                comp.setPedigree(pedigree);
+            }
+            manifestBuilder.addComponent(comp.build());
+        }
+        final ApplicationManifestConfig manifestConfig = manifestBuilder.build();
 
         return new JarBuildItem(runnerJar, originalJar, null, UBER_JAR,
                 suffixToClassifier(packageConfig.computedRunnerSuffix()), manifestConfig);
@@ -252,6 +267,22 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                             archiveCreator.addDirectory(relativePath);
                         }
                         return;
+                    }
+
+                    // When tree shake level is CLASSES, skip non-reachable classes
+                    // Skip filtering for multi-release version entries (META-INF/versions/)
+                    if (treeShakeResult.isClassesShaken()
+                            && relativePath.endsWith(".class") && !relativePath.equals("module-info.class")
+                            && !relativePath.startsWith("META-INF/versions/")) {
+                        String className = relativePath.substring(0, relativePath.length() - 6).replace('/', '.');
+                        if (!treeShakeResult.getReachableClassNames().contains(className)) {
+                            // Keep inner classes if the outer class is reachable
+                            int dollarIdx = className.indexOf('$');
+                            if (dollarIdx < 0
+                                    || !treeShakeResult.getReachableClassNames().contains(className.substring(0, dollarIdx))) {
+                                return;
+                            }
+                        }
                     }
 
                     final Path file = visit.getPath();

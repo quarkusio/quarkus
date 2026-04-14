@@ -643,6 +643,8 @@ TIP: The `fast-jar` packaging results in creating an artifact that starts a litt
 because it has indexed information about which dependency jar contains classes and resources. It can thus avoid the lookup into potentially every jar
 on the classpath that the legacy jar necessitates, when loading a class or resource.
 
+TIP: You can reduce the size of the produced JAR by enabling experimental tree-shaking, which removes unreachable classes from runtime dependencies. See xref:jar-tree-shaking.adoc[Tree-shaking JAR dependencies] for details.
+
 == Building Uber-Jars
 
 Quarkus Gradle plugin supports the generation of Uber-Jars by specifying a `quarkus.package.jar.type` argument as follows:
@@ -659,6 +661,8 @@ When building an Uber-Jar you can specify entries that you want to exclude from 
 ----
 
 The entries are relative to the root of the generated Uber-Jar. You can specify multiple entries by adding extra `--ignored-entry` arguments.
+
+TIP: You can reduce the size of the produced Uber-Jar by enabling experimental tree-shaking, which removes unreachable classes from runtime dependencies. See xref:jar-tree-shaking.adoc[Tree-shaking JAR dependencies] for details.
 
 [[multi-module-gradle]]
 === Working with multi-module projects

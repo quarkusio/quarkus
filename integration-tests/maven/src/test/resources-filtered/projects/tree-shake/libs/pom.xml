@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.acme.treeshake</groupId>
+    <artifactId>tree-shake-libs-parent</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <properties>
+        <compiler-plugin.version>${compiler-plugin.version}</compiler-plugin.version>
+        <maven.compiler.source>${maven.compiler.source}</maven.compiler.source>
+        <maven.compiler.target>${maven.compiler.target}</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
+        <quarkus.platform.version>@project.version@</quarkus.platform.version>
+    </properties>
+
+    <modules>
+        <module>lib-a</module>
+        <module>lib-annotations</module>
+        <module>lib-field-annotations</module>
+        <module>lib-generics</module>
+        <module>lib-inner-classes</module>
+        <module>lib-method-descriptors</module>
+        <module>lib-serviceloader</module>
+        <module>lib-class-forname</module>
+        <module>lib-classloader-load</module>
+        <module>lib-string-constants</module>
+        <module>lib-delimited-lists</module>
+        <module>lib-multirelease</module>
+        <module>lib-jboss-logging</module>
+        <module>lib-throws</module>
+        <module>lib-field-types</module>
+        <module>lib-invokedynamic</module>
+        <module>lib-sisu</module>
+        <module>lib-method-handles</module>
+        <module>lib-transform</module>
+        <module>lib-transform-extension</module>
+        <module>lib-reflection</module>
+        <module>lib-jni</module>
+        <module>lib-serialization</module>
+        <module>lib-e</module>
+        <module>lib-b</module>
+        <module>lib-c</module>
+        <module>lib-d</module>
+        <module>lib-loadclass-chain</module>
+    </modules>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>\${compiler-plugin.version}</version>
+                    <configuration>
+                        <parameters>true</parameters>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>

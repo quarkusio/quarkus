@@ -27,6 +27,7 @@ import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.JarTreeShakeBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -48,10 +49,11 @@ public class NativeImageSourceJarBuilder extends AbstractLegacyThinJarBuilder<Na
             List<GeneratedNativeImageClassBuildItem> nativeImageResources,
             Set<ArtifactKey> removedArtifactKeys,
             ExecutorService executorService,
-            ResolvedJVMRequirements jvmRequirements) {
+            ResolvedJVMRequirements jvmRequirements,
+            JarTreeShakeBuildItem treeShakeResult) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
                 augmentGeneratedClasses(generatedClasses, nativeImageResources), generatedResources,
-                augmentRemovedArtifactKeys(removedArtifactKeys), executorService, jvmRequirements);
+                augmentRemovedArtifactKeys(removedArtifactKeys), executorService, jvmRequirements, treeShakeResult);
     }
 
     public NativeImageSourceJarBuildItem build() throws IOException {

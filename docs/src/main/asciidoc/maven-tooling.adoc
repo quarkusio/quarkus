@@ -643,6 +643,8 @@ TIP: The `fast-jar` packaging results in creating an artifact that starts a litt
 because it has indexed information about which dependency jar contains classes and resources. It can thus avoid the lookup into potentially every jar
 on the classpath that the legacy jar necessitates, when loading a class or resource.
 
+TIP: You can reduce the size of the produced JAR by enabling experimental tree-shaking, which removes unreachable classes from runtime dependencies. See xref:jar-tree-shaking.adoc[Tree-shaking JAR dependencies] for details.
+
 [[uber-jar-maven]]
 === Uber-Jar Creation
 
@@ -657,6 +659,8 @@ option, this takes a comma separated list of entries to ignore.
 Uber-Jar creation by default excludes link:https://docs.oracle.com/javase/tutorial/deployment/jar/intro.html[signature files] that might be present in the dependencies of the application.
 
 Uber-Jar's final name is configurable via a Maven's build settings `finalName` option.
+
+TIP: You can reduce the size of the produced Uber-Jar by enabling experimental tree-shaking, which removes unreachable classes from runtime dependencies. See xref:jar-tree-shaking.adoc[Tree-shaking JAR dependencies] for details.
 
 ==== Uber-Jar file name suffix
 

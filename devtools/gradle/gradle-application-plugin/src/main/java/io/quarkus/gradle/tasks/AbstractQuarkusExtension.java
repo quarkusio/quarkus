@@ -6,7 +6,6 @@ import static java.util.Collections.emptyList;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -22,11 +21,9 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.process.JavaForkOptions;
 
-import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.gradle.dsl.Manifest;
-import io.quarkus.maven.dependency.ResolvedDependency;
 
 /**
  * This base class exists to hide internal properties, make those only available in the {@link io.quarkus.gradle.tasks}
@@ -122,34 +119,6 @@ public abstract class AbstractQuarkusExtension {
         return baseConfig().nativeConfig();
     }
 
-    protected EffectiveConfig buildEffectiveConfiguration(ApplicationModel appModel) {
-        ResolvedDependency appArtifact = appModel.getAppArtifact();
-
-        Map<String, Object> properties = new HashMap<>();
-        exportCustomManifestProperties(properties);
-
-        Set<File> resourcesDirs = getSourceSet(project, SourceSet.MAIN_SOURCE_SET_NAME).getResources().getSourceDirectories()
-                .getFiles();
-
-        Map<String, String> defaultProperties = new HashMap<>();
-        String userIgnoredEntries = String.join(",", ignoredEntries.get());
-        if (!userIgnoredEntries.isEmpty()) {
-            defaultProperties.put("quarkus.package.jar.user-configured-ignored-entries", userIgnoredEntries);
-        }
-        defaultProperties.putIfAbsent("quarkus.application.name", appArtifact.getArtifactId());
-        defaultProperties.putIfAbsent("quarkus.application.version", appArtifact.getVersion());
-
-        return EffectiveConfig.builder()
-                .withPlatformProperties(appModel.getPlatformProperties())
-                .withTaskProperties(properties)
-                .withBuildProperties(quarkusBuildProperties.get())
-                .withProjectProperties(project.getProperties())
-                .withDefaultProperties(defaultProperties)
-                .withSourceDirectories(resourcesDirs)
-                .withProfile(quarkusProfile())
-                .build();
-    }
-
     private String quarkusProfile() {
         String profile = System.getProperty(QUARKUS_PROFILE);
         if (profile == null) {
@@ -174,20 +143,6 @@ public abstract class AbstractQuarkusExtension {
         return mainSourceSet.getCompileClasspath().plus(mainSourceSet.getRuntimeClasspath())
                 .plus(mainSourceSet.getAnnotationProcessorPath())
                 .plus(mainSourceSet.getResources());
-    }
-
-    private void exportCustomManifestProperties(Map<String, Object> properties) {
-        for (Map.Entry<String, Object> attribute : baseConfig().manifest().getAttributes().entrySet()) {
-            properties.put(toManifestAttributeKey(attribute.getKey()),
-                    attribute.getValue());
-        }
-
-        for (Map.Entry<String, Attributes> section : baseConfig().manifest().getSections().entrySet()) {
-            for (Map.Entry<String, Object> attribute : section.getValue().entrySet()) {
-                properties
-                        .put(toManifestSectionAttributeKey(section.getKey(), attribute.getKey()), attribute.getValue());
-            }
-        }
     }
 
     protected static String toManifestAttributeKey(String key) {

@@ -14,7 +14,7 @@ If any Kafka-related extension is present (e.g. `quarkus-messaging-kafka`), Dev 
 So, you don't have to start a broker manually.
 The application is configured automatically.
 
-IMPORTANT: Because starting a Kafka broker can be long, Dev Services for Kafka uses https://redpanda.com[Redpanda], a Kafka compatible broker which starts in ~1 second.
+IMPORTANT: By default, Dev Services for Kafka uses the https://hub.docker.com/r/apache/kafka-native[Apache Kafka native] image which starts in ~1 second.
 
 == Enabling / Disabling Dev Services for Kafka
 
@@ -52,26 +52,28 @@ Note that the Kafka advertised address is automatically configured with the chos
 [[configuring-the-image]]
 == Configuring the image
 
-Dev Services for Kafka supports https://redpanda.com[Redpanda], https://github.com/ozangunalp/kafka-native[kafka-native]
-and https://strimzi.io[Strimzi] (in https://github.com/apache/kafka/blob/trunk/config/kraft/README.md[Kraft] mode)  images.
+Dev Services for Kafka supports the following container providers:
 
-**Redpanda** is a Kafka compatible event streaming platform.
-Because it provides a fast startup times, Dev Services defaults to Redpanda images from `redpandadata/redpanda`.
-You can select any version from https://hub.docker.com/r/redpandadata/redpanda.
+**upstream-kafka-native** (default) uses the official https://hub.docker.com/r/apache/kafka-native[Apache Kafka native] image, compiled with GraalVM for fast startup.
 
-**kafka-native** provides images of standard Apache Kafka distribution compiled to native binary using Quarkus and GraalVM.
-While still being _experimental_, it provides very fast startup times with small footprint.
-
-Image type can be configured using
+**upstream-kafka** uses the official https://hub.docker.com/r/apache/kafka[Apache Kafka] JVM image.
 
 [source, properties]
 ----
-quarkus.kafka.devservices.provider=kafka-native
+quarkus.kafka.devservices.provider=upstream-kafka
+----
+
+**Redpanda** is a Kafka compatible event streaming platform.
+You can select any version from https://hub.docker.com/r/redpandadata/redpanda.
+
+[source, properties]
+----
+quarkus.kafka.devservices.provider=redpanda
 ----
 
 **Strimzi** provides container images and Operators for running Apache Kafka on Kubernetes.
 While Strimzi is optimized for Kubernetes, the images work perfectly in classic container environments.
-Strimzi container images run "genuine" Kafka broker on JVM, which is slower to start.
+Strimzi container images run a Kafka broker on JVM, which is slower to start.
 
 [source, properties]
 ----
@@ -82,7 +84,7 @@ For Strimzi, you can select any image with a Kafka version which has Kraft suppo
 
 [source, properties]
 ----
-quarkus.kafka.devservices.image-name=quay.io/strimzi-test-container/test-container:0.112.0-kafka-4.1.0
+quarkus.kafka.devservices.image-name=quay.io/strimzi-test-container/test-container:0.115.0-kafka-4.2.0
 ----
 
 == Configuring Kafka topics
@@ -133,7 +135,7 @@ It relies on a `compose-devservices.yml`, such as:
 name: <application name>
 services:
   kafka:
-    image: apache/kafka-native:3.9.0
+    image: apache/kafka-native:4.2.0
     restart: "no"
     ports:
       - '9092'

@@ -19,6 +19,7 @@ public final class GraalVM {
         private static final String JVMCI_BUILD_PREFIX = "jvmci-";
         private static final String MANDREL_VERS_PREFIX = "Mandrel-";
         private static final String GRAALVM_VERS_PREFIX = "GraalVM CE ";
+        private static final String ORACLE_GRAALVM_VERS_PREFIX = "Oracle GraalVM ";
 
         private static final String LIBERICA_NIK_VERS_PREFIX = "Liberica-NIK-";
 
@@ -79,6 +80,9 @@ public final class GraalVM {
                 } else if (isLiberica(vendorVersion)) {
                     dist = Distribution.LIBERICA;
                     versNum = libericaVersion(vendorVersion);
+                } else if (isOracleGraalVM(vendorVersion)) {
+                    dist = Distribution.ORACLE;
+                    versNum = graalVersion;
                 } else {
                     dist = Distribution.GRAALVM;
                     versNum = graalVersion;
@@ -118,6 +122,13 @@ public final class GraalVM {
             return !vendorVersion.isBlank() && vendorVersion.startsWith(MANDREL_VERS_PREFIX);
         }
 
+        private static boolean isOracleGraalVM(String vendorVersion) {
+            if (vendorVersion == null) {
+                return false;
+            }
+            return !vendorVersion.isBlank() && vendorVersion.startsWith(ORACLE_GRAALVM_VERS_PREFIX);
+        }
+
         private static String mandrelVersion(String vendorVersion) {
             if (vendorVersion == null) {
                 return null;
@@ -155,6 +166,19 @@ public final class GraalVM {
                         return matchVersion(versFromVendor);
                     }
                     // fall through to other logic
+                } else if (vendorVersion.startsWith(ORACLE_GRAALVM_VERS_PREFIX)) {
+                    String versFromVendor = vendorVersion.substring(ORACLE_GRAALVM_VERS_PREFIX.length());
+                    versFromVendor = versFromVendor.substring(0, versFromVendor.indexOf("+"));
+                    if (String.valueOf(v.feature()).equals(versFromVendor)) {
+                        versFromVendor = String.format("%d.0.0", v.feature());
+                    }
+                    if (versFromVendor.endsWith("-dev")) {
+                        versFromVendor = versFromVendor.substring(0, versFromVendor.length() - 4);
+                    }
+                    Matcher versMatcher = VERSION_PATTERN.matcher(versFromVendor);
+                    if (versMatcher.find()) {
+                        return matchVersion(versFromVendor);
+                    }
                 }
             }
             if (buildInfo == null) {

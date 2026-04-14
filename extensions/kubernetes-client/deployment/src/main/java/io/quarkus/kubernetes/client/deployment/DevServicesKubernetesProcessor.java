@@ -72,7 +72,7 @@ import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.devservices.common.ContainerShutdownCloseable;
-import io.quarkus.kubernetes.client.runtime.internal.KubernetesClientBuildConfig;
+import io.quarkus.kubernetes.client.runtime.internal.KubernetesClientBuildTimeConfig;
 import io.quarkus.kubernetes.client.runtime.internal.KubernetesDevServicesBuildTimeConfig;
 import io.quarkus.kubernetes.client.runtime.internal.KubernetesDevServicesBuildTimeConfig.Flavor;
 import io.quarkus.kubernetes.client.spi.KubernetesDevServiceInfoBuildItem;
@@ -101,7 +101,7 @@ public class DevServicesKubernetesProcessor {
             DockerStatusBuildItem dockerStatusBuildItem,
             DevServicesComposeProjectBuildItem composeProjectBuildItem,
             LaunchModeBuildItem launchMode,
-            KubernetesClientBuildConfig kubernetesClientBuildTimeConfig,
+            KubernetesClientBuildTimeConfig kubernetesClientBuildTimeConfig,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
@@ -110,7 +110,7 @@ public class DevServicesKubernetesProcessor {
             BuildProducer<KubernetesDevServiceInfoBuildItem> devServicesKube,
             Optional<KubernetesDevServiceRequestBuildItem> devServiceKubeRequest) {
 
-        KubernetesDevServiceCfg configuration = getConfiguration(kubernetesClientBuildTimeConfig);
+        KubernetesDevServiceCfg configuration = new KubernetesDevServiceCfg(kubernetesClientBuildTimeConfig.devservices());
 
         if (devService != null) {
             boolean shouldShutdownTheCluster = !configuration.equals(cfg);
@@ -181,7 +181,7 @@ public class DevServicesKubernetesProcessor {
     @Produce(ServiceStartBuildItem.class)
     public void applyManifests(
             KubernetesDevServiceInfoBuildItem kubernetesDevServiceInfoBuildItem,
-            KubernetesClientBuildConfig kubernetesClientBuildTimeConfig) {
+            KubernetesClientBuildTimeConfig kubernetesClientBuildTimeConfig) {
         if (kubernetesDevServiceInfoBuildItem == null) {
             // Gracefully return in case the Kubernetes dev service could not be found
             log.error("Cannot apply manifests because the Kubernetes dev service is not running");
@@ -399,7 +399,6 @@ public class DevServicesKubernetesProcessor {
     }
 
     private Map<String, String> getKubernetesClientConfigFromKubeConfig(KubeConfig kubeConfig) {
-
         ClusterSpec cluster = kubeConfig.getClusters().get(0).getCluster();
         UserSpec user = kubeConfig.getUsers().get(0).getUser();
         return Map.of(
@@ -425,11 +424,6 @@ public class DevServicesKubernetesProcessor {
         var container = new RunningContainer(dockerClient, containerAddress);
 
         return container.getKubeconfigFromContainer();
-    }
-
-    private KubernetesDevServiceCfg getConfiguration(KubernetesClientBuildConfig cfg) {
-        KubernetesDevServicesBuildTimeConfig devServicesConfig = cfg.devservices();
-        return new KubernetesDevServiceCfg(devServicesConfig);
     }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")

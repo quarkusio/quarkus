@@ -35,7 +35,7 @@ import io.quarkus.maven.dependency.ArtifactKey;
  * require it, so this would facilitate the option to revert to the older version in
  * case of problems.
  */
-@BuildSteps(onlyIf = NativeOrNativeSourcesBuild.class)
+@BuildSteps
 public final class OracleMetadataOverrides {
 
     static final String DRIVER_JAR_MATCH_REGEX = "com\\.oracle\\.database\\.jdbc";
@@ -136,7 +136,7 @@ public final class OracleMetadataOverrides {
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.diagnostics.OracleDiagnosticsMXBean"));
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void excludeOracleDirectives(BuildProducer<ExcludeConfigBuildItem> nativeImageExclusions) {
         // Excludes both native-image.properties and reflect-config.json, which are reimplemented above.
         // N.B. this could be expressed by using a single regex to match both resources,
@@ -151,7 +151,7 @@ public final class OracleMetadataOverrides {
         return new NativeImageAllowIncompleteClasspathBuildItem("quarkus-jdbc-oracle");
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     RemovedResourceBuildItem enhancedCharsetSubstitutions() {
         return new RemovedResourceBuildItem(ArtifactKey.fromString("com.oracle.database.jdbc:ojdbc17"),
                 Collections.singleton("oracle/nativeimage/CharacterSetFeature.class"));

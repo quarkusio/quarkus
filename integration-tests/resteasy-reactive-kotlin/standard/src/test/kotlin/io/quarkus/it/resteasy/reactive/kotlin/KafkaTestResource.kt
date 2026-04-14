@@ -1,11 +1,12 @@
 package io.quarkus.it.resteasy.reactive.kotlin
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager
-import io.strimzi.test.container.StrimziKafkaContainer
+import io.strimzi.test.container.StrimziKafkaCluster
 
 class KafkaTestResource : QuarkusTestResourceLifecycleManager {
 
-    private val kafka: StrimziKafkaContainer = StrimziKafkaContainer()
+    private val kafka: StrimziKafkaCluster =
+        StrimziKafkaCluster.StrimziKafkaClusterBuilder().build()
 
     fun getBootstrapServers(): String? {
         return kafka.getBootstrapServers()

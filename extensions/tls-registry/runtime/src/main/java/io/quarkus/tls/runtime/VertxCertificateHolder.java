@@ -255,6 +255,8 @@ public class VertxCertificateHolder implements TlsConfiguration {
                 return false;
             }
         } else if (config.trustAll()) {
+            LOGGER.warnf("TLS certificate validation disabled via trust-all configuration during reload - name: %s", name);
+            LOGGER.warn("This configuration is INSECURE and must not be used in production");
             trustStoreUpdateResult = new TrustStoreAndTrustOptions(null, TrustAllOptions.INSTANCE);
         }
 

@@ -1,8 +1,8 @@
 package io.quarkus.hibernate.reactive.panache.common.runtime;
 
 import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
-import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.SESSION_ON_DEMAND_KEY;
-import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.TRANSACTIONAL_METHOD_KEY;
+import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.SESSION_ON_DEMAND_KEY;
+import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.TRANSACTIONAL_METHOD_KEY;
 
 import java.util.ArrayList;
 import java.util.HashSet;

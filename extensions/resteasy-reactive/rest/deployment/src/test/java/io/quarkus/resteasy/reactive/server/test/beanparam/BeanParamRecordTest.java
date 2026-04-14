@@ -43,7 +43,7 @@ public class BeanParamRecordTest {
                 .get("/record")
                 .then()
                 .statusCode(200)
-                .body(equalTo("got it/2/3/4/5/6.0/7.0/true/a/query/query/query/query"));
+                .body(equalTo("got it/2/3/4/5/6.0/7.0/true/a/query/query/query/query//record"));
 
     }
 
@@ -102,7 +102,8 @@ public class BeanParamRecordTest {
                     + p.obp().q + "/"
                     + p.obp().obpr.q() + "/"
                     + p.obp().obpc.q + "/"
-                    + p.obpr().q;
+                    + p.obpr().q + "/"
+                    + p.uriInfo().getPath();
         }
     }
 }

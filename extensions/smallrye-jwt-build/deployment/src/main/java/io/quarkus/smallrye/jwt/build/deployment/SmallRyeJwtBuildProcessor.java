@@ -10,7 +10,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.impl.JwtBuildUtils;
@@ -35,7 +34,7 @@ class SmallRyeJwtBuildProcessor {
      *
      * @return NativeImageResourceBuildItem
      */
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    @BuildStep
     void registerNativeImageResources(BuildProducer<NativeImageResourceBuildItem> nativeImageResource) {
         Config config = ConfigProvider.getConfig();
         registerKeyLocationResource(config, JwtBuildUtils.SIGN_KEY_LOCATION_PROPERTY, nativeImageResource);

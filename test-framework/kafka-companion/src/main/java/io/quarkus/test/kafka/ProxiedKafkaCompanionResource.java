@@ -1,31 +1,52 @@
 package io.quarkus.test.kafka;
 
+import static org.awaitility.Awaitility.await;
+
+import java.util.Collections;
 import java.util.Map;
 
+import org.testcontainers.toxiproxy.ToxiproxyContainer;
+import org.testcontainers.utility.DockerImageName;
+
+import eu.rekawek.toxiproxy.Proxy;
+import io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion;
 import io.smallrye.reactive.messaging.kafka.companion.test.KafkaProxy;
-import io.smallrye.reactive.messaging.kafka.companion.test.ProxiedStrimziKafkaContainer;
+import io.strimzi.test.container.StrimziKafkaCluster;
 import io.strimzi.test.container.StrimziKafkaContainer;
 
 public class ProxiedKafkaCompanionResource extends KafkaCompanionResource {
 
-    private ProxiedStrimziKafkaContainer proxiedKafka;
+    private StrimziKafkaCluster cluster;
+    private StrimziKafkaContainer proxiedKafka;
     private KafkaProxy toxiProxy;
 
     @Override
     protected StrimziKafkaContainer createContainer(String imageName) {
-        if (imageName == null) {
-            proxiedKafka = new ProxiedStrimziKafkaContainer();
-        } else {
-            proxiedKafka = new ProxiedStrimziKafkaContainer(imageName);
-        }
+        ToxiproxyContainer toxiproxy = new ToxiproxyContainer(
+                DockerImageName.parse(System.getProperty("toxiproxy.image.name", "ghcr.io/shopify/toxiproxy:2.4.0"))
+                        .asCompatibleSubstituteFor("shopify/toxiproxy"))
+                .withNetworkAliases("toxiproxy");
+        cluster = new StrimziKafkaCluster.StrimziKafkaClusterBuilder()
+                .withProxyContainer(toxiproxy)
+                .build();
+        proxiedKafka = cluster.getBrokers().stream().findFirst().get();
         return proxiedKafka;
     }
 
     @Override
     public Map<String, String> start() {
-        Map<String, String> config = super.start();
+        Map<String, String> config;
+        if (kafkaCompanion == null && kafka != null) {
+            cluster.start();
+            await().until(kafka::isRunning);
+            kafkaCompanion = new KafkaCompanion(cluster.getBootstrapServers());
+            config = Collections.singletonMap("kafka.bootstrap.servers", kafka.getBootstrapServers());
+        } else {
+            config = Collections.emptyMap();
+        }
         if (proxiedKafka != null) {
-            toxiProxy = proxiedKafka.getKafkaProxy();
+            Proxy proxyForNode = cluster.getProxyForNode(proxiedKafka.getNodeId());
+            toxiProxy = new KafkaProxy(proxyForNode, proxiedKafka.getHost(), kafka.getMappedPort(9092), 0);
         }
         return config;
     }

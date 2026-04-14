@@ -341,10 +341,12 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: daily
+      interval: weekly
       time: "00:30"
       timezone: Europe/Paris
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 10
     labels:
       - area/infra
+    cooldown:
+      default-days: 14
     rebase-strategy: disabled

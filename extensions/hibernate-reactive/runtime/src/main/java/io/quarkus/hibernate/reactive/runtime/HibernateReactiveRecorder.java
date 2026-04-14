@@ -1,7 +1,7 @@
 package io.quarkus.hibernate.reactive.runtime;
 
-import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.PERSISTENCE_UNIT_NAME_KEY;
-import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.TRANSACTIONAL_METHOD_KEY;
+import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.PERSISTENCE_UNIT_NAME_KEY;
+import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.TRANSACTIONAL_METHOD_KEY;
 
 import java.util.List;
 import java.util.Locale;
@@ -134,17 +134,6 @@ public class HibernateReactiveRecorder {
         } else if (context.getLocal(TRANSACTIONAL_METHOD_KEY) == null) {
             throw new IllegalStateException(noSessionFoundErrorMessage());
         } else {
-
-            Optional<OpenedSessionsState.SessionWithKey<Mutiny.StatelessSession>> openedStatelessSession = OPENED_SESSIONS_STATE_STATELESS
-                    .getOpenedSession(
-                            context,
-                            persistenceUnitName);
-
-            if (openedStatelessSession.isPresent()) {
-                throw new IllegalStateException("A stateless session for the same Persistence Unit is already opened."
-                        + "\n\t- Mixing different kinds of sessions in the same transaction is not supported yet.");
-            }
-
             // Store the persistence unit name so that we can close only this session at the end of the interceptor
             context.putLocal(PERSISTENCE_UNIT_NAME_KEY, persistenceUnitName);
 
@@ -179,17 +168,6 @@ public class HibernateReactiveRecorder {
         } else if (context.getLocal(TRANSACTIONAL_METHOD_KEY) == null) {
             throw new IllegalStateException(noSessionFoundErrorMessage());
         } else {
-
-            Optional<OpenedSessionsState.SessionWithKey<Mutiny.Session>> openedRegularSession = OPENED_SESSIONS_STATE
-                    .getOpenedSession(
-                            context,
-                            persistenceUnitName);
-
-            if (openedRegularSession.isPresent()) {
-                throw new IllegalStateException("A (non-stateless) session for the same Persistence Unit is already opened."
-                        + "\n\t- Mixing different kinds of sessions in the same transaction is not supported yet.");
-            }
-
             // Store the persistence unit name so that we can close only this session at the end of the interceptor
             context.putLocal(PERSISTENCE_UNIT_NAME_KEY, persistenceUnitName);
 

@@ -132,6 +132,8 @@ public class TlsConfigUtils {
         if (configuration.getHostnameVerificationAlgorithm().isPresent()
                 && configuration.getHostnameVerificationAlgorithm().get().equals("NONE")) {
             // Only disable hostname verification if the algorithm is explicitly set to NONE
+            log.warnf("Hostname verification disabled via hostname-verification-algorithm=NONE");
+            log.warn("This configuration is INSECURE and must not be used in production");
             options.setVerifyHost(false);
         }
     }
@@ -147,6 +149,8 @@ public class TlsConfigUtils {
         if (configuration.getHostnameVerificationAlgorithm().isPresent()
                 && configuration.getHostnameVerificationAlgorithm().get().equals("NONE")) {
             // Only disable hostname verification if the algorithm is explicitly set to NONE
+            log.warnf("Hostname verification DISABLED via hostname-verification-algorithm=NONE");
+            log.warn("This configuration is INSECURE and must not be used in production");
             options.setVerifyHost(false);
         }
     }

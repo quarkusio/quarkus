@@ -204,7 +204,7 @@ public final class HibernateOrmProcessor {
         return new NativeImageFeatureBuildItem(RegisterServicesForReflectionFeature.class);
     }
 
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    @BuildStep
     void registerStrategyForReflection(
             BuildProducer<ReflectiveClassBuildItem> reflective) {
 
@@ -554,7 +554,7 @@ public final class HibernateOrmProcessor {
         return new BytecodeRecorderConstantDefinitionBuildItem(PreGeneratedProxies.class, proxyDefinitions);
     }
 
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    @BuildStep
     public void preGenAnnotationProxies(List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflective,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinitions) {
@@ -841,7 +841,7 @@ public final class HibernateOrmProcessor {
         }
     }
 
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    @BuildStep
     public void registerStaticMetamodelClassesForReflection(CombinedIndexBuildItem index,
             BuildProducer<ReflectiveClassBuildItem> reflective) {
         Collection<AnnotationInstance> annotationInstances = index.getIndex().getAnnotations(ClassNames.STATIC_METAMODEL);
@@ -861,7 +861,7 @@ public final class HibernateOrmProcessor {
      * Enable reflection for methods annotated with @InjectService,
      * such as org.hibernate.engine.jdbc.cursor.internal.StandardRefCursorSupport.injectJdbcServices.
      */
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    @BuildStep
     public void registerInjectServiceMethodsForReflection(CombinedIndexBuildItem index,
             BuildProducer<ReflectiveClassBuildItem> reflective) {
         Set<String> classes = new HashSet<>();

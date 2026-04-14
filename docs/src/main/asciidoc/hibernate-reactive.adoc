@@ -492,7 +492,7 @@ Mixing both transaction management styles in the same reactive pipeline is not s
 In the future, we'll deprecate the previous annotations provided by Panache and and support only `@Transactional`.
 
 You can inject either `Mutiny.Session` or `Mutiny.StatelessSession`.
-Be careful of injecting both session types in the same bean. Attempting to use both session types within the same transaction will throw an `IllegalStateException`.
+Mixing both session types in the same transaction should work, but should be reserved for exotic use cases implemented by advanced users, as the (stateful) session will not be aware of changes operated through the stateless session, which could thus conflict or be silently erased by (stateful) session writes.
 
 [[transactional-different-pipelines]]
 === Using Declarative Transaction Management in different reactive pipelines

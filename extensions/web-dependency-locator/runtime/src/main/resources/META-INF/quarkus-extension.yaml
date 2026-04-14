@@ -1,6 +1,7 @@
 ---
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
 name: "Web Dependency Locator"
+description: "Serve JavaScript and CSS web dependencies from mvnpm and WebJars with version-agnostic routing and ES6 import map generation"
 metadata:
   short-name: "web-dependency-locator"
   keywords:

@@ -429,7 +429,7 @@ public class GrpcClientProcessor {
         superfluousInterceptors.remove(StorkMeasuringGrpcInterceptor.class.getName());
         superfluousInterceptors.remove(VertxStorkMeasuringGrpcInterceptor.class.getName());
         if (!superfluousInterceptors.isEmpty()) {
-            LOGGER.warnf("At least one unused gRPC client interceptor found: %s. If there are meant to be used globally, " +
+            LOGGER.warnf("At least one unused gRPC client interceptor found: %s. If they are meant to be used globally, " +
                     "annotate them with @GlobalInterceptor.", String.join(", ", superfluousInterceptors));
         }
 

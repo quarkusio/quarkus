@@ -1,6 +1,7 @@
 ---
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
 name: "Hibernate ORM with Panache"
+description: "Simplified JPA/Hibernate data access layer with active record and repository patterns"
 metadata:
   keywords:
   - "hibernate-orm-panache"
@@ -8,6 +9,7 @@ metadata:
   - "hibernate"
   - "jpa"
   guide: "https://quarkus.io/guides/hibernate-orm-panache"
+  quickstart: "hibernate-orm-panache-quickstart"
   categories:
   - "data"
   status: "stable"

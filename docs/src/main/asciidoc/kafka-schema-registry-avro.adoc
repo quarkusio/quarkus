@@ -556,11 +556,11 @@ import java.util.Map;
 import org.testcontainers.containers.GenericContainer;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-import io.strimzi.StrimziKafkaContainer;
+import io.strimzi.test.container.StrimziKafkaCluster;
 
 public class KafkaAndSchemaRegistryTestResource implements QuarkusTestResourceLifecycleManager {
 
-    private final StrimziKafkaContainer kafka = new StrimziKafkaContainer();
+    private final StrimziKafkaCluster kafka = new StrimziKafkaCluster.StrimziKafkaClusterBuilder().build();
 
     private GenericContainer<?> registry;
 

@@ -1,12 +1,14 @@
 ---
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
 name: "OpenID Connect"
+description: "Secure applications with OpenID Connect and OAuth 2.0 using bearer tokens and authorization code flow"
 metadata:
   keywords:
   - "oauth2"
   - "openid-connect"
   - "oidc"
   guide: "https://quarkus.io/guides/security-openid-connect"
+  quickstart: "security-openid-connect-quickstart"
   categories:
   - "security"
   status: "stable"

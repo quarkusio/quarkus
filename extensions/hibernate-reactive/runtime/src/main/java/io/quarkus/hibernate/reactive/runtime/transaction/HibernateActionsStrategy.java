@@ -1,14 +1,14 @@
 package io.quarkus.hibernate.reactive.runtime.transaction;
 
-import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.PERSISTENCE_UNIT_NAME_KEY;
-import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.TRANSACTIONAL_METHOD_KEY;
+import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.PERSISTENCE_UNIT_NAME_KEY;
+import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.TRANSACTIONAL_METHOD_KEY;
 
 import java.util.Optional;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder;
-import io.quarkus.reactive.transaction.ReactiveResource;
+import io.quarkus.reactive.transaction.runtime.ReactiveResource;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 

@@ -9,7 +9,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.hibernate.reactive.runtime.transaction.HibernateActionsStrategy;
-import io.quarkus.reactive.transaction.TransactionalInterceptorRequired;
+import io.quarkus.reactive.transaction.runtime.TransactionalInterceptorRequired;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;

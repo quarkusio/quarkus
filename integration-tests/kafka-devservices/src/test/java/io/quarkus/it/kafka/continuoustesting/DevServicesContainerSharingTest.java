@@ -17,7 +17,7 @@ import io.quarkus.it.kafka.KafkaAdminTest;
 import io.quarkus.it.kafka.KafkaEndpoint;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.QuarkusDevModeTest;
-import io.strimzi.test.container.StrimziKafkaContainer;
+import io.strimzi.test.container.StrimziKafkaCluster;
 
 public class DevServicesContainerSharingTest extends BaseDevServiceTest {
 
@@ -29,11 +29,13 @@ public class DevServicesContainerSharingTest extends BaseDevServiceTest {
                     .addClass(KafkaAdminManager.class))
             .setTestArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(KafkaAdminTest.class));
 
-    static StrimziKafkaContainer kafka;
+    static StrimziKafkaCluster kafka;
 
     @BeforeAll
     static void beforeAll() {
-        kafka = new StrimziKafkaContainer().withLabel("quarkus-dev-service-kafka", "kafka");
+        kafka = new StrimziKafkaCluster.StrimziKafkaClusterBuilder()
+                .withContainerCustomizer(c -> c.withLabel("quarkus-dev-service-kafka", "kafka"))
+                .build();
         kafka.start();
     }
 

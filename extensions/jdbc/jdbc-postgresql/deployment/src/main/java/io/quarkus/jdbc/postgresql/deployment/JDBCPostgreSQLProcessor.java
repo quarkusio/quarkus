@@ -17,7 +17,6 @@ import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
-import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.jdbc.postgresql.runtime.PostgreSQLAgroalConnectionConfigurer;
 import io.quarkus.jdbc.postgresql.runtime.PostgreSQLServiceBindingConverter;
 import io.quarkus.jdbc.postgresql.runtime.graal.SQLXMLFeature;
@@ -29,12 +28,12 @@ public class JDBCPostgreSQLProcessor {
         return new FeatureBuildItem(Feature.JDBC_POSTGRESQL);
     }
 
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    @BuildStep
     NativeImageFeatureBuildItem nativeImageFeature() {
         return new NativeImageFeatureBuildItem(SQLXMLFeature.class);
     }
 
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    @BuildStep
     RuntimeInitializedClassBuildItem runtimeReinitialize() {
         return new RuntimeInitializedClassBuildItem("org.postgresql.util.PasswordUtil$SecureRandomHolder");
     }

@@ -261,15 +261,45 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         int i = 0;
         for (MethodParameterInfo paramInfo : deserData.constructor.parameters()) {
             FieldSpecs fieldSpecs = fieldSpecsFromFieldParam(paramInfo);
+            if (fieldSpecs.hasUnknownAnnotation()) {
+                return null;
+            }
             deserData.constructorFields.add(fieldSpecs.jsonName);
-            ResultHandle fieldValue = deserData.methodCreator.invokeVirtualMethod(
-                    ofMethod(JsonNode.class, "get", JsonNode.class, String.class), deserData.jsonNode,
-                    deserData.methodCreator.load(fieldSpecs.jsonName));
+            for (String alias : fieldSpecs.aliases) {
+                deserData.constructorFields.add(alias);
+            }
+
+            ResultHandle fieldValue = lookupJsonField(deserData.methodCreator, deserData.jsonNode, fieldSpecs);
 
             params[i++] = readValueFromJson(deserData.classCreator, deserData.methodCreator,
                     deserData.methodCreator.getMethodParam(1), fieldSpecs, deserData.typeParametersIndex, fieldValue);
         }
         return deserData.methodCreator.newInstance(deserData.constructor, params);
+    }
+
+    /**
+     * Looks up a field value from a JSON node by its primary name, falling back to any @JsonAlias names.
+     */
+    private static ResultHandle lookupJsonField(BytecodeCreator bytecode, ResultHandle jsonNode, FieldSpecs fieldSpecs) {
+        if (fieldSpecs.aliases.length == 0) {
+            return bytecode.invokeVirtualMethod(
+                    ofMethod(JsonNode.class, "get", JsonNode.class, String.class), jsonNode,
+                    bytecode.load(fieldSpecs.jsonName));
+        }
+
+        AssignableResultHandle fieldValue = bytecode.createVariable(JsonNode.class);
+        bytecode.assign(fieldValue, bytecode.invokeVirtualMethod(
+                ofMethod(JsonNode.class, "get", JsonNode.class, String.class), jsonNode,
+                bytecode.load(fieldSpecs.jsonName)));
+
+        for (String alias : fieldSpecs.aliases) {
+            BytecodeCreator fallback = bytecode.ifNull(fieldValue).trueBranch();
+            fallback.assign(fieldValue, fallback.invokeVirtualMethod(
+                    ofMethod(JsonNode.class, "get", JsonNode.class, String.class), jsonNode,
+                    fallback.load(alias)));
+        }
+
+        return fieldValue;
     }
 
     private boolean deserializeObjectFields(DeserializationData deserData, ResultHandle objHandle) {
@@ -400,6 +430,11 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
             strSwitch.caseOf(fieldSpecs.jsonName,
                     bytecode -> valid.compareAndSet(true, deserializeField(deserData, bytecode, objHandle,
                             fieldValue, fieldSpecs, deserializationContext)));
+            for (String alias : fieldSpecs.aliases) {
+                strSwitch.caseOf(alias,
+                        bytecode -> valid.compareAndSet(true, deserializeField(deserData, bytecode, objHandle,
+                                fieldValue, fieldSpecs, deserializationContext)));
+            }
         }
         return true;
     }

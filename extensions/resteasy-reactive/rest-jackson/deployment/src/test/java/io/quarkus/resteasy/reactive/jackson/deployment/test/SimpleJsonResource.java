@@ -621,4 +621,11 @@ public class SimpleJsonResource extends SuperClass<Person> {
     public String greeting(GreetingRequest request) {
         return "{\"message\":\"Hello " + request.name() + "\"}";
     }
+
+    @POST
+    @Path("/json-alias-record-echo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public JsonAliasRecord echoJsonAliasRecord(JsonAliasRecord record) {
+        return record;
+    }
 }

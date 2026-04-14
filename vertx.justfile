@@ -13,6 +13,12 @@ modules := """
     extensions/vertx-http
     extensions/tls-registry
     extensions/mailer
+    extensions/reactive-datasource
+    extensions/reactive-db2-client
+    extensions/reactive-mssql-client
+    extensions/reactive-mysql-client
+    extensions/reactive-oracle-client
+    extensions/reactive-pg-client
     """
 
 # Build the comma-separated list of directories containing a pom.xml

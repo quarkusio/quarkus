@@ -14,8 +14,115 @@ import org.junit.jupiter.api.Test;
 
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.ProxyOptions;
+import io.vertx.mutiny.core.MultiMap;
 
 public class OidcCommonUtilsTest {
+
+    @Test
+    public void testMaskAuthorizationBasicScheme() throws Exception {
+        MultiMap headers = MultiMap.caseInsensitiveMultiMap().set("Authorization", "Basic base64encoded");
+
+        MultiMap maskedHeaders = OidcCommonUtils.maskAuthorizationHeader(headers);
+        assertEquals("Basic ...", maskedHeaders.get("Authorization"));
+
+        assertEquals("Basic base64encoded", headers.get("Authorization"));
+    }
+
+    @Test
+    public void testMaskAuthorizationBearerScheme() throws Exception {
+        MultiMap headers = MultiMap.caseInsensitiveMultiMap().set("authorization", "Bearer token");
+
+        MultiMap maskedHeaders = OidcCommonUtils.maskAuthorizationHeader(headers);
+        assertEquals("Bearer ...", maskedHeaders.get("Authorization"));
+
+        assertEquals("Bearer token", headers.get("Authorization"));
+    }
+
+    @Test
+    public void testMaskAuthorizationWithoutScheme() throws Exception {
+        MultiMap headers = MultiMap.caseInsensitiveMultiMap().set("Authorization", "API-Key");
+
+        MultiMap maskedHeaders = OidcCommonUtils.maskAuthorizationHeader(headers);
+        assertEquals("...", maskedHeaders.get("Authorization"));
+
+        assertEquals("API-Key", headers.get("Authorization"));
+    }
+
+    @Test
+    public void testMaskClientSecretFormData() throws Exception {
+        MultiMap form = MultiMap.caseInsensitiveMultiMap().set("client_secret", "secret");
+
+        MultiMap maskedForm = OidcCommonUtils.maskFormData(form);
+        assertEquals("...", maskedForm.get("client_secret"));
+
+        assertEquals("secret", form.get("client_secret"));
+    }
+
+    @Test
+    public void testMaskClientAssertionFormData() throws Exception {
+        MultiMap form = MultiMap.caseInsensitiveMultiMap().set("client_assertion", "ey.token.signature");
+
+        MultiMap maskedForm = OidcCommonUtils.maskFormData(form);
+        assertEquals("...", maskedForm.get("client_assertion"));
+
+        assertEquals("ey.token.signature", form.get("client_assertion"));
+    }
+
+    @Test
+    public void testMaskPasswordGrantPasswordFormData() throws Exception {
+        MultiMap form = MultiMap.caseInsensitiveMultiMap().set("password", "secret");
+
+        MultiMap maskedForm = OidcCommonUtils.maskFormData(form);
+        assertEquals("...", maskedForm.get("password"));
+
+        assertEquals("secret", form.get("password"));
+    }
+
+    @Test
+    public void testMaskRefreshTokenFormData() throws Exception {
+        MultiMap form = MultiMap.caseInsensitiveMultiMap().set("refresh_token", "rt");
+
+        MultiMap maskedForm = OidcCommonUtils.maskFormData(form);
+        assertEquals("...", maskedForm.get("refresh_token"));
+
+        assertEquals("rt", form.get("refresh_token"));
+    }
+
+    @Test
+    public void testMaskAuthorizationCodeFormData() throws Exception {
+        MultiMap form = MultiMap.caseInsensitiveMultiMap().set("code", "somecode");
+
+        MultiMap maskedForm = OidcCommonUtils.maskFormData(form);
+        assertEquals("...", maskedForm.get("code"));
+
+        assertEquals("somecode", form.get("code"));
+    }
+
+    @Test
+    public void testMaskPkceCodeVerifierFormData() throws Exception {
+        MultiMap form = MultiMap.caseInsensitiveMultiMap().set("code_verifier", "somecode");
+
+        MultiMap maskedForm = OidcCommonUtils.maskFormData(form);
+        assertEquals("...", maskedForm.get("code_verifier"));
+
+        assertEquals("somecode", form.get("code_verifier"));
+    }
+
+    @Test
+    public void testMaskJsonTokensResponse() throws Exception {
+        JsonObject json = new JsonObject()
+                .put("access_token", "at").put("refresh_token", "rt").put("id_token", "id");
+
+        JsonObject maskedJson = OidcCommonUtils.maskJsonTokens(json);
+        assertEquals("...", maskedJson.getString("access_token"));
+        assertEquals("...", maskedJson.getString("refresh_token"));
+        assertEquals("...", maskedJson.getString("id_token"));
+
+        assertEquals("at", json.getString("access_token"));
+        assertEquals("rt", json.getString("refresh_token"));
+        assertEquals("id", json.getString("id_token"));
+
+    }
 
     @Test
     public void testProxyOptionsWithHostWithoutScheme() throws Exception {

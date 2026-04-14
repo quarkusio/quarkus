@@ -517,7 +517,7 @@ public class CodeFlowAuthorizationTest {
                                         StandardCharsets.UTF_8))) {
                             String line;
                             while ((line = reader.readLine()) != null) {
-                                if (line.contains("Verifying the signed UserInfo with the local JWK keys: ey")) {
+                                if (line.contains("Verifying the signed UserInfo with the local JWK keys")) {
                                     lineConfirmingVerificationDetected = true;
                                 } else if (line.contains("Response contains signed UserInfo")) {
                                     signedUserInfoResponseFilterMessageDetected = true;

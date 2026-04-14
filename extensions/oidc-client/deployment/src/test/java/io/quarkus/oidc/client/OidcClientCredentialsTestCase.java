@@ -2,7 +2,13 @@ package io.quarkus.oidc.client;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.List;
+import java.util.logging.LogRecord;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -24,7 +30,9 @@ public class OidcClientCredentialsTestCase {
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(testClasses)
-                    .addAsResource("application-oidc-client-credentials.properties", "application.properties"));
+                    .addAsResource("application-oidc-client-credentials.properties", "application.properties"))
+            .setLogRecordPredicate(r -> true)
+            .assertLogRecords(r -> assertLogRecord(r));
 
     @Test
     public void testGetTokenDefaultClient() {
@@ -83,5 +91,23 @@ public class OidcClientCredentialsTestCase {
         assertEquals(2, tokens.length);
         assertNotNull(tokens[0]);
         assertEquals("null", tokens[1]);
+    }
+
+    private static void assertLogRecord(List<LogRecord> records) {
+        List<LogRecord> authorizationRecords = records.stream()
+                .filter(r -> (r.getMessage().contains("client_secret=")
+                        || r.getMessage().contains("authorization=Basic")))
+                .collect(Collectors.toList());
+        assertFalse(authorizationRecords.isEmpty());
+
+        List<LogRecord> clientSecretRecords = authorizationRecords.stream()
+                .filter(r -> r.getMessage().contains("client_secret=")).collect(Collectors.toList());
+        assertFalse(clientSecretRecords.isEmpty());
+        assertTrue(clientSecretRecords.stream().allMatch(r -> r.getMessage().contains("client_secret=...")));
+
+        List<LogRecord> authorizationBasicSecretRecords = authorizationRecords.stream()
+                .filter(r -> r.getMessage().contains("authorization=Basic")).collect(Collectors.toList());
+        assertFalse(authorizationBasicSecretRecords.isEmpty());
+        assertTrue(authorizationBasicSecretRecords.stream().allMatch(r -> r.getMessage().contains("authorization=Basic ...")));
     }
 }

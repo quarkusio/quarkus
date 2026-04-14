@@ -7,12 +7,12 @@ import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
 import io.quarkus.bootstrap.app.DependencyInfoProvider;
-import io.quarkus.cyclonedx.deployment.spi.EmbeddedSbomMetadataBuildItem;
 import io.quarkus.cyclonedx.deployment.spi.EmbeddedSbomRequestBuildItem;
 import io.quarkus.cyclonedx.generator.CycloneDxSbomGenerator;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AppModelProviderBuildItem;
+import io.quarkus.deployment.builditem.EmbeddedSbomMetadataBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;

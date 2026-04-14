@@ -1,4 +1,4 @@
-package io.quarkus.cyclonedx.deployment.spi;
+package io.quarkus.deployment.builditem;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 

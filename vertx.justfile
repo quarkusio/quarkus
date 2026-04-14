@@ -19,6 +19,7 @@ modules := """
     extensions/reactive-mysql-client
     extensions/reactive-oracle-client
     extensions/reactive-pg-client
+    extensions/redis-client
     """
 
 # Build the comma-separated list of directories containing a pom.xml

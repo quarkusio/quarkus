@@ -154,6 +154,20 @@ public class ConfigurationProcessor {
                 .build();
 
         configActions.actionBuilder()
+                .methodName("removeProperty")
+                .description("Remove a configuration property from the Quarkus application")
+                .parameter("name", "The name of the configuration property to remove")
+                .parameter("profile", "The profile of the configuration to remove (optional)")
+                .parameter("target", "The target configuration file to update")
+                .function(map -> {
+                    String name = map.get("name");
+                    String profile = map.getOrDefault("profile", "");
+                    String target = map.getOrDefault("target", "application.properties");
+                    return removeConfig(name, profile, target);
+                })
+                .build();
+
+        configActions.actionBuilder()
                 .methodName("updateProperties")
                 .description("Update multiple configurations in the Quarkus application")
                 .parameter("type",
@@ -264,6 +278,34 @@ public class ConfigurationProcessor {
                     writer.newLine();
                 }
             }
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    static boolean removeConfig(final String name, final String profile, final String target) {
+        try {
+            final Path configPath = getConfigPath(target);
+            final String profileName = profile != null && !profile.isEmpty() ? "%" + profile + "." + name : name;
+            final int lineNumber = findLineNumber(configPath, profileName);
+
+            if (lineNumber <= 0) {
+                // Property not found in file
+                return false;
+            }
+
+            List<String> lines = Files.readAllLines(configPath, UTF_8);
+            if (lineNumber <= lines.size()) {
+                lines.remove(lineNumber - 1);
+                try (BufferedWriter writer = Files.newBufferedWriter(configPath, UTF_8)) {
+                    for (String line : lines) {
+                        writer.write(line);
+                        writer.newLine();
+                    }
+                }
+                return true;
+            }
+            return false;
         } catch (Throwable t) {
             throw new RuntimeException(t);
         }

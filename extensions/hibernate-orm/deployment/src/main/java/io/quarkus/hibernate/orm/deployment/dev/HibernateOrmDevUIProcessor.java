@@ -8,6 +8,7 @@ import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.devshell.spi.ShellPageBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
@@ -16,6 +17,7 @@ import io.quarkus.hibernate.orm.deployment.HibernateOrmEnabled;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.dev.HibernateOrmDevInfoCreateDDLSupplier;
 import io.quarkus.hibernate.orm.dev.HibernateOrmDevInfoUpdateDDLSupplier;
+import io.quarkus.hibernate.orm.dev.shell.HibernateOrmShellPage;
 import io.quarkus.hibernate.orm.dev.ui.HibernateOrmDevJsonRpcService;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 
@@ -55,6 +57,14 @@ public class HibernateOrmDevUIProcessor {
     @BuildStep
     JsonRPCProvidersBuildItem createJsonRPCService() {
         return new JsonRPCProvidersBuildItem(HibernateOrmDevJsonRpcService.class);
+    }
+
+    @BuildStep
+    ShellPageBuildItem createShellPage() {
+        return ShellPageBuildItem.withCustomPage(
+                "Hibernate ORM",
+                'o',
+                HibernateOrmShellPage.class);
     }
 
     @BuildStep

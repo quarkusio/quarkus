@@ -18,6 +18,7 @@
         <module>deployment-spi</module>
         <module>runtime</module>
         <module>runtime-spi</module>
+        <module>runtime-dev</module>
     </modules>
 
 </project>

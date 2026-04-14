@@ -3,9 +3,11 @@ package io.quarkus.liquibase.deployment.devui;
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.devshell.spi.ShellPageBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
+import io.quarkus.liquibase.runtime.dev.shell.LiquibaseShellPage;
 import io.quarkus.liquibase.runtime.dev.ui.LiquibaseJsonRpcService;
 
 /**
@@ -32,5 +34,13 @@ public class LiquibaseDevUIProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem registerJsonRpcBackend() {
         return new JsonRPCProvidersBuildItem(LiquibaseJsonRpcService.class);
+    }
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    ShellPageBuildItem createShellPage() {
+        return ShellPageBuildItem.withCustomPage(
+                "Liquibase",
+                'l',
+                LiquibaseShellPage.class);
     }
 }

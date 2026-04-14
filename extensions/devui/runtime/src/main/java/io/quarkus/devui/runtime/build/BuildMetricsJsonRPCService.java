@@ -64,20 +64,20 @@ public class BuildMetricsJsonRPCService {
         return controller.getBuildStepsMetrics();
     }
 
-    static class BuildMetrics {
+    public static class BuildMetrics {
         public boolean enabled;
         public int numberOfThreads;
         public Long duration;
         public JsonArray records;
     }
 
-    static class BuildItems {
+    public static class BuildItems {
         public boolean enabled;
         public int itemsCount;
         public JsonArray items;
     }
 
-    static class BuildExecutionMetrics {
+    public static class BuildExecutionMetrics {
         public List<Long> slots;
         public Map<String, JsonArray> threadSlotRecords;
     }

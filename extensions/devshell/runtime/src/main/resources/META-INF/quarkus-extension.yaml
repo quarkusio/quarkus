@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Quarkus Dev Shell"
+metadata:
+  keywords:
+  - "devshell"
+  - "tui"
+  - "terminal"
+  - "cli"
+  status: "experimental"
+  unlisted: true
+  hide-in-dev-ui: true

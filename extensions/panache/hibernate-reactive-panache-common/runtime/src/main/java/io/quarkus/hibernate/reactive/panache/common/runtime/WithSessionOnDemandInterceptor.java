@@ -1,7 +1,7 @@
 package io.quarkus.hibernate.reactive.panache.common.runtime;
 
-import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.proceedUni;
-import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.reactiveInterceptorShouldRun;
+import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.proceedUni;
+import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.reactiveInterceptorShouldRun;
 
 import jakarta.annotation.Priority;
 import jakarta.interceptor.AroundInvoke;

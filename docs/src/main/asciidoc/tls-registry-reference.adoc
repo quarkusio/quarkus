@@ -1560,6 +1560,24 @@ quarkus tls lets-encrypt issue-certificate \
 <2> Provide your contact email address that Let's Encrypt can use to contact you in case of any issues with your Let's Encrypt account.
 <3> Set your application management URL, which you can use to handle ACME challenges.
 Use `https://localhost:8443/` if you choose not to enable a management router in the <<lets-encrypt-prerequisites,Let's Encrypt prerequisites>> step.
++
+Additional options are available:
++
+[source,shell]
+----
+  --acme-server-url=<url>         Custom ACME production server URL (default: Let's Encrypt production)
+  --acme-staging-server-url=<url> Custom ACME staging server URL (default: Let's Encrypt staging)
+  --staging                       Use staging environment (default: false)
+  --insecure                      Disable SSL certificate validation for the management endpoint (INSECURE - development/testing only)
+----
++
+These options allow you to:
++
+* Use alternative ACME providers such as link:https://zerossl.com/[ZeroSSL] or custom ACME servers to issue certificates from different providers.
+* Test with staging environments to avoid rate limits during development.
+* Disable SSL validation for testing with self-signed management certificates (not recommended for production).
++
+NOTE: If `--staging` is set to `true`, the TLS registry CLI uses the staging server URL, which is either the default Let's Encrypt staging server or the custom staging server provided with `--acme-staging-server-url`.
 
 . During the processing of the `issue-certificate` command, the TLS registry CLI performs the following tasks:
 
@@ -1589,13 +1607,84 @@ Run the following command to renew your Let's Encrypt certificate and set your d
 [source,shell]
 ----
 quarkus tls lets-encrypt renew-certificate \
-  --domain=<domain-dns-name>
+  --domain=<domain-dns-name> \
+  --management-url=https://localhost:9000
 ----
 
 During this command, the TLS registry CLI reads the Let's Encrypt account information recorded during the <<lets-encrypt-issue-certificate,Issue certificates with Let's Encrypt>> step, issues a Let's Encrypt certificate request, and communicates with the Quarkus application to resolve ACME challenges.
 
 After the `renew-certificate` command renews the Let's Encrypt certificate chain and private key, the TLS registry CLI converts them to PEM format and copies them to the `.letsencrypt` folder.
 The TLS registry detects the new certificate and private key and reloads them automatically.
+
+Additional options are available to support alternative ACME providers:
+
+[source,shell]
+----
+  --acme-server-url=<url>         Custom ACME production server URL (default: Let's Encrypt production)
+  --acme-staging-server-url=<url> Custom ACME staging server URL (default: Let's Encrypt staging)
+  --insecure                      Disable SSL certificate validation for the management endpoint (INSECURE - development/testing only)
+----
+
+For example, to renew a certificate from ZeroSSL:
+
+[source,shell]
+----
+quarkus tls lets-encrypt renew-certificate \
+  --domain=<domain-dns-name> \
+  --management-url=https://localhost:9000 \
+  --acme-server-url=https://acme.zerossl.com/v2/DV90
+----
+
+=== Using alternative ACME providers
+
+While Let's Encrypt is the default ACME provider, you can use other ACME-compatible certificate authorities by specifying custom server URLs.
+This is useful for:
+
+* **Disaster recovery**: Failover to different providers if Let's Encrypt experiences outages
+* **Regional requirements**: Use providers that better serve specific geographic regions
+* **Organizational policies**: Comply with company requirements for specific CAs
+* **Testing**: Use custom staging servers during development
+
+==== Supported ACME providers
+
+The following ACME providers are known to work with Quarkus:
+
+[cols="1,2,2"]
+|===
+|Provider |Production URL |Staging URL
+
+|Let's Encrypt (default)
+|`https://acme-v02.api.letsencrypt.org/directory`
+|`https://acme-staging-v02.api.letsencrypt.org/directory`
+
+|ZeroSSL
+|`https://acme.zerossl.com/v2/DV90`
+|N/A (use Let's Encrypt staging for testing)
+
+|BuyPass Go
+|`https://api.buypass.com/acme/directory`
+|`https://api.test4.buypass.no/acme/directory`
+
+|Google Trust Services
+|`https://dv.acme-v02.api.pki.goog/directory`
+|`https://dv.acme-v02.test-api.pki.goog/directory`
+|===
+
+==== Example: Using ZeroSSL
+
+To issue a certificate from ZeroSSL instead of Let's Encrypt:
+
+[source,shell]
+----
+quarkus tls lets-encrypt issue-certificate \
+  --domain=example.com \
+  --email=admin@example.com \
+  --management-url=https://localhost:9000 \
+  --acme-server-url=https://acme.zerossl.com/v2/DV90
+----
+
+IMPORTANT: Each ACME provider may have different rate limits, account requirements, and supported features.
+Consult the provider's documentation before using them in production.
 
 [[lets-encrypt-ngrok]]
 === Testing with ngrok

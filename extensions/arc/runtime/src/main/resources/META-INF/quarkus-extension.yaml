@@ -1,6 +1,7 @@
 ---
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
 name: "ArC"
+description: "Build-time oriented CDI Lite implementation for Jakarta Contexts and Dependency Injection"
 metadata:
   short-name: "CDI"
   keywords:

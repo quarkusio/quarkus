@@ -545,6 +545,7 @@ public class SmallRyeOpenApiProcessor {
 
                 return false;
             }
+
         };
 
         return new OpenApiFilteredIndexViewBuildItem(indexView);
@@ -1560,14 +1561,31 @@ public class SmallRyeOpenApiProcessor {
 
             @Override
             public Collection<AnnotationInstance> getAnnotationsWithRepeatable(DotName securityAnnotationName) {
+                // Avoid IndexView#getAnnotationsWithRepeatable as it requires the annotation definition
+                // to be present in the index (to discover the @Repeatable container via reflection).
+                // When MicroProfile filter options like `mp.openapi.scan.*` are in use, the annotation
+                // class may not be visible in the filtered index. Instead, look up both the annotation
+                // and its repeatable container (conventionally named `$List`) directly.
+                DotName containerName = DotName.createSimple(securityAnnotationName.toString() + "$List");
+                Collection<AnnotationInstance> directAnnotations;
+                Collection<AnnotationInstance> containerAnnotations;
                 if (securityTransformer != null) {
-                    return securityTransformer.getAnnotationsWithRepeatable(securityAnnotationName);
+                    directAnnotations = securityTransformer.getAnnotations(securityAnnotationName);
+                    containerAnnotations = securityTransformer.getAnnotations(containerName);
+                } else {
+                    directAnnotations = index.getAnnotations(securityAnnotationName);
+                    containerAnnotations = index.getAnnotations(containerName);
                 }
-                // the annotation definition may not be in the index if the security extension is not on the classpath
-                if (index.getClassByName(securityAnnotationName) == null) {
-                    return Collections.emptyList();
+                List<AnnotationInstance> results = new ArrayList<>(directAnnotations);
+                for (AnnotationInstance container : containerAnnotations) {
+                    AnnotationValue value = container.value();
+                    if (value != null) {
+                        for (AnnotationInstance nested : value.asNestedArray()) {
+                            results.add(AnnotationInstance.create(nested.name(), container.target(), nested.values()));
+                        }
+                    }
                 }
-                return index.getAnnotationsWithRepeatable(securityAnnotationName, index);
+                return results;
             }
 
             @Override

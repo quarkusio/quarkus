@@ -40,7 +40,7 @@ jobs:
         run: git restore-mtime
 
       - name: Download PR Artifact
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           run-id: ${{ github.event.workflow_run.id }}
           name: documentation
@@ -67,47 +67,21 @@ jobs:
           rm -rf documentation-temp
           rm -rf quarkus-main
       - name: Set up ruby
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@e65c17d16e57e481586a6a5a0282698790062f92 # v1.300.0
         with:
           ruby-version: 3.2.3
-      - name: Build Jekyll site
-        uses: limjh16/jekyll-action-ts@v2
+      - name: Cache Ruby gems
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
-          enable_cache: true
-          ### Enables caching. Similar to https://github.com/actions/cache.
-          #
-          format_output: false
-          ### Uses prettier https://prettier.io to format jekyll output HTML.
-          #
-          # prettier_opts: '{ "useTabs": true }'
-          ### Sets prettier options (in JSON) to format output HTML. For example, output tabs over spaces.
-          ### Possible options are outlined in https://prettier.io/docs/en/options.html
-          #
-          prettier_ignore: '*'
-          ### Ignore paths for prettier to not format those html files.
-          ### Useful if the file is exceptionally large, so formatting it takes a while.
-          ### Also useful if HTML compression is enabled for that file / formatting messes it up.
-          #
-          # jekyll_src: sample_site
-          ### If the jekyll website source is not in root, specify the directory. (in this case, sample_site)
-          ### By default, this is not required as the action searches for a _config.yml automatically.
-          #
-          #gem_src: quarkusio
-          ### By default, this is not required as the action searches for a _config.yml automatically.
-          ### However, if there are multiple Gemfiles, the action may not be able to determine which to use.
-          ### In that case, specify the directory. (in this case, sample_site)
-          ###
-          ### If jekyll_src is set, the action would automatically choose the Gemfile in jekyll_src.
-          ### In that case this input may not be needed as well.
-          #
-          # key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
-          # restore-keys: ${{ runner.os }}-gems-
-          ### In cases where you want to specify the cache key, enable the above 2 inputs
-          ### Follows the format here https://github.com/actions/cache
-          #
-          custom_opts: '--config _config.yml,_only_latest_guides_config.yml'
-          ### If you need to specify any Jekyll build options, enable the above input
-          ### Flags accepted can be found here https://jekyllrb.com/docs/configuration/options/#build-command-options
+          path: vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+          restore-keys: ${{ runner.os }}-gems-
+      - name: Install dependencies
+        run: |
+          bundle config path vendor/bundle
+          bundle install --jobs 4 --retry 3
+      - name: Build Jekyll site
+        run: bundle exec jekyll build --config _config.yml,_only_latest_guides_config.yml
 
       - name: Reduce the size of the website to be compatible with surge
         run: |

@@ -62,7 +62,7 @@ implementation("io.quarkus:quarkus-messaging-kafka")
 
 [NOTE]
 ====
-The extension includes `kafka-clients` version 3.2.1 as a transitive dependency and is compatible with Kafka brokers version 2.x.
+The extension includes `kafka-clients` version 4.1.1 as a transitive dependency and is compatible with Kafka brokers version 2.x and above.
 ====
 
 == Configuring SmallRye Kafka Connector
@@ -387,11 +387,12 @@ See https://smallrye.io/smallrye-reactive-messaging/latest/kafka/receiving-kafka
 [[error-handling]]
 === Error Handling Strategies
 
-If a message produced from a Kafka record is nacked, a failure strategy is applied. The Kafka connector supports three strategies:
+If a message produced from a Kafka record is nacked, a failure strategy is applied. The Kafka connector supports the following strategies:
 
 - `fail`: fail the application, no more records will be processed (default strategy). The offset of the record that has not been processed correctly is not committed.
 - `ignore`: the failure is logged, but the processing continue. The offset of the record that has not been processed correctly is committed.
 - `dead-letter-queue`: the offset of the record that has not been processed correctly is committed, but the record is written to a Kafka dead letter topic.
+- `delayed-retry-topic`: the failed record is sent to delayed retry topics for later reprocessing, with configurable delays and maximum retries.
 
 The strategy is selected using the `failure-strategy` attribute.
 
@@ -538,6 +539,16 @@ The default partitioner uses record key hash to compute the partition for a reco
 
 During normal operation, a Kafka consumer preserves the order of records inside each partition assigned to it.
 SmallRye Reactive Messaging keeps this order for processing, unless `@Blocking(ordered = false)` is used (see <<blocking-processing>>).
+
+When using `@Blocking(ordered = false)`, you can still enforce ordering guarantees with the `ordered` channel attribute:
+
+- `ordered=partition`: records from the same partition are processed sequentially, but different partitions can be processed concurrently.
+- `ordered=key`: records with the same key are processed sequentially, regardless of partition.
+
+[source, properties]
+----
+mp.messaging.incoming.your-channel.ordered=key
+----
 
 Note that due to consumer rebalances, Kafka consumers only guarantee at-least-once processing of single records, meaning that uncommitted records _can_ be processed again by consumers.
 ====
@@ -752,6 +763,124 @@ Conversely, if the processing throws an exception, all messages are _nacked_, ap
 Quarkus autodetects batch types for incoming channels and sets batch configuration automatically.
 You can configure batch mode explicitly with `mp.messaging.incoming.$channel.batch` property.
 ====
+
+[[share-groups]]
+=== Share Groups (Kafka Queues)
+
+[IMPORTANT]
+====
+Kafka Share Groups require Apache Kafka 4.2+ brokers and are an early access feature in Kafka.
+====
+
+Share Groups (https://cwiki.apache.org/confluence/display/KAFKA/KIP-932[KIP-932]) provide a queue-like consumption model for Kafka topics.
+Unlike consumer groups, records are distributed across share consumers without explicit partition assignment -- the broker handles distribution of records and acquisition locks automatically.
+This provides queue-style workloads where records are processed by any available consumer with at-least-once delivery semantics.
+
+==== Enabling Share Groups
+
+To enable share group consumption, set the `share-group` attribute on the incoming channel:
+
+[source, properties]
+----
+mp.messaging.incoming.queue.connector=smallrye-kafka
+mp.messaging.incoming.queue.topic=prices
+mp.messaging.incoming.queue.value.deserializer=org.apache.kafka.common.serialization.DoubleDeserializer
+mp.messaging.incoming.queue.share-group=true
+----
+
+Consuming messages works like any other incoming channel:
+
+[source, java]
+----
+@ApplicationScoped
+public class KafkaShareGroupConsumer {
+
+    @Incoming("queue")
+    public void consume(double price) {
+        // process price
+    }
+}
+----
+
+==== Per-record Acknowledgement
+
+Share groups support three acknowledgement types:
+
+- **ACCEPT**: Record processed successfully (default on ack).
+- **RELEASE**: Record failed processing and is eligible for re-delivery to another consumer.
+- **REJECT**: Permanent rejection with no re-delivery.
+
+You can control the acknowledgement per record using `ShareGroupAcknowledgement` metadata:
+
+[source, java]
+----
+@Incoming("queue")
+@Outgoing("processed")
+public String consume(double msg, ShareGroupAcknowledgement ack) {
+    try {
+        // successful processing is ACCEPT
+        return process(msg);
+    } catch (TransientException e) {
+        ack.release();
+    } catch (Exception e) {
+        ack.reject();
+    }
+    // Skip publishing message
+    return null;
+}
+----
+
+==== Acquisition Lock Renewal
+
+Each acquired record has a time-limited acquisition lock managed by the broker.
+The connector tracks in-processing records and periodically renews their locks to prevent re-delivery.
+The `share-group.unprocessed-record-max-age.ms` attribute controls this behavior:
+
+[source, properties]
+----
+mp.messaging.incoming.queue.share-group=true
+mp.messaging.incoming.queue.share-group.unprocessed-record-max-age.ms=30000
+----
+
+When enabled (default: `60000`), records still in processing are periodically renewed with the broker.
+If a record exceeds this timeout, the health check reports a failure.
+Set to `0` to disable monitoring and automatic renewal.
+
+==== Batch Mode
+
+Share groups support batch consumption.
+Enable it by setting `batch=true` alongside `share-group=true`:
+
+[source, properties]
+----
+mp.messaging.incoming.queue.share-group=true
+mp.messaging.incoming.queue.batch=true
+----
+
+With per-record acknowledgement control, each record inside a batch can be individually acknowledged using `IncomingKafkaRecordBatchMetadata`:
+
+[source, java]
+----
+@Incoming("queue")
+public void consume(ConsumerRecords<String, String> batch, IncomingKafkaRecordBatchMetadata metadata) {
+    for (var record : batch) {
+        ShareGroupAcknowledgement ack = metadata.getMetadataForRecord(record, ShareGroupAcknowledgement.class);
+        String event = record.value();
+        if (event.startsWith("INVALID")) {
+            Log.warnf("[Batch] Rejecting invalid event: %s", event);
+            ack.reject();
+        } else {
+            Log.infof("[Batch] Accepted event: %s", event);
+            ack.accept();
+        }
+    }
+}
+----
+
+==== Incompatible Configuration
+
+When `share-group=true`, the following attributes are ignored:
+`pattern`, `assign-seek`, `partitions`, `commit-strategy`, `failure-strategy`, and `consumer-rebalance-listener.name`.
 
 [[stateful-processing-checkpointing]]
 === Stateful processing with Checkpointing
@@ -1402,10 +1531,9 @@ Note that for production use the `transactional.id` must be unique across all ap
 
 [IMPORTANT]
 ====
-While a normal message emitter would support concurrent calls to `send` methods and consequently queues outgoing messages to be written to Kafka,
-a `KafkaTransactions` emitter only supports one transaction at a time.
+By default, a `KafkaTransactions` emitter supports one transaction at a time per producer.
 A transaction is considered in progress from the call to the `withTransaction` until the returned `Uni` results in success or failure.
-While a transaction is in progress, subsequent calls to the `withTransaction`, including nested ones inside the given function, will throw `IllegalStateException`.
+While a transaction is in progress on the same producer, subsequent calls to the `withTransaction`, including nested ones inside the given function, will throw `IllegalStateException`.
 
 Note that in Reactive Messaging, the execution of processing methods, is already serialized, unless `@Blocking(ordered = false)` is used.
 If `withTransaction` can be called concurrently, for example from a REST endpoint, it is recommended to limit the concurrency of the execution.
@@ -1413,6 +1541,72 @@ This can be done using the `@Bulkhead` annotation from xref:smallrye-fault-toler
 
 An example usage can be found in <<chaining-kafka-transactions-with-hibernate-reactive-transactions>>.
 ====
+
+==== Concurrent Exactly-Once Processing with Pooled Producers
+
+By default, `KafkaTransactions` uses a single producer, so only one transaction can run at a time.
+The *pooled producer* mode uses a pool of Kafka producers, each with its own `transactional.id`, derived from the configured `transactional.id` (e.g., `my-tx-id-1`, `my-tx-id-2`, etc.).
+Each transaction reserves a producer from the pool for the duration of the transaction, enabling concurrent exactly-once processing.
+
+Combined with `@Blocking(ordered = false)` and `ordered=partition` on the incoming channel, records from different partitions can be processed concurrently while maintaining per-partition ordering:
+
+[source, properties]
+----
+mp.messaging.incoming.prices-in.ordered=partition
+mp.messaging.incoming.prices-in.commit-strategy=ignore
+mp.messaging.incoming.prices-in.failure-strategy=ignore
+
+mp.messaging.outgoing.prices-out.pooled-producer=true
+
+// when running on dev mode with Kafka Dev Services, pre-create 3 producers for the 3 partitions
+quarkus.kafka.devservices.topic-partitions.prices-in=3
+quarkus.kafka.devservices.topic-partitions.prices-out=3
+----
+
+The `KafkaTransactions` API is the same as for regular exactly-once processing.
+The outgoing record's partition defaults to the incoming record's partition:
+
+[source, java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.OnOverflow;
+
+import io.quarkus.logging.Log;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.annotations.Blocking;
+import io.smallrye.reactive.messaging.kafka.KafkaRecord;
+import io.smallrye.reactive.messaging.kafka.api.IncomingKafkaRecordMetadata;
+import io.smallrye.reactive.messaging.kafka.transactions.KafkaTransactions;
+
+@ApplicationScoped
+public class ConcurrentExactlyOnceProcessor {
+
+    @Channel("prices-out")
+    @OnOverflow(value = OnOverflow.Strategy.BUFFER, bufferSize = 500)
+    KafkaTransactions<Integer> txProducer;
+
+    @Incoming("prices-in")
+    @Blocking(ordered = false)
+    public void process(ConsumerRecord<String, Integer> record, // <1>
+            IncomingKafkaRecordMetadata<String, Integer> metadata) {
+        txProducer.withTransactionAndAwait(metadata, emitter -> { // <2>
+            emitter.send(KafkaRecord.of(record.key(), record.value() + 1));
+            return Uni.createFrom().voidItem();
+        });
+    }
+}
+----
+<1> `@Blocking(ordered = false)` enables concurrent processing across worker threads. With `ordered=partition`, records from the same partition are still processed sequentially. The record payload and metadata are injected directly as method parameters.
+<2> `withTransactionAndAwait` is the synchronous variant that blocks the worker thread until the transaction completes. It accepts `IncomingKafkaRecordMetadata` for managing consumer offset commits within the transaction. Each call acquires a separate producer from the pool.
+
+Producers are returned to the pool after commit or abort.
+On abort, only the partitions involved in that transaction are reset so other concurrent transactions are not affected.
+By default, the pool grows lazily to match actual concurrency, up to `pooled-producer.max-pool-size` (default 10).
+Number of producers that are pre-created at startup can be configured with `pooled-producer.initial-pool-size` (default 0).
 
 ==== Transaction-aware consumers
 
@@ -2487,9 +2681,8 @@ The configuration of the created Kafka broker can be customized using `@Resource
 [source,java]
 ----
 @QuarkusTestResource(value = KafkaCompanionResource.class, initArgs = {
-        @ResourceArg(name = "strimzi.kafka.image", value = "quay.io/strimzi-test-container/test-container:0.112.0-kafka-4.1.0"), // Image name
+        @ResourceArg(name = "strimzi.kafka.image", value = "quay.io/strimzi-test-container/test-container:0.115.0-kafka-4.2.0"), // Image name
         @ResourceArg(name = "kafka.port", value = "9092"), // Fixed port for kafka, by default it will be exposed on a random port
-        @ResourceArg(name = "kraft", value = "true"), // Enable Kraft mode
         @ResourceArg(name = "num.partitions", value = "3"), // Other custom broker configurations
 })
 public class OrderProcessorTest {
@@ -2629,7 +2822,7 @@ For example, to configure the `max.block.ms` property, use:
 
 [source,properties]
 ----
-mp.messaging.incoming.[channel].max.block.ms=10000
+mp.messaging.outgoing.[channel].max.block.ms=10000
 ----
 
 Some producer client properties are configured to sensible default values:

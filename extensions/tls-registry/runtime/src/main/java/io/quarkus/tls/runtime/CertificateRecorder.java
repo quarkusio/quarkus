@@ -12,6 +12,8 @@ import java.util.function.Supplier;
 import jakarta.enterprise.inject.AmbiguousResolutionException;
 import jakarta.enterprise.inject.Default;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.runtime.RuntimeValue;
@@ -29,6 +31,8 @@ import io.vertx.core.Vertx;
 
 @Recorder
 public class CertificateRecorder implements TlsConfigurationRegistry {
+
+    private static final Logger LOGGER = Logger.getLogger(CertificateRecorder.class);
 
     private final Map<String, TlsConfiguration> certificates = new ConcurrentHashMap<>();
     private volatile TlsCertificateUpdater reloader;
@@ -123,6 +127,8 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
         if (config.trustAll() && ts != null) {
             throw new IllegalStateException("The trust-all option cannot be used when a trust-store is configured");
         } else if (config.trustAll()) {
+            LOGGER.warnf("TLS certificate validation disabled via trust-all configuration - name: %s", name);
+            LOGGER.warn("This configuration is INSECURE and must not be used in production");
             ts = new TrustStoreAndTrustOptions(null, TrustAllOptions.INSTANCE);
         }
         return new VertxCertificateHolder(vertx, name, config, ks, ts);

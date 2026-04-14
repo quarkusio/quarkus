@@ -29,7 +29,7 @@
         <resteasy-microprofile.version>3.0.1.Final</resteasy-microprofile.version>
         <resteasy-spring-web.version>3.2.0.Final</resteasy-spring-web.version>
         <resteasy.version>6.2.15.Final</resteasy.version>
-        <opentelemetry-instrumentation.version>2.25.0-alpha</opentelemetry-instrumentation.version> <!-- OTel SDk 1.59.0-->
+        <opentelemetry-instrumentation.version>2.26.1-alpha</opentelemetry-instrumentation.version> <!-- OTel SDk 1.60.1-->
         <opentelemetry-semconv.version>1.40.0-alpha</opentelemetry-semconv.version>
         <quarkus-http.version>6.0.0.Alpha3</quarkus-http.version>
         <micrometer.version>1.16.3</micrometer.version><!-- keep in sync with hdrhistogram: https://central.sonatype.com/artifact/io.micrometer/micrometer-core -->
@@ -56,7 +56,7 @@
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>3.0.3</smallrye-reactive-types-converter.version>
         <smallrye-mutiny-vertx-binding.version>4.0.0-beta0</smallrye-mutiny-vertx-binding.version>
-        <smallrye-reactive-messaging.version>4.33.0</smallrye-reactive-messaging.version>
+        <smallrye-reactive-messaging.version>4.34.0</smallrye-reactive-messaging.version>
         <smallrye-stork.version>2.7.9</smallrye-stork.version>
         <jakarta.activation.version>2.1.4</jakarta.activation.version>
         <jakarta.annotation-api.version>3.0.0</jakarta.annotation-api.version>
@@ -107,7 +107,7 @@
         <slf4j-jboss-logmanager.version>2.0.2.Final</slf4j-jboss-logmanager.version>
         <wildfly-common.version>2.0.1</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
-        <wildfly-elytron.version>2.8.3.Final</wildfly-elytron.version>
+        <wildfly-elytron.version>2.8.4.Final</wildfly-elytron.version>
         <jboss-marshalling.version>2.3.0</jboss-marshalling.version>
         <jboss-threads.version>3.9.2</jboss-threads.version>
         <vertx.version>5.0.10</vertx.version>
@@ -137,10 +137,10 @@
         <jboss-logging.version>3.6.3.Final</jboss-logging.version>
         <mutiny.version>3.1.1</mutiny.version>
         <jctools-core.version>4.0.5</jctools-core.version>
-        <kafka.version>4.1.1</kafka.version>
+        <kafka.version>4.2.0</kafka.version>
         <lz4.version>1.10.1</lz4.version> <!-- dependency of the kafka-clients that could be overridden by other imported BOMs in the platform -->
         <snappy.version>1.1.10.8</snappy.version>
-        <strimzi-test-container.version>0.113.0</strimzi-test-container.version>
+        <strimzi-test-container.version>0.115.0</strimzi-test-container.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
         <scala.version>2.13.16</scala.version>
         <aws-lambda-java.version>1.4.0</aws-lambda-java.version>
@@ -165,7 +165,7 @@
         <liquibase-mongodb.version>4.33.0.1</liquibase-mongodb.version>
         <snakeyaml.version>2.6</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
-        <mongo-client.version>5.6.4</mongo-client.version>
+        <mongo-client.version>5.6.5</mongo-client.version>
         <proton-j.version>0.34.1</proton-j.version>
         <javaparser.version>3.28.0</javaparser.version>
         <hibernate-quarkus-local-cache.version>0.5.0</hibernate-quarkus-local-cache.version>
@@ -190,7 +190,7 @@
         <commons-text.version>1.15.0</commons-text.version>
         <gson.version>2.13.2</gson.version>
         <log4j2-jboss-logmanager.version>2.0.1.Final</log4j2-jboss-logmanager.version>
-        <log4j2-api.version>2.25.3</log4j2-api.version>
+        <log4j2-api.version>2.25.4</log4j2-api.version>
         <avro.version>1.12.1</avro.version>
         <apicurio-registry.version>3.1.7</apicurio-registry.version>
         <testcontainers.version>2.0.3</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
@@ -4565,13 +4565,6 @@
                 <groupId>org.apache.kafka</groupId>
                 <artifactId>kafka-clients</artifactId>
                 <version>${kafka.version}</version>
-                <!-- TODO: remove the exclusion after upgrading to kafka-clients depending on the new lz4-java groupId (at.yawk.lz4) -->
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.lz4</groupId>
-                        <artifactId>lz4-java</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>at.yawk.lz4</groupId>

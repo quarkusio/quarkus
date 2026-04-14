@@ -861,6 +861,7 @@ public class ConfigGenerationBuildStep {
                         method.readStaticField(configClassField));
             }
 
+            mappings.removeAll(mappingsShared);
             mappings.removeAll(mappingsInstances);
             for (ConfigClass mapping : mappings) {
                 method.invokeStaticMethod(WITH_MAPPING, configBuilder, method.readStaticField(sharedFields.get(mapping)));

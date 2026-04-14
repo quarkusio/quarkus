@@ -14,7 +14,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
-import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.jdbc.mariadb.runtime.MariaDBAgroalConnectionConfigurer;
 import io.quarkus.jdbc.mariadb.runtime.MariaDBServiceBindingConverter;
 
@@ -62,7 +61,7 @@ public class JDBCMariaDBProcessor {
                 .produce(ServiceProviderBuildItem.allProvidersFromClassPath("org.mariadb.jdbc.plugin.Codec"));
     }
 
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    @BuildStep
     void addNativeImageResources(BuildProducer<NativeImageResourceBuildItem> resources) {
         // mariadb.properties is used by org.mariadb.jdbc.util.VersionFactory and is small enough.
         // driver.properties is not added because it only provides optional descriptions for

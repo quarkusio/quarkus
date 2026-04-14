@@ -1,3 +1,5 @@
+default: 
+   just --list
 
 mvncmd := env_var_or_default("QMVNCMD", "./mvnw -T0.8C")
 

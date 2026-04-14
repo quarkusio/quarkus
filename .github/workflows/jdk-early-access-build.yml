@@ -61,13 +61,13 @@ jobs:
     steps:
       - name: Set up JDK from jdk.java.net
         if: matrix.dist == 'jdk.java.net'
-        uses: oracle-actions/setup-java@v1
+        uses: oracle-actions/setup-java@fff43251af9936a0e6a4d5d0946e14f1680e9b6b # v1.5.0
         with:
           website: jdk.java.net
           release: ${{ matrix.version }}
       - name: Set up JDK from other provider than jdk.java.net
         if: matrix.dist != 'jdk.java.net'
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: ${{ matrix.dist }}
           java-version: ${{ matrix.version }}
@@ -96,7 +96,7 @@ jobs:
         shell: bash
       - name: Cache Maven Repository
         id: cache-maven
-        uses: actions/cache@v5
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: ~/.m2/repository
           # refresh cache every month to avoid unlimited growth
@@ -129,7 +129,7 @@ jobs:
         shell: bash
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         if: failure()
         with:
           name: test-reports-linux-jvm${{ matrix.version }}

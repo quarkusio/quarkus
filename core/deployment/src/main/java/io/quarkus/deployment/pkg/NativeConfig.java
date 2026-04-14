@@ -534,6 +534,25 @@ public interface NativeConfig {
     }
 
     /**
+     * Profile-Guided Optimization options for native images.
+     */
+    Pgo pgo();
+
+    @ConfigGroup
+    interface Pgo {
+        /**
+         * Enable Profile-Guided Optimization for native images.
+         * <p>
+         * Requires Oracle GraalVM. When enabled, the native build produces an
+         * instrumented binary. Running {@code @QuarkusIntegrationTest} generates a
+         * {@code .iprof} profile, and a post-integration-test Maven goal rebuilds
+         * with that profile to produce an optimized native binary.
+         */
+        @WithDefault("false")
+        boolean enabled();
+    }
+
+    /**
      * Supported Builder Image providers/distributions
      */
     enum BuilderImageProvider {

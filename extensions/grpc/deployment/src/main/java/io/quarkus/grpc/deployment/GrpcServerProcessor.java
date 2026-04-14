@@ -694,7 +694,7 @@ public class GrpcServerProcessor {
                         .done());
 
         if (!superfluousInterceptors.isEmpty()) {
-            log.warnf("At least one unused gRPC interceptor found: %s. If there are meant to be used globally, " +
+            log.warnf("At least one unused gRPC interceptor found: %s. If they are meant to be used globally, " +
                     "annotate them with @GlobalInterceptor.", String.join(", ", superfluousInterceptors));
         }
     }

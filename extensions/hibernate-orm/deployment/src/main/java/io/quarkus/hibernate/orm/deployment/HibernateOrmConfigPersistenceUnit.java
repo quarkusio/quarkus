@@ -368,8 +368,8 @@ public interface HibernateOrmConfigPersistenceUnit {
          * Can be overridden locally using `@JdbcType`, `@JdbcTypeCode`, and similar annotations.
          * <p>
          * Can also specify the name of the SqlTypes constant field,
-         * for example, `quarkus.hibernate-orm.mapping.type.preferred_instant_jdbc_type=TIMESTAMP`
-         * or `quarkus.hibernate-orm.mapping.type.preferred_instant_jdbc_type=INSTANT`.
+         * for example, `quarkus.hibernate-orm.mapping.instant.preferred-jdbc-type=TIMESTAMP`
+         * or `quarkus.hibernate-orm.mapping.instant.preferred-jdbc-type=INSTANT`.
          *
          * @asciidoclet
          */
@@ -383,7 +383,7 @@ public interface HibernateOrmConfigPersistenceUnit {
          * Can be overridden locally using `@JdbcType`, `@JdbcTypeCode`, and similar annotations.
          * <p>
          * Can also specify the name of the SqlTypes constant field,
-         * for example, `quarkus.hibernate-orm.mapping.type.boolean_jdbc_type=BIT`.
+         * for example, `quarkus.hibernate-orm.mapping.boolean.preferred-jdbc-type=BIT`.
          *
          * @asciidoclet
          */
@@ -397,7 +397,7 @@ public interface HibernateOrmConfigPersistenceUnit {
          * Can be overridden locally using `@JdbcType`, `@JdbcTypeCode`, and similar annotations.
          * <p>
          * Can also specify the name of the SqlTypes constant field,
-         * for example, `quarkus.hibernate-orm.mapping.type.uuid_jdbc_type=CHAR`.
+         * for example, `quarkus.hibernate-orm.mapping.uuid.preferred-jdbc-type=CHAR`.
          *
          * @asciidoclet
          */
@@ -716,6 +716,7 @@ public interface HibernateOrmConfigPersistenceUnit {
         /**
          * The maximum time before an object of the cache is considered expired.
          */
+        @ConfigDocDefault("100s")
         Optional<Duration> maxIdle();
     }
 
@@ -724,6 +725,7 @@ public interface HibernateOrmConfigPersistenceUnit {
         /**
          * The maximum number of objects kept in memory in the cache.
          */
+        @ConfigDocDefault("10000")
         OptionalLong objectCount();
     }
 

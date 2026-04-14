@@ -1,12 +1,14 @@
 ---
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
 name: "SmallRye OpenAPI"
+description: "Generate OpenAPI schemas and serve Swagger UI for REST API documentation"
 metadata:
   keywords:
   - "smallrye-openapi"
   - "openapi"
   - "open-api"
   guide: "https://quarkus.io/guides/openapi-swaggerui"
+  quickstart: "openapi-swaggerui-quickstart"
   categories:
   - "web"
   status: "stable"

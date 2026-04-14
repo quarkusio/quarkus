@@ -99,6 +99,20 @@ public interface OTelRuntimeConfig {
     InstrumentRuntimeConfig instrument();
 
     /**
+     * Controls the OpenTelemetry SDK internal telemetry version.
+     * <p>
+     * When set to <code>latest</code>, the SDK emits self-diagnostics metrics for spans
+     * (<code>otel.sdk.span.live</code>, <code>otel.sdk.span.started</code>) in addition to
+     * metric reader diagnostics (<code>otel.sdk.metric_reader.collection.duration</code>).
+     * When set to <code>legacy</code>, only metric reader diagnostics are emitted.
+     * <p>
+     * Defaults to <code>latest</code>.
+     */
+    @WithName("experimental.sdk.telemetry.version")
+    @WithDefault("latest")
+    String experimentalSdkTelemetryVersion();
+
+    /**
      * Prioritize OpenTelemetry configuration <code>otel.</code> on top of Quarkus OpenTelemetry configuration
      * <code>quarkus.otel</code>.
      * <p>

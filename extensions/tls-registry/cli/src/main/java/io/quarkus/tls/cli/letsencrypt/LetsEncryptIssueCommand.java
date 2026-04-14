@@ -50,9 +50,21 @@ public class LetsEncryptIssueCommand implements Callable<Integer> {
             "--staging" }, description = "Whether to use the staging environment of Let's Encrypt", defaultValue = "false")
     boolean staging;
 
+    @CommandLine.Option(names = {
+            "--insecure" }, description = "Disable SSL certificate validation for the management endpoint (INSECURE - development/testing only)", defaultValue = "false")
+    boolean insecure;
+
+    @CommandLine.Option(names = {
+            "--acme-server-url" }, description = "Custom ACME production server URL (default: Let's Encrypt production)")
+    String acmeServerUrl;
+
+    @CommandLine.Option(names = {
+            "--acme-staging-server-url" }, description = "Custom ACME staging server URL (default: Let's Encrypt staging)")
+    String acmeStagingServerUrl;
+
     @Override
-    public Integer call() throws Exception {
-        AcmeClient client = new AcmeClient(managementUrl, managementUser, managementPassword, tlsConfigurationName);
+    public Integer call() {
+        AcmeClient client = new AcmeClient(managementUrl, managementUser, managementPassword, tlsConfigurationName, insecure);
 
         // Step 0 - Verification
         // - Make sure the .letsencrypt directory exists
@@ -78,11 +90,12 @@ public class LetsEncryptIssueCommand implements Callable<Integer> {
         }
 
         // Step 1 - Account
-        createAccount(client, LETS_ENCRYPT_DIR.getAbsolutePath(), staging, email);
+        createAccount(client, LETS_ENCRYPT_DIR.getAbsolutePath(), staging, email, acmeServerUrl, acmeStagingServerUrl);
 
         // Step 2 - run the challenge to obtain first certificate
-        LOGGER.infof("\uD83D\uDD35 Requesting initial certificate from %s Let's Encrypt", (staging ? "staging" : ""));
-        issueCertificate(client, LETS_ENCRYPT_DIR, staging, domain, CERT_FILE, KEY_FILE);
+        LOGGER.infof("\uD83D\uDD35 Requesting initial certificate from %s ACME server", (staging ? "staging" : "production"));
+        issueCertificate(client, LETS_ENCRYPT_DIR, staging, domain, CERT_FILE, KEY_FILE, acmeServerUrl,
+                acmeStagingServerUrl);
         adjustPermissions(CERT_FILE, KEY_FILE);
 
         // Step 3 - Reload certificate

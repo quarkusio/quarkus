@@ -180,4 +180,12 @@ public interface DataSourceJdbcRuntimeConfig {
     @ConfigDocDefault("false if quarkus.datasource.jdbc.telemetry=false and true if quarkus.datasource.jdbc.telemetry=true")
     Optional<Boolean> telemetry();
 
+    /**
+     * Enable tracing of the connection acquisition from the datasource.
+     * When enabled, a span is created for each {@code getConnection()} call.
+     */
+    @WithName("telemetry.trace-connection")
+    @WithDefault("false")
+    boolean telemetryTraceConnection();
+
 }

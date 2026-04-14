@@ -672,6 +672,14 @@ Even with all the tracing infrastructure in place, the datasource tracing is not
 quarkus.datasource.jdbc.telemetry=true
 ----
 
+By default, only SQL statement executions are traced.
+Connection acquisition from the datasource (`getConnection()` calls) is not traced.
+To also trace connection acquisition, enable it explicitly:
+[source,properties]
+----
+quarkus.datasource.jdbc.telemetry.trace-connection=true
+----
+
 === Narayana transaction manager integration
 
 Integration is automatic if the Narayana JTA extension is also available.

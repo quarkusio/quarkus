@@ -131,6 +131,13 @@ public class LiquibaseMongodbFactory {
             if (liquibaseMongodbConfig.defaultSchemaName().isPresent()) {
                 database.setDefaultSchemaName(liquibaseMongodbConfig.defaultSchemaName().get());
             }
+            if (liquibaseMongodbConfig.databaseChangeLogTableName().isPresent()) {
+                database.setDatabaseChangeLogTableName(liquibaseMongodbConfig.databaseChangeLogTableName().get());
+            }
+            if (liquibaseMongodbConfig.databaseChangeLogLockTableName().isPresent()) {
+                database.setDatabaseChangeLogLockTableName(
+                        liquibaseMongodbConfig.databaseChangeLogLockTableName().get());
+            }
             Liquibase liquibase = new Liquibase(parsedChangeLog, resourceAccessor, database);
 
             for (Map.Entry<String, String> entry : liquibaseMongodbConfig.changeLogParameters().entrySet()) {

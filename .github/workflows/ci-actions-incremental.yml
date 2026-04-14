@@ -331,16 +331,16 @@ jobs:
           java-version: 17
       - name: Restore Maven Repository
         uses: actions/cache/restore@v5
-        if: github.event_name != 'push' || github.actor == 'dependabot[bot]'
+        if: (github.event_name != 'push' && github.event_name != 'schedule') || github.actor == 'dependabot[bot]'
         with:
           path: ~/.m2/repository
           key: ${{ needs.configure.outputs.m2-cache-key }}
           restore-keys: |
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
-      - name: Cache Maven Repository on push
+      - name: Cache Maven Repository on push or scheduled build
         uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
-        if: github.event_name == 'push' && github.actor != 'dependabot[bot]'
+        if: (github.event_name == 'push' || github.event_name == 'schedule') && github.actor != 'dependabot[bot]'
         with:
           path: ~/.m2/repository
           key: ${{ needs.configure.outputs.m2-cache-key }}

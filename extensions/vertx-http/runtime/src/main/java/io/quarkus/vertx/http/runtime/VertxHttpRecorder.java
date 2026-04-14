@@ -16,13 +16,20 @@ import static io.quarkus.vertx.http.runtime.options.HttpServerTlsConfig.getHttpS
 import java.io.File;
 import java.io.IOException;
 import java.net.BindException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.net.Socket;
+import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -149,6 +156,10 @@ public class VertxHttpRecorder {
     public static final String MAX_REQUEST_SIZE_KEY = "io.quarkus.max-request-size";
 
     private static final String DISABLE_WEBSOCKETS_PROP_NAME = "vertx.disableWebsockets";
+
+    private static final int PORT_SHADOW_CHECK_TIMEOUT_MS = 500;
+
+    private static final Set<String> LOOPBACK_HOSTS = Set.of("localhost", "127.0.0.1", "::1");
 
     private static final Logger LOGGER = Logger.getLogger(VertxHttpRecorder.class.getName());
 
@@ -1420,6 +1431,7 @@ public class VertxHttpRecorder {
                                     // Compatibility with test.url
                                     valueRegistry.register(RuntimeKey.key("test.url"), localBaseUri.toString());
                                 }
+                                checkPortShadowedByAnotherProcess(options.getHost(), actualPort);
                             }
                         }
 
@@ -1491,6 +1503,55 @@ public class VertxHttpRecorder {
                         path.deleteCharAt(path.length() - 1);
                     }
                     return URI.create(scheme + "://" + host + ":" + actualPort + path);
+                }
+
+                private void checkPortShadowedByAnotherProcess(String host, int port) {
+                    if (!launchMode.isDevOrTest()) {
+                        return;
+                    }
+                    if (!LOOPBACK_HOSTS.contains(host)) {
+                        return;
+                    }
+                    InetAddress nonLoopback = findNonLoopbackAddress();
+                    if (nonLoopback == null) {
+                        LOGGER.debug("No non-loopback address found, skipping port shadow check");
+                        return;
+                    }
+                    vertx.executeBlocking(() -> {
+                        try (Socket socket = new Socket()) {
+                            socket.connect(new InetSocketAddress(nonLoopback, port), PORT_SHADOW_CHECK_TIMEOUT_MS);
+                            LOGGER.warnf("Port %d is also in use on network interface %s, possibly by a container. "
+                                    + "Quarkus is listening on %s only, which may shadow the other process. "
+                                    + "Use 'quarkus.http.host=0.0.0.0' to listen on all interfaces.",
+                                    port, nonLoopback.getHostAddress(), host);
+                        } catch (IOException e) {
+                            LOGGER.debugf("Port shadow check on %s:%d found no conflict: %s",
+                                    nonLoopback.getHostAddress(), port, e.getMessage());
+                        }
+                        return null;
+                    });
+                }
+
+                private InetAddress findNonLoopbackAddress() {
+                    try {
+                        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+                        while (interfaces.hasMoreElements()) {
+                            NetworkInterface ni = interfaces.nextElement();
+                            if (ni.isLoopback() || !ni.isUp()) {
+                                continue;
+                            }
+                            Enumeration<InetAddress> addresses = ni.getInetAddresses();
+                            while (addresses.hasMoreElements()) {
+                                InetAddress addr = addresses.nextElement();
+                                if (!addr.isLoopbackAddress()) {
+                                    return addr;
+                                }
+                            }
+                        }
+                    } catch (SocketException e) {
+                        LOGGER.debugf("Failed to enumerate network interfaces: %s", e.getMessage());
+                    }
+                    return null;
                 }
             });
         }

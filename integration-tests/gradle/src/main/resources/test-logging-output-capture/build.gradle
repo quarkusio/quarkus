@@ -1,0 +1,45 @@
+plugins {
+    id 'java'
+    id 'io.quarkus'
+}
+
+repositories {
+    mavenLocal {
+        content {
+            includeGroupByRegex 'io.quarkus.*'
+            includeGroup 'org.hibernate.orm'
+        }
+    }
+    mavenCentral()
+}
+
+dependencies {
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation 'io.quarkus:quarkus-arc'
+
+    testImplementation 'io.quarkus:quarkus-junit'
+}
+
+compileJava {
+    options.compilerArgs << '-parameters'
+}
+
+test {
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+
+    // Suppress test output at all Gradle log levels (lifecycle, info, debug).
+    // The Quarkus Gradle test wrapper runs with --info, which uses the info-level
+    // testLogging config rather than the default lifecycle-level one.
+    testLogging {
+        showStandardStreams = false
+        events("failed", "skipped", "passed")
+    }
+    testLogging.info {
+        showStandardStreams = false
+        events("failed", "skipped", "passed")
+    }
+    testLogging.debug {
+        showStandardStreams = false
+        events("failed", "skipped", "passed")
+    }
+}

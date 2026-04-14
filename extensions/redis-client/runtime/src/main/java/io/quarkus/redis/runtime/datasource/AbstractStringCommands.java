@@ -10,8 +10,8 @@ import java.lang.reflect.Type;
 import java.util.Map;
 
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Command;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Response;
 
 class AbstractStringCommands<K, V> extends AbstractRedisCommands {
 

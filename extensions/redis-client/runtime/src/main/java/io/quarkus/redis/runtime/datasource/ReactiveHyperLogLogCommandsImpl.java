@@ -5,7 +5,7 @@ import java.lang.reflect.Type;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.hyperloglog.ReactiveHyperLogLogCommands;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveHyperLogLogCommandsImpl<K, V> extends AbstractHyperLogLogCommands<K, V>
         implements ReactiveHyperLogLogCommands<K, V> {

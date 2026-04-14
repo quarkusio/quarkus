@@ -7,7 +7,7 @@ import io.quarkus.redis.datasource.list.Position;
 import io.quarkus.redis.datasource.list.ReactiveTransactionalListCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveTransactionalListCommandsImpl<K, V> extends AbstractTransactionalCommands
         implements ReactiveTransactionalListCommands<K, V> {

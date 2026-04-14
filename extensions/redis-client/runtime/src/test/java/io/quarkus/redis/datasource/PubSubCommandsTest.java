@@ -27,7 +27,7 @@ import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.Cancellable;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class PubSubCommandsTest extends DatasourceTestBase {
 

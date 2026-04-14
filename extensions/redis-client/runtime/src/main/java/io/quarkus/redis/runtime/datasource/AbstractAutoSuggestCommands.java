@@ -7,8 +7,8 @@ import java.lang.reflect.Type;
 
 import io.quarkus.redis.datasource.autosuggest.GetArgs;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Command;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Response;
 
 public class AbstractAutoSuggestCommands<K> extends AbstractRedisCommands {
 

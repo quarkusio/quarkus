@@ -10,7 +10,7 @@ import io.quarkus.redis.datasource.autosuggest.GetArgs;
 import io.quarkus.redis.datasource.autosuggest.ReactiveAutoSuggestCommands;
 import io.quarkus.redis.datasource.autosuggest.Suggestion;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveAutoSuggestCommandsImpl<K> extends AbstractAutoSuggestCommands<K>
         implements ReactiveAutoSuggestCommands<K>, ReactiveRedisCommands {

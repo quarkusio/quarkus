@@ -15,8 +15,8 @@ import io.quarkus.redis.datasource.search.IndexedField;
 import io.quarkus.redis.datasource.search.QueryArgs;
 import io.quarkus.redis.datasource.search.SpellCheckArgs;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Command;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Response;
 
 public class AbstractSearchCommands<K> extends AbstractRedisCommands {
 

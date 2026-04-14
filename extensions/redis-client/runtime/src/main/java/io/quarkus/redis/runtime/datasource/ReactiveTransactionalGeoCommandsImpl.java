@@ -14,7 +14,7 @@ import io.quarkus.redis.datasource.geo.GeoUnit;
 import io.quarkus.redis.datasource.geo.ReactiveTransactionalGeoCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveTransactionalGeoCommandsImpl<K, V> extends AbstractTransactionalCommands
         implements ReactiveTransactionalGeoCommands<K, V> {

@@ -12,7 +12,7 @@ import io.quarkus.redis.datasource.ScanArgs;
 import io.quarkus.redis.datasource.hash.ReactiveHashCommands;
 import io.quarkus.redis.datasource.hash.ReactiveHashScanCursor;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveHashCommandsImpl<K, F, V> extends AbstractHashCommands<K, F, V> implements ReactiveHashCommands<K, F, V> {
 

@@ -22,7 +22,7 @@ import io.quarkus.redis.datasource.topk.ReactiveTransactionalTopKCommands;
 import io.quarkus.redis.datasource.value.ReactiveTransactionalValueCommands;
 import io.smallrye.common.annotation.Experimental;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Command;
+import io.vertx.redis.client.Command;
 
 /**
  * Redis Data Source object used to execute commands in a Redis transaction ({@code MULTI}).
@@ -524,13 +524,4 @@ public interface ReactiveTransactionalRedisDataSource {
      */
     Uni<Void> execute(Command command, String... args);
 
-    /**
-     * Executes a command.
-     * This method is used to execute commands not offered by the API.
-     *
-     * @param command the command
-     * @param args the parameters, encoded as String.
-     * @return the response
-     */
-    Uni<Void> execute(io.vertx.redis.client.Command command, String... args);
 }

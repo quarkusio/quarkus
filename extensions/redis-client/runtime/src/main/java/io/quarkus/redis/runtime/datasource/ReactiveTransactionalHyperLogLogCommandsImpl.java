@@ -3,7 +3,7 @@ package io.quarkus.redis.runtime.datasource;
 import io.quarkus.redis.datasource.hyperloglog.ReactiveTransactionalHyperLogLogCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveTransactionalHyperLogLogCommandsImpl<K, V> extends AbstractTransactionalCommands
         implements ReactiveTransactionalHyperLogLogCommands<K, V> {

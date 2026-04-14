@@ -9,7 +9,7 @@ import io.quarkus.redis.datasource.keys.ReactiveTransactionalKeyCommands;
 import io.quarkus.redis.datasource.keys.RedisKeyNotFoundException;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveTransactionalKeyCommandsImpl<K> extends AbstractTransactionalCommands
         implements ReactiveTransactionalKeyCommands<K> {

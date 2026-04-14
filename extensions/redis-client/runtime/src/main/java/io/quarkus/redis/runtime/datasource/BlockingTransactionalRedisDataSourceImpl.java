@@ -24,7 +24,7 @@ import io.quarkus.redis.datasource.topk.TransactionalTopKCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
 import io.quarkus.redis.datasource.value.TransactionalValueCommands;
-import io.vertx.mutiny.redis.client.Command;
+import io.vertx.redis.client.Command;
 
 public class BlockingTransactionalRedisDataSourceImpl implements TransactionalRedisDataSource {
 
@@ -158,11 +158,6 @@ public class BlockingTransactionalRedisDataSourceImpl implements TransactionalRe
 
     @Override
     public void execute(Command command, String... args) {
-        reactive.execute(command, args).await().atMost(timeout);
-    }
-
-    @Override
-    public void execute(io.vertx.redis.client.Command command, String... args) {
         reactive.execute(command, args).await().atMost(timeout);
     }
 }

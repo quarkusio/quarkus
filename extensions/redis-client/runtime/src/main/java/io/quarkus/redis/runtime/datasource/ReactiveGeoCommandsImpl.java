@@ -18,7 +18,7 @@ import io.quarkus.redis.datasource.geo.GeoUnit;
 import io.quarkus.redis.datasource.geo.GeoValue;
 import io.quarkus.redis.datasource.geo.ReactiveGeoCommands;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveGeoCommandsImpl<K, V> extends AbstractGeoCommands<K, V> implements ReactiveGeoCommands<K, V> {
 

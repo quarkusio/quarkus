@@ -44,17 +44,12 @@ public class PubSubTest extends DatasourceTestBase {
         CountDownLatch latch = new CountDownLatch(3);
         ReactivePubSubCommands.ReactiveRedisSubscriber subscriber = ps.subscribe("people",
                 p -> latch.countDown()).await().indefinitely();
-
         ps.publish("people", person1).await().indefinitely();
         ps.publish("people", person2).await().indefinitely();
-
         ds.value(String.class, String.class)
                 .set("hello", "foo").await().indefinitely();
-
         ps.publish("people", person2).await().indefinitely();
-
         assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
-
         subscriber.unsubscribe().await().indefinitely();
     }
 

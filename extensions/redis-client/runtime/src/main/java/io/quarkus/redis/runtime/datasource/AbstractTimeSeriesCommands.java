@@ -19,8 +19,8 @@ import io.quarkus.redis.datasource.timeseries.RangeArgs;
 import io.quarkus.redis.datasource.timeseries.SeriesSample;
 import io.quarkus.redis.datasource.timeseries.TimeSeriesRange;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Command;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Response;
 
 public class AbstractTimeSeriesCommands<K> extends AbstractRedisCommands {
 

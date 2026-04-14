@@ -8,7 +8,7 @@ import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.string.ReactiveStringCommands;
 import io.quarkus.redis.datasource.value.ReactiveValueCommands;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveStringCommandsImpl<K, V> extends AbstractStringCommands<K, V>
         implements ReactiveStringCommands<K, V>, ReactiveValueCommands<K, V> {

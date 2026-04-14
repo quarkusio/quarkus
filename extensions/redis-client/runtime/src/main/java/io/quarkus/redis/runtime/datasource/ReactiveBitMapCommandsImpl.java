@@ -8,7 +8,7 @@ import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.bitmap.BitFieldArgs;
 import io.quarkus.redis.datasource.bitmap.ReactiveBitMapCommands;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveBitMapCommandsImpl<K> extends AbstractBitMapCommands<K>
         implements ReactiveBitMapCommands<K>, ReactiveRedisCommands {

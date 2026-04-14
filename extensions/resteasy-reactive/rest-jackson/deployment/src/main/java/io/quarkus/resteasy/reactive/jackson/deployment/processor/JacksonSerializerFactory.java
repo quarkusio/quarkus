@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.SerializableString;
 import com.fasterxml.jackson.core.io.SerializedString;
 import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
@@ -262,16 +263,17 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
 
     private boolean serializeObjectData(ClassInfo classInfo, ClassCreator classCreator, MethodCreator serialize,
             SerializationContext ctx, Set<String> serializedFields) {
-        return serializeFields(classInfo, classCreator, serialize, ctx, serializedFields) &&
-                serializeMethods(classInfo, classCreator, serialize, ctx, serializedFields);
+        PropertyNamingStrategy namingStrategy = getNamingStrategy(classInfo);
+        return serializeFields(classInfo, classCreator, serialize, ctx, serializedFields, namingStrategy) &&
+                serializeMethods(classInfo, classCreator, serialize, ctx, serializedFields, namingStrategy);
     }
 
     private boolean serializeFields(ClassInfo classInfo, ClassCreator classCreator, MethodCreator serialize,
-            SerializationContext ctx, Set<String> serializedFields) {
+            SerializationContext ctx, Set<String> serializedFields, PropertyNamingStrategy namingStrategy) {
         MethodInfo constructor = findConstructor(classInfo).orElse(null);
 
         for (FieldInfo fieldInfo : classFields(classInfo)) {
-            FieldSpecs fieldSpecs = fieldSpecsFromField(classInfo, constructor, fieldInfo);
+            FieldSpecs fieldSpecs = fieldSpecsFromField(classInfo, constructor, fieldInfo, namingStrategy);
             if (fieldSpecs != null && serializedFields.add(fieldSpecs.jsonName)) {
                 if (fieldSpecs.isIgnoredField()) {
                     continue;
@@ -286,9 +288,9 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
     }
 
     private boolean serializeMethods(ClassInfo classInfo, ClassCreator classCreator, MethodCreator serialize,
-            SerializationContext ctx, Set<String> serializedFields) {
+            SerializationContext ctx, Set<String> serializedFields, PropertyNamingStrategy namingStrategy) {
         for (MethodInfo methodInfo : classMethods(classInfo)) {
-            FieldSpecs fieldSpecs = fieldSpecsFromMethod(methodInfo);
+            FieldSpecs fieldSpecs = fieldSpecsFromMethod(methodInfo, namingStrategy);
             if (fieldSpecs != null && serializedFields.add(fieldSpecs.jsonName)) {
                 if (fieldSpecs.isIgnoredField()) {
                     continue;
@@ -302,8 +304,10 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
         return true;
     }
 
-    private FieldSpecs fieldSpecsFromMethod(MethodInfo methodInfo) {
-        return !Modifier.isStatic(methodInfo.flags()) && isGetterMethod(methodInfo) ? new FieldSpecs(methodInfo) : null;
+    private FieldSpecs fieldSpecsFromMethod(MethodInfo methodInfo, PropertyNamingStrategy namingStrategy) {
+        return !Modifier.isStatic(methodInfo.flags()) && isGetterMethod(methodInfo)
+                ? new FieldSpecs(null, null, methodInfo, namingStrategy)
+                : null;
     }
 
     private boolean isJsonValueMethod(MethodInfo methodInfo) {

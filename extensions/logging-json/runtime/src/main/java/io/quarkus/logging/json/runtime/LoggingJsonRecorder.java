@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logmanager.PropertyValues;
+import org.jboss.logmanager.formatters.StructuredFormatter;
 import org.jboss.logmanager.formatters.StructuredFormatter.Key;
 
 import io.quarkus.logging.json.runtime.JsonLogConfig.AdditionalFieldConfig.Type;
@@ -121,7 +122,12 @@ public class LoggingJsonRecorder {
         if (!dateFormat.equals("default")) {
             formatter.setDateFormat(dateFormat);
         }
-        formatter.setExceptionOutputType(config.exceptionOutputType());
+        if (JsonConfig.LogFormat.GCP == config.logFormat()
+                && config.exceptionOutputType() == StructuredFormatter.ExceptionOutputType.DETAILED) {
+            formatter.setExceptionOutputType(StructuredFormatter.ExceptionOutputType.DETAILED_AND_FORMATTED);
+        } else {
+            formatter.setExceptionOutputType(config.exceptionOutputType());
+        }
         formatter.setPrintDetails(config.printDetails());
         config.recordDelimiter().ifPresent(formatter::setRecordDelimiter);
         final String zoneId = config.zoneId();
@@ -167,6 +173,7 @@ public class LoggingJsonRecorder {
     private OverridableJsonConfig addGCPFieldOverrides(OverridableJsonConfig overridableJsonConfig) {
         EnumMap<Key, String> keyOverrides = PropertyValues.stringToEnumMap(Key.class, overridableJsonConfig.keyOverrides());
         keyOverrides.putIfAbsent(Key.LEVEL, "severity");
+        keyOverrides.putIfAbsent(Key.STACK_TRACE, "stack_trace");
 
         Set<String> excludedKeys = new HashSet<>(overridableJsonConfig.excludedKeys());
         Map<String, AdditionalField> additionalFields = new LinkedHashMap<>(overridableJsonConfig.additionalFields());

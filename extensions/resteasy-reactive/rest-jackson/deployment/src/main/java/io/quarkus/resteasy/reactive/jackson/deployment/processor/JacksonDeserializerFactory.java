@@ -35,6 +35,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.type.TypeFactory;
@@ -228,7 +229,8 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
 
         MethodInfo ctor = ctorOpt.get();
         DeserializationData deserData = new DeserializationData(classInfo, ctor, classCreator, deserialize,
-                getJsonNode(deserialize), parseTypeParameters(classInfo, classCreator), new HashSet<>());
+                getJsonNode(deserialize), parseTypeParameters(classInfo, classCreator), new HashSet<>(),
+                getNamingStrategy(classInfo));
 
         ResultHandle deserializedHandle = ctor.parametersCount() == 0
                 ? deserData.methodCreator.newInstance(MethodDescriptor.ofConstructor(deserData.classInfo.name().toString()))
@@ -257,7 +259,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         ResultHandle[] params = new ResultHandle[deserData.constructor.parameters().size()];
         int i = 0;
         for (MethodParameterInfo paramInfo : deserData.constructor.parameters()) {
-            FieldSpecs fieldSpecs = fieldSpecsFromFieldParam(paramInfo);
+            FieldSpecs fieldSpecs = fieldSpecsFromFieldParam(paramInfo, deserData.namingStrategy);
             if (fieldSpecs.hasUnknownAnnotation()) {
                 return null;
             }
@@ -400,14 +402,15 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
 
         for (FieldInfo fieldInfo : classFields(deserData.classInfo)) {
             if (!deserializeFieldSpecs(deserData, deserializationContext, objHandle, fieldValue,
-                    deserializedFields, strSwitch, fieldSpecsFromField(deserData.classInfo, deserData.constructor, fieldInfo),
+                    deserializedFields, strSwitch,
+                    fieldSpecsFromField(deserData.classInfo, deserData.constructor, fieldInfo, deserData.namingStrategy),
                     valid))
                 return false;
         }
 
         for (MethodInfo methodInfo : classMethods(deserData.classInfo)) {
             if (!deserializeFieldSpecs(deserData, deserializationContext, objHandle, fieldValue,
-                    deserializedFields, strSwitch, fieldSpecsFromMethod(methodInfo), valid))
+                    deserializedFields, strSwitch, fieldSpecsFromMethod(methodInfo, deserData.namingStrategy), valid))
                 return false;
         }
 
@@ -449,8 +452,8 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         return true;
     }
 
-    private FieldSpecs fieldSpecsFromMethod(MethodInfo methodInfo) {
-        return isSetterMethod(methodInfo) ? new FieldSpecs(methodInfo) : null;
+    private FieldSpecs fieldSpecsFromMethod(MethodInfo methodInfo, PropertyNamingStrategy namingStrategy) {
+        return isSetterMethod(methodInfo) ? new FieldSpecs(null, null, methodInfo, namingStrategy) : null;
     }
 
     private boolean isSetterMethod(MethodInfo methodInfo) {
@@ -603,6 +606,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
 
     private record DeserializationData(ClassInfo classInfo, MethodInfo constructor, ClassCreator classCreator,
             MethodCreator methodCreator,
-            ResultHandle jsonNode, Map<String, Integer> typeParametersIndex, Set<String> constructorFields) {
+            ResultHandle jsonNode, Map<String, Integer> typeParametersIndex, Set<String> constructorFields,
+            PropertyNamingStrategy namingStrategy) {
     }
 }

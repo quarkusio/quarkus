@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.test;
 
+import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.is;
@@ -1081,5 +1082,29 @@ public abstract class AbstractSimpleJsonTest {
                 .post("/simple/greeting")
                 .then()
                 .statusCode(400);
+    }
+
+    @Test
+    void naming_annotationUpperSnake_shouldDeserialize() {
+        given()
+                .contentType("application/json")
+                .body("""
+                        {"FIRST_NAME": "Bob"}
+                        """)
+                .when()
+                .post("/simple/annotation-naming")
+                .then()
+                .statusCode(200)
+                .body("values", CoreMatchers.is("Bob"));
+    }
+
+    @Test
+    void naming_annotationUpperSnake_shouldSerialize() {
+        given()
+                .when()
+                .get("/simple/annotation-naming-ser")
+                .then()
+                .statusCode(200)
+                .body("FIRST_NAME", CoreMatchers.is("Bob"));
     }
 }

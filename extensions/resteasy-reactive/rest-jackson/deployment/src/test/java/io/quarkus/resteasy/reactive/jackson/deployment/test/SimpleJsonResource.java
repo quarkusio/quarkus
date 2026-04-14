@@ -642,4 +642,19 @@ public class SimpleJsonResource extends SuperClass<Person> {
     public JsonAliasRecord echoJsonAliasRecord(JsonAliasRecord record) {
         return record;
     }
+
+    @POST
+    @Path("/annotation-naming")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public String annotationNaming(AnnotationNamingRequest request) {
+        return "{\"values\":\"" + request.firstName() + "\"}";
+    }
+
+    @GET
+    @Path("/annotation-naming-ser")
+    @Produces(MediaType.APPLICATION_JSON)
+    public AnnotationNamingRequest annotationNamingSer() {
+        return new AnnotationNamingRequest("Bob");
+    }
 }

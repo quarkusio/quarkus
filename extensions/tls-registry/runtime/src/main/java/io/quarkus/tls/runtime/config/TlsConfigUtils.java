@@ -161,7 +161,7 @@ public class TlsConfigUtils {
      */
     public static void configure(WebSocketClientOptions options, TlsConfiguration configuration) {
         ClientSSLOptions sslOptions = applyClientSSLOptions(options, configuration);
-        if (sslOptions != null  && sslOptions.getHostnameVerificationAlgorithm() != null
+        if (sslOptions != null && sslOptions.getHostnameVerificationAlgorithm() != null
                 && sslOptions.getHostnameVerificationAlgorithm().equals("NONE")) {
             // Only disable hostname verification if the algorithm is explicitly set to NONE
             log.warnf("Hostname verification DISABLED via hostname-verification-algorithm=NONE");

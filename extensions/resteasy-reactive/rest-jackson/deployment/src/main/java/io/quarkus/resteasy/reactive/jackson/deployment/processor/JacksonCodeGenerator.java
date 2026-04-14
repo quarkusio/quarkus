@@ -78,7 +78,8 @@ public abstract class JacksonCodeGenerator {
 
     private Optional<String> create(ClassInfo classInfo) {
         String beanClassName = classInfo.name().toString();
-        if (vetoedClass(classInfo, beanClassName) || !generatedClassNames.add(beanClassName)) {
+        if (vetoedClass(classInfo, beanClassName) || hasUnknownClassAnnotation(classInfo)
+                || !generatedClassNames.add(beanClassName)) {
             return Optional.empty();
         }
 
@@ -159,6 +160,11 @@ public abstract class JacksonCodeGenerator {
 
     private static boolean vetoedClassName(String className) {
         return className.startsWith("java.") || className.startsWith("jakarta.") || className.startsWith("io.vertx.core.json.");
+    }
+
+    private static boolean hasUnknownClassAnnotation(ClassInfo classInfo) {
+        return classInfo.declaredAnnotations().stream()
+                .anyMatch(a -> FieldSpecs.isUnknownAnnotation(a.name().toString()));
     }
 
     protected enum FieldKind {
@@ -431,12 +437,13 @@ public abstract class JacksonCodeGenerator {
             return annotations.get(JsonIgnore.class.getName()) != null;
         }
 
-        private static boolean isUnknownAnnotation(String ann) {
+        static boolean isUnknownAnnotation(String ann) {
             if (ann.startsWith("com.fasterxml.jackson.")) {
                 return !ann.equals(JsonProperty.class.getName()) &&
                         !ann.equals(JsonIgnore.class.getName()) &&
                         !ann.equals(JsonCreator.class.getName()) &&
-                        !ann.equals(JsonAlias.class.getName());
+                        !ann.equals(JsonAlias.class.getName()) &&
+                        !ann.equals(JsonNaming.class.getName());
             }
             return ann.startsWith("jakarta.persistence.");
         }

@@ -2,24 +2,33 @@ package io.quarkus.reactive.oracle.client;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import jakarta.inject.Inject;
+import java.util.concurrent.CompletionStage;
 
-import io.quarkus.vertx.web.Route;
-import io.smallrye.mutiny.Uni;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
 import io.vertx.mutiny.sqlclient.Pool;
 
+@Path("/test")
 public class CredentialsTestResource {
 
     @Inject
     Pool client;
 
-    @Route(path = "/test", methods = Route.HttpMethod.GET)
-    Uni<String> connect() {
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public CompletionStage<String> connect() {
+
         return client.query("SELECT 1 FROM DUAL").execute()
                 .map(oracleRowSet -> {
                     assertEquals(1, oracleRowSet.size());
                     assertEquals(1, oracleRowSet.iterator().next().getInteger(0));
                     return "OK";
-                });
+                })
+                .subscribeAsCompletionStage();
     }
+
 }

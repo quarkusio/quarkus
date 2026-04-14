@@ -1,30 +1,41 @@
 package io.quarkus.reactive.mssql.client;
 
 import java.net.ConnectException;
+import java.sql.SQLException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
-import io.quarkus.vertx.web.Route;
-import io.vertx.ext.web.RoutingContext;
 import io.vertx.sqlclient.Pool;
 
+@Path("/dev")
 public class DevModeResource {
 
     @Inject
     Pool client;
 
-    @Route(path = "/dev/error", methods = Route.HttpMethod.GET)
-    void getErrorMessage(RoutingContext rc) {
+    @GET
+    @Path("/error")
+    @Produces(MediaType.TEXT_PLAIN)
+    public CompletionStage<Response> getErrorMessage() throws SQLException {
+        CompletableFuture<Response> future = new CompletableFuture<>();
         client.query("SELECT 1").execute().onComplete(ar -> {
             Class<?> expectedExceptionClass = ConnectException.class;
             if (ar.succeeded()) {
-                rc.response().setStatusCode(500).end("Expected SQL query to fail");
+                future.complete(Response.serverError().entity("Expected SQL query to fail").build());
             } else if (!expectedExceptionClass.isAssignableFrom(ar.cause().getClass())) {
-                rc.response().setStatusCode(500)
-                        .end("Expected " + expectedExceptionClass + ", got " + ar.cause().getClass());
+                future.complete(Response.serverError()
+                        .entity("Expected " + expectedExceptionClass + ", got " + ar.cause().getClass()).build());
             } else {
-                rc.response().setStatusCode(200).end(ar.cause().getMessage());
+                future.complete(Response.ok(ar.cause().getMessage()).build());
             }
         });
+        return future;
     }
 }

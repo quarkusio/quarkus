@@ -28,12 +28,6 @@ public class ConfigUrlMissingDefaultDatasourceDynamicInjectionTest {
     @Inject
     InjectableInstance<io.vertx.mutiny.sqlclient.Pool> mutinyPool;
 
-    @Inject
-    InjectableInstance<Pool> vendorPool;
-
-    @Inject
-    InjectableInstance<io.vertx.mutiny.sqlclient.Pool> mutinyVendorPool;
-
     @Test
     public void pool() {
         doTest(pool, pool1 -> pool1.getConnection().toCompletionStage().toCompletableFuture().join());
@@ -42,16 +36,6 @@ public class ConfigUrlMissingDefaultDatasourceDynamicInjectionTest {
     @Test
     public void mutinyPool() {
         doTest(mutinyPool, pool1 -> pool1.getConnection().subscribe().asCompletionStage().join());
-    }
-
-    @Test
-    public void vendorPool() {
-        doTest(vendorPool, PGPool -> PGPool.getConnection().toCompletionStage().toCompletableFuture().join());
-    }
-
-    @Test
-    public void mutinyVendorPool() {
-        doTest(mutinyVendorPool, PGPool -> PGPool.getConnection().subscribe().asCompletionStage().join());
     }
 
     private <T> void doTest(InjectableInstance<T> instance, Consumer<T> action) {

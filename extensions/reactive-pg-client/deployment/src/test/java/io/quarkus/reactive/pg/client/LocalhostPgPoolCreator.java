@@ -2,10 +2,11 @@ package io.quarkus.reactive.pg.client;
 
 import jakarta.inject.Singleton;
 
+import io.quarkus.reactive.datasource.PoolCreator;
 import io.vertx.sqlclient.Pool;
 
 @Singleton
-public class LocalhostPgPoolCreator implements PgPoolCreator {
+public class LocalhostPgPoolCreator implements PoolCreator {
 
     @Override
     public Pool create(Input input) {

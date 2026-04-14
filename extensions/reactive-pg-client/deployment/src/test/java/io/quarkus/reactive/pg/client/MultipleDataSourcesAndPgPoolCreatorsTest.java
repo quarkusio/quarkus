@@ -12,6 +12,7 @@ import jakarta.inject.Singleton;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.reactive.datasource.PoolCreator;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.vertx.pgclient.PgConnectOptions;
@@ -82,9 +83,8 @@ public class MultipleDataSourcesAndPgPoolCreatorsTest {
     }
 
     @Singleton
-    public static class DefaultPgPoolCreator implements PgPoolCreator {
+    public static class DefaultPgPoolCreator implements PoolCreator {
 
-        // TODO Improve input to be able to direction retrieve the right options?
         @Override
         public Pool create(Input input) {
             assertEquals(10, ((PgConnectOptions) input.connectOptionsList().get(0)).getPipeliningLimit()); // validate that the bean has been called for the proper datasource
@@ -95,7 +95,7 @@ public class MultipleDataSourcesAndPgPoolCreatorsTest {
 
     @Singleton
     @ReactiveDataSource("hibernate")
-    public static class HibernatePgPoolCreator implements PgPoolCreator {
+    public static class HibernatePgPoolCreator implements PoolCreator {
 
         @Override
         public Pool create(Input input) {
@@ -103,6 +103,7 @@ public class MultipleDataSourcesAndPgPoolCreatorsTest {
             return Pool.pool(input.vertx(),
                     ((PgConnectOptions) input.connectOptionsList().get(0)).setHost("localhost").setPort(5431),
                     input.poolOptions());
+
         }
     }
 }

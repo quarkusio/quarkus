@@ -346,7 +346,9 @@ public interface NativeConfig {
         /**
          * A comma separated list of globs to match resource paths that should be added to the native image.
          * <p>
-         * Use slash ({@code /}) as a path separator on all platforms. Globs must not start with slash.
+         * Use slash ({@code /}) as a path separator on all platforms. Globs must not start with a slash.
+         * Globs must not start with a globstar ({@code **})
+         * as wildly general globs that target the entire classpath are rejected.
          * <p>
          * By default, no resources are included.
          * <p>
@@ -376,31 +378,6 @@ public interface NativeConfig {
          * <td>Matches a (possibly empty) sequence of characters that may contain slash ({@code /})</td>
          * </tr>
          * <tr>
-         * <td><code>?</code></td>
-         * <td>Matches one character, but not slash</td>
-         * </tr>
-         * <tr>
-         * <td><code>[abc]</code></td>
-         * <td>Matches one character given in the bracket, but not slash</td>
-         * </tr>
-         * <tr>
-         * <td><code>[a-z]</code></td>
-         * <td>Matches one character from the range given in the bracket, but not slash</td>
-         * </tr>
-         * <tr>
-         * <td><code>[!abc]</code></td>
-         * <td>Matches one character not named in the bracket; does not match slash</td>
-         * </tr>
-         * <tr>
-         * <td><code>[a-z]</code></td>
-         * <td>Matches one character outside the range given in the bracket; does not match slash</td>
-         * </tr>
-         * <tr>
-         * <td><code>{one,two,three}</code></td>
-         * <td>Matches any of the alternating tokens separated by comma; the tokens may contain wildcards, nested
-         * alternations and ranges</td>
-         * </tr>
-         * <tr>
          * <td><code>\</code></td>
          * <td>The escape character</td>
          * </tr>
@@ -421,29 +398,9 @@ public interface NativeConfig {
         Optional<List<String>> includes();
 
         /**
-         * A comma separated list of globs to match resource paths that should <b>not</b> be added to the native image.
-         * <p>
-         * Use slash ({@code /}) as a path separator on all platforms. Globs must not start with slash.
-         * <p>
-         * Please refer to {@link #includes} for details about the glob syntax.
-         * <p>
-         * By default, no resources are excluded.
-         * <p>
-         * Example: Given that you have {@code src/main/resources/red.png}
-         * and {@code src/main/resources/foo/green.png} in your source tree and one of your dependency JARs contains
-         * {@code bar/blue.png} file, with the following configuration
-         *
-         * <pre>
-         * quarkus.native.resources.includes = **&#47;*.png
-         * quarkus.native.resources.excludes = foo/**,**&#47;green.png
-         * </pre>
-         * <p>
-         * the resource {@code red.png} will be available in the native image while the resources {@code foo/green.png}
-         * and {@code bar/blue.png} will not be available in the native image.
-         *
-         * @deprecated Excluding resources is not supported in the new reachability-metadata.json file used with Mandrel/GraalVM
-         *             25.0 and onwards. Quarkus plans to adopt the use of reachability-metadata.json for Mandrel/GraalVM 23.1
-         *             for JDK 21 as well (see https://github.com/quarkusio/quarkus/issues/41016)
+         * @deprecated Excluding resources is not supported in the new reachability-metadata.json and
+         *             Quarkus no longer implements it for any GraalVM/Mandrel version. It is effectively a no-op
+         *             that emits an error in the build log.
          */
         @Deprecated(since = "3.29", forRemoval = true)
         Optional<List<String>> excludes();

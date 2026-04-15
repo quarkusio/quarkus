@@ -125,6 +125,12 @@ Once you add the dependency, the extension will generate tracing data by default
 |true
 | If false, will disable Quarkus default OTLP exporters at *build* time.
 
+| All output
+|`quarkus.otel.experimental.otlp.default.enable`
+|false
+|If true, the default OTLP exporter is created even when another exporter is already present for
+that signal, allowing both to coexist. This is a *build* time property.
+
 Telemetry will be generated, contexts will be propagated but no telemetry will be sent out.
 
 | Traces
@@ -429,6 +435,25 @@ Currently, are available the following exporters (may be outdated) for:
 - Google Cloud
 
 Also on Quarkiverse, the https://docs.quarkiverse.io/quarkus-amazon-services/dev/opentelemetry.html[Quarkus AWS SDK has integration with OpenTelemetry].
+
+=== Coexistence with the default exporter
+
+By default, if a custom exporter is present in the CDI container — for example one contributed by a
+Quarkiverse extension, or a bean defined directly in the application — Quarkus does not create its
+built-in OTLP exporter for that signal. This lets you fully replace the default exporter with your
+own without any leftover output.
+
+If instead you want the default OTLP exporter to keep exporting *in addition to* any other exporters
+that are present, set:
+
+[source,properties]
+----
+quarkus.otel.experimental.otlp.default.enable=true
+----
+
+This is a *build* time property. With it enabled, telemetry is sent both to the default OTLP endpoint
+and to any other configured exporters, so you can, for example, combine a Quarkiverse exporter with
+the default collector without having to choose one or the other.
 
 === Logging exporter (for debugging)
 

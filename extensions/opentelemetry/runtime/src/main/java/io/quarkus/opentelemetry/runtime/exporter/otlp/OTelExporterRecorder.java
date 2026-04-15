@@ -15,6 +15,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.util.TypeLiteral;
+
 import org.jboss.logging.Logger;
 
 import io.opentelemetry.api.metrics.MeterProvider;
@@ -36,6 +39,7 @@ import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.metrics.internal.aggregator.AggregationUtil;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.quarkus.arc.SyntheticCreationalContext;
+import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.CompressionType;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig;
@@ -70,19 +74,22 @@ public class OTelExporterRecorder {
     public static final String BASE2EXPONENTIAL_AGGREGATION_NAME = AggregationUtil
             .aggregationName(Aggregation.base2ExponentialBucketHistogram());
 
+    private final OTelBuildConfig buildConfig;
     private final RuntimeValue<OTelRuntimeConfig> runtimeConfig;
     private final RuntimeValue<OtlpExporterRuntimeConfig> exporterRuntimeConfig;
 
     public OTelExporterRecorder(
+            final OTelBuildConfig buildConfig,
             final RuntimeValue<OTelRuntimeConfig> runtimeConfig,
             final RuntimeValue<OtlpExporterRuntimeConfig> exporterRuntimeConfig) {
+        this.buildConfig = buildConfig;
         this.runtimeConfig = runtimeConfig;
         this.exporterRuntimeConfig = exporterRuntimeConfig;
     }
 
     public Function<SyntheticCreationalContext<SpanExporter>, SpanExporter> spanExporterForOtlp(
             Supplier<Vertx> vertx) {
-        URI baseUri = getTracesUri(exporterRuntimeConfig.getValue()); // do the creation and validation here in order to preserve backward compatibility
+        URI baseUri = getTracesUri(exporterRuntimeConfig.getValue());
         return new Function<>() {
             @Override
             public SpanExporter apply(
@@ -143,7 +150,7 @@ public class OTelExporterRecorder {
                                 new HttpClientOptionsConsumer(tracesConfig, baseUri, tlsConfigurationRegistry),
                                 vertx),
                         InternalTelemetryVersion.LATEST,
-                        ComponentId.generateLazy(StandardComponentId.ExporterType.OTLP_GRPC_SPAN_EXPORTER), // use the same as OTel does
+                        ComponentId.generateLazy(StandardComponentId.ExporterType.OTLP_GRPC_SPAN_EXPORTER),
                         MeterProvider::noop,
                         baseUri),
                         memoryMode);
@@ -191,6 +198,13 @@ public class OTelExporterRecorder {
                 }
 
                 MemoryMode memoryMode = exporterRuntimeConfig.getValue().memoryMode();
+
+                Instance<MetricExporter> metricExporters = context.getInjectedReference(new TypeLiteral<>() {
+                });
+                if (!metricExporters.isUnsatisfied() && !buildConfig.defaultExporterEnabled()) {
+                    return NoopMetricExporter.INSTANCE;
+                }
+
                 MetricExporter metricExporter;
 
                 try {
@@ -215,7 +229,7 @@ public class OTelExporterRecorder {
                                                 new HttpClientOptionsConsumer(metricsConfig, baseUri, tlsConfigurationRegistry),
                                                 vertx.get()),
                                         InternalTelemetryVersion.LATEST,
-                                        ComponentId.generateLazy(OTLP_GRPC_METRIC_EXPORTER), // use the same as OTel does
+                                        ComponentId.generateLazy(OTLP_GRPC_METRIC_EXPORTER),
                                         MeterProvider::noop,
                                         baseUri),
                                 aggregationTemporalityResolver(metricsConfig),
@@ -268,6 +282,12 @@ public class OTelExporterRecorder {
                     return NoopLogRecordExporter.INSTANCE;
                 }
 
+                Instance<LogRecordExporter> logRecordExporters = context.getInjectedReference(new TypeLiteral<>() {
+                });
+                if (!logRecordExporters.isUnsatisfied() && !buildConfig.defaultExporterEnabled()) {
+                    return NoopLogRecordExporter.INSTANCE;
+                }
+
                 MemoryMode memoryMode = exporterRuntimeConfig.getValue().memoryMode();
                 LogRecordExporter logRecordExporter;
 
@@ -294,7 +314,7 @@ public class OTelExporterRecorder {
                                                 vertx.get()),
                                         InternalTelemetryVersion.LATEST,
                                         ComponentId.generateLazy(
-                                                StandardComponentId.ExporterType.OTLP_GRPC_LOG_EXPORTER), // use the same as OTel does
+                                                StandardComponentId.ExporterType.OTLP_GRPC_LOG_EXPORTER),
                                         MeterProvider::noop,
                                         baseUri),
                                 memoryMode);

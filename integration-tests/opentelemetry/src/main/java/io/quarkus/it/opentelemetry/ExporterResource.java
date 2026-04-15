@@ -16,6 +16,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Response;
 
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.sdk.logs.data.LogRecordData;
@@ -33,6 +34,8 @@ public class ExporterResource {
     InMemoryMetricExporter inMemoryMetricExporter;
     @Inject
     InMemoryLogRecordExporter inMemoryLogRecordExporter;
+    @Inject
+    OpenTelemetry openTelemetry;
 
     @GET
     @Path("/reset")

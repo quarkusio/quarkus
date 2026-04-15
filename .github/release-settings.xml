@@ -16,15 +16,6 @@
                 <njord.snapshotUrl>njord:template:snapshot-sca</njord.snapshotUrl>
             </configuration>
         </server>
-        <server>
-            <id>github</id>
-            <username>${env.GITHUB_ACTOR}</username>
-            <password>${env.GITHUB_TOKEN}</password>
-            <configuration>
-                <njord.publisher>deploy</njord.publisher>
-                <njord.snapshotUrl>njord:template:snapshot-sca</njord.snapshotUrl>
-            </configuration>
-        </server>
     </servers>
 
     <!-- Enable Google mirror to avoid hammering Maven Central -->
@@ -60,6 +51,10 @@
         </profile>
         <profile>
           <id>snapshots</id>
+          <properties>
+            <!-- https://docs.aws.amazon.com/codeartifact/latest/ug/maven-troubleshooting.html#disable-parallel-puts -->
+            <aether.connector.basic.parallelPut>false</aether.connector.basic.parallelPut>
+          </properties>
         </profile>
     </profiles>
     <activeProfiles>

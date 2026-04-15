@@ -20,7 +20,9 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import jakarta.inject.Singleton;
+import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.RuntimeType;
 import jakarta.ws.rs.core.Cookie;
@@ -411,7 +413,8 @@ public class ResteasyReactiveJacksonProcessor {
                 serializedClasses.put(effectiveReturnClassInfo.name().toString(), effectiveReturnClassInfo);
             }
 
-            if (methodInfo.hasAnnotation(POST.class)) {
+            if (methodInfo.hasAnnotation(POST.class) || methodInfo.hasAnnotation(PUT.class)
+                    || methodInfo.hasAnnotation(PATCH.class)) {
                 for (Type paramType : methodInfo.parameterTypes()) {
                     ClassInfo effectiveParamClassInfo = getEffectiveClassInfo(paramType, indexView);
                     if (effectiveParamClassInfo != null) {

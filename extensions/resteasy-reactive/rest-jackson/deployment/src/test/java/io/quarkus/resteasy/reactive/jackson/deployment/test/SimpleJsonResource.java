@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
@@ -112,6 +113,20 @@ public class SimpleJsonResource extends SuperClass<Person> {
     @Path("/dog-echo")
     @Consumes(MediaType.APPLICATION_JSON)
     public Dog echoDog(Dog dog) {
+        return dog;
+    }
+
+    @PUT
+    @Path("/dog-echo-put")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Dog echoDogPut(Dog dog) {
+        return dog;
+    }
+
+    @PATCH
+    @Path("/dog-echo-patch")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Dog echoDogPatch(Dog dog) {
         return dog;
     }
 

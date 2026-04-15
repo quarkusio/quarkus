@@ -685,6 +685,42 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    public void testEchoPut() {
+        RestAssured
+                .with()
+                .body("{\"publicName\":\"Leo\",\"veterinarian\":{\"name\":\"Dolittle\"},\"age\":5,\"vaccinated\":true}")
+                .contentType("application/json; charset=utf-8")
+                .put("/simple/dog-echo-put")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("publicName", Matchers.is("Leo"))
+                .body("privateName", Matchers.nullValue())
+                .body("age", Matchers.is(5))
+                .body("vaccinated", Matchers.is(true))
+                .body("veterinarian.name", Matchers.is("Dolittle"))
+                .body("veterinarian.title", Matchers.nullValue());
+    }
+
+    @Test
+    public void testEchoPatch() {
+        RestAssured
+                .with()
+                .body("{\"publicName\":\"Leo\",\"veterinarian\":{\"name\":\"Dolittle\"},\"age\":5,\"vaccinated\":true}")
+                .contentType("application/json; charset=utf-8")
+                .patch("/simple/dog-echo-patch")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("publicName", Matchers.is("Leo"))
+                .body("privateName", Matchers.nullValue())
+                .body("age", Matchers.is(5))
+                .body("vaccinated", Matchers.is(true))
+                .body("veterinarian.name", Matchers.is("Dolittle"))
+                .body("veterinarian.title", Matchers.nullValue());
+    }
+
+    @Test
     public void testEchoWithNullString() {
         RestAssured
                 .with()

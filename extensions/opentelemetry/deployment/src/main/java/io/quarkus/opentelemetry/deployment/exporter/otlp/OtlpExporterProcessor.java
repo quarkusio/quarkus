@@ -52,7 +52,7 @@ public class OtlpExporterProcessor {
         public boolean getAsBoolean() {
             return otelBuildConfig.enabled() &&
                     otelBuildConfig.traces().enabled().orElse(Boolean.TRUE) &&
-                    otelBuildConfig.traces().exporter().contains(CDI_VALUE) &&
+                    (otelBuildConfig.traces().exporter().contains(CDI_VALUE) || otelBuildConfig.defaultExporterEnabled()) &&
                     exportBuildConfig.enabled();
         }
     }
@@ -64,7 +64,7 @@ public class OtlpExporterProcessor {
         public boolean getAsBoolean() {
             return otelBuildConfig.enabled() &&
                     otelBuildConfig.metrics().enabled().orElse(Boolean.TRUE) &&
-                    otelBuildConfig.metrics().exporter().contains(CDI_VALUE) &&
+                    (otelBuildConfig.metrics().exporter().contains(CDI_VALUE) || otelBuildConfig.defaultExporterEnabled()) &&
                     exportBuildConfig.enabled();
         }
     }
@@ -76,7 +76,7 @@ public class OtlpExporterProcessor {
         public boolean getAsBoolean() {
             return otelBuildConfig.enabled() &&
                     otelBuildConfig.logs().enabled().orElse(Boolean.TRUE) &&
-                    otelBuildConfig.logs().exporter().contains(CDI_VALUE) &&
+                    (otelBuildConfig.logs().exporter().contains(CDI_VALUE) || otelBuildConfig.defaultExporterEnabled()) &&
                     exportBuildConfig.enabled();
         }
     }
@@ -140,11 +140,20 @@ public class OtlpExporterProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     @Consume(TlsRegistryBuildItem.class)
     void createSpanProcessor(OTelExporterRecorder recorder,
+            OTelBuildConfig otelBuildConfig,
+            BeanDiscoveryFinishedBuildItem beanDiscovery,
             CoreVertxBuildItem vertxBuildItem,
             List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
-        if (!externalOtelExporterBuildItem.isEmpty()) {
-            // if there is an external exporter, we don't want to create the default one
+
+        if (!externalOtelExporterBuildItem.isEmpty() && !otelBuildConfig.defaultExporterEnabled()) {
+            // unless explicitly configured we don't want to create the default one if there is an external exporter.
+            // External exporter also use synthetic beans. However, synthetic beans don't show in the BeanDiscoveryFinishedBuildItem
+            return;
+        }
+
+        if (!beanDiscovery.beanStream().withBeanType(DotName.createSimple(SpanExporter.class.getName())).isEmpty()
+                && !otelBuildConfig.defaultExporterEnabled()) {
             return;
         }
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem
@@ -165,19 +174,21 @@ public class OtlpExporterProcessor {
     @Consume(TlsRegistryBuildItem.class)
     void createMetricsExporterProcessor(
             BeanDiscoveryFinishedBuildItem beanDiscovery,
+            OTelBuildConfig otelBuildConfig,
             OTelExporterRecorder recorder,
             List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem,
             CoreVertxBuildItem vertxBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
-        if (!externalOtelExporterBuildItem.isEmpty()) {
-            // if there is an external exporter, we don't want to create the default one.
+        if (!externalOtelExporterBuildItem.isEmpty() && !otelBuildConfig.defaultExporterEnabled()) {
+            // unless explicitly configured we don't want to create the default one if there is an external exporter.
             // External exporter also use synthetic beans. However, synthetic beans don't show in the BeanDiscoveryFinishedBuildItem
             return;
         }
 
-        if (!beanDiscovery.beanStream().withBeanType(METRIC_EXPORTER).isEmpty()) {
-            // if there is a MetricExporter bean impl around, we don't want to create the default one
+        if (!beanDiscovery.beanStream().withBeanType(METRIC_EXPORTER).isEmpty()
+                && !otelBuildConfig.defaultExporterEnabled()) {
+            // unless explicitly configured if there is a MetricExporter bean impl around, we don't want to create the default one
             return;
         }
 
@@ -199,19 +210,21 @@ public class OtlpExporterProcessor {
     @Consume(TlsRegistryBuildItem.class)
     void createLogRecordExporterProcessor(
             BeanDiscoveryFinishedBuildItem beanDiscovery,
+            OTelBuildConfig otelBuildConfig,
             OTelExporterRecorder recorder,
             List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem,
             CoreVertxBuildItem vertxBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
-        if (!externalOtelExporterBuildItem.isEmpty()) {
-            // if there is an external exporter, we don't want to create the default one.
+        if (!externalOtelExporterBuildItem.isEmpty() && !otelBuildConfig.defaultExporterEnabled()) {
+            // unless explicitly configured we don't want to create the default one if there is an external exporter.
             // External exporter also use synthetic beans. However, synthetic beans don't show in the BeanDiscoveryFinishedBuildItem
             return;
         }
 
-        if (!beanDiscovery.beanStream().withBeanType(LOG_RECORD_EXPORTER).isEmpty()) {
-            // if there is a MetricExporter bean impl around, we don't want to create the default one
+        if (!beanDiscovery.beanStream().withBeanType(LOG_RECORD_EXPORTER).isEmpty()
+                && !otelBuildConfig.defaultExporterEnabled()) {
+            // unless explicitly configured if there is a MetricExporter bean impl around, we don't want to create the default one
             return;
         }
 

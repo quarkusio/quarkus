@@ -199,7 +199,8 @@ public class OpenTelemetryProcessor {
                     new ServiceProviderBuildItem(ConfigurableSpanExporterProvider.class.getName(), spanExporterProviders));
         }
         // remove the service file that contains OtlpSpanExporterProvider
-        if (config.traces().exporter().stream().noneMatch(ExporterType.Constants.OTLP_VALUE::equals)) {
+        if (!config.defaultExporterEnabled()
+                && config.traces().exporter().stream().noneMatch(ExporterType.Constants.OTLP_VALUE::equals)) {
             removedResources.produce(new RemovedResourceBuildItem(
                     ArtifactKey.fromString("io.opentelemetry:opentelemetry-exporter-otlp"),
                     Set.of("META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")));
@@ -215,7 +216,8 @@ public class OpenTelemetryProcessor {
             services.produce(
                     new ServiceProviderBuildItem(ConfigurableMetricExporterProvider.class.getName(), metricExporterProviders));
         }
-        if (config.metrics().exporter().stream().noneMatch(ExporterType.Constants.OTLP_VALUE::equals)) {
+        if (!config.defaultExporterEnabled()
+                && config.metrics().exporter().stream().noneMatch(ExporterType.Constants.OTLP_VALUE::equals)) {
             removedResources.produce(new RemovedResourceBuildItem(
                     ArtifactKey.fromString("io.opentelemetry:opentelemetry-exporter-otlp"),
                     Set.of("META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")));
@@ -232,7 +234,8 @@ public class OpenTelemetryProcessor {
                     new ServiceProviderBuildItem(ConfigurableLogRecordExporterProvider.class.getName(),
                             logRecordExporterProviders));
         }
-        if (config.logs().exporter().stream().noneMatch(ExporterType.Constants.OTLP_VALUE::equals)) {
+        if (!config.defaultExporterEnabled()
+                && config.logs().exporter().stream().noneMatch(ExporterType.Constants.OTLP_VALUE::equals)) {
             removedResources.produce(new RemovedResourceBuildItem(
                     ArtifactKey.fromString("io.opentelemetry:opentelemetry-exporter-otlp"),
                     Set.of("META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider")));

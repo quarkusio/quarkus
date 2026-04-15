@@ -103,7 +103,7 @@ public class OTelExporterRecorder {
                 // Only create the OtlpGrpcSpanExporter if an endpoint was set in runtime config and was properly validated at startup
                 Instance<SpanExporter> spanExporters = context.getInjectedReference(new TypeLiteral<>() {
                 });
-                if (!spanExporters.isUnsatisfied()) {
+                if (!spanExporters.isUnsatisfied() && !buildConfig.defaultExporterEnabled()) {
                     return RemoveableLateBoundSpanProcessor.INSTANCE;
                 }
 

@@ -5,10 +5,15 @@ import static io.opentelemetry.semconv.HttpAttributes.HTTP_ROUTE;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Alternative;
 import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.GET;
@@ -24,6 +29,7 @@ import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import io.opentelemetry.sdk.trace.export.SpanExporter;
 
 @Path("")
 public class ExporterResource {
@@ -33,6 +39,8 @@ public class ExporterResource {
     InMemoryMetricExporter inMemoryMetricExporter;
     @Inject
     InMemoryLogRecordExporter inMemoryLogRecordExporter;
+    @Inject
+    BeanManager beanManager;
 
     @GET
     @Path("/reset")
@@ -86,6 +94,15 @@ public class ExporterResource {
                 .collect(Collectors.toList());
     }
 
+    @GET
+    @Path("/export/count")
+    public String countExporters() {
+        Set<Bean<?>> beans = beanManager.getBeans(SpanExporter.class);
+        return beans.stream()
+                .map(bean -> bean.getBeanClass().getName())
+                .collect(Collectors.joining(","));
+    }
+
     private static boolean isPathFound(String path, Attributes attributes) {
         if (path == null) {
             return true;// any match
@@ -101,6 +118,8 @@ public class ExporterResource {
     static class InMemorySpanExporterProducer {
         @Produces
         @Singleton
+        @Priority(1)
+        @Alternative
         InMemorySpanExporter inMemorySpanExporter() {
             return InMemorySpanExporter.create();
         }
@@ -110,6 +129,8 @@ public class ExporterResource {
     static class InMemoryMetricExporterProducer {
         @Produces
         @Singleton
+        @Priority(1)
+        @Alternative
         InMemoryMetricExporter inMemoryMetricsExporter() {
             return InMemoryMetricExporter.create();
         }
@@ -119,6 +140,8 @@ public class ExporterResource {
     static class InMemoryLogRecordExporterProducer {
         @Produces
         @Singleton
+        @Priority(1)
+        @Alternative
         public InMemoryLogRecordExporter createInMemoryExporter() {
             return InMemoryLogRecordExporter.create();
         }

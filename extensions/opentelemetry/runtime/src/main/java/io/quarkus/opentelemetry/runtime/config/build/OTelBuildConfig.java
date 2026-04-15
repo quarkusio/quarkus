@@ -15,6 +15,7 @@ import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.security.spi.runtime.SecurityEvent;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
 /**
  * Build Time configuration where all the attributes related with
@@ -47,6 +48,19 @@ public interface OTelBuildConfig {
      */
     @WithDefault("false")
     boolean simple();
+
+    /**
+     * Controls the coexistence of the default OTLP exporter with user-defined exporters.
+     * <p>
+     * If <code>true</code>, the default OTLP exporter is always created. If <code>false</code>,
+     * the default exporter is disabled whenever a custom exporter implementation
+     * is discovered in the CDI container.
+     * <p>
+     * Defaults to <code>false</code>.
+     */
+    @WithName("experimental.otlp.default.enable")
+    @WithDefault("false")
+    boolean defaultExporterEnabled();
 
     /**
      * Trace exporter configurations.

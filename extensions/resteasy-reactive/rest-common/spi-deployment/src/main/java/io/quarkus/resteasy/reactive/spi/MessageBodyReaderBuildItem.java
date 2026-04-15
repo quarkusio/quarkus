@@ -8,7 +8,8 @@ import jakarta.ws.rs.RuntimeType;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
-public final class MessageBodyReaderBuildItem extends MultiBuildItem implements RuntimeTypeItem {
+public final class MessageBodyReaderBuildItem extends MultiBuildItem
+        implements RuntimeTypeItem, Comparable<MessageBodyReaderBuildItem> {
 
     private final String className;
     private final String handledClassName;
@@ -63,6 +64,19 @@ public final class MessageBodyReaderBuildItem extends MultiBuildItem implements 
 
     public Integer getPriority() {
         return priority;
+    }
+
+    @Override
+    public int compareTo(MessageBodyReaderBuildItem o) {
+        int result = this.handledClassName.compareTo(o.handledClassName);
+        if (result != 0) {
+            return result;
+        }
+        result = this.priority.compareTo(o.priority);
+        if (result != 0) {
+            return result;
+        }
+        return this.className.compareTo(o.className);
     }
 
     public static class Builder {

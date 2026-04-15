@@ -327,6 +327,7 @@ final class ExportUtil {
                             char[] buf = new char[newLength];
                             System.arraycopy(lineBuf, 0, buf, 0, lineBuf.length);
                             lineBuf = buf;
+                            this.lineBuf = buf;
                         }
                         // flip the preceding backslash flag
                         precedingBackslash = (c == '\\') ? !precedingBackslash : false;

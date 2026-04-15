@@ -202,6 +202,20 @@ public class SpringDataRepositoryCreator {
         }
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private static void resetFunctionCounter(String generatedClassName) {
+        try {
+            Class<?> bytecodeCreatorImpl = Class.forName("io.quarkus.gizmo.BytecodeCreatorImpl");
+            java.lang.reflect.Field countersField = bytecodeCreatorImpl.getDeclaredField("functionCountersByClass");
+            countersField.setAccessible(true);
+            Map counters = (Map) countersField.get(null);
+            counters.remove(generatedClassName);
+            counters.remove(generatedClassName.replace('.', '/'));
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Unable to reset Gizmo function counter for class " + generatedClassName, e);
+        }
+    }
+
     public static final class Result {
         final DotName entityDotName;
         final DotName idTypeDotName;

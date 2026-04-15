@@ -44,4 +44,5 @@ public class ConfiguredPathInfo {
             return TemplateHtmlBuilder.adjustRoot(nonAppRoot.getNormalizedHttpRootPath(), endpointPath);
         }
     }
+
 }

@@ -4,9 +4,8 @@ import static io.vertx.core.spi.resolver.ResolverProvider.DISABLE_DNS_RESOLVER_P
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.net.ServerSocket;
 import java.net.URI;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.jboss.logging.Logger;
@@ -76,13 +75,12 @@ public class VertxHttpProxyDevServicesRestClientProxyProvider implements DevServ
         proxy.origin(targetPort, targetHost)
                 .addInterceptor(new AuthoritySettingInterceptor(targetPort, targetHost));
 
-        HttpServer proxyServer = vertx.get().createHttpServer();
-        Integer proxyPort = findRandomPort();
-        proxyServer.requestHandler(proxy).listen(proxyPort);
+        StartedProxyServer startedProxyServer = startProxyServer(proxy, buildItem.getClassName());
+        int proxyPort = startedProxyServer.port;
 
         logStartup(buildItem.getClassName(), proxyPort);
 
-        return new CreateResult("localhost", proxyPort, new HttpServerClosable(proxyServer));
+        return new CreateResult("localhost", proxyPort, new HttpServerClosable(startedProxyServer.server));
     }
 
     protected void logStartup(String className, Integer port) {
@@ -114,11 +112,56 @@ public class VertxHttpProxyDevServicesRestClientProxyProvider implements DevServ
         return 80;
     }
 
-    private Integer findRandomPort() {
-        try (ServerSocket socket = new ServerSocket(0)) {
-            return socket.getLocalPort();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+    private StartedProxyServer startProxyServer(HttpProxy proxy, String className) {
+        int basePort = deterministicBasePort(className);
+        for (int i = 0; i < 100; i++) {
+            int candidatePort = 20000 + ((basePort - 20000 + i) % 20000);
+            StartedProxyServer started = tryStartProxyServer(proxy, candidatePort);
+            if (started != null) {
+                return started;
+            }
+        }
+        StartedProxyServer started = tryStartProxyServer(proxy, 0);
+        if (started != null) {
+            return started;
+        }
+        throw new IllegalStateException("Unable to start HTTP proxy server");
+    }
+
+    private int deterministicBasePort(String className) {
+        return 20000 + Math.floorMod(className.hashCode(), 20000);
+    }
+
+    private StartedProxyServer tryStartProxyServer(HttpProxy proxy, int port) {
+        HttpServer proxyServer = vertx.get().createHttpServer();
+        proxyServer.requestHandler(proxy);
+        try {
+            proxyServer.listen(port).toCompletionStage().toCompletableFuture().join();
+            return new StartedProxyServer(proxyServer, proxyServer.actualPort());
+        } catch (CompletionException e) {
+            closeQuietly(proxyServer);
+            return null;
+        } catch (RuntimeException e) {
+            closeQuietly(proxyServer);
+            return null;
+        }
+    }
+
+    private void closeQuietly(HttpServer server) {
+        try {
+            server.close().toCompletionStage().toCompletableFuture().join();
+        } catch (Exception e) {
+            log.debug("Error closing HTTP Proxy server", e);
+        }
+    }
+
+    private static final class StartedProxyServer {
+        private final HttpServer server;
+        private final int port;
+
+        private StartedProxyServer(HttpServer server, int port) {
+            this.server = server;
+            this.port = port;
         }
     }
 

@@ -13,6 +13,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -315,7 +316,14 @@ class ReactiveRoutesProcessor {
         Map<RouteMatcher, MethodInfo> matchers = new HashMap<>();
         boolean validatorAvailable = capabilities.isPresent(Capability.HIBERNATE_VALIDATOR);
 
-        for (AnnotatedRouteHandlerBuildItem businessMethod : routeHandlerBusinessMethods) {
+        // Sort to ensure stable bytecode generation order
+        List<AnnotatedRouteHandlerBuildItem> sortedRouteHandlers = new ArrayList<>(routeHandlerBusinessMethods);
+        sortedRouteHandlers.sort(Comparator
+                .comparing((AnnotatedRouteHandlerBuildItem h) -> h.getBean().getBeanClass().toString())
+                .thenComparing(h -> h.getMethod().name())
+                .thenComparing(h -> h.getMethod().toString()));
+
+        for (AnnotatedRouteHandlerBuildItem businessMethod : sortedRouteHandlers) {
             AnnotationInstance routeBaseAnnotation = businessMethod.getRouteBase();
             String pathPrefix = null;
             String[] baseProduces = null;
@@ -481,7 +489,14 @@ class ReactiveRoutesProcessor {
             }
         }
 
-        for (AnnotatedRouteFilterBuildItem filterMethod : routeFilterBusinessMethods) {
+        // Sort to ensure stable bytecode generation order
+        List<AnnotatedRouteFilterBuildItem> sortedFilterMethods = new ArrayList<>(routeFilterBusinessMethods);
+        sortedFilterMethods.sort(Comparator
+                .comparing((AnnotatedRouteFilterBuildItem f) -> f.getBean().getBeanClass().toString())
+                .thenComparing(f -> f.getMethod().name())
+                .thenComparing(f -> f.getMethod().toString()));
+
+        for (AnnotatedRouteFilterBuildItem filterMethod : sortedFilterMethods) {
             String handlerClass = generateHandler(
                     new HandlerDescriptor(filterMethod.getMethod(), beanValidationAnnotations.orElse(null), false,
                             new String[0]),

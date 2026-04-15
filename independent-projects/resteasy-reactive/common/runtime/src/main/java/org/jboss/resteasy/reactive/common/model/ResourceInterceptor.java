@@ -97,7 +97,18 @@ public class ResourceInterceptor<T>
 
     @Override
     public int compareTo(ResourceInterceptor<T> o) {
-        return this.priority().compareTo(o.priority());
+        int result = Integer.compare(this.priority, o.priority);
+        if (result != 0) {
+            return result;
+        }
+        return compareNullSafe(this.className, o.className);
+    }
+
+    static int compareNullSafe(String a, String b) {
+        if (a == null) {
+            return b == null ? 0 : -1;
+        }
+        return b == null ? 1 : a.compareTo(b);
     }
 
     //Container response filters are reversed
@@ -105,7 +116,11 @@ public class ResourceInterceptor<T>
 
         @Override
         public int compareTo(ResourceInterceptor<T> o) {
-            return o.priority().compareTo(this.priority());
+            int result = Integer.compare(o.priority(), this.priority());
+            if (result != 0) {
+                return result;
+            }
+            return compareNullSafe(this.getClassName(), o.getClassName());
         }
     }
 }

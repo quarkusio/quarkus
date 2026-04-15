@@ -21,6 +21,7 @@ public class MongoInactiveClientsByConfigExceptionTest {
     @RegisterExtension
     static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(MongoTestBase.class))
+            .overrideConfigKey("quarkus.mongodb.devservices.enabled", "false")
             .overrideRuntimeConfigKey("quarkus.mongodb.active.active", "false")
             .assertException(e -> assertThat(e)// Can't use isInstanceOf due to weird classloading in tests
                     .satisfies(t -> assertThat(t.getClass().getName()).isEqualTo(InactiveBeanException.class.getName()))

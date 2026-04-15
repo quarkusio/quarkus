@@ -16,8 +16,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -468,8 +470,10 @@ public class HttpSecurityProcessor {
             var index = indexBuildItem.getIndex();
             Map<AnnotationTarget, List<EagerSecurityInterceptorBindingBuildItem>> cache = new HashMap<>();
             Map<DotName, Map<String, List<MethodInfo>>> result = new HashMap<>();
+            // Map<DotName, Map<String, List<MethodInfo>>> result = new LinkedHashMap<>();
             Predicate<ClassInfo> useClassLevelSecurity = useClassLevelSecurity(classSecurityAnnotations);
             // these are classes with class-level security, where interceptor runs once per class, not on every method
+            // Map<DotName, Map<String, Set<String>>> classResult = new LinkedHashMap<>();
             Map<DotName, Map<String, Set<String>>> classResult = new HashMap<>();
             addInterceptedEndpoints(interceptorBindings, index, AnnotationTarget.Kind.METHOD, result, cache,
                     useClassLevelSecurity, classResult);
@@ -503,12 +507,21 @@ public class HttpSecurityProcessor {
                     .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
 
             final var methodCache = new HashMap<MethodInfo, RuntimeValue<MethodDescription>>();
-            final var methodDescriptionToInterceptor = new HashMap<RuntimeValue<MethodDescription>, Consumer<RoutingContext>>();
+            final var methodDescriptionToInterceptor = new LinkedHashMap<RuntimeValue<MethodDescription>, Consumer<RoutingContext>>();
             for (EagerSecurityInterceptorMethodsBuildItem interceptorMethod : interceptorMethods) {
                 var interceptorCreator = bindingNameToInterceptorCreator.get(interceptorMethod.interceptorBinding);
-                for (Map.Entry<String, List<MethodInfo>> e : interceptorMethod.bindingValueToInterceptedMethods.entrySet()) {
+                List<Map.Entry<String, List<MethodInfo>>> sortedEntries = interceptorMethod.bindingValueToInterceptedMethods
+                        .entrySet()
+                        .stream()
+                        .sorted(Map.Entry.comparingByKey())
+                        .toList();
+                for (Map.Entry<String, List<MethodInfo>> e : sortedEntries) {
                     var annotationValue = e.getKey();
-                    var annotatedMethods = e.getValue();
+                    var annotatedMethods = e.getValue()
+                            .stream()
+                            .sorted(Comparator.comparing((MethodInfo m) -> m.declaringClass().name().toString())
+                                    .thenComparing(MethodInfo::toString))
+                            .toList();
                     var interceptor = recorder.createEagerSecurityInterceptor(interceptorCreator, annotationValue);
                     for (MethodInfo method : annotatedMethods) {
                         // transform method info to description
@@ -529,19 +542,23 @@ public class HttpSecurityProcessor {
                 }
             }
 
-            final var classNameToInterceptor = new HashMap<String, Consumer<RoutingContext>>();
+            final var classNameToInterceptor = new LinkedHashMap<String, Consumer<RoutingContext>>();
             for (EagerSecurityInterceptorClassesBuildItem interceptorClass : interceptorClasses) {
                 var interceptorCreator = bindingNameToInterceptorCreator.get(interceptorClass.interceptorBinding);
-                interceptorClass.bindingValueToInterceptedClasses.forEach((annotationValue, annotatedClasses) -> {
-                    Consumer<RoutingContext> interceptor = recorder.createEagerSecurityInterceptor(interceptorCreator,
-                            annotationValue);
-                    for (String annotatedClass : annotatedClasses) {
-                        // add (class name -> interceptor) to the storage
-                        classNameToInterceptor.compute(annotatedClass,
-                                (c, existingInterceptor) -> existingInterceptor == null ? interceptor
-                                        : recorder.compoundSecurityInterceptor(interceptor, existingInterceptor));
-                    }
-                });
+                interceptorClass.bindingValueToInterceptedClasses.entrySet().stream()
+                        .sorted(Map.Entry.comparingByKey())
+                        .forEach(entry -> {
+                            var annotationValue = entry.getKey();
+                            var annotatedClasses = entry.getValue();
+                            Consumer<RoutingContext> interceptor = recorder.createEagerSecurityInterceptor(interceptorCreator,
+                                    annotationValue);
+                            for (String annotatedClass : annotatedClasses.stream().sorted().toList()) {
+                                // add (class name -> interceptor) to the storage
+                                classNameToInterceptor.compute(annotatedClass,
+                                        (c, existingInterceptor) -> existingInterceptor == null ? interceptor
+                                                : recorder.compoundSecurityInterceptor(interceptor, existingInterceptor));
+                            }
+                        });
             }
 
             producer.produce(SyntheticBeanBuildItem
@@ -585,6 +602,11 @@ public class HttpSecurityProcessor {
                             .map(mi -> Map.entry(mi, policyName));
                 })
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        // .collect(Collectors.toMap(
+        //         Map.Entry::getKey,
+        //         Map.Entry::getValue,
+        //         (a, b) -> b,
+        //         LinkedHashMap::new));
         return Collections.unmodifiableMap(methodToPolicy);
     }
 
@@ -679,7 +701,11 @@ public class HttpSecurityProcessor {
                             AuthorizationPolicyStorage.MethodsToPolicyBuilder.class, "addMethodToPolicyName",
                             AuthorizationPolicyStorage.MethodsToPolicyBuilder.class, String.class, String.class, String.class,
                             String[].class);
-                    for (var e : methodToPolicyName.entrySet()) {
+                    for (var e : methodToPolicyName.entrySet().stream()
+                            .sorted(Map.Entry.comparingByKey(Comparator.comparing(
+                                    (MethodInfo m) -> m.declaringClass().name().toString())
+                                    .thenComparing(MethodInfo::toString)))
+                            .toList()) {
                         MethodInfo securedMethod = e.getKey();
                         String policyNameStr = e.getValue();
 

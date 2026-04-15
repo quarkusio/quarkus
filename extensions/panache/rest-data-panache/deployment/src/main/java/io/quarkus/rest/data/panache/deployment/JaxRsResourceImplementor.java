@@ -1,8 +1,10 @@
 package io.quarkus.rest.data.panache.deployment;
 
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import jakarta.annotation.Priority;
 import jakarta.enterprise.inject.Alternative;
@@ -74,6 +76,7 @@ class JaxRsResourceImplementor {
             Capabilities capabilities) {
         String controllerClassName = resourceMetadata.getResourceName() + "JaxRs_" +
                 HashUtil.sha1(resourceMetadata.getResourceName());
+        resetFunctionCounter(controllerClassName);
         LOGGER.tracef("Starting generation of '%s'", controllerClassName);
         ClassCreator.Builder classCreatorBuilder = ClassCreator.builder()
                 .classOutput(classOutput).className(controllerClassName);
@@ -126,6 +129,25 @@ class JaxRsResourceImplementor {
             ResourceProperties resourceProperties, FieldDescriptor resourceField) {
         for (MethodImplementor methodImplementor : methodImplementors) {
             methodImplementor.implement(classCreator, resourceMetadata, resourceProperties, resourceField);
+        }
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private static void resetFunctionCounter(String generatedClassName) {
+        try {
+            Class<?> bytecodeCreatorImpl = Class.forName("io.quarkus.gizmo.BytecodeCreatorImpl");
+            java.lang.reflect.Field countersField = bytecodeCreatorImpl.getDeclaredField("functionCountersByClass");
+            countersField.setAccessible(true);
+            Map counters = (Map) countersField.get(null);
+            String internalClassName = generatedClassName.replace('.', '/');
+            for (Object key : new ArrayList<>(counters.keySet())) {
+                if (key instanceof String className
+                        && (className.startsWith(generatedClassName) || className.startsWith(internalClassName))) {
+                    counters.remove(className);
+                }
+            }
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Unable to reset Gizmo function counter for class " + generatedClassName, e);
         }
     }
 }

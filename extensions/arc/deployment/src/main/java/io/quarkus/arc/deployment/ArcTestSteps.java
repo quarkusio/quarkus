@@ -1,6 +1,8 @@
 package io.quarkus.arc.deployment;
 
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -60,7 +62,15 @@ public class ArcTestSteps {
             BeanDiscoveryFinishedBuildItem beanDiscoveryFinished,
             CompletedApplicationClassPredicateBuildItem predicate) {
         Set<String> applicationBeanClasses = new HashSet<>();
-        for (BeanInfo bean : beanDiscoveryFinished.beanStream().classBeans()) {
+        // We sort the bean infos below in ad-hoc fashion to enforce stable bytecode generation.
+        // There is an ongoing work (tracked in https://github.com/quarkusio/quarkus/pull/53359)
+        // to add a reproducible build stream. Once that issue is resolved, we could revert to using
+        // the original stream without sorting.
+        List<BeanInfo> beanInfos = beanDiscoveryFinished.beanStream().classBeans()
+                .stream()
+                .sorted(Comparator.comparing(bi -> bi.getBeanClass().toString()))
+                .toList();
+        for (BeanInfo bean : beanInfos) {
             if (predicate.test(bean.getBeanClass())) {
                 applicationBeanClasses.add(bean.getBeanClass().toString());
             }

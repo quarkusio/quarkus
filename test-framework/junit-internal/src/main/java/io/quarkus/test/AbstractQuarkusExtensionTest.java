@@ -56,7 +56,9 @@ import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.classloading.ClassLoaderEventListener;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
+import io.quarkus.bootstrap.classloading.MemoryClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildException;
@@ -140,6 +142,7 @@ public class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExtensionTest
 
     private boolean debugBytecode = false;
     private List<String> traceCategories = new ArrayList<>();
+    private int buildReproducibilityRuns = 5;
 
     private Map<String, String> systemPropertiesToRestore = new HashMap<>();
     private Map<String, java.util.logging.Level> loggerLevelsToRestore = new HashMap<>();
@@ -286,6 +289,14 @@ public class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExtensionTest
      */
     public S setFlatClassPath(boolean flatClassPath) {
         this.flatClassPath = flatClassPath;
+        return (S) this;
+    }
+
+    public S checkBuildReproducibility(int runs) {
+        if (runs < 2) {
+            throw new IllegalArgumentException("Build reproducibility checks require at least 2 runs");
+        }
+        this.buildReproducibilityRuns = runs;
         return (S) this;
     }
 
@@ -552,6 +563,8 @@ public class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExtensionTest
         if (beforeAllCustomizer != null) {
             beforeAllCustomizer.run();
         }
+        // pin the output timestamp so that build time values are stable across runs
+        overrideConfigKey("quarkus.package.output-timestamp", "1970-01-02T00:00:00Z");
         if (debugBytecode) {
             // Use a unique ID to avoid overriding dumps between test classes (and re-execution of flaky tests).
             var testRunId = extensionContext.getRequiredTestClass().getName() + "/" + UUID.randomUUID();
@@ -664,47 +677,78 @@ public class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExtensionTest
             try {
                 final Path testLocation = PathTestHelper.getTestClassesLocation(testClass);
                 final Path projectDir = Path.of("").normalize().toAbsolutePath();
-                QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
-                        .setBaseName(extensionContext.getDisplayName() + " (AbstractQuarkusExtensionTest)")
-                        .setApplicationRoot(deploymentDir.resolve(APP_ROOT))
-                        .setMode(QuarkusBootstrap.Mode.TEST)
-                        .addExcludedPath(testLocation)
-                        .setProjectRoot(projectDir)
-                        .setTargetDirectory(PathTestHelper.getProjectBuildDir(projectDir, testLocation))
-                        .setFlatClassPath(flatClassPath)
-                        .setForcedDependencies(forcedDependencies);
-                for (JavaArchive dependency : additionalDependencies) {
-                    builder.addAdditionalApplicationArchive(
-                            new AdditionalDependency(deploymentDir.resolve(dependency.getName()), false, true));
-                }
-                if (!forcedDependencies.isEmpty()) {
-                    //if we have forced dependencies we can't use the cache
-                    //as it can screw everything up
-                    builder.setDisableClasspathCache(true);
-                }
                 if (!allowTestClassOutsideDeployment) {
                     quarkusUnitTestClassLoader = QuarkusClassLoader
                             .builder("AbstractQuarkusExtensionTest ClassLoader for " + extensionContext.getDisplayName(),
                                     getClass().getClassLoader(), false)
                             .addClassLoaderEventListeners(this.classLoadListeners)
                             .addBannedElement(ClassPathElement.fromPath(testLocation, true)).build();
-                    builder.setBaseClassLoader(quarkusUnitTestClassLoader);
                 }
-                builder.addClassLoaderEventListeners(this.classLoadListeners);
 
-                for (Consumer<QuarkusBootstrap.Builder> bootstrapCustomizer : bootstrapCustomizers) {
-                    bootstrapCustomizer.accept(builder);
-                }
-                curatedApplication = builder.build().bootstrap();
-
-                StartupActionImpl startupAction = new AugmentActionImpl(curatedApplication, customizers, classLoadListeners)
-                        .createInitialRuntimeApplication();
                 Map<String, String> overriddenConfig = new HashMap<>(testResourceManager.getConfigProperties());
                 if (customRuntimeApplicationProperties != null) {
                     overriddenConfig.putAll(customRuntimeApplicationProperties);
                 }
-                startupAction.overrideConfig(overriddenConfig);
-                runningQuarkusApplication = startupAction.run(commandLineParameters);
+                // Reproducibility check: augment multiple times and compare generated bytecode
+                // without starting the app, to avoid Metaspace exhaustion from repeated class loading
+                Map<String, byte[]> referenceInMemoryClasses = null;
+                ApplicationModel cachedApplicationModel = null;
+                StartupActionImpl startupAction = null;
+                int totalRuns = Math.max(1, buildReproducibilityRuns);
+                for (int run = 1; run <= totalRuns; run++) {
+                    CuratedApplication currentCuratedApplication = null;
+                    StartupActionImpl currentStartupAction = null;
+                    boolean finalRun = run == totalRuns;
+                    boolean retainForFinalRun = false;
+                    try {
+                        currentCuratedApplication = createCuratedApplication(extensionContext, testLocation, projectDir,
+                                cachedApplicationModel);
+                        if (cachedApplicationModel == null) {
+                            cachedApplicationModel = currentCuratedApplication.getApplicationModel();
+                        }
+                        currentStartupAction = new AugmentActionImpl(currentCuratedApplication, customizers, classLoadListeners)
+                                .createInitialRuntimeApplication();
+
+                        // Repro check
+                        Map<String, byte[]> currentInMemoryClasses;
+                        currentInMemoryClasses = collectInMemoryClassBytes(currentStartupAction.getClassLoader());
+                        if (referenceInMemoryClasses == null) {
+                            referenceInMemoryClasses = currentInMemoryClasses;
+                        } else {
+                            var diff = BytecodeTools.diff(referenceInMemoryClasses, currentInMemoryClasses);
+                            if (!diff.isEmpty()) {
+                                Path mismatchDumpPath = BytecodeTools.dumpReproducibilityMismatch(diff,
+                                        referenceInMemoryClasses, currentInMemoryClasses, run,
+                                        extensionContext);
+                                throw new AssertionError("Build reproducibility check failed on run " + run + "/"
+                                        + totalRuns + ": " + diff + ". Dumped to "
+                                        + mismatchDumpPath);
+                            }
+                        }
+
+                        if (finalRun) {
+                            curatedApplication = currentCuratedApplication;
+                            startupAction = currentStartupAction;
+                            // finally, launch
+                            startupAction.overrideConfig(overriddenConfig);
+                            runningQuarkusApplication = startupAction.run(commandLineParameters);
+                            retainForFinalRun = true;
+                        }
+                    } finally {
+                        if (!retainForFinalRun) {
+                            if (currentStartupAction != null) {
+                                currentStartupAction.getClassLoader().close();
+                            }
+                            if (currentCuratedApplication != null) {
+                                currentCuratedApplication.close();
+                            }
+                        }
+                        // always preserve logs for final run
+                        if (!finalRun) {
+                            inMemoryLogHandler.clearRecords();
+                        }
+                    }
+                }
                 //we restore the CL at the end of the test
                 Thread.currentThread().setContextClassLoader(runningQuarkusApplication.getClassLoader());
                 if (assertException != null) {
@@ -767,6 +811,62 @@ public class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExtensionTest
             //failed to unwrap
         }
         return cause;
+    }
+
+    private Map<String, byte[]> collectInMemoryClassBytes(ClassLoader classLoader) {
+        if (!(classLoader instanceof QuarkusClassLoader quarkusClassLoader)) {
+            throw new IllegalStateException("Unexpected classloader: " + classLoader);
+        }
+        Map<String, byte[]> classes = new HashMap<>();
+        addMemoryClassBytes(classes, getPrivateField(quarkusClassLoader, "transformedClasses", MemoryClassPathElement.class));
+        addMemoryClassBytes(classes, getPrivateField(quarkusClassLoader, "resettableElement", MemoryClassPathElement.class));
+        for (ClassPathElement element : getClassPathElements(quarkusClassLoader, "normalPriorityElements")) {
+            if (element instanceof MemoryClassPathElement memoryClassPathElement) {
+                addMemoryClassBytes(classes, memoryClassPathElement);
+            }
+        }
+        for (ClassPathElement element : getClassPathElements(quarkusClassLoader, "lesserPriorityElements")) {
+            if (element instanceof MemoryClassPathElement memoryClassPathElement) {
+                addMemoryClassBytes(classes, memoryClassPathElement);
+            }
+        }
+        return classes;
+    }
+
+    private void addMemoryClassBytes(Map<String, byte[]> destination, MemoryClassPathElement memoryClassPathElement) {
+        if (memoryClassPathElement == null) {
+            return;
+        }
+        for (String resource : memoryClassPathElement.getProvidedResources()) {
+            if (!resource.endsWith(".class")) {
+                continue;
+            }
+            destination.putIfAbsent(resource, memoryClassPathElement.getResource(resource).getData());
+        }
+    }
+
+    private List<ClassPathElement> getClassPathElements(QuarkusClassLoader classLoader, String fieldName) {
+        List<?> values = getPrivateField(classLoader, fieldName, List.class);
+        List<ClassPathElement> elements = new ArrayList<>(values.size());
+        for (Object value : values) {
+            elements.add(ClassPathElement.class.cast(value));
+        }
+        return elements;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T getPrivateField(Object target, String fieldName, Class<T> type) {
+        try {
+            Field field = target.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            Object value = field.get(target);
+            if (value == null) {
+                return null;
+            }
+            return type.cast(value);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new IllegalStateException("Unable to access field '" + fieldName + "' on " + target.getClass(), e);
+        }
     }
 
     private void overrideSystemProperty(String key, String value) {
@@ -845,6 +945,40 @@ public class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExtensionTest
         if (records != null) {
             assertLogRecords.accept(records);
         }
+    }
+
+    private CuratedApplication createCuratedApplication(ExtensionContext extensionContext, Path testLocation, Path projectDir,
+            ApplicationModel existingModel)
+            throws Exception {
+        QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
+                .setBaseName(extensionContext.getDisplayName() + " (AbstractQuarkusExtensionTest)")
+                .setApplicationRoot(deploymentDir.resolve(APP_ROOT))
+                .setMode(QuarkusBootstrap.Mode.TEST)
+                .addExcludedPath(testLocation)
+                .setProjectRoot(projectDir)
+                .setTargetDirectory(PathTestHelper.getProjectBuildDir(projectDir, testLocation))
+                .setFlatClassPath(flatClassPath)
+                .setForcedDependencies(forcedDependencies);
+        for (JavaArchive dependency : additionalDependencies) {
+            builder.addAdditionalApplicationArchive(
+                    new AdditionalDependency(deploymentDir.resolve(dependency.getName()), false, true));
+        }
+        if (!forcedDependencies.isEmpty()) {
+            //if we have forced dependencies we can't use the cache
+            //as it can screw everything up
+            builder.setDisableClasspathCache(true);
+        }
+        if (quarkusUnitTestClassLoader != null) {
+            builder.setBaseClassLoader(quarkusUnitTestClassLoader);
+        }
+        builder.addClassLoaderEventListeners(this.classLoadListeners);
+        for (Consumer<QuarkusBootstrap.Builder> bootstrapCustomizer : bootstrapCustomizers) {
+            bootstrapCustomizer.accept(builder);
+        }
+        if (existingModel != null) {
+            builder.setExistingModel(existingModel);
+        }
+        return builder.build().bootstrap();
     }
 
     @Override

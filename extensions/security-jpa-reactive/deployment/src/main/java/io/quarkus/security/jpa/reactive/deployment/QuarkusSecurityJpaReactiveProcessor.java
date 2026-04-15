@@ -7,6 +7,7 @@ import static io.quarkus.security.jpa.common.deployment.JpaSecurityIdentityUtil.
 import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -96,6 +97,7 @@ class QuarkusSecurityJpaReactiveProcessor {
         GeneratedBeanGizmoAdaptor gizmoAdaptor = new GeneratedBeanGizmoAdaptor(beanProducer);
 
         String name = jpaSecurityDefinition.annotatedClass.name() + "__JpaReactiveIdentityProviderImpl";
+        resetFunctionCounter(name);
         try (ClassCreator classCreator = ClassCreator.builder()
                 .className(name)
                 .superClass(JpaReactiveIdentityProvider.class)
@@ -132,6 +134,7 @@ class QuarkusSecurityJpaReactiveProcessor {
         GeneratedBeanGizmoAdaptor gizmoAdaptor = new GeneratedBeanGizmoAdaptor(beanProducer);
 
         String name = jpaSecurityDefinition.annotatedClass.name() + "__JpaReactiveTrustedIdentityProviderImpl";
+        resetFunctionCounter(name);
         try (ClassCreator classCreator = ClassCreator.builder()
                 .className(name)
                 .superClass(JpaReactiveTrustedIdentityProvider.class)
@@ -255,5 +258,19 @@ class QuarkusSecurityJpaReactiveProcessor {
 
         return creator.invokeInterfaceMethod(ofMethod(Uni.class, name, Uni.class, Function.class),
                 uniInstance, lambda.getInstance());
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private static void resetFunctionCounter(String generatedClassName) {
+        try {
+            Class<?> bytecodeCreatorImpl = Class.forName("io.quarkus.gizmo.BytecodeCreatorImpl");
+            java.lang.reflect.Field countersField = bytecodeCreatorImpl.getDeclaredField("functionCountersByClass");
+            countersField.setAccessible(true);
+            Map counters = (Map) countersField.get(null);
+            counters.remove(generatedClassName);
+            counters.remove(generatedClassName.replace('.', '/'));
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Unable to reset Gizmo function counter for class " + generatedClassName, e);
+        }
     }
 }

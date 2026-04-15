@@ -7,6 +7,7 @@ import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -54,6 +55,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.deployment.recording.BytecodeRecorderImpl.ReturnedProxy;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.gizmo.Gizmo;
 import io.quarkus.mutiny.deployment.MutinyRuntimeInitBuildItem;
@@ -248,7 +250,8 @@ class VertxCoreProcessor {
         recorder.wrapMainExecutorForMutiny(executorBuildItem.getExecutorProxy());
 
         List<Consumer<VertxOptions>> consumers = vertxOptionsConsumers.stream()
-                .sorted()
+                .sorted(Comparator.comparing((VertxOptionsConsumerBuildItem consumerBuildItem) -> consumerBuildItem)
+                        .thenComparing(consumerBuildItem -> deterministicConsumerKey(consumerBuildItem.getConsumer())))
                 .map(VertxOptionsConsumerBuildItem::getConsumer)
                 .toList();
 
@@ -298,6 +301,13 @@ class VertxCoreProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     ThreadFactoryBuildItem createVertxThreadFactory(VertxCoreRecorder recorder, LaunchModeBuildItem launchMode) {
         return new ThreadFactoryBuildItem(recorder.createThreadFactory(launchMode.getLaunchMode()));
+    }
+
+    private static String deterministicConsumerKey(Consumer<VertxOptions> consumer) {
+        if (consumer instanceof ReturnedProxy returnedProxy) {
+            return returnedProxy.__returned$proxy$key();
+        }
+        return consumer.getClass().getName();
     }
 
     @BuildStep
@@ -462,8 +472,14 @@ class VertxCoreProcessor {
 
     private <T> List<T> loadServices(Class<T> serviceClass) throws IOException, ClassNotFoundException {
         List<T> services = new ArrayList<>();
-        for (Class<?> serviceImplClass : ServiceUtil.classesNamedIn(Thread.currentThread().getContextClassLoader(),
-                "META-INF/services/" + serviceClass.getName())) {
+        // for (Class<?> serviceImplClass : ServiceUtil.classesNamedIn(Thread.currentThread().getContextClassLoader(),
+        //         "META-INF/services/" + serviceClass.getName())) {
+        Iterable<Class<?>> classIterable = ServiceUtil.classesNamedIn(Thread.currentThread().getContextClassLoader(),
+                "META-INF/services/" + serviceClass.getName());
+        List<Class<?>> serviceImplClasses = new ArrayList<>();
+        classIterable.forEach(serviceImplClasses::add);
+        serviceImplClasses.sort(Comparator.comparing(Class::getName));
+        for (Class<?> serviceImplClass : serviceImplClasses) {
             if (!QuarkusClassLoader.isClassPresentAtRuntime(serviceImplClass.getName())) {
                 continue;
             }

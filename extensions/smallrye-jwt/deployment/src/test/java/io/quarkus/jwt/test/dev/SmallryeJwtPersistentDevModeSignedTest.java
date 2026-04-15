@@ -90,8 +90,8 @@ public class SmallryeJwtPersistentDevModeSignedTest {
                     // this is called before the JWT dev mode processor, so we can clean up here
                     CurateOutcomeBuildItem curateOutcomeBuildItem = context.consume(CurateOutcomeBuildItem.class);
                     File buildDir = SmallryeJwtDevModeProcessor.getBuildDir(curateOutcomeBuildItem);
-                    new File(buildDir, SmallryeJwtDevModeProcessor.DEV_PRIVATE_KEY_PEM).delete();
-                    new File(buildDir, SmallryeJwtDevModeProcessor.DEV_PUBLIC_KEY_PEM).delete();
+                    // new File(buildDir, SmallryeJwtDevModeProcessor.DEV_PRIVATE_KEY_PEM).delete();
+                    // new File(buildDir, SmallryeJwtDevModeProcessor.DEV_PUBLIC_KEY_PEM).delete();
                     context.produce(new GeneratePersistentDevModeJwtKeysBuildItem());
                 }
             })

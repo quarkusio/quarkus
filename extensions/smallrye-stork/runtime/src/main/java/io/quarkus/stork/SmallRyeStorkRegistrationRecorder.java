@@ -2,7 +2,6 @@ package io.quarkus.stork;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -69,17 +68,15 @@ public class SmallRyeStorkRegistrationRecorder {
                     continue;
                 }
             }
-            CountDownLatch registrationLatch = new CountDownLatch(1);
-            Stork.getInstance()
-                    .getService(serviceName)
-                    .deregisterServiceInstance(serviceName)
-                    .subscribe()
-                    .with(
-                            success -> registrationLatch.countDown(),
-                            failure -> {
-                                LOGGER.warnf("Failed to deregister service '%s': %s", serviceName, failure.getMessage());
-                                registrationLatch.countDown();
-                            });
+            // TODO: doesn't look like its reproducibility related at all
+            try {
+                Stork.getInstance()
+                        .getService(serviceName)
+                        .deregisterServiceInstance(serviceName)
+                        .await().indefinitely();
+            } catch (Throwable t) {
+                LOGGER.warnf("Failed to deregister service '%s': %s", serviceName, t.getMessage());
+            }
 
         }
     }

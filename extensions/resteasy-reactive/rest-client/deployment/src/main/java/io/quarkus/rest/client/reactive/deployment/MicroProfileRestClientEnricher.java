@@ -22,11 +22,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -199,7 +198,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
         collectClientParamData(interfaceClass, method, queryParamsByName,
                 CLIENT_QUERY_PARAM, CLIENT_QUERY_PARAMS, ClientQueryParam.class.getSimpleName());
 
-        for (var queryEntry : queryParamsByName.entrySet()) {
+        for (var queryEntry : sortedEntries(queryParamsByName)) {
             addQueryParam(method, methodCreator, queryEntry.getValue(), webTarget, generatedClasses, index);
         }
     }
@@ -215,7 +214,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
         collectClientParamData(subInterfaceClass, subMethod, queryParamsByName,
                 CLIENT_QUERY_PARAM, CLIENT_QUERY_PARAMS, ClientQueryParam.class.getSimpleName());
 
-        for (var headerEntry : queryParamsByName.entrySet()) {
+        for (var headerEntry : sortedEntries(queryParamsByName)) {
             addQueryParam(subMethod, methodCreator, headerEntry.getValue(), webTarget, generatedClasses, index);
         }
     }
@@ -233,7 +232,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
             formParams = createFormData(methodCreator, multipart);
         }
 
-        for (var formEntry : formParamsByName.entrySet()) {
+        for (var formEntry : sortedEntries(formParamsByName)) {
             addFormParam(method, methodCreator, formEntry.getValue(), generatedClasses, index, formParams, multipart);
         }
 
@@ -256,7 +255,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
             formParams = createFormData(methodCreator, multipart);
         }
 
-        for (var formEntry : formParamsByName.entrySet()) {
+        for (var formEntry : sortedEntries(formParamsByName)) {
             addFormParam(subMethod, methodCreator, formEntry.getValue(), generatedClasses, index, formParams, multipart);
         }
 
@@ -627,7 +626,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                                 MethodDescriptor.ofMethod(HeaderFiller.class, "addHeaders", void.class,
                                         MultivaluedMap.class, ResteasyReactiveClientRequestContext.class));
 
-                for (Map.Entry<String, ParamData> headerEntry : headerFillersByName.entrySet()) {
+                for (Map.Entry<String, ParamData> headerEntry : sortedEntries(headerFillersByName)) {
                     addHeaderParam(method, addHeaders, headerEntry.getValue(), generatedClasses,
                             fillerClassName, index);
                 }
@@ -1102,19 +1101,24 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
         return interfaceMocks.computeIfAbsent(declaringClass, classInfo -> {
             String mockName = declaringClass.toString() + HashUtil.sha1(declaringClass.toString());
             ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
-            List<DotName> interfaceNames = declaringClass.interfaceNames();
-            Set<MethodInfo> methods = new HashSet<>();
+            List<DotName> interfaceNames = new ArrayList<>(declaringClass.interfaceNames());
+            interfaceNames.sort((left, right) -> left.toString().compareTo(right.toString()));
+            Map<String, MethodInfo> methods = new TreeMap<>();
             for (DotName interfaceName : interfaceNames) {
                 ClassInfo interfaceClass = index.getClassByName(interfaceName);
-                methods.addAll(interfaceClass.methods());
+                for (MethodInfo method : interfaceClass.methods()) {
+                    methods.putIfAbsent(methodKey(method), method);
+                }
             }
-            methods.addAll(declaringClass.methods());
+            for (MethodInfo method : declaringClass.methods()) {
+                methods.put(methodKey(method), method);
+            }
 
             try (ClassCreator classCreator = ClassCreator.builder().className(mockName).interfaces(declaringClass.toString())
                     .classOutput(classOutput)
                     .build()) {
 
-                for (MethodInfo method : methods) {
+                for (MethodInfo method : methods.values()) {
                     if (Modifier.isAbstract(method.flags())) {
                         MethodCreator methodCreator = classCreator.getMethodCreator(MethodDescriptor.of(method));
                         methodCreator.throwException(IllegalStateException.class, "This should never be called");
@@ -1123,6 +1127,20 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
             }
             return mockName;
         });
+    }
+
+    private static String methodKey(MethodInfo method) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(method.name()).append('(');
+        for (Type parameter : method.parameterTypes()) {
+            builder.append(parameter.name()).append(';');
+        }
+        builder.append("):").append(method.returnType().name());
+        return builder.toString();
+    }
+
+    private static List<Map.Entry<String, ParamData>> sortedEntries(Map<String, ParamData> source) {
+        return source.entrySet().stream().sorted(Map.Entry.comparingByKey()).collect(Collectors.toList());
     }
 
     private AnnotationInstance[] extractAnnotations(AnnotationInstance groupAnnotation) {

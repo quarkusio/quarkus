@@ -11,7 +11,9 @@ import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -55,6 +57,7 @@ import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientTlsCleanupDestroy
 import io.quarkus.smallrye.graphql.client.runtime.SmallRyeGraphQLClientRecorder;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.smallrye.graphql.client.model.ClientModels;
+import io.smallrye.graphql.client.model.MethodKey;
 import io.smallrye.graphql.client.modelbuilder.ClientModelBuilder;
 
 public class SmallRyeGraphQLClientProcessor {
@@ -238,7 +241,8 @@ public class SmallRyeGraphQLClientProcessor {
         if (!index.getIndex().getAnnotations(GRAPHQL_CLIENT_API).isEmpty()) {
             ClientModels clientModels = (quarkusConfig.enableBuildTimeScanning()) ? ClientModelBuilder.build(index.getIndex())
                     : new ClientModels(); // empty Client Model(s)
-            RuntimeValue<ClientModels> modelRuntimeClientModel = recorder.getRuntimeClientModel(clientModels);
+            RuntimeValue<ClientModels> modelRuntimeClientModel = recorder
+                    .getRuntimeClientModel(canonicalizeClientModels(clientModels));
             DotName supportClassName = DotName.createSimple(ClientModels.class.getName());
             SyntheticBeanBuildItem bean = SyntheticBeanBuildItem
                     .configure(supportClassName)
@@ -250,6 +254,59 @@ public class SmallRyeGraphQLClientProcessor {
                     .done();
             syntheticBeans.produce(bean);
         }
+    }
+
+    private ClientModels canonicalizeClientModels(ClientModels clientModels) {
+        Map<String, io.smallrye.graphql.client.model.ClientModel> originalClientModelMap = clientModels.getClientModelMap();
+        if (originalClientModelMap == null || originalClientModelMap.isEmpty()) {
+            return clientModels;
+        }
+        List<Map.Entry<String, io.smallrye.graphql.client.model.ClientModel>> clientModelEntries = new ArrayList<>(
+                originalClientModelMap.entrySet());
+        clientModelEntries.sort(Map.Entry.comparingByKey());
+
+        Map<String, io.smallrye.graphql.client.model.ClientModel> canonicalClientModelMap = new LinkedHashMap<>();
+        for (Map.Entry<String, io.smallrye.graphql.client.model.ClientModel> clientModelEntry : clientModelEntries) {
+            io.smallrye.graphql.client.model.ClientModel originalModel = clientModelEntry.getValue();
+            io.smallrye.graphql.client.model.ClientModel canonicalModel = new io.smallrye.graphql.client.model.ClientModel();
+            canonicalModel.setOperationMap(canonicalizeOperationMap(originalModel.getOperationMap()));
+            canonicalClientModelMap.put(clientModelEntry.getKey(), canonicalModel);
+        }
+
+        ClientModels canonicalClientModels = new ClientModels();
+        canonicalClientModels.setClientModelMap(canonicalClientModelMap);
+        return canonicalClientModels;
+    }
+
+    private Map<MethodKey, String> canonicalizeOperationMap(Map<MethodKey, String> operationMap) {
+        if (operationMap == null || operationMap.isEmpty()) {
+            return Map.of();
+        }
+        List<Map.Entry<MethodKey, String>> operationEntries = new ArrayList<>(operationMap.entrySet());
+        operationEntries.sort(Comparator.comparing(this::methodKeySortKey, String::compareTo));
+
+        Map<MethodKey, String> canonicalOperationMap = new LinkedHashMap<>();
+        for (Map.Entry<MethodKey, String> operationEntry : operationEntries) {
+            canonicalOperationMap.put(operationEntry.getKey(), operationEntry.getValue());
+        }
+        return canonicalOperationMap;
+    }
+
+    private String methodKeySortKey(Map.Entry<MethodKey, String> entry) {
+        MethodKey methodKey = entry.getKey();
+        StringBuilder builder = new StringBuilder();
+        builder.append(methodKey.getMethodName());
+        builder.append('#');
+        Class<?>[] parameterTypes = methodKey.getParameterTypes();
+        if (parameterTypes != null) {
+            for (int i = 0; i < parameterTypes.length; i++) {
+                if (i > 0) {
+                    builder.append(',');
+                }
+                builder.append(parameterTypes[i].getName());
+            }
+        }
+        return builder.toString();
     }
 
     @BuildStep

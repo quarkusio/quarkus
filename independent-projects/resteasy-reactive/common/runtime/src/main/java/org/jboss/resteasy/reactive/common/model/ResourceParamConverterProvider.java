@@ -38,6 +38,10 @@ public class ResourceParamConverterProvider implements Comparable<ResourceParamC
 
     @Override
     public int compareTo(ResourceParamConverterProvider o) {
-        return this.priority.compareTo(o.priority);
+        int result = Integer.compare(this.priority, o.priority);
+        if (result != 0) {
+            return result;
+        }
+        return this.className.compareTo(o.className);
     }
 }

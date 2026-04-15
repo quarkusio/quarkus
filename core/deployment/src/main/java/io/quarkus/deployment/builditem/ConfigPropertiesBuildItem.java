@@ -20,7 +20,7 @@ import io.quarkus.builder.item.MultiBuildItem;
  *
  * @see org.eclipse.microprofile.config.inject.ConfigProperties
  */
-public final class ConfigPropertiesBuildItem extends MultiBuildItem {
+public final class ConfigPropertiesBuildItem extends MultiBuildItem implements Comparable<ConfigPropertiesBuildItem> {
     private final Class<?> configClass;
     private final String prefix;
 
@@ -65,6 +65,15 @@ public final class ConfigPropertiesBuildItem extends MultiBuildItem {
         final ConfigPropertiesBuildItem that = (ConfigPropertiesBuildItem) o;
         return configClass.equals(that.configClass) &&
                 prefix.equals(that.prefix);
+    }
+
+    @Override
+    public int compareTo(ConfigPropertiesBuildItem o) {
+        int result = this.configClass.getName().compareTo(o.configClass.getName());
+        if (result != 0) {
+            return result;
+        }
+        return this.prefix.compareTo(o.prefix);
     }
 
     @Override

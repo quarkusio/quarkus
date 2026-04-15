@@ -1,8 +1,9 @@
 package io.quarkus.smallrye.faulttolerance.deployment;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -109,7 +110,7 @@ public class SmallRyeFaultToleranceProcessor {
         // Add reflective access to fallback handlers and before retry handlers
         // (reflective access to fallback methods and before retry methods is added
         // in `FaultToleranceScanner.searchForMethods`)
-        Set<String> handlers = new HashSet<>();
+        Set<String> handlers = new LinkedHashSet<>();
         for (ClassInfo implementor : index.getAllKnownImplementors(DotNames.FALLBACK_HANDLER)) {
             handlers.add(implementor.name().toString());
         }
@@ -244,7 +245,7 @@ public class SmallRyeFaultToleranceProcessor {
 
         Config config = ConfigProvider.getConfig();
 
-        Set<String> exceptionConfigs = Set.of("CircuitBreaker/failOn", "CircuitBreaker/skipOn",
+        List<String> exceptionConfigs = List.of("CircuitBreaker/failOn", "CircuitBreaker/skipOn",
                 "Fallback/applyOn", "Fallback/skipOn", "Retry/retryOn", "Retry/abortOn");
 
         for (String exceptionConfig : exceptionConfigs) {
@@ -267,16 +268,21 @@ public class SmallRyeFaultToleranceProcessor {
 
         List<FaultToleranceMethod> ftMethods = new ArrayList<>();
         List<Throwable> exceptions = new ArrayList<>();
-        Map<String, Set<String>> existingCircuitBreakerNames = new HashMap<>();
+        Map<String, Set<String>> existingCircuitBreakerNames = new LinkedHashMap<>();
 
-        Map<String, Set<String>> existingGuards = new HashMap<>();
-        Set<String> expectedGuards = new HashSet<>();
+        Map<String, Set<String>> existingGuards = new LinkedHashMap<>();
+        Set<String> expectedGuards = new LinkedHashSet<>();
 
-        for (BeanInfo info : validationPhase.getContext().beans()) {
+        // TODO: add a comment / link to the beanstream issue
+        List<BeanInfo> beans = validationPhase.getContext().beans()
+                .stream()
+                .sorted(Comparator.comparing(bi -> bi.getBeanClass().toString()))
+                .toList();
+        for (BeanInfo info : beans) {
             if (info.hasType(DotNames.GUARD) || info.hasType(DotNames.TYPED_GUARD)) {
                 info.getQualifier(DotNames.IDENTIFIER).ifPresent(idAnn -> {
                     String id = idAnn.value().asString();
-                    existingGuards.computeIfAbsent(id, ignored -> new HashSet<>()).add(info.toString());
+                    existingGuards.computeIfAbsent(id, ignored -> new LinkedHashSet<>()).add(info.toString());
                     if ("global".equals(id)) {
                         exceptions.add(new DefinitionException("Guard/TypedGuard with identifier 'global' is not allowed: "
                                 + info));
@@ -329,7 +335,8 @@ public class SmallRyeFaultToleranceProcessor {
 
                         if (annotationStore.hasAnnotation(method, DotNames.CIRCUIT_BREAKER_NAME)) {
                             AnnotationInstance ann = annotationStore.getAnnotation(method, DotNames.CIRCUIT_BREAKER_NAME);
-                            existingCircuitBreakerNames.computeIfAbsent(ann.value().asString(), ignored -> new HashSet<>())
+                            existingCircuitBreakerNames
+                                    .computeIfAbsent(ann.value().asString(), ignored -> new LinkedHashSet<>())
                                     .add(method + " @ " + method.declaringClass());
                         }
 
@@ -356,6 +363,7 @@ public class SmallRyeFaultToleranceProcessor {
             }
         }
 
+        // Collections.sort(ftMethods);
         recorder.createFaultToleranceOperation(ftMethods);
 
         for (Map.Entry<String, Set<String>> entry : existingCircuitBreakerNames.entrySet()) {

@@ -5,6 +5,7 @@ import static io.quarkus.smallrye.jwt.deployment.SmallRyeJwtProcessor.MP_JWT_VER
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.Key;
@@ -112,7 +113,9 @@ public class SmallryeJwtDevModeProcessor {
                 "Please ensure the correct keys/locations are set in production to avoid potential issues.");
         if (ctx == null && !liveReloadBuildItem.isLiveReload()) {
             // first execution
-            KeyPair keyPair = generateOrReloadKeyPair(curateOutcomeBuildItem, generatePersistentDevModeJwtKeysBuildItem);
+            // TODO: optional is present below for reproducibility tests! We should fix it.
+            KeyPair keyPair = generateOrReloadKeyPair(curateOutcomeBuildItem,
+                    Optional.of(new GeneratePersistentDevModeJwtKeysBuildItem()));
             String publicKey = getStringKey(keyPair.getPublic());
             String privateKey = getStringKey(keyPair.getPrivate());
 
@@ -162,8 +165,8 @@ public class SmallryeJwtDevModeProcessor {
                 return keyPair;
             } else {
                 // read from disk
-                return new KeyPair(KeyUtils.readPublicKey(publicKey.getName()),
-                        KeyUtils.readPrivateKey(privateKey.getName()));
+                return new KeyPair(KeyUtils.decodePublicKey(Files.readString(publicKey.toPath())),
+                        KeyUtils.decodePrivateKey(Files.readString(privateKey.toPath())));
             }
         } else {
             return KeyUtils.generateKeyPair(KEY_SIZE);

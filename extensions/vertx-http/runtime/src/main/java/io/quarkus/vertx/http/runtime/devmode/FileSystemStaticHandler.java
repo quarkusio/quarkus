@@ -179,7 +179,7 @@ public class FileSystemStaticHandler implements Handler<RoutingContext>, Closeab
         }
     }
 
-    public static class StaticWebRootConfiguration {
+    public static class StaticWebRootConfiguration implements Comparable<StaticWebRootConfiguration> {
         /**
          * File system of the webroot. This can point to a directory on disk, or a jar file.
          */
@@ -214,6 +214,15 @@ public class FileSystemStaticHandler implements Handler<RoutingContext>, Closeab
 
         public void setWebRoot(String webRoot) {
             this.webRoot = webRoot;
+        }
+
+        @Override
+        public int compareTo(StaticWebRootConfiguration other) {
+            int result = fileSystem.compareTo(other.fileSystem);
+            if (result != 0) {
+                return result;
+            }
+            return webRoot.compareTo(other.webRoot);
         }
     }
 }

@@ -10,7 +10,7 @@ import jakarta.ws.rs.ext.ContextResolver;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
-public class ResourceContextResolver {
+public class ResourceContextResolver implements Comparable<ResourceContextResolver> {
 
     private BeanFactory<ContextResolver<?>> factory;
     private String className;
@@ -41,6 +41,11 @@ public class ResourceContextResolver {
 
     public List<String> getMediaTypeStrings() {
         return mediaTypeStrings;
+    }
+
+    @Override
+    public int compareTo(ResourceContextResolver o) {
+        return this.className.compareTo(o.className);
     }
 
     public List<MediaType> mediaTypes() {

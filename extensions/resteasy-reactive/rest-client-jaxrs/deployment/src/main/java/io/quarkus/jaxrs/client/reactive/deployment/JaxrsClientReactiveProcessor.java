@@ -41,6 +41,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -330,7 +331,7 @@ public class JaxrsClientReactiveProcessor {
 
         if (resourceScanningResultBuildItem.isEmpty()
                 || resourceScanningResultBuildItem.get().getResult().getClientInterfaces().isEmpty()) {
-            recorder.setupClientProxies(new HashMap<>(), Collections.emptyMap());
+            recorder.setupClientProxies(new LinkedHashMap<>(), Collections.emptyMap());
             jaxrsClientReactiveInfoBuildItemProducer.produce(new JaxrsClientReactiveInfoBuildItem(new HashSet<>()));
             return;
         }
@@ -410,10 +411,10 @@ public class JaxrsClientReactiveProcessor {
                 (metricsCapability.isPresent()
                         && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)));
 
-        Map<String, RuntimeValue<BiFunction<WebTarget, List<ParamConverterProvider>, ?>>> clientImplementations = new HashMap<>();
-        Map<String, String> failures = new HashMap<>();
+        Map<String, RuntimeValue<BiFunction<WebTarget, List<ParamConverterProvider>, ?>>> clientImplementations = new LinkedHashMap<>();
+        Map<String, String> failures = new LinkedHashMap<>();
 
-        Set<ClassInfo> multipartResponseTypes = new HashSet<>();
+        Set<ClassInfo> multipartResponseTypes = new LinkedHashSet<>();
         // collect classes annotated with MultipartForm and add classes that are used in rest client interfaces as return
         // types for multipart responses
         for (AnnotationInstance annotation : index.getAnnotations(ResteasyReactiveDotNames.MULTI_PART_FORM_PARAM)) {
@@ -423,7 +424,10 @@ public class JaxrsClientReactiveProcessor {
         }
 
         Map<GeneratedSubResourceKey, String> generatedSubResources = new HashMap<>();
-        for (Map.Entry<DotName, String> i : result.getClientInterfaces().entrySet()) {
+        List<Map.Entry<DotName, String>> sortedClientInterfaces = new ArrayList<>(
+                result.getClientInterfaces().entrySet());
+        sortedClientInterfaces.sort(Comparator.comparing(e -> e.getKey().toString()));
+        for (Map.Entry<DotName, String> i : sortedClientInterfaces) {
             ClassInfo clazz = index.getClassByName(i.getKey());
             //these interfaces can also be clients
             //so we generate client proxies for them
@@ -739,9 +743,11 @@ public class JaxrsClientReactiveProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     public void registerInvocationCallbacks(CombinedIndexBuildItem index, JaxrsClientReactiveRecorder recorder) {
-
         Collection<ClassInfo> invocationCallbacks = index.getComputingIndex()
-                .getAllKnownImplementors(ResteasyReactiveDotNames.INVOCATION_CALLBACK);
+                .getAllKnownImplementors(ResteasyReactiveDotNames.INVOCATION_CALLBACK)
+                .stream()
+                .sorted(Comparator.comparing(ic -> ic.name().toString()))
+                .toList();
 
         GenericTypeMapping genericTypeMapping = new GenericTypeMapping();
         for (ClassInfo invocationCallback : invocationCallbacks) {
@@ -1808,7 +1814,8 @@ public class JaxrsClientReactiveProcessor {
                             // just store the index of parameter used to create the body, we'll use it later
                             bodyParameterValue = paramValue;
                         } else if (param.parameterType == ParameterType.HEADER) {
-                            Type paramType = jandexSubMethod.parameterType(subParamField.paramIndex);
+                            // Type paramType = jandexSubMethod.parameterType(subParamField.paramIndex);
+                            Type paramType = subParamField.type;
                             Type effectiveParamType = paramType;
                             boolean isOptional = isOptional(paramType, index);
                             if (isOptional) {

@@ -2,7 +2,8 @@ package io.quarkus.resteasy.reactive.spi;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
-public final class MessageBodyReaderOverrideBuildItem extends MultiBuildItem {
+public final class MessageBodyReaderOverrideBuildItem extends MultiBuildItem
+        implements Comparable<MessageBodyReaderOverrideBuildItem> {
 
     private final String className;
     private final MessageBodyReaderWriterOverrideData overrideData;
@@ -19,5 +20,10 @@ public final class MessageBodyReaderOverrideBuildItem extends MultiBuildItem {
 
     public MessageBodyReaderWriterOverrideData getOverrideData() {
         return overrideData;
+    }
+
+    @Override
+    public int compareTo(MessageBodyReaderOverrideBuildItem o) {
+        return this.className.compareTo(o.className);
     }
 }

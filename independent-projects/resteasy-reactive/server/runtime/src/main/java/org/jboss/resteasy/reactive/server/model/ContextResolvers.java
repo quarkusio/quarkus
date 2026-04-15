@@ -2,7 +2,7 @@ package org.jboss.resteasy.reactive.server.model;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -17,7 +17,7 @@ import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 public class ContextResolvers {
 
-    private final Map<Class<?>, List<ResourceContextResolver>> resolvers = new HashMap<>();
+    private final Map<Class<?>, List<ResourceContextResolver>> resolvers = new LinkedHashMap<>();
 
     public <T> void addContextResolver(Class<T> contextType, ResourceContextResolver contextResolver) {
         List<ResourceContextResolver> list = resolvers.get(contextType);
@@ -84,6 +84,12 @@ public class ContextResolvers {
 
     public Map<Class<?>, List<ResourceContextResolver>> getResolvers() {
         return resolvers;
+    }
+
+    public void sort() {
+        for (List<ResourceContextResolver> list : resolvers.values()) {
+            Collections.sort(list);
+        }
     }
 
     public void initializeDefaultFactories(Function<String, BeanFactory<?>> factoryCreator) {

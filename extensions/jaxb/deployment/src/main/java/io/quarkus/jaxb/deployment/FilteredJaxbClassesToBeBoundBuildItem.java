@@ -2,6 +2,7 @@ package io.quarkus.jaxb.deployment;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -61,6 +62,7 @@ public final class FilteredJaxbClassesToBeBoundBuildItem extends SimpleBuildItem
 
         public FilteredJaxbClassesToBeBoundBuildItem build() {
             final List<Class<?>> classes = classNames.stream()
+                    .sorted(Comparator.naturalOrder())
                     .filter(className -> this.classNamePredicateExcludes.stream().noneMatch(p -> p.test(className)))
                     .map(FilteredJaxbClassesToBeBoundBuildItem::getClassByName)
                     .filter(JaxbType::isValidType)

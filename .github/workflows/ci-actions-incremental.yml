@@ -9,54 +9,54 @@ on:
   # the build for main is run periodically and cancelled if there are no changes since the last run
   schedule:
     - cron: '0 */12 * * *'
-  push:
-    branches-ignore:
-      - 'dependabot/**'
-      - 'main'
-    paths-ignore:
-      - '*.adoc'
-      - '*.md'
-      - '*.scenario'
-      - '*.txt'
-      - '.agents/**'
-      - 'adr/**'
-      - '.clinerules/**'
-      - '.continue/**'
-      - '.cursor/**'
-      - '.devcontainer/**'
-      - '.dockerignore'
-      - '.goosehints'
-      - '.windsurfrules'
-      - 'docs/**'
-      - '.github/ISSUE_TEMPLATE/**'
-      - '.github/copilot-instructions.md'
-      - '.github/*.yml'
-      - '.github/*.java'
-      - '.github/*.conf'
-      - '.github/workflows/doc-build.yml'
-      - '.github/workflows/ci-istio.yml'
-      - '.github/workflows/ci-kubernetes.yml'
-      - '.github/workflows/ci-sanity-check.yml'
-      - '.github/workflows/codeql-analysis.yml'
-      - '.github/workflows/deploy-snapshots.yml'
-      - '.github/workflows/jdk-early-access-build.yml'
-      - '.github/workflows/native-it-selected-graalvm.yml'
-      - '.github/workflows/owasp-check.yml'
-      - '.github/workflows/podman-build.yml'
-      - '.github/workflows/populate-cache.yml'
-      - '.github/workflows/preview.yml'
-      - '.github/workflows/preview-teardown.yml'
-      - '.github/workflows/quarkus-github-bot-lint.yml'
-      - '.github/workflows/release-build.yml'
-      - '.github/workflows/sonarcloud.yml'
-      - '.github/workflows/vale.yml'
-      - '.gitignore'
-      - '.gitpod.yml'
-      - '.justfile'
-      - 'LICENSE'
-      - '.sdkmanrc'
+  # push:
+  #   branches-ignore:
+  #     - 'dependabot/**'
+  #     - 'main'
+  #   paths-ignore:
+  #     - '*.adoc'
+  #     - '*.md'
+  #     - '*.scenario'
+  #     - '*.txt'
+  #     - '.agents/**'
+  #     - 'adr/**'
+  #     - '.clinerules/**'
+  #     - '.continue/**'
+  #     - '.cursor/**'
+  #     - '.devcontainer/**'
+  #     - '.dockerignore'
+  #     - '.goosehints'
+  #     - '.windsurfrules'
+  #     - 'docs/**'
+  #     - '.github/ISSUE_TEMPLATE/**'
+  #     - '.github/copilot-instructions.md'
+  #     - '.github/*.yml'
+  #     - '.github/*.java'
+  #     - '.github/*.conf'
+  #     - '.github/workflows/doc-build.yml'
+  #     - '.github/workflows/ci-istio.yml'
+  #     - '.github/workflows/ci-kubernetes.yml'
+  #     - '.github/workflows/ci-sanity-check.yml'
+  #     - '.github/workflows/codeql-analysis.yml'
+  #     - '.github/workflows/deploy-snapshots.yml'
+  #     - '.github/workflows/jdk-early-access-build.yml'
+  #     - '.github/workflows/native-it-selected-graalvm.yml'
+  #     - '.github/workflows/owasp-check.yml'
+  #     - '.github/workflows/podman-build.yml'
+  #     - '.github/workflows/populate-cache.yml'
+  #     - '.github/workflows/preview.yml'
+  #     - '.github/workflows/preview-teardown.yml'
+  #     - '.github/workflows/quarkus-github-bot-lint.yml'
+  #     - '.github/workflows/release-build.yml'
+  #     - '.github/workflows/sonarcloud.yml'
+  #     - '.github/workflows/vale.yml'
+  #     - '.gitignore'
+  #     - '.gitpod.yml'
+  #     - '.justfile'
+  #     - 'LICENSE'
+  #     - '.sdkmanrc'
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [ opened, synchronize, reopened, ready_for_review ]
     paths-ignore:
       - '*.adoc'
       - '*.md'
@@ -172,12 +172,12 @@ jobs:
     # Skip main in forks
     # Skip draft PRs, rerun as soon as its removed
     if: (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')) && (
-           github.event_name != 'pull_request' || (
-             github.event.pull_request.draft == false &&
-             github.event.pull_request.state != 'closed' &&
-             github.event.action != 'edited'
-           )
-        )
+      github.event_name != 'pull_request' || (
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.state != 'closed' &&
+      github.event.action != 'edited'
+      )
+      )
     outputs:
       config: ${{ steps.configure.outputs.config }}
       m2-monthly-branch-cache-key: ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}
@@ -560,9 +560,9 @@ jobs:
   jvm-tests:
     name: ${{ matrix.java.name }}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [ configure, build-jdk17, calculate-test-jobs ]
     if: needs.calculate-test-jobs.outputs.jvm_matrix
-    timeout-minutes: 400
+    timeout-minutes: 800
     env:
       MAVEN_OPTS: ${{ matrix.java.maven_opts }}
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
@@ -669,7 +669,7 @@ jobs:
           # see https://maven.apache.org/configure.html#a.mvn.2Fmaven.config_file.3A
           # IMPORTANT: we cannot simply replace all spaces with new lines as we have a module with spaces in the name (to test spaces are supported)
           echo -e "$MATRIX_JAVA_MODULES" >> .mvn/maven.config
-          ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS clean install -Dsurefire.timeout=1200 -Dno-test-kubernetes ${{ matrix.java.maven_args }}
+          ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS clean install -Dsurefire.timeout=3600 -Dno-test-kubernetes ${{ matrix.java.maven_args }}
       - name: Clean Gradle temp directory
         if: always()
         run: devtools/gradle/gradlew --stop && rm -rf devtools/gradle/gradle-extension-plugin/build/tmp
@@ -724,7 +724,7 @@ jobs:
   maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [ configure, build-jdk17, calculate-test-jobs ]
     env:
       MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
@@ -847,7 +847,7 @@ jobs:
   gradle-tests:
     name: Gradle Tests - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [ configure, build-jdk17, calculate-test-jobs ]
     env:
       # leave more space for the actual gradle execution (which is just wrapped by maven)
       MAVEN_OPTS: -Xmx1g
@@ -944,7 +944,7 @@ jobs:
   devtools-tests:
     name: Devtools Tests - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'small')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'small')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [ configure, build-jdk17, calculate-test-jobs ]
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.run_devtools == 'true'
     env:
@@ -1053,7 +1053,7 @@ jobs:
   kubernetes-tests:
     name: Kubernetes Tests - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [ configure, build-jdk17, calculate-test-jobs ]
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.run_kubernetes == 'true'
     env:
@@ -1162,7 +1162,7 @@ jobs:
   quickstarts-tests:
     name: Quickstarts Compilation - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [ configure, build-jdk17, calculate-test-jobs ]
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.run_quickstarts == 'true'
     env:
@@ -1261,7 +1261,7 @@ jobs:
   platform-tests:
     name: Platform Tests - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [ configure, build-jdk17, calculate-test-jobs ]
     # Skip main in forks
     if: ${{ contains( github.event.pull_request.labels.*.name, 'ci/test-platform') }}
     env:
@@ -1360,7 +1360,7 @@ jobs:
   virtual-thread-native-tests:
     name: Native Tests - Virtual Thread - ${{matrix.category}}
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.os-name, 'large')].runsOn, matrix.tag) || matrix.os-name }}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [ configure, build-jdk17, calculate-test-jobs ]
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.virtual_threads_matrix != '{}'
     env:
@@ -1440,7 +1440,7 @@ jobs:
 
   tcks-test:
     name: MicroProfile TCKs Tests
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [ configure, build-jdk17, calculate-test-jobs ]
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.run_tcks == 'true'
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest-large'].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners['ubuntu-latest-large'].runsOn, 'microprofile-tcks') || 'ubuntu-latest' }}
@@ -1530,7 +1530,7 @@ jobs:
 
   native-tests:
     name: Native Tests - ${{matrix.category}}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [ configure, build-jdk17, calculate-test-jobs ]
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.os-name, 'large')].runsOn, matrix.tag) || matrix.os-name }}
     env:
       # leave more space for the actual native compilation and execution

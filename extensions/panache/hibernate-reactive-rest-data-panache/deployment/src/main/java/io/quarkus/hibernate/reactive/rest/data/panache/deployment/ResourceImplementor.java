@@ -2,6 +2,7 @@ package io.quarkus.hibernate.reactive.rest.data.panache.deployment;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -51,6 +52,7 @@ class ResourceImplementor {
             String entityType, List<ClassInfo> resourceMethodListeners) {
         String resourceType = resourceInterface.name().toString();
         String className = resourceType + "Impl_" + HashUtil.sha1(resourceType);
+        resetFunctionCounter(className);
         LOGGER.tracef("Starting generation of '%s'", className);
         ClassCreator classCreator = ClassCreator.builder()
                 .classOutput(classOutput)
@@ -188,5 +190,24 @@ class ResourceImplementor {
         FieldInfo idField = entityClassHelper.getIdField(entityType);
         MethodDescriptor idSetter = entityClassHelper.getSetter(entityType, idField);
         creator.invokeVirtualMethod(idSetter, entity, id);
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private static void resetFunctionCounter(String generatedClassName) {
+        try {
+            Class<?> bytecodeCreatorImpl = Class.forName("io.quarkus.gizmo.BytecodeCreatorImpl");
+            java.lang.reflect.Field countersField = bytecodeCreatorImpl.getDeclaredField("functionCountersByClass");
+            countersField.setAccessible(true);
+            Map counters = (Map) countersField.get(null);
+            String internalClassName = generatedClassName.replace('.', '/');
+            for (Object key : new ArrayList<>(counters.keySet())) {
+                if (key instanceof String className
+                        && (className.startsWith(generatedClassName) || className.startsWith(internalClassName))) {
+                    counters.remove(className);
+                }
+            }
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Unable to reset Gizmo function counter for class " + generatedClassName, e);
+        }
     }
 }

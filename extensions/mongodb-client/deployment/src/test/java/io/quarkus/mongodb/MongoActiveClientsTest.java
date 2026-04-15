@@ -20,6 +20,7 @@ import io.quarkus.test.QuarkusExtensionTest;
 public class MongoActiveClientsTest extends MongoWithReplicasTestBase {
     @RegisterExtension
     static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
+            .overrideConfigKey("quarkus.mongodb.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar.addClasses(MongoTestBase.class));
 
     @Inject

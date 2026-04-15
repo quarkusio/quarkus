@@ -1,11 +1,15 @@
 package io.quarkus.websockets.next.deployment;
 
+import java.util.Comparator;
+
+import org.jspecify.annotations.NonNull;
+
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * A generated representation of a WebSocket endpoint.
  */
-public final class GeneratedEndpointBuildItem extends MultiBuildItem {
+public final class GeneratedEndpointBuildItem extends MultiBuildItem implements Comparable<GeneratedEndpointBuildItem> {
 
     public final String endpointId;
     public final String endpointClassName;
@@ -46,4 +50,15 @@ public final class GeneratedEndpointBuildItem extends MultiBuildItem {
         return path;
     }
 
+    private static final Comparator<GeneratedEndpointBuildItem> COMPARATOR = Comparator
+            .comparing(GeneratedEndpointBuildItem::getEndpointId, Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(GeneratedEndpointBuildItem::getEndpointClassName, Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(GeneratedEndpointBuildItem::getGeneratedClassName, Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(GeneratedEndpointBuildItem::getPath, Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(GeneratedEndpointBuildItem::isClient);
+
+    @Override
+    public int compareTo(@NonNull GeneratedEndpointBuildItem o) {
+        return COMPARATOR.compare(this, o);
+    }
 }

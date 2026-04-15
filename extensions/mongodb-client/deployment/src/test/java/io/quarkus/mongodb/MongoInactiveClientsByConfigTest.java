@@ -20,6 +20,7 @@ public class MongoInactiveClientsByConfigTest extends MongoWithReplicasTestBase 
     @RegisterExtension
     static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(MongoTestBase.class))
+            .overrideConfigKey("quarkus.mongodb.devservices.enabled", "false")
             .overrideRuntimeConfigKey("quarkus.mongodb.inactive.active", "false");
 
     @Inject

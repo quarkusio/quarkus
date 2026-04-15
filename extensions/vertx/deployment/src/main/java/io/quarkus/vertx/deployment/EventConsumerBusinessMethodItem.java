@@ -6,7 +6,8 @@ import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.InvokerInfo;
 import io.quarkus.builder.item.MultiBuildItem;
 
-public final class EventConsumerBusinessMethodItem extends MultiBuildItem {
+public final class EventConsumerBusinessMethodItem extends MultiBuildItem
+        implements Comparable<EventConsumerBusinessMethodItem> {
 
     private final BeanInfo bean;
     private final AnnotationInstance consumeEvent;
@@ -71,6 +72,11 @@ public final class EventConsumerBusinessMethodItem extends MultiBuildItem {
      */
     public InvokerInfo getInvoker() {
         return invoker;
+    }
+
+    @Override
+    public int compareTo(EventConsumerBusinessMethodItem o) {
+        return this.invoker.getClassDesc().displayName().compareTo(o.invoker.getClassDesc().displayName());
     }
 
 }

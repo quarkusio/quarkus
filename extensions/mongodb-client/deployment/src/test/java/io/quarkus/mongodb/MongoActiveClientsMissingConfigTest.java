@@ -21,6 +21,7 @@ public class MongoActiveClientsMissingConfigTest {
     @RegisterExtension
     static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(MongoTestBase.class))
+            .overrideConfigKey("quarkus.mongodb.devservices.enabled", "false")
             .overrideRuntimeConfigKey("quarkus.mongodb.active.hosts", "")
             .overrideRuntimeConfigKey("quarkus.mongodb.active.connection-string", "")
             .assertException(e -> assertThat(e)// Can't use isInstanceOf due to weird classloading in tests

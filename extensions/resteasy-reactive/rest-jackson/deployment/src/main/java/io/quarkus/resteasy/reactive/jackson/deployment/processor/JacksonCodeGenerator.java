@@ -318,6 +318,7 @@ public abstract class JacksonCodeGenerator {
 
         final String fieldName;
         final String jsonName;
+        final boolean hasExplicitJsonName;
         final String[] aliases;
         final Type fieldType;
 
@@ -349,7 +350,9 @@ public abstract class JacksonCodeGenerator {
             }
             this.fieldType = fieldType();
             this.fieldName = fieldName();
-            this.jsonName = jsonName(constructor, namingStrategy);
+            JsonNameResult result = jsonName(constructor, namingStrategy);
+            this.jsonName = result.name;
+            this.hasExplicitJsonName = result.explicit;
             this.aliases = jsonAliases();
         }
 
@@ -357,7 +360,9 @@ public abstract class JacksonCodeGenerator {
             readAnnotations(paramInfo);
             this.fieldType = paramInfo.type();
             this.fieldName = paramInfo.name();
-            this.jsonName = jsonName(null, namingStrategy);
+            JsonNameResult result = jsonName(null, namingStrategy);
+            this.jsonName = result.name;
+            this.hasExplicitJsonName = result.explicit;
             this.aliases = jsonAliases();
         }
 
@@ -390,7 +395,10 @@ public abstract class JacksonCodeGenerator {
             return new String[0];
         }
 
-        private String jsonName(MethodInfo constructor, PropertyNamingStrategy namingStrategy) {
+        private record JsonNameResult(String name, boolean explicit) {
+        }
+
+        private JsonNameResult jsonName(MethodInfo constructor, PropertyNamingStrategy namingStrategy) {
             AnnotationInstance jsonProperty = annotations.get(JsonProperty.class.getName());
             if (jsonProperty == null && constructor != null) {
                 jsonProperty = constructor.parameters().stream()
@@ -402,13 +410,13 @@ public abstract class JacksonCodeGenerator {
             if (jsonProperty != null) {
                 AnnotationValue value = jsonProperty.value();
                 if (value != null && !value.asString().isEmpty()) {
-                    return value.asString();
+                    return new JsonNameResult(value.asString(), true);
                 }
             }
             if (namingStrategy != null) {
-                return namingStrategy.nameForField(null, null, fieldName);
+                return new JsonNameResult(namingStrategy.nameForField(null, null, fieldName), true);
             }
-            return fieldName;
+            return new JsonNameResult(fieldName, false);
         }
 
         private String fieldName() {

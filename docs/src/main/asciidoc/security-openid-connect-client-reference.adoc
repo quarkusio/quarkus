@@ -1161,7 +1161,7 @@ When your custom extension must acquire OIDC tokens by using one of the token gr
 
 . Update your extension to use the `io.quarkus.oidc.client.spi.TokenProvider` CDI bean as required.
 For example:
-
++
 [source,java]
 ----
 package org.acme.extension;

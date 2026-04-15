@@ -543,9 +543,11 @@ This `quarkus` realm file adds a `frontend` client, and `alice` and `admin` user
 
 . Run the application in a dev mode:
 +
+====
 include::{includes}/devtools/dev.adoc[]
-+
+
 xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] launches a Keycloak container and imports `quarkus-realm.json`.
+====
 
 . Open a xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev-ui[/q/dev-ui] and click a `Keycloak provider` link in the *OpenID Connect Dev UI* card.
 
@@ -569,7 +571,9 @@ You have tested that `FrontendResource` can propagate the access tokens from the
 
 . After exploring the application in dev mode, run it as a standard Java application by compiling it:
 +
+====
 include::{includes}/devtools/build.adoc[]
+====
 
 . Run it:
 +

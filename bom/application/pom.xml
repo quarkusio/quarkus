@@ -5457,6 +5457,13 @@
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-core</artifactId>
                 <version>${hibernate-orm.version}</version>
+                <exclusions>
+                    <!-- We don't use ByteBuddy at runtime in Quarkus, only at build time. -->
+                    <exclusion>
+                        <groupId>net.bytebuddy</groupId>
+                        <artifactId>byte-buddy</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.orm</groupId>

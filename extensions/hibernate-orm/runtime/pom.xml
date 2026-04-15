@@ -50,12 +50,6 @@
             <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-core</artifactId>
         </dependency>
-        <!-- ByteBuddy is marked as a "runtime" dependency of Hibernate ORM but we need it to compile the extension -->
-        <dependency>
-            <groupId>net.bytebuddy</groupId>
-            <artifactId>byte-buddy</artifactId>
-            <scope>compile</scope>
-        </dependency>
 
         <!--
         Pull in the optional GraalVM Feature of Hibernate ORM as it contains the static list of classes

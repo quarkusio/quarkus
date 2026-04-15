@@ -116,8 +116,8 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
             return this;
         }
 
-        private void warnExclude(String patternOrGlob) {
-            log.warnf("Resource excludes are no longer supported by native-image's reachability-metadata.json. " +
+        private void errorExclude(String patternOrGlob) {
+            log.errorf("Resource excludes are no longer supported by native-image's reachability-metadata.json. " +
                     "The exclude pattern '%s' ignored. Remove it from your configuration or extension.",
                     patternOrGlob);
         }
@@ -127,7 +127,7 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
          */
         @Deprecated(since = "3.29", forRemoval = true)
         public Builder excludeGlob(String glob) {
-            warnExclude(glob);
+            errorExclude(glob);
             excludePatterns.add(GlobUtil.toRegexPattern(glob));
             return this;
         }
@@ -138,7 +138,7 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
         @Deprecated(since = "3.29", forRemoval = true)
         public Builder excludeGlobs(Collection<String> globs) {
             for (String glob : globs) {
-                warnExclude(glob);
+                errorExclude(glob);
                 excludePatterns.add(GlobUtil.toRegexPattern(glob));
             }
             return this;
@@ -150,7 +150,7 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
         @Deprecated(since = "3.29", forRemoval = true)
         public Builder excludeGlobs(String... globs) {
             for (String glob : globs) {
-                warnExclude(glob);
+                errorExclude(glob);
                 excludePatterns.add(GlobUtil.toRegexPattern(glob));
             }
             return this;
@@ -161,7 +161,7 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
          */
         @Deprecated(since = "3.29", forRemoval = true)
         public Builder excludePattern(String pattern) {
-            warnExclude(pattern);
+            errorExclude(pattern);
             excludePatterns.add(pattern);
             return this;
         }
@@ -172,7 +172,7 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
         @Deprecated(since = "3.29", forRemoval = true)
         public Builder excludePatterns(Collection<String> patterns) {
             for (String pattern : patterns) {
-                warnExclude(pattern);
+                errorExclude(pattern);
                 excludePatterns.add(pattern);
             }
             return this;
@@ -184,7 +184,7 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
         @Deprecated(since = "3.29", forRemoval = true)
         public Builder excludePatterns(String... patterns) {
             for (String pattern : patterns) {
-                warnExclude(pattern);
+                errorExclude(pattern);
                 excludePatterns.add(pattern);
             }
             return this;

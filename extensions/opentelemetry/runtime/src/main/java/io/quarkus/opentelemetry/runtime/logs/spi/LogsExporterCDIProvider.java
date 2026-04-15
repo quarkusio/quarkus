@@ -11,6 +11,7 @@ import org.jboss.logging.Logger;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.logs.CompositeLogRecordExporter;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.logs.NoopLogRecordExporter;
 
 public class LogsExporterCDIProvider implements ConfigurableLogRecordExporterProvider {
@@ -29,8 +30,7 @@ public class LogsExporterCDIProvider implements ConfigurableLogRecordExporterPro
         if (exporters.isUnsatisfied()) {
             return NoopLogRecordExporter.INSTANCE;
         } else {
-            log.debugf("using exporter: %s", exporters.get().getClass().getName());
-            return exporters.get();
+            return CompositeLogRecordExporter.of(exporters.stream().toList());
         }
     }
 

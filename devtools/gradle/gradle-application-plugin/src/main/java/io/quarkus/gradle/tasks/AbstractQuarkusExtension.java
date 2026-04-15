@@ -5,7 +5,7 @@ import static java.util.Collections.emptyList;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -18,6 +18,7 @@ import org.gradle.api.java.archives.Attributes;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.process.JavaForkOptions;
 
@@ -66,20 +67,41 @@ public abstract class AbstractQuarkusExtension {
     }
 
     private BaseConfig buildBaseConfig() {
-        // Using common code to construct the "base config", which is all the configuration (system properties,
-        // environment, application.properties/yaml/yml, project properties) that is available in a Gradle task's
-        // _configuration phase_.
+        // Using a ValueSource to construct the "base config" map. The ValueSource wraps all
+        // SmallRyeConfig construction (which internally calls System.getProperties()) in an
+        // opaque boundary, so Gradle's configuration cache does not track individual system
+        // property accesses as inputs. Only the final result map is compared between builds.
         Set<File> resourcesDirs = getSourceSet(project, SourceSet.MAIN_SOURCE_SET_NAME).getResources().getSourceDirectories()
                 .getFiles();
 
-        EffectiveConfig effectiveConfig = EffectiveConfig.builder()
-                .withTaskProperties(Collections.emptyMap())
-                .withBuildProperties(quarkusBuildProperties.get())
-                .withProjectProperties(project.getProperties())
-                .withSourceDirectories(resourcesDirs)
-                .withProfile(quarkusProfile())
-                .build();
-        return new BaseConfig(effectiveConfig);
+        // Filter project properties to quarkus-relevant ones to avoid tracking all project
+        // properties as configuration cache inputs.
+        Map<String, String> filteredProjectProperties = getQuarkusRelevantProjectProperties();
+
+        Provider<Map<String, String>> configMapProvider = project.getProviders()
+                .of(QuarkusConfigValueSource.class, spec -> {
+                    spec.getParameters().getBuildProperties().set(quarkusBuildProperties);
+                    spec.getParameters().getProjectProperties().set(filteredProjectProperties);
+                    spec.getParameters().getSourceDirectories().set(resourcesDirs);
+                    spec.getParameters().getProfile().set(quarkusProfile());
+                });
+
+        return new BaseConfig(configMapProvider.get());
+    }
+
+    /**
+     * Returns only quarkus-relevant project properties, to avoid registering all project
+     * properties as configuration cache inputs.
+     */
+    private Map<String, String> getQuarkusRelevantProjectProperties() {
+        Map<String, String> result = new HashMap<>();
+        for (Map.Entry<String, ?> entry : project.getProperties().entrySet()) {
+            if (entry.getValue() != null
+                    && (entry.getKey().startsWith("quarkus.") || entry.getKey().startsWith("platform.quarkus."))) {
+                result.put(entry.getKey(), entry.getValue().toString());
+            }
+        }
+        return result;
     }
 
     public BaseConfig baseConfig() {
@@ -120,9 +142,10 @@ public abstract class AbstractQuarkusExtension {
     }
 
     private String quarkusProfile() {
-        String profile = System.getProperty(QUARKUS_PROFILE);
+        // Use Gradle Provider API for CC-compatible single property lookups
+        String profile = project.getProviders().systemProperty(QUARKUS_PROFILE).getOrNull();
         if (profile == null) {
-            profile = System.getenv("QUARKUS_PROFILE");
+            profile = project.getProviders().environmentVariable("QUARKUS_PROFILE").getOrNull();
         }
         if (profile == null) {
             profile = quarkusBuildProperties.get().get(QUARKUS_PROFILE);

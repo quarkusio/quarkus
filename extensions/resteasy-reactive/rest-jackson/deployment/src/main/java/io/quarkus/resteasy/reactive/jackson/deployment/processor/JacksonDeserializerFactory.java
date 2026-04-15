@@ -644,15 +644,15 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 ResultHandle valueTypes = bytecode.readInstanceField(valueTypesField, bytecode.getThis());
                 yield bytecode.readArrayValue(valueTypes, parameterIndex);
             }
-            case LIST, SET -> {
-                Type listType = ((ParameterizedType) fieldType).arguments().get(0);
+            case LIST, SET, OPTIONAL -> {
+                Type contentType = ((ParameterizedType) fieldType).arguments().get(0);
                 MethodDescriptor getTypeFactory = ofMethod(DeserializationContext.class, "getTypeFactory",
                         TypeFactory.class);
                 ResultHandle typeFactory = bytecode.invokeVirtualMethod(getTypeFactory, deserializationContext);
                 MethodDescriptor constructParametricType = ofMethod(TypeFactory.class,
                         "constructParametricType", JavaType.class, Class.class, Class[].class);
                 ResultHandle paramTypes = bytecode.newArray(Class.class, 1);
-                bytecode.writeArrayValue(paramTypes, 0, bytecode.loadClass(listType.name().toString()));
+                bytecode.writeArrayValue(paramTypes, 0, bytecode.loadClass(contentType.name().toString()));
                 yield bytecode.invokeVirtualMethod(constructParametricType, typeFactory,
                         bytecode.loadClass(fieldTypeName), paramTypes);
             }

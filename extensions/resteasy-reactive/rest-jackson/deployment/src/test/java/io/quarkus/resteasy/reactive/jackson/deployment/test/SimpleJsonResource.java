@@ -607,6 +607,21 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return holder;
     }
 
+    @POST
+    @Path("/optional-holder")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public String echoOptionalHolder(OptionalHolder holder) {
+        // Access the Score object to verify it was deserialized to the correct type,
+        // not to a LinkedHashMap (which would cause a ClassCastException)
+        String scoreCategory = holder.getScore()
+                .map(Score::getCategory)
+                .orElse("none");
+        return "{\"name\":" + holder.getName().map(n -> "\"" + n + "\"").orElse("null")
+                + ",\"count\":" + holder.getCount().map(Object::toString).orElse("null")
+                + ",\"scoreCategory\":\"" + scoreCategory + "\"}";
+    }
+
     public static class UnquotedFieldsPersonSerialization implements BiFunction<ObjectMapper, Type, ObjectWriter> {
 
         public static final AtomicInteger count = new AtomicInteger();

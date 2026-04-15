@@ -31,7 +31,7 @@ public class SimpleJsonWithReflectionFreeSerializersTest extends AbstractSimpleJ
                                     ItemJsonValuePublicMethod.class, ItemJsonValuePublicField.class,
                                     ItemJsonValuePrivateMethod.class, ItemJsonValuePrivateField.class, StringWrapper.class,
                                     JsonAliasRecord.class, AnnotationNamingRequest.class, Pair.class, Score.class,
-                                    ProductPrice.class, DefaultValueHolder.class)
+                                    ProductPrice.class, DefaultValueHolder.class, OptionalHolder.class)
                             .addAsResource(new StringAsset("admin-expression=admin\n" +
                                     "user-expression=user\n" +
                                     "birth-date-roles=alice,bob\n" +

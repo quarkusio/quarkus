@@ -991,6 +991,37 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    public void testOptionalFieldDeserialization() {
+        // Optional<Score> must be deserialized to Optional<Score>, not Optional<LinkedHashMap>.
+        // The endpoint calls Score::getCategory to verify the actual type at runtime.
+        RestAssured
+                .with()
+                .body("{\"name\":\"hello\",\"count\":42,\"score\":{\"category\":\"A\",\"value\":10}}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/optional-holder")
+                .then()
+                .statusCode(200)
+                .body("name", is("hello"),
+                        "count", is(42),
+                        "scoreCategory", is("A"));
+    }
+
+    @Test
+    public void testOptionalFieldWithNull() {
+        // Explicit null should result in null (Optional.empty() serializes as null)
+        RestAssured
+                .with()
+                .body("{\"name\":null,\"count\":null}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/optional-holder")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", is(nullValue()),
+                        "count", is(nullValue()));
+    }
+
+    @Test
     public void testExplicitNullOverridesDefaultValue() {
         // When a field has a non-null default value (e.g. mode = "auto"),
         // sending an explicit null must override it to null, not preserve the default

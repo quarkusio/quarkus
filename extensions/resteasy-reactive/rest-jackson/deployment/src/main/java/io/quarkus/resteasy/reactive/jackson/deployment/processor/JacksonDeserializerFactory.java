@@ -378,12 +378,8 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         ResultHandle fieldValue = loopCreator.checkCast(loopCreator
                 .invokeInterfaceMethod(ofMethod(Map.Entry.class, "getValue", Object.class), mapEntry), JsonNode.class);
 
-        BytecodeCreator fieldReader = loopCreator
-                .ifTrue(loopCreator.invokeVirtualMethod(ofMethod(JsonNode.class, "isNull", boolean.class), fieldValue))
-                .falseBranch();
-
-        ResultHandle fieldName = translateFieldName(deserData, fieldReader, mapEntry);
-        Switch.StringSwitch strSwitch = fieldReader.stringSwitch(fieldName);
+        ResultHandle fieldName = translateFieldName(deserData, loopCreator, mapEntry);
+        Switch.StringSwitch strSwitch = loopCreator.stringSwitch(fieldName);
 
         // save constructor field names before deserializeFields modifies the set
         Set<String> ctorFields = Set.copyOf(deserData.constructorFields);

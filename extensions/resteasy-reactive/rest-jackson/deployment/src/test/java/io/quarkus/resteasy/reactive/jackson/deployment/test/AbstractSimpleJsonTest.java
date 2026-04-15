@@ -991,6 +991,22 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    public void testExplicitNullOverridesDefaultValue() {
+        // When a field has a non-null default value (e.g. mode = "auto"),
+        // sending an explicit null must override it to null, not preserve the default
+        RestAssured
+                .with()
+                .body("{\"mode\":null,\"label\":\"test\"}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/default-value-holder")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("mode", is(nullValue()),
+                        "label", is("test"));
+    }
+
+    @Test
     public void testPrimitiveTypesBean() {
         RestAssured
                 .with()

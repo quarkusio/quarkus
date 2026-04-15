@@ -510,7 +510,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         Map<String, Integer> typeParametersIndex = new HashMap<>();
         int index = 0;
         for (TypeVariable typeParameter : typeParameters) {
-            typeParametersIndex.put(typeParameter.name().toString(), index++);
+            typeParametersIndex.put(typeParameter.identifier(), index++);
         }
         return typeParametersIndex;
     }
@@ -614,7 +614,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         FieldKind fieldKind = registerTypeToBeGenerated(fieldType, fieldTypeName);
         ResultHandle typeHandle = switch (fieldKind) {
             case TYPE_VARIABLE -> {
-                Integer parameterIndex = typeParametersIndex.get(fieldTypeName);
+                Integer parameterIndex = typeParametersIndex.get(fieldType.asTypeVariable().identifier());
                 if (parameterIndex == null) {
                     yield null;
                 }

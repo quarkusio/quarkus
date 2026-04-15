@@ -30,7 +30,7 @@ public class SimpleJsonWithReflectionFreeSerializersTest extends AbstractSimpleJ
                                     PrimitiveTypesBean.class, PrimitiveTypesRecord.class, TokenResponse.class,
                                     ItemJsonValuePublicMethod.class, ItemJsonValuePublicField.class,
                                     ItemJsonValuePrivateMethod.class, ItemJsonValuePrivateField.class, StringWrapper.class,
-                                    JsonAliasRecord.class, AnnotationNamingRequest.class)
+                                    JsonAliasRecord.class, AnnotationNamingRequest.class, Pair.class, Score.class)
                             .addAsResource(new StringAsset("admin-expression=admin\n" +
                                     "user-expression=user\n" +
                                     "birth-date-roles=alice,bob\n" +

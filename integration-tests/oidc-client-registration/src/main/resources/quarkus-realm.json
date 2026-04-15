@@ -694,10 +694,9 @@
       "redirectUris": ["*"],
       "directAccessGrantsEnabled": true,
       "defaultClientScopes": ["profile"],
-      "optionalClientScopes": ["vc-scope-mapping"],
+      "optionalClientScopes": ["oid4vc_natural_person_sd"],
       "attributes": {
-        "oid4vci.enabled": "true",
-        "oid4vc.client.enabled": "true"
+        "oid4vci.enabled": "true"
       }
     }
   ],
@@ -1186,27 +1185,74 @@
       ]
     },
     {
-      "id": "12345-vc-scope-mapping",
-      "name": "vc-scope-mapping",
+      "id": "1e8b2a07-e7f4-4eca-b61e-27b1d46b7894",
+      "name": "oid4vc_natural_person_sd",
+      "description": "OID4VCI credential scope that represents a natural person in format: dc+sd-jwt",
       "protocol": "oid4vc",
       "attributes": {
-        "include.in.token.scope": "true",
-        "vc.issuer_did": "did:web:vc.example.com",
-        "vc.credential_configuration_id": "vc-scope-mapping",
-        "vc.credential_identifier": "my-credential-identifier",
-        "vc.format": "jwt_vc",
-        "vc.expiry_in_seconds": 31536000,
-        "vc.verifiable_credential_type": "my-vct",
-        "vc.supported_credential_types": "credential-type-1,credential-type-2",
-        "vc.credential_contexts": "context-1,context-2",
-        "vc.credential_signing_alg": "ES256",
-        "vc.cryptographic_binding_methods_supported": "jwk",
-        "vc.sd_jwt.number_of_decoys": "2",
-        "vc.credential_build_config.sd_jwt.visible_claims": "iat,jti,nbf,exp,given_name",
+        "vc.credential_configuration_id": "oid4vc_natural_person_sd",
+        "vc.credential_contexts": "oid4vc_natural_person",
+        "vc.credential_build_config.sd_jwt.visible_claims": "id,iat,nbf,exp,jti",
         "vc.credential_build_config.hash_algorithm": "SHA-256",
+        "vc.supported_credential_types": "oid4vc_natural_person",
+        "vc.format": "dc+sd-jwt",
+        "include.in.token.scope": "true",
+        "vc.cryptographic_binding_methods_supported": "jwk",
+        "vc.expiry_in_seconds": "31536000",
+        "vc.include_in_metadata": "true",
+        "vc.verifiable_credential_type": "oid4vc_natural_person",
         "vc.credential_build_config.token_jws_type": "JWS",
-        "vc.include_in_metadata": "true"
-      }
+        "vc.sd_jwt.number_of_decoys": "10"
+      },
+      "protocolMappers": [
+        {
+          "id": "7d23e68f-15ff-4af7-b7fc-9e14bccd3e25",
+          "name": "last-name",
+          "protocol": "oid4vc",
+          "protocolMapper": "oid4vc-user-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "familyName",
+            "userAttribute": "lastName",
+            "aggregateAttributes": "false"
+          }
+        },
+        {
+          "id": "6d7a5456-8830-4525-826c-77e5381a4aa2",
+          "name": "first-name",
+          "protocol": "oid4vc",
+          "protocolMapper": "oid4vc-user-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "firstName",
+            "userAttribute": "firstName",
+            "aggregateAttributes": "false"
+          }
+        },
+        {
+          "id": "8edd3c20-15dd-48ae-ae7f-7909c308d260",
+          "name": "subject-id",
+          "protocol": "oid4vc",
+          "protocolMapper": "oid4vc-subject-id-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "id",
+            "userAttribute": "did"
+          }
+        },
+        {
+          "id": "f4a8b298-4e79-4188-a81a-86d4415bd754",
+          "name": "email",
+          "protocol": "oid4vc",
+          "protocolMapper": "oid4vc-user-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "email",
+            "userAttribute": "email",
+            "aggregateAttributes": "false"
+          }
+        }
+      ]
     }
   ],
   "defaultDefaultClientScopes": [
@@ -2099,6 +2145,7 @@
     "notBefore" : 0,
     "groups" : [ ]
   } ],
-  "keycloakVersion": "8.0.1",
+  "keycloakVersion": "26.6.1",
+  "verifiableCredentialsEnabled": true,
   "userManagedAccessAllowed": false
 }

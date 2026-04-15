@@ -36,9 +36,7 @@ class OidcRichAuthorizationRequestsTest {
             assertNotNull(authorizationDetailsFromTokenResponse);
             assertTrue(authorizationDetailsFromTokenResponse.contains("type=openid_credential"),
                     authorizationDetailsFromTokenResponse);
-            assertTrue(authorizationDetailsFromTokenResponse.contains("credential_configuration_id=vc-scope-mapping"),
-                    authorizationDetailsFromTokenResponse);
-            assertTrue(authorizationDetailsFromTokenResponse.contains("credential_identifiers"),
+            assertTrue(authorizationDetailsFromTokenResponse.contains("credential_configuration_id=oid4vc_natural_person_sd"),
                     authorizationDetailsFromTokenResponse);
 
             webClient.getCookieManager().clearCookies();

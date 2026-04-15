@@ -918,6 +918,43 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    public void testProductPriceValid() {
+        RestAssured
+                .with()
+                .body("{\"name\":\"Widget\",\"price\":42}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/product-price")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("Widget"))
+                .body("price", Matchers.is(42));
+    }
+
+    @Test
+    public void testProductPriceInvalidType() {
+        // Sending a string where an Integer is expected must return 400, not silently coerce
+        RestAssured
+                .with()
+                .body("{\"name\":\"Widget\",\"price\":\"expensive\"}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/product-price")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    public void testProductPriceInvalidTypePut() {
+        RestAssured
+                .with()
+                .body("{\"name\":\"Widget\",\"price\":\"expensive\"}")
+                .contentType("application/json; charset=utf-8")
+                .put("/simple/product-price")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
     public void testPrimitiveTypesBean() {
         RestAssured
                 .with()

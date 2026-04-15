@@ -15,6 +15,7 @@ import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.WebApplicationException;
@@ -553,6 +554,22 @@ public class SimpleJsonResource extends SuperClass<Person> {
     @Produces(MediaType.APPLICATION_JSON)
     public ItemJsonValuePrivateField echoJsonValuePrivateField(@RestQuery int value) {
         return new ItemJsonValuePrivateField(value);
+    }
+
+    @POST
+    @Path("/product-price")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public ProductPrice echoProductPrice(ProductPrice productPrice) {
+        return productPrice;
+    }
+
+    @PUT
+    @Path("/product-price")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public ProductPrice echoProductPricePut(ProductPrice productPrice) {
+        return productPrice;
     }
 
     @POST

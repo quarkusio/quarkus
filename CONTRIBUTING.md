@@ -106,7 +106,7 @@ what you would expect to see. Don't forget to indicate your Quarkus, Java, Maven
 Sometimes a bug has been fixed in the `main` branch of Quarkus and you want to confirm it is fixed for your own
 application. There are two simple options for testing the `main` branch:
 
-* either use the snapshots we publish daily on [GitHub Packages](https://github.com/quarkusio/quarkus/packages)
+* either use the snapshots we publish daily on <https://central.sonatype.com/repository/maven-snapshots>
 * or build Quarkus locally
 
 The following is a quick summary aimed at allowing you to quickly test `main`. If you are interested in learning more details, refer to
@@ -114,36 +114,23 @@ the [Build section](#build) and the [Usage section](#usage).
 
 ### Using snapshots
 
-Snapshots are published daily with version `999-SNAPSHOT` to GitHub Packages, so you will have to wait for a snapshot containing the commits you are interested in.
+Snapshots are published daily with version `999-SNAPSHOT`, so you will have to wait for a snapshot containing the commits you are interested in.
 
-> **Note:** GitHub Packages requires authentication even for reading public packages.
-> You will need a GitHub Personal Access Token with the `read:packages` scope.
-> You can create one at <https://github.com/settings/tokens>.
-
-Add the GitHub Packages repository as a Maven repository **and** a plugin
-repository in your `settings.xml` (which should be placed in the `.m2` directory within your home directory).
-Replace `YOUR_GITHUB_USERNAME` and `YOUR_GITHUB_TOKEN` with your credentials
-(you can also use environment variables or [Maven password encryption](https://maven.apache.org/guides/mini/guide-encryption.html) to avoid storing credentials in plain text):
+Then just add <https://central.sonatype.com/repository/maven-snapshots> as a Maven repository **and** a plugin
+repository in your `settings xml` (which should be placed in the `.m2` directory within your home directory):
 
 ```xml
 
 <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
-    <servers>
-        <server>
-            <id>github-quarkus</id>
-            <username>YOUR_GITHUB_USERNAME</username>
-            <password>YOUR_GITHUB_TOKEN</password>
-        </server>
-    </servers>
     <profiles>
         <profile>
             <id>quarkus-snapshots</id>
             <repositories>
                 <repository>
-                    <id>github-quarkus</id>
-                    <url>https://maven.pkg.github.com/quarkusio/quarkus</url>
+                    <id>quarkus-snapshots-repository</id>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
                     <releases>
                         <enabled>false</enabled>
                     </releases>
@@ -154,8 +141,8 @@ Replace `YOUR_GITHUB_USERNAME` and `YOUR_GITHUB_TOKEN` with your credentials
             </repositories>
             <pluginRepositories>
                 <pluginRepository>
-                    <id>github-quarkus</id>
-                    <url>https://maven.pkg.github.com/quarkusio/quarkus</url>
+                    <id>quarkus-snapshots-plugin-repository</id>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
                     <releases>
                         <enabled>false</enabled>
                     </releases>
@@ -171,6 +158,8 @@ Replace `YOUR_GITHUB_USERNAME` and `YOUR_GITHUB_TOKEN` with your credentials
     </activeProfiles>
 </settings>
 ```
+
+You can check the last publication date here: <https://central.sonatype.com/service/rest/repository/browse/maven-snapshots/io/quarkus/quarkus-core/999-SNAPSHOT/>.
 
 ### Building main
 
@@ -865,14 +854,10 @@ repositories {
 }
 ```
 
-**Note**  Use the following definition in `repositories` section when using daily snapshot builds instead of local builds (requires authentication, see [Using snapshots](#using-snapshots)):
+**Note**  Use the following definition in `repositories` section when using daily snapshot builds instead of local builds:
 ```gradle
     maven {
-        url 'https://maven.pkg.github.com/quarkusio/quarkus'
-        credentials {
-            username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_USERNAME")
-            password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
-        }
+        url 'https://central.sonatype.com/repository/maven-snapshots/'
     }
 ```
 

@@ -173,6 +173,7 @@ public abstract class JacksonCodeGenerator {
         LIST(true),
         SET(true),
         MAP(true),
+        OPTIONAL(true),
         TYPE_VARIABLE(true);
 
         private final boolean generic;
@@ -207,6 +208,10 @@ public abstract class JacksonCodeGenerator {
                 if (typeName.equals("java.lang.Iterable") || isAssignableTo(typeName, COLLECTION_NAME)) {
                     registerTypeToBeGenerated(pType.arguments().get(0));
                     return FieldKind.LIST;
+                }
+                if (Optional.class.getName().equals(typeName)) {
+                    registerTypeToBeGenerated(pType.arguments().get(0));
+                    return FieldKind.OPTIONAL;
                 }
             }
             if (pType.arguments().size() == 2 && isAssignableTo(typeName, MAP_NAME)) {

@@ -599,6 +599,14 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return record;
     }
 
+    @POST
+    @Path("/default-value-holder")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public DefaultValueHolder echoDefaultValueHolder(DefaultValueHolder holder) {
+        return holder;
+    }
+
     public static class UnquotedFieldsPersonSerialization implements BiFunction<ObjectMapper, Type, ObjectWriter> {
 
         public static final AtomicInteger count = new AtomicInteger();

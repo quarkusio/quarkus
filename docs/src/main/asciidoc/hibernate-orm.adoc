@@ -1160,7 +1160,7 @@ The dependency version is managed by Quarkus, so you don't need to specify it ex
 To map a vector column, annotate a persistent attribute with one of the various vector `@JdbcTypeCode`s (for example, `SqlTypes.VECTOR` for a `float[]` embedding) and specify the vector length with `@Array(length = …​)`.
 
 [source,java]
-.Example entity with a vector theVector
+.Example entity with a vector
 ----
 @Entity
 public class Document {

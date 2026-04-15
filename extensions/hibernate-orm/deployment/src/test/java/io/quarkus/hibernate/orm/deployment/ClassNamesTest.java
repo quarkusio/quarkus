@@ -297,7 +297,7 @@ public class ClassNamesTest {
     }
 
     private static File determineHibernateVectorLocation() throws ClassNotFoundException {
-        URL url = Class.forName("org.hibernate.vector.internal.PGVectorTypeContributor")
+        URL url = Class.forName("org.hibernate.vector.SparseFloatVector")
                 .getProtectionDomain().getCodeSource().getLocation();
         if (!url.getProtocol().equals("file")) {
             throw new IllegalStateException("Hibernate Vector JAR is not a local file? " + url);

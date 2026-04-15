@@ -7,7 +7,7 @@ import java.util.function.BooleanSupplier;
  * if Hibernate Vector is available in the classpath.
  */
 public class HibernateVectorAvailable implements BooleanSupplier {
-    static final String HIBERNATE_VECTOR_SERVICE_CLASS = "org.hibernate.vector.internal.PGVectorTypeContributor";
+    static final String HIBERNATE_VECTOR_SERVICE_CLASS = "org.hibernate.vector.SparseFloatVector";
     static final boolean HIBERNATE_VECTOR_AVAILABLE = isClassAvailable(
             HIBERNATE_VECTOR_SERVICE_CLASS);
 

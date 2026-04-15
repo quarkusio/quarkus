@@ -15,6 +15,7 @@ import jakarta.ws.rs.core.MediaType;
 import io.quarkus.runtime.StartupEvent;
 
 @Path("/vector")
+@Transactional
 public class VectorResource {
 
     private final EntityManager em;
@@ -23,7 +24,6 @@ public class VectorResource {
         this.em = em;
     }
 
-    @Transactional
     public void startup(@Observes final StartupEvent startupEvent) {
         em.persist(new VectorEntity(1L, new float[] { 1.0f, 2.0f, 3.0f }, new double[] { 1.0, 2.0, 3.0 }));
         em.persist(new VectorEntity(2L, new float[] { 4.0f, 5.0f, 6.0f }, new double[] { 4.0, 5.0, 6.0 }));

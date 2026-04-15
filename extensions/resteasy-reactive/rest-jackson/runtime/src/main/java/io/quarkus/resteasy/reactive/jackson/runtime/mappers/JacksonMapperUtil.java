@@ -150,7 +150,7 @@ public class JacksonMapperUtil {
         JavaType wrapperType = property != null ? property.getType() : context.getContextualType();
         JavaType[] valueTypes = new JavaType[wrapperType.containedTypeCount()];
         for (int i = 0; i < valueTypes.length; i++) {
-            valueTypes[i] = wrapperType.containedType(0);
+            valueTypes[i] = wrapperType.containedType(i);
         }
         return valueTypes;
     }

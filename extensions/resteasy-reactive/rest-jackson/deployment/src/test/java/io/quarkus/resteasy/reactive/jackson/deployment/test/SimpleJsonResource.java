@@ -493,6 +493,14 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return item.getContent().getName();
     }
 
+    @POST
+    @Path("/multiGenericInput")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public String multiGenericInputTest(Pair<Item, Score> pair) {
+        return pair.getFirst().getName() + "/" + pair.getSecond().getCategory() + "/" + pair.getSecond().getValue();
+    }
+
     @GET
     @Path("/interface")
     public ContainerDTO interfaceTest() {

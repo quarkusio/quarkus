@@ -485,6 +485,18 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    public void testMultiGenericInput() {
+        RestAssured
+                .with()
+                .body("{\"first\": {\"name\":\"foo\", \"email\":\"bar\"}, \"second\": {\"category\":\"test\", \"value\":42}}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/multiGenericInput")
+                .then()
+                .statusCode(200)
+                .body(is("foo/test/42"));
+    }
+
+    @Test
     public void testInterface() {
         RestAssured
                 .with()

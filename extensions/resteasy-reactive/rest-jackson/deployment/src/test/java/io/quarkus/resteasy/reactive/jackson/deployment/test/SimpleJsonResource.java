@@ -4,6 +4,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -606,6 +607,9 @@ public class SimpleJsonResource extends SuperClass<Person> {
     public record LinkedListBatchRequest(@JsonProperty("items") LinkedList<GreetingRequest> items) {
     }
 
+    public record DequeBatchRequest(@JsonProperty("items") Deque<GreetingRequest> items) {
+    }
+
     @POST
     @Path("/linkedlist-batch")
     @Produces(MediaType.APPLICATION_JSON)
@@ -617,8 +621,40 @@ public class SimpleJsonResource extends SuperClass<Person> {
     }
 
     @POST
+    @Path("/deque-batch")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String dequeBatch(DequeBatchRequest request) {
+        String values = request.items().stream()
+                .map(GreetingRequest::name)
+                .collect(Collectors.joining(","));
+        return "{\"values\":\"" + values + "\"}";
+    }
+
+    @POST
     @Path("/greeting")
     public String greeting(GreetingRequest request) {
         return "{\"message\":\"Hello " + request.name() + "\"}";
+    }
+
+    @POST
+    @Path("/json-alias-record-echo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public JsonAliasRecord echoJsonAliasRecord(JsonAliasRecord record) {
+        return record;
+    }
+
+    @POST
+    @Path("/annotation-naming")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public String annotationNaming(AnnotationNamingRequest request) {
+        return "{\"values\":\"" + request.firstName() + "\"}";
+    }
+
+    @GET
+    @Path("/annotation-naming-ser")
+    @Produces(MediaType.APPLICATION_JSON)
+    public AnnotationNamingRequest annotationNamingSer() {
+        return new AnnotationNamingRequest("Bob");
     }
 }

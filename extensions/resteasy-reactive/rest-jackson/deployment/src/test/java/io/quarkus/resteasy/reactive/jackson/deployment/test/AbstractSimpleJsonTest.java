@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.test;
 
+import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.is;
@@ -730,6 +731,33 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    public void testJsonAliasRecordEcho() {
+        // Test that @JsonAlias is respected when using the alias name
+        RestAssured
+                .with()
+                .body("{\"name\":\"John\",\"insurance_number\":\"INS-123\"}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/json-alias-record-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("John"))
+                .body("insuranceNumber", Matchers.is("INS-123"));
+
+        // Test that the original field name also still works
+        RestAssured
+                .with()
+                .body("{\"name\":\"Jane\",\"insuranceNumber\":\"INS-456\"}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/json-alias-record-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("Jane"))
+                .body("insuranceNumber", Matchers.is("INS-456"));
+    }
+
+    @Test
     public void testRecordWithEmptyConstructorEcho() {
         RestAssured
                 .with()
@@ -1033,6 +1061,19 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    void testShouldDeserializeAbstractList() {
+        RestAssured
+                .with()
+                .body("{\"items\": [{\"name\": \"world\"}]}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/deque-batch")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("values", CoreMatchers.is("world"));
+    }
+
+    @Test
     void testShouldRejectUnknownFields() {
         RestAssured
                 .with()
@@ -1041,5 +1082,29 @@ public abstract class AbstractSimpleJsonTest {
                 .post("/simple/greeting")
                 .then()
                 .statusCode(400);
+    }
+
+    @Test
+    void naming_annotationUpperSnake_shouldDeserialize() {
+        given()
+                .contentType("application/json")
+                .body("""
+                        {"FIRST_NAME": "Bob"}
+                        """)
+                .when()
+                .post("/simple/annotation-naming")
+                .then()
+                .statusCode(200)
+                .body("values", CoreMatchers.is("Bob"));
+    }
+
+    @Test
+    void naming_annotationUpperSnake_shouldSerialize() {
+        given()
+                .when()
+                .get("/simple/annotation-naming-ser")
+                .then()
+                .statusCode(200)
+                .body("FIRST_NAME", CoreMatchers.is("Bob"));
     }
 }

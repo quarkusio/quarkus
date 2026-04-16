@@ -21,3 +21,5 @@ guidance before starting work:
   when unsure about formatting, naming, visibility, or logging conventions.
 - **Building and testing** — Read `.agents/skills/building-and-testing/SKILL.md`
   when building, testing, or understanding Maven flags and build commands.
+- **Pull requests** — Read `.agents/skills/pull-requests/SKILL.md`
+  when preparing a pull request, writing commit messages, or choosing labels.

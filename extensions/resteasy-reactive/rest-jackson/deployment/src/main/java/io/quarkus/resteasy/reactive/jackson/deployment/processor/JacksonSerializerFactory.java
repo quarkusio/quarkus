@@ -240,7 +240,7 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
         serialize.invokeVirtualMethod(writeStartObject, ctx.jsonGenerator);
 
         Set<String> serializedFields = new HashSet<>();
-        boolean valid = serializeObjectData(classInfo, classCreator, serialize, ctx, serializedFields);
+        serializeObjectData(classInfo, classCreator, serialize, ctx, serializedFields);
 
         // jsonGenerator.writeEndObject();
         MethodDescriptor writeEndObject = MethodDescriptor.ofMethod(JSON_GEN_CLASS_NAME, "writeEndObject", "void");
@@ -252,7 +252,7 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
 
         classCreator.getMethodCreator("<clinit>", void.class).setModifiers(ACC_STATIC).returnVoid();
 
-        return valid;
+        return true;
     }
 
     private Optional<FieldSpecs> jsonValueFieldSpecs(ClassInfo classInfo) {
@@ -288,14 +288,14 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
         writeFieldValue(jsonValueFieldSpecs, bytecode, ctx, typeName, arg, null);
     }
 
-    private boolean serializeObjectData(ClassInfo classInfo, ClassCreator classCreator, MethodCreator serialize,
+    private void serializeObjectData(ClassInfo classInfo, ClassCreator classCreator, MethodCreator serialize,
             SerializationContext ctx, Set<String> serializedFields) {
         PropertyNamingStrategy namingStrategy = getNamingStrategy(classInfo);
-        return serializeFields(classInfo, classCreator, serialize, ctx, serializedFields, namingStrategy) &&
-                serializeMethods(classInfo, classCreator, serialize, ctx, serializedFields, namingStrategy);
+        serializeFields(classInfo, classCreator, serialize, ctx, serializedFields, namingStrategy);
+        serializeMethods(classInfo, classCreator, serialize, ctx, serializedFields, namingStrategy);
     }
 
-    private boolean serializeFields(ClassInfo classInfo, ClassCreator classCreator, MethodCreator serialize,
+    private void serializeFields(ClassInfo classInfo, ClassCreator classCreator, MethodCreator serialize,
             SerializationContext ctx, Set<String> serializedFields, PropertyNamingStrategy namingStrategy) {
         MethodInfo constructor = findConstructor(classInfo).orElse(null);
 
@@ -305,16 +305,12 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
                 if (fieldSpecs.isIgnoredField()) {
                     continue;
                 }
-                if (fieldSpecs.hasUnknownAnnotation()) {
-                    return false;
-                }
                 writeField(classInfo, fieldSpecs, writeFieldBranch(classCreator, serialize, fieldSpecs, ctx), ctx);
             }
         }
-        return true;
     }
 
-    private boolean serializeMethods(ClassInfo classInfo, ClassCreator classCreator, MethodCreator serialize,
+    private void serializeMethods(ClassInfo classInfo, ClassCreator classCreator, MethodCreator serialize,
             SerializationContext ctx, Set<String> serializedFields, PropertyNamingStrategy namingStrategy) {
         for (MethodInfo methodInfo : classMethods(classInfo)) {
             FieldSpecs fieldSpecs = fieldSpecsFromMethod(methodInfo, namingStrategy);
@@ -322,13 +318,9 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
                 if (fieldSpecs.isIgnoredField()) {
                     continue;
                 }
-                if (fieldSpecs.hasUnknownAnnotation()) {
-                    return false;
-                }
                 writeField(classInfo, fieldSpecs, serialize, ctx);
             }
         }
-        return true;
     }
 
     private FieldSpecs fieldSpecsFromMethod(MethodInfo methodInfo, PropertyNamingStrategy namingStrategy) {

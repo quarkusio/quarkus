@@ -25,6 +25,7 @@ import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
+import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -45,6 +46,9 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.resteasy.reactive.jackson.SecureField;
 
 public abstract class JacksonCodeGenerator {
+
+    private static final Logger log = Logger.getLogger(JacksonCodeGenerator.class);
+
     protected final BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
     protected final IndexView jandexIndex;
 
@@ -78,8 +82,13 @@ public abstract class JacksonCodeGenerator {
 
     private Optional<String> create(ClassInfo classInfo) {
         String beanClassName = classInfo.name().toString();
-        if (vetoedClass(classInfo, beanClassName) || hasUnknownClassAnnotation(classInfo)
-                || !generatedClassNames.add(beanClassName)) {
+        if (vetoedClass(classInfo, beanClassName) || !generatedClassNames.add(beanClassName)) {
+            return Optional.empty();
+        }
+        Optional<String> unknownAnnotation = findUnknownAnnotation(classInfo);
+        if (unknownAnnotation.isPresent()) {
+            log.infof("Skipping generation of reflection-free Jackson serializer for class %s" +
+                    " because it contains the unsupported Jackson annotation %s", beanClassName, unknownAnnotation.get());
             return Optional.empty();
         }
 
@@ -162,9 +171,11 @@ public abstract class JacksonCodeGenerator {
         return className.startsWith("java.") || className.startsWith("jakarta.") || className.startsWith("io.vertx.core.json.");
     }
 
-    private static boolean hasUnknownClassAnnotation(ClassInfo classInfo) {
-        return classInfo.declaredAnnotations().stream()
-                .anyMatch(a -> FieldSpecs.isUnknownAnnotation(a.name().toString()));
+    private static Optional<String> findUnknownAnnotation(ClassInfo classInfo) {
+        return classInfo.annotations().stream()
+                .map(a -> a.name().toString())
+                .filter(FieldSpecs::isUnknownAnnotation)
+                .findFirst();
     }
 
     protected enum FieldKind {
@@ -440,10 +451,6 @@ public abstract class JacksonCodeGenerator {
                 return methodName.substring(3, 4).toLowerCase() + methodName.substring(4);
             }
             return methodName;
-        }
-
-        boolean hasUnknownAnnotation() {
-            return annotations.keySet().stream().anyMatch(FieldSpecs::isUnknownAnnotation);
         }
 
         boolean isIgnoredField() {

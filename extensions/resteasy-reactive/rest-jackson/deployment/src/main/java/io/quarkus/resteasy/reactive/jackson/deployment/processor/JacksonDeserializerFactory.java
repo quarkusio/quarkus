@@ -299,9 +299,6 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         int i = 0;
         for (MethodParameterInfo paramInfo : deserData.constructor.parameters()) {
             FieldSpecs fieldSpecs = fieldSpecsFromFieldParam(paramInfo, deserData.namingStrategy);
-            if (fieldSpecs.hasUnknownAnnotation()) {
-                return null;
-            }
             deserData.constructorFields.add(fieldSpecs.jsonName);
             for (String alias : fieldSpecs.aliases) {
                 deserData.constructorFields.add(alias);
@@ -540,31 +537,26 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         AtomicBoolean valid = new AtomicBoolean(true);
 
         for (FieldInfo fieldInfo : classFields(deserData.classInfo)) {
-            if (!deserializeFieldSpecs(deserData, deserializationContext, objHandle, fieldValue,
+            deserializeFieldSpecs(deserData, deserializationContext, objHandle, fieldValue,
                     deserializedFields, strSwitch,
                     fieldSpecsFromField(deserData.classInfo, deserData.constructor, fieldInfo, deserData.namingStrategy),
-                    valid))
-                return false;
+                    valid);
         }
 
         for (MethodInfo methodInfo : classMethods(deserData.classInfo)) {
-            if (!deserializeFieldSpecs(deserData, deserializationContext, objHandle, fieldValue,
-                    deserializedFields, strSwitch, fieldSpecsFromMethod(methodInfo, deserData.namingStrategy), valid))
-                return false;
+            deserializeFieldSpecs(deserData, deserializationContext, objHandle, fieldValue,
+                    deserializedFields, strSwitch, fieldSpecsFromMethod(methodInfo, deserData.namingStrategy), valid);
         }
 
         return valid.get();
     }
 
-    private boolean deserializeFieldSpecs(DeserializationData deserData, ResultHandle deserializationContext,
+    private void deserializeFieldSpecs(DeserializationData deserData, ResultHandle deserializationContext,
             ResultHandle objHandle, ResultHandle fieldValue, Set<String> deserializedFields, Switch.StringSwitch strSwitch,
             FieldSpecs fieldSpecs, AtomicBoolean valid) {
         if (fieldSpecs != null && deserializedFields.add(fieldSpecs.jsonName)) {
             if (fieldSpecs.isIgnoredField()) {
-                return true;
-            }
-            if (fieldSpecs.hasUnknownAnnotation()) {
-                return false;
+                return;
             }
             strSwitch.caseOf(fieldSpecs.jsonName,
                     bytecode -> valid.compareAndSet(true, deserializeField(deserData, bytecode, objHandle,
@@ -575,7 +567,6 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                                 fieldValue, fieldSpecs, deserializationContext)));
             }
         }
-        return true;
     }
 
     private boolean deserializeField(DeserializationData deserData, BytecodeCreator bytecode,

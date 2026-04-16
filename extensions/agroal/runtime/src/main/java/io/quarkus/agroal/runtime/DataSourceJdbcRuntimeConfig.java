@@ -13,7 +13,6 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
-import io.smallrye.config.WithName;
 
 @ConfigGroup
 public interface DataSourceJdbcRuntimeConfig {
@@ -174,18 +173,8 @@ public interface DataSourceJdbcRuntimeConfig {
     Map<String, String> additionalJdbcProperties();
 
     /**
-     * Enable OpenTelemetry JDBC instrumentation.
+     * OpenTelemetry JDBC instrumentation configuration.
      */
-    @WithName("telemetry.enabled")
-    @ConfigDocDefault("false if quarkus.datasource.jdbc.telemetry=false and true if quarkus.datasource.jdbc.telemetry=true")
-    Optional<Boolean> telemetry();
-
-    /**
-     * Enable tracing of the connection acquisition from the datasource.
-     * When enabled, a span is created for each {@code getConnection()} call.
-     */
-    @WithName("telemetry.trace-connection")
-    @WithDefault("false")
-    boolean telemetryTraceConnection();
+    DataSourceJdbcTelemetryConfig telemetry();
 
 }

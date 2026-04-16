@@ -720,4 +720,12 @@ public class SimpleJsonResource extends SuperClass<Person> {
     public AnnotationNamingRequest annotationNamingSer() {
         return new AnnotationNamingRequest("Bob");
     }
+
+    @POST
+    @Path("/any-setter")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public String anySetter(AnySetterRequest request) {
+        return "{\"known\":\"" + request.getKnown() + "\",\"extras_size\":" + request.getExtras().size() + "}";
+    }
 }

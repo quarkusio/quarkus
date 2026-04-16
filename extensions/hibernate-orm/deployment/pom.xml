@@ -131,6 +131,11 @@
             <artifactId>geolatte-geom</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-vector</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

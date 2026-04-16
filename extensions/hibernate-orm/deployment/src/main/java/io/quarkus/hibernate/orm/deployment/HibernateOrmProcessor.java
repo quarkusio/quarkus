@@ -426,7 +426,7 @@ public final class HibernateOrmProcessor {
                             true, isHibernateValidatorPresent(capabilities), jsonMapper, xmlMapper));
         }
 
-        if (impliedPU.shouldGenerateImpliedBlockingPersistenceUnit()) {
+        if (persistenceXmlDescriptors.isEmpty() && impliedPU.shouldGenerateImpliedBlockingPersistenceUnit()) {
             handleHibernateORMWithNoPersistenceXml(hibernateOrmConfig, index, persistenceXmlDescriptors,
                     jdbcDataSources, reactiveDataSources, applicationArchivesBuildItem, launchMode.getLaunchMode(),
                     additionalJpaModelBuildItems,
@@ -476,7 +476,31 @@ public final class HibernateOrmProcessor {
     @BuildStep
     public void contributeQuarkusConfigToJpaModel(
             BuildProducer<JpaModelPersistenceUnitContributionBuildItem> jpaModelPuContributions,
-            HibernateOrmConfig hibernateOrmConfig) {
+            HibernateOrmConfig hibernateOrmConfig, List<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptors) {
+        if (!persistenceXmlDescriptors.isEmpty()) {
+            if (hibernateOrmConfig.isAnyNonPersistenceXmlPropertySet()) {
+                throw new ConfigurationException(
+                        "A legacy persistence.xml file is present in the classpath, but Hibernate ORM is also configured through the Quarkus config file.\n"
+                                + "Legacy persistence.xml files and Quarkus configuration cannot be used at the same time.\n"
+                                + "To ignore persistence.xml files, set the configuration property"
+                                + " 'quarkus.hibernate-orm.persistence-xml.ignore' to 'true'.\n"
+                                + "To use persistence.xml files, remove all '" + HIBERNATE_ORM_CONFIG_PREFIX
+                                + "*' properties from the Quarkus config file.");
+            } else {
+                // It's theoretically possible to use the Quarkus Hibernate ORM extension
+                // without setting any build-time configuration property,
+                // so the condition above might not catch all attempts to use persistence.xml and Quarkus-configured PUs
+                // at the same time.
+                // At that point, the only thing we can do is log something,
+                // so that hopefully people in that situation will notice that their Quarkus configuration is being ignored.
+                LOG.infof(
+                        "A legacy persistence.xml file is present in the classpath. This file will be used to configure JPA/Hibernate ORM persistence units,"
+                                + " and any configuration of the Hibernate ORM extension will be ignored."
+                                + " To ignore persistence.xml files instead, set the configuration property"
+                                + " 'quarkus.hibernate-orm.persistence-xml.ignore' to 'true'.");
+                return;
+            }
+        }
         for (Entry<String, HibernateOrmConfigPersistenceUnit> entry : hibernateOrmConfig.persistenceUnits()
                 .entrySet()) {
             String name = entry.getKey();
@@ -977,31 +1001,6 @@ public final class HibernateOrmProcessor {
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
-        if (!descriptors.isEmpty()) {
-            if (hibernateOrmConfig.isAnyNonPersistenceXmlPropertySet()) {
-                throw new ConfigurationException(
-                        "A legacy persistence.xml file is present in the classpath, but Hibernate ORM is also configured through the Quarkus config file.\n"
-                                + "Legacy persistence.xml files and Quarkus configuration cannot be used at the same time.\n"
-                                + "To ignore persistence.xml files, set the configuration property"
-                                + " 'quarkus.hibernate-orm.persistence-xml.ignore' to 'true'.\n"
-                                + "To use persistence.xml files, remove all '" + HIBERNATE_ORM_CONFIG_PREFIX
-                                + "*' properties from the Quarkus config file.");
-            } else {
-                // It's theoretically possible to use the Quarkus Hibernate ORM extension
-                // without setting any build-time configuration property,
-                // so the condition above might not catch all attempts to use persistence.xml and Quarkus-configured PUs
-                // at the same time.
-                // At that point, the only thing we can do is log something,
-                // so that hopefully people in that situation will notice that their Quarkus configuration is being ignored.
-                LOG.infof(
-                        "A legacy persistence.xml file is present in the classpath. This file will be used to configure JPA/Hibernate ORM persistence units,"
-                                + " and any configuration of the Hibernate ORM extension will be ignored."
-                                + " To ignore persistence.xml files instead, set the configuration property"
-                                + " 'quarkus.hibernate-orm.persistence-xml.ignore' to 'true'.");
-                return;
-            }
-        }
-
         if (!hibernateOrmConfig.blocking()) {
             LOG.infof(
                     "Hibernate ORM was disabled explicitly by quarkus.hibernate-orm.blocking=false");

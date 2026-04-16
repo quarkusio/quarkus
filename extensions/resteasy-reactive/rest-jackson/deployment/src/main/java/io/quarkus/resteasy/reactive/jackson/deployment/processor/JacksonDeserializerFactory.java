@@ -42,6 +42,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.cfg.MapperConfig;
 import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.introspect.AnnotatedField;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 
@@ -50,6 +51,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.gizmo.FieldCreator;
@@ -58,6 +60,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.Switch;
+import io.quarkus.gizmo.TryBlock;
 import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
 
 /**
@@ -375,12 +378,8 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         ResultHandle fieldValue = loopCreator.checkCast(loopCreator
                 .invokeInterfaceMethod(ofMethod(Map.Entry.class, "getValue", Object.class), mapEntry), JsonNode.class);
 
-        BytecodeCreator fieldReader = loopCreator
-                .ifTrue(loopCreator.invokeVirtualMethod(ofMethod(JsonNode.class, "isNull", boolean.class), fieldValue))
-                .falseBranch();
-
-        ResultHandle fieldName = translateFieldName(deserData, fieldReader, mapEntry);
-        Switch.StringSwitch strSwitch = fieldReader.stringSwitch(fieldName);
+        ResultHandle fieldName = translateFieldName(deserData, loopCreator, mapEntry);
+        Switch.StringSwitch strSwitch = loopCreator.stringSwitch(fieldName);
 
         // save constructor field names before deserializeFields modifies the set
         Set<String> ctorFields = Set.copyOf(deserData.constructorFields);
@@ -510,7 +509,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         Map<String, Integer> typeParametersIndex = new HashMap<>();
         int index = 0;
         for (TypeVariable typeParameter : typeParameters) {
-            typeParametersIndex.put(typeParameter.name().toString(), index++);
+            typeParametersIndex.put(typeParameter.identifier(), index++);
         }
         return typeParametersIndex;
     }
@@ -582,13 +581,35 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
     private boolean deserializeField(DeserializationData deserData, BytecodeCreator bytecode,
             ResultHandle objHandle, ResultHandle fieldValue, FieldSpecs fieldSpecs,
             ResultHandle deserializationContext) {
-        ResultHandle valueHandle = readValueFromJson(deserData.classCreator, bytecode, deserializationContext, fieldSpecs,
-                deserData.typeParametersIndex, fieldValue);
+        boolean isBasicType = JacksonSerializationUtils.isBasicJsonType(fieldSpecs.fieldType);
+
+        // For non-basic types (objects, collections, boxed primitives, etc.), wrap in try-catch
+        // to enrich any MismatchedInputException with the field path context.
+        // This ensures the exception mapper can report the object name and attribute name.
+        BytecodeCreator effectiveBytecode = bytecode;
+        TryBlock tryBlock = null;
+        if (!isBasicType) {
+            tryBlock = bytecode.tryBlock();
+            effectiveBytecode = tryBlock;
+        }
+
+        ResultHandle valueHandle = readValueFromJson(deserData.classCreator, effectiveBytecode, deserializationContext,
+                fieldSpecs, deserData.typeParametersIndex, fieldValue);
         if (valueHandle == null) {
             return false;
         }
-        writeValueToObject(deserData.classInfo, objHandle, fieldSpecs, bytecode,
-                fieldSpecs.toValueWriterHandle(bytecode, valueHandle));
+        writeValueToObject(deserData.classInfo, objHandle, fieldSpecs, effectiveBytecode,
+                fieldSpecs.toValueWriterHandle(effectiveBytecode, valueHandle));
+
+        if (tryBlock != null) {
+            CatchBlockCreator catchBlock = tryBlock.addCatch(MismatchedInputException.class);
+            ResultHandle exception = catchBlock.getCaughtException();
+            catchBlock.invokeVirtualMethod(
+                    ofMethod(JsonMappingException.class, "prependPath", void.class, Object.class, String.class),
+                    exception, objHandle, catchBlock.load(fieldSpecs.jsonName));
+            catchBlock.throwException(exception);
+        }
+
         return true;
     }
 
@@ -614,7 +635,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         FieldKind fieldKind = registerTypeToBeGenerated(fieldType, fieldTypeName);
         ResultHandle typeHandle = switch (fieldKind) {
             case TYPE_VARIABLE -> {
-                Integer parameterIndex = typeParametersIndex.get(fieldTypeName);
+                Integer parameterIndex = typeParametersIndex.get(fieldType.asTypeVariable().identifier());
                 if (parameterIndex == null) {
                     yield null;
                 }
@@ -623,15 +644,15 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 ResultHandle valueTypes = bytecode.readInstanceField(valueTypesField, bytecode.getThis());
                 yield bytecode.readArrayValue(valueTypes, parameterIndex);
             }
-            case LIST, SET -> {
-                Type listType = ((ParameterizedType) fieldType).arguments().get(0);
+            case LIST, SET, OPTIONAL -> {
+                Type contentType = ((ParameterizedType) fieldType).arguments().get(0);
                 MethodDescriptor getTypeFactory = ofMethod(DeserializationContext.class, "getTypeFactory",
                         TypeFactory.class);
                 ResultHandle typeFactory = bytecode.invokeVirtualMethod(getTypeFactory, deserializationContext);
                 MethodDescriptor constructParametricType = ofMethod(TypeFactory.class,
                         "constructParametricType", JavaType.class, Class.class, Class[].class);
                 ResultHandle paramTypes = bytecode.newArray(Class.class, 1);
-                bytecode.writeArrayValue(paramTypes, 0, bytecode.loadClass(listType.name().toString()));
+                bytecode.writeArrayValue(paramTypes, 0, bytecode.loadClass(contentType.name().toString()));
                 yield bytecode.invokeVirtualMethod(constructParametricType, typeFactory,
                         bytecode.loadClass(fieldTypeName), paramTypes);
             }

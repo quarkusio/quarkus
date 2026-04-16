@@ -1409,9 +1409,11 @@ public class JaxrsClientReactiveProcessor {
         if (produces != null) {
             String[] producesValues = produces.value().asStringArray();
             for (String producesValue : producesValues) {
-                if (producesValue.toLowerCase(Locale.ROOT)
-                        .startsWith(MULTIPART_FORM_DATA)) {
-                    multipartResponseTypes.add(returnTypeAsClass(method, index));
+                if (producesValue.toLowerCase(Locale.ROOT).startsWith(MULTIPART_FORM_DATA)) {
+                    ClassInfo result = returnTypeAsClass(method, index);
+                    if (!InputStream.class.getName().equals(result.name().toString())) { // a return type of InputStream means that the code will handle the results in a custom manner
+                        multipartResponseTypes.add(result);
+                    }
                 }
             }
         }

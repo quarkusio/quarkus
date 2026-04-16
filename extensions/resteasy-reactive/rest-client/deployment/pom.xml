@@ -121,6 +121,16 @@
             <artifactId>smallrye-certificate-generator-junit5</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.james</groupId>
+            <artifactId>apache-mime4j-dom</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.james</groupId>
+            <artifactId>apache-mime4j-core</artifactId>
+            <scope>test</scope>
+        </dependency>
    </dependencies>
 
     <build>

@@ -65,7 +65,7 @@ public abstract class BuildAotEnhancedImage extends QuarkusBuildTask {
         getLogger().debug("Found AOT file '{}'; proceeding to build AOT enhanced container image", aotFilePath);
 
         ApplicationModel appModel = resolveAppModelForBuild();
-        Map<String, String> quarkusProperties = extension().buildEffectiveConfiguration(appModel).getValues();
+        Map<String, String> quarkusProperties = effectiveProvider().buildEffectiveConfiguration(appModel, Map.of()).getValues();
 
         WorkQueue workQueue = workQueue(quarkusProperties, getExtensionView().getBuildForkOptions().get());
 

@@ -228,7 +228,7 @@ public class DataSources {
         }
 
         if (dataSourceJdbcBuildTimeConfig.telemetry() &&
-                dataSourceJdbcRuntimeConfig.telemetry().orElse(true) &&
+                dataSourceJdbcRuntimeConfig.telemetry().enabled().orElse(true) &&
                 otelEnabled) {
             // activate OpenTelemetry JDBC instrumentation by wrapping AgroalDatasource
             // use an optional CDI bean as we can't reference optional OpenTelemetry classes here

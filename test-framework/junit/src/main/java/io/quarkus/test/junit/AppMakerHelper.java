@@ -18,6 +18,7 @@ import org.jboss.jandex.Index;
 
 import io.quarkus.bootstrap.BootstrapAppModelFactory;
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.app.AugmentationClassLoaderManager;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.app.StartupAction;
@@ -76,7 +77,8 @@ public class AppMakerHelper {
     }
 
     public static CuratedApplication makeCuratedApplication(Class<?> requiredTestClass, List<Path> additionalPaths,
-            String displayName, boolean isContinuousTesting) throws Exception {
+            String displayName, boolean isContinuousTesting,
+            AugmentationClassLoaderManager augmentationClassLoaderManager) throws Exception {
         final PathList.Builder rootBuilder = PathList.builder();
         final Consumer<Path> addToBuilderIfConditionMet = path -> {
             if (path != null && Files.exists(path)) {
@@ -171,6 +173,7 @@ public class AppMakerHelper {
                 .setTargetDirectory(PathTestHelper.getProjectBuildDir(projectRoot, testClassLocation))
                 .setProjectRoot(projectRoot)
                 .setApplicationRoot(rootBuilder.build())
+                .setAugmentationClassLoaderManager(augmentationClassLoaderManager)
                 .build()
                 .bootstrap();
 

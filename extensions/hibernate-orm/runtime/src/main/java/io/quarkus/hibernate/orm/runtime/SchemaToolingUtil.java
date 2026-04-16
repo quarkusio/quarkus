@@ -22,43 +22,52 @@ public class SchemaToolingUtil {
 
     private static final Logger log = Logger.getLogger(SchemaToolingUtil.class);
     private static final String SQL_LOAD_SCRIPT_UNZIPPED_DIR_PREFIX = "import-sql-unzip-";
+    private static final String SQL_LOAD_SCRIPT_SHUTDOWN_HOOK_NAME = "shutdown-hook-delete-import-sql-temp-dirs";
 
     public static PreparedImportScripts unzipZipFilesAndReplaceZips(String commaSeparatedFileNames) {
         List<String> unzippedFilesNames = new ArrayList<>();
-        List<TempDirCleanup> cleanups = new ArrayList<>();
-        if (commaSeparatedFileNames != null) {
-            String[] fileNames = commaSeparatedFileNames.split(",");
-            for (String fileName : fileNames) {
-                if (fileName.endsWith(".zip")) {
-                    try {
-                        Path unzipDir = Files.createTempDirectory(SQL_LOAD_SCRIPT_UNZIPPED_DIR_PREFIX);
-                        Thread hook = new Thread(
-                                () -> recursiveDeleteQuietly(unzipDir),
-                                "shutdown-hook-delete-" + unzipDir.getFileName());
-                        Runtime.getRuntime().addShutdownHook(hook);
-                        cleanups.add(new TempDirCleanup(unzipDir, hook));
+        List<Path> unzipDirs = new ArrayList<>();
+        RuntimeException failure = null;
+        try {
+            if (commaSeparatedFileNames != null) {
+                String[] fileNames = commaSeparatedFileNames.split(",");
+                for (String fileName : fileNames) {
+                    if (fileName.endsWith(".zip")) {
+                        try {
+                            Path unzipDir = Files.createTempDirectory(SQL_LOAD_SCRIPT_UNZIPPED_DIR_PREFIX);
+                            unzipDirs.add(unzipDir);
 
-                        URL resource = Thread.currentThread()
-                                .getContextClassLoader()
-                                .getResource(fileName);
-                        Path zipFile = Paths.get(resource.toURI());
-                        ZipUtils.unzip(zipFile, unzipDir);
-                        try (DirectoryStream<Path> paths = Files.newDirectoryStream(unzipDir)) {
-                            for (Path path : paths) {
-                                unzippedFilesNames.add(path.toAbsolutePath().toString());
+                            URL resource = Thread.currentThread()
+                                    .getContextClassLoader()
+                                    .getResource(fileName);
+                            Path zipFile = Paths.get(resource.toURI());
+                            ZipUtils.unzip(zipFile, unzipDir);
+                            try (DirectoryStream<Path> paths = Files.newDirectoryStream(unzipDir)) {
+                                for (Path path : paths) {
+                                    unzippedFilesNames.add(path.toAbsolutePath().toString());
+                                }
                             }
+                        } catch (Exception e) {
+                            throw new IllegalStateException(String.format(Locale.ROOT, "Error unzipping import file %s: %s",
+                                    fileName, e.getMessage()), e);
                         }
-                    } catch (Exception e) {
-                        throw new IllegalStateException(String.format(Locale.ROOT, "Error unzipping import file %s: %s",
-                                fileName, e.getMessage()), e);
+                    } else {
+                        unzippedFilesNames.add(fileName);
                     }
-                } else {
-                    unzippedFilesNames.add(fileName);
+                }
+                return new PreparedImportScripts(String.join(",", unzippedFilesNames), unzipDirs);
+            } else {
+                return new PreparedImportScripts(null, Collections.emptyList());
+            }
+        } catch (RuntimeException e) {
+            failure = e;
+            throw e;
+        } finally {
+            if (failure != null) {
+                for (Path unzipDir : unzipDirs) {
+                    recursiveDeleteQuietly(unzipDir);
                 }
             }
-            return new PreparedImportScripts(String.join(",", unzippedFilesNames), cleanups);
-        } else {
-            return new PreparedImportScripts(null, Collections.emptyList());
         }
     }
 
@@ -82,17 +91,23 @@ public class SchemaToolingUtil {
         }
     }
 
-    private record TempDirCleanup(Path dir, Thread shutdownHook) {
-    }
-
     public static final class PreparedImportScripts implements AutoCloseable {
 
         private final String rewrittenValue;
-        private final List<TempDirCleanup> cleanups;
+        private final List<Path> unzipDirs;
+        private final Thread shutdownHook;
 
-        private PreparedImportScripts(String rewrittenValue, List<TempDirCleanup> cleanups) {
+        private PreparedImportScripts(String rewrittenValue, List<Path> unzipDirs) {
             this.rewrittenValue = rewrittenValue;
-            this.cleanups = cleanups;
+            this.unzipDirs = List.copyOf(unzipDirs);
+            if (this.unzipDirs.isEmpty()) {
+                this.shutdownHook = null;
+            } else {
+                this.shutdownHook = new Thread(
+                        () -> this.unzipDirs.forEach(SchemaToolingUtil::recursiveDeleteQuietly),
+                        SQL_LOAD_SCRIPT_SHUTDOWN_HOOK_NAME);
+                Runtime.getRuntime().addShutdownHook(shutdownHook);
+            }
         }
 
         public String getRewrittenValue() {
@@ -100,14 +115,20 @@ public class SchemaToolingUtil {
         }
 
         @Override
+        public String toString() {
+            return String.valueOf(rewrittenValue);
+        }
+
+        @Override
         public void close() {
-            for (TempDirCleanup cleanup : cleanups) {
-                recursiveDeleteQuietly(cleanup.dir());
-                try {
-                    Runtime.getRuntime().removeShutdownHook(cleanup.shutdownHook());
-                } catch (IllegalStateException e) {
-                    // JVM is already shutting down – the hook will execute (or already has), nothing to do.
-                }
+            unzipDirs.forEach(SchemaToolingUtil::recursiveDeleteQuietly);
+            if (shutdownHook == null) {
+                return;
+            }
+            try {
+                Runtime.getRuntime().removeShutdownHook(shutdownHook);
+            } catch (IllegalStateException e) {
+                // JVM is already shutting down – the hook will execute (or already has), nothing to do.
             }
         }
     }

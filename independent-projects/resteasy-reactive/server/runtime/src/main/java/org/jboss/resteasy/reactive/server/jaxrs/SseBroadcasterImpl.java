@@ -5,7 +5,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -13,64 +20,101 @@ import jakarta.ws.rs.sse.OutboundSseEvent;
 import jakarta.ws.rs.sse.SseBroadcaster;
 import jakarta.ws.rs.sse.SseEventSink;
 
+import org.jboss.logging.Logger;
+
 public class SseBroadcasterImpl implements SseBroadcaster {
 
-    private final List<SseEventSink> sinks = new ArrayList<>();
-    private final List<BiConsumer<SseEventSink, Throwable>> onErrorListeners = new ArrayList<>();
-    private final List<Consumer<SseEventSink>> onCloseListeners = new ArrayList<>();
-    private volatile boolean isClosed;
+    private static final Logger log = Logger.getLogger(SseBroadcasterImpl.class);
+
+    private final ConcurrentLinkedQueue<SseEventSink> outputQueue = new ConcurrentLinkedQueue<>();
+    private final List<BiConsumer<SseEventSink, Throwable>> onErrorConsumers = new CopyOnWriteArrayList<>();
+    private final List<Consumer<SseEventSink>> closeConsumers = new CopyOnWriteArrayList<>();
+    private final AtomicBoolean closed = new AtomicBoolean();
+
+    // Used to perform a mutual exclusion between register and close operations
+    // since every registered SseEventSink needs to be closed when
+    // SseBroadcaster.close() is invoked to prevent leaks due to SseEventSink
+    // never closed.
+    // Actually most of the time when a SseEventSink is registered to a
+    // SseBroadcaster, user is expected its termination to be handled by the
+    // SseBroadcaster itself. So user will never call SseEventSink.close() on
+    // each SseEventSink he registers but instead he will just call
+    // SseBroadcaster.close().
+    ReadWriteLock readWriteLock = new ReentrantReadWriteLock(true);
+    private final Lock readLock = readWriteLock.readLock();
+    private final Lock writeLock = readWriteLock.writeLock();
 
     @Override
     public synchronized void onError(BiConsumer<SseEventSink, Throwable> onError) {
         Objects.requireNonNull(onError);
         checkClosed();
-        onErrorListeners.add(onError);
+        onErrorConsumers.add(onError);
     }
 
     @Override
     public synchronized void onClose(Consumer<SseEventSink> onClose) {
         Objects.requireNonNull(onClose);
         checkClosed();
-        onCloseListeners.add(onClose);
+        closeConsumers.add(onClose);
     }
 
     @Override
     public synchronized void register(SseEventSink sseEventSink) {
         Objects.requireNonNull(sseEventSink);
         checkClosed();
-        if (sseEventSink instanceof SseEventSinkImpl == false) {
-            throw new IllegalArgumentException("Can only work with Quarkus-REST instances: " + sseEventSink);
+        readLock.lock();
+        try {
+            checkClosed();
+            if (!(sseEventSink instanceof SseEventSinkImpl sinkImpl)) {
+                throw new IllegalArgumentException("Can only work with Quarkus-REST instances: " + sseEventSink);
+            }
+            sinkImpl.register(this);
+            outputQueue.add(sseEventSink);
+        } finally {
+            readLock.unlock();
         }
-        ((SseEventSinkImpl) sseEventSink).register(this);
-        sinks.add(sseEventSink);
     }
 
     @Override
     public synchronized CompletionStage<?> broadcast(OutboundSseEvent event) {
         Objects.requireNonNull(event);
         checkClosed();
-        CompletableFuture<?>[] cfs = new CompletableFuture[sinks.size()];
-        for (int i = 0; i < sinks.size(); i++) {
-            SseEventSink sseEventSink = sinks.get(i);
+
+        List<CompletableFuture<?>> cfs = new ArrayList<>(outputQueue.size());
+        for (SseEventSink eventSink : outputQueue) {
             CompletionStage<?> cs;
             try {
-                cs = sseEventSink.send(event).exceptionally((t) -> {
+                CompletionStage<?> sendStage = eventSink.send(event);
+
+                cs = sendStage.exceptionally((err) -> {
                     // do not propagate the exception to the returned CF
                     // apparently, the goal is to close this sink and not report the error
                     // of the broadcast operation
-                    notifyOnErrorListeners(sseEventSink, t);
+                    Throwable cause = err;
+                    while (cause instanceof CompletionException && cause.getCause() != null) {
+                        cause = cause.getCause();
+                        if (cause instanceof IOException) {
+                            try {
+                                eventSink.close();
+                            } catch (Exception ignore) {
+                            }
+                            break;
+                        }
+                    }
+
+                    notifyOnErrorListeners(eventSink, err);
                     return null;
                 });
             } catch (Exception e) {
                 // do not propagate the exception to the returned CF
                 // apparently, the goal is to close this sink and not report the error
                 // of the broadcast operation
-                notifyOnErrorListeners(sseEventSink, e);
+                notifyOnErrorListeners(eventSink, e);
                 cs = CompletableFuture.completedFuture(null);
             }
-            cfs[i] = cs.toCompletableFuture();
+            cfs.add(cs.toCompletableFuture());
         }
-        return CompletableFuture.allOf(cfs);
+        return CompletableFuture.allOf(cfs.toArray(new CompletableFuture[0]));
     }
 
     private void notifyOnErrorListeners(SseEventSink eventSink, Throwable throwable) {
@@ -81,7 +125,7 @@ public class SseBroadcasterImpl implements SseBroadcaster {
         if (throwable instanceof IOException || throwable instanceof IllegalStateException) {
             notifyOnCloseListeners(eventSink);
         }
-        onErrorListeners.forEach(consumer -> {
+        onErrorConsumers.forEach(consumer -> {
             consumer.accept(eventSink, throwable);
         });
     }
@@ -90,15 +134,15 @@ public class SseBroadcasterImpl implements SseBroadcaster {
         // First remove the eventSink from the outputQueue to ensure that
         // concurrent calls to this method will notify listeners only once for a
         // given eventSink instance.
-        if (sinks.remove(eventSink)) {
-            onCloseListeners.forEach(consumer -> {
+        if (outputQueue.remove(eventSink)) {
+            closeConsumers.forEach(consumer -> {
                 consumer.accept(eventSink);
             });
         }
     }
 
     private void checkClosed() {
-        if (isClosed) {
+        if (closed.get()) {
             throw new IllegalStateException("Broadcaster has been closed");
         }
     }
@@ -109,24 +153,35 @@ public class SseBroadcasterImpl implements SseBroadcaster {
     }
 
     @Override
-    public synchronized void close(boolean cascading) {
-        if (isClosed) {
+    public synchronized void close(final boolean cascading) {
+        if (!closed.compareAndSet(false, true)) {
             return;
         }
-        isClosed = true;
         if (cascading) {
-            for (SseEventSink sink : sinks) {
-                // this will in turn fire close events to our listeners
-                sink.close();
+            writeLock.lock();
+            try {
+                //Javadoc says close the broadcaster and all subscribed {@link SseEventSink} instances.
+                //is it necessary to close the subscribed SseEventSink ?
+                outputQueue.forEach(eventSink -> {
+                    try {
+                        eventSink.close();
+                    } catch (RuntimeException e) {
+                        log.debug(e.getLocalizedMessage());
+                    } finally {
+                        notifyOnCloseListeners(eventSink);
+                    }
+                });
+            } finally {
+                writeLock.unlock();
             }
         }
     }
 
     synchronized void fireClose(SseEventSinkImpl sseEventSink) {
-        for (Consumer<SseEventSink> listener : onCloseListeners) {
+        for (Consumer<SseEventSink> listener : closeConsumers) {
             listener.accept(sseEventSink);
         }
-        if (!isClosed)
-            sinks.remove(sseEventSink);
+        if (!closed.get())
+            outputQueue.remove(sseEventSink);
     }
 }

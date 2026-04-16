@@ -1239,4 +1239,19 @@ public abstract class AbstractSimpleJsonTest {
                 .statusCode(200)
                 .body("FIRST_NAME", CoreMatchers.is("Bob"));
     }
+
+    @Test
+    void anySetter_shouldCaptureUnknownFields() {
+        given()
+                .contentType("application/json")
+                .body("""
+                        {"known": "x", "extra1": "y", "extra2": "z"}
+                        """)
+                .when()
+                .post("/simple/any-setter")
+                .then()
+                .statusCode(200)
+                .body("known", CoreMatchers.is("x"))
+                .body("extras_size", CoreMatchers.is(2));
+    }
 }

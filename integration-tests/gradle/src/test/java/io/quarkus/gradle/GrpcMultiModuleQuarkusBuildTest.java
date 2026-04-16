@@ -36,7 +36,7 @@ public class GrpcMultiModuleQuarkusBuildTest extends QuarkusGradleWrapperTestBas
         Files.copy(projectDir.toPath().resolve("invalid.proto"), protoDirectory.resolve("invalid.proto"));
         try {
             final BuildResult buildResult = runGradleWrapper(true, projectDir, ":application:quarkusBuild", "--info");
-            assertTrue(buildResult.getOutput().contains("invalid.proto:5:1: Missing field number."));
+            assertTrue(buildResult.getOutput().contains("Grpc Zero failed while parsing proto 'invalid.proto'"));
         } finally {
             Files.delete(protoDirectory.resolve("invalid.proto"));
         }

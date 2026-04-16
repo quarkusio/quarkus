@@ -2235,13 +2235,13 @@ It also sets up two users: `alice` with `admin` and `user` roles, and `bob` with
 
 . Prepare the `application.properties` file.
 +
-If starting from an empty `application.properties` file, `Dev Services for Keycloak` automatically registers the following properties:
+* If starting from an empty `application.properties` file, `Dev Services for Keycloak` automatically registers the following properties:
 +
-* `quarkus.oidc.auth-server-url`, which points to the running test container.
-* `quarkus.oidc.client-id=quarkus-app`.
-* `quarkus.oidc.credentials.secret=secret`.
+** `quarkus.oidc.auth-server-url`, which points to the running test container.
+** `quarkus.oidc.client-id=quarkus-app`.
+** `quarkus.oidc.credentials.secret=secret`.
 +
-If you already have the required `quarkus-oidc` properties configured, associate `quarkus.oidc.auth-server-url` with the `prod` profile.
+* If you already have the required `quarkus-oidc` properties configured, associate `quarkus.oidc.auth-server-url` with the `prod` profile.
 This ensures that `Dev Services for Keycloak` starts the container as expected.
 +
 For example:
@@ -2250,8 +2250,8 @@ For example:
 ----
 %prod.quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
 ----
-
-To import a custom realm file into Keycloak before running the tests, configure `Dev services for Keycloak`:
++
+. Optional: To import a custom realm file into Keycloak before running the tests, configure `Dev services for Keycloak`:
 +
 [source,properties]
 ----

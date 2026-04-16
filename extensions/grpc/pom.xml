@@ -16,6 +16,7 @@
     <modules>
         <module>protoc</module>
         <module>codegen</module>
+        <module>zero-codegen</module>
         <module>api</module>
         <module>stubs</module>
         <module>reflection</module>

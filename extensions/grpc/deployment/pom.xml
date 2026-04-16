@@ -66,7 +66,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-grpc-codegen</artifactId>
+            <artifactId>quarkus-grpc-zero-codegen</artifactId>
         </dependency>
 
         <dependency>

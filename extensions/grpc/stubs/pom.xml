@@ -23,6 +23,11 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-grpc-zero-codegen</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-mutiny</artifactId>
         </dependency>
         <dependency>
@@ -106,7 +111,7 @@
                 <dependencies>
                     <dependency>
                         <groupId>io.quarkus</groupId>
-                        <artifactId>quarkus-grpc-codegen</artifactId>
+                        <artifactId>quarkus-grpc-zero-codegen</artifactId>
                         <version>${project.version}</version>
                     </dependency>
                 </dependencies>
@@ -122,12 +127,12 @@
                             <includePluginDependencies>true</includePluginDependencies>
                             <executableDependency>
                                 <groupId>io.quarkus</groupId>
-                                <artifactId>quarkus-grpc-codegen</artifactId>
+                                <artifactId>quarkus-grpc-zero-codegen</artifactId>
                             </executableDependency>
                             <arguments>
                                 <argument>${project.build.directory}/generated-sources/protobuf/grpc-java</argument>
                             </arguments>
-                            <mainClass>io.quarkus.grpc.codegen.GrpcPostProcessing</mainClass>
+                            <mainClass>io.quarkus.grpc.zero.codegen.GrpcZeroPostProcessing</mainClass>
                         </configuration>
                     </execution>
                 </executions>

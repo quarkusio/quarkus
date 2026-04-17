@@ -485,7 +485,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             Buffer buff = routingContext.body().buffer();
             try {
                 Object input = null;
-                if (buff.length() > 0) {
+                if (invoker.hasInput() && buff != null && buff.length() > 0) {
                     ByteBufInputStream in = new ByteBufInputStream(buff.getByteBuf());
                     ObjectReader reader = (ObjectReader) invoker.getBindingContext().get(DATA_OBJECT_READER);
                     try {

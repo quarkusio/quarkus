@@ -1,5 +1,6 @@
 package io.quarkus.vertx.utils;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -16,7 +17,7 @@ import io.vertx.core.buffer.impl.VertxByteBufAllocator;
  * A bounded (direct) buffer container that can keep on accepting data till {@link #capacity} is exhausted.
  * In order to keep appending on it, it can {@link #clear} and consolidate its content as a {@link ByteBuf}.
  */
-final class AppendBuffer {
+public final class AppendBuffer {
 
     private static final MethodHandle virtualMh = PlatformDependent.javaVersion() >= 21 ? findVirtualMH() : null;
 
@@ -38,6 +39,11 @@ final class AppendBuffer {
         } catch (Throwable t) {
             return false;
         }
+    }
+
+    @FunctionalInterface
+    public interface DrainHandler {
+        void drain(ByteBuf data, boolean last) throws IOException;
     }
 
     private final int minChunkSize;
@@ -173,6 +179,22 @@ final class AppendBuffer {
             last.writerIndex(last.writerIndex() - alreadyWritten);
             size -= alreadyWritten;
             assert last.writerIndex() > 0;
+        }
+    }
+
+    public void appendAndDrain(byte[] b, int off, int len, DrainHandler handler) throws IOException {
+        if (len == 0) {
+            return;
+        }
+        int rem = len;
+        int idx = off;
+        while (rem > 0) {
+            int written = append(b, idx, rem);
+            if (written < rem) {
+                handler.drain(clear(), false);
+            }
+            rem -= written;
+            idx += written;
         }
     }
 

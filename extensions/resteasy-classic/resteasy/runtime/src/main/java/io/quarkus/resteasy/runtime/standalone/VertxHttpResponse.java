@@ -36,11 +36,12 @@ public class VertxHttpResponse implements HttpResponse {
     private final RoutingContext routingContext;
 
     public VertxHttpResponse(HttpServerRequest request, ResteasyProviderFactory providerFactory,
-            final HttpMethod method, BufferAllocator allocator, VertxOutput output, RoutingContext routingContext) {
+            final HttpMethod method, int bufferSize, VertxOutput output, RoutingContext routingContext) {
         this.routingContext = routingContext;
         outputHeaders = new MultivaluedHashMap<String, Object>();
         this.method = method;
-        os = (method == null || !method.equals(HttpMethod.HEAD)) ? new VertxOutputStream(this, allocator)
+        os = (method == null || !method.equals(HttpMethod.HEAD))
+                ? new VertxOutputStream(this, bufferSize)
                 : null;
         this.request = request;
         this.response = request.response();

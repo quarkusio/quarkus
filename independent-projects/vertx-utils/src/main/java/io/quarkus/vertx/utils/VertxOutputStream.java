@@ -179,18 +179,13 @@ public class VertxOutputStream extends OutputStream {
         if (closed) {
             throw new IOException("Stream is closed");
         }
-
-        int rem = len;
-        int idx = off;
         try {
-            while (rem > 0) {
-                final int written = appendBuffer.append(b, idx, rem);
-                if (written < rem) {
-                    writeBlocking(appendBuffer.clear(), false);
+            appendBuffer.appendAndDrain(b, off, len, new AppendBuffer.DrainHandler() {
+                @Override
+                public void drain(ByteBuf buffer, boolean finished) throws IOException {
+                    VertxOutputStream.this.writeBlocking(buffer, finished);
                 }
-                rem -= written;
-                idx += written;
-            }
+            });
         } catch (Exception e) {
             throw new IOException(e);
         }

@@ -1,8 +1,6 @@
 # Quarkus Coding Conventions
 
-Essential rules for working on the Quarkus codebase. Detailed guidance for
-specific tasks is available in `.agents/skills/` — consult the relevant skill
-when performing that type of work.
+Essential rules for working on the Quarkus codebase. 
 
 ## General Principles
 
@@ -82,19 +80,3 @@ If you change a runtime module, rebuild its deployment module too.
   `@ConfigItem` are removed. New `quarkus.*` properties must always be
   registered in a `@ConfigMapping`, even if read programmatically. See the
   `working-with-config` skill for details.
-
-## On-Demand Skills
-
-Detailed guidance is available in `.agents/skills/` for specific tasks.
-Consult the relevant skill when you are about to do that type of work:
-
-| Skill | When to use |
-|-------|-------------|
-| `writing-build-steps` | Creating or modifying `@BuildStep` methods, build items, or recorders |
-| `writing-tests` | Creating or modifying tests for Quarkus extensions |
-| `working-with-config` | Creating or modifying `@ConfigMapping` configuration interfaces |
-| `classloading-and-runtime-dev` | Working with runtime-dev modules, conditional dependencies, or debugging classloading |
-| `creating-extensions` | Creating a new extension or understanding the full module layout |
-| `coding-style` | Code formatting, visibility, naming conventions, and logging |
-| `building-and-testing` | Maven build commands, flags, incremental builds, and build rules |
-| `pull-requests` | PR title/description conventions, commit hygiene, labels, and contribution rules |

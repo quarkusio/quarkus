@@ -39,9 +39,9 @@ nb-configuration.xml
 .mvn/.develocity
 .mvn/.gradle-enterprise/
 .goose
-.claude
 **/.claude
 .quarkus
 
 CLAUDE.local.md
 docs/superpowers
+.local

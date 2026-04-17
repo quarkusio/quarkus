@@ -93,6 +93,7 @@ public class NativeImageReflectConfigStep {
             if (info.typeReachable != null) {
                 json.put("condition", Json.object().put("typeReached", info.typeReachable));
             }
+            // reachability-metadata-schema-v1.2.0 merges query and execution capabilities
             if (info.constructors || info.queryConstructors) {
                 json.put("allDeclaredConstructors", true);
             } else if (!info.ctorSet.isEmpty()) {
@@ -101,6 +102,7 @@ public class NativeImageReflectConfigStep {
             if (info.publicConstructors) {
                 json.put("allPublicConstructors", true);
             }
+            // reachability-metadata-schema-v1.2.0 merges query and execution capabilities
             if (info.methods || info.queryMethods) {
                 json.put("allDeclaredMethods", true);
             } else {
@@ -108,12 +110,15 @@ public class NativeImageReflectConfigStep {
                     extractToJsonArray(info.methodSet, methodsArray);
                 }
                 if (!info.queriedMethodSet.isEmpty()) {
+                    // even if just queried we must write them as standard methods
+                    // in reachability-metadata-schema-v1.2.0
                     extractToJsonArray(info.queriedMethodSet, methodsArray);
                 }
             }
             if (!methodsArray.isEmpty()) {
                 json.put("methods", methodsArray);
             }
+            // reachability-metadata-schema-v1.2.0 delegates fields to DCE
             if (info.fields) {
                 json.put("allDeclaredFields", true);
             } else if (!info.fieldSet.isEmpty()) {

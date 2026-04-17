@@ -21,10 +21,18 @@ public class RegisterForReflectionITCase {
         final String resourceA = BASE_PKG + ".ResourceA";
 
         assertRegistration("ResourceA", resourceA);
-        final boolean isCompleteReflectionTypes = isCompleteReflectionTypes();
-        assertRegistration(isCompleteReflectionTypes ? "InnerClassOfA" : "FAILED", resourceA + "$InnerClassOfA");
-        assertRegistration(isCompleteReflectionTypes ? "StaticClassOfA" : "FAILED", resourceA + "$StaticClassOfA");
-        assertRegistration(isCompleteReflectionTypes ? "InterfaceOfA" : "FAILED", resourceA + "$InterfaceOfA");
+        // Mandrel/GraalVM reachability-metadata.json workflow unconditionally
+        // retains all nested classes (static, non-static, interfaces) when the outer
+        // class is registered.
+        // Asserting exclusion (expected "FAILED") is no longer valid.
+        // Keeping it here for a reference in case we manage to change this in Mandrel/GraalVM.
+        // assertRegistration("FAILED", resourceA + "$InnerClassOfA");
+        // assertRegistration("FAILED", resourceA + "$StaticClassOfA");
+        // assertRegistration("FAILED", resourceA + "$InterfaceOfA");
+        // It's all registered now:
+        assertRegistration("InnerClassOfA", resourceA + "$InnerClassOfA");
+        assertRegistration("StaticClassOfA", resourceA + "$StaticClassOfA");
+        assertRegistration("InterfaceOfA", resourceA + "$InterfaceOfA");
     }
 
     @Test
@@ -55,9 +63,11 @@ public class RegisterForReflectionITCase {
 
         assertRegistration("FAILED", resourceD);
         assertRegistration("StaticClassOfD", resourceD + "$StaticClassOfD");
-        final boolean isCompleteReflectionTypes = isCompleteReflectionTypes();
-        assertRegistration(isCompleteReflectionTypes ? "OtherAccessibleClassOfD" : "FAILED",
-                resourceD + "$StaticClassOfD$OtherAccessibleClassOfD");
+        // StaticClassOfD is registered. Mandrel/GraalVM reachability-metadata.json workflow unconditionally
+        // registers its inner classes. Asserting exclusion fails.
+        // assertRegistration("FAILED", resourceD + "$StaticClassOfD$OtherAccessibleClassOfD");
+        // It's all registered now:
+        assertRegistration("OtherAccessibleClassOfD", resourceD + "$StaticClassOfD$OtherAccessibleClassOfD");
     }
 
     // NOTE: This test is expected to fail with GraalVM >= 23.1.0 and < 23.1.3 yet we enable it for all 23.1 versions
@@ -72,10 +82,5 @@ public class RegisterForReflectionITCase {
 
     private void assertRegistration(String expected, String queryParam) {
         RestAssured.given().queryParam("className", queryParam).when().get(ENDPOINT).then().body(is(expected));
-    }
-
-    private boolean isCompleteReflectionTypes() {
-        return Boolean.valueOf(
-                RestAssured.given().when().get("/reflection/completeReflectionTypes").then().extract().body().asString());
     }
 }

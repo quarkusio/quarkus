@@ -276,7 +276,8 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                 if (isInSubtree(Path.of(dir), protoFilePath)) {
                     Path base = Path.of(dir).toAbsolutePath().normalize();
                     Path file = protoFilePath.toAbsolutePath().normalize();
-                    return base.relativize(file).toString();
+                    // Use forward slashes for protobuf compatibility (Windows uses backslashes)
+                    return base.relativize(file).toString().replace("\\", "/");
                 }
             } catch (IllegalArgumentException e) {
                 // cannot be relativized, skip

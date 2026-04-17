@@ -275,7 +275,7 @@ For example, you can send to a dynamic address based on the incoming message:
 
 [source, java]
 ----
-String addressName = selectAddressFromIncommingMessage(incoming);
+String addressName = selectAddressFromIncomingMessage(incoming);
 OutgoingAmqpMetadata metadata = OutgoingAmqpMetadata.builder()
     .withAddress(addressName)
     .withDurable(true)

@@ -9,10 +9,10 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 
 import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.annotations.RuntimeInit;
 import io.quarkus.runtime.annotations.StaticInit;
-import io.quarkus.runtime.shutdown.ShutdownListener;
 
 @Recorder
 public class JacksonRecorder {
@@ -68,12 +68,12 @@ public class JacksonRecorder {
     }
 
     @RuntimeInit
-    public ShutdownListener clearCachesOnShutdown() {
-        return new ShutdownListener() {
+    public void clearCachesOnShutdown(ShutdownContext shutdownContext) {
+        shutdownContext.addShutdownTask(new Runnable() {
             @Override
-            public void shutdown(ShutdownNotification notification) {
+            public void run() {
                 TypeFactory.defaultInstance().clearCache();
             }
-        };
+        });
     }
 }

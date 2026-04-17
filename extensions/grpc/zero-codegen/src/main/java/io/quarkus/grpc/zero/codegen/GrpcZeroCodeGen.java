@@ -177,43 +177,47 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                 DescriptorProtos.FileDescriptorSet.Builder descriptorSetBuilder = DescriptorProtos.FileDescriptorSet
                         .newBuilder();
                 PluginProtos.CodeGeneratorRequest.Builder requestBuilder = PluginProtos.CodeGeneratorRequest.newBuilder();
+                DescriptorProtos.FileDescriptorSet descriptorSet;
 
-                var protobuf = Protobuf.builder().withWorkdir(workdir).build();
+                // Use try-with-resources to close the Protobuf instance promptly, releasing
+                // the Chicory WASM runtime resources and helping classloader GC reclaim Metaspace
+                try (var protobuf = Protobuf.builder().withWorkdir(workdir).build()) {
+                    for (String protoFile : protoFiles) {
+                        try (InputStream is = Files.newInputStream(Path.of(protoFile))) {
+                            Files.copy(is, workdir.resolve(Path.of(protoFile).getFileName().toString()),
+                                    StandardCopyOption.REPLACE_EXISTING);
+                        }
 
-                for (String protoFile : protoFiles) {
-                    try (InputStream is = Files.newInputStream(Path.of(protoFile))) {
-                        Files.copy(is, workdir.resolve(Path.of(protoFile).getFileName().toString()),
-                                StandardCopyOption.REPLACE_EXISTING);
+                        log.info("resolving proto file: " + protoFile);
+                        var protoName = realitivizeProtoFile(protoFile, protoDirs);
+                        log.info("final proto name: " + protoName);
+
+                        try {
+                            descriptorSetBuilder
+                                    .addAllFile(protobuf.getDescriptors(List.of(protoName)).getFileList());
+                        } catch (RuntimeException e) {
+                            throw new CodeGenException(
+                                    "Grpc Zero failed while parsing proto '" + protoName + "' (source: " + protoFile
+                                            + "). "
+                                            + "This is commonly caused by malformed proto syntax, unresolved imports, or duplicated "
+                                            + "merged content in a single file.",
+                                    e);
+                        }
+                        requestBuilder.addFileToGenerate(protoName);
                     }
 
-                    log.info("resolving proto file: " + protoFile);
-                    var protoName = realitivizeProtoFile(protoFile, protoDirs);
-                    log.info("final proto name: " + protoName);
+                    descriptorSet = descriptorSetBuilder.build();
 
+                    // Add all FileDescriptorProto entries from the descriptor set
+                    // and all from dependencies
                     try {
-                        descriptorSetBuilder.addAllFile(protobuf.getDescriptors(List.of(protoName)).getFileList());
+                        resolveDependencies(protobuf, descriptorSet, requestBuilder);
                     } catch (RuntimeException e) {
                         throw new CodeGenException(
-                                "Grpc Zero failed while parsing proto '" + protoName + "' (source: " + protoFile + "). "
-                                        + "This is commonly caused by malformed proto syntax, unresolved imports, or duplicated "
-                                        + "merged content in a single file.",
+                                "Grpc Zero failed while resolving transitive proto dependencies. "
+                                        + "Check gathered proto imports and file integrity before code generation.",
                                 e);
                     }
-                    requestBuilder.addFileToGenerate(protoName);
-                }
-
-                // Load the previously generated descriptor
-                DescriptorProtos.FileDescriptorSet descriptorSet = descriptorSetBuilder.build();
-
-                // Add all FileDescriptorProto entries from the descriptor set
-                // and all from dependencies
-                try {
-                    resolveDependencies(protobuf, descriptorSet, requestBuilder);
-                } catch (RuntimeException e) {
-                    throw new CodeGenException(
-                            "Grpc Zero failed while resolving transitive proto dependencies. "
-                                    + "Check gathered proto imports and file integrity before code generation.",
-                            e);
                 }
 
                 PluginProtos.CodeGeneratorRequest codeGeneratorRequest = requestBuilder.build();

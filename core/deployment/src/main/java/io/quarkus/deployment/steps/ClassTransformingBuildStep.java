@@ -33,19 +33,21 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
 import io.quarkus.bootstrap.BootstrapDebug;
+import io.quarkus.bootstrap.app.ClassTransformer;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.deployment.QuarkusClassVisitor;
 import io.quarkus.deployment.QuarkusClassWriter;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
-import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
+import io.quarkus.deployment.builditem.RuntimeClassTransformerBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.configuration.ClassLoadingConfig;
 import io.quarkus.deployment.index.ConstPoolScanner;
@@ -60,23 +62,11 @@ public class ClassTransformingBuildStep {
 
     private static final Logger log = Logger.getLogger(ClassTransformingBuildStep.class);
 
-    /**
-     * Cache used for dev mode to save the result for classes that have not changed.
-     */
-    private static final Map<String, TransformedClassesBuildItem.TransformedClass> transformedClassesCache = new ConcurrentHashMap<>();
-    private static volatile BiFunction<String, byte[], byte[]> lastTransformers;
-
-    public static byte[] transform(String className, byte[] classData) {
-        if (lastTransformers == null) {
-            return classData;
+    // Cache used for dev mode to save the result for classes that have not changed
+    record TransformedClassesCache(Map<String, TransformedClassesBuildItem.TransformedClass> cache) {
+        TransformedClassesCache() {
+            this(new ConcurrentHashMap<>());
         }
-
-        return lastTransformers.apply(className, classData);
-    }
-
-    private static void reset() {
-        lastTransformers = null;
-        transformedClassesCache.clear();
     }
 
     @BuildStep
@@ -86,10 +76,11 @@ public class ClassTransformingBuildStep {
             CurateOutcomeBuildItem curateOutcomeBuildItem, List<RemovedResourceBuildItem> removedResourceBuildItems,
             ArchiveRootBuildItem archiveRoot, LaunchModeBuildItem launchMode, PackageConfig packageConfig,
             ExecutorService buildExecutor,
-            CuratedApplicationShutdownBuildItem shutdown)
+            BuildProducer<RuntimeClassTransformerBuildItem> runtimeClassTransformerProducer)
             throws ExecutionException, InterruptedException {
         if (bytecodeTransformerBuildItems.isEmpty() && classLoadingConfig.removedResources().isEmpty()
                 && removedResourceBuildItems.isEmpty()) {
+            runtimeClassTransformerProducer.produce(new RuntimeClassTransformerBuildItem(ClassTransformer.IDENTITY));
             return new TransformedClassesBuildItem(Collections.emptyMap());
         }
         final Map<String, List<BytecodeTransformerBuildItem>> bytecodeTransformers = new HashMap<>(
@@ -107,6 +98,14 @@ public class ClassTransformingBuildStep {
                     (oldValue, newValue) -> oldValue | newValue);
         }
 
+        TransformedClassesCache existingCache = liveReloadBuildItem
+                .getContextObject(TransformedClassesCache.class);
+        if (existingCache == null) {
+            existingCache = new TransformedClassesCache();
+            liveReloadBuildItem.setContextObject(TransformedClassesCache.class, existingCache);
+        }
+        final TransformedClassesCache transformedClassesCache = existingCache;
+
         QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
         Map<String, Path> transformedToArchive = new ConcurrentHashMap<>();
         // now copy all the contents to the runner jar
@@ -115,10 +114,9 @@ public class ClassTransformingBuildStep {
         final ConcurrentLinkedDeque<Future<TransformedClassesBuildItem.TransformedClass>> transformed = new ConcurrentLinkedDeque<>();
         final Map<Path, Set<TransformedClassesBuildItem.TransformedClass>> transformedClassesByJar = new HashMap<>();
         ClassLoader transformCl = Thread.currentThread().getContextClassLoader();
-        shutdown.addCloseTask(ClassTransformingBuildStep::reset, true);
-        lastTransformers = new BiFunction<String, byte[], byte[]>() {
+        ClassTransformer classTransformer = new ClassTransformer() {
             @Override
-            public byte[] apply(String className, byte[] originalBytes) {
+            public byte[] transform(String className, byte[] originalBytes) {
 
                 List<BytecodeTransformerBuildItem> classTransformers = bytecodeTransformers.get(className);
                 if (classTransformers == null) {
@@ -181,16 +179,17 @@ public class ClassTransformingBuildStep {
                 }
             }
         };
+        runtimeClassTransformerProducer.produce(new RuntimeClassTransformerBuildItem(classTransformer));
         for (Map.Entry<String, List<BytecodeTransformerBuildItem>> entry : bytecodeTransformers
                 .entrySet()) {
             String className = entry.getKey();
             boolean cacheable = !nonCacheable.contains(className);
-            if (cacheable && transformedClassesCache.containsKey(className)) {
+            if (cacheable && transformedClassesCache.cache().containsKey(className)) {
                 if (liveReloadBuildItem.getChangeInformation() != null) {
                     if (!liveReloadBuildItem.getChangeInformation().getChangedClasses().contains(className)) {
                         //we can use the cached transformation
                         handleTransformedClass(transformedToArchive, transformedClassesByJar,
-                                transformedClassesCache.get(className));
+                                transformedClassesCache.cache().get(className));
                         continue;
                     }
                 }
@@ -245,7 +244,7 @@ public class ClassTransformingBuildStep {
                                     classFileName);
                             if (cacheable && launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT
                                     && classData != null) {
-                                transformedClassesCache.put(className, transformedClass);
+                                transformedClassesCache.cache().put(className, transformedClass);
                             }
                             return transformedClass;
                         } catch (Throwable e) {

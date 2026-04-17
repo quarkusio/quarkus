@@ -2,6 +2,7 @@ package io.quarkus.devtools.project.create;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -51,7 +52,9 @@ public class CreateProjectWithNonPlatformExtensionTest extends MultiplePlatformB
 
         assertModel(projectDir,
                 List.of(mainPlatformBom()),
-                List.of(ArtifactCoords.jar("org.bla", "bla-magic", "5.5.5")),
-                "1.1.1");
+                List.of(ArtifactCoords.jar("org.bla", "bla-magic", "${bla-magic.version}")),
+                Map.of(
+                        "quarkus.platform.version", "1.1.1",
+                        "bla-magic.version", "5.5.5"));
     }
 }

@@ -28,6 +28,11 @@
         <compiler-plugin.version>{maven-compiler-plugin.version}</compiler-plugin.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>{maven-surefire-plugin.version}</surefire-plugin.version>
+        {#each dependencies}
+        {#if it.version}
+        <{it.artifactId}.version>{it.version}</{it.artifactId}.version>
+        {/if}
+        {/each}
         {#if uberjar}
         <quarkus.package.jar.type>uber-jar</quarkus.package.jar.type>
         {/if}
@@ -98,7 +103,7 @@
             <groupId>{it.groupId}</groupId>
             <artifactId>{it.artifactId}</artifactId>
             {#if it.version}
-            <version>{it.version}</version>
+            <version>$\{{it.artifactId}.version}</version>
             {/if}
         </dependency>
         {/each}

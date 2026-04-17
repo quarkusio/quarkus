@@ -482,7 +482,9 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public ServerHttpResponse write(byte[] data, Consumer<Throwable> asyncResultHandler) {
-        response.write(Buffer.buffer(data), new Handler<AsyncResult<Void>>() {
+        var buf = VertxByteBufAllocator.POOLED_ALLOCATOR.directBuffer(data.length);
+        buf.writeBytes(data);
+        response.write(new NoBoundChecksBuffer(buf), new Handler<AsyncResult<Void>>() {
             @Override
             public void handle(AsyncResult<Void> event) {
                 if (event.failed()) {
@@ -498,7 +500,9 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     @Override
     public CompletionStage<Void> write(byte[] data) {
         CompletableFuture<Void> ret = new CompletableFuture<>();
-        response.write(Buffer.buffer(data), new Handler<AsyncResult<Void>>() {
+        var buf = VertxByteBufAllocator.POOLED_ALLOCATOR.directBuffer(data.length);
+        buf.writeBytes(data);
+        response.write(new NoBoundChecksBuffer(buf), new Handler<AsyncResult<Void>>() {
             @Override
             public void handle(AsyncResult<Void> event) {
                 if (event.failed()) {

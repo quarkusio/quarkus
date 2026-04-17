@@ -45,7 +45,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -59,6 +58,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
 
+import io.quarkus.bootstrap.app.ClassTransformer;
 import io.quarkus.bootstrap.runner.DevModeMediator;
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.changeagent.ClassChangeAgent;
@@ -116,7 +116,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     private final List<Runnable> deploymentFailedStartHandlers = new ArrayList<>();
     private final BiConsumer<Set<String>, ClassScanResult> restartCallback;
     private final BiConsumer<DevModeContext.ModuleInfo, String> copyResourceNotification;
-    private final BiFunction<String, byte[], byte[]> classTransformers;
+    private final ClassTransformer classTransformer;
     private final ReentrantLock scanLock = new ReentrantLock();
     private final Lock codeGenLock = CodeGenLock.lockForCompilation();
 
@@ -146,7 +146,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     public RuntimeUpdatesProcessor(Path applicationRoot, DevModeContext context, QuarkusCompiler compiler,
             DevModeType devModeType, BiConsumer<Set<String>, ClassScanResult> restartCallback,
             BiConsumer<DevModeContext.ModuleInfo, String> copyResourceNotification,
-            BiFunction<String, byte[], byte[]> classTransformers,
+            ClassTransformer classTransformer,
             TestSupport testSupport, AtomicReference<Throwable> deploymentProblem) {
         this.applicationRoot = applicationRoot;
         this.context = context;
@@ -154,7 +154,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         this.devModeType = devModeType;
         this.restartCallback = restartCallback;
         this.copyResourceNotification = copyResourceNotification;
-        this.classTransformers = classTransformers;
+        this.classTransformer = classTransformer;
         this.testSupport = testSupport;
         if (testSupport != null) {
             testSupport.addListener(new TestListener() {
@@ -510,7 +510,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                             String name = indexer.indexWithSummary(new ByteArrayInputStream(bytes)).name().toString();
                             defs[index++] = new ClassDefinition(
                                     Thread.currentThread().getContextClassLoader().loadClass(name),
-                                    classTransformers.apply(name, bytes));
+                                    classTransformer.transform(name, bytes));
                         }
                         Index current = indexer.complete();
                         boolean ok = !disableInstrumentationForIndexPredicate.test(current);

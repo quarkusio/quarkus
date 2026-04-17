@@ -54,6 +54,25 @@ public interface ServerHttpRequest {
 
     InputStream createInputStream(ByteBuffer existingData);
 
+    /**
+     * Creates an InputStream that first serves the pre-buffered data, then continues
+     * reading from the request. Implementations may override for zero-copy wrapping.
+     */
+    default InputStream createInputStream(List<ByteBuffer> existingData) {
+        int total = 0;
+        for (ByteBuffer byteBuffer : existingData) {
+            total += byteBuffer.remaining();
+        }
+        byte[] bytes = new byte[total];
+        int position = 0;
+        for (ByteBuffer byteBuffer : existingData) {
+            int remaining = byteBuffer.remaining();
+            byteBuffer.get(bytes, position, remaining);
+            position += remaining;
+        }
+        return createInputStream(ByteBuffer.wrap(bytes));
+    }
+
     InputStream createInputStream();
 
     ServerHttpResponse pauseRequestInput();

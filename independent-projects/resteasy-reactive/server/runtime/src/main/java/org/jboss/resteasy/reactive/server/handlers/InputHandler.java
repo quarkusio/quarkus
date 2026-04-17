@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
-import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +12,10 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufInputStream;
+import io.netty.buffer.Unpooled;
+
 /**
  * Handler that reads data and sets up the input stream
  * <p>
@@ -20,7 +23,8 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
  * to allow the request to stay on the IO thread. If the request is too large
  * it will be delegated to an executor and a blocking stream used instead.
  * <p>
- * TODO: the stream implementation here could be a lot more efficient.
+ * Uses zero-copy composite ByteBuf wrapping when all data fits in memory,
+ * or delegates to VertxInputStream for continued reading when data exceeds the buffer limit.
  */
 public class InputHandler implements ServerRestHandler {
 
@@ -72,16 +76,8 @@ public class InputHandler implements ServerRestHandler {
 
         @Override
         public void done() {
-            //super inefficient
-            //TODO: write a stream that just uses the existing vert.x buffers
-            byte[] ar = new byte[dataCount];
-            int count = 0;
-            for (ByteBuffer i : data) {
-                int remaining = i.remaining();
-                i.get(ar, count, remaining);
-                count += remaining;
-            }
-            context.setInputStream(new ByteArrayInputStream(ar));
+            ByteBuf composite = Unpooled.wrappedBuffer(data.toArray(new ByteBuffer[0]));
+            context.setInputStream(new ByteBufInputStream(composite, true));
             Thread.currentThread().setContextClassLoader(originalTCCL);
             context.resume();
         }
@@ -96,17 +92,8 @@ public class InputHandler implements ServerRestHandler {
                 if (workerExecutor == null) {
                     workerExecutor = workerExecutorSupplier.get();
                 }
-                //super inefficient
-                //TODO: write a stream that just uses the existing vert.x buffers
-                int count = 0;
-                byte[] ar = new byte[dataCount];
-                for (ByteBuffer i : data) {
-                    int remaining = i.remaining();
-                    i.get(ar, count, remaining);
-                    count += remaining;
-                }
                 //todo timeout
-                context.setInputStream(context.serverRequest().createInputStream(ByteBuffer.wrap(ar)));
+                context.setInputStream(context.serverRequest().createInputStream(data));
                 context.resume(workerExecutor);
             }
         }

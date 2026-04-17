@@ -41,10 +41,10 @@ This skips tests, ITs, docs, native, and validation.
 ./mvnw verify -f extensions/<name>/ -Dstart-containers -Dtest-containers
 
 # Run a single test class
-./mvnw test -f integration-tests/<name>/-Dstart-containers -Dtest-containers -Dtest=MyTest
+./mvnw test -f integration-tests/<name>/ -Dstart-containers -Dtest-containers -Dtest=MyTest
 
 # Run a single test method
-./mvnw verify  -Dstart-containers -Dtest-containers -Dtest=fully.qualified.ClassName#methodName
+./mvnw verify -Dstart-containers -Dtest-containers -Dtest=fully.qualified.ClassName#methodName
 
 # Native integration tests
 ./mvnw verify -f integration-tests/<name>/ -Dstart-containers -Dtest-containers -Dnative

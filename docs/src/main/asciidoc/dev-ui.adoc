@@ -287,6 +287,69 @@ For dynamic and streaming labels, the method name is the name of the JsonRPC met
 
 image::dev-ui-extension-card-label-v2.png[alt=Dev UI card labels,role="center"]
 
+===== Optional: Card Actions
+
+You can add action buttons to your extension's card. Unlike page links (which navigate to a page), actions trigger behavior when clicked — they call a JsonRPC method or hit a URL and optionally show the result as a toast notification.
+
+To add an action, use the `addAction` method on `CardPageBuildItem`:
+
+[source,java]
+----
+cardPageBuildItem.addAction(CardAction.actionBuilder() // <1>
+        .title("Clean All") // <2>
+        .icon("font-awesome-solid:broom") // <3>
+        .tooltip("Clean all databases") // <4>
+        .jsonRpcMethodName("cleanAll") // <5>
+        .build());
+----
+<1> Create an action using the `CardAction.actionBuilder()` factory.
+<2> The button label (required).
+<3> A Font Awesome icon displayed next to the label (optional).
+<4> A tooltip shown on hover (optional).
+<5> The JsonRPC method to call when the button is clicked. This uses the same JsonRPC service as page labels — we will discuss how to create JsonRPC services later.
+
+By default, the result of the JsonRPC call is shown as a toast notification. To disable this:
+
+[source,java]
+----
+cardPageBuildItem.addAction(CardAction.actionBuilder()
+        .title("Refresh")
+        .icon("font-awesome-solid:arrows-rotate")
+        .jsonRpcMethodName("refresh")
+        .showResultNotification(false) // <1>
+        .build());
+----
+<1> Set to `false` to suppress the result notification.
+
+You can also create URL actions that send a GET request to a URL:
+
+[source,java]
+----
+cardPageBuildItem.addAction(CardAction.actionBuilder()
+        .title("Ping")
+        .url("/q/health") // <1>
+        .build());
+----
+<1> Use `url()` instead of `jsonRpcMethodName()` to hit a URL endpoint.
+
+You can combine page links and action buttons on the same card:
+
+[source,java]
+----
+CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
+
+cardPageBuildItem.addPage(Page.webComponentPageBuilder()
+        .title("Datasources")
+        .icon("font-awesome-solid:database")
+        .componentLink("qwc-flyway-datasources.js"));
+
+cardPageBuildItem.addAction(CardAction.actionBuilder()
+        .title("Clean All")
+        .icon("font-awesome-solid:broom")
+        .jsonRpcMethodName("cleanAll")
+        .build());
+----
+
 ==== Footer
 
 Apart from adding a card and a page, extensions can add a tab to the footer. This is useful for things that are happening continuously. A page will disconnect from the DOM (and maybe the backend) when navigating away from that page (or webcomponent), and a log in the footer will be permanently connected to the DOM, as it's always part of the view (or app)

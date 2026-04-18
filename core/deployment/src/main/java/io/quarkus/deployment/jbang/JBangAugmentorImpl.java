@@ -69,6 +69,7 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
             builder.setRebuild(quarkusBootstrap.isRebuild());
             builder.setLiveReloadState(
                     new LiveReloadBuildItem(false, Collections.emptySet(), new HashMap<>(), null));
+            builder.setCuratedApplicationContext(curatedApplication.getCuratedApplicationContext());
             for (AdditionalDependency i : quarkusBootstrap.getAdditionalApplicationArchives()) {
                 //this gets added to the class path either way
                 //but we only need to add it to the additional app archives

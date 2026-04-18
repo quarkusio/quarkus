@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -69,6 +70,9 @@ public class CuratedApplication implements Serializable, AutoCloseable {
 
     final AtomicInteger runtimeClassLoaderCount = new AtomicInteger();
     private boolean eligibleForReuse = false;
+
+    // Per-CuratedApplication context that survives across AugmentActionImpl instances
+    private final Map<Class<?>, Object> curatedApplicationContext = new ConcurrentHashMap<>();
 
     CuratedApplication(QuarkusBootstrap quarkusBootstrap, CurationResult curationResult,
             ConfiguredClassLoading configuredClassLoading) {
@@ -477,6 +481,10 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         return this.configuredClassLoading.hasReloadableArtifacts();
     }
 
+    public Map<Class<?>, Object> getCuratedApplicationContext() {
+        return curatedApplicationContext;
+    }
+
     @Override
     public void close() {
         if (augmentClassLoader != null) {
@@ -488,6 +496,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             baseRuntimeClassLoader = null;
         }
         augmentationElements.clear();
+        curatedApplicationContext.clear();
     }
 
     public boolean isEligibleForReuse() {

@@ -443,13 +443,11 @@ public class UndertowDeploymentRecorder {
                 // Note that we can't add an end handler in a separate HttpCompressionHandler because VertxHttpExchange does set
                 // its own end handler and so the end handlers added previously are just ignored...
                 if (!compressMediaTypes.isEmpty()) {
-                    event.addEndHandler(new Handler<AsyncResult<Void>>() {
+                    event.addHeadersEndHandler(new Handler<Runnable>() {
 
                         @Override
-                        public void handle(AsyncResult<Void> result) {
-                            if (result.succeeded()) {
-                                HttpCompressionHandler.compressIfNeeded(event, compressMediaTypes);
-                            }
+                        public void handle(Runnable result) {
+                            HttpCompressionHandler.compressIfNeeded(event, compressMediaTypes);
                         }
                     });
                 }

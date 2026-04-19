@@ -22,7 +22,7 @@ import io.smallrye.certs.Format;
  */
 public class MailpitTestResource implements QuarkusTestResourceLifecycleManager {
 
-    public GenericContainer<?> server = new GenericContainer<>("axllent/mailpit")
+    public GenericContainer<?> server = new GenericContainer<>(System.getProperty("mailpit.image", "axllent/mailpit"))
             .withExposedPorts(8025, 1025);
 
     static {

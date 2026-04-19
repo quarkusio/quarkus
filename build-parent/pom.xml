@@ -122,6 +122,8 @@
         <pulsar.image>docker.io/apachepulsar/pulsar:3.2.4</pulsar.image>
         <redis.image>docker.io/library/redis:7</redis.image>
         <infinispan.image>quay.io/infinispan/server:latest</infinispan.image>
+        <mailpit.image>docker.io/axllent/mailpit:latest</mailpit.image>
+        <fake-smtp-server.image>docker.io/reachfive/fake-smtp-server:latest</fake-smtp-server.image>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
@@ -454,6 +456,25 @@
                             <!-- some dev tools tests need the following properties -->
                             <project.version>${project.version}</project.version>
                             <project.groupId>${project.groupId}</project.groupId>
+
+                            <!-- Container Image Properties -->
+                            <elasticsearch.image>${elasticsearch.image}</elasticsearch.image>
+                            <opensearch.image>${opensearch.image}</opensearch.image>
+                            <postgres.image>${postgres.image}</postgres.image>
+                            <postgis.image>${postgis.image}</postgis.image>
+                            <pgvector.image>${pgvector.image}</pgvector.image>
+                            <mariadb.image>${mariadb.image}</mariadb.image>
+                            <db2.image>${db2.image}</db2.image>
+                            <mssql.image>${mssql.image}</mssql.image>
+                            <mysql.image>${mysql.image}</mysql.image>
+                            <oracle.image>${oracle.image}</oracle.image>
+                            <mongo.image>${mongo.image}</mongo.image>
+                            <keycloak.docker.image>${keycloak.docker.image}</keycloak.docker.image>
+                            <pulsar.image>${pulsar.image}</pulsar.image>
+                            <rabbitmq.image>${rabbitmq.image}</rabbitmq.image>
+                            <redis.image>${redis.image}</redis.image>
+                            <mailpit.image>${mailpit.image}</mailpit.image>
+                            <fake-smtp-server.image>${fake-smtp-server.image}</fake-smtp-server.image>
                         </systemPropertyVariables>
                         <!-- limit the amount of memory surefire can use, 1500m should be plenty-->
                         <!-- set tmpdir as early as possible because surefire sets it too late for JDK16 -->
@@ -482,6 +503,25 @@
                             <!-- some dev tools tests need the following properties -->
                             <project.version>${project.version}</project.version>
                             <project.groupId>${project.groupId}</project.groupId>
+
+                            <!-- Container Image Properties -->
+                            <elasticsearch.image>${elasticsearch.image}</elasticsearch.image>
+                            <opensearch.image>${opensearch.image}</opensearch.image>
+                            <postgres.image>${postgres.image}</postgres.image>
+                            <postgis.image>${postgis.image}</postgis.image>
+                            <pgvector.image>${pgvector.image}</pgvector.image>
+                            <mariadb.image>${mariadb.image}</mariadb.image>
+                            <db2.image>${db2.image}</db2.image>
+                            <mssql.image>${mssql.image}</mssql.image>
+                            <mysql.image>${mysql.image}</mysql.image>
+                            <oracle.image>${oracle.image}</oracle.image>
+                            <mongo.image>${mongo.image}</mongo.image>
+                            <keycloak.docker.image>${keycloak.docker.image}</keycloak.docker.image>
+                            <pulsar.image>${pulsar.image}</pulsar.image>
+                            <rabbitmq.image>${rabbitmq.image}</rabbitmq.image>
+                            <redis.image>${redis.image}</redis.image>
+                            <mailpit.image>${mailpit.image}</mailpit.image>
+                            <fake-smtp-server.image>${fake-smtp-server.image}</fake-smtp-server.image>
                         </systemPropertyVariables>
                         <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
                         <argLine>-Djava.io.tmpdir="${project.build.directory}" ${failsafe.argLine.additional}</argLine>

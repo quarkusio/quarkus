@@ -33,7 +33,7 @@ public class RabbitMQConnectorDynCredsTest {
             String username = "tester";
             String password = RandomStringUtils.insecure().next(10);
 
-            rabbit = new RabbitMQContainer(DockerImageName.parse("rabbitmq:3.12-management"))
+            rabbit = new RabbitMQContainer(DockerImageName.parse(System.getProperty("rabbitmq.image", "rabbitmq:3.12-management")))
                     .withNetwork(Network.SHARED)
                     .withNetworkAliases("rabbitmq")
                     .withUser(username, password)

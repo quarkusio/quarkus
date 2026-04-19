@@ -20,6 +20,7 @@ import io.smallrye.config.Priorities;
 import io.smallrye.config.RelocateConfigSourceInterceptor;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
+import io.smallrye.config.ConfigValue;
 
 public class QuarkusConfigBuilderCustomizer implements SmallRyeConfigBuilderCustomizer {
     public static final String QUARKUS_PROFILE = "quarkus.profile";
@@ -145,5 +146,16 @@ public class QuarkusConfigBuilderCustomizer implements SmallRyeConfigBuilderCust
 
         // Ignore unmapped quarkus properties, because properties in the same root may be split between build / runtime
         builder.withMappingIgnore("quarkus.**");
+
+        // Filter out keys that end in '.' (from for example environment variables ending in '_')
+        builder.withInterceptors(new ConfigSourceInterceptor() {
+            @Override
+            public ConfigValue getValue(ConfigSourceInterceptorContext context, String name) {
+                if (name != null && name.endsWith(".")) {
+                    return null;
+                }
+                return context.proceed(name);
+            }
+        });
     }
 }

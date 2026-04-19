@@ -280,3 +280,30 @@ For example
 <4> the artifact coordinates of a conditional dependency.
 
 In this example `library-b` is a regular Maven artifact that will be added as a dependency of the `quarkus-extension-a` only when an application is launched in dev mode.
+
+== Default capability providers and conditional dependencies
+
+The conditional dependency resolution process integrates with default capability providers to automatically satisfy unsatisfied capability requirements. This creates an outer resolution loop that works as follows:
+
+1. Resolve all conditional dependencies based on the current dependency graph
+2. Check for any unsatisfied capability requirements
+3. If unsatisfied capabilities exist and default providers are configured, inject the appropriate default provider
+4. Re-run the conditional dependency resolution cycle with the expanded dependency graph
+5. Repeat until no new dependencies are added
+
+This is a natural extension of the existing conditional dependency resolution mechanism. When a default capability provider is added to the application, it becomes part of the dependency graph just like any other extension. If that provider extension declares its own conditional dependencies, those will be evaluated in the next iteration of the cycle.
+
+For example, consider this scenario:
+
+* `quarkus-rest-data-panache` requires capability `io.quarkus.rest`
+* The platform defines `quarkus-rest` as the default provider for `io.quarkus.rest`
+* `quarkus-rest` has a conditional dependency on `quarkus-rest-kotlin`, which is activated when `quarkus-kotlin` is present
+
+The resolution process will:
+
+1. Detect that `quarkus-rest-data-panache` requires `io.quarkus.rest` but no provider is present
+2. Add `quarkus-rest` as a default provider
+3. Re-run conditional dependency resolution, which may now activate `quarkus-rest`'s conditional dependency on `quarkus-rest-kotlin` if `quarkus-kotlin` is in the dependency graph
+4. Continue until the dependency graph stabilizes
+
+This ensures that adding a default capability provider can trigger a cascade of conditional dependency activations, allowing platforms to provide fully integrated defaults without manual dependency management.

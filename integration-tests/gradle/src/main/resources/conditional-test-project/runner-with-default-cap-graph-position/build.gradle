@@ -1,0 +1,27 @@
+plugins {
+    id 'java'
+    id 'io.quarkus'
+}
+
+repositories {
+    mavenLocal {
+        content {
+            includeGroup 'org.acme' // for dependencies built in this test
+            includeGroupByRegex 'io.quarkus.*'
+            includeGroup 'org.hibernate.orm'
+        }
+    }
+    mavenCentral()
+}
+
+dependencies {
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation enforcedPlatform('org.acme:acme-bom:1.0-SNAPSHOT')
+
+    implementation 'io.quarkus:quarkus-rest'
+    implementation 'org.acme:ext-gp-a:1.0-SNAPSHOT'
+    implementation 'org.acme:ext-gp-d:1.0-SNAPSHOT'
+
+    testImplementation 'io.quarkus:quarkus-junit'
+    testImplementation 'io.rest-assured:rest-assured'
+}

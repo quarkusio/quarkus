@@ -17,16 +17,21 @@ public abstract class ExtensionDependency<T> {
     private final List<Dependency> conditionalDependencies;
     private final List<Dependency> conditionalDevDeps;
     private final List<ArtifactKey> dependencyConditions;
+    private final String providesCapabilities;
+    private final String requiresCapabilities;
     private boolean isConditional;
 
     public ExtensionDependency(ModuleVersionIdentifier extensionId, T deploymentModule,
             List<Dependency> conditionalDependencies, List<Dependency> conditionalDevDeps,
-            List<ArtifactKey> dependencyConditions) {
+            List<ArtifactKey> dependencyConditions,
+            String providesCapabilities, String requiresCapabilities) {
         this.extensionId = extensionId;
         this.deploymentModule = deploymentModule;
         this.conditionalDependencies = conditionalDependencies;
         this.conditionalDevDeps = conditionalDevDeps;
         this.dependencyConditions = dependencyConditions;
+        this.providesCapabilities = providesCapabilities;
+        this.requiresCapabilities = requiresCapabilities;
     }
 
     public void importConditionalDependency(DependencyHandler dependencies, ModuleVersionIdentifier capability) {
@@ -102,6 +107,14 @@ public abstract class ExtensionDependency<T> {
 
     public T getDeploymentModule() {
         return deploymentModule;
+    }
+
+    public String getProvidesCapabilities() {
+        return providesCapabilities;
+    }
+
+    public String getRequiresCapabilities() {
+        return requiresCapabilities;
     }
 
     public boolean isConditional() {

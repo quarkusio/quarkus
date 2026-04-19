@@ -43,6 +43,13 @@ public interface BootstrapConstants {
 
     String PLATFORM_PROPERTY_PREFIX = "platform.";
 
+    /**
+     * Prefix for platform properties that configure default capability providers.
+     * The full property key format is:
+     * {@code platform.default-capability-provider.<capability-name>=<artifact-coords>}
+     */
+    String DEFAULT_CAPABILITY_PROVIDER_PREFIX = PLATFORM_PROPERTY_PREFIX + "default-capability-provider.";
+
     String QUARKUS_BOOTSTRAP_WORKSPACE_DISCOVERY = "quarkus.bootstrap.workspace-discovery";
 
     /**

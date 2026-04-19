@@ -87,9 +87,7 @@ public class DependencyUtils {
 
         ExtensionDependency<?> projectDependency;
 
-        if (artifact.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier) {
-            ProjectComponentIdentifier componentId = (ProjectComponentIdentifier) artifact.getId().getComponentIdentifier();
-
+        if (artifact.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier componentId) {
             projectDependency = getProjectExtensionDependencyOrNull(
                     project,
                     componentId.getProjectPath(),
@@ -273,7 +271,9 @@ public class DependencyUtils {
         if (extensionDescriptor != null && extensionDescriptor.containsKey(BootstrapConstants.DEPENDENCY_CONDITION)) {
             final ArtifactKey[] conditions = BootstrapUtils
                     .parseDependencyCondition(extensionDescriptor.getProperty(BootstrapConstants.DEPENDENCY_CONDITION));
-            dependencyConditions.addAll(Arrays.asList(conditions));
+            if (conditions != null) {
+                dependencyConditions.addAll(Arrays.asList(conditions));
+            }
         }
 
         return new ProjectExtensionDependency(
@@ -282,7 +282,11 @@ public class DependencyUtils {
                 isIncludedBuild,
                 conditionalDependencies,
                 conditionalDevDependencies,
-                dependencyConditions);
+                dependencyConditions,
+                extensionDescriptor == null ? null
+                        : extensionDescriptor.getProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES),
+                extensionDescriptor == null ? null
+                        : extensionDescriptor.getProperty(BootstrapConstants.PROP_REQUIRES_CAPABILITIES));
     }
 
     private static void collectionConditionalDeps(Project project, String conditionalDevDepsStr,
@@ -316,7 +320,7 @@ public class DependencyUtils {
         if (extensionProperties.containsKey(BootstrapConstants.DEPENDENCY_CONDITION)) {
             final ArtifactKey[] conditions = BootstrapUtils
                     .parseDependencyCondition(extensionProperties.getProperty(BootstrapConstants.DEPENDENCY_CONDITION));
-            if (conditions.length > 0) {
+            if (conditions != null) {
                 dependencyConditions = Arrays.asList(conditions);
             }
         }
@@ -326,7 +330,9 @@ public class DependencyUtils {
                 deploymentArtifact,
                 parseConditionalDeps(project, extensionProperties, BootstrapConstants.CONDITIONAL_DEPENDENCIES),
                 parseConditionalDeps(project, extensionProperties, BootstrapConstants.CONDITIONAL_DEV_DEPENDENCIES),
-                dependencyConditions);
+                dependencyConditions,
+                extensionProperties.getProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES),
+                extensionProperties.getProperty(BootstrapConstants.PROP_REQUIRES_CAPABILITIES));
     }
 
     private static List<Dependency> parseConditionalDeps(Project project, Properties extensionProperties, String propertyName) {

@@ -14,4 +14,4 @@ pluginManagement {
     }
 }
 
-include 'runner', 'runner-with-exclude', 'runner-with-explicit-import', 'scenario-two'
+include 'runner', 'runner-with-exclude', 'runner-with-explicit-import', 'scenario-two', 'runner-with-default-cap', 'runner-with-default-cap-graph-position'

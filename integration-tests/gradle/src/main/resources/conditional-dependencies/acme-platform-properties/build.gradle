@@ -1,0 +1,29 @@
+plugins {
+    id 'maven-publish'
+}
+
+def propsFile = file("$buildDir/platform-properties.properties")
+
+task generateProperties {
+    outputs.file(propsFile)
+    doLast {
+        propsFile.parentFile.mkdirs()
+        propsFile.text = "platform.default-capability-provider.test.cap.a=org.acme:ext-cap-provider::jar:1.0-SNAPSHOT\n" +
+                "platform.default-capability-provider.cap.gp.x=org.acme:ext-gp-f::jar:1.0-SNAPSHOT\n" +
+                "platform.default-capability-provider.cap.gp.y=org.acme:ext-gp-h::jar:1.0-SNAPSHOT\n"
+    }
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = 'org.acme'
+            artifactId = 'acme-bom-quarkus-platform-properties'
+            version = '1.0-SNAPSHOT'
+            artifact(propsFile) {
+                extension = 'properties'
+                builtBy generateProperties
+            }
+        }
+    }
+}

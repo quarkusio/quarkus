@@ -1,10 +1,8 @@
 package io.quarkus.bootstrap.resolver;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 
@@ -81,8 +79,13 @@ public class TsQuarkusExt {
 
     public TsQuarkusExt setProvidesCapabilities(String... capability) {
         setDescriptorProp(BootstrapConstants.PROP_PROVIDES_CAPABILITIES,
-                Arrays.asList(capability).stream()
-                        .collect(Collectors.joining(",")));
+                String.join(",", capability));
+        return this;
+    }
+
+    public TsQuarkusExt setRequiresCapabilities(String... capabilities) {
+        setDescriptorProp(BootstrapConstants.PROP_REQUIRES_CAPABILITIES,
+                String.join(",", capabilities));
         return this;
     }
 

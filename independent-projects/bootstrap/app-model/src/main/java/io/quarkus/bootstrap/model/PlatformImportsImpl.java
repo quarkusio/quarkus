@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +49,8 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
     private final Map<String, String> collectedProps;
     private final Collection<ArtifactCoords> platformBoms;
     private final Collection<PlatformReleaseInfo> platformReleaseInfo;
+
+    private Map<String, ArtifactCoords> defaultCapabilityProviders;
 
     public PlatformImportsImpl() {
         collectedProps = new HashMap<>();
@@ -231,6 +234,34 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
 
     PlatformInfo getPlatform(String platformKey) {
         return allPlatformInfo.get(platformKey);
+    }
+
+    @Override
+    public Map<String, ArtifactCoords> getDefaultCapabilityProviders() {
+        if (defaultCapabilityProviders == null) {
+            defaultCapabilityProviders = parseDefaultCapabilityProviders();
+        }
+        return defaultCapabilityProviders;
+    }
+
+    /**
+     * Parses default capability provider entries from the collected platform properties.
+     * Entries use the prefix defined by {@link BootstrapConstants#DEFAULT_CAPABILITY_PROVIDER_PREFIX}.
+     *
+     * @return unmodifiable map of capability names to artifact coordinates, never {@code null}
+     */
+    private Map<String, ArtifactCoords> parseDefaultCapabilityProviders() {
+        final Map<String, ArtifactCoords> result = new HashMap<>();
+        for (Map.Entry<String, String> entry : collectedProps.entrySet()) {
+            final String key = entry.getKey();
+            if (key.startsWith(BootstrapConstants.DEFAULT_CAPABILITY_PROVIDER_PREFIX)) {
+                final String capability = key.substring(BootstrapConstants.DEFAULT_CAPABILITY_PROVIDER_PREFIX.length());
+                if (!capability.isEmpty()) {
+                    result.put(capability, ArtifactCoords.fromString(entry.getValue()));
+                }
+            }
+        }
+        return result.isEmpty() ? Map.of() : Collections.unmodifiableMap(result);
     }
 
     private static class PlatformImport implements Serializable {

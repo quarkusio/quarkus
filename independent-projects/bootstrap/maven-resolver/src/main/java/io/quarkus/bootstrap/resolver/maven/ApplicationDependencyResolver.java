@@ -46,6 +46,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
+import io.quarkus.bootstrap.model.DefaultCapabilityProviderResolver;
 import io.quarkus.bootstrap.model.PlatformImportsImpl;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.util.DependencyUtils;
@@ -103,6 +104,8 @@ public class ApplicationDependencyResolver {
     private List<Dependency> collectCompileOnly;
     private boolean runtimeModelOnly;
     private boolean devMode;
+    private PlatformImportsImpl platformImports;
+    private DefaultCapabilityProviderResolver defaultCapabilityResolver;
 
     /**
      * Maven artifact resolver that should be used to resolve application dependencies
@@ -204,10 +207,10 @@ public class ApplicationDependencyResolver {
         dependencyMap = new ApplicationDependencyMap();
 
         collectPlatformProperties();
+        initDefaultCapabilityResolver();
 
-        DependencyNode root = resolveRuntimeDeps(collectRtDepsRequest);
-        processRuntimeDeps(root);
-        activateConditionalDeps();
+        DependencyNode root = resolveBaseRuntimeDeps(collectRtDepsRequest);
+        resolveAllRuntimeDeps(root);
         // resolve and inject deployment dependency branches for the top (first met) runtime extension nodes
         if (!runtimeModelOnly) {
             injectDeploymentDeps();
@@ -267,6 +270,7 @@ public class ApplicationDependencyResolver {
         if (conditionalDepsToProcess.isEmpty()) {
             return;
         }
+        final ModelResolutionTaskRunner taskRunner = getTaskRunner();
         boolean checkDependencyConditions = true;
         while (!conditionalDepsToProcess.isEmpty() && checkDependencyConditions) {
             checkDependencyConditions = false;
@@ -274,7 +278,7 @@ public class ApplicationDependencyResolver {
             conditionalDepsToProcess = new ConcurrentLinkedDeque<>();
             for (ConditionalDependency cd : unsatisfiedConditionalDeps) {
                 if (cd.isSatisfied()) {
-                    cd.activate();
+                    cd.activate(taskRunner);
                     // if a dependency was activated, the remaining not satisfied conditions should be checked again
                     checkDependencyConditions = true;
                 } else {
@@ -282,7 +286,6 @@ public class ApplicationDependencyResolver {
                 }
             }
         }
-        conditionalDepsToProcess = List.of();
     }
 
     /**
@@ -476,7 +479,87 @@ public class ApplicationDependencyResolver {
                         artifact.getVersion(), resolver.resolve(artifact).getArtifact().getFile().toPath());
             }
         }
+        platformImports = platformReleases;
         appBuilder.setPlatformImports(platformReleases);
+    }
+
+    /**
+     * Initializes the default capability provider resolver from platform imports.
+     *
+     * <p>
+     * If platform properties contain default capability provider mappings, they are used
+     * to create the resolver. Otherwise, an empty resolver is created.
+     */
+    private void initDefaultCapabilityResolver() {
+        if (platformImports != null) {
+            defaultCapabilityResolver = new DefaultCapabilityProviderResolver(
+                    platformImports.getDefaultCapabilityProviders());
+        } else {
+            defaultCapabilityResolver = new DefaultCapabilityProviderResolver(Map.of());
+        }
+    }
+
+    /**
+     * Resolves unsatisfied capability requirements by injecting default providers
+     * as direct project dependencies, one at a time.
+     *
+     * <p>
+     * After each injection, the conditional dependency cycle is re-run because
+     * the injected provider may transitively satisfy other requirements.
+     *
+     * @param appRoot the root application dependency from the main tree traversal
+     */
+    private void resolveDefaultCapabilityProviders(AppDep appRoot) {
+        if (defaultCapabilityResolver != null && defaultCapabilityResolver.hasDefaultProviders()) {
+            ArtifactCoords coords = defaultCapabilityResolver.getNextDefaultProvider();
+            if (coords != null) {
+                final ModelResolutionTaskRunner taskRunner = getTaskRunner();
+                while (coords != null) {
+                    injectDefaultProvider(appRoot, coords, taskRunner);
+                    activateConditionalDeps();
+                    coords = defaultCapabilityResolver.getNextDefaultProvider();
+                }
+            }
+        }
+    }
+
+    /**
+     * Injects a default capability provider as a direct child of the root dependency node.
+     *
+     * <p>
+     * The method resolves the provider's transitive dependencies, enforces managed dependency
+     * versions from the platform BOM, adds the provider as a child of the root node, and
+     * walks the resulting subtree to discover any new extensions and register their capabilities.
+     *
+     * @param rootDep the root application dependency
+     * @param coords the artifact coordinates of the default provider
+     */
+    private void injectDefaultProvider(AppDep rootDep, ArtifactCoords coords, ModelResolutionTaskRunner taskRunner) {
+        Artifact artifact = new DefaultArtifact(
+                coords.getGroupId(), coords.getArtifactId(), coords.getClassifier(), coords.getType(),
+                coords.getVersion());
+
+        // enforce managed dependency version from the platform BOM
+        final Dependency managed = managedDeps.get(getKey(artifact));
+        if (managed != null) {
+            artifact = artifact.setVersion(managed.getArtifact().getVersion());
+        }
+
+        final DependencyNode providerNode = collectDependencies(artifact, List.of(), rootDep.node.getRepositories());
+
+        // add as direct child of root
+        rootDep.node.getChildren().add(providerNode);
+        dependencyMap.getOrCreate(rootDep.node.getArtifact()).putDependency(providerNode.getDependency());
+
+        // walk the subtree to discover extensions and register capabilities
+        final AppDep providerDep = new AppDep(rootDep, providerNode);
+        rootDep.children.add(providerDep);
+        providerDep.scheduleRuntimeVisit(taskRunner);
+        taskRunner.waitForCompletion();
+        providerDep.setFlags((byte) (COLLECT_TOP_EXTENSION_RUNTIME_NODES
+                | COLLECT_DIRECT_DEPS
+                | COLLECT_DEPLOYMENT_INJECTION_POINTS
+                | (collectReloadableModules ? COLLECT_RELOADABLE_MODULES : 0)));
     }
 
     private void clearReloadableFlag(ResolvedDependencyBuilder dep) {
@@ -501,7 +584,7 @@ public class ApplicationDependencyResolver {
      * @return the root of the resolved dependency tree
      * @throws AppModelResolverException in case dependencies could not be resolved
      */
-    private DependencyNode resolveRuntimeDeps(CollectRequest request)
+    private DependencyNode resolveBaseRuntimeDeps(CollectRequest request)
             throws AppModelResolverException {
 
         var ctx = new BootstrapMavenContext(BootstrapMavenContext.config()
@@ -535,13 +618,21 @@ public class ApplicationDependencyResolver {
         return dep != null && dep.isFlagSet(DependencyFlags.RUNTIME_CP);
     }
 
-    private void processRuntimeDeps(DependencyNode root) {
+    private void resolveAllRuntimeDeps(DependencyNode root) {
+        final AppDep appRoot = processRuntimeDeps(root);
+        activateConditionalDeps();
+        resolveDefaultCapabilityProviders(appRoot);
+        conditionalDepsToProcess = List.of();
+    }
+
+    private AppDep processRuntimeDeps(DependencyNode root) {
         final AppDep appRoot = new AppDep(root);
         visitRuntimeDeps(appRoot);
         appRoot.setChildFlags((byte) (COLLECT_TOP_EXTENSION_RUNTIME_NODES
                 | COLLECT_DIRECT_DEPS
                 | COLLECT_DEPLOYMENT_INJECTION_POINTS
                 | (collectReloadableModules ? COLLECT_RELOADABLE_MODULES : 0)));
+        return appRoot;
     }
 
     private void visitRuntimeDeps(AppDep appRoot) {
@@ -553,6 +644,7 @@ public class ApplicationDependencyResolver {
     private class AppDep {
         final AppDep parent;
         final DependencyNode node;
+        final int childIndex;
         ExtensionDependency ext;
         ResolvedDependencyBuilder resolvedDep;
         final List<AppDep> children;
@@ -560,13 +652,33 @@ public class ApplicationDependencyResolver {
         AppDep(DependencyNode node) {
             this.parent = null;
             this.node = node;
+            this.childIndex = -1;
             this.children = new ArrayList<>(node.getChildren().size());
         }
 
         AppDep(AppDep parent, DependencyNode node) {
             this.parent = parent;
             this.node = node;
+            this.childIndex = parent.children.size();
             this.children = new ArrayList<>(node.getChildren().size());
+        }
+
+        /**
+         * Returns the BFS path from root to this node as an array of child indices,
+         * used for priority ordering in {@link DefaultCapabilityProviderResolver}.
+         */
+        int[] bfsPath() {
+            return computeBfsPath(1);
+        }
+
+        /**
+         * Recursively walks to the root to determine array size, allocates once,
+         * then fills child indices on the way back down the call stack.
+         */
+        private int[] computeBfsPath(int childDepth) {
+            final int[] path = parent != null ? parent.computeBfsPath(childDepth + 1) : new int[childDepth];
+            path[path.length - childDepth] = childIndex;
+            return path;
         }
 
         /**
@@ -652,6 +764,9 @@ public class ApplicationDependencyResolver {
                     if (ext != null) {
                         resolvedDep.setRuntimeExtensionArtifact();
                         collectConditionalDependencies();
+                        if (defaultCapabilityResolver != null) {
+                            ext.info.registerCapabilities(defaultCapabilityResolver, this::bfsPath);
+                        }
                     }
                 } catch (DeploymentInjectionException e) {
                     throw e;
@@ -1087,7 +1202,7 @@ public class ApplicationDependencyResolver {
             conditionalDep.ext = info == null ? null : new ExtensionDependency(info, rtNode, parent.ext.exclusions);
         }
 
-        void activate() {
+        void activate(ModelResolutionTaskRunner taskRunner) {
             if (activated) {
                 return;
             }
@@ -1112,15 +1227,14 @@ public class ApplicationDependencyResolver {
             if (conditionalDep.ext != null && conditionalDep.ext.extDeps == null) {
                 conditionalDep.ext.extDeps = new ArrayList<>();
             }
-            visitRuntimeDeps();
+            visitRuntimeDeps(taskRunner);
             conditionalDep.setFlags(
                     (byte) (COLLECT_DEPLOYMENT_INJECTION_POINTS | (collectReloadableModules ? COLLECT_RELOADABLE_MODULES : 0)));
             dependencyMap.getOrCreate(parent.node.getDependency()).putDependency(conditionalDep.node.getDependency());
             parent.ext.runtimeNode.getChildren().add(rtNode);
         }
 
-        private void visitRuntimeDeps() {
-            var taskRunner = getTaskRunner();
+        private void visitRuntimeDeps(ModelResolutionTaskRunner taskRunner) {
             conditionalDep.scheduleRuntimeVisit(taskRunner);
             taskRunner.waitForCompletion();
         }

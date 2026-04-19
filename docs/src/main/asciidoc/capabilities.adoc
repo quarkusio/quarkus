@@ -58,8 +58,8 @@ quarkusExtension {
     }
 }
 ----
-<1> the extension provides the `io.quarkus.hibernate.orm` capability (multiple `provides` elements are allowed)
-<2> the extension requires the `io.quarkus.agroal` capability to be provided to function properly (multiple `requires` elements are allowed)
+<1> the extension provides the `io.quarkus.rest` capability (multiple `provides` elements are allowed)
+<2> the extension requires the `io.quarkus.resteasy` capability to be provided to function properly (multiple `requires` elements are allowed)
 
 NOTE: The Gradle extension plugin is still experimental and may change in the future.
 
@@ -77,8 +77,8 @@ quarkusExtension {
     }
 }
 ----
-<1> the extension provides the `io.quarkus.hibernate.orm` capability (multiple `provides` elements are allowed)
-<2> the extension requires the `io.quarkus.agroal` capability to be provided to function properly (multiple `requires` elements are allowed)
+<1> the extension provides the `io.quarkus.rest` capability (multiple `provides` elements are allowed)
+<2> the extension requires the `io.quarkus.resteasy` capability to be provided to function properly (multiple `requires` elements are allowed)
 
 NOTE: The Gradle extension plugin is still experimental and may change in the future.
 ****
@@ -170,6 +170,50 @@ public class OpenshiftBuild implements BooleanSupplier {
     }
 }
 ----
+
+== Default capability providers
+
+When an extension requires a capability but no provider is present in the application dependencies, Quarkus can automatically add a default provider if one has been configured by the platform maintainers. This allows platforms to define sensible defaults for capabilities without forcing those dependencies on all applications.
+
+[[configuring-default-providers]]
+=== Configuring default providers
+
+Platform maintainers configure default capability providers in platform BOMs using the following property format:
+
+[source,properties]
+----
+platform.default-capability-provider.<capability-name>=<artifactCoords>
+----
+
+For example, to configure a default REST client implementation for the `io.quarkus.rest.client` capability:
+
+[source,properties]
+----
+platform.default-capability-provider.io.quarkus.rest.client=io.quarkus:quarkus-rest-client:3.0.0
+----
+
+The value must be artifact coordinates in one of the following formats:
+
+* `groupId:artifactId:version`
+* `groupId:artifactId:classifier:version`
+* `groupId:artifactId:classifier:type:version`
+
+When classifier and type are omitted, they default to empty and `jar` respectively.
+
+=== Version management
+
+When a default provider is added to an application, its version is determined by the managed dependency versions from the platform BOMs. If the default provider artifact is present in the BOM's dependency management section, that version will override the version specified in the property. This ensures version consistency across the platform.
+
+=== Resolution behavior
+
+Default capability providers are added as direct project dependencies when their capability is required but unsatisfied. The resolution process works as follows:
+
+* Providers are resolved one at a time based on priority, starting with the shallowest requiring extension first
+* Only unconditional capabilities participate in resolution. Conditional capabilities declared with `?BooleanSupplier` syntax are ignored during default provider resolution
+* When multiple platform BOMs define a default provider for the same capability, the first one wins
+* After a default provider is added, the conditional dependency resolution cycle runs again, as the new extension may bring its own conditional dependencies
+
+IMPORTANT: Default providers are only added when a required capability is completely absent. If any provider of the capability is already present in the application dependencies, no default provider will be added.
 
 == CapabilityBuildItem
 

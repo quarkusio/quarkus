@@ -5,6 +5,7 @@ import static io.quarkus.bootstrap.util.DependencyUtils.toArtifact;
 
 import java.util.Arrays;
 import java.util.Properties;
+import java.util.function.Supplier;
 
 import org.eclipse.aether.artifact.Artifact;
 
@@ -12,6 +13,7 @@ import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
 import io.quarkus.bootstrap.model.CapabilityContract;
+import io.quarkus.bootstrap.model.DefaultCapabilityProviderResolver;
 import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -58,6 +60,31 @@ class ExtensionInfo {
         if (providesCapabilities != null || requiresCapabilities != null) {
             appBuilder.addExtensionCapabilities(
                     CapabilityContract.of(toCompactCoords(runtimeArtifact), providesCapabilities, requiresCapabilities));
+        }
+    }
+
+    /**
+     * Registers the unconditional capabilities provided and required by this extension
+     * with the given {@link DefaultCapabilityProviderResolver}.
+     *
+     * <p>
+     * Conditional capabilities (those containing '?') are excluded because the
+     * {@code BooleanSupplier} condition can only be evaluated at build time.
+     *
+     * @param resolver the default capability provider resolver to register with
+     * @param bfsPathSupplier supplier that computes the path of local child indices from root to this node
+     */
+    void registerCapabilities(DefaultCapabilityProviderResolver resolver, Supplier<int[]> bfsPathSupplier) {
+        final String extensionKey = toCompactCoords(runtimeArtifact);
+
+        final String providesCapabilities = props.getProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES);
+        for (String cap : DefaultCapabilityProviderResolver.parseUnconditionalCapabilities(providesCapabilities)) {
+            resolver.registerProvided(cap, extensionKey);
+        }
+
+        final String requiresCapabilities = props.getProperty(BootstrapConstants.PROP_REQUIRES_CAPABILITIES);
+        for (String cap : DefaultCapabilityProviderResolver.parseUnconditionalCapabilities(requiresCapabilities)) {
+            resolver.registerRequired(cap, extensionKey, bfsPathSupplier);
         }
     }
 

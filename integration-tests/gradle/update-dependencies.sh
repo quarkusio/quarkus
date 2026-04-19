@@ -41,7 +41,7 @@ export LANG="C"
 # note on sed: -deployment deps are added explicitly later and bom is upstream anyway
 ARTIFACT_IDS=$(grep -EhR --include 'build*.gradle*' --exclude-dir=build '[iI]mplementation|api|quarkusDev' "${PRG_PATH}" | \
               grep -Eo 'quarkus-[a-z0-9-]+' | \
-              sed -e '/-deployment/d' -e '/quarkus-bom/d' | sort | uniq)
+              sed -e '/-deployment/d' -e '/quarkus-bom/d' -e '/quarkus-platform-descriptor/d' -e '/quarkus-platform-properties/d' | sort | uniq)
 set -o pipefail
 if [ -z "${ARTIFACT_IDS}" ]
 then

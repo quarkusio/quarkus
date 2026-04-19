@@ -32,6 +32,7 @@ import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 
+import io.quarkus.bootstrap.model.DefaultCapabilityProviderResolver;
 import io.quarkus.gradle.tooling.dependency.DependencyUtils;
 import io.quarkus.gradle.tooling.dependency.ExtensionDependency;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -47,6 +48,8 @@ public class QuarkusComponentVariants {
     private static final String ON = "on";
     private static final String RUNTIME_ELEMENTS = "runtimeElements";
     private static final String RUNTIME = "runtime";
+    private static final String TEMP = "Temp";
+    private static final String DEFAULT_PROVIDERS_SUFFIX = "DefaultProviders";
 
     /**
      * Makes sure the first character of the string is an upper-case one.
@@ -186,6 +189,9 @@ public class QuarkusComponentVariants {
     private final Map<String, SatisfiedExtensionDeps> satisfiedExtensionDeps = new HashMap<>();
     private final LaunchMode mode;
     private final AtomicInteger configCopyCounter = new AtomicInteger();
+    private final List<Dependency> defaultProviderDeps = new ArrayList<>();
+    private DefaultCapabilityProviderResolver defaultCapabilityResolver;
+    private int rootChildCount;
 
     private QuarkusComponentVariants(Project project, LaunchMode mode,
             Property<PlatformSpec> platformSpecProperty) {
@@ -221,10 +227,13 @@ public class QuarkusComponentVariants {
                     final AtomicInteger invocations = new AtomicInteger();
                     config.getDependencies().addAllLater(dependencyProperty.value(project.provider(() -> {
                         if (invocations.getAndIncrement() == 0) {
-                            addConditionalVariants(getBaseConfiguration());
+                            initDefaultCapabilityResolver();
+                            Configuration baseConfig = getBaseConfiguration();
+                            addConditionalVariants(baseConfig);
+                            resolveDefaultCapabilityProviders(baseConfig);
                             addDeploymentVariants();
                         }
-                        return Set.of();
+                        return defaultProviderDeps;
                     })));
                 });
     }
@@ -364,31 +373,67 @@ public class QuarkusComponentVariants {
     }
 
     private Configuration copyBaseConfig(Configuration baseConfig) {
-        return project.getConfigurations()
-                .resolvable(baseConfig.getName() + "Copy" + configCopyCounter.incrementAndGet(), c -> {
+        final int copyIndex = configCopyCounter.incrementAndGet();
+        var config = project.getConfigurations()
+                .resolvable(baseConfig.getName() + TEMP + copyIndex, c -> {
                     c.setCanBeConsumed(false);
                     c.extendsFrom(baseConfig);
                     setIterativeConditionalAttributes(c, project, satisfiedExtensionDeps.values());
                 }).get();
+        if (!defaultProviderDeps.isEmpty()) {
+            var bucket = project.getConfigurations()
+                    .dependencyScope(getDefaultProvidersConfigName(config)).get();
+            for (Dependency d : defaultProviderDeps) {
+                bucket.getDependencies().add(d);
+            }
+            config.extendsFrom(bucket);
+        }
+        return config;
     }
 
     private void processConfiguration(Configuration baseConfig) {
         var config = copyBaseConfig(baseConfig);
         final Set<ModuleVersionIdentifier> visited = new HashSet<>();
+        rootChildCount = 0;
         for (var dep : config.getResolvedConfiguration().getFirstLevelModuleDependencies()) {
-            processDependency(null, dep, visited, true);
+            processDependency(null, dep, visited, true, null, rootChildCount++);
         }
-        // drop the temporary configuration
+        // drop the temporary configurations
         project.getConfigurations().remove(config);
+        if (!defaultProviderDeps.isEmpty()) {
+            var depsConfig = project.getConfigurations().findByName(getDefaultProvidersConfigName(config));
+            if (depsConfig != null) {
+                project.getConfigurations().remove(depsConfig);
+            }
+        }
     }
 
+    private static String getDefaultProvidersConfigName(Configuration config) {
+        return config.getName() + DEFAULT_PROVIDERS_SUFFIX;
+    }
+
+    /**
+     * Processes a resolved dependency and its children, detecting Quarkus extensions,
+     * queuing conditional dependencies, and registering capabilities with the default
+     * capability resolver.
+     *
+     * @param parent the parent processed dependency, or {@code null} for first-level dependencies
+     * @param dep the resolved dependency to process
+     * @param visited set of already-visited module version identifiers to avoid cycles
+     * @param collectTopExtensions whether to mark discovered extensions as top-level
+     * @param parentBfsNode the BFS path node of the parent, or {@code null} for root children
+     * @param childIndex the index of this node among its parent's children
+     */
     private void processDependency(ProcessedDependency parent,
             ResolvedDependency dep,
             Set<ModuleVersionIdentifier> visited,
-            boolean collectTopExtensions) {
+            boolean collectTopExtensions,
+            BfsPathNode parentBfsNode,
+            int childIndex) {
         if (!visited.add(dep.getModule().getId())) {
             return;
         }
+        final var bfsNode = new BfsPathNode(parentBfsNode, childIndex);
         var artifacts = dep.getModuleArtifacts();
         ProcessedDependency nextParent = null;
         if (!artifacts.isEmpty()) {
@@ -407,11 +452,46 @@ public class QuarkusComponentVariants {
                         collectTopExtensions = false;
                     }
                 }
+                registerExtensionCapabilities(nextParent, bfsNode);
             }
         }
 
+        int nextChildIndex = 0;
         for (var c : dep.getChildren()) {
-            processDependency(nextParent, c, visited, collectTopExtensions);
+            processDependency(nextParent, c, visited, collectTopExtensions, bfsNode, nextChildIndex++);
+        }
+    }
+
+    /**
+     * Linked-list node representing a dependency's position in the resolved dependency graph.
+     * Each node stores its index among siblings and a reference to its parent, forming a
+     * path from root to the node. Used to compute BFS-order priority for
+     * {@link DefaultCapabilityProviderResolver}.
+     */
+    private static class BfsPathNode {
+        final BfsPathNode parent;
+        final int childIndex;
+
+        BfsPathNode(BfsPathNode parent, int childIndex) {
+            this.parent = parent;
+            this.childIndex = childIndex;
+        }
+
+        /**
+         * Converts the linked-list path into an {@code int[]} of child indices from root to this node.
+         */
+        int[] toArray() {
+            return computePath(1);
+        }
+
+        /**
+         * Recursively walks to the root to determine array size, allocates once,
+         * then fills indices on the way back down the call stack.
+         */
+        private int[] computePath(int childDepth) {
+            final int[] path = parent != null ? parent.computePath(childDepth + 1) : new int[childDepth];
+            path[path.length - childDepth] = childIndex;
+            return path;
         }
     }
 
@@ -527,6 +607,121 @@ public class QuarkusComponentVariants {
         PlatformSpec.Constraint matchingConstraint = constraints
                 .get(ArtifactKey.ga(dep.getGroup(), dep.getName()));
         return Optional.ofNullable(matchingConstraint);
+    }
+
+    /**
+     * Initializes the default capability provider resolver from the platform spec.
+     * If no default providers are configured, the resolver remains {@code null} and
+     * all capability-related methods become no-ops.
+     */
+    private void initDefaultCapabilityResolver() {
+        PlatformSpec platformSpec = platformSpecProperty.get();
+        Map<String, ArtifactCoords> defaultProviders = platformSpec.getDefaultCapabilityProviders();
+        if (defaultProviders != null && !defaultProviders.isEmpty()) {
+            defaultCapabilityResolver = new DefaultCapabilityProviderResolver(defaultProviders);
+        }
+    }
+
+    /**
+     * Registers the provided and required capabilities of an extension with the
+     * default capability resolver, using capability data already stored on the
+     * {@link ExtensionDependency}.
+     *
+     * @param dep the processed dependency to register capabilities for
+     * @param bfsNode the BFS path node for this dependency's position in the graph
+     */
+    private void registerExtensionCapabilities(ProcessedDependency dep, BfsPathNode bfsNode) {
+        if (defaultCapabilityResolver == null || dep.extension == null) {
+            return;
+        }
+        List<String> providedCaps = DefaultCapabilityProviderResolver.parseUnconditionalCapabilities(
+                dep.extension.getProvidesCapabilities());
+        List<String> requiredCaps = DefaultCapabilityProviderResolver.parseUnconditionalCapabilities(
+                dep.extension.getRequiresCapabilities());
+        if (!providedCaps.isEmpty() || !requiredCaps.isEmpty()) {
+            String extensionKey = dep.extension.getGroup() + ":" + dep.extension.getName();
+            for (String cap : providedCaps) {
+                defaultCapabilityResolver.registerProvided(cap, extensionKey);
+            }
+            for (String cap : requiredCaps) {
+                defaultCapabilityResolver.registerRequired(cap, extensionKey, bfsNode::toArray);
+            }
+        }
+    }
+
+    /**
+     * Resolves default capability providers after the conditional dependency cycle
+     * converges. For each unsatisfied capability with a configured default provider:
+     * <ol>
+     * <li>Creates a dependency for the provider artifact with version enforcement</li>
+     * <li>Adds it to the base configuration so subsequent resolution discovers it</li>
+     * <li>Re-runs the conditional dependency cycle to discover the provider's
+     * extensions, register its capabilities, and activate any triggered
+     * conditional dependencies</li>
+     * </ol>
+     *
+     * <p>
+     * Providers are injected one at a time because a single provider may
+     * transitively satisfy other unsatisfied requirements, avoiding unnecessary
+     * additions.
+     *
+     * @param baseConfig the base configuration to add default providers to
+     */
+    private void resolveDefaultCapabilityProviders(Configuration baseConfig) {
+        if (defaultCapabilityResolver == null || !defaultCapabilityResolver.hasDefaultProviders()) {
+            return;
+        }
+        int injectedIndex = rootChildCount;
+        ArtifactCoords coords;
+        while ((coords = defaultCapabilityResolver.getNextDefaultProvider()) != null) {
+            String version = enforceVersion(coords);
+            Dependency dep = project.getDependencies().create(
+                    coords.getGroupId() + ":" + coords.getArtifactId() + ":" + version);
+            defaultProviderDeps.add(dep);
+            discoverProviderExtension(dep, new BfsPathNode(null, injectedIndex++));
+            addConditionalVariants(baseConfig);
+        }
+    }
+
+    /**
+     * Resolves a default provider dependency in a detached configuration to
+     * discover its extension metadata and register capabilities with the
+     * resolver. This immediate discovery is needed so that
+     * {@link DefaultCapabilityProviderResolver#getNextDefaultProvider()} sees
+     * the newly provided capabilities and does not re-inject the same provider.
+     * Full transitive extension discovery happens in the subsequent
+     * {@link #addConditionalVariants(Configuration)} call.
+     */
+    private void discoverProviderExtension(Dependency dep, BfsPathNode bfsNode) {
+        Configuration detached = getDetachedWithExclusions(dep).setTransitive(false);
+        for (ResolvedArtifact a : detached.getResolvedConfiguration().getResolvedArtifacts()) {
+            var ext = DependencyUtils.getExtensionInfoOrNull(project, a);
+            var pd = processedDeps.computeIfAbsent(getKey(a), k -> {
+                var newPd = new ProcessedDependency(a, ext,
+                        a.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier);
+                newPd.queueConditionalDeps();
+                return newPd;
+            });
+            registerExtensionCapabilities(pd, bfsNode);
+        }
+    }
+
+    /**
+     * Resolves the version for a default provider artifact. If the platform
+     * constraints contain a matching entry, uses the constrained version.
+     * Otherwise, falls back to the version from the artifact coordinates.
+     *
+     * @param coords the artifact coordinates of the default provider
+     * @return the resolved version string
+     */
+    private String enforceVersion(ArtifactCoords coords) {
+        PlatformSpec platformSpec = platformSpecProperty.get();
+        PlatformSpec.Constraint constraint = platformSpec.getConstraints()
+                .get(ArtifactKey.ga(coords.getGroupId(), coords.getArtifactId()));
+        if (constraint != null) {
+            return constraint.getVersion();
+        }
+        return coords.getVersion();
     }
 
     private class ProcessedDependency {

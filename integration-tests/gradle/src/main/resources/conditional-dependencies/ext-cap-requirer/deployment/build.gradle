@@ -1,0 +1,21 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+dependencies {
+    implementation platform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation 'io.quarkus:quarkus-core-deployment'
+    implementation project(':ext-cap-requirer:runtime')
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = 'org.acme'
+            artifactId = 'ext-cap-requirer-deployment'
+            version = '1.0-SNAPSHOT'
+            from components.java
+        }
+    }
+}

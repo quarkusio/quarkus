@@ -2,15 +2,22 @@ package io.quarkus.bootstrap.resolver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.DependencyFlags;
@@ -47,12 +54,17 @@ public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
             expected.addAll(expectedResult);
             expected.addAll(deploymentDeps);
         }
-        final Collection<ResolvedDependency> buildDeps = getTestResolver().resolveModel(root.toArtifact()).getDependencies();
+        final ApplicationModel model = getTestResolver().resolveModel(root.toArtifact());
+        final Collection<ResolvedDependency> buildDeps = model.getDependencies();
         assertThat(stripResolvedPaths(buildDeps)).containsExactlyInAnyOrderElementsOf(expected);
         assertBuildDependencies(buildDeps);
+        assertModel(model);
     }
 
     protected void assertBuildDependencies(Collection<ResolvedDependency> buildDeps) {
+    }
+
+    protected void assertModel(ApplicationModel model) {
     }
 
     private static List<Dependency> stripResolvedPaths(Collection<ResolvedDependency> deps) {
@@ -198,5 +210,54 @@ public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
 
     protected void setPomProperty(String name, String value) {
         root.setPomProperty(name, value);
+    }
+
+    protected void installDefaultCapabilityProviders(Map<String, TsQuarkusExt> capabilityProviders) {
+        final TsArtifact platformProps = new TsArtifact(TsArtifact.DEFAULT_GROUP_ID,
+                "test" + BootstrapConstants.PLATFORM_PROPERTIES_ARTIFACT_ID_SUFFIX,
+                null, "properties", TsArtifact.DEFAULT_VERSION);
+        platformProps.setContent(new TsArtifact.ContentProvider() {
+            Path propsFile;
+
+            @Override
+            public Path getPath(Path workDir) throws IOException {
+                if (propsFile == null) {
+                    final Properties props = new Properties();
+                    for (var entry : capabilityProviders.entrySet()) {
+                        final TsArtifact rt = entry.getValue().getRuntime();
+                        props.setProperty(
+                                BootstrapConstants.DEFAULT_CAPABILITY_PROVIDER_PREFIX + entry.getKey(),
+                                rt.getGroupId() + ":" + rt.getArtifactId() + ":" + rt.getVersion());
+                    }
+                    propsFile = workDir.resolve("platform-properties.properties");
+                    try (OutputStream os = Files.newOutputStream(propsFile)) {
+                        props.store(os, "Test platform properties");
+                    }
+                }
+                return propsFile;
+            }
+        });
+        platformProps.install(repo);
+        addManagedDep(platformProps);
+    }
+
+    protected void installPlatformDescriptor() {
+        final TsArtifact platformDescr = new TsArtifact(TsArtifact.DEFAULT_GROUP_ID,
+                "test" + BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX,
+                "1.0", "json", TsArtifact.DEFAULT_VERSION);
+        platformDescr.setContent(new TsArtifact.ContentProvider() {
+            Path json;
+
+            @Override
+            public Path getPath(Path workDir) throws IOException {
+                if (json == null) {
+                    json = workDir.resolve("platform-descriptor.json");
+                    Files.writeString(json, "platform descriptor");
+                }
+                return json;
+            }
+        });
+        platformDescr.install(repo);
+        addManagedDep(platformDescr);
     }
 }

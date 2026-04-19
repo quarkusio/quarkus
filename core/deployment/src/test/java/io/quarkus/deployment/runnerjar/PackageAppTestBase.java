@@ -47,6 +47,14 @@ public abstract class PackageAppTestBase extends BootstrapTestBase {
     protected List<String> expectedLib = new ArrayList<>();
     protected TsDependency platformDescriptor;
     protected TsDependency platformPropsDep;
+    private Properties platformProps;
+
+    protected void setPlatformProperty(String name, String value) {
+        if (platformProps == null) {
+            platformProps = new Properties();
+        }
+        platformProps.setProperty(name, value);
+    }
 
     protected void addToExpectedLib(TsArtifact entry) {
         expectedLib.add(entry.getGroupId() + '.' + entry.getArtifactId() + '-' + entry.getVersion() + '.' + entry.getType());
@@ -95,11 +103,10 @@ public abstract class PackageAppTestBase extends BootstrapTestBase {
                 @Override
                 public Path getPath(Path workDir) throws IOException {
                     if (propsFile == null) {
-                        Properties props = new Properties();
-                        props.setProperty("platform.quarkus.native.builder-image", "builder-image-url");
+                        setPlatformProperty("platform.quarkus.native.builder-image", "builder-image-url");
                         propsFile = workDir.resolve("platform-properties.properties");
                         try (OutputStream os = Files.newOutputStream(propsFile)) {
-                            props.store(os, "Test Quarkus platform properties");
+                            PackageAppTestBase.this.platformProps.store(os, "Test Quarkus platform properties");
                         }
                     }
                     return propsFile;

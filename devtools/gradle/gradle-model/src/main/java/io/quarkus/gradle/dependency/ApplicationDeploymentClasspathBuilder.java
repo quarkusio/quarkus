@@ -285,7 +285,12 @@ public class ApplicationDeploymentClasspathBuilder {
 
     private PlatformSpec resolvePlatformSpec() {
         getPlatformConfiguration().resolve();
-        return new PlatformSpec(platformConstraints, getPlatformConfiguration().getExcludeRules());
+        final PlatformImportsImpl platformImportsImpl = platformImports.get(this.platformImportName);
+        final Map<String, ArtifactCoords> defaultCapabilityProviders = platformImportsImpl != null
+                ? platformImportsImpl.getDefaultCapabilityProviders()
+                : Map.of();
+        return new PlatformSpec(platformConstraints, getPlatformConfiguration().getExcludeRules(),
+                defaultCapabilityProviders);
     }
 
     private void setUpRuntimeConfiguration() {

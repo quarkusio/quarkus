@@ -1,0 +1,28 @@
+plugins {
+    id 'maven-publish'
+}
+
+def descriptorFile = file("$buildDir/platform-descriptor.json")
+
+task generateDescriptor {
+    outputs.file(descriptorFile)
+    doLast {
+        descriptorFile.parentFile.mkdirs()
+        descriptorFile.text = '{"platform":true}'
+    }
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = 'org.acme'
+            artifactId = 'acme-bom-quarkus-platform-descriptor'
+            version = '1.0-SNAPSHOT'
+            artifact(descriptorFile) {
+                extension = 'json'
+                classifier = '1.0-SNAPSHOT'
+                builtBy generateDescriptor
+            }
+        }
+    }
+}

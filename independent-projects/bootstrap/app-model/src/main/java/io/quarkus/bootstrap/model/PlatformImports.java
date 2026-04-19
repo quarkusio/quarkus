@@ -78,6 +78,22 @@ public interface PlatformImports extends Mappable {
      */
     boolean isAligned();
 
+    /**
+     * Returns the default capability provider mappings aggregated from all imported
+     * platform properties. Each entry maps a capability name to the artifact coordinates
+     * of the extension that should provide it when no explicit provider exists.
+     *
+     * <p>
+     * Property format: {@code platform.default-capability-provider.<capability>=<artifactCoords>}
+     *
+     * <p>
+     * When multiple platforms define a default for the same capability, the first one
+     * imported wins (consistent with general platform property merging semantics).
+     *
+     * @return default capability provider mappings, never {@code null}
+     */
+    Map<String, ArtifactCoords> getDefaultCapabilityProviders();
+
     @Override
     default Map<String, Object> asMap(MappableCollectionFactory factory) {
         final Map<String, Object> map = factory.newMap(3);

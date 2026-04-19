@@ -1,0 +1,41 @@
+plugins {
+    id 'java-platform'
+    id 'maven-publish'
+}
+
+// Disable Gradle module metadata so Gradle uses the Maven POM directly.
+// The Quarkus platform properties detection relies on eachDependency firing
+// for managed dependencies in the POM.
+tasks.withType(GenerateModuleMetadata) {
+    enabled = false
+}
+
+dependencies {
+    constraints {
+        api 'org.acme:acme-bom-quarkus-platform-descriptor:1.0-SNAPSHOT'
+        api 'org.acme:acme-bom-quarkus-platform-properties:1.0-SNAPSHOT'
+        api 'org.acme:ext-cap-requirer:1.0-SNAPSHOT'
+        api 'org.acme:ext-cap-provider:1.0-SNAPSHOT'
+        api 'org.acme:ext-cap-cond:1.0-SNAPSHOT'
+        api 'org.acme:ext-gp-a:1.0-SNAPSHOT'
+        api 'org.acme:ext-gp-b:1.0-SNAPSHOT'
+        api 'org.acme:ext-gp-c:1.0-SNAPSHOT'
+        api 'org.acme:ext-gp-d:1.0-SNAPSHOT'
+        api 'org.acme:ext-gp-e:1.0-SNAPSHOT'
+        api 'org.acme:ext-gp-f:1.0-SNAPSHOT'
+        api 'org.acme:ext-gp-g:1.0-SNAPSHOT'
+        api 'org.acme:ext-gp-h:1.0-SNAPSHOT'
+        api 'org.acme:ext-gp-i:1.0-SNAPSHOT'
+    }
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = 'org.acme'
+            artifactId = 'acme-bom'
+            version = '1.0-SNAPSHOT'
+            from components.javaPlatform
+        }
+    }
+}

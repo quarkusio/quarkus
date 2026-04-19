@@ -13,8 +13,10 @@ public class ArtifactExtensionDependency extends ExtensionDependency<ArtifactCoo
             ArtifactCoords deploymentModule,
             List<Dependency> conditionalDependencies,
             List<Dependency> conditionalDevDeps,
-            List<ArtifactKey> dependencyConditions) {
-        super(extensionId, deploymentModule, conditionalDependencies, conditionalDevDeps, dependencyConditions);
+            List<ArtifactKey> dependencyConditions,
+            String providesCapabilities, String requiresCapabilities) {
+        super(extensionId, deploymentModule, conditionalDependencies, conditionalDevDeps, dependencyConditions,
+                providesCapabilities, requiresCapabilities);
     }
 
     @Override

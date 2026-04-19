@@ -69,7 +69,35 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
                 ":ext-t:deployment:publishToMavenLocal",
                 ":ext-u:runtime:publishToMavenLocal",
                 ":ext-u:deployment:publishToMavenLocal",
+                ":ext-cap-requirer:runtime:publishToMavenLocal",
+                ":ext-cap-requirer:deployment:publishToMavenLocal",
+                ":ext-cap-provider:runtime:publishToMavenLocal",
+                ":ext-cap-provider:deployment:publishToMavenLocal",
+                ":ext-cap-cond:runtime:publishToMavenLocal",
+                ":ext-cap-cond:deployment:publishToMavenLocal",
+                ":ext-gp-b:runtime:publishToMavenLocal",
+                ":ext-gp-b:deployment:publishToMavenLocal",
+                ":ext-gp-c:runtime:publishToMavenLocal",
+                ":ext-gp-c:deployment:publishToMavenLocal",
+                ":ext-gp-e:runtime:publishToMavenLocal",
+                ":ext-gp-e:deployment:publishToMavenLocal",
+                ":ext-gp-g:runtime:publishToMavenLocal",
+                ":ext-gp-g:deployment:publishToMavenLocal",
+                ":ext-gp-i:runtime:publishToMavenLocal",
+                ":ext-gp-i:deployment:publishToMavenLocal",
+                ":acme-platform-descriptor:publishToMavenLocal",
+                ":acme-platform-properties:publishToMavenLocal",
+                ":acme-bom:publishToMavenLocal",
                 ":dev-mode-only-lib:publishToMavenLocal");
+        runGradleWrapper(dependencyProject,
+                ":ext-gp-a:runtime:publishToMavenLocal",
+                ":ext-gp-a:deployment:publishToMavenLocal",
+                ":ext-gp-d:runtime:publishToMavenLocal",
+                ":ext-gp-d:deployment:publishToMavenLocal",
+                ":ext-gp-f:runtime:publishToMavenLocal",
+                ":ext-gp-f:deployment:publishToMavenLocal",
+                ":ext-gp-h:runtime:publishToMavenLocal",
+                ":ext-gp-h:deployment:publishToMavenLocal");
     }
 
     @Test
@@ -244,6 +272,54 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
                 "ext-e", "ext-e-deployment",
                 "ext-t", "ext-t-deployment",
                 "simple-dependency", "transitive-dependency");
+    }
+
+    @Test
+    @Order(8)
+    public void defaultCapabilityProviderWithConditionalDeps()
+            throws IOException, URISyntaxException, InterruptedException {
+        final File projectDir = getProjectDir("conditional-test-project");
+
+        runGradleWrapper(projectDir, "clean", ":runner-with-default-cap:quarkusBuild",
+                "-Dquarkus.package.jar.type=mutable-jar");
+
+        final File buildDir = new File(projectDir, "runner-with-default-cap" + File.separator + "build");
+        final Path mainLib = buildDir.toPath().resolve("quarkus-app").resolve("lib").resolve("main");
+
+        // ext-cap-requirer is an explicit dependency
+        assertThat(mainLib.resolve("org.acme.ext-cap-requirer-1.0-SNAPSHOT.jar")).exists();
+        // ext-cap-provider should be automatically injected as a default capability provider
+        assertThat(mainLib.resolve("org.acme.ext-cap-provider-1.0-SNAPSHOT.jar")).exists();
+        // ext-cap-cond is a conditional dep of ext-cap-provider, conditioned on ext-cap-requirer;
+        // it should be activated because ext-cap-requirer is present
+        assertThat(mainLib.resolve("org.acme.ext-cap-cond-1.0-SNAPSHOT.jar")).exists();
+    }
+
+    @Test
+    @Order(9)
+    public void defaultCapabilityProviderGraphPosition()
+            throws IOException, URISyntaxException, InterruptedException {
+        final File projectDir = getProjectDir("conditional-test-project");
+
+        runGradleWrapper(projectDir, "clean", ":runner-with-default-cap-graph-position:quarkusBuild",
+                "-Dquarkus.package.jar.type=mutable-jar");
+
+        final File buildDir = new File(projectDir, "runner-with-default-cap-graph-position" + File.separator + "build");
+        final Path mainLib = buildDir.toPath().resolve("quarkus-app").resolve("lib").resolve("main");
+
+        // ext-gp-a and ext-gp-d are explicit dependencies
+        assertThat(mainLib.resolve("org.acme.ext-gp-a-1.0-SNAPSHOT.jar")).exists();
+        assertThat(mainLib.resolve("org.acme.ext-gp-d-1.0-SNAPSHOT.jar")).exists();
+
+        // ext-gp-f should be injected as default provider for cap.gp.x (ext-gp-c has higher BFS priority than ext-gp-e)
+        assertThat(mainLib.resolve("org.acme.ext-gp-f-1.0-SNAPSHOT.jar")).exists();
+        // ext-gp-g is a dependency of ext-gp-f and provides cap.gp.y, satisfying ext-gp-e's requirement
+        assertThat(mainLib.resolve("org.acme.ext-gp-g-1.0-SNAPSHOT.jar")).exists();
+
+        // ext-gp-h should NOT be injected because cap.gp.y is already satisfied by ext-gp-g
+        assertThat(mainLib.resolve("org.acme.ext-gp-h-1.0-SNAPSHOT.jar")).doesNotExist();
+        // ext-gp-i should NOT be present since ext-gp-h was not injected
+        assertThat(mainLib.resolve("org.acme.ext-gp-i-1.0-SNAPSHOT.jar")).doesNotExist();
     }
 
 }

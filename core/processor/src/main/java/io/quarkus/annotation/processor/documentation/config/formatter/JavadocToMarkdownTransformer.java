@@ -31,7 +31,72 @@ public class JavadocToMarkdownTransformer {
         }
 
         // it's Asciidoc, the fun begins...
-        return "";
+        return asciidocToMarkdown(javadoc);
+    }
+
+    private static String asciidocToMarkdown(String asciidoc) {
+        if (asciidoc == null || asciidoc.isBlank()) {
+            return asciidoc;
+        }
+
+        String result = asciidoc;
+
+        // Bold: *text* -> **text**
+        // Note: This is a very simplified regex and might need refinement for nested styles
+        result = result.replaceAll("\\*([^\\*\\s][^\\*]*[^\\*\\s]|[^\\*\\s])\\*", "**$1**");
+
+        // Italics: _text_ -> *text*
+        result = result.replaceAll("_([^\\_\\s][^\\_]*[^\\_\\s]|[^\\_\\s])_", "*$1*");
+
+        // Monospace: `text` -> `text` (usually no change needed if using backticks in both)
+        // But links in Asciidoc: link:url[caption] -> [caption](url)
+        result = result.replaceAll("link:([^\\s\\[]+)\\[([^\\]]*)\\]", "[$2]($1)");
+
+        // Definition lists: `term`:: -> **term**:
+        result = result.replaceAll("`([^`]+)`::", "**$1**:");
+
+        // Basic blockquote/source blocks
+        // [source,...]
+        // ----
+        // code
+        // ----
+        // -> ```\ncode\n```
+        result = result.replaceAll("\\[source,[^\\]]*\\]\\s*\\n----\\n([\\s\\S]*?)\\n----", "```\n$1\n```");
+
+        // Simple table conversion (AsciiDoc !=== to HTML table)
+        result = convertTablesToHtml(result);
+
+        return result.trim();
+    }
+
+    private static String convertTablesToHtml(String asciidoc) {
+        StringBuilder sb = new StringBuilder();
+        String[] lines = asciidoc.split("\\n");
+        boolean inTable = false;
+
+        for (String line : lines) {
+            if (line.trim().equals("!===")) {
+                if (!inTable) {
+                    sb.append("<table>\n");
+                    inTable = true;
+                } else {
+                    sb.append("</table>\n");
+                    inTable = false;
+                }
+                continue;
+            }
+
+            if (inTable) {
+                if (line.trim().startsWith("!")) {
+                    sb.append("  <tr><td>").append(line.trim().substring(1).trim()).append("</td></tr>\n");
+                } else if (line.trim().startsWith("h!")) {
+                    sb.append("  <tr><th>").append(line.trim().substring(2).trim()).append("</th></tr>\n");
+                }
+            } else {
+                sb.append(line).append("\n");
+            }
+        }
+        return sb.toString();
     }
 
     /**

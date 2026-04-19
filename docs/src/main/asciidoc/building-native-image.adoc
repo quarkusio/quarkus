@@ -31,9 +31,9 @@ The solution is in the `getting-started` directory of the Quarkus quickstarts. C
 ====
 
 [[first-native-build]]
-[[container-runtime]]
 == Your first native build with a container runtime
 
+[[container-runtime]]
 IMPORTANT: Docker or podman is required as the container runtime. On Windows, share your project's drive in Docker Desktop's file share settings and restart Docker Desktop before continuing.
 
 If your target is a containerized Linux deployment, Quarkus can build the native executable inside a container runtime, skipping the local GraalVM install. This matches CI environments where minimal host tooling is the norm.
@@ -984,7 +984,6 @@ include at build time.
 Please see the Quarkus Native Reference Guide for more detailed information on these monitoring options.
 
 [[advanced]]
-[[configuration-reference]]
 == Advanced and reference
 
 === Build fully static native executables
@@ -1033,6 +1032,7 @@ This command will generate all the files and configuration needed for the native
 More details on the GraalVM native-image bundle are available in the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/overview/Bundles[GraalVM documentation].
 ====
 
+[[configuration-reference]]
 === Configuring the native executable
 
 There are a lot of different configuration options that can affect how the native executable is generated.

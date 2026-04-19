@@ -9,9 +9,9 @@ include::_attributes.adoc[]
 :summary: Build native executables with GraalVM or Mandrel.
 :topics: native,graalvm,mandrel
 
-Compile your Quarkus application to a native executable — a standalone binary that starts in milliseconds and uses less memory than JVM mode. Choose native mode when startup latency and memory footprint are strict constraints: serverless cold starts, scale-to-zero autoscaling, edge deployments, or high-density container hosts.
+Compile your Quarkus application to a native executable — a standalone binary that starts in milliseconds and uses less memory than JVM mode.
 
-Native mode is one of three Quarkus runtime options. JVM fast-jar, JVM with xref:aot.adoc[Project Leyden AOT caching] (JDK 24+), and native (Mandrel) each trade cold-start speed, peak throughput, memory footprint, and build cost differently. Choose the one whose trade-off profile matches your workload's binding constraint.
+Native is one of three runtime options Quarkus supports. JVM fast-jar, JVM with xref:aot.adoc[Project Leyden AOT caching] (JDK 24+), and native (Mandrel) each trade cold-start speed, peak throughput, memory footprint, and build cost differently. The table below compares them — pick the mode that matches your workload's most important constraint.
 
 [cols="1,1,1,1,1,2",options="header"]
 |===
@@ -26,20 +26,22 @@ Native mode is one of three Quarkus runtime options. JVM fast-jar, JVM with xref
 
 | xref:aot.adoc[JVM + Leyden AOT cache]
 | ~80 ms (small) to ~900 ms (large)
-| Baseline — same as fast-jar
-| Similar to fast-jar
+| Matches JVM fast-jar
+| Matches JVM fast-jar
 | Standard build plus a training run on a representative workload
 | Cold-start-sensitive but not millisecond-critical; requires JDK 24+; keeps full JVM tooling (debuggers, profilers, JFR)
 
 | Native (Mandrel)
 | ~17 ms (small) to ~240 ms (large)
-| ~50% of JVM
-| 3–5× smaller than JVM
+| ~50% of JVM fast-jar
+| 3–5× smaller than JVM fast-jar
 | 3–10 min build; 4–8 GB build-host RAM
 | Extreme cold start (serverless, scale-to-zero); edge deployments; high-density container hosts where memory is the binding constraint
 |===
 
-Numbers above come from the https://quarkus.io/blog/leyden-2/[Quarkus team's Leyden integration benchmarks] and the https://quarkus.io/blog/new-benchmarks/[Mar 2026 performance post]. Measure your own workload before deciding — the rest of this guide covers the native path; see xref:aot.adoc[the AOT caching guide] for the Leyden path.
+Numbers above come from the https://quarkus.io/blog/leyden-2/[Quarkus team's Leyden integration benchmarks] and the https://quarkus.io/blog/new-benchmarks/[Mar 2026 performance post].
+
+For the Leyden AOT cache path, see xref:aot.adoc[the AOT caching guide]. For the native path, continue below.
 
 Every path below assumes the xref:getting-started.adoc[Getting Started] application as the starting point.
 

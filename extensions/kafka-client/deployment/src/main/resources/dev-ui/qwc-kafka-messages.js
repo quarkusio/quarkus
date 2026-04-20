@@ -167,6 +167,7 @@ export class QwcKafkaMessages extends observeState(QwcHotReloadElement) {
                     <vaadin-grid-sort-column auto-width
                         path="value"
                         header=${msg('Value', { id: 'quarkus-kafka-client-value' })}
+                        ${columnBodyRenderer(this._valueRenderer, [])}
                         resizable>
                     </vaadin-grid-sort-column>
 
@@ -185,7 +186,7 @@ export class QwcKafkaMessages extends observeState(QwcHotReloadElement) {
                             <div class="code-block">    
                                 <qui-code-block
                                     mode='json'
-                                    content='${message.value}'
+                                    content='${message.value?.value}'
                                     theme='${themeState.theme.name}'>
                                 </qui-code-block>
                             </div>
@@ -208,6 +209,13 @@ export class QwcKafkaMessages extends observeState(QwcHotReloadElement) {
                             </vaadin-grid>
                         </detail-content>
                     </vaadin-split-layout>`;
+    }
+
+    _valueRenderer(message) {
+        return html`<div>
+                    ${message.value?.format !== 'STRING' ? html`<qui-badge small pill><span>${message.value?.format}</span></qui-badge>` : ''}
+                    <span>${message.value?.value}</span>
+                </div>`;
     }
 
     _timestampRenderer(message){

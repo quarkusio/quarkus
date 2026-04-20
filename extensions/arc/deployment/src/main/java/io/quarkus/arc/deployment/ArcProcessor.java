@@ -4,6 +4,7 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -86,7 +87,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
@@ -506,7 +507,7 @@ public class ArcProcessor {
             BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             LiveReloadBuildItem liveReloadBuildItem,
-            BuildProducer<GeneratedResourceBuildItem> generatedResource,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformer,
             List<ReflectiveBeanClassBuildItem> reflectiveBeanClasses,
             ExecutorService buildExecutor) throws Exception {
@@ -589,8 +590,9 @@ public class ArcProcessor {
                     }
                     break;
                 case SERVICE_PROVIDER:
-                    generatedResource.produce(
-                            new GeneratedResourceBuildItem("META-INF/services/" + resource.getName(), resource.getData()));
+                    generatedServiceProviders.produce(new GeneratedServiceProviderBuildItem(
+                            resource.getName(),
+                            new String(resource.getData(), StandardCharsets.UTF_8).trim()));
                     break;
                 default:
                     break;

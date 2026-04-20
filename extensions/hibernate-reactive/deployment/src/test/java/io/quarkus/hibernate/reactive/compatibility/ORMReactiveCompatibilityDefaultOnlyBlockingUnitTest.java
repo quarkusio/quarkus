@@ -11,7 +11,7 @@ import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 
-public class ORMReactiveCompatbilityDefaultOnlyBlockingUnitTest extends CompatibilityUnitTestBase {
+public class ORMReactiveCompatibilityDefaultOnlyBlockingUnitTest extends CompatibilityUnitTestBase {
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()

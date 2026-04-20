@@ -13,7 +13,7 @@ import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 
-public class ORMReactiveCompatbilityDefaultOnlyReactiveDisabledBlockingSessionUnitTest extends CompatibilityUnitTestBase {
+public class ORMReactiveCompatibilityDefaultOnlyReactiveDisabledBlockingSessionUnitTest extends CompatibilityUnitTestBase {
 
     // We disable the blocking data source but keep the persistence unit by using the quarkus.hibernate-orm.blocking property
     @RegisterExtension

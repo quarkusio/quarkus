@@ -14,7 +14,7 @@ import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 import io.vertx.sqlclient.Pool;
 
-public class ORMReactiveCompatbilityNamedDataSourceReactiveUnitTest extends CompatibilityUnitTestBase {
+public class ORMReactiveCompatibilityNamedDataSourceReactiveUnitTest extends CompatibilityUnitTestBase {
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()

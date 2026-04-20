@@ -758,7 +758,7 @@ After the logout, you can request Quarkus OIDC to send a https://developer.mozil
 |quarkus.oidc.logout.clear-site-data || A list of Clear-Site-Data header directives
 |====
 
-The `cache`, `client-hints`, `cookies`, `execution-contexts` and wildcard `*` directives can be configured.
+The `local`, `client-hints`, `cookies`, `execution-contexts` and wildcard `*` directives can be configured.
 
 [[token-verification]]
 == Token verification

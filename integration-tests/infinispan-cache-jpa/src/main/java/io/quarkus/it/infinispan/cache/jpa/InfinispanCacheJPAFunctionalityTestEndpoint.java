@@ -30,7 +30,8 @@ import org.hibernate.cache.spi.CacheImplementor;
 import org.hibernate.cache.spi.RegionFactory;
 import org.hibernate.stat.CacheRegionStatistics;
 import org.hibernate.stat.Statistics;
-import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
+
+import io.quarkus.hibernate.orm.runtime.cache.local.QuarkusInfinispanRegionFactory;
 
 /**
  * Basic test running JPA with the H2 database and Infinispan as second level cache provider.

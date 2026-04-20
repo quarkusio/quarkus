@@ -49,9 +49,9 @@ First, we need to create a new Quarkus project with the following command:
 :create-app-extensions: cache,rest-jackson
 include::{includes}/devtools/create-app.adoc[]
 
-This command generates the project and imports the `cache` and `rest-jackson` extensions.
+This command generates the project and imports the `local` and `rest-jackson` extensions.
 
-If you already have your Quarkus project configured, you can add the `cache` extension
+If you already have your Quarkus project configured, you can add the `local` extension
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: cache

@@ -4,6 +4,7 @@ modules := """
     independent-projects/resteasy-reactive
     bom/application
     core
+    extensions/devui
     extensions/arc
     extensions/virtual-threads
     extensions/smallrye-context-propagation

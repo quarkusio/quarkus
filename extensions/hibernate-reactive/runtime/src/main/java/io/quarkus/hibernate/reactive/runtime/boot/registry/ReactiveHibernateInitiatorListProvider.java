@@ -29,8 +29,8 @@ import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilder
 import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitiator;
 
 import io.quarkus.hibernate.orm.runtime.cdi.QuarkusManagedBeanRegistryInitiator;
-import io.quarkus.hibernate.orm.runtime.customized.BootstrapOnlyProxyFactoryFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJndiServiceInitiator;
+import io.quarkus.hibernate.orm.runtime.customized.QuarkusStaticInitProxyFactoryFactory;
 import io.quarkus.hibernate.orm.runtime.service.InitialInitiatorListProvider;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusImportSqlCommandExtractorInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
@@ -57,7 +57,7 @@ public final class ReactiveHibernateInitiatorListProvider implements InitialInit
         final ArrayList<StandardServiceInitiator<?>> serviceInitiators = new ArrayList<>();
 
         //This one needs to be replaced after Metadata has been recorded:
-        serviceInitiators.add(BootstrapOnlyProxyFactoryFactoryInitiator.INSTANCE);
+        serviceInitiators.add(QuarkusStaticInitProxyFactoryFactory.Initiator.INSTANCE);
 
         // Definitely exclusive to Hibernate Reactive, as it marks the registry as Reactive:
         serviceInitiators.add(ReactiveMarkerServiceInitiator.INSTANCE);

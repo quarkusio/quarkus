@@ -18,6 +18,11 @@ public class OracleOpenTelemetryJdbcInstrumentationTest extends OpenTelemetryJdb
         testQueryTraced("oracle", "OracleHit");
     }
 
+    @Test
+    void testOracleConnectionNotTraced() {
+        testConnectionNotTraced("oracle");
+    }
+
     public static class SomeProfile implements QuarkusTestProfile {
         public SomeProfile() {
         }

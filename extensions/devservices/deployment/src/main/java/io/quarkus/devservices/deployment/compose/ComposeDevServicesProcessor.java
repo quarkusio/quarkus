@@ -97,7 +97,6 @@ public class ComposeDevServicesProcessor {
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
-            DevServicesConfig devServicesConfig,
             DockerStatusBuildItem dockerStatusBuildItem) throws IOException {
 
         ComposeDevServiceCfg configuration = new ComposeDevServiceCfg(composeBuildTimeConfig.devservices());
@@ -121,7 +120,7 @@ public class ComposeDevServicesProcessor {
                         || s.getName().equals("Process stdout") || s.getName().startsWith("build-"));
         try {
             runningCompose = startCompose(buildExecutor, configuration, appInfo.getName(),
-                    dockerStatusBuildItem, launchMode, devServicesConfig.timeout());
+                    dockerStatusBuildItem, launchMode, composeBuildTimeConfig.devservices().startupTimeout());
             if (runningCompose == null) {
                 compressor.closeAndDumpCaptured();
             } else {

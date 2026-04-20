@@ -241,7 +241,7 @@ export const templates = {
     'workspace-discard': 'Discard',
     'workspace-unsaved-dialog': 'There are unsaved changes. Do you want to discard or save them?',
     'workspace-check-logs': 'Please check your logs.',
-    'workspace-error': 'An error occured.',
+    'workspace-error': 'An error occurred.',
     'workspace-saved-success': 'saved successfully',
     'workspace-not-saved': 'NOT saved',
     'workspace-no-content': 'has no content',

@@ -485,6 +485,18 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    public void testMultiGenericInput() {
+        RestAssured
+                .with()
+                .body("{\"first\": {\"name\":\"foo\", \"email\":\"bar\"}, \"second\": {\"category\":\"test\", \"value\":42}}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/multiGenericInput")
+                .then()
+                .statusCode(200)
+                .body(is("foo/test/42"));
+    }
+
+    @Test
     public void testInterface() {
         RestAssured
                 .with()
@@ -661,6 +673,42 @@ public abstract class AbstractSimpleJsonTest {
                 .body("{\"publicName\":\"Leo\",\"veterinarian\":{\"name\":\"Dolittle\"},\"age\":5,\"vaccinated\":true}")
                 .contentType("application/json; charset=utf-8")
                 .post("/simple/dog-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("publicName", Matchers.is("Leo"))
+                .body("privateName", Matchers.nullValue())
+                .body("age", Matchers.is(5))
+                .body("vaccinated", Matchers.is(true))
+                .body("veterinarian.name", Matchers.is("Dolittle"))
+                .body("veterinarian.title", Matchers.nullValue());
+    }
+
+    @Test
+    public void testEchoPut() {
+        RestAssured
+                .with()
+                .body("{\"publicName\":\"Leo\",\"veterinarian\":{\"name\":\"Dolittle\"},\"age\":5,\"vaccinated\":true}")
+                .contentType("application/json; charset=utf-8")
+                .put("/simple/dog-echo-put")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("publicName", Matchers.is("Leo"))
+                .body("privateName", Matchers.nullValue())
+                .body("age", Matchers.is(5))
+                .body("vaccinated", Matchers.is(true))
+                .body("veterinarian.name", Matchers.is("Dolittle"))
+                .body("veterinarian.title", Matchers.nullValue());
+    }
+
+    @Test
+    public void testEchoPatch() {
+        RestAssured
+                .with()
+                .body("{\"publicName\":\"Leo\",\"veterinarian\":{\"name\":\"Dolittle\"},\"age\":5,\"vaccinated\":true}")
+                .contentType("application/json; charset=utf-8")
+                .patch("/simple/dog-echo-patch")
                 .then()
                 .statusCode(200)
                 .contentType("application/json")
@@ -906,6 +954,90 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    public void testProductPriceValid() {
+        RestAssured
+                .with()
+                .body("{\"name\":\"Widget\",\"price\":42}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/product-price")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("Widget"))
+                .body("price", Matchers.is(42));
+    }
+
+    @Test
+    public void testProductPriceInvalidType() {
+        // Sending a string where an Integer is expected must return 400, not silently coerce
+        RestAssured
+                .with()
+                .body("{\"name\":\"Widget\",\"price\":\"expensive\"}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/product-price")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    public void testProductPriceInvalidTypePut() {
+        RestAssured
+                .with()
+                .body("{\"name\":\"Widget\",\"price\":\"expensive\"}")
+                .contentType("application/json; charset=utf-8")
+                .put("/simple/product-price")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    public void testOptionalFieldDeserialization() {
+        // Optional<Score> must be deserialized to Optional<Score>, not Optional<LinkedHashMap>.
+        // The endpoint calls Score::getCategory to verify the actual type at runtime.
+        RestAssured
+                .with()
+                .body("{\"name\":\"hello\",\"count\":42,\"score\":{\"category\":\"A\",\"value\":10}}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/optional-holder")
+                .then()
+                .statusCode(200)
+                .body("name", is("hello"),
+                        "count", is(42),
+                        "scoreCategory", is("A"));
+    }
+
+    @Test
+    public void testOptionalFieldWithNull() {
+        // Explicit null should result in null (Optional.empty() serializes as null)
+        RestAssured
+                .with()
+                .body("{\"name\":null,\"count\":null}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/optional-holder")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", is(nullValue()),
+                        "count", is(nullValue()));
+    }
+
+    @Test
+    public void testExplicitNullOverridesDefaultValue() {
+        // When a field has a non-null default value (e.g. mode = "auto"),
+        // sending an explicit null must override it to null, not preserve the default
+        RestAssured
+                .with()
+                .body("{\"mode\":null,\"label\":\"test\"}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/default-value-holder")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("mode", is(nullValue()),
+                        "label", is("test"));
+    }
+
+    @Test
     public void testPrimitiveTypesBean() {
         RestAssured
                 .with()
@@ -1106,5 +1238,20 @@ public abstract class AbstractSimpleJsonTest {
                 .then()
                 .statusCode(200)
                 .body("FIRST_NAME", CoreMatchers.is("Bob"));
+    }
+
+    @Test
+    void anySetter_shouldCaptureUnknownFields() {
+        given()
+                .contentType("application/json")
+                .body("""
+                        {"known": "x", "extra1": "y", "extra2": "z"}
+                        """)
+                .when()
+                .post("/simple/any-setter")
+                .then()
+                .statusCode(200)
+                .body("known", CoreMatchers.is("x"))
+                .body("extras_size", CoreMatchers.is(2));
     }
 }

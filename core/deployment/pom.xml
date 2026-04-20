@@ -256,7 +256,6 @@
                             </annotationProcessorPaths>
                             <compilerArgs>
                                 <arg>-AsplitOnConfigRootDescription=true</arg>
-                                <arg>--add-exports=java.base/jdk.internal.module=ALL-UNNAMED</arg>
                             </compilerArgs>
                         </configuration>
                     </execution>

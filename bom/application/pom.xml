@@ -16,7 +16,7 @@
     <properties>
         <angus-activation.version>2.0.3</angus-activation.version>
         <angus-mail.version>2.0.5</angus-mail.version> <!-- keep in sync with angus-activation (mail depends on activation) -->
-        <bouncycastle.version>1.83</bouncycastle.version>
+        <bouncycastle.version>1.84</bouncycastle.version>
         <bouncycastle.fips.version>2.1.2</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>2.1.22</bouncycastle.tls.fips.version>
         <cyclonedx.version>12.1.0</cyclonedx.version>
@@ -46,7 +46,7 @@
         <microprofile-lra.version>2.0.2</microprofile-lra.version>
         <microprofile-openapi.version>4.1.1</microprofile-openapi.version>
         <smallrye-common.version>2.17.0</smallrye-common.version>
-        <smallrye-config.version>3.17.0</smallrye-config.version>
+        <smallrye-config.version>3.17.1</smallrye-config.version>
         <smallrye-health.version>4.3.0</smallrye-health.version>
         <smallrye-open-api.version>4.3.0</smallrye-open-api.version>
         <smallrye-graphql.version>2.18.0</smallrye-graphql.version>
@@ -193,8 +193,8 @@
         <log4j2-api.version>2.25.4</log4j2-api.version>
         <avro.version>1.12.1</avro.version>
         <apicurio-registry.version>3.1.7</apicurio-registry.version>
-        <testcontainers.version>2.0.3</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
-        <docker-java.version>3.7.0</docker-java.version> <!-- must be the version Testcontainers use: https://central.sonatype.com/artifact/org.testcontainers/testcontainers -->
+        <testcontainers.version>2.0.4</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
+        <docker-java.version>3.7.1</docker-java.version> <!-- must be the version Testcontainers use: https://central.sonatype.com/artifact/org.testcontainers/testcontainers -->
         <!-- Check the compatibility matrix (https://github.com/opensearch-project/opensearch-testcontainers) before upgrading: -->
         <opensearch-testcontainers.version>2.1.3</opensearch-testcontainers.version>
         <com.dajudge.kindcontainer>2.0.0</com.dajudge.kindcontainer>
@@ -3653,11 +3653,6 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-devtools-utilities</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-project-core-extension-codestarts</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -5462,6 +5457,13 @@
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-core</artifactId>
                 <version>${hibernate-orm.version}</version>
+                <exclusions>
+                    <!-- We don't use ByteBuddy at runtime in Quarkus, only at build time. -->
+                    <exclusion>
+                        <groupId>net.bytebuddy</groupId>
+                        <artifactId>byte-buddy</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.orm</groupId>

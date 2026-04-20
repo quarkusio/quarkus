@@ -25,6 +25,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm-dev</artifactId>
         </dependency>
+        <!-- ByteBuddy is excluded from the transitive dependencies of Hibernate ORM, but we still need it at build time. -->
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm-deployment-spi</artifactId>
@@ -129,6 +134,11 @@
         <dependency>
             <groupId>org.geolatte</groupId>
             <artifactId>geolatte-geom</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-vector</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

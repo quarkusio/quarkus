@@ -24,10 +24,10 @@ final class NonStrictDataAccess implements InternalDataAccess {
 
     final InternalCache cache;
     final InternalRegion internalRegion;
-    private final Comparator versionComparator;
+    private final Comparator<Object> versionComparator;
     final LongSupplier nextTimestamp;
 
-    NonStrictDataAccess(InternalCache cache, InternalRegion internalRegion, Comparator versionComparator,
+    NonStrictDataAccess(InternalCache cache, InternalRegion internalRegion, Comparator<Object> versionComparator,
             RegionFactory regionFactory) {
         this.cache = cache;
         this.internalRegion = internalRegion;

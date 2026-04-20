@@ -14,7 +14,8 @@ final class ReadOnlyEntityDataAccess extends AbstractDomainDataAccess implements
     }
 
     @Override
-    public Object generateCacheKey(Object id, EntityPersister persister, SessionFactoryImplementor factory, String tenantIdentifier) {
+    public Object generateCacheKey(Object id, EntityPersister persister, SessionFactoryImplementor factory,
+            String tenantIdentifier) {
         return region.getCacheKeysFactory().createEntityKey(id, persister, factory, tenantIdentifier);
     }
 
@@ -34,12 +35,14 @@ final class ReadOnlyEntityDataAccess extends AbstractDomainDataAccess implements
     }
 
     @Override
-    public boolean update(SharedSessionContractImplementor session, Object key, Object value, Object currentVersion, Object previousVersion) {
+    public boolean update(SharedSessionContractImplementor session, Object key, Object value, Object currentVersion,
+            Object previousVersion) {
         throw new UnsupportedOperationException("Illegal attempt to edit read only item");
     }
 
     @Override
-    public boolean afterUpdate(SharedSessionContractImplementor session, Object key, Object value, Object currentVersion, Object previousVersion, SoftLock lock) {
+    public boolean afterUpdate(SharedSessionContractImplementor session, Object key, Object value, Object currentVersion,
+            Object previousVersion, SoftLock lock) {
         throw new UnsupportedOperationException("Illegal attempt to edit read only item");
     }
 

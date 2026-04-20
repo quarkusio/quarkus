@@ -1,12 +1,12 @@
 package org.infinispan.quarkus.hibernate.cache;
 
-import org.hibernate.cache.spi.CacheTransactionSynchronization;
-import org.hibernate.cache.spi.RegionFactory;
-import org.jboss.logging.Logger;
-
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+
+import org.hibernate.cache.spi.CacheTransactionSynchronization;
+import org.hibernate.cache.spi.RegionFactory;
+import org.jboss.logging.Logger;
 
 final class Sync implements CacheTransactionSynchronization {
     private static final Logger log = Logger.getLogger(Sync.class);
@@ -110,7 +110,8 @@ final class Sync implements CacheTransactionSynchronization {
             try {
                 tasks[i] = ((QueryResultsRegionImpl.PostTransactionQueryUpdate) invocation).apply(successful);
             } catch (Exception e) {
-                log.errorf(e, "Operation #%d scheduled after transaction completion failed (transaction successful? %s)", i, successful);
+                log.errorf(e, "Operation #%d scheduled after transaction completion failed (transaction successful? %s)", i,
+                        successful);
                 tasks[i] = null;
             }
             invoked++;
@@ -121,7 +122,8 @@ final class Sync implements CacheTransactionSynchronization {
                 try {
                     cf.join();
                 } catch (Exception e) {
-                    log.errorf(e, "Operation #%d scheduled after transaction completion failed (transaction successful? %s)", i, successful);
+                    log.errorf(e, "Operation #%d scheduled after transaction completion failed (transaction successful? %s)", i,
+                            successful);
                 }
                 waiting++;
             }

@@ -15,7 +15,8 @@ final class CollectionDataAccessImpl extends AbstractDomainDataAccess implements
     }
 
     @Override
-    public Object generateCacheKey(Object id, CollectionPersister persister, SessionFactoryImplementor factory, String tenantIdentifier) {
+    public Object generateCacheKey(Object id, CollectionPersister persister, SessionFactoryImplementor factory,
+            String tenantIdentifier) {
         return region.getCacheKeysFactory().createCollectionKey(id, persister, factory, tenantIdentifier);
     }
 

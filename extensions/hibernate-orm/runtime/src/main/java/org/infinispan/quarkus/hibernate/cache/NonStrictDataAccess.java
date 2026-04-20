@@ -1,5 +1,11 @@
 package org.infinispan.quarkus.hibernate.cache;
 
+import java.util.Comparator;
+import java.util.function.LongSupplier;
+
+import jakarta.transaction.Status;
+import jakarta.transaction.Synchronization;
+
 import org.hibernate.HibernateException;
 import org.hibernate.cache.spi.RegionFactory;
 import org.hibernate.cache.spi.access.SoftLock;
@@ -9,11 +15,6 @@ import org.hibernate.jdbc.WorkExecutorVisitable;
 import org.hibernate.resource.transaction.spi.TransactionCoordinator;
 import org.infinispan.quarkus.hibernate.cache.VersionedEntry.ComputeFn;
 import org.jboss.logging.Logger;
-
-import jakarta.transaction.Status;
-import jakarta.transaction.Synchronization;
-import java.util.Comparator;
-import java.util.function.LongSupplier;
 
 final class NonStrictDataAccess implements InternalDataAccess {
 
@@ -25,7 +26,8 @@ final class NonStrictDataAccess implements InternalDataAccess {
     private final Comparator versionComparator;
     final LongSupplier nextTimestamp;
 
-    NonStrictDataAccess(InternalCache cache, InternalRegion internalRegion, Comparator versionComparator, RegionFactory regionFactory) {
+    NonStrictDataAccess(InternalCache cache, InternalRegion internalRegion, Comparator versionComparator,
+            RegionFactory regionFactory) {
         this.cache = cache;
         this.internalRegion = internalRegion;
         this.versionComparator = versionComparator;
@@ -50,10 +52,12 @@ final class NonStrictDataAccess implements InternalDataAccess {
     }
 
     @Override
-    public boolean putFromLoad(Object session, Object key, Object value, long txTimestamp, Object version, boolean minimalPutOverride) {
+    public boolean putFromLoad(Object session, Object key, Object value, long txTimestamp, Object version,
+            boolean minimalPutOverride) {
         long lastRegionInvalidation = internalRegion.getLastRegionInvalidation();
         if (txTimestamp < lastRegionInvalidation) {
-            log.tracef("putFromLoad not executed since tx started at %d, before last region invalidation finished = %d", txTimestamp, lastRegionInvalidation);
+            log.tracef("putFromLoad not executed since tx started at %d, before last region invalidation finished = %d",
+                    txTimestamp, lastRegionInvalidation);
             return false;
         }
         assert version != null;
@@ -101,7 +105,8 @@ final class NonStrictDataAccess implements InternalDataAccess {
         // the API does not provide version of removed item but we can't load it from the cache
         // as that would be prone to race conditions - if the entry was updated in the meantime
         // the remove could be discarded and we would end up with stale record
-        final TransactionCoordinator transactionCoordinator = ((SharedSessionContractImplementor) session).getTransactionCoordinator();
+        final TransactionCoordinator transactionCoordinator = ((SharedSessionContractImplementor) session)
+                .getTransactionCoordinator();
         RemovalSynchronization sync = new RemovalSynchronization(key, transactionCoordinator);
         transactionCoordinator.getLocalSynchronizations().registerSynchronization(sync);
     }
@@ -135,16 +140,19 @@ final class NonStrictDataAccess implements InternalDataAccess {
     public boolean afterInsert(Object session, Object key, Object value, Object version) {
         assert value != null;
         assert version != null;
-        final long timestamp = ((SharedSessionContractImplementor) session).getCacheTransactionSynchronization().getCachingTimestamp();
+        final long timestamp = ((SharedSessionContractImplementor) session).getCacheTransactionSynchronization()
+                .getCachingTimestamp();
         cache.compute(key, new ComputeFn(new VersionedEntry(value, version, timestamp), internalRegion));
         return true;
     }
 
     @Override
-    public boolean afterUpdate(Object session, Object key, Object value, Object currentVersion, Object previousVersion, SoftLock lock) {
+    public boolean afterUpdate(Object session, Object key, Object value, Object currentVersion, Object previousVersion,
+            SoftLock lock) {
         assert value != null;
         assert currentVersion != null;
-        final long timestamp = ((SharedSessionContractImplementor) session).getCacheTransactionSynchronization().getCachingTimestamp();
+        final long timestamp = ((SharedSessionContractImplementor) session).getCacheTransactionSynchronization()
+                .getCachingTimestamp();
         cache.compute(key, new ComputeFn(new VersionedEntry(value, currentVersion, timestamp), internalRegion));
         return true;
     }

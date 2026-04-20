@@ -1,5 +1,11 @@
 package org.infinispan.quarkus.hibernate.cache;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+
 import org.hibernate.cache.cfg.spi.CollectionDataCachingConfig;
 import org.hibernate.cache.cfg.spi.DomainDataCachingConfig;
 import org.hibernate.cache.cfg.spi.DomainDataRegionConfig;
@@ -16,12 +22,6 @@ import org.hibernate.cache.spi.access.NaturalIdDataAccess;
 import org.hibernate.metamodel.model.domain.NavigableRole;
 import org.hibernate.stat.CacheRegionStatistics;
 import org.jboss.logging.Logger;
-
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 final class DomainDataRegionImpl implements DomainDataRegion, ExtendedStatisticsSupport {
 
@@ -53,10 +53,12 @@ final class DomainDataRegionImpl implements DomainDataRegion, ExtendedStatistics
     }
 
     private enum Strategy {
-        VALIDATION, VERSIONED_ENTRIES
+        VALIDATION,
+        VERSIONED_ENTRIES
     }
 
-    DomainDataRegionImpl(InternalCache cache, DomainDataRegionConfig config, CacheKeysFactory cacheKeysFactory, RegionFactory regionFactory) {
+    DomainDataRegionImpl(InternalCache cache, DomainDataRegionConfig config, CacheKeysFactory cacheKeysFactory,
+            RegionFactory regionFactory) {
         this.cache = cache;
         this.config = config;
         this.cacheKeysFactory = cacheKeysFactory;
@@ -73,8 +75,7 @@ final class DomainDataRegionImpl implements DomainDataRegion, ExtendedStatistics
         EntityDataCachingConfig entityConfig = findConfig(config.getEntityCaching(), rootEntityRole);
         AccessType accessType = entityConfig.getAccessType();
 
-        Comparator<?> comparator =
-                entityConfig.isVersioned() ? entityConfig.getVersionComparatorAccess().get() : null;
+        Comparator<?> comparator = entityConfig.isVersioned() ? entityConfig.getVersionComparatorAccess().get() : null;
         InternalDataAccess internal = createInternalDataAccess(accessType, comparator);
 
         if (accessType == AccessType.READ_ONLY || !entityConfig.isMutable())
@@ -128,7 +129,8 @@ final class DomainDataRegionImpl implements DomainDataRegion, ExtendedStatistics
         }
         for (CollectionDataCachingConfig collectionConfig : config.getCollectionCaching()) {
             if (collectionConfig.isVersioned()) {
-                internalRegion.addComparator(collectionConfig.getNavigableRole().getNavigableName(), collectionConfig.getOwnerVersionComparator());
+                internalRegion.addComparator(collectionConfig.getNavigableRole().getNavigableName(),
+                        collectionConfig.getOwnerVersionComparator());
             }
         }
 

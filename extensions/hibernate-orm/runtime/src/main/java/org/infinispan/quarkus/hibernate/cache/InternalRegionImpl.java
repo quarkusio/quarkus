@@ -1,11 +1,11 @@
 package org.infinispan.quarkus.hibernate.cache;
 
-import org.hibernate.cache.spi.Region;
-import org.jboss.logging.Logger;
-
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.hibernate.cache.spi.Region;
+import org.jboss.logging.Logger;
 
 final class InternalRegionImpl implements InternalRegion {
 

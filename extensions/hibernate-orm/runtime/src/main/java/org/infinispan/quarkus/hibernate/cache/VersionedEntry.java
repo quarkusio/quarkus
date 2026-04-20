@@ -1,14 +1,14 @@
 package org.infinispan.quarkus.hibernate.cache;
 
-import org.hibernate.cache.spi.entry.CacheEntry;
-import org.hibernate.cache.spi.entry.StructuredCacheEntry;
-import org.jboss.logging.Logger;
-
 import java.time.Duration;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
+
+import org.hibernate.cache.spi.entry.CacheEntry;
+import org.hibernate.cache.spi.entry.StructuredCacheEntry;
+import org.jboss.logging.Logger;
 
 final class VersionedEntry {
 
@@ -111,9 +111,10 @@ final class VersionedEntry {
                     entry.lifespan = TOMBSTONE_LIFESPAN;
                     return new VersionedEntry(null, null, entry.timestamp);
                 } else {
-                    int compareResult = ((Comparator)versionComparator).compare(entry.version, oldVersion);
+                    int compareResult = ((Comparator) versionComparator).compare(entry.version, oldVersion);
                     if (trace) {
-                        log.tracef("Comparing %s and %s -> %d (using %s)", entry.version, oldVersion, compareResult, versionComparator);
+                        log.tracef("Comparing %s and %s -> %d (using %s)", entry.version, oldVersion, compareResult,
+                                versionComparator);
                     }
                     if (entry.value == null && compareResult >= 0) {
                         entry.lifespan = TOMBSTONE_LIFESPAN;

@@ -1,5 +1,11 @@
 package org.infinispan.quarkus.hibernate.cache;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.ExtendedStatisticsSupport;
 import org.hibernate.cache.spi.QueryResultsRegion;
@@ -7,12 +13,6 @@ import org.hibernate.cache.spi.RegionFactory;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.stat.CacheRegionStatistics;
 import org.jboss.logging.Logger;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 final class QueryResultsRegionImpl implements QueryResultsRegion, ExtendedStatisticsSupport {
 

@@ -1,11 +1,5 @@
 package org.infinispan.quarkus.hibernate.cache;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import org.hibernate.cache.spi.RegionFactory;
-import org.hibernate.engine.spi.SessionImplementor;
-import org.jboss.logging.Logger;
-
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -16,7 +10,13 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.LongSupplier;
-import java.util.function.Supplier;
+
+import org.hibernate.cache.spi.RegionFactory;
+import org.hibernate.engine.spi.SessionImplementor;
+import org.jboss.logging.Logger;
+
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 
 /**
  * Encapsulates logic to allow a {@link StrictDataAccess} to determine
@@ -30,12 +30,12 @@ import java.util.function.Supplier;
  * not find data is:
  * <p/>
  * <ol>
- * <li> Call {@link #registerPendingPut(Object, Object, long)}</li>
- * <li> Read the database</li>
- * <li> Call {@link #acquirePutFromLoadLock(Object, Object, long)}
- * <li> if above returns <code>null</code>, the thread should not cache the data;
+ * <li>Call {@link #registerPendingPut(Object, Object, long)}</li>
+ * <li>Read the database</li>
+ * <li>Call {@link #acquirePutFromLoadLock(Object, Object, long)}
+ * <li>if above returns <code>null</code>, the thread should not cache the data;
  * only if above returns instance of <code>AcquiredLock</code>, put data in the cache and...</li>
- * <li> then call {@link #releasePutFromLoadLock(Object, Lock)}</li>
+ * <li>then call {@link #releasePutFromLoadLock(Object, Lock)}</li>
  * </ol>
  * </p>
  * <p/>
@@ -45,7 +45,7 @@ import java.util.function.Supplier;
  * call
  * <p/>
  * <ul>
- * <li> {@link #beginInvalidatingRegion()} followed by {@link #endInvalidatingRegion()}
+ * <li>{@link #beginInvalidatingRegion()} followed by {@link #endInvalidatingRegion()}
  * (for a general invalidation all pending puts)</li>
  * </ul>
  * After transaction commit (when the DB is updated) {@link #endInvalidatingKey(Object, Object)} should
@@ -106,7 +106,7 @@ final class PutFromLoadValidator {
     /**
      * Creates a new put from load validator instance.
      *
-     * @param cache      Cache instance on which to store pending put information.
+     * @param cache Cache instance on which to store pending put information.
      * @param regionName
      */
     public PutFromLoadValidator(InternalCache cache, String regionName, RegionFactory regionFactory) {
@@ -137,10 +137,10 @@ final class PutFromLoadValidator {
      * </p>
      *
      * @param session
-     * @param key         the key
+     * @param key the key
      * @param txTimestamp
      * @return <code>AcquiredLock</code> if the lock is acquired and the cache put
-     * can proceed; <code>null</code> if the data should not be cached
+     *         can proceed; <code>null</code> if the data should not be cached
      */
     public Lock acquirePutFromLoadLock(Object session, Object key, long txTimestamp) {
         if (trace) {
@@ -149,7 +149,7 @@ final class PutFromLoadValidator {
         boolean locked = false;
 
         PendingPutMap pending = pendingPuts.getIfPresent(key);
-        for (; ; ) {
+        for (;;) {
             try {
                 if (pending != null) {
                     locked = pending.acquireLock(100, TimeUnit.MILLISECONDS);
@@ -192,7 +192,8 @@ final class PutFromLoadValidator {
                                 locked = false;
                             }
                             if (trace) {
-                                log.tracef("acquirePutFromLoadLock(%s#%s, %d) ended with %s, valid: %s", regionName, key, txTimestamp, pending, valid);
+                                log.tracef("acquirePutFromLoadLock(%s#%s, %d) ended with %s, valid: %s", regionName, key,
+                                        txTimestamp, pending, valid);
                             }
                         }
                     } else {
@@ -206,12 +207,14 @@ final class PutFromLoadValidator {
                     long regionInvalidationTimestamp = this.regionInvalidationTimestamp;
                     if (txTimestamp <= regionInvalidationTimestamp) {
                         if (trace) {
-                            log.tracef("acquirePutFromLoadLock(%s#%s, %d) failed due to region invalidated at %d", regionName, key, txTimestamp, regionInvalidationTimestamp);
+                            log.tracef("acquirePutFromLoadLock(%s#%s, %d) failed due to region invalidated at %d", regionName,
+                                    key, txTimestamp, regionInvalidationTimestamp);
                         }
                         return null;
                     } else {
                         if (trace) {
-                            log.tracef("Region invalidated at %d, this transaction started at %d", regionInvalidationTimestamp, txTimestamp);
+                            log.tracef("Region invalidated at %d, this transaction started at %d", regionInvalidationTimestamp,
+                                    txTimestamp);
                         }
                     }
 
@@ -258,14 +261,19 @@ final class PutFromLoadValidator {
     }
 
     /**
-     * Invalidates all {@link #registerPendingPut(Object, Object, long) previously registered pending puts} ensuring a subsequent call to
-     * {@link #acquirePutFromLoadLock(Object, Object, long)} will return <code>false</code>. <p> This method will block until any
-     * concurrent thread that has {@link #acquirePutFromLoadLock(Object, Object, long) acquired the putFromLoad lock} for the any key has
+     * Invalidates all {@link #registerPendingPut(Object, Object, long) previously registered pending puts} ensuring a
+     * subsequent call to
+     * {@link #acquirePutFromLoadLock(Object, Object, long)} will return <code>false</code>.
+     * <p>
+     * This method will block until any
+     * concurrent thread that has {@link #acquirePutFromLoadLock(Object, Object, long) acquired the putFromLoad lock} for the
+     * any key has
      * released the lock. This allows the caller to be certain the putFromLoad will not execute after this method returns,
-     * possibly caching stale data. </p>
+     * possibly caching stale data.
+     * </p>
      *
      * @return <code>true</code> if the invalidation was successful; <code>false</code> if a problem occurred (which the
-     * caller should treat as an exception condition)
+     *         caller should treat as an exception condition)
      */
     public boolean beginInvalidatingRegion() {
         if (trace) {
@@ -286,7 +294,7 @@ final class PutFromLoadValidator {
             // We cannot erase the map: if there was ongoing invalidation and we removed it, registerPendingPut
             // started after that would have no way of finding out that the entity *is* invalidated (it was
             // removed from the cache and now the DB is about to be updated).
-            for (Iterator<PendingPutMap> it = pendingPuts.asMap().values().iterator(); it.hasNext(); ) {
+            for (Iterator<PendingPutMap> it = pendingPuts.asMap().values().iterator(); it.hasNext();) {
                 PendingPutMap entry = it.next();
                 if (entry.acquireLock(60, TimeUnit.SECONDS)) {
                     try {
@@ -316,7 +324,8 @@ final class PutFromLoadValidator {
                 }
             } else {
                 if (trace) {
-                    log.tracef("Finished invalidating region %s, but there are %d ongoing invalidations", regionName, regionInvalidations);
+                    log.tracef("Finished invalidating region %s, but there are %d ongoing invalidations", regionName,
+                            regionInvalidations);
                 }
             }
         }
@@ -324,21 +333,23 @@ final class PutFromLoadValidator {
 
     /**
      * Notifies this validator that it is expected that a database read followed by a subsequent {@link
-     * #acquirePutFromLoadLock(Object, Object, long)} call will occur. The intent is this method would be called following a cache miss
+     * #acquirePutFromLoadLock(Object, Object, long)} call will occur. The intent is this method would be called following a
+     * cache miss
      * wherein it is expected that a database read plus cache put will occur. Calling this method allows the validator to
      * treat the subsequent <code>acquirePutFromLoadLock</code> as if the database read occurred when this method was
      * invoked. This allows the validator to compare the timestamp of this call against the timestamp of subsequent removal
      * notifications.
      *
      * @param session
-     * @param key         key that will be used for subsequent cache put
+     * @param key key that will be used for subsequent cache put
      * @param txTimestamp
      */
     public void registerPendingPut(Object session, Object key, long txTimestamp) {
         long invalidationTimestamp = this.regionInvalidationTimestamp;
         if (txTimestamp <= invalidationTimestamp) {
             if (trace) {
-                log.tracef("registerPendingPut(%s#%s, %d) skipped due to region invalidation (%d)", regionName, key, txTimestamp, invalidationTimestamp);
+                log.tracef("registerPendingPut(%s#%s, %d) skipped due to region invalidation (%d)", regionName, key,
+                        txTimestamp, invalidationTimestamp);
             }
             return;
         }
@@ -346,7 +357,7 @@ final class PutFromLoadValidator {
         final PendingPut pendingPut = new PendingPut(session);
         final PendingPutMap pendingForKey = new PendingPutMap(pendingPut);
 
-        for (; ; ) {
+        for (;;) {
             final PendingPutMap existing = pendingPuts.asMap().putIfAbsent(key, pendingForKey);
             if (existing != null) {
                 if (existing.acquireLock(10, TimeUnit.SECONDS)) {
@@ -374,7 +385,8 @@ final class PutFromLoadValidator {
                 }
             } else {
                 if (trace) {
-                    log.tracef("registerPendingPut(%s#%s, %d) registered using putIfAbsent: %s", regionName, key, txTimestamp, pendingForKey);
+                    log.tracef("registerPendingPut(%s#%s, %d) registered using putIfAbsent: %s", regionName, key, txTimestamp,
+                            pendingForKey);
                 }
             }
             return;
@@ -382,7 +394,7 @@ final class PutFromLoadValidator {
     }
 
     public boolean beginInvalidatingWithPFER(Object lockOwner, Object key, Object valueForPFER) {
-        for (; ; ) {
+        for (;;) {
             PendingPutMap pending = new PendingPutMap(null);
             PendingPutMap prev = pendingPuts.asMap().putIfAbsent(key, pending);
             if (prev != null) {
@@ -398,7 +410,8 @@ final class PutFromLoadValidator {
                     }
                     long now = nextTimestamp.getAsLong();
                     if (trace) {
-                        log.tracef("beginInvalidatingKey(%s#%s, %s) remove invalidator from %s", regionName, key, lockOwnerToString(lockOwner), pending);
+                        log.tracef("beginInvalidatingKey(%s#%s, %s) remove invalidator from %s", regionName, key,
+                                lockOwnerToString(lockOwner), pending);
                     }
                     pending.invalidate(now);
                     pending.addInvalidator(lockOwner, valueForPFER, now);
@@ -406,11 +419,13 @@ final class PutFromLoadValidator {
                     pending.releaseLock();
                 }
                 if (trace) {
-                    log.tracef("beginInvalidatingKey(%s#%s, %s) ends with %s", regionName, key, lockOwnerToString(lockOwner), pending);
+                    log.tracef("beginInvalidatingKey(%s#%s, %s) ends with %s", regionName, key, lockOwnerToString(lockOwner),
+                            pending);
                 }
                 return true;
             } else {
-                log.tracef("beginInvalidatingKey(%s#%s, %s) failed to acquire lock", regionName, key, lockOwnerToString(lockOwner));
+                log.tracef("beginInvalidatingKey(%s#%s, %s) failed to acquire lock", regionName, key,
+                        lockOwnerToString(lockOwner));
                 return false;
             }
         }
@@ -428,7 +443,8 @@ final class PutFromLoadValidator {
         PendingPutMap pending = pendingPuts.getIfPresent(key);
         if (pending == null) {
             if (trace) {
-                log.tracef("endInvalidatingKey(%s#%s, %s) could not find pending puts", regionName, key, lockOwnerToString(lockOwner));
+                log.tracef("endInvalidatingKey(%s#%s, %s) could not find pending puts", regionName, key,
+                        lockOwnerToString(lockOwner));
             }
             return true;
         }
@@ -442,12 +458,14 @@ final class PutFromLoadValidator {
             } finally {
                 pending.releaseLock();
                 if (trace) {
-                    log.tracef("endInvalidatingKey(%s#%s, %s) ends with %s", regionName, key, lockOwnerToString(lockOwner), pending);
+                    log.tracef("endInvalidatingKey(%s#%s, %s) ends with %s", regionName, key, lockOwnerToString(lockOwner),
+                            pending);
                 }
             }
         } else {
             if (trace) {
-                log.tracef("endInvalidatingKey(%s#%s, %s) failed to acquire lock", regionName, key, lockOwnerToString(lockOwner));
+                log.tracef("endInvalidatingKey(%s#%s, %s) failed to acquire lock", regionName, key,
+                        lockOwnerToString(lockOwner));
             }
             return false;
         }
@@ -584,7 +602,7 @@ final class PutFromLoadValidator {
                     singlePendingPut = null;
                 }
             } else if (fullMap != null) {
-                for (Iterator<PendingPut> it = fullMap.values().iterator(); it.hasNext(); ) {
+                for (Iterator<PendingPut> it = fullMap.values().iterator(); it.hasNext();) {
                     PendingPut pp = it.next();
                     if (pp.invalidate(now, EXPIRATION_PERIOD)) {
                         it.remove();
@@ -607,7 +625,7 @@ final class PutFromLoadValidator {
             assert fullMap != null;
             long now = nextTimestamp.getAsLong();
             log.tracef("Contains %d, doing GC at %d, expiration %d", size(), now, EXPIRATION_PERIOD);
-            for (Iterator<PendingPut> it = fullMap.values().iterator(); it.hasNext(); ) {
+            for (Iterator<PendingPut> it = fullMap.values().iterator(); it.hasNext();) {
                 PendingPut pp = it.next();
                 if (pp.gc(now, EXPIRATION_PERIOD)) {
                     it.remove();
@@ -636,7 +654,7 @@ final class PutFromLoadValidator {
             } else {
                 long allowedRegistration = now - EXPIRATION_PERIOD;
                 // remove leaked invalidators
-                for (Iterator<Invalidator> it = invalidators.values().iterator(); it.hasNext(); ) {
+                for (Iterator<Invalidator> it = invalidators.values().iterator(); it.hasNext();) {
                     if (it.next().registeredTimestamp < allowedRegistration) {
                         it.remove();
                     }
@@ -690,7 +708,8 @@ final class PutFromLoadValidator {
 
         private void pferValueIfNeeded(Object owner, Object key, Object valueForPFER, boolean doPFER) {
             if (trace) {
-                log.tracef("Put for external read value, if needed (doPFER=%b): key=%s, valueForPFER=%s, owner=%s", doPFER, key, valueForPFER, owner);
+                log.tracef("Put for external read value, if needed (doPFER=%b): key=%s, valueForPFER=%s, owner=%s", doPFER, key,
+                        valueForPFER, owner);
             }
 
             if (valueForPFER != null) {

@@ -1,5 +1,13 @@
 package org.infinispan.quarkus.hibernate.cache;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.Comparator;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.selector.spi.StrategySelector;
 import org.hibernate.boot.spi.SessionFactoryOptions;
@@ -17,14 +25,6 @@ import org.hibernate.mapping.RootClass;
 import org.hibernate.metamodel.model.domain.NavigableRole;
 import org.hibernate.type.BasicType;
 import org.hibernate.type.descriptor.java.IntegerJavaType;
-
-import java.util.Comparator;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 final class CacheRegionTesting {
 
@@ -100,7 +100,7 @@ final class CacheRegionTesting {
         when(persistentClass.getEntityName()).thenReturn(entityName);
         Property versionMock = mock(Property.class);
         BasicType typeMock = mock(BasicType.class);
-        when(typeMock.getJavaTypeDescriptor()).thenReturn( IntegerJavaType.INSTANCE);
+        when(typeMock.getJavaTypeDescriptor()).thenReturn(IntegerJavaType.INSTANCE);
         when(versionMock.getType()).thenReturn(typeMock);
         when(persistentClass.getVersion()).thenReturn(versionMock);
         when(persistentClass.isVersioned()).thenReturn(true);

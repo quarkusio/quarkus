@@ -1,13 +1,13 @@
 package org.infinispan.quarkus.hibernate.cache;
 
+import jakarta.transaction.Status;
+import jakarta.transaction.Synchronization;
+
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.access.SoftLock;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.resource.transaction.spi.TransactionCoordinator;
 import org.jboss.logging.Logger;
-
-import jakarta.transaction.Status;
-import jakarta.transaction.Synchronization;
 
 final class StrictDataAccess implements InternalDataAccess {
 
@@ -45,7 +45,8 @@ final class StrictDataAccess implements InternalDataAccess {
     }
 
     @Override
-    public boolean putFromLoad(Object session, Object key, Object value, long txTimestamp, Object version, boolean minimalPutOverride) {
+    public boolean putFromLoad(Object session, Object key, Object value, long txTimestamp, Object version,
+            boolean minimalPutOverride) {
         if (!internalRegion.checkValid()) {
             if (trace) {
                 log.tracef("Region %s not valid", internalRegion.getName());
@@ -135,7 +136,8 @@ final class StrictDataAccess implements InternalDataAccess {
     }
 
     @Override
-    public boolean afterUpdate(Object session, Object key, Object value, Object currentVersion, Object previousVersion, SoftLock lock) {
+    public boolean afterUpdate(Object session, Object key, Object value, Object currentVersion, Object previousVersion,
+            SoftLock lock) {
         return false;
     }
 
@@ -148,21 +150,21 @@ final class StrictDataAccess implements InternalDataAccess {
         registerLocalInvalidation(session, lockOwner, key);
         if (!putValidator.beginInvalidatingWithPFER(lockOwner, key, value)) {
             throw new CacheException(String.format(
-                    "Failed to invalidate pending putFromLoad calls for key %s from region %s"
-                    , key, internalRegion.getName()
-            ));
+                    "Failed to invalidate pending putFromLoad calls for key %s from region %s", key, internalRegion.getName()));
         }
         // Make use of the simple cache mode here
         cache.invalidate(key);
     }
 
     private void registerLocalInvalidation(Object session, Object lockOwner, Object key) {
-        TransactionCoordinator transactionCoordinator = ((SharedSessionContractImplementor) session).getTransactionCoordinator();
+        TransactionCoordinator transactionCoordinator = ((SharedSessionContractImplementor) session)
+                .getTransactionCoordinator();
         if (transactionCoordinator == null) {
             return;
         }
         if (trace) {
-            log.tracef("Registering synchronization on transaction in %s, cache %s: %s", lockOwner, internalRegion.getName(), key);
+            log.tracef("Registering synchronization on transaction in %s, cache %s: %s", lockOwner, internalRegion.getName(),
+                    key);
         }
         transactionCoordinator.getLocalSynchronizations()
                 .registerSynchronization(new LocalInvalidationSynchronization(putValidator, key, lockOwner));
@@ -192,7 +194,8 @@ final class StrictDataAccess implements InternalDataAccess {
             if (trace) {
                 log.tracef("After completion callback with status %d", status);
             }
-            validator.endInvalidatingKey(lockOwner, key, status == Status.STATUS_COMMITTED || status == Status.STATUS_COMMITTING);
+            validator.endInvalidatingKey(lockOwner, key,
+                    status == Status.STATUS_COMMITTED || status == Status.STATUS_COMMITTING);
         }
 
     }

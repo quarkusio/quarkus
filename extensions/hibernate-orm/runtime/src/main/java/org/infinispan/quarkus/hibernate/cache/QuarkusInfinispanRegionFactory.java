@@ -1,5 +1,15 @@
 package org.infinispan.quarkus.hibernate.cache;
 
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.function.Supplier;
+
 import org.hibernate.boot.registry.selector.spi.StrategySelector;
 import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.cache.cfg.spi.DomainDataRegionBuildingContext;
@@ -19,16 +29,6 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.jboss.logging.Logger;
-
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
-import java.util.function.Supplier;
 
 public final class QuarkusInfinispanRegionFactory implements RegionFactory {
 
@@ -52,12 +52,13 @@ public final class QuarkusInfinispanRegionFactory implements RegionFactory {
 
     public QuarkusInfinispanRegionFactory() {
         //By default, we'll run operations "inline":
-        this(()->Runnable::run);
+        this(() -> Runnable::run);
     }
 
     /**
      * Special constructor which allows to customize the Executor
      * being used for internal cache maintenance operations
+     *
      * @param cacheExecutorSupplier
      */
     public QuarkusInfinispanRegionFactory(Supplier<Executor> cacheExecutorSupplier) {
@@ -104,8 +105,7 @@ public final class QuarkusInfinispanRegionFactory implements RegionFactory {
                 .resolveDefaultableStrategy(
                         CacheKeysFactory.class,
                         properties.get(AvailableSettings.CACHE_KEYS_FACTORY),
-                        DefaultCacheKeysFactory.INSTANCE
-                );
+                        DefaultCacheKeysFactory.INSTANCE);
     }
 
     @Override
@@ -147,8 +147,7 @@ public final class QuarkusInfinispanRegionFactory implements RegionFactory {
                 regionConfig.getRegionName(),
                 regionConfig.getEntityCaching(),
                 regionConfig.getCollectionCaching(),
-                regionConfig.getNaturalIdCaching()
-        );
+                regionConfig.getNaturalIdCaching());
 
         final String cacheName = qualify(regionConfig.getRegionName());
         InternalCache cache = getCache(cacheName);
@@ -161,7 +160,8 @@ public final class QuarkusInfinispanRegionFactory implements RegionFactory {
         return caches.compute(cacheName, (ignore, cache) -> {
             if (cache == null) {
                 final InternalCacheConfig userDefinedCacheConfig = cacheConfigs.get(cacheName);
-                final InternalCacheConfig cacheConfig = userDefinedCacheConfig == null ? defaultDomainCacheConfig() : userDefinedCacheConfig;
+                final InternalCacheConfig cacheConfig = userDefinedCacheConfig == null ? defaultDomainCacheConfig()
+                        : userDefinedCacheConfig;
                 cache = new CaffeineCache(cacheName, cacheConfig, this.cacheTimeService, getCacheExecutor());
             }
 
@@ -172,8 +172,7 @@ public final class QuarkusInfinispanRegionFactory implements RegionFactory {
     private Executor getCacheExecutor() {
         if (this.cacheExecutorSupplier == null) {
             return null;
-        }
-        else {
+        } else {
             return this.cacheExecutorSupplier.get();
         }
     }

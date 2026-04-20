@@ -1,17 +1,18 @@
 package org.infinispan.quarkus.hibernate.cache;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.Expiry;
-import com.github.benmanes.caffeine.cache.Ticker;
-import org.jboss.logging.Logger;
-
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+
+import org.jboss.logging.Logger;
+
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Expiry;
+import com.github.benmanes.caffeine.cache.Ticker;
 
 final class CaffeineCache implements InternalCache {
 
@@ -172,7 +173,8 @@ final class CaffeineCache implements InternalCache {
                     final long idleDeadline = currentTime + maxIdleNanos;
                     final long versionedLifespan = versioned.getLifespanNanos();
                     if (trace) {
-                        log.tracef("Expire after create, either idle deadline %d (ns) or versioned entry lifespan %d (ns)", idleDeadline, versionedLifespan);
+                        log.tracef("Expire after create, either idle deadline %d (ns) or versioned entry lifespan %d (ns)",
+                                idleDeadline, versionedLifespan);
                     }
                     return Math.min(idleDeadline, versionedLifespan);
                 }

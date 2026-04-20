@@ -191,10 +191,17 @@ public class OidcProvider implements Closeable {
         if (!enforceExpReq) {
             // Expiry check was skipped during the initial verification but if the logout token contains the exp claim
             // then it must be verified
-            if (isTokenExpired(result.localVerificationResult.getLong(Claims.exp.name()))) {
-                String error = String.format("Logout token for client %s has expired", oidcConfig.clientId().get());
-                LOG.debugf(error);
-                throw new InvalidJwtException(error, List.of(new ErrorCodeValidator.Error(ErrorCodes.EXPIRED, error)), null);
+            final Long exp = result.localVerificationResult.getLong(Claims.exp.name());
+            if (exp != null) {
+                final long secondsAfterExpiry = now() / 1000 - (exp + getLifespanGrace());
+                if (secondsAfterExpiry > 0) {
+                    String error = """
+                            Logout token issued to client %s expired %d seconds ago""".formatted(oidcConfig.clientId().get(),
+                            secondsAfterExpiry);
+                    LOG.debug(error);
+                    throw new InvalidJwtException(error, List.of(new ErrorCodeValidator.Error(ErrorCodes.EXPIRED, error)),
+                            null);
+                }
             }
         }
         return result;
@@ -433,7 +440,7 @@ public class OidcProvider implements Closeable {
                                 try {
                                     actualClaimValueArray = requireNonNull(introspectionResult.getArray(requiredClaimName));
                                 } catch (Exception ignored) {
-                                    LOG.debugf("Introspection claim %s is neither string or array", requiredClaimName);
+                                    LOG.debugf("Introspection claim %s is neither string nor array", requiredClaimName);
                                     throw new AuthenticationFailedException(tokenMap(token, idToken));
                                 }
                                 requiredClaimValuesLoop: for (String requiredClaimValue : requiredClaimValues) {
@@ -461,18 +468,20 @@ public class OidcProvider implements Closeable {
     }
 
     private void verifyTokenExpiry(String token, boolean idToken, Long exp) {
-        if (isTokenExpired(exp)) {
-            String error = String.format("Token issued to client %s has expired", oidcConfig.clientId().get());
-            LOG.debugf(error);
+        if (exp == null) {
+            return;
+        }
+        final long secondsAfterExpiry = now() / 1000 - (exp + getLifespanGrace());
+        if (secondsAfterExpiry > 0) {
+            String error = """
+                    Token issued to client %s expired %d seconds ago""".formatted(oidcConfig.clientId().get(),
+                    secondsAfterExpiry);
+            LOG.debug(error);
             throw new AuthenticationFailedException(
                     new InvalidJwtException(error,
                             List.of(new ErrorCodeValidator.Error(ErrorCodes.EXPIRED, error)), null),
                     tokenMap(token, idToken));
         }
-    }
-
-    private boolean isTokenExpired(Long exp) {
-        return exp != null && now() / 1000 > exp + getLifespanGrace();
     }
 
     private int getLifespanGrace() {

@@ -378,6 +378,8 @@ public class QuarkusComponentVariants {
         for (var dep : config.getResolvedConfiguration().getFirstLevelModuleDependencies()) {
             processDependency(null, dep, visited, true);
         }
+        // drop the temporary configuration
+        project.getConfigurations().remove(config);
     }
 
     private void processDependency(ProcessedDependency parent,

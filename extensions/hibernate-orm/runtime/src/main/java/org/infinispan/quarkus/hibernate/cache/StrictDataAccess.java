@@ -1,5 +1,7 @@
 package org.infinispan.quarkus.hibernate.cache;
 
+import java.util.Locale;
+
 import jakarta.transaction.Status;
 import jakarta.transaction.Synchronization;
 
@@ -149,7 +151,7 @@ final class StrictDataAccess implements InternalDataAccess {
         Object lockOwner = new Object();
         registerLocalInvalidation(session, lockOwner, key);
         if (!putValidator.beginInvalidatingWithPFER(lockOwner, key, value)) {
-            throw new CacheException(String.format(
+            throw new CacheException(String.format(Locale.ROOT,
                     "Failed to invalidate pending putFromLoad calls for key %s from region %s", key, internalRegion.getName()));
         }
         // Make use of the simple cache mode here

@@ -11,7 +11,7 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
-import io.quarkus.hibernate.orm.runtime.cache.local.QuarkusInfinispanRegionFactory;
+import io.quarkus.hibernate.orm.runtime.cache.local.QuarkusLocalCacheRegionFactory;
 
 public final class QuarkusRegionFactoryInitiator implements StandardServiceInitiator<RegionFactory> {
 
@@ -45,7 +45,7 @@ public final class QuarkusRegionFactoryInitiator implements StandardServiceIniti
             }
         }
 
-        return new QuarkusInfinispanRegionFactory();
+        return new QuarkusLocalCacheRegionFactory();
     }
 
 }

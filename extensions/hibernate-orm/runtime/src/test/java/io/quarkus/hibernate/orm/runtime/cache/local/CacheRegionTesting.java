@@ -62,7 +62,7 @@ final class CacheRegionTesting {
     }
 
     static CacheRegionTesting cacheRegion(String regionName, Map configValues) {
-        QuarkusInfinispanRegionFactory regionFactory = new QuarkusInfinispanRegionFactory();
+        QuarkusLocalCacheRegionFactory regionFactory = new QuarkusLocalCacheRegionFactory();
         ManualMillisService regionTimeService = new ManualMillisService();
         regionFactory.setRegionTimeService(regionTimeService);
         ManualNanosService cacheTimeService = new ManualNanosService();

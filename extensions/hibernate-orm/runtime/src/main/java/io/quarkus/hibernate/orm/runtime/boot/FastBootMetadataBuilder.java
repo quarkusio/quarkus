@@ -70,7 +70,7 @@ import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
-import io.quarkus.hibernate.orm.runtime.cache.local.QuarkusInfinispanRegionFactory;
+import io.quarkus.hibernate.orm.runtime.cache.local.QuarkusLocalCacheRegionFactory;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
@@ -397,7 +397,7 @@ public class FastBootMetadataBuilder {
         }
 
         cfg.put(org.hibernate.cfg.AvailableSettings.CACHE_REGION_FACTORY,
-                QuarkusInfinispanRegionFactory.class.getName());
+                QuarkusLocalCacheRegionFactory.class.getName());
 
         for (HibernateOrmIntegrationStaticDescriptor descriptor : integrationStaticDescriptors) {
             Optional<HibernateOrmIntegrationStaticInitListener> listenerOptional = descriptor.getInitListener();

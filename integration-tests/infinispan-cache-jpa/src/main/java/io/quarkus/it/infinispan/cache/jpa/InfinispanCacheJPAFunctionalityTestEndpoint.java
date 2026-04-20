@@ -31,7 +31,7 @@ import org.hibernate.cache.spi.RegionFactory;
 import org.hibernate.stat.CacheRegionStatistics;
 import org.hibernate.stat.Statistics;
 
-import io.quarkus.hibernate.orm.runtime.cache.local.QuarkusInfinispanRegionFactory;
+import io.quarkus.hibernate.orm.runtime.cache.local.QuarkusLocalCacheRegionFactory;
 
 /**
  * Basic test running JPA with the H2 database and Infinispan as second level cache provider.
@@ -56,7 +56,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/memory-object-count/{region}")
     public String memoryObjectCount(@PathParam("region") String region) {
-        QuarkusInfinispanRegionFactory regionFactory = getRegionFactory();
+        QuarkusLocalCacheRegionFactory regionFactory = getRegionFactory();
         Optional<Long> result = regionFactory.getMemoryObjectCount(region);
         return result
                 .map(Object::toString)
@@ -68,7 +68,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/expiration-max-idle/{region}")
     public String expirationMaxIdle(@PathParam("region") String region) {
-        QuarkusInfinispanRegionFactory regionFactory = getRegionFactory();
+        QuarkusLocalCacheRegionFactory regionFactory = getRegionFactory();
         Optional<Duration> result = regionFactory.getExpirationMaxIdle(region);
         return result
                 .map(duration -> Long.toString(duration.getSeconds()))
@@ -76,10 +76,10 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
                         () -> String.format("Region %s not found", region));
     }
 
-    private QuarkusInfinispanRegionFactory getRegionFactory() {
+    private QuarkusLocalCacheRegionFactory getRegionFactory() {
         SessionFactory sessionFactory = entityManagerFactory.unwrap(SessionFactory.class);
         CacheImplementor cache = (CacheImplementor) sessionFactory.getCache();
-        return (QuarkusInfinispanRegionFactory) cache.getRegionFactory();
+        return (QuarkusLocalCacheRegionFactory) cache.getRegionFactory();
     }
 
     /**

@@ -30,9 +30,9 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.jboss.logging.Logger;
 
-public final class QuarkusInfinispanRegionFactory implements RegionFactory {
+public final class QuarkusLocalCacheRegionFactory implements RegionFactory {
 
-    private static final Logger log = Logger.getLogger(QuarkusInfinispanRegionFactory.class);
+    private static final Logger log = Logger.getLogger(QuarkusLocalCacheRegionFactory.class);
 
     public static final String PREFIX = "hibernate.cache.";
     public static final String OBJECT_COUNT_SUFFIX = ".memory.object-count";
@@ -50,7 +50,7 @@ public final class QuarkusInfinispanRegionFactory implements RegionFactory {
     private Time.NanosService cacheTimeService;
     private final Supplier<Executor> cacheExecutorSupplier;
 
-    public QuarkusInfinispanRegionFactory() {
+    public QuarkusLocalCacheRegionFactory() {
         //By default, we'll run operations "inline":
         this(() -> Runnable::run);
     }
@@ -61,13 +61,13 @@ public final class QuarkusInfinispanRegionFactory implements RegionFactory {
      *
      * @param cacheExecutorSupplier
      */
-    public QuarkusInfinispanRegionFactory(Supplier<Executor> cacheExecutorSupplier) {
+    public QuarkusLocalCacheRegionFactory(Supplier<Executor> cacheExecutorSupplier) {
         this.cacheExecutorSupplier = cacheExecutorSupplier;
     }
 
     @Override
     public void start(SessionFactoryOptions settings, Map configValues) {
-        log.debug("Starting Infinispan region factory");
+        log.debug("Starting Quarkus Local Cache region factory");
         // TODO: Customise this generated block
 
         // determine the CacheKeysFactory to use...

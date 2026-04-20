@@ -1,6 +1,7 @@
 package io.quarkus.devtools.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -8,6 +9,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
@@ -179,6 +183,58 @@ public class SkillComposerTest {
         assertThrows(NullPointerException.class, () -> SkillComposer.compose(null, "c", "n"));
         assertThrows(NullPointerException.class, () -> SkillComposer.compose(meta, null, "n"));
         assertThrows(NullPointerException.class, () -> SkillComposer.compose(meta, "c", null));
+    }
+
+    @Test
+    public void formatMcpToolsSectionProducesValidTable() {
+        Map<String, SkillComposer.ParameterInfo> params = new LinkedHashMap<>();
+        params.put("identity", new SkillComposer.ParameterInfo("The job ID", true));
+
+        List<SkillComposer.McpToolInfo> tools = List.of(
+                new SkillComposer.McpToolInfo("getData", "Get scheduler info", null),
+                new SkillComposer.McpToolInfo("pauseJob", "Pause a specific job", params));
+
+        String result = SkillComposer.formatMcpToolsSection(tools, "quarkus-scheduler");
+
+        assertTrue(result.startsWith("### Available Dev MCP Tools\n\n"));
+        assertTrue(result.contains("| `quarkus-scheduler_getData` | Get scheduler info | \u2014 |"));
+        assertTrue(result.contains("| `quarkus-scheduler_pauseJob` | Pause a specific job | "
+                + "`identity` (required): The job ID |"));
+    }
+
+    @Test
+    public void composeWithToolsIncludesToolsSection() throws IOException {
+        String yaml = "name: \"Sched\"\ndescription: \"Job scheduling\"\n";
+        ObjectNode meta = parseYaml(yaml);
+
+        List<SkillComposer.McpToolInfo> tools = List.of(
+                new SkillComposer.McpToolInfo("getData", "Get info", null));
+
+        String result = SkillComposer.composeWithTools(meta, "### Usage\n- Use @Scheduled", "quarkus-scheduler", tools);
+
+        assertTrue(result.contains("### Usage"));
+        assertTrue(result.contains("### Available Dev MCP Tools"));
+        assertTrue(result.contains("| `quarkus-scheduler_getData` | Get info |"));
+    }
+
+    @Test
+    public void composeWithEmptyToolsOmitsSection() throws IOException {
+        String yaml = "name: \"Ext\"\ndescription: \"desc\"\n";
+        ObjectNode meta = parseYaml(yaml);
+
+        String result = SkillComposer.composeWithTools(meta, "body", "quarkus-ext", List.of());
+
+        assertFalse(result.contains("Available Dev MCP Tools"));
+    }
+
+    @Test
+    public void formatMcpToolsEscapesPipeInDescription() {
+        List<SkillComposer.McpToolInfo> tools = List.of(
+                new SkillComposer.McpToolInfo("method", "Returns A | B", null));
+
+        String result = SkillComposer.formatMcpToolsSection(tools, "ext");
+
+        assertTrue(result.contains("Returns A \\| B"));
     }
 
     private static ObjectNode parseYaml(String yaml) throws IOException {

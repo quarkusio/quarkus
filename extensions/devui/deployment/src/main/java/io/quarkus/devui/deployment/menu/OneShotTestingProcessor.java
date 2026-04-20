@@ -16,12 +16,20 @@ import io.quarkus.deployment.dev.testing.TestRunResults;
 import io.quarkus.deployment.dev.testing.TestSupport;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
+import io.quarkus.devui.spi.buildtime.DevMcpBuildTimeTool;
+import io.quarkus.devui.spi.buildtime.DevMcpParam;
 
 /**
  * Registers one-shot synchronous testing tools for AI coding agents.
  * These tools run tests on demand and return results directly,
  * without requiring continuous testing to be started.
  */
+@DevMcpBuildTimeTool(name = "runTests", description = "Run all tests synchronously and return the results. Does not require continuous testing to be started.")
+@DevMcpBuildTimeTool(name = "runAffectedTests", description = "Run tests affected by recent code changes synchronously and return the results. On first call, runs all tests to populate tracing data. Subsequent calls intelligently filter to only affected tests.")
+@DevMcpBuildTimeTool(name = "runTest", description = "Run a specific test synchronously and return the results. Accepts a test class name or class and method.", params = {
+        @DevMcpParam(name = "className", description = "The fully qualified test class name, e.g. com.example.MyTest"),
+        @DevMcpParam(name = "methodName", description = "The test method name to run. If not provided, all tests in the class are run.", required = false)
+})
 public class OneShotTestingProcessor {
 
     private static final String NAMESPACE = "devui-testing";

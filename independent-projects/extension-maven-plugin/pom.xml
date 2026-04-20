@@ -41,6 +41,7 @@
         <smallrye-beanbag.version>1.6.1</smallrye-beanbag.version>
         <junit.version>6.0.3</junit.version>
         <mockito.version>5.21.0</mockito.version>
+        <version.jandex>3.5.3</version.jandex>
     </properties>
     <build>
         <testResources>
@@ -332,6 +333,11 @@
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-repository-metadata</artifactId>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye</groupId>
+            <artifactId>jandex</artifactId>
+            <version>${version.jandex}</version>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>

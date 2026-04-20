@@ -234,7 +234,14 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
 
         if (highPriorityConfig != null) {
             for (String key : highPriorityConfig) {
-                map.put(key, () -> applicationConfigProvider.get(key).apply(startable));
+                map.put(key, () -> {
+                    var function = applicationConfigProvider.get(key);
+                    if (function != null) {
+                        return function.apply(startable);
+                    } else {
+                        return config.get(key);
+                    }
+                });
             }
         }
         return map;

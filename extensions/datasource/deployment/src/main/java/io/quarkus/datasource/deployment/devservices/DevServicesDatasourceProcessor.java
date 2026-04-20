@@ -11,6 +11,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
+import org.testcontainers.shaded.com.google.common.collect.Sets;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.deployment.spi.DatasourceStartable;
@@ -226,6 +227,8 @@ public class DevServicesDatasourceProcessor {
                         return DevServicesResultBuildItem.owned().feature(feature).startable(() -> startable)
                                 .serviceName(dbName)
                                 .serviceConfig(configForWhichChangesShouldTriggerARestart)
+                                // Workaround for https://github.com/quarkusio/quarkus/issues/53705
+                                .highPriorityConfig(Sets.union(devDebProperties.keySet(), credentials.keySet()))
                                 .config(credentials)
                                 .configProvider(devDebProperties)
                                 .postStartHook((s) -> {

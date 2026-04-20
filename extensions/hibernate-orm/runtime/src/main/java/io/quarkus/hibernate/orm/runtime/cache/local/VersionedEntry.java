@@ -133,7 +133,7 @@ final class VersionedEntry {
                 // with UnstructuredCacheEntry
                 return ((CacheEntry) entry).getVersion();
             } else if (entry instanceof Map) {
-                return ((Map) entry).get(StructuredCacheEntry.VERSION_KEY);
+                return ((Map<?, ?>) entry).get(StructuredCacheEntry.VERSION_KEY);
             } else {
                 return null;
             }
@@ -144,7 +144,7 @@ final class VersionedEntry {
             if (entry instanceof CacheEntry) {
                 return ((CacheEntry) entry).getSubclass();
             } else if (entry instanceof Map) {
-                Object maybeSubclass = ((Map) entry).get(StructuredCacheEntry.SUBCLASS_KEY);
+                Object maybeSubclass = ((Map<?, ?>) entry).get(StructuredCacheEntry.SUBCLASS_KEY);
                 return maybeSubclass instanceof String ? (String) maybeSubclass : null;
             } else {
                 return null;
@@ -153,13 +153,13 @@ final class VersionedEntry {
 
     }
 
-    private static class ExcludeEmptyFilter implements Predicate<Map.Entry> {
+    private static class ExcludeEmptyFilter implements Predicate<Map.Entry<Object, Object>> {
 
         ExcludeEmptyFilter() {
         }
 
         @Override
-        public boolean test(Map.Entry entry) {
+        public boolean test(Map.Entry<Object, Object> entry) {
             if (entry.getValue() instanceof VersionedEntry) {
                 return ((VersionedEntry) entry.getValue()).getValue() != null;
             }

@@ -15,7 +15,7 @@ public class CacheRegionMaxSizeTest {
 
     @Test
     public void testMaxSize() {
-        final Map configValues = new HashMap();
+        final Map<String, Object> configValues = new HashMap<>();
         configValues.put("hibernate.cache.com.acme.EntityB.memory.object-count", "3");
 
         CacheRegionTesting testing = CacheRegionTesting.cacheRegion("com.acme.EntityB", configValues);

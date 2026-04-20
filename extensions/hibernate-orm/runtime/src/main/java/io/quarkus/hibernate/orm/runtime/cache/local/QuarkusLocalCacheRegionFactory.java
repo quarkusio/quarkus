@@ -66,7 +66,7 @@ public final class QuarkusLocalCacheRegionFactory implements RegionFactory {
     }
 
     @Override
-    public void start(SessionFactoryOptions settings, Map configValues) {
+    public void start(SessionFactoryOptions settings, Map<String, Object> configValues) {
         log.debug("Starting Quarkus Local Cache region factory");
         // TODO: Customise this generated block
 
@@ -92,13 +92,13 @@ public final class QuarkusLocalCacheRegionFactory implements RegionFactory {
         return null;
     }
 
-    private static String extractProperty(String key, Map properties) {
+    private static String extractProperty(String key, Map<?, ?> properties) {
         final String value = ConfigurationHelper.extractPropertyValue(key, properties);
         log.debugf("Configuration override via property %s: %s", key, value);
         return value;
     }
 
-    private static CacheKeysFactory determineCacheKeysFactory(SessionFactoryOptions settings, Map properties) {
+    private static CacheKeysFactory determineCacheKeysFactory(SessionFactoryOptions settings, Map<String, Object> properties) {
         return settings
                 .getServiceRegistry()
                 .getService(StrategySelector.class)
@@ -222,14 +222,13 @@ public final class QuarkusLocalCacheRegionFactory implements RegionFactory {
         regions.clear();
     }
 
-    private static HashMap<String, InternalCacheConfig> computeCacheConfigs(Map configValues) {
+    private static HashMap<String, InternalCacheConfig> computeCacheConfigs(Map<String, Object> configValues) {
         final HashMap<String, InternalCacheConfig> cacheConfigs = new HashMap<>();
 
         cacheConfigs.put(DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME, defaultQueryCacheConfig());
         cacheConfigs.put(DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME, defaultTimestampsCacheConfig());
 
-        for (Object k : configValues.keySet()) {
-            final String key = (String) k;
+        for (String key : configValues.keySet()) {
             int prefixIndex;
             if ((prefixIndex = key.indexOf(PREFIX)) != -1) {
                 int prefixIndexEnd = prefixIndex + PREFIX.length();

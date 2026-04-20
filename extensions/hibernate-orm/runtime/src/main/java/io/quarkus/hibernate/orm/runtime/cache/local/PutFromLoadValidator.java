@@ -48,7 +48,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
  * <li>{@link #beginInvalidatingRegion()} followed by {@link #endInvalidatingRegion()}
  * (for a general invalidation all pending puts)</li>
  * </ul>
- * After transaction commit (when the DB is updated) {@link #endInvalidatingKey(Object, Object)} should
+ * After transaction commit (when the DB is updated) {@link #endInvalidatingKey(Object, Object, boolean)} should
  * be called in order to allow further attempts to cache entry.
  * </p>
  * <p/>

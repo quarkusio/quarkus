@@ -23,7 +23,7 @@ final class QueryResultsRegionImpl implements QueryResultsRegion, ExtendedStatis
     private final InternalRegionImpl internalRegion;
     private final RegionFactory regionFactory;
 
-    final ConcurrentMap<Object, Map> transactionContext = new ConcurrentHashMap<>();
+    final ConcurrentMap<Object, Map<Object, Object>> transactionContext = new ConcurrentHashMap<>();
 
     public QueryResultsRegionImpl(InternalCache cache, String name, QuarkusLocalCacheRegionFactory regionFactory) {
         this.cache = cache;
@@ -39,7 +39,7 @@ final class QueryResultsRegionImpl implements QueryResultsRegion, ExtendedStatis
         }
 
         Object result = null;
-        Map map = transactionContext.get(session);
+        Map<Object, Object> map = transactionContext.get(session);
         if (map != null) {
             result = map.get(key);
         }

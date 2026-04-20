@@ -27,7 +27,7 @@ final class CaffeineCache implements InternalCache {
         }
     };
 
-    private final Cache cache;
+    private final Cache<Object, Object> cache;
     private final String cacheName;
 
     CaffeineCache(String cacheName, InternalCacheConfig config, Time.NanosService nanosTimeService, Executor cacheExecutor) {
@@ -35,7 +35,7 @@ final class CaffeineCache implements InternalCache {
         long objectCount = config.objectCount;
 
         this.cacheName = cacheName;
-        final Caffeine cacheBuilder = Caffeine.newBuilder()
+        final Caffeine<Object, Object> cacheBuilder = Caffeine.newBuilder()
                 .ticker(nanosTimeService::nanoTime);
 
         if (!Time.isForever(maxIdle)) {
@@ -100,7 +100,7 @@ final class CaffeineCache implements InternalCache {
     }
 
     @Override
-    public long size(Predicate<Map.Entry> filter) {
+    public long size(Predicate<Map.Entry<Object, Object>> filter) {
         // Size calculated for stats, so try to get as accurate count as possible
         // by performing any cleanup operations before returning the result
         cache.cleanUp();
@@ -123,7 +123,7 @@ final class CaffeineCache implements InternalCache {
     }
 
     @Override
-    public void forEach(Predicate<Map.Entry> filter, Consumer<Map.Entry> action) {
+    public void forEach(Predicate<Map.Entry<Object, Object>> filter, Consumer<Map.Entry<Object, Object>> action) {
         cache.asMap().entrySet().stream().filter(filter).forEach(action);
     }
 
@@ -149,7 +149,7 @@ final class CaffeineCache implements InternalCache {
     // However, with caches kept at region level so, impossible to know at cache creation whether non-strict will be used or not.
     // Alternative would be for cache granularity to be at data access level (needs more analysis).
     // e.g. regions would then need to aggregate counts for all data accesses for that region.
-    private static final class CacheExpiryPolicy implements Expiry {
+    private static final class CacheExpiryPolicy implements Expiry<Object, Object> {
 
         private final long maxIdleNanos;
 

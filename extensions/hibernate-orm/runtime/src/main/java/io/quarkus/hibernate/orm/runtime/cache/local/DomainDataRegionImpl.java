@@ -35,7 +35,7 @@ final class DomainDataRegionImpl implements DomainDataRegion, ExtendedStatistics
 
     private Strategy strategy;
     private PutFromLoadValidator validator;
-    private Predicate<Map.Entry> filter;
+    private Predicate<Map.Entry<Object, Object>> filter;
 
     @Override
     public long getElementCountInMemory() {
@@ -202,7 +202,7 @@ final class DomainDataRegionImpl implements DomainDataRegion, ExtendedStatistics
         }
     }
 
-    private void removeEntries(Consumer<Map.Entry> remover) {
+    private void removeEntries(Consumer<Map.Entry<Object, Object>> remover) {
         // We can never use cache.clear() since tombstones must be kept.
         cache.forEach(filter, remover);
     }

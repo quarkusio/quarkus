@@ -17,9 +17,9 @@ interface InternalCache {
 
     void invalidate(Object key);
 
-    long size(Predicate<Map.Entry> filter);
+    long size(Predicate<Map.Entry<Object, Object>> filter);
 
-    void forEach(Predicate<Map.Entry> filter, Consumer<Map.Entry> action);
+    void forEach(Predicate<Map.Entry<Object, Object>> filter, Consumer<Map.Entry<Object, Object>> action);
 
     void stop();
 

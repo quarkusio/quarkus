@@ -61,7 +61,7 @@ final class CacheRegionTesting {
         return region.getEntityDataAccess(role);
     }
 
-    static CacheRegionTesting cacheRegion(String regionName, Map configValues) {
+    static CacheRegionTesting cacheRegion(String regionName, Map<String, Object> configValues) {
         QuarkusLocalCacheRegionFactory regionFactory = new QuarkusLocalCacheRegionFactory();
         ManualMillisService regionTimeService = new ManualMillisService();
         regionFactory.setRegionTimeService(regionTimeService);

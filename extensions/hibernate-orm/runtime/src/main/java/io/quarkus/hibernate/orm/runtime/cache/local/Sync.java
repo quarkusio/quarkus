@@ -60,7 +60,7 @@ final class Sync implements CacheTransactionSynchronization {
             for (int i = 0; i < index; ++i) {
                 Object task = tasks[i];
                 if (task instanceof CompletableFuture) {
-                    if (((CompletableFuture) task).isDone()) {
+                    if (((CompletableFuture<?>) task).isDone()) {
                         done++;
                     } else {
                         notDone++;
@@ -77,7 +77,7 @@ final class Sync implements CacheTransactionSynchronization {
                     log.tracef("Waiting for %08x %s", System.identityHashCode(task), task);
                 }
                 try {
-                    ((CompletableFuture) task).join();
+                    ((CompletableFuture<?>) task).join();
                 } catch (CompletionException e) {
                     log.errorf(e, "Operation #%d scheduled to complete before transaction completion failed", i);
                 }

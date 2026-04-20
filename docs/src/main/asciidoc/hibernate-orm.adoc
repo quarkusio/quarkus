@@ -1985,7 +1985,7 @@ create table myentity
 and the length of the values is limited to `50` because of the `@Size(max=50)` constraint.
 +
 <2> Since the `value` property in the entity has no constraints, there are no additional constraints in the DDL,
-and the `255` length limit comes from the default `jakarta.persistence.Column#lenght()`.
+and the `255` length limit comes from the default `jakarta.persistence.Column#length()`.
 
 With the `callback` mode, expect getting a `jakarta.validation.ConstraintViolationException` thrown:
 

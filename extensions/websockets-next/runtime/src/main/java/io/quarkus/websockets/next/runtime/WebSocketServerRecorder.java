@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -76,7 +77,8 @@ public class WebSocketServerRecorder {
             public Object get() {
                 Context context = Vertx.currentContext();
                 if (context != null && VertxContext.isDuplicatedContext(context)) {
-                    Object connection = context.getLocal(ContextSupport.WEB_SOCKET_CONN_KEY);
+                    var contextMap = context.getLocal(VertxContext.DATA_MAP_LOCAL, ConcurrentHashMap::new);
+                    Object connection = contextMap.get(ContextSupport.WEB_SOCKET_CONN_KEY);
                     if (connection != null) {
                         return connection;
                     }

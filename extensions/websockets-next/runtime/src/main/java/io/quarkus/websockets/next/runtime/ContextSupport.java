@@ -1,6 +1,7 @@
 package io.quarkus.websockets.next.runtime;
 
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.jboss.logging.Logger;
 
@@ -85,7 +86,8 @@ public class ContextSupport {
         VertxContextSafetyToggle.setContextSafe(duplicated, true);
         // We need to store the connection in the duplicated context
         // It's used to initialize the synthetic bean later on
-        duplicated.putLocal(ContextSupport.WEB_SOCKET_CONN_KEY, connection);
+        duplicated.getLocal(VertxContext.DATA_MAP_LOCAL, ConcurrentHashMap::new)
+                .put(ContextSupport.WEB_SOCKET_CONN_KEY, connection);
         LOG.debugf("New vertx duplicated context [%s] created: %s", duplicated, connection);
         return duplicated;
     }

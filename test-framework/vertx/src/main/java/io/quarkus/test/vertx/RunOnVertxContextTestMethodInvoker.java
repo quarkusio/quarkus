@@ -105,7 +105,13 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
         } else {
             var handler = new RunTestMethodOnVertxBlockingContextHandler(actualTestInstance, actualTestMethod,
                     actualTestMethodArgs, uniAsserter);
-            cf = ((CompletableFuture<Object>) context.executeBlocking(handler).toCompletionStage());
+            cf = (CompletableFuture<Object>) context.executeBlocking(() -> {
+                Promise<Object> promise = Promise.promise();
+                handler.handle(promise);
+                return promise.future().await();
+            }).toCompletionStage();
+            // TODO FIX RunTestMethodOnVertxBlockingContextHandler not to be a Promise handler
+            // cf = ((CompletableFuture<Object>) context.executeBlocking(handler).toCompletionStage());
         }
 
         try {

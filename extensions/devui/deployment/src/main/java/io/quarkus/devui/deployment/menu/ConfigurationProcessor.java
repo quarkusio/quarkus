@@ -44,6 +44,8 @@ import io.quarkus.devui.runtime.config.ConfigDevUIRecorder;
 import io.quarkus.devui.runtime.config.ConfigJsonRPCService;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
+import io.quarkus.devui.spi.buildtime.DevMcpBuildTimeTool;
+import io.quarkus.devui.spi.buildtime.DevMcpParam;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
 import io.smallrye.config.ConfigValue;
@@ -52,6 +54,12 @@ import io.smallrye.config.PropertiesConfigSource;
 /**
  * This creates Extensions Page
  */
+@DevMcpBuildTimeTool(name = "updateProperty", description = "Update a configuration in the Quarkus application", params = {
+        @DevMcpParam(name = "name", description = "The name of the configuration to update"),
+        @DevMcpParam(name = "value", description = "The new value for the configuration to update"),
+        @DevMcpParam(name = "profile", description = "The profile of the configuration to update", required = false),
+        @DevMcpParam(name = "target", description = "The target configuration file to update", required = false)
+})
 public class ConfigurationProcessor {
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)

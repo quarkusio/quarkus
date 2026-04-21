@@ -62,7 +62,7 @@ class TransactionScopeQuarkusTransactionRunnerTest {
         assertEquals(1, TransactionBeanWithEvents.getInitialized(), "Expected @Initialized to be observed");
         assertEquals(1, TransactionBeanWithEvents.getBeforeDestroyed(), "Expected @BeforeDestroyed to be observed");
         assertEquals(1, TransactionBeanWithEvents.getDestroyed(), "Expected @Destroyed to be observed");
-        assertEquals(1, TransactionBeanWithEvents.getCommited(), "Expected commit to be called once");
+        assertEquals(1, TransactionBeanWithEvents.getCommitted(), "Expected commit to be called once");
         assertEquals(0, TransactionBeanWithEvents.getRolledBack(), "Expected no rollback");
         TransactionBeanWithEvents.cleanCounts();
 
@@ -76,7 +76,7 @@ class TransactionScopeQuarkusTransactionRunnerTest {
         assertEquals(1, TransactionBeanWithEvents.getInitialized(), "Expected @Initialized to be observed");
         assertEquals(1, TransactionBeanWithEvents.getBeforeDestroyed(), "Expected @BeforeDestroyed to be observed");
         assertEquals(1, TransactionBeanWithEvents.getDestroyed(), "Expected @Destroyed to be observed");
-        assertEquals(0, TransactionBeanWithEvents.getCommited(), "Expected no commit");
+        assertEquals(0, TransactionBeanWithEvents.getCommitted(), "Expected no commit");
         assertEquals(1, TransactionBeanWithEvents.getRolledBack(), "Expected rollback to be called once");
         TransactionBeanWithEvents.cleanCounts();
     }

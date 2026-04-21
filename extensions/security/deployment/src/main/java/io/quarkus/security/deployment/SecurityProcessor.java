@@ -101,6 +101,7 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.JarTreeShakeExcludedArtifactBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeImageFutureDefault;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
@@ -285,9 +286,11 @@ public class SecurityProcessor {
     void prepareBouncyCastleProviders(CurateOutcomeBuildItem curateOutcomeBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflection,
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeReInitialized,
+            BuildProducer<JarTreeShakeExcludedArtifactBuildItem> treeShakeExclusions,
             List<BouncyCastleProviderBuildItem> bouncyCastleProviders,
             List<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProviders) throws Exception {
         Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider = getOne(bouncyCastleJsseProviders);
+        boolean isFipsMode = false;
         if (bouncyCastleJsseProvider.isPresent()) {
             reflection.produce(
                     ReflectiveClassBuildItem.builder(SecurityProviderUtils.BOUNCYCASTLE_JSSE_PROVIDER_CLASS_NAME).methods()
@@ -298,13 +301,24 @@ public class SecurityProcessor {
             runtimeReInitialized
                     .produce(new RuntimeInitializedClassBuildItem(
                             "org.bouncycastle.jsse.provider.DefaultSSLContextSpi$LazyManagers"));
-            prepareBouncyCastleProvider(curateOutcomeBuildItem, reflection, runtimeReInitialized,
-                    bouncyCastleJsseProvider.get().isInFipsMode());
+            isFipsMode = bouncyCastleJsseProvider.get().isInFipsMode();
+            prepareBouncyCastleProvider(curateOutcomeBuildItem, reflection, runtimeReInitialized, isFipsMode);
         } else {
             Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider = getOne(bouncyCastleProviders);
             if (bouncyCastleProvider.isPresent()) {
-                prepareBouncyCastleProvider(curateOutcomeBuildItem, reflection, runtimeReInitialized,
-                        bouncyCastleProvider.get().isInFipsMode());
+                isFipsMode = bouncyCastleProvider.get().isInFipsMode();
+                prepareBouncyCastleProvider(curateOutcomeBuildItem, reflection, runtimeReInitialized, isFipsMode);
+            }
+        }
+        // BouncyCastle FIPS performs a self-integrity check (FIPS 140-2) by computing a checksum
+        // over its own classes. Tree-shaking would remove unreachable classes, changing the checksum
+        // and causing the integrity check to fail. Exclude all bc-fips JARs from tree-shaking.
+        if (isFipsMode) {
+            for (var dep : curateOutcomeBuildItem.getApplicationModel().getDependencies()) {
+                if ("org.bouncycastle".equals(dep.getGroupId())
+                        && dep.getArtifactId().startsWith("bc") && dep.getArtifactId().contains("fips")) {
+                    treeShakeExclusions.produce(new JarTreeShakeExcludedArtifactBuildItem(dep.getKey()));
+                }
             }
         }
     }

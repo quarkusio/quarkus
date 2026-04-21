@@ -50,12 +50,14 @@ public class ClassNamesTest {
     private static Index jpaIndex;
     private static Index hibernateIndex;
     private static Index geolatteGeomIndex;
+    private static Index hibernateVectorIndex;
 
     @BeforeAll
-    public static void index() throws IOException {
+    public static void index() throws IOException, ClassNotFoundException {
         jpaIndex = IndexingUtil.indexJar(determineJpaJarLocation());
         hibernateIndex = IndexingUtil.indexJar(determineHibernateJarLocation());
         geolatteGeomIndex = IndexingUtil.indexJar(determineGeolatteGeomLocation());
+        hibernateVectorIndex = IndexingUtil.indexJar(determineHibernateVectorLocation());
     }
 
     @ParameterizedTest
@@ -102,6 +104,34 @@ public class ClassNamesTest {
 
         assertThat(ClassNames.GEOLATTE_WKB_DECODERS)
                 .containsExactlyInAnyOrderElementsOf(wkbDecoderImplementors);
+    }
+
+    @Test
+    public void testNoMissingHibernateVectorTypeContributorClass() {
+        // TypeContributor interface lives in hibernate-orm, not hibernate-vector,
+        // so we look up implementors directly without asserting the interface is in the index
+        Set<DotName> typeContributorImplementors = hibernateVectorIndex
+                .getAllKnownImplementors(DotName.createSimple("org.hibernate.boot.model.TypeContributor")).stream()
+                .filter(c -> !c.isInterface() && !c.isAbstract() && c.simpleName() != null)
+                .map(ClassInfo::name)
+                .collect(Collectors.toSet());
+
+        assertThat(ClassNames.HIBERNATE_VECTOR_TYPE_CONTRIBUTORS)
+                .containsExactlyInAnyOrderElementsOf(typeContributorImplementors);
+    }
+
+    @Test
+    public void testNoMissingHibernateVectorFunctionContributorClass() {
+        // FunctionContributor interface lives in hibernate-orm, not hibernate-vector,
+        // so we look up implementors directly without asserting the interface is in the index
+        Set<DotName> functionContributorImplementors = hibernateVectorIndex
+                .getAllKnownImplementors(DotName.createSimple("org.hibernate.boot.model.FunctionContributor")).stream()
+                .filter(c -> !c.isInterface() && !c.isAbstract() && c.simpleName() != null)
+                .map(ClassInfo::name)
+                .collect(Collectors.toSet());
+
+        assertThat(ClassNames.HIBERNATE_VECTOR_FUNCTION_CONTRIBUTORS)
+                .containsExactlyInAnyOrderElementsOf(functionContributorImplementors);
     }
 
     @Test
@@ -262,6 +292,15 @@ public class ClassNamesTest {
         URL url = WkbEncoder.class.getProtectionDomain().getCodeSource().getLocation();
         if (!url.getProtocol().equals("file")) {
             throw new IllegalStateException("Geolatte Geom is not a local file? " + url);
+        }
+        return new File(url.getPath());
+    }
+
+    private static File determineHibernateVectorLocation() throws ClassNotFoundException {
+        URL url = Class.forName("org.hibernate.vector.SparseFloatVector")
+                .getProtectionDomain().getCodeSource().getLocation();
+        if (!url.getProtocol().equals("file")) {
+            throw new IllegalStateException("Hibernate Vector JAR is not a local file? " + url);
         }
         return new File(url.getPath());
     }

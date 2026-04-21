@@ -1,0 +1,202 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Tree-shaking JAR dependencies
+include::_attributes.adoc[]
+:categories: core
+:summary: This guide explains how to reduce JAR size by removing unreachable classes from runtime dependencies.
+:topics: packaging,jar,tree-shaking,optimization
+
+[WARNING]
+====
+This feature is experimental and subject to change. Please provide feedback if you encounter issues.
+====
+
+Tree-shaking analyzes your application's bytecode at build time to determine which classes from runtime dependencies are actually reachable.
+Unreachable classes are excluded from the produced JAR, reducing its size.
+
+This applies to `fast-jar`, `uber-jar`, `legacy-jar`, and `aot-jar` package types.
+
+== Enabling tree-shaking
+
+Tree-shaking is disabled by default.
+To enable it, add the following property to your `application.properties`:
+
+[source,properties]
+----
+quarkus.package.jar.tree-shake.mode=classes
+----
+
+To explicitly disable it (if it was enabled elsewhere, e.g., in a parent profile):
+
+[source,properties]
+----
+quarkus.package.jar.tree-shake.mode=none
+----
+
+== How it works
+
+When tree-shaking is enabled, Quarkus determines which dependency classes are actually reachable and excludes the rest from the final JAR.
+The algorithm runs in several stages:
+
+[source]
+----
+                    ┌───────────────────────────────────┐
+                    │         Collect roots             │
+                    │  (app classes, generated classes, │
+                    │   reflection/JNI/service provider │
+                    │   registrations, native-image     │
+                    │   config, GraalVM substitutions)  │
+                    └────────────────┬──────────────────┘
+                                     │
+                                     ▼
+                    ┌───────────────────────────────────┐
+                    │     BFS reachability analysis     │
+                    │  Walk bytecode references from    │
+                    │  roots: superclasses, interfaces, │
+                    │  field/method types, annotations, │
+                    │  generics, string constants,      │
+                    │  Class.forName, ServiceLoader,    │
+                    │  JBoss Logging companions, etc.   │
+                    └────────────────┬──────────────────┘
+                                     │
+                                     ▼
+                    ┌────────────────────────────────────┐
+                    │   Evaluate conditional roots       │
+                    │ (ReflectiveClassConditionBuildItem │
+                    │   — fixed-point loop)              │
+                    └────────────────┬───────────────────┘
+                                     │
+                                     ▼
+              ┌──────────────────────────────────────────────┐
+              │    Class-loading chain analysis              │
+              │                                              │
+              │  1. Identify methods that transitively call  │
+              │     ClassLoader.loadClass / Class.forName    │
+              │                                              │
+              │  2. Walk up the caller chain to find classes │
+              │     whose <init> or <clinit> triggers the    │
+              │     loading                                  │
+              │                                              │
+              │  3. Execute those classes in a forked JVM    │
+              │     with a RecordingClassLoader to capture   │
+              │     all loaded class names dynamically       │
+              │                                              │
+              │  4. Extract class name strings from Map      │
+              │     values (for deferred loading patterns)   │
+              └──────────────────┬───────────────────────────┘
+                                 │
+                        new classes found?
+                       ╱                ╲
+                     yes                 no
+                      │                   │
+                      ▼                   │
+              ┌───────────────┐           │
+              │ Add to roots, │           │
+              │ repeat BFS    │           │
+              └───────────────┘           ▼
+                    ┌───────────────────────────────────┐
+                    │   Post-analysis adjustments       │
+                    │  • Mark excluded artifact classes │
+                    │    reachable (e.g., BC FIPS)      │
+                    │  • Trace references from higher-  │
+                    │    version multi-release bytecode │
+                    └────────────────┬──────────────────┘
+                                     │
+                                     ▼
+                    ┌───────────────────────────────────┐
+                    │  Compute removals, produce JAR    │
+                    └───────────────────────────────────┘
+----
+
+=== Root collection
+
+The analysis starts by collecting root classes — classes that must be preserved regardless of bytecode references.
+Roots include: the application main class, all generated classes, classes registered for reflection or JNI access, service provider implementations, runtime-initialized classes, classes referenced in `META-INF/native-image` configuration files, and classes containing GraalVM substitution annotations (`@TargetClass`, `@Substitute`).
+
+=== BFS reachability
+
+Starting from roots, a breadth-first search walks bytecode references to discover all reachable dependency classes.
+The BFS recognizes the following patterns:
+
+Direct class references:: Superclasses, implemented interfaces, field types, method parameter and return types, and exception types in `throws` clauses.
+
+Annotations and generics:: Class references appearing in annotation values and generic type signatures.
+
+ServiceLoader / SPI:: `ServiceLoader.load()` calls where the service interface is a compile-time constant, and implementations listed in `META-INF/services` files.
+
+Dynamic class loading:: `Class.forName()`, `ClassLoader.loadClass()`, and `MethodHandles.Lookup.findClass()` calls where the class name is a string constant in the bytecode. For cases where class names are constructed at runtime (e.g., via `StringBuilder` or `invokedynamic` string concatenation), the tree-shaker traces the call chain up to the class whose constructor or static initializer triggers the loading, then executes it in a forked JVM with an isolated class loader to dynamically capture which classes are loaded. This handles libraries like BouncyCastle that build class names from package prefixes and algorithm name arrays.
+
+Reflection, JNI, and service provider registrations:: Classes registered by extensions for reflection (`ReflectiveClassBuildItem`, `ReflectiveFieldBuildItem`, `ReflectiveMethodBuildItem`), JNI runtime access (`JniRuntimeAccessBuildItem`, `JniRuntimeAccessFieldBuildItem`, `JniRuntimeAccessMethodBuildItem`), and service providers (`ServiceProviderBuildItem`) are treated as root classes. Weak reflective registrations are excluded — they are only preserved if bytecode analysis independently reaches them. Conditional registrations (`ReflectiveClassConditionBuildItem`) are evaluated to a fixed point: a conditionally registered class becomes a root only when its condition type is reachable.
+
+String constants:: When a method contains a string constant that exactly matches a fully-qualified dependency class name, that class is marked reachable. Comma- or colon-delimited lists of class names (as used by some frameworks) are also handled by splitting and matching each part.
+
+Inner and outer classes:: If an outer class is reachable, its inner classes are preserved.
+
+Multi-release JAR entries:: `META-INF/versions/N/` entries are analyzed, picking the highest version compatible with the application's target Java version. Entries targeting newer Java versions are also preserved when they are referenced by reachable higher-version code, ensuring the JAR works correctly when run on a newer JVM (e.g., native image built with Mandrel 25 while the app was compiled with JDK 21).
+
+JBoss Logging companions:: `_$logger` and `_$bundle` companion classes are automatically included when their owning class is reachable.
+
+Sisu named components:: Classes discovered through Eclipse Sisu's named component loading are preserved.
+
+=== Class-loading chain analysis
+
+Some libraries construct class names at runtime — for example, by concatenating a package prefix with an algorithm name via `StringBuilder` or `invokedynamic` — and load them via `ClassLoader.loadClass()` during static initialization.
+Because the class name strings are computed dynamically, the BFS over bytecode references cannot trace them.
+
+To handle this, the tree-shaker runs a class-loading chain analysis after the BFS:
+
+1. **Seed propagation**: Builds a reverse caller index (callee to callers) during the BFS bytecode scan and identifies methods that transitively call `ClassLoader.loadClass(String)`, `Class.forName(String)`, or `MethodHandles.Lookup.findClass(String)` using an efficient worklist algorithm. The caller index is extended incrementally across iterations.
+2. **Entry point discovery**: Walks up the caller chain to find classes whose constructor (`<init>`) or static initializer (`<clinit>`) triggers the class-loading chain.
+3. **Dynamic execution**: Each entry point class is executed in a forked JVM process with an isolated `RecordingClassLoader` that captures every class load attempt — including failed attempts. After instantiation, if the object is a `Map` (e.g., a JCA security provider), its values are also inspected for class name strings that are stored for deferred loading. Running in a separate process ensures complete isolation of global JVM state and is safe for parallel Maven builds (`-T2C`).
+
+The chain analysis runs in an incremental fixed-point loop: the reverse caller index is extended as new classes are discovered. Only new entry points are executed in each iteration, avoiding redundant work. The loop terminates when no new classes are found.
+
+For example, BouncyCastle's `BouncyCastleProvider` constructor calls `setup()` which calls `loadAlgorithms()` which calls `loadServiceClass()` which calls `ClassUtil.loadClass()`.
+The tree-shaker identifies `BouncyCastleProvider` as the entry point, instantiates it in the recording class loader, and captures all dynamically loaded algorithm classes.
+
+== Excluding artifacts from tree-shaking
+
+Some libraries may not work correctly if classes are removed — for example, libraries that perform self-integrity checks (e.g., BouncyCastle FIPS) or that load classes through mechanisms the tree-shaker cannot detect.
+
+To exclude specific dependency artifacts from tree-shaking, use:
+
+[source,properties]
+----
+quarkus.package.jar.tree-shake.excluded-artifacts=org.bouncycastle:bcprov-jdk18on,com.example:my-lib
+----
+
+All classes from excluded artifacts are preserved regardless of reachability analysis.
+
+Extensions can also exclude artifacts programmatically by producing a `JarTreeShakeExcludedArtifactBuildItem`.
+
+== Limitations
+
+* Tree-shaking is not supported for the `mutable-jar` package type, since re-augmentation requires all classes to be present.
+* Only classes from runtime dependencies are candidates for removal. Application classes are never removed.
+* The `classes` level only removes class files. Other resources (such as configuration files, property files, and `META-INF` entries) are preserved. Dependencies from which all classes have been removed are still included in the final JAR, since they may contain resources required at runtime.
+
+== Troubleshooting
+
+When tree-shaking is enabled, the build log includes a one-line summary at info level:
+
+[source]
+----
+Tree-shaking removed 2469 unreachable classes from 15 dependencies, saving 1.5 MB (20.0%)
+----
+
+For a detailed per-dependency breakdown, enable debug logging for the tree shaker. The debug output includes total/reachable/removed class counts and a list of affected dependencies.
+
+If your application throws a `ClassNotFoundException` or `NoClassDefFoundError` at runtime after enabling tree-shaking, a needed class may have been incorrectly identified as unreachable.
+To resolve this:
+
+1. Disable tree-shaking by setting `quarkus.package.jar.tree-shake.mode=none` to verify the issue goes away.
+2. If it does, identify the artifact containing the missing class and exclude it from tree-shaking:
++
+[source,properties]
+----
+quarkus.package.jar.tree-shake.excluded-artifacts=com.example:problematic-lib
+----
+3. Please also report the issue so the analysis can be improved.

@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,11 +30,14 @@ import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 import io.quarkus.deployment.pkg.JarUnsigner;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.JarTreeShakeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
 
 public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends AbstractJarBuilder<T> {
+
+    protected final JarTreeShakeBuildItem treeShakeResult;
 
     public AbstractLegacyThinJarBuilder(CurateOutcomeBuildItem curateOutcome,
             OutputTargetBuildItem outputTarget,
@@ -46,9 +50,11 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
             List<GeneratedResourceBuildItem> generatedResources,
             Set<ArtifactKey> removedArtifactKeys,
             ExecutorService executorService,
-            ResolvedJVMRequirements jvmRequirements) {
+            ResolvedJVMRequirements jvmRequirements,
+            JarTreeShakeBuildItem treeShakeResult) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
                 generatedClasses, generatedResources, removedArtifactKeys, executorService, jvmRequirements);
+        this.treeShakeResult = treeShakeResult;
     }
 
     public abstract T build() throws IOException;
@@ -66,7 +72,7 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
             Predicate<String> ignoredEntriesPredicate = getThinJarIgnoredEntriesPredicate(packageConfig);
 
             copyLibraryJars(archiveCreator, outputTarget, transformedClasses, libDir, classPath, appDeps, services,
-                    ignoredEntriesPredicate, removedArtifactKeys);
+                    ignoredEntriesPredicate, removedArtifactKeys, treeShakeResult);
 
             ResolvedDependency appArtifact = curateOutcome.getApplicationModel().getAppArtifact();
             // the manifest needs to be the first entry in the jar, otherwise JarInputStream does not work properly
@@ -86,7 +92,8 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
     private static void copyLibraryJars(ArchiveCreator archiveCreator, OutputTargetBuildItem outputTargetBuildItem,
             TransformedClassesBuildItem transformedClasses, Path libDir,
             StringBuilder classPath, Collection<ResolvedDependency> appDeps, Map<String, List<byte[]>> services,
-            Predicate<String> ignoredEntriesPredicate, Set<ArtifactKey> removedDependencies) throws IOException {
+            Predicate<String> ignoredEntriesPredicate, Set<ArtifactKey> removedDependencies,
+            JarTreeShakeBuildItem treeShakeResult) throws IOException {
         for (ResolvedDependency appDep : appDeps) {
 
             // Exclude files that are not jars (typically, we can have XML files here, see https://github.com/quarkusio/quarkus/issues/2852)
@@ -98,19 +105,54 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
             for (Path resolvedDep : appDep.getResolvedPaths()) {
                 if (!Files.isDirectory(resolvedDep)) {
                     Set<String> transformedFromThisArchive = transformedClasses.getTransformedFilesByJar().get(resolvedDep);
-                    if (transformedFromThisArchive == null || transformedFromThisArchive.isEmpty()) {
-                        final String fileName = appDep.getGroupId() + "." + resolvedDep.getFileName();
-                        final Path targetPath = libDir.resolve(fileName);
-                        // Unsign the jar before copying it
-                        JarUnsigner.unsignJar(resolvedDep, targetPath);
-                        classPath.append(" lib/").append(fileName);
+                    Set<String> removedEntries = new HashSet<>();
+                    if (transformedFromThisArchive != null && !transformedFromThisArchive.isEmpty()) {
+                        removedEntries.addAll(transformedFromThisArchive);
+                    }
+                    // When tree shake level is CLASSES, add non-reachable classes to removal set
+                    if (treeShakeResult != null
+                            && treeShakeResult.isClassesShaken()) {
+                        try (var pathTree = appDep.getContentTree().open()) {
+                            pathTree.walkRaw(visit -> {
+                                String rel = visit.getRelativePath("/");
+                                String classRel = rel;
+                                if (rel.startsWith("META-INF/versions/")) {
+                                    String afterVersions = rel.substring("META-INF/versions/".length());
+                                    int slash = afterVersions.indexOf('/');
+                                    if (slash > 0) {
+                                        classRel = afterVersions.substring(slash + 1);
+                                    } else {
+                                        return;
+                                    }
+                                }
+                                if (classRel.endsWith(".class") && !classRel.equals("module-info.class")) {
+                                    String className = classRel.substring(0, classRel.length() - 6).replace('/', '.');
+                                    if (!treeShakeResult.getReachableClassNames().contains(className)) {
+                                        int dollarIdx = className.indexOf('$');
+                                        if (dollarIdx < 0
+                                                || !treeShakeResult.getReachableClassNames()
+                                                        .contains(className.substring(0, dollarIdx))) {
+                                            removedEntries.add(rel);
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    }
+                    final String fileName;
+                    if (removedEntries.isEmpty()) {
+                        fileName = appDep.getGroupId() + "." + resolvedDep.getFileName();
+                    } else if (transformedFromThisArchive != null && !transformedFromThisArchive.isEmpty()) {
+                        fileName = "modified-" + appDep.getGroupId() + "." + resolvedDep.getFileName();
                     } else {
-                        //we have transformed classes, we need to handle them correctly
-                        final String fileName = "modified-" + appDep.getGroupId() + "."
-                                + resolvedDep.getFileName();
-                        final Path targetPath = libDir.resolve(fileName);
-                        classPath.append(" lib/").append(fileName);
-                        JarUnsigner.unsignJar(resolvedDep, targetPath, Predicate.not(transformedFromThisArchive::contains));
+                        fileName = appDep.getGroupId() + "." + resolvedDep.getFileName();
+                    }
+                    final Path targetPath = libDir.resolve(fileName);
+                    classPath.append(" lib/").append(fileName);
+                    if (removedEntries.isEmpty()) {
+                        JarUnsigner.unsignJar(resolvedDep, targetPath);
+                    } else {
+                        JarUnsigner.unsignJar(resolvedDep, targetPath, Predicate.not(removedEntries::contains));
                     }
                 } else {
                     // This case can happen when we are building a jar from inside the Quarkus repository

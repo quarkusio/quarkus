@@ -241,7 +241,7 @@ class TemplateImpl implements Template {
         }
 
         private TemplateException newTimeoutException(long timeout) {
-            return new TemplateException(TemplateImpl.this.toString() + " rendering timeout [" + timeout + "ms] occured");
+            return new TemplateException(TemplateImpl.this.toString() + " rendering timeout [" + timeout + "ms] occurred");
         }
 
         @Override

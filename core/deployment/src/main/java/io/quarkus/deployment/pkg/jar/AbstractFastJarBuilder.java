@@ -52,6 +52,7 @@ import io.quarkus.deployment.pkg.JarUnsigner;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
+import io.quarkus.deployment.pkg.builditem.JarTreeShakeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -66,6 +67,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
     private final List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchives;
     private final Set<ArtifactKey> parentFirstArtifactKeys;
+    private final JarTreeShakeBuildItem treeShakeResult;
 
     AbstractFastJarBuilder(CurateOutcomeBuildItem curateOutcome,
             OutputTargetBuildItem outputTarget,
@@ -80,11 +82,13 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             Set<ArtifactKey> parentFirstArtifactKeys,
             Set<ArtifactKey> removedArtifactKeys,
             ExecutorService executorService,
-            ResolvedJVMRequirements jvmRequirements) {
+            ResolvedJVMRequirements jvmRequirements,
+            JarTreeShakeBuildItem treeShakeResult) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
                 generatedClasses, generatedResources, removedArtifactKeys, executorService, jvmRequirements);
         this.additionalApplicationArchives = additionalApplicationArchives;
         this.parentFirstArtifactKeys = parentFirstArtifactKeys;
+        this.treeShakeResult = treeShakeResult;
     }
 
     public JarBuildItem build() throws IOException {
@@ -232,7 +236,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 copyDependency(parentFirstArtifactKeys, outputTarget, copiedArtifacts, mainLib, baseLib,
                         fastJarJarsBuilder::addDependency, fastJarJarsBuilder::addParentFirstDependency, true,
                         appDep, transformedClasses, removedArtifactKeys, packageConfig, manifestConfig,
-                        executorService);
+                        executorService, treeShakeResult);
             } else if (includeAppDependency(appDep, outputTarget.getIncludedOptionalDependencies(), removedArtifactKeys)) {
                 appDep.getResolvedPaths().forEach(fastJarJarsBuilder::addDependency);
             }
@@ -311,7 +315,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                     copyDependency(parentFirstArtifactKeys, outputTarget, copiedArtifacts, deploymentLib, baseLib, p -> {
                     }, p -> {
                     }, false, appDep, new TransformedClassesBuildItem(Map.of()), removedArtifactKeys, packageConfig,
-                            manifestConfig, executorService); //we don't care about transformation here, so just pass in an empty item
+                            manifestConfig, executorService, null); //we don't care about transformation or tree shaking here
                 }
                 Map<ArtifactKey, List<String>> relativePaths = new HashMap<>();
                 for (Entry<ArtifactKey, List<Path>> e : copiedArtifacts.entrySet()) {
@@ -398,7 +402,8 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             Map<ArtifactKey, List<Path>> runtimeArtifacts, Path libDir, Path baseLib, Consumer<Path> dependenciesConsumer,
             Consumer<Path> parentFirstDependenciesConsumer, boolean allowParentFirst, ResolvedDependency appDep,
             TransformedClassesBuildItem transformedClasses, Set<ArtifactKey> removedDeps,
-            PackageConfig packageConfig, ApplicationManifestConfig.Builder manifestConfig, ExecutorService executorService)
+            PackageConfig packageConfig, ApplicationManifestConfig.Builder manifestConfig, ExecutorService executorService,
+            JarTreeShakeBuildItem treeShakeResult)
             throws IOException {
 
         // Exclude files that are not jars (typically, we can have XML files here, see https://github.com/quarkusio/quarkus/issues/2852)
@@ -450,6 +455,40 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                         }
                     }
                 }
+                // When tree shake level is CLASSES, add non-reachable classes to removal set.
+                // Use walkRaw to handle multi-release JARs: we need to add both base and
+                // versioned entry paths to the removal set for unreachable classes.
+                if (treeShakeResult != null
+                        && treeShakeResult.isClassesShaken()) {
+                    try (var pathTree = appDep.getContentTree().open()) {
+                        pathTree.walkRaw(visit -> {
+                            String rel = visit.getRelativePath("/");
+                            String classRel = rel;
+                            // For multi-release entries, extract the actual class path
+                            if (rel.startsWith("META-INF/versions/")) {
+                                String afterVersions = rel.substring("META-INF/versions/".length());
+                                int slash = afterVersions.indexOf('/');
+                                if (slash > 0) {
+                                    classRel = afterVersions.substring(slash + 1);
+                                } else {
+                                    return;
+                                }
+                            }
+                            if (classRel.endsWith(".class") && !classRel.equals("module-info.class")) {
+                                String className = classRel.substring(0, classRel.length() - 6).replace('/', '.');
+                                if (!treeShakeResult.getReachableClassNames().contains(className)) {
+                                    int dollarIdx = className.indexOf('$');
+                                    if (dollarIdx < 0
+                                            || !treeShakeResult.getReachableClassNames()
+                                                    .contains(className.substring(0, dollarIdx))) {
+                                        // Add the raw path (base or META-INF/versions/N/...) to removal set
+                                        removedFromThisArchive.add(rel);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
                 var appComponent = ApplicationComponent.builder()
                         .setPath(targetPath)
                         .setResolvedDependency(appDep);
@@ -461,14 +500,10 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                     // we copy jars for which we remove entries to the same directory
                     // which seems a bit odd to me
                     JarUnsigner.unsignJar(resolvedDep, targetPath, Predicate.not(removedFromThisArchive::contains));
-
-                    var list = new ArrayList<>(removedFromThisArchive);
-                    Collections.sort(list);
-                    var sb = new StringBuilder("Removed ").append(list.get(0));
-                    for (int i = 1; i < list.size(); ++i) {
-                        sb.append(",").append(list.get(i));
-                    }
-                    appComponent.setPedigree(sb.toString());
+                }
+                String pedigree = treeShakeResult != null ? treeShakeResult.computePedigree(appDep.getKey()) : null;
+                if (pedigree != null) {
+                    appComponent.setPedigree(pedigree);
                 }
                 manifestConfig.addComponent(appComponent);
             }

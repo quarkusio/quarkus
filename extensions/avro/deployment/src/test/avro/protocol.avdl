@@ -1,0 +1,22 @@
+/**
+ * An example protocol in Avro IDL
+ */
+@namespace("org.apache.avro.test")
+protocol Simple {
+	// Import the example file above
+	import idl "schema.avdl";
+
+	/** Errors are records that can be thrown from a method */
+	error TestError {
+		string message;
+	}
+
+	string hello(string greeting);
+	/** Return what was given. Demonstrates the use of backticks to name types/fields/messages/parameters after keywords */
+	TestRecord echo(TestRecord `record`);
+	int add(int arg1, int arg2);
+	bytes echoBytes(bytes data);
+	void `error`() throws TestError;
+	// The oneway keyword forces the method to return null.
+	void ping() oneway;
+}

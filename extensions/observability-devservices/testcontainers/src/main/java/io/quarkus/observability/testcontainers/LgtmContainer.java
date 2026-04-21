@@ -102,10 +102,14 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
         super(config);
         // do we require scraping
         this.scrapingRequired = scrapingRequired;
-        // always expose both -- since the LGTM image already does that as well
-        addExposedPorts(ContainerConstants.OTEL_GRPC_EXPORTER_PORT, ContainerConstants.OTEL_HTTP_EXPORTER_PORT);
+        // always expose all -- since the LGTM image already does that as well
+        addExposedPorts(
+                ContainerConstants.OTEL_GRPC_EXPORTER_PORT,
+                ContainerConstants.OTEL_HTTP_EXPORTER_PORT,
+                ContainerConstants.TEMPO_MCP_PORT);
         config.otelGrpcPort().ifPresent(port -> addFixedExposedPort(port, ContainerConstants.OTEL_GRPC_EXPORTER_PORT));
         config.otelHttpPort().ifPresent(port -> addFixedExposedPort(port, ContainerConstants.OTEL_HTTP_EXPORTER_PORT));
+        config.tempoMcpPort().ifPresent(port -> addFixedExposedPort(port, ContainerConstants.TEMPO_MCP_PORT));
 
         Optional<Set<LgtmComponent>> logging = config.logging();
         logging.ifPresent(set -> set.forEach(l -> withEnv("ENABLE_LOGS_" + l.name(), "true")));
@@ -248,6 +252,11 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
 
         @Override
         public OptionalInt otelHttpPort() {
+            return OptionalInt.empty();
+        }
+
+        @Override
+        public OptionalInt tempoMcpPort() {
             return OptionalInt.empty();
         }
 

@@ -3,19 +3,19 @@
         {
             "category": "Main",
             "timeout": 60,
-            "test-modules": "virtual-threads-disabled, grpc-virtual-threads, mailer-virtual-threads, redis-virtual-threads, rest-client-reactive-virtual-threads, resteasy-reactive-virtual-threads, vertx-event-bus-virtual-threads, scheduler-virtual-threads, quartz-virtual-threads, metrics-virtual-threads",
+            "test-modules": "virtual-threads/virtual-threads-disabled, virtual-threads/grpc-virtual-threads, virtual-threads/mailer-virtual-threads, virtual-threads/redis-virtual-threads, virtual-threads/rest-client-reactive-virtual-threads, virtual-threads/resteasy-reactive-virtual-threads, virtual-threads/vertx-event-bus-virtual-threads, virtual-threads/scheduler-virtual-threads, virtual-threads/quartz-virtual-threads, virtual-threads/metrics-virtual-threads",
             "os-name": "ubuntu-latest"
         },
         {
             "category": "Messaging",
             "timeout": 45,
-            "test-modules": "amqp-virtual-threads, jms-virtual-threads, kafka-virtual-threads",
+            "test-modules": "virtual-threads/amqp-virtual-threads, virtual-threads/jms-virtual-threads, virtual-threads/kafka-virtual-threads",
             "os-name": "ubuntu-latest"
         },
         {
             "category": "Security",
             "timeout": 20,
-            "test-modules": "security-webauthn-virtual-threads",
+            "test-modules": "virtual-threads/security-webauthn-virtual-threads",
             "os-name": "ubuntu-latest"
         }
     ]

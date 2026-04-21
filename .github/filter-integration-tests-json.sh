@@ -1,7 +1,9 @@
 #!/bin/bash
 
-# Purpose: Prints a filtered version of virtual-threads-tests.json, with "test-modules" reduced to the ones passed in as the first argument.
-#          This first argument is expected to the define one module per line.
+# Purpose: Prints a filtered version of a JSON file derived from the first argument,
+#          e.g. "native" => "native-tests.json" or "virtual-threads" => "virtual-threads-tests.json",
+#          with "test-modules" reduced to the ones passed in as the second argument.
+#          This second argument is expected to the define one module per line.
 #          "include" elements that (after filtering) have no "test-modules" anymore are deleted entirely!
 # Note: This script is only for CI and does therefore not aim to be compatible with BSD/macOS.
 
@@ -11,13 +13,15 @@ shopt -s failglob
 # path of this shell script
 PRG_PATH=$( cd "$(dirname "$0")" ; pwd -P )
 
-JSON=$(cat ${PRG_PATH}/virtual-threads-tests.json)
+FILE_BASE_NAME=$1
+shift
+JSON=$(cat ${PRG_PATH}/${FILE_BASE_NAME}-tests.json)
 
-JSON=$( echo "$JSON" | jq '
+JSON=$( echo "$JSON" | jq "$(cat <<EOF
   .include |= map(
     . + {
       tag: (
-        "virtual-threads-" +
+        "$FILE_BASE_NAME-" +
         (.category
           | ascii_downcase
           | gsub(" "; "-")
@@ -26,7 +30,8 @@ JSON=$( echo "$JSON" | jq '
       )
     }
   )
-')
+EOF
+)")
 
 # Step 0: print unfiltered json and exit in case the parameter is '_all_' (full build) or print nothing if empty (no changes)
 if [ "$1" == '_all_' ]
@@ -45,7 +50,7 @@ EXPR='((?:(?<=^)|(?<=,)|(?<=, ))('
 while read -r impacted
 do
   EXPR+="${impacted}|"
-done < <(echo -n "$1" | grep -Po '(?<=integration-tests/virtual-threads/).+')
+done < <(echo -n "$1" | grep -Po '(?<=integration-tests/).+')
 EXPR+=')(,|$))+'
 
 # Step 2: apply the filter expression via grep to each "test-modules" list and replace each original list with the filtered one

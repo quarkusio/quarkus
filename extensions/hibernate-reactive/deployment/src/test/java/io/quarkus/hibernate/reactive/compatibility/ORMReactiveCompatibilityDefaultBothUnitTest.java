@@ -14,7 +14,7 @@ import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 
-public class ORMReactiveCompatbilityDefaultBothUnitTest extends CompatibilityUnitTestBase {
+public class ORMReactiveCompatibilityDefaultBothUnitTest extends CompatibilityUnitTestBase {
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()

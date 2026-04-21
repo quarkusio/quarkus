@@ -17,7 +17,8 @@ import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 
-public class ORMReactiveCompatbilityDifferentNamedDataSourceNamedPersistenceUnitBothUnitTest extends CompatibilityUnitTestBase {
+public class ORMReactiveCompatibilityDifferentNamedDataSourceNamedPersistenceUnitBothUnitTest
+        extends CompatibilityUnitTestBase {
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()

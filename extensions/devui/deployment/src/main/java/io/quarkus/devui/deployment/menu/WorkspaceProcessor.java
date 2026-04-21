@@ -37,6 +37,8 @@ import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devui.deployment.DevUIConfig;
 import io.quarkus.devui.deployment.InternalPageBuildItem;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
+import io.quarkus.devui.spi.buildtime.DevMcpBuildTimeTool;
+import io.quarkus.devui.spi.buildtime.DevMcpParam;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.workspace.Action;
 import io.quarkus.devui.spi.workspace.ActionBuilder;
@@ -49,6 +51,14 @@ import io.quarkus.devui.spi.workspace.WorkspaceBuildItem;
 /**
  * This creates the workspace Page
  */
+@DevMcpBuildTimeTool(name = "getWorkspaceItems", description = "Gets all the items in the current workspace of the Quarkus project. Returns a list of workspace items with name and path.")
+@DevMcpBuildTimeTool(name = "getWorkspaceItemContent", description = "Get the content of a certain workspace item. Returns a WorkspaceContent with type, content, and isBinary fields.", params = {
+        @DevMcpParam(name = "path", description = "The path, as a URI in String format, to the workspace item")
+})
+@DevMcpBuildTimeTool(name = "saveWorkspaceItemContent", description = "Add or update an item in the workspace", params = {
+        @DevMcpParam(name = "content", description = "The new or updated content in String format"),
+        @DevMcpParam(name = "path", description = "The path, as a URI in String format, to the workspace item")
+})
 @BuildSteps(onlyIf = IsLocalDevelopment.class)
 public class WorkspaceProcessor {
     private static final Logger LOG = Logger.getLogger(WorkspaceProcessor.class);

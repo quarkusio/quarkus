@@ -2,7 +2,7 @@
 plugin-publish = "2.1.1"
 
 kotlin = "2.3.10"
-smallrye-config = "3.17.1"
+smallrye-config = "3.17.2"
 
 junit = "6.0.3"
 assertj = "3.27.7"

@@ -37,7 +37,7 @@ public abstract class GrpcServiceTestBase {
 
     @BeforeEach
     public void init() throws Exception {
-        channel = ManagedChannelBuilder.forAddress("localhost", 9001)
+        channel = ManagedChannelBuilder.forAddress("localhost", 8081)
                 .usePlaintext()
                 .build();
     }

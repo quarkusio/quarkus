@@ -7,8 +7,9 @@ import io.quarkus.test.QuarkusExtensionTest;
 public class GrpcAuthUsingSeparatePortTest extends GrpcAuthTestBase {
 
     @RegisterExtension
-    static final QuarkusExtensionTest config = createQuarkusExtensionTest("quarkus.grpc.server.use-separate-server=false\n" +
+    static final QuarkusExtensionTest config = createQuarkusExtensionTest(
             "quarkus.grpc.clients.securityClient.host=localhost\n" +
-            "quarkus.grpc.clients.securityClient.port=8081\n", true);
+                    "quarkus.grpc.clients.securityClient.port=8081\n",
+            true);
 
 }

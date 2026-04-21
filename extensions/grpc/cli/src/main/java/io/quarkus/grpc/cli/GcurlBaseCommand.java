@@ -20,7 +20,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.grpc.client.GrpcClient;
-import io.vertx.grpc.client.GrpcClientChannel;
+import io.vertx.grpcio.client.GrpcIoClientChannel;
 import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Spec;
@@ -122,7 +122,7 @@ public abstract class GcurlBaseCommand implements Callable<Integer> {
         String[] split = unmatched.get(0).split(":");
         String host = split[0];
         int port = Integer.parseInt(split[1]);
-        Channel channel = new GrpcClientChannel(client, SocketAddress.inetSocketAddress(port, host));
+        Channel channel = new GrpcIoClientChannel(client, SocketAddress.inetSocketAddress(port, host));
         try {
             return fn.apply(channel);
         } finally {

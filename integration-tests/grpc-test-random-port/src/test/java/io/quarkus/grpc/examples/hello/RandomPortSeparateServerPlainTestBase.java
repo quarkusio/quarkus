@@ -9,7 +9,8 @@ abstract class RandomPortSeparateServerPlainTestBase extends RandomPortTestBase 
         @Override
         public Map<String, String> getConfigOverrides() {
             return Map.of(
-                    "quarkus.grpc.server.test-port", "0",
+                    "quarkus.http.port", "0",
+                    "quarkus.http.test-port", "0",
                     "quarkus.grpc.clients.hello.host", "localhost");
         }
     }

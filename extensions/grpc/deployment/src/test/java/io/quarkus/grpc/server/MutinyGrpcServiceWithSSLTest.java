@@ -21,6 +21,7 @@ import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloReplyOrBuilder;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.examples.helloworld.HelloRequestOrBuilder;
+import io.grpc.examples.helloworld.HelloWorldProto;
 import io.grpc.examples.helloworld.MutinyGreeterGrpc;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
@@ -29,6 +30,7 @@ import io.grpc.testing.integration.MutinyTestServiceGrpc;
 import io.grpc.testing.integration.TestServiceGrpc;
 import io.netty.handler.ssl.SslContext;
 import io.quarkus.grpc.server.services.AssertHelper;
+import io.quarkus.grpc.server.services.HelloService;
 import io.quarkus.grpc.server.services.MutinyHelloService;
 import io.quarkus.grpc.server.services.MutinyTestService;
 import io.quarkus.test.QuarkusExtensionTest;
@@ -48,6 +50,9 @@ public class MutinyGrpcServiceWithSSLTest extends GrpcServiceTestBase {
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setFlatClassPath(true).setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
+                            .addPackage(io.grpc.testing.integration.Test.class.getPackage())
+                            .addPackage(HelloService.class.getPackage())
+                            .addPackage(HelloWorldProto.class.getPackage())
                             .addClasses(MutinyHelloService.class, MutinyTestService.class, AssertHelper.class,
                                     GreeterGrpc.class, Greeter.class, GreeterBean.class, HelloRequest.class, HelloReply.class,
                                     MutinyGreeterGrpc.class,
@@ -62,7 +67,7 @@ public class MutinyGrpcServiceWithSSLTest extends GrpcServiceTestBase {
         SslContext sslcontext = GrpcSslContexts.forClient()
                 .trustManager(new File("target/certs/grpc-tls-ca.crt"))
                 .build();
-        channel = NettyChannelBuilder.forAddress("localhost", 9001)
+        channel = NettyChannelBuilder.forAddress("localhost", 8444)
                 .sslContext(sslcontext)
                 .build();
     }

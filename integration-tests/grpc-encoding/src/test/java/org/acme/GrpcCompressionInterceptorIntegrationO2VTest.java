@@ -15,7 +15,6 @@ class GrpcCompressionInterceptorIntegrationO2VTest extends GrpcCompressionInterc
         @Override
         public Map<String, String> getConfigOverrides() {
             return Map.of(
-                    "quarkus.grpc.server.use-separate-server", "false",
                     "quarkus.grpc.clients.hello-service.test-port", "8081");
         }
     }

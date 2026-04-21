@@ -28,7 +28,7 @@ import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.net.PemTrustOptions;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.grpc.client.GrpcClient;
-import io.vertx.grpc.client.GrpcClientChannel;
+import io.vertx.grpcio.client.GrpcIoClientChannel;
 
 @Certificates(baseDir = "target/certs", certificates = @Certificate(name = "grpc-tls", password = "wibble", formats = {
         Format.PKCS12, Format.PEM }))
@@ -53,7 +53,7 @@ class HelloWorldTlsServiceTest {
         }
         options.setTrustOptions(new PemTrustOptions().addCertValue(buffer));
         client = GrpcClient.client(vertx, options);
-        channel = new GrpcClientChannel(client, SocketAddress.inetSocketAddress(8444, "localhost"));
+        channel = new GrpcIoClientChannel(client, SocketAddress.inetSocketAddress(8444, "localhost"));
     }
 
     @AfterEach

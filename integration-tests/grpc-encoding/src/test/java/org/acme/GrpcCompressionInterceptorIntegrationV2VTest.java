@@ -15,7 +15,6 @@ class GrpcCompressionInterceptorIntegrationV2VTest extends GrpcCompressionInterc
         @Override
         public Map<String, String> getConfigOverrides() {
             return Map.of(
-                    "quarkus.grpc.server.use-separate-server", "false",
                     "quarkus.grpc.clients.hello-service.use-quarkus-grpc-client", "true");
         }
     }

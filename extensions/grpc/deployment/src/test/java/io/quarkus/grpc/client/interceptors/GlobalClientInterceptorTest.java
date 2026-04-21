@@ -17,6 +17,7 @@ import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloReplyOrBuilder;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.examples.helloworld.HelloRequestOrBuilder;
+import io.grpc.examples.helloworld.HelloWorldProto;
 import io.grpc.examples.helloworld.MutinyGreeterGrpc;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.server.services.MutinyHelloService;
@@ -30,7 +31,7 @@ public class GlobalClientInterceptorTest {
                     .addClasses(MutinyHelloService.class, MyFirstClientInterceptor.class, Calls.class,
                             GreeterGrpc.class, Greeter.class, GreeterBean.class, HelloRequest.class, HelloReply.class,
                             MutinyGreeterGrpc.class,
-                            HelloRequestOrBuilder.class, HelloReplyOrBuilder.class))
+                            HelloRequestOrBuilder.class, HelloReplyOrBuilder.class, HelloWorldProto.class))
             .withConfigurationResource("hello-config.properties");
 
     @GrpcClient("hello-service")
@@ -43,7 +44,6 @@ public class GlobalClientInterceptorTest {
         HelloReply reply = client
                 .sayHello(HelloRequest.newBuilder().setName("neo").build());
         assertThat(reply.getMessage()).isEqualTo("Hello neo");
-
         List<String> calls = Calls.LIST;
         assertEquals(1, calls.size());
         assertEquals(MyFirstClientInterceptor.class.getName(), calls.get(0));

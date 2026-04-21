@@ -9,8 +9,6 @@ abstract class RandomPortVertxServerTlsTestBase extends RandomPortTestBase {
         @Override
         public Map<String, String> getConfigOverrides() {
             return Map.of(
-                    "quarkus.grpc.server.use-separate-server", "false",
-                    "quarkus.grpc.server.plain-text", "false",
                     "quarkus.http.test-ssl-port", "0",
                     "quarkus.http.ssl.certificate.files", "tls/server.pem",
                     "quarkus.http.ssl.certificate.key-files", "tls/server.key",

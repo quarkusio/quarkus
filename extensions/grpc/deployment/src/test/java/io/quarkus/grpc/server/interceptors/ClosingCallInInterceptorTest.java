@@ -9,7 +9,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import org.assertj.core.api.Condition;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -42,9 +41,7 @@ public class ClosingCallInInterceptorTest {
     static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addPackage(GreeterGrpc.class.getPackage())
-                    .addClasses(MyClosingCallInterceptor.class, GreeterBean.class, HelloRequest.class, HelloService.class)
-                    .addAsResource(new StringAsset("quarkus.grpc.server.use-separate-server=false" + System.lineSeparator()),
-                            "application.properties"))
+                    .addClasses(MyClosingCallInterceptor.class, GreeterBean.class, HelloRequest.class, HelloService.class))
             .setLogRecordPredicate(
                     record -> record.getMessage() != null && record.getMessage().contains("Closing gRPC call due to an error"))
             .assertLogRecords(logRecords -> {

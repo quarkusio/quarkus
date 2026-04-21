@@ -177,9 +177,15 @@ Do *not* call `start()` on the `Startable` – Quarkus will start it at the righ
 ----
 @BuildStep(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public DevServicesResultBuildItem createContainer(MyConfig config) {
+    // Guard to check if if service-specific dev services are enabled and if a server had been enabled for this service
+    if (! config.devservices().enabled() || config.myBaseServiceUrl() != null) {
+        return null;
+    }
+
+    // We should create a dev service, let's do it
     return DevServicesResultBuildItem.owned()
             .feature(FEATURE)
-            .serviceConfig(config)
+            .serviceConfig(config) // this is a re-use key, so does not have to be the config object
             .startable(() -> new MyContainer(
                     config.imageName(),
                     config.port()))

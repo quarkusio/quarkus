@@ -1,6 +1,7 @@
 package io.quarkus.spring.data.deployment.generate;
 
-import java.util.Collection;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.ConstantDescs;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -23,14 +24,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.SliceImpl;
 import org.springframework.data.jpa.repository.Modifying;
 
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.CatchBlockCreator;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.FunctionCreator;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.gizmo.TryBlock;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.ClassMethodDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
 import io.quarkus.runtime.util.HashUtil;
@@ -40,218 +38,217 @@ import io.quarkus.spring.data.runtime.TypesConverter;
 
 public abstract class AbstractMethodsAdder {
 
-    protected void handleLongReturnValue(BytecodeCreator methodCreator, ResultHandle resultHandle, DotName returnType) {
+    protected void handleLongReturnValue(BlockCreator bc, Expr resultHandle, DotName returnType) {
         if (DotNames.LONG.equals(returnType)) { // handle object Long return type
-            resultHandle = methodCreator.invokeStaticMethod(
-                    MethodDescriptor.ofMethod(Long.class, "valueOf", Long.class, long.class),
+            resultHandle = bc.invokeStatic(
+                    MethodDesc.of(Long.class, "valueOf", Long.class, long.class),
                     resultHandle);
         }
-        methodCreator.returnValue(resultHandle);
+        bc.return_(resultHandle);
     }
 
-    protected void handleIntegerReturnValue(BytecodeCreator methodCreator, ResultHandle resultHandle, DotName returnType) {
+    protected void handleIntegerReturnValue(BlockCreator bc, Expr resultHandle, DotName returnType) {
         if (DotNames.INTEGER.equals(returnType)) { // handle object Integer return type
-            resultHandle = methodCreator.invokeStaticMethod(
-                    MethodDescriptor.ofMethod(Integer.class, "valueOf", Integer.class, int.class),
+            resultHandle = bc.invokeStatic(
+                    MethodDesc.of(Integer.class, "valueOf", Integer.class, int.class),
                     resultHandle);
         }
-        methodCreator.returnValue(resultHandle);
+        bc.return_(resultHandle);
     }
 
-    protected void handleBooleanReturnValue(BytecodeCreator methodCreator, ResultHandle resultHandle, DotName returnType) {
-        if (DotNames.BOOLEAN.equals(returnType)) { // handle object Long return type
-            resultHandle = methodCreator.invokeStaticMethod(
-                    MethodDescriptor.ofMethod(Boolean.class, "valueOf", Boolean.class, boolean.class),
+    protected void handleBooleanReturnValue(BlockCreator bc, Expr resultHandle, DotName returnType) {
+        if (DotNames.BOOLEAN.equals(returnType)) { // handle object Boolean return type
+            resultHandle = bc.invokeStatic(
+                    MethodDesc.of(Boolean.class, "valueOf", Boolean.class, boolean.class),
                     resultHandle);
         }
-        methodCreator.returnValue(resultHandle);
+        bc.return_(resultHandle);
     }
 
-    protected void generateFindQueryResultHandling(MethodCreator methodCreator, ResultHandle panacheQuery,
-            Integer pageableParameterIndex, ClassInfo repositoryClassInfo, ClassInfo entityClassInfo,
+    protected void generateFindQueryResultHandling(BlockCreator bc, Expr panacheQueryExpr,
+            Integer pageableParameterIndex, Expr[] methodParams,
+            ClassInfo repositoryClassInfo, ClassInfo entityClassInfo,
             DotName returnType, Integer limit, String methodName, DotName customResultType, String originalResultType) {
 
-        ResultHandle page = null;
+        // Store panacheQuery in a LocalVar so it can be used across nested blocks (try_, ifElse, etc.)
+        Expr panacheQuery = bc.localVar("panacheQuery", panacheQueryExpr);
+
+        Expr page = null;
         if (limit != null) {
             // create a custom page object that will limit the results by the limit size
-            page = methodCreator.newInstance(MethodDescriptor.ofConstructor(Page.class, int.class), methodCreator.load(limit));
+            page = bc.new_(ClassDesc.of(Page.class.getName()), Const.of(limit));
         } else if (pageableParameterIndex != null) {
-            page = methodCreator.invokeStaticMethod(
-                    MethodDescriptor.ofMethod(TypesConverter.class, "toPanachePage", Page.class, Pageable.class),
-                    methodCreator.getMethodParam(pageableParameterIndex));
+            page = bc.invokeStatic(
+                    MethodDesc.of(TypesConverter.class, "toPanachePage", Page.class, Pageable.class),
+                    methodParams[pageableParameterIndex]);
         }
 
         if (page != null) {
-            panacheQuery = methodCreator.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class),
-                    panacheQuery, page);
+            panacheQuery = bc.localVar("pagedPanacheQuery",
+                    bc.invokeInterface(
+                            MethodDesc.of(PanacheQuery.class, "page", PanacheQuery.class, Page.class),
+                            panacheQuery, page));
         }
 
-        if (returnType.equals(entityClassInfo.name())) {
-            // implement by issuing PanacheQuery.singleResult
-            // if there is one result return
-            // if there are no results (known due to NoResultException) return null
-            // if there are multiple results just let the relevant exception be thrown
+        // Need a final copy for use in lambdas
+        final Expr finalPanacheQuery = panacheQuery;
 
-            // when limit is specified we don't want to fail when there are multiple results, we just want to return the first one
+        if (returnType.equals(entityClassInfo.name())) {
             String panacheQueryMethodToUse = (limit != null) ? "firstResult" : "singleResult";
 
-            TryBlock tryBlock = methodCreator.tryBlock();
-            ResultHandle singleResult = tryBlock.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(PanacheQuery.class, panacheQueryMethodToUse, Object.class),
-                    panacheQuery);
+            bc.try_(tc -> {
+                tc.body(tb -> {
+                    Expr singleResult = tb.invokeInterface(
+                            MethodDesc.of(PanacheQuery.class, panacheQueryMethodToUse, Object.class),
+                            finalPanacheQuery);
 
-            ResultHandle casted = tryBlock.checkCast(singleResult, entityClassInfo.name().toString());
-            tryBlock.returnValue(casted);
-
-            CatchBlockCreator catchBlock = tryBlock.addCatch(NoResultException.class);
-            catchBlock.returnValue(catchBlock.loadNull());
+                    Expr casted = tb.cast(singleResult, ClassDesc.of(entityClassInfo.name().toString()));
+                    tb.return_(casted);
+                });
+                tc.catch_(NoResultException.class, "e", (cb, e) -> {
+                    cb.return_(Const.ofNull(ClassDesc.of(entityClassInfo.name().toString())));
+                });
+            });
 
         } else if (DotNames.OPTIONAL.equals(returnType)) {
-            // implement by issuing PanacheQuery.singleResult
-            // if there is one result return an Optional containing it
-            // if there are no results (known due to NoResultException) return empty Optional
-            // if there are multiple results just let the relevant exception be thrown
-
-            // when limit is specified we don't want to fail when there are multiple results, we just want to return the first one
             String panacheQueryMethodToUse = (limit != null) ? "firstResult" : "singleResult";
 
-            TryBlock tryBlock = methodCreator.tryBlock();
-            ResultHandle singleResult = tryBlock.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(PanacheQuery.class, panacheQueryMethodToUse, Object.class),
-                    panacheQuery);
+            bc.try_(tc -> {
+                tc.body(tb -> {
+                    Expr singleResult = tb.invokeInterface(
+                            MethodDesc.of(PanacheQuery.class, panacheQueryMethodToUse, Object.class),
+                            finalPanacheQuery);
 
-            if (customResultType == null) {
-                ResultHandle casted = tryBlock.checkCast(singleResult, entityClassInfo.name().toString());
-                ResultHandle optional = tryBlock.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(Optional.class, "ofNullable", Optional.class, Object.class),
-                        casted);
-                tryBlock.returnValue(optional);
-            } else {
-                ResultHandle customResult = tryBlock.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(customResultType.toString(), "convert_" + methodName,
-                                customResultType.toString(),
-                                originalResultType),
-                        singleResult);
-                ResultHandle optional = tryBlock.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(Optional.class, "ofNullable", Optional.class, Object.class),
-                        customResult);
-                tryBlock.returnValue(optional);
-            }
-            CatchBlockCreator catchBlock = tryBlock.addCatch(NoResultException.class);
-            ResultHandle emptyOptional = catchBlock.invokeStaticMethod(
-                    MethodDescriptor.ofMethod(Optional.class, "empty", Optional.class));
-            catchBlock.returnValue(emptyOptional);
+                    if (customResultType == null) {
+                        Expr casted = tb.cast(singleResult, ClassDesc.of(entityClassInfo.name().toString()));
+                        Expr optional = tb.invokeStatic(
+                                MethodDesc.of(Optional.class, "ofNullable", Optional.class, Object.class),
+                                casted);
+                        tb.return_(optional);
+                    } else {
+                        Expr customResult = tb.invokeStatic(
+                                ClassMethodDesc.of(ClassDesc.of(customResultType.toString()), "convert_" + methodName,
+                                        GenerationUtil.toMethodTypeDesc(customResultType.toString(), originalResultType)),
+                                singleResult);
+                        Expr optional = tb.invokeStatic(
+                                MethodDesc.of(Optional.class, "ofNullable", Optional.class, Object.class),
+                                customResult);
+                        tb.return_(optional);
+                    }
+                });
+                tc.catch_(NoResultException.class, "e", (cb, e) -> {
+                    Expr emptyOptional = cb.invokeStatic(
+                            MethodDesc.of(Optional.class, "empty", Optional.class));
+                    cb.return_(emptyOptional);
+                });
+            });
         } else if (DotNames.LIST.equals(returnType) || DotNames.COLLECTION.equals(returnType)
                 || DotNames.SET.equals(returnType) || DotNames.ITERATOR.equals(returnType)
                 || DotNames.SPRING_DATA_PAGE.equals(returnType) || DotNames.SPRING_DATA_SLICE.equals(returnType)) {
-            ResultHandle list;
+            Expr list;
 
             if (customResultType == null) {
-                list = methodCreator.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(PanacheQuery.class, "list", List.class),
-                        panacheQuery);
+                list = bc.invokeInterface(
+                        MethodDesc.of(PanacheQuery.class, "list", List.class),
+                        finalPanacheQuery);
             } else {
+                Expr stream = bc.invokeInterface(
+                        MethodDesc.of(PanacheQuery.class, "stream", Stream.class),
+                        finalPanacheQuery);
 
-                ResultHandle stream = methodCreator.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(PanacheQuery.class, "stream", Stream.class),
-                        panacheQuery);
+                // Function to convert originResultType to the custom type
+                Expr mappingFunction = bc.lambda(Function.class, lc -> {
+                    var param = lc.parameter("p", 0);
+                    lc.body(lb -> {
+                        Expr obj = lb.invokeStatic(
+                                ClassMethodDesc.of(ClassDesc.of(customResultType.toString()), "convert_" + methodName,
+                                        GenerationUtil.toMethodTypeDesc(customResultType.toString(), originalResultType)),
+                                param);
+                        lb.return_(obj);
+                    });
+                });
 
-                // Function to convert `originResultType` (Object[] or entity class)
-                // to the custom type (using the generated static convert method)
-                FunctionCreator customResultMappingFunction = methodCreator.createFunction(Function.class);
-                BytecodeCreator funcBytecode = customResultMappingFunction.getBytecode();
-                ResultHandle obj = funcBytecode.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(customResultType.toString(), "convert_" + methodName,
-                                customResultType.toString(),
-                                originalResultType),
-                        funcBytecode.getMethodParam(0));
-                funcBytecode.returnValue(obj);
-
-                stream = methodCreator.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(Stream.class, "map", Stream.class, Function.class),
-                        stream, customResultMappingFunction.getInstance());
+                stream = bc.invokeInterface(
+                        MethodDesc.of(Stream.class, "map", Stream.class, Function.class),
+                        stream, mappingFunction);
 
                 // Re-collect the stream into a list
-                ResultHandle collector = methodCreator.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(Collectors.class, "toList", Collector.class));
-                list = methodCreator.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(Stream.class, "collect", Object.class, Collector.class),
+                Expr collector = bc.invokeStatic(
+                        MethodDesc.of(Collectors.class, "toList", Collector.class));
+                Expr collected = bc.invokeInterface(
+                        MethodDesc.of(Stream.class, "collect", Object.class, Collector.class),
                         stream, collector);
+                list = bc.cast(collected, ConstantDescs.CD_List);
             }
 
             if (DotNames.ITERATOR.equals(returnType)) {
-                ResultHandle iterator = methodCreator.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(Iterable.class, "iterator", Iterator.class),
+                Expr iterator = bc.invokeInterface(
+                        MethodDesc.of(Iterable.class, "iterator", Iterator.class),
                         list);
-                methodCreator.returnValue(iterator);
+                bc.return_(iterator);
             } else if (DotNames.SET.equals(returnType)) {
-                ResultHandle set = methodCreator.newInstance(
-                        MethodDescriptor.ofConstructor(LinkedHashSet.class, Collection.class), list);
-                methodCreator.returnValue(set);
+                Expr listAsCollection = bc.cast(list, ConstantDescs.CD_Collection);
+                Expr set = bc.new_(ClassDesc.of(LinkedHashSet.class.getName()), listAsCollection);
+                bc.return_(set);
             } else if (DotNames.SPRING_DATA_PAGE.equals(returnType)) {
-                ResultHandle pageResult;
                 if (pageableParameterIndex != null) {
-                    ResultHandle count = methodCreator.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(PanacheQuery.class, "count", long.class),
-                            panacheQuery);
-                    pageResult = methodCreator.newInstance(
-                            MethodDescriptor.ofConstructor(PageImpl.class, List.class, Pageable.class, long.class),
-                            list, methodCreator.getMethodParam(pageableParameterIndex), count);
+                    Expr count = bc.invokeInterface(
+                            MethodDesc.of(PanacheQuery.class, "count", long.class),
+                            finalPanacheQuery);
+                    Expr pageResult = bc.new_(ClassDesc.of(PageImpl.class.getName()),
+                            list, methodParams[pageableParameterIndex], count);
+                    bc.return_(pageResult);
                 } else {
-                    pageResult = methodCreator.newInstance(MethodDescriptor.ofConstructor(PageImpl.class, List.class), list);
+                    Expr pageResult = bc.new_(ClassDesc.of(PageImpl.class.getName()), list);
+                    bc.return_(pageResult);
                 }
-
-                methodCreator.returnValue(pageResult);
             } else if (DotNames.SPRING_DATA_SLICE.equals(returnType)) {
-                ResultHandle sliceResult;
                 if (pageableParameterIndex != null) {
-                    ResultHandle hasNextPage = methodCreator.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(PanacheQuery.class, "hasNextPage", boolean.class),
-                            panacheQuery);
-                    sliceResult = methodCreator.newInstance(
-                            MethodDescriptor.ofConstructor(SliceImpl.class, List.class, Pageable.class, boolean.class),
-                            list, methodCreator.getMethodParam(pageableParameterIndex), hasNextPage);
+                    Expr hasNextPage = bc.invokeInterface(
+                            MethodDesc.of(PanacheQuery.class, "hasNextPage", boolean.class),
+                            finalPanacheQuery);
+                    Expr sliceResult = bc.new_(ClassDesc.of(SliceImpl.class.getName()),
+                            list, methodParams[pageableParameterIndex], hasNextPage);
+                    bc.return_(sliceResult);
                 } else {
-                    sliceResult = methodCreator.newInstance(MethodDescriptor.ofConstructor(SliceImpl.class, List.class), list);
+                    Expr sliceResult = bc.new_(ClassDesc.of(SliceImpl.class.getName()), list);
+                    bc.return_(sliceResult);
                 }
-
-                methodCreator.returnValue(sliceResult);
+            } else {
+                bc.return_(list);
             }
-            methodCreator.returnValue(list);
 
         } else if (DotNames.STREAM.equals(returnType)) {
-            ResultHandle stream = methodCreator.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(PanacheQuery.class, "stream", Stream.class),
-                    panacheQuery);
-            methodCreator.returnValue(stream);
+            Expr stream = bc.invokeInterface(
+                    MethodDesc.of(PanacheQuery.class, "stream", Stream.class),
+                    finalPanacheQuery);
+            bc.return_(stream);
 
         } else if (isHibernateSupportedReturnType(returnType)) {
-            ResultHandle singleResult = methodCreator.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(PanacheQuery.class, "singleResult", Object.class),
-                    panacheQuery);
-            methodCreator.returnValue(singleResult);
+            Expr singleResult = bc.invokeInterface(
+                    MethodDesc.of(PanacheQuery.class, "singleResult", Object.class),
+                    finalPanacheQuery);
+            bc.return_(singleResult);
         } else if (customResultType != null) {
-            // when limit is specified we don't want to fail when there are multiple results, we just want to return the first one
             String panacheQueryMethodToUse = (limit != null) ? "firstResult" : "singleResult";
 
-            TryBlock tryBlock = methodCreator.tryBlock();
-            ResultHandle singleResult = tryBlock.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(PanacheQuery.class, panacheQueryMethodToUse, Object.class),
-                    panacheQuery);
+            bc.try_(tc -> {
+                tc.body(tb -> {
+                    Expr singleResult = tb.invokeInterface(
+                            MethodDesc.of(PanacheQuery.class, panacheQueryMethodToUse, Object.class),
+                            finalPanacheQuery);
 
-            ResultHandle customResult = tryBlock.invokeStaticMethod(
-                    MethodDescriptor.ofMethod(customResultType.toString(), "convert_" + methodName,
-                            customResultType.toString(),
-                            originalResultType),
-                    singleResult);
+                    Expr customResult = tb.invokeStatic(
+                            ClassMethodDesc.of(ClassDesc.of(customResultType.toString()), "convert_" + methodName,
+                                    GenerationUtil.toMethodTypeDesc(customResultType.toString(), originalResultType)),
+                            singleResult);
 
-            tryBlock.returnValue(customResult);
-
-            CatchBlockCreator catchBlock = tryBlock.addCatch(NoResultException.class);
-            catchBlock.returnValue(catchBlock.loadNull());
-
-            tryBlock.returnValue(customResult);
+                    tb.return_(customResult);
+                });
+                tc.catch_(NoResultException.class, "e", (cb, e) -> {
+                    cb.return_(Const.ofNull(ConstantDescs.CD_Object));
+                });
+            });
         } else {
             throw new IllegalArgumentException(
                     "Return type of method " + methodName + " of Repository " + repositoryClassInfo
@@ -263,14 +260,14 @@ public abstract class AbstractMethodsAdder {
      * Flush the underlying persistence context before executing the modifying query if enabled by {@link Modifying}
      * annotation.
      */
-    protected void handleFlushAutomatically(AnnotationInstance modifyingAnnotation, MethodCreator methodCreator,
-            FieldDescriptor entityClassFieldDescriptor) {
+    protected void handleFlushAutomatically(AnnotationInstance modifyingAnnotation, BlockCreator bc,
+            Expr entityClassExpr) {
         final AnnotationValue flushAutomatically = modifyingAnnotation != null ? modifyingAnnotation.value("flushAutomatically")
                 : null;
         if (flushAutomatically != null && flushAutomatically.asBoolean()) {
-            methodCreator.invokeStaticMethod(
-                    MethodDescriptor.ofMethod(RepositorySupport.class, "flush", void.class, Class.class),
-                    methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()));
+            bc.invokeStatic(
+                    MethodDesc.of(RepositorySupport.class, "flush", void.class, Class.class),
+                    entityClassExpr);
         }
     }
 
@@ -278,14 +275,14 @@ public abstract class AbstractMethodsAdder {
      * Clear the underlying persistence context after executing the modifying query if enabled by {@link Modifying}
      * annotation.
      */
-    protected void handleClearAutomatically(AnnotationInstance modifyingAnnotation, MethodCreator methodCreator,
-            FieldDescriptor entityClassFieldDescriptor) {
+    protected void handleClearAutomatically(AnnotationInstance modifyingAnnotation, BlockCreator bc,
+            Expr entityClassExpr) {
         final AnnotationValue clearAutomatically = modifyingAnnotation != null ? modifyingAnnotation.value("clearAutomatically")
                 : null;
         if (clearAutomatically != null && clearAutomatically.asBoolean()) {
-            methodCreator.invokeStaticMethod(
-                    MethodDescriptor.ofMethod(RepositorySupport.class, "clear", void.class, Class.class),
-                    methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()));
+            bc.invokeStatic(
+                    MethodDesc.of(RepositorySupport.class, "clear", void.class, Class.class),
+                    entityClassExpr);
         }
     }
 

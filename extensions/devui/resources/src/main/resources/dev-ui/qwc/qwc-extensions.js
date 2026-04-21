@@ -6,6 +6,7 @@ import { observeState } from 'lit-element-state';
 import { allowExtensionManagement } from 'devui-data';
 import 'qwc/qwc-extension.js';
 import 'qwc/qwc-extension-link.js';
+import 'qwc/qwc-extension-action.js';
 import 'qwc/qwc-extension-add.js';
 import { StorageController } from 'storage-controller';
 import '@vaadin/dialog';
@@ -405,6 +406,7 @@ export class QwcExtensions extends observeState(LitElement) {
                         ${msg(extension.description, {id: extension.namespace + '-meta-description'})}
                     </span>
                     ${this._renderCardLinks(extension)}
+                    ${this._renderCardActions(extension)}
                 </div>
                 ${this._renderLibraryVersions(extension)}
             </div>`;
@@ -460,6 +462,24 @@ export class QwcExtensions extends observeState(LitElement) {
                             </qwc-extension-link>
                         `;
         }
+    }
+
+    _renderCardActions(extension){
+        if (extension.cardActions && extension.cardActions.length > 0) {
+            return html`${extension.cardActions.map(action => html`${this._renderCardAction(extension, action)}`)}`;
+        }
+    }
+
+    _renderCardAction(extension, action){
+        return html`<qwc-extension-action
+                        namespace="${extension.namespace}"
+                        displayName="${action.title}"
+                        iconName="${action.icon}"
+                        tooltipContent="${action.tooltip}"
+                        actionType="${action.actionType}"
+                        actionReference="${action.actionReference}"
+                        ?showResultNotification=${action.showResultNotification}>
+                    </qwc-extension-action>`;
     }
 
     _renderLibraryVersions(extension) {

@@ -19,7 +19,7 @@ public class AddJobResourceDecorator extends BaseAddDeploymentResourceDecorator<
         final var spec = builder.editOrNewSpec();
 
         // match labels for selector
-        initMatchLabels(spec.editOrNewSelector())
+        initSelectorMatchLabels(spec.editOrNewSelector())
                 .endSelector();
 
         // ensure defaults on template spec

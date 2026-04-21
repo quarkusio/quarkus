@@ -12,6 +12,10 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.rbac.ClusterRole;
+import io.fabric8.kubernetes.api.model.rbac.PolicyRule;
+import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
+import io.fabric8.kubernetes.api.model.rbac.Subject;
 import io.quarkus.builder.Version;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.maven.dependency.Dependency;
@@ -63,13 +67,34 @@ public class WithKubernetesClientAndExistingResourcesTest {
                 .satisfies(h -> assertThat(h.getMetadata().getName()).isEqualTo(APPLICATION_NAME));
 
         assertThat(kubernetesList).filteredOn(h -> "RoleBinding".equals(h.getKind())).singleElement()
-                .satisfies(h -> assertThat(h.getMetadata().getName()).isEqualTo(APPLICATION_NAME + "-view"));
+                .satisfies(h -> {
+                    final var binding = (RoleBinding) h;
+                    final var metadata = h.getMetadata();
+                    assertThat(metadata.getName()).isEqualTo(APPLICATION_NAME + "-view");
+                    assertThat(metadata.getLabels().containsKey("foo"));
+                    final var subjects = binding.getSubjects();
+                    assertThat(subjects).hasSize(1);
+                    final Subject subject = subjects.get(0);
+                    assertThat(subject.getKind()).isEqualTo("ServiceAccount");
+                    assertThat(subject.getName()).isEqualTo(APPLICATION_NAME);
+                    assertThat(subject.getNamespace()).isEqualTo("bar");
+                });
 
         // check that if quarkus.kubernetes.namespace is set, "manually" set namespaces are not overwritten
         assertThat(kubernetesList).filteredOn(h -> "ConfigMap".equals(h.getKind())).singleElement().satisfies(h -> {
             final var metadata = h.getMetadata();
             assertThat(metadata.getName()).isEqualTo("foo");
             assertThat(metadata.getNamespace()).isEqualTo("foo");
+        });
+
+        assertThat(kubernetesList).filteredOn(h -> "ClusterRole".equals(h.getKind())).singleElement().satisfies(h -> {
+            final var clusterRole = (ClusterRole) h;
+            final var metadata = h.getMetadata();
+            assertThat(metadata.getName()).isEqualTo("secrets");
+            final var rules = clusterRole.getRules();
+            assertThat(rules).hasSize(1);
+            final var rule = rules.get(0);
+            assertThat(rule).isEqualTo(new PolicyRule(List.of(""), List.of(), List.of(), List.of("secrets"), List.of("*")));
         });
     }
 }

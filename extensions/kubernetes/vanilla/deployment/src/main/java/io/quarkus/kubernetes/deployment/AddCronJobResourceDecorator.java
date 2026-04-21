@@ -23,7 +23,7 @@ public class AddCronJobResourceDecorator extends BaseAddDeploymentResourceDecora
         // match labels for selector
         // for some reason, tests want null selector if not explicitly set
         if (jobTemplateSpec.hasSelector()) {
-            initMatchLabels(jobTemplateSpec.editSelector())
+            initSelectorMatchLabels(jobTemplateSpec.editSelector())
                     .endSelector();
         }
 

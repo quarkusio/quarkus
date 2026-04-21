@@ -71,17 +71,17 @@
         <jacoco.version>0.8.14</jacoco.version>
         <kubernetes-client.version>7.6.1</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
         <rest-assured.version>6.0.0</rest-assured.version>
-        <hibernate-orm.version>7.3.1.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below; checked by maven-enforcer-plugin in bom -->
+        <hibernate-orm.version>7.3.2.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below; checked by maven-enforcer-plugin in bom -->
         <jakarta.persistence-api.version>3.2.0</jakarta.persistence-api.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
         <jakarta.data-api.version>1.0.1</jakarta.data-api.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
         <antlr.version>4.13.2</antlr.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
         <bytebuddy.version>1.18.8</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
         <geolatte.version>1.10</geolatte.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
         <hibernate-models.version>1.1.1</hibernate-models.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
-        <hibernate-reactive.version>3.3.4.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
+        <hibernate-reactive.version>3.3.5.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
         <hibernate-validator.version>9.1.0.Final</hibernate-validator.version>
         <hibernate-search.version>8.3.0.Final</hibernate-search.version>
-        <hibernate-tools.version>7.2.10.Final</hibernate-tools.version>
+        <hibernate-tools.version>7.2.12.Final</hibernate-tools.version>
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
         <grpc.version>1.79.0</grpc.version> <!-- when updating, verify if following versions should not be updated too: -->

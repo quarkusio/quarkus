@@ -6,13 +6,13 @@
 
     <parent>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-cyclonedx-parent</artifactId>
+        <artifactId>quarkus-cyclonedx-endpoint-parent</artifactId>
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-cyclonedx</artifactId>
-    <name>Quarkus - CycloneDX - Runtime</name>
-    <description>Generate application SBOM following CycloneDX specification</description>
+    <artifactId>quarkus-cyclonedx-endpoint</artifactId>
+    <name>Quarkus - CycloneDX - Endpoint - Runtime</name>
+    <description>CycloneDX REST Endpoint</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -20,8 +20,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-cyclonedx-endpoint</artifactId>
-            <optional>true</optional>
+            <artifactId>quarkus-vertx-http</artifactId>
         </dependency>
     </dependencies>
     <build>
@@ -29,6 +28,11 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-extension-maven-plugin</artifactId>
+                <configuration>
+                    <dependencyCondition>
+                        <artifact>io.quarkus:quarkus-vertx-http</artifact>
+                    </dependencyCondition>
+                </configuration>
             </plugin>
         </plugins>
     </build>

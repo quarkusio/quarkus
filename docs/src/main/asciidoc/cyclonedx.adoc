@@ -4,39 +4,49 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="cyclonedx"]
-= Generating CycloneDX BOMs
+= Generating and Using CycloneDX SBOMs
 include::_attributes.adoc[]
 :categories: tooling
-:summary: This guide explains how to generate SBOMs for Quarkus applications in the CycloneDX format.
+:summary: This guide explains how to generate and use SBOMs for Quarkus applications in the CycloneDX format.
 :topics: sbom
 :extensions: io.quarkus:quarkus-cyclonedx
 
-An SBOM (Software Bill of Material) is a manifest that describes what a given software distribution consists of in terms of components. In addition to that, it may include a lot more information such as relationships between those components, licenses, provenance, etc.
-SBOMs would typically be used by software security and software supply chain risk management tools to perform vulnerability and compliance related analysis.
+An SBOM (Software Bill of Materials) is a manifest that describes what a given software distribution consists of in terms of components. In addition to that, it may include a lot more information such as relationships between those components, licenses, provenance, etc.
+SBOMs are typically used by software security and software supply chain risk management tools to perform vulnerability and compliance related analysis.
 
-This guide describes Quarkus SBOM generation capabilities following https://cyclonedx.org/[CycloneDX] specification.
+This guide covers:
+
+* <<dependency-sboms,Dependency SBOMs>> — generating SBOMs that manifest application dependencies before a build
+* <<embedded-dependency-sboms,Embedded Dependency SBOMs>> — embedding dependency SBOMs into applications as classpath resources
+* <<sbom-endpoint,SBOM REST Endpoint>> — exposing embedded dependency SBOMs via a REST endpoint
+* <<distribution-sboms,Distribution SBOMs>> — generating SBOMs that manifest the final application distribution after a build
+* <<vulnerability-scanning,Vulnerability scanning>> — using generated SBOMs with tools such as Grype to identify known vulnerabilities
+
+All SBOM generation in this guide follows the https://cyclonedx.org/[CycloneDX] specification.
 
 == Why Quarkus-specific tooling?
 
-While Quarkus integrates with build tools such as https://maven.apache.org/[Maven] and https://gradle.org/[Gradle], it could itself be categorized as a build tool with its own component and dependency model, build steps, and build outcomes. One of the essential component types of a Quarkus application is a Quarkus extension, which consists of a runtime and a build time artifacts, and their dependencies.
+While Quarkus integrates with build tools such as https://maven.apache.org/[Maven] and https://gradle.org/[Gradle], it could itself be categorized as a build tool with its own component and dependency model, build steps, and build outcomes. One of the essential component types of a Quarkus application is a Quarkus extension, which consists of runtime and build time artifacts, and their dependencies.
 
-To properly resolve Quarkus extension and other application dependencies Quarkus uses its own dependency resolver, which is implemented on top of the dependency resolver provided by the underlying build tool: Maven or Gradle.
+To properly resolve Quarkus extension and other application dependencies, Quarkus uses its own dependency resolver, which is implemented on top of the dependency resolver provided by the underlying build tool: Maven or Gradle.
 
-As a consequence, in case of Maven, for example, the results of `dependency:tree` will not include all the dependencies Quarkus will use to build an application. A similar issue will affect other dependency analysis tools that assume a project adheres to the standard Maven dependency model: they will not be able to capture the effective Quarkus application dependency graph. Unfortunately, that includes the implementation of the https://github.com/CycloneDX/cyclonedx-maven-plugin[CycloneDX Maven plugin].
+As a consequence, in the case of Maven, for example, the results of `dependency:tree` will not include all the dependencies Quarkus will use to build an application. A similar issue will affect other dependency analysis tools that assume a project adheres to the standard Maven dependency model: they will not be able to capture the effective Quarkus application dependency graph. Unfortunately, that includes the implementation of the https://github.com/CycloneDX/cyclonedx-maven-plugin[CycloneDX Maven plugin].
 
-Besides the dependencies, that are an input to a build process, there is also an outcome of the build that is the final distribution of an application. Users of an application may request an SBOM manifesting not only the dependencies (the input to a build) but also the final distribution (the outcome of the build) before they agree to deploy the application. Quarkus allows application developers to choose various packaging types for their applications, some of which are Quarkus-specific. Providing certain Quarkus-specific details about components included in a distribution may help better evaluate the impact of potential security-related issues.
+In addition to manifesting dependencies (the input to a build), there is also an outcome of the build that is the final distribution of an application. Users of an application may request an SBOM manifesting not only the dependencies (the input to a build) but also the final distribution (the outcome of the build) before they agree to deploy the application. Quarkus allows application developers to choose various packaging types for their applications, some of which are Quarkus-specific. Providing certain Quarkus-specific details about components included in a distribution may help better evaluate the impact of potential security-related issues.
 
+[[dependency-sboms]]
 == Dependency SBOMs
 
-This chapter describes how to generate SBOMs manifesting only the dependencies of an application before it is built. In other words, these SBOMs will manifest the input into a build. These SBOMs could be used to perform vulnerability and compliance related analysis before building applications.
+Dependency SBOMs manifest the dependencies of an application before it is built. In other words, they describe the input to a build. These SBOMs can be used to perform vulnerability and compliance related analysis before building applications.
 
 === Maven Dependency SBOMs
 
-For Quarkus Maven projects dependency SBOMs can be generated with the `quarkus:dependency-sbom` goal. The outcome of the goal will be saved in a `target/<artifactId>-<version>-dependency-cyclonedx.json` file (which can be changed by setting the `outputFile` goal parameter or the `quarkus.dependency.sbom.output-file` property). The complete Quarkus build and runtime dependency graphs will be recorded in the https://cyclonedx.org/[CycloneDX] `JSON` format.
+For Quarkus Maven projects, dependency SBOMs can be generated with the `quarkus:dependency-sbom` goal. The output of the goal will be saved in a `target/<artifactId>-<version>-dependency-cyclonedx.json` file (which can be changed by setting the `outputFile` goal parameter or the `quarkus.dependency.sbom.output-file` property). The complete Quarkus build and runtime dependency graphs will be recorded in the https://cyclonedx.org/[CycloneDX] `JSON` format.
 
-`XML` format can be requested by setting `format` goal parameter (or `quarkus.dependency.sbom.format` property) to `xml`.
+`XML` format can be requested by setting the `format` goal parameter (or `quarkus.dependency.sbom.format` property) to `xml`.
 
-Each component in the generated SBOM will include the `quarkus:component:scope` property that will indicate whether this component is used at runtime or only development/build time.
+Each component in the generated SBOM will include the `quarkus:component:scope` property indicating whether the component is used at runtime or only at development/build time.
+
 [source,json]
 ----
         {
@@ -45,15 +55,19 @@ Each component in the generated SBOM will include the `quarkus:component:scope` 
         }
 ----
 
-By default, `quarkus:dependency-sbom` captures the dependencies of a production build. Quarkus supports three application bootstrap modes: normal (production), test, and dev. In all three modes, an application may have different dependency graphs. The `mode` parameter can be used to indicate which dependency graph should be recorded. If the `mode` is set to `test` or `dev`, the target file name will become `target/<artifactId>-<version>-<mode>-dependency-cyclonedx.json`.
-
 The complete set of parameters and their description can be obtained by executing `mvn help:describe -Dcmd=quarkus:dependency-sbom -Ddetail`.
+
+==== Bootstrap Modes
+
+By default, `quarkus:dependency-sbom` captures the dependencies of a production build. Quarkus supports three application bootstrap modes: normal (production), test, and dev. In all three modes, an application may have different dependency graphs.
+
+The `mode` parameter can be used to indicate which dependency graph should be recorded. If the `mode` is set to `test` or `dev`, the target file name will become `target/<artifactId>-<version>-<mode>-dependency-cyclonedx.json`.
 
 === Gradle Dependency SBOMs
 
 Unlike Maven, the https://github.com/CycloneDX/cyclonedx-gradle-plugin[Gradle CycloneDX plugin implementation] can be used in Quarkus projects to generate dependency SBOMs, since the implementation manifests dependency configurations registered by configured plugins.
 
-Please, refer to the https://github.com/CycloneDX/cyclonedx-gradle-plugin[Gradle CycloneDX plugin] documentation for its configuration options. Here is a list of Quarkus dependency configurations that would be relevant for manifesting:
+Please refer to the https://github.com/CycloneDX/cyclonedx-gradle-plugin[Gradle CycloneDX plugin] documentation for its configuration options. Here is a list of Quarkus dependency configurations that would be relevant for manifesting:
 
 * `quarkusProdRuntimeClasspathConfiguration` - Quarkus application production runtime dependencies;
 * `quarkusProdRuntimeClasspathConfigurationDeployment` - Quarkus application production runtime and build time dependencies;
@@ -62,18 +76,135 @@ Please, refer to the https://github.com/CycloneDX/cyclonedx-gradle-plugin[Gradle
 * `quarkusDevRuntimeClasspathConfiguration` - Quarkus application dev mode runtime dependencies;
 * `quarkusDevRuntimeClasspathConfigurationDeployment` - Quarkus application dev mode runtime and build time dependencies.
 
-Given that the plugin is not aware of how Quarkus uses these dependencies, it will not be able to set the `quarkus:component:scope` property for components. On the other hand, the requested configuration name can be used indicate which scope to target.
+For example, to generate an SBOM for the production runtime dependencies only:
 
+[source,groovy]
+----
+cyclonedxBom {
+    includeConfigs = ["quarkusProdRuntimeClasspathConfiguration"]
+}
+----
+
+Given that the plugin is not aware of how Quarkus uses these dependencies, it will not be able to set the `quarkus:component:scope` property for components. On the other hand, the requested configuration name can be used to indicate which scope to target.
+
+[[embedded-dependency-sboms]]
+== Embedded Dependency SBOMs
+
+In addition to generating dependency SBOMs as separate files, Quarkus can embed a dependency SBOM directly into the built application as a classpath resource. This allows the application to carry its own bill of materials at runtime, which can be useful for runtime auditing or to expose via a REST endpoint (see <<sbom-endpoint>>).
+
+To embed a dependency SBOM in the application:
+
+[source,properties]
+----
+quarkus.cyclonedx.embedded.enabled=true
+----
+
+The SBOM will be embedded as a classpath resource at `META-INF/sbom/dependency.cdx.json` by default. The resource name can be customized:
+
+[source,properties]
+----
+quarkus.cyclonedx.embedded.resource-name=META-INF/custom-sbom.json
+----
+
+The format is determined by the resource name extension: `.json` for JSON, `.xml` for XML.
+
+By default, the embedded SBOM is compressed with GZIP to reduce the application size. The classpath resource name will have a `.gz` extension appended (e.g., `META-INF/sbom/dependency.cdx.json.gz`). If the SBOM is exposed through the <<sbom-endpoint,REST endpoint>>, it will be served with `Content-Encoding: gzip`, so HTTP clients will decompress it transparently. Compression can be disabled with:
+
+[source,properties]
+----
+quarkus.cyclonedx.embedded.compress=false
+----
+
+[NOTE]
+====
+Embedded dependency SBOMs are also available when running in dev mode (`quarkus dev`).
+====
+
+[[sbom-endpoint]]
+== SBOM REST Endpoint
+
+The embedded dependency SBOM can be exposed through a REST endpoint, making it accessible to external tools and scanners at runtime. To enable the endpoint:
+
+[source,properties]
+----
+quarkus.cyclonedx.endpoint.enabled=true
+----
+
+The embedded SBOM will be served at `/.well-known/sbom` with the `application/vnd.cyclonedx+json` content type (or `application/vnd.cyclonedx+xml` for XML SBOMs).
+Since the embedded SBOM is compressed by default, the response will include `Content-Encoding: gzip`, which HTTP clients handle transparently.
+The path can be customized using the `quarkus.cyclonedx.endpoint.path` property.
+
+Enabling the endpoint will automatically trigger SBOM embedding, even if `quarkus.cyclonedx.embedded.enabled` is not explicitly set to `true`.
+
+[NOTE]
+====
+The `quarkus.cyclonedx.endpoint.*` configuration options are only available when `quarkus-vertx-http` is present as a direct or transitive dependency of the application, which is the case for most web applications (e.g., those using `quarkus-rest`).
+====
+
+[CAUTION]
+====
+Exposing an SBOM endpoint allows anyone with access to it to perform composition analysis of the application, potentially revealing dependency versions with known vulnerabilities.
+The endpoint should be restricted to approved consumers only by applying appropriate authentication and authorization policies.
+====
+
+For an example of scanning a running application through the endpoint, see <<scanning-via-endpoint>>.
+
+The SBOM endpoint is also available when running in dev mode (`quarkus dev`), which can be useful for scanning during development.
+
+=== Management Interface
+
+When the xref:management-interface-reference.adoc[management interface] is enabled, the SBOM endpoint is automatically served on the management port (default `9000`) instead of the main application port:
+
+[source,properties]
+----
+quarkus.management.enabled=true
+----
+
+The SBOM will then be accessible at `http://localhost:9000/.well-known/sbom`.
+Authentication and authorization policies can be applied to the management interface to restrict access — see xref:management-interface-reference.adoc[Management Interface] for details.
+
+[[distribution-sboms]]
 == Distribution SBOMs
 
-This chapter describes SBOMs that manifest outcomes of Quarkus builds that are final application distributions.
+Distribution SBOMs manifest the outcomes of Quarkus builds — the final application distributions. Unlike dependency SBOMs, which describe the input to a build, distribution SBOMs describe what was actually produced.
 
-During an application build and package assembly process, Quarkus captures certain details about the produced distribution and then allows an SBOM generator to consume and record that information in an SBOM format.
+During the build and package assembly process, Quarkus captures details about the produced distribution and allows an SBOM generator to record that information in an SBOM format.
 
-At this point, the only SBOM generator available for Quarkus users that can manifest application distributions is `io.quarkus:quarkus-cyclonedx`. Once it's added as a project dependency it will generate SBOMs every time an application is built. SBOMs will be saved in the project's build output directory under `<executable-name>-cyclonedx.<format>` name, where
+To generate CycloneDX distribution SBOMs, add `io.quarkus:quarkus-cyclonedx` as a project dependency. It will generate SBOMs every time an application is built. SBOMs will be saved in the project's build output directory under `<executable-name>-cyclonedx.<format>` name, where
 
-* `<executable-name>` is the base file name (without the extension) of the executable that launches an application;
-* `<format>` is either `json` (the default) or `xml`, which can be configured using `quarkus.cyclonedx.format` property. If both formats are desired `quarkus.cyclonedx.format` can be set to `all`.
+* `<executable-name>` is the base file name (without the extension) of the executable that launches the application;
+* `<format>` is either `json` (the default) or `xml`, which can be configured using the `quarkus.cyclonedx.format` property. If both formats are desired, `quarkus.cyclonedx.format` can be set to `all`.
+
+By default, generated JSON SBOMs are not pretty-printed. To enable pretty-printing:
+
+[source,properties]
+----
+quarkus.cyclonedx.pretty-print=true
+----
+
+=== Pedigree
+
+Pedigree is a way to provide information that patches or modifications have been applied to a component.
+
+An application developer may instruct Quarkus to remove some resources or classes from specific dependencies to exclude them from the application classpath. Manipulating the original content of an artifact will change its digest, which may get highlighted as suspicious by the tools comparing original component digest to the one found in the distribution.
+
+In such cases, when Quarkus generates an SBOM, it will add a pedigree note for a modified artifact documenting what content was removed from the artifact.
+
+For example, if an application developer decided to remove certain classpath resources from a dependency, such as
+
+[source,properties]
+----
+quarkus.class-loading.removed-resources."jakarta.transaction\:jakarta.transaction-api"=META-INF/NOTICE.md,jakarta/transaction/package.html
+----
+
+The resulting SBOM will include
+[source,json]
+----
+      "purl" : "pkg:maven/jakarta.transaction/jakarta.transaction-api@2.0.1?type=jar",
+      "pedigree" : {
+        "notes" : "Removed META-INF/NOTICE.md,jakarta/transaction/package.html"
+      },
+----
 
 === Fast JAR
 
@@ -83,7 +214,7 @@ SBOMs for Fast JAR packaging type will use the executable JAR file as their main
 
 ==== Runtime Components
 
-Every file in the resulting Fast JAR distribution will appear in the SBOM with the `quarkus:component:scope` property set to `runtime` and `evidence.occurrences.location` field pointing to the location of the component in the application distribution directory, for example
+Every file in the resulting Fast JAR distribution will appear in the SBOM with the `quarkus:component:scope` property set to `runtime` and `evidence.occurrences.location` field pointing to the location of the component in the application distribution directory, for example:
 
 [source,json]
 ----
@@ -103,30 +234,10 @@ Every file in the resulting Fast JAR distribution will appear in the SBOM with t
       }
 ----
 
-NOTE: `evidence.occurrences.location` was introduced in CycloneDX schema version 1.5, for older versions the location will be indicated using the `quarkus:component:location` property.
-
-==== Pedigree
-
-Pedigree is a way to provide information that certain patches, or changes in general, have been applied to a certain component.
-
-In certain cases, Quarkus may copy modified versions of dependency artifacts to an application distribution. Manipulating the original content of a component will change its hash sums which may get highlighted as suspicious by the tools comparing original component hash sums to those found in the distribution.
-
-When Quarkus applies modifications to artifacts resolved from Maven repositories, it can manifest these changes as pedigree notes in the generated SBOM.
-For example, if an application developer decided to remove certain classpath resources from a dependency, such as
-
-[source,properties]
-----
-quarkus.class-loading.removed-resources."jakarta.transaction\:jakarta.transaction-api"=META-INF/NOTICE.md,jakarta/transaction/package.html
-----
-
-The resulting SBOM will include
-[source,json]
-----
-      "purl" : "pkg:maven/jakarta.transaction/jakarta.transaction-api@2.0.1?type=jar",
-      "pedigree" : {
-        "notes" : "Removed META-INF/NOTICE.md,jakarta/transaction/package.html"
-      },
-----
+[NOTE]
+====
+`evidence.occurrences.location` was introduced in CycloneDX schema version 1.5, for older versions the location will be indicated using the `quarkus:component:location` property.
+====
 
 ==== Build time dependencies
 
@@ -149,7 +260,18 @@ They will not include `evidence.occurrences.location` since they will not be fou
 
 SBOMs for Uber JARs will use the Uber JAR Maven artifact as their main component.
 
-Since an Uber JAR is published as a Maven artifact itself, SBOMs generated for Uber JARs will also be automatically published as Maven artifacts. This, however, can be disabled by setting the `attachSboms` parameter of the `quarkus:build` goal to `false`.
+Since an Uber JAR is published as a Maven artifact itself, SBOMs generated for Uber JARs will also be automatically published as Maven artifacts. This can be disabled by setting the `attachSboms` parameter of the `quarkus:build` goal to `false`:
+
+[source,xml]
+----
+<plugin>
+    <groupId>${quarkus.platform.group-id}</groupId>
+    <artifactId>quarkus-maven-plugin</artifactId>
+    <configuration>
+        <attachSboms>false</attachSboms>
+    </configuration>
+</plugin>
+----
 
 Gradle users will have to explicitly configure a publishing plugin to deploy SBOMs as Maven artifacts.
 
@@ -161,7 +283,7 @@ SBOMs for native images will use the native executable file as their main compon
 
 Since native executables are not currently attached to projects as Maven artifacts, their SBOMs will not be attached as Maven artifacts either.
 
-As in the case of an Uber JAR, runtime components in an SBOM generated for an native executable will not include `evidence.occurrences.location` since their corresponding code and resources are included in a single native executable file.
+As in the case of an Uber JAR, runtime components in an SBOM generated for a native executable will not include `evidence.occurrences.location` since their corresponding code and resources are included in a single native executable file.
 
 === Mutable JAR
 
@@ -187,7 +309,152 @@ SBOMs generated for Mutable JAR distributions will also record locations of comp
       }
 ----
 
-== Quarkus Property Taxonomy
+[[vulnerability-scanning]]
+== Vulnerability Scanning with SBOMs
+
+SBOMs can be fed into vulnerability scanners such as https://github.com/anchore/grype[Grype] to identify known vulnerabilities in application dependencies. This section demonstrates how to use Quarkus-generated SBOMs with Grype.
+
+=== Sample Project Setup
+
+Create a sample project with a REST endpoint, CycloneDX SBOM generation, and `org.codehaus.plexus:plexus-utils:3.6.0` — a dependency with a known security vulnerability added here on purpose for demonstration:
+
+[source,bash,role="primary asciidoc-tabs-sync-cli"]
+.CLI
+----
+quarkus create app org.acme:my-rest-app \
+    --extension='rest,cyclonedx,org.codehaus.plexus:plexus-utils:3.6.0'
+cd my-rest-app
+----
+
+[source,bash,role="secondary asciidoc-tabs-sync-maven"]
+.Maven
+----
+mvn io.quarkus.platform:quarkus-maven-plugin:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=my-rest-app \
+    -Dextensions='rest,cyclonedx,org.codehaus.plexus:plexus-utils:3.6.0'
+cd my-rest-app
+----
+
+[source,bash,role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+----
+quarkus create app org.acme:my-rest-app \
+    --extension='rest,cyclonedx,org.codehaus.plexus:plexus-utils:3.6.0' \
+    --gradle
+cd my-rest-app
+----
+
+=== Scanning Distribution SBOMs
+
+Build the application:
+
+[source,bash,role="primary asciidoc-tabs-sync-cli asciidoc-tabs-sync-maven"]
+.Maven
+----
+./mvnw package
+----
+
+[source,bash,role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+----
+./gradlew build
+----
+
+Scan the generated distribution SBOM:
+
+[source,bash,role="primary asciidoc-tabs-sync-cli asciidoc-tabs-sync-maven"]
+.Maven
+----
+grype target/quarkus-run-cyclonedx.json
+----
+
+[source,bash,role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+----
+grype build/quarkus-run-cyclonedx.json
+----
+
+Grype should report the known vulnerability in `plexus-utils:3.6.0`:
+
+[source]
+----
+NAME          INSTALLED  FIXED IN  TYPE          VULNERABILITY         SEVERITY  EPSS        RISK
+plexus-utils  3.6.0      3.6.1     java-archive  GHSA-6fmv-xxpf-w3cw   High      0.2% (47th) 0.2
+----
+
+[[scanning-via-endpoint]]
+=== Scanning via the SBOM Endpoint
+
+With the SBOM endpoint enabled, a running application can be scanned without access to the build output. This works regardless of the packaging type, including JARs and native executables.
+
+Enable the endpoint by adding the following property to `src/main/resources/application.properties`:
+
+[source,properties]
+----
+quarkus.cyclonedx.endpoint.enabled=true
+----
+
+This can also be done from the command line:
+
+[source,bash,role="primary"]
+.Linux / macOS
+----
+echo 'quarkus.cyclonedx.endpoint.enabled=true' >> src/main/resources/application.properties
+----
+
+[source,powershell,role="secondary"]
+.Windows (PowerShell)
+----
+Add-Content src\main\resources\application.properties 'quarkus.cyclonedx.endpoint.enabled=true'
+----
+
+Build the application:
+
+[source,bash,role="primary asciidoc-tabs-sync-cli asciidoc-tabs-sync-maven"]
+.Maven
+----
+./mvnw package
+----
+
+[source,bash,role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+----
+./gradlew build
+----
+
+Start the application:
+
+[source,bash,role="primary asciidoc-tabs-sync-cli asciidoc-tabs-sync-maven"]
+.Maven
+----
+java -jar target/quarkus-app/quarkus-run.jar
+----
+
+[source,bash,role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+----
+java -jar build/quarkus-app/quarkus-run.jar
+----
+
+In another terminal, scan the running application:
+
+[source,bash]
+----
+curl -s http://localhost:8080/.well-known/sbom | grype
+----
+
+The output should be the same as when scanning the distribution SBOM:
+
+[source]
+----
+NAME          INSTALLED  FIXED IN  TYPE          VULNERABILITY        SEVERITY  EPSS        RISK
+plexus-utils  3.6.0      3.6.1     java-archive  GHSA-6fmv-xxpf-w3cw  High      0.2% (47th) 0.2
+----
+
+This approach is useful for scanning applications that are already deployed, for example as part of a periodic audit or a CI/CD pipeline that verifies running instances.
+
+== SBOM Component Properties
 
 [cols="1,1,1"]
 |===

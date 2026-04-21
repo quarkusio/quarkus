@@ -272,7 +272,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                         }
                     }
 
-                    if (isResponseMultipart(requestContext)) {
+                    if (isResponseMultipart(requestContext) && !requestContext.isInputStreamDownload()) {
                         QuarkusMultipartResponseDecoder multipartDecoder = new QuarkusMultipartResponseDecoder(
                                 clientResponse);
 

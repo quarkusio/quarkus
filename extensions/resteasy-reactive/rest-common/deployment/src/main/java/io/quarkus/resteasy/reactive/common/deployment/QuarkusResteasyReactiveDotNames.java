@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.common.deployment;
 
+import java.lang.reflect.Modifier;
 import java.util.function.Predicate;
 
 import org.jboss.jandex.DotName;
@@ -70,7 +71,10 @@ public class QuarkusResteasyReactiveDotNames {
 
         @Override
         public boolean test(MethodInfo methodInfo) {
-            return methodInfo.hasAnnotation(JSON_IGNORE)
+            // Non-public methods are not required by JSON serialisation, and may lead to leaking of implementation
+            // types that we should not register.
+            return !Modifier.isPublic(methodInfo.flags())
+                    || methodInfo.hasAnnotation(JSON_IGNORE)
                     || methodInfo.hasAnnotation(JSONB_TRANSIENT);
         }
     }

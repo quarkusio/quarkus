@@ -169,6 +169,7 @@ import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.pool.TypePool;
 import net.bytebuddy.pool.TypePool.CacheProvider;
 import net.bytebuddy.pool.TypePool.Default.ReaderMode;
+import net.bytebuddy.utility.GraalImageCode;
 
 /**
  * Simulacrum of JPA bootstrap.
@@ -194,6 +195,14 @@ public final class HibernateOrmProcessor {
     private static final String INTEGRATOR_SERVICE_FILE = "META-INF/services/org.hibernate.integrator.spi.Integrator";
 
     private static final String JAKARTA_DATA_REPOSITORY_ANNOTATION = "jakarta.data.repository.Repository";
+
+    static {
+        // configure ByteBuddy for build reproducibility
+        // while it looks like the property is related to GraalVM,
+        // it actually needs to be set for reproducible builds it NOT using GraalVM
+        // see https://github.com/raphw/byte-buddy/commit/9b4690956dd049373a0c9fa548f74a16557cf3c0
+        System.setProperty(GraalImageCode.REPRODUCIBLE_PROPERTIES, "true");
+    }
 
     @BuildStep
     NativeImageFeatureBuildItem registerServicesForReflection(BuildProducer<ServiceProviderBuildItem> services) {

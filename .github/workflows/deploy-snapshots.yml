@@ -3,7 +3,7 @@ name: Quarkus Deploy Snapshots
 permissions:
   contents: read
   issues: write
-  packages: write
+  packages: read
 
 # CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
 #on:
@@ -57,7 +57,9 @@ jobs:
             ${{ steps.cache-key.outputs.m2-monthly-cache-key }}-
       - name: Build and Deploy
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
         run: |
           ./mvnw -e -B --no-transfer-progress --settings .github/release-settings.xml \
             -Dnjord.autoPublish \

@@ -9,6 +9,7 @@ import org.hibernate.reactive.session.impl.ReactiveSessionFactoryImpl;
 
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
+import io.quarkus.hibernate.orm.runtime.SchemaToolingUtil;
 import io.quarkus.hibernate.orm.runtime.boot.FastBootEntityManagerFactoryBuilder;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.customized.BuiltinFormatMapperBehaviour;
@@ -24,10 +25,11 @@ public final class FastBootReactiveEntityManagerFactoryBuilder extends FastBootE
             Object cdiBeanManager, MultiTenancyStrategy strategy,
             boolean shouldApplySchemaMigration,
             BuiltinFormatMapperBehaviour builtinFormatMapperBehaviour,
-            JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck) {
+            JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck,
+            SchemaToolingUtil.PreparedImportScripts importScripts) {
         super(puDescriptor, metadata, standardServiceRegistry, runtimeSettings, validatorFactory,
                 cdiBeanManager, strategy, shouldApplySchemaMigration, builtinFormatMapperBehaviour,
-                jsonFormatterCustomizationCheck);
+                jsonFormatterCustomizationCheck, importScripts);
     }
 
     @Override
@@ -40,6 +42,8 @@ public final class FastBootReactiveEntityManagerFactoryBuilder extends FastBootE
             return new ReactiveSessionFactoryImpl(metadata, options, metadata.getBootstrapContext());
         } catch (Exception e) {
             throw persistenceException("Unable to build Hibernate Reactive SessionFactory", e);
+        } finally {
+            closeImportScripts();
         }
     }
 }

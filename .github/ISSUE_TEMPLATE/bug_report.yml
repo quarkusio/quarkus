@@ -11,6 +11,10 @@ body:
   - type: markdown
     attributes:
       value: |
+        When using AI tools (LLMs, agents, etc.) to help prepare this issue, please make sure you follow our [AI and LLM Usage Policy](https://github.com/quarkusio/quarkus/blob/main/AI_POLICY.md).
+  - type: markdown
+    attributes:
+      value: |
         To maximize the chance of your issue being handled in a timely manner, please ensure you have tested that the issue occurs on the absolute latest version of Quarkus, or latest LTS version. 
         Moreover, providing a minimal canonical sample project that makes it easy to reproduce the issue is a huge help to the community when it comes to understanding, debugging, fixing the problem and testing the fix.
   - type: textarea

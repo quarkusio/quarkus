@@ -208,6 +208,8 @@ quarkus.datasource.db-kind=postgresql
 quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/mydatabase
 ----
 
+For more details check the xref:datasource.adoc#datasource-tracing[Datasource tracing] documentation.
+
 == Additional configuration
 Some use cases will require custom configuration of OpenTelemetry.
 These sections will outline what is necessary to properly configure it.

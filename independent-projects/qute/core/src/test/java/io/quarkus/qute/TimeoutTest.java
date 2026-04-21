@@ -19,12 +19,12 @@ public class TimeoutTest {
                         // Invalid timeout is ignored
                         .setAttribute("timeout", "bar")
                         .render())
-                .withMessage("Template 1 [generatedId=1] rendering timeout [100ms] occured");
+                .withMessage("Template 1 [generatedId=1] rendering timeout [100ms] occurred");
 
         assertThatExceptionOfType(TemplateException.class)
                 .isThrownBy(
                         () -> engine.parse("{foo}").data("foo", new CompletableFuture<>()).createUni().await().indefinitely())
-                .withMessage("Template 2 [generatedId=2] rendering timeout [100ms] occured");
+                .withMessage("Template 2 [generatedId=2] rendering timeout [100ms] occurred");
 
         assertThatExceptionOfType(ExecutionException.class)
                 .isThrownBy(
@@ -44,7 +44,7 @@ public class TimeoutTest {
         assertThatExceptionOfType(TemplateException.class)
                 .isThrownBy(() -> engine.parse("{foo}").data("foo", new CompletableFuture<>()).setAttribute("timeout", 300)
                         .render())
-                .withMessage("Template 1 [generatedId=1] rendering timeout [300ms] occured");
+                .withMessage("Template 1 [generatedId=1] rendering timeout [300ms] occurred");
     }
 
     @Test
@@ -54,7 +54,7 @@ public class TimeoutTest {
         Uni<String> fooUni = Uni.createFrom().completionStage(new CompletableFuture<>());
         assertThatExceptionOfType(TemplateException.class)
                 .isThrownBy(() -> template.data("foo", fooUni).render())
-                .withMessage("Template 1 [generatedId=1] rendering timeout [100ms] occured");
+                .withMessage("Template 1 [generatedId=1] rendering timeout [100ms] occurred");
     }
 
 }

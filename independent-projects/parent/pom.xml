@@ -120,9 +120,9 @@
             <url>https://repo.maven.apache.org/maven2</url>
         </repository>
         <snapshotRepository>
-            <id>github</id>
+            <id>quarkus-publish</id>
             <name>Quarkus Snapshots</name>
-            <url>https://maven.pkg.github.com/quarkusio/quarkus</url>
+            <url>https://central.sonatype.com/repository/maven-snapshots</url>
         </snapshotRepository>
     </distributionManagement>
 

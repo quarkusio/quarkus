@@ -9,6 +9,7 @@ However, recent patterns of use have led to increased moderation burden, low-val
 - You may use agents/LLMs to help you **write better**, but not to **post more**.
 - AI may be used to **assist your development** — for example drafting code, writing documentation, or proposing fixes — as long as **you understand, validate**, and **take responsibility for the results**.
 - You should only submit contributions (PRs, comments, discussions, issues) that reflect your **own understanding** and **intent**, not what an agent/LLM "spit out."
+  - This means that when the contribution is scrutinized by a maintainer, you need to be ready to argue about all aspects of it; simply responding that the contribution is what the LLM provided is completely unacceptable   
 
 ## Unacceptable Use of AI
 

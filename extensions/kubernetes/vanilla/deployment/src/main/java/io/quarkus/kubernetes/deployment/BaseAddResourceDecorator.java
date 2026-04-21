@@ -34,6 +34,8 @@ abstract class BaseAddResourceDecorator<T extends HasMetadata, B extends Visitab
 
     private final String name;
     private final C config;
+    private final String apiVersion;
+    private final String kind;
 
     /**
      * Create a new decorator to add a new named resource .
@@ -41,13 +43,15 @@ abstract class BaseAddResourceDecorator<T extends HasMetadata, B extends Visitab
      * @param name the name of the resource to add
      * @param config the optional configuration associated with the deployment resource, {@code null} otherwise
      */
-    public BaseAddResourceDecorator(String name, C config) {
+    public BaseAddResourceDecorator(String name, String kind, String apiVersion, C config) {
         this.name = name;
         this.config = config;
+        this.apiVersion = apiVersion;
+        this.kind = kind;
     }
 
-    public BaseAddResourceDecorator(String name) {
-        this(name, null);
+    public BaseAddResourceDecorator(String name, String kind, String apiVersion) {
+        this(name, kind, apiVersion, null);
     }
 
     @Override
@@ -75,7 +79,7 @@ abstract class BaseAddResourceDecorator<T extends HasMetadata, B extends Visitab
     }
 
     protected boolean match(HasMetadata hasMetadata) {
-        return match(hasMetadata, apiVersion(), kind(), name);
+        return match(hasMetadata, apiVersion, kind, name);
     }
 
     /**
@@ -87,6 +91,12 @@ abstract class BaseAddResourceDecorator<T extends HasMetadata, B extends Visitab
         return name;
     }
 
+    /**
+     * Record interesting information or prepare the items list before resources are added.
+     *
+     * @param items the {@link HasMetadata} resources in the list (read-only)
+     * @param list the associated builder lists (in case the resources in the list need to be modified)
+     */
     protected void prepare(List<HasMetadata> items, KubernetesListBuilder list) {
         // nothing to do by default
     }
@@ -107,20 +117,6 @@ abstract class BaseAddResourceDecorator<T extends HasMetadata, B extends Visitab
      * @param config an optional configuration object to retrieve values from to init the builder with
      */
     protected abstract void initBuilderWithDefaults(B builder, C config);
-
-    /**
-     * Returns the api version of resources being handled by this decorator
-     *
-     * @return the api version of resources being handled by this decorator
-     */
-    protected abstract String apiVersion();
-
-    /**
-     * Returns the kind of resources being handled by this decorator
-     *
-     * @return the kind of resources being handled by this decorator
-     */
-    protected abstract String kind();
 
     /**
      * Returns the first deployment-like resource metadata with the given name if it exists in the specified list of items. Note
@@ -171,6 +167,15 @@ abstract class BaseAddResourceDecorator<T extends HasMetadata, B extends Visitab
         return builder;
     }
 
+    /**
+     * Merges the provided labels with the ones provided by the designated deployment-like resource, identified by the optional
+     * name. Note that when the same key is present in both label maps, the deployment-like resource's will take precedence.
+     *
+     * @param items the current list of generated resources
+     * @param labels the labels to merge with the deployment-like resource's
+     * @param deploymentName the name of the deployment-like resource
+     * @return the merge labels map
+     */
     protected Map<String, String> mergeLabelsFromDeploymentWith(List<HasMetadata> items, Map<String, String> labels,
             @Nullable String deploymentName) {
         Map<String, String> merged = new HashMap<>(labels);
@@ -180,7 +185,14 @@ abstract class BaseAddResourceDecorator<T extends HasMetadata, B extends Visitab
         return merged;
     }
 
-    protected <S extends LabelSelectorFluent<?>> S initMatchLabels(S selector) {
+    /**
+     * Initializes the specified {@link LabelSelectorFluent} with a new empty, modifiable map
+     *
+     * @param selector the {@link LabelSelectorFluent} to modify
+     * @return the modified selector fluent instance
+     * @param <S> the specific type of the passed fluent instance
+     */
+    protected <S extends LabelSelectorFluent<?>> S initSelectorMatchLabels(S selector) {
         if (!selector.hasMatchLabels()) {
             selector.withMatchLabels(new HashMap<>());
         }

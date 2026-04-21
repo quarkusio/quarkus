@@ -1,46 +1,30 @@
 package io.quarkus.kubernetes.deployment;
 
+import static io.quarkus.kubernetes.deployment.Constants.CORE_API_VERSION;
 import static io.quarkus.kubernetes.deployment.Constants.SERVICE_ACCOUNT;
 
-import java.util.HashMap;
 import java.util.Map;
 
-import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
-import io.fabric8.kubernetes.api.model.KubernetesListBuilder;
-import io.fabric8.kubernetes.api.model.ObjectMeta;
+import io.fabric8.kubernetes.api.model.ServiceAccount;
+import io.fabric8.kubernetes.api.model.ServiceAccountBuilder;
 
-public class AddServiceAccountResourceDecorator extends ResourceProvidingDecorator<KubernetesListBuilder> {
-
-    private final String deploymentName;
-    private final String name;
+public class AddServiceAccountResourceDecorator extends BaseAddRBACDecorator<ServiceAccount, ServiceAccountBuilder> {
     private final String namespace;
-    private final Map<String, String> labels;
 
     public AddServiceAccountResourceDecorator(String deploymentName, String name, String namespace,
             Map<String, String> labels) {
-        this.deploymentName = deploymentName;
-        this.name = name;
+        super(name, SERVICE_ACCOUNT, CORE_API_VERSION, deploymentName, labels);
         this.namespace = namespace;
-        this.labels = labels;
     }
 
-    public void visit(KubernetesListBuilder list) {
-        if (contains(list, "v1", SERVICE_ACCOUNT, name)) {
-            return;
-        }
+    @Override
+    protected ServiceAccountBuilder builderWithName(String name) {
+        return new ServiceAccountBuilder().withNewMetadata().withName(name).endMetadata();
+    }
 
-        Map<String, String> saLabels = new HashMap<>();
-        saLabels.putAll(labels);
-        getDeploymentMetadata(list, deploymentName)
-                .map(ObjectMeta::getLabels)
-                .ifPresent(saLabels::putAll);
-
-        list.addNewServiceAccountItem()
-                .withNewMetadata()
-                .withName(name)
-                .withNamespace(namespace)
-                .withLabels(saLabels)
-                .endMetadata()
-                .endServiceAccountItem();
+    @Override
+    protected void initBuilderWithDefaults(ServiceAccountBuilder builder, Void config) {
+        updateMetadata(builder.editOrNewMetadata(), namespace)
+                .endMetadata();
     }
 }

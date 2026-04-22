@@ -37,7 +37,7 @@ A single JSON‑RPC service can be used for both Dev UI and Dev MCP; methods wit
 
 === Extension skills
 
-Extensions can ship a `quarkus-skill.md` file to provide AI coding agents with extension-specific coding guidelines, testing patterns, and common pitfalls. During the Quarkus build, all skill files are automatically discovered, composed with extension metadata (name, description, guide URL), and aggregated into a single `io.quarkus:quarkus-extension-skills` JAR following the https://agentskills.io/specification[Agent Skills specification]. This JAR is published to Maven Central with each Quarkus release and is compatible with https://www.skillsjars.com[SkillsJars].
+Extensions can ship a `quarkus-skill.md` file to provide AI coding agents with extension-specific coding guidelines, testing patterns, and common pitfalls. During the Quarkus build, all skill files are automatically discovered, composed with extension metadata (name, description, guide URL, categories), and aggregated into a single `io.quarkus:quarkus-extension-skills` JAR following the https://agentskills.io/specification[Agent Skills specification]. This JAR is published to Maven Central with each Quarkus release and is compatible with https://www.skillsjars.com[SkillsJars].
 
 ==== Adding a skill file to your extension
 
@@ -50,7 +50,7 @@ my-extension/deployment/src/main/resources/META-INF/quarkus-skill.md
 
 That's it. No pom.xml changes are needed. The Quarkus build automatically discovers all `quarkus-skill.md` files across all extensions and aggregates them into the `quarkus-extension-skills` artifact.
 
-If your extension's runtime module has a `description` field in `META-INF/quarkus-extension.yaml`, it will be included in the composed skill's YAML frontmatter to help AI agents discover and understand your extension. While optional, providing a description is recommended:
+If your extension's runtime module has a `description` field in `META-INF/quarkus-extension.yaml`, it will be included in the composed skill's YAML frontmatter to help AI agents discover and understand your extension. The `categories` field under `metadata` is also included, allowing AI agents to group skills by category. While optional, providing a description and categories is recommended:
 
 [source,yaml]
 ----
@@ -59,6 +59,8 @@ description: "A concise description of what this extension does"
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
 metadata:
   guide: "https://quarkus.io/guides/my-extension"
+  categories:
+  - "web"
 ----
 
 The file should contain concise, actionable Markdown content. Focus on what an AI agent needs to know to use your extension correctly:
@@ -92,7 +94,7 @@ Example for a hypothetical extension:
 
 The skill file content is **not** shipped as-is. During the Quarkus build, the `aggregate-skills` goal scans the source tree for all `quarkus-skill.md` files and composes each one with extension metadata to produce a `SKILL.md` file at `META-INF/skills/{extension-name}/SKILL.md` inside the aggregated JAR. The composed document follows the https://agentskills.io/specification[Agent Skills specification] and includes:
 
-1. **YAML frontmatter** — the skill name, extension description from `quarkus-extension.yaml`, license, and guide URL as structured metadata for agent discovery.
+1. **YAML frontmatter** — the skill name, extension description from `quarkus-extension.yaml`, license, guide URL, and categories as structured metadata for agent discovery.
 2. **Skill body** — the patterns, testing guidelines, and pitfalls authored by the extension developer.
 3. **Dev MCP tools** — the skill is automatically enriched with an "Available Dev MCP Tools" section listing each MCP tool the extension enables by default, including tool names, descriptions, and parameters. Tools are discovered from runtime methods annotated with both `@JsonRpcDescription` and `@DevMCPEnableByDefault`, and from deployment processor classes annotated with `@DevMcpBuildTimeTool`.
 
@@ -106,6 +108,7 @@ description: "A brief description of the extension from quarkus-extension.yaml"
 license: Apache-2.0
 metadata:
   guide: https://quarkus.io/guides/my-extension
+  categories: "web, data"
 ---
 
 ### Data Access

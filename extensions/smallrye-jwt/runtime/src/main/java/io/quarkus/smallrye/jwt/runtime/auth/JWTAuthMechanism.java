@@ -5,6 +5,8 @@ import static io.vertx.core.http.HttpHeaders.COOKIE;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -29,6 +31,7 @@ import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.Cookie;
+import io.vertx.core.internal.ContextInternal;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -75,7 +78,9 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
                 VertxContextSafetyToggle.validateContextIfExists(ERROR_MSG, ERROR_MSG);
                 final var ctx = Vertx.currentContext();
                 final var token = new JsonWebTokenCredential(jwtToken);
-                ctx.putLocal(TokenCredential.class.getName(), token);
+                // Assume that consumers of this expect to find the context entry in the Vert.x 4 era context local maps
+                ConcurrentMap<Object, Object> localMap = ctx.getLocal(ContextInternal.LOCAL_MAP, ConcurrentHashMap::new);
+                localMap.put(TokenCredential.class.getName(), token);
                 return identityProviderManager
                         .authenticate(HttpSecurityUtils.setRoutingContextAttribute(
                                 new TokenAuthenticationRequest(token), context))
@@ -83,7 +88,7 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
                             @Override
                             public void run() {
                                 // remove as we recommend to acquire TokenCredential via CDI
-                                ctx.removeLocal(TokenCredential.class.getName());
+                                localMap.remove(TokenCredential.class.getName());
                             }
                         });
             }
@@ -131,7 +136,7 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
         protected String getCookieValue(String cookieName) {
             String cookieHeader = httpExchange.request().headers().get(COOKIE);
 
-            if (cookieHeader != null && httpExchange.cookieCount() == 0) {
+            if (cookieHeader != null && httpExchange.request().cookieCount() == 0) {
                 Set<io.netty.handler.codec.http.cookie.Cookie> nettyCookies = ServerCookieDecoder.STRICT.decode(cookieHeader);
                 for (io.netty.handler.codec.http.cookie.Cookie cookie : nettyCookies) {
                     if (cookie.name().equals(cookieName)) {
@@ -139,7 +144,7 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
                     }
                 }
             }
-            Cookie cookie = httpExchange.getCookie(cookieName);
+            Cookie cookie = httpExchange.request().getCookie(cookieName);
             return cookie != null ? cookie.getValue() : null;
         }
     }

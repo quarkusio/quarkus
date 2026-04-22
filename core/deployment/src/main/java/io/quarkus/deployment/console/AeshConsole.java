@@ -197,6 +197,9 @@ public class AeshConsole extends QuarkusConsole {
                     IN_WRITE.set(false);
                     connectionLock.unlock();
                 }
+            } else {
+                //another thread holds the lock; it will drain the queue
+                return;
             }
         }
     }

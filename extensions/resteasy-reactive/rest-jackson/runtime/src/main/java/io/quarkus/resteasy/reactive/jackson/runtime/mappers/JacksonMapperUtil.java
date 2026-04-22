@@ -4,16 +4,19 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Type;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.SerializableString;
 import com.fasterxml.jackson.databind.BeanProperty;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
 import io.quarkus.arc.Arc;
@@ -54,6 +57,34 @@ public class JacksonMapperUtil {
             }
         }
         return false;
+    }
+
+    /**
+     * Writes a field name to the JSON generator, translating through the ObjectMapper's
+     * {@link PropertyNamingStrategy} if one is configured.
+     * When no strategy is set, the pre-encoded {@code defaultName} is used for zero overhead.
+     */
+    public static void writeFieldName(JsonGenerator gen, PropertyNamingStrategy strategy,
+            String javaFieldName, SerializableString defaultName) throws IOException {
+        if (strategy == null) {
+            gen.writeFieldName(defaultName);
+        } else {
+            gen.writeFieldName(strategy.nameForField(null, null, javaFieldName));
+        }
+    }
+
+    /**
+     * Builds a reverse-translation index mapping strategy-translated JSON field names back to
+     * Java field names. Called once at the start of deserialization so that per-field lookups
+     * are O(1) via {@link Map#getOrDefault} instead of O(n) scans.
+     */
+    public static Map<String, String> buildReverseNameIndex(PropertyNamingStrategy strategy,
+            String[] translatableFieldNames) {
+        Map<String, String> index = new HashMap<>();
+        for (String javaName : translatableFieldNames) {
+            index.put(strategy.nameForField(null, null, javaName), javaName);
+        }
+        return index;
     }
 
     /**
@@ -119,7 +150,7 @@ public class JacksonMapperUtil {
         JavaType wrapperType = property != null ? property.getType() : context.getContextualType();
         JavaType[] valueTypes = new JavaType[wrapperType.containedTypeCount()];
         for (int i = 0; i < valueTypes.length; i++) {
-            valueTypes[i] = wrapperType.containedType(0);
+            valueTypes[i] = wrapperType.containedType(i);
         }
         return valueTypes;
     }

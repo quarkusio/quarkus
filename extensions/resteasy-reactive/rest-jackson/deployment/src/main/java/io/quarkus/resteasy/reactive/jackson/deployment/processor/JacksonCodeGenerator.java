@@ -25,6 +25,7 @@ import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
+import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -45,6 +46,9 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.resteasy.reactive.jackson.SecureField;
 
 public abstract class JacksonCodeGenerator {
+
+    private static final Logger log = Logger.getLogger(JacksonCodeGenerator.class);
+
     protected final BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
     protected final IndexView jandexIndex;
 
@@ -78,8 +82,13 @@ public abstract class JacksonCodeGenerator {
 
     private Optional<String> create(ClassInfo classInfo) {
         String beanClassName = classInfo.name().toString();
-        if (vetoedClass(classInfo, beanClassName) || hasUnknownClassAnnotation(classInfo)
-                || !generatedClassNames.add(beanClassName)) {
+        if (vetoedClass(classInfo, beanClassName) || !generatedClassNames.add(beanClassName)) {
+            return Optional.empty();
+        }
+        Optional<String> unknownAnnotation = findUnknownAnnotation(classInfo);
+        if (unknownAnnotation.isPresent()) {
+            log.infof("Skipping generation of reflection-free Jackson serializer for class %s" +
+                    " because it contains the unsupported Jackson annotation %s", beanClassName, unknownAnnotation.get());
             return Optional.empty();
         }
 
@@ -162,9 +171,11 @@ public abstract class JacksonCodeGenerator {
         return className.startsWith("java.") || className.startsWith("jakarta.") || className.startsWith("io.vertx.core.json.");
     }
 
-    private static boolean hasUnknownClassAnnotation(ClassInfo classInfo) {
-        return classInfo.declaredAnnotations().stream()
-                .anyMatch(a -> FieldSpecs.isUnknownAnnotation(a.name().toString()));
+    private static Optional<String> findUnknownAnnotation(ClassInfo classInfo) {
+        return classInfo.annotations().stream()
+                .map(a -> a.name().toString())
+                .filter(FieldSpecs::isUnknownAnnotation)
+                .findFirst();
     }
 
     protected enum FieldKind {
@@ -173,6 +184,7 @@ public abstract class JacksonCodeGenerator {
         LIST(true),
         SET(true),
         MAP(true),
+        OPTIONAL(true),
         TYPE_VARIABLE(true);
 
         private final boolean generic;
@@ -207,6 +219,10 @@ public abstract class JacksonCodeGenerator {
                 if (typeName.equals("java.lang.Iterable") || isAssignableTo(typeName, COLLECTION_NAME)) {
                     registerTypeToBeGenerated(pType.arguments().get(0));
                     return FieldKind.LIST;
+                }
+                if (Optional.class.getName().equals(typeName)) {
+                    registerTypeToBeGenerated(pType.arguments().get(0));
+                    return FieldKind.OPTIONAL;
                 }
             }
             if (pType.arguments().size() == 2 && isAssignableTo(typeName, MAP_NAME)) {
@@ -318,6 +334,7 @@ public abstract class JacksonCodeGenerator {
 
         final String fieldName;
         final String jsonName;
+        final boolean hasExplicitJsonName;
         final String[] aliases;
         final Type fieldType;
 
@@ -349,7 +366,9 @@ public abstract class JacksonCodeGenerator {
             }
             this.fieldType = fieldType();
             this.fieldName = fieldName();
-            this.jsonName = jsonName(constructor, namingStrategy);
+            JsonNameResult result = jsonName(constructor, namingStrategy);
+            this.jsonName = result.name;
+            this.hasExplicitJsonName = result.explicit;
             this.aliases = jsonAliases();
         }
 
@@ -357,7 +376,9 @@ public abstract class JacksonCodeGenerator {
             readAnnotations(paramInfo);
             this.fieldType = paramInfo.type();
             this.fieldName = paramInfo.name();
-            this.jsonName = jsonName(null, namingStrategy);
+            JsonNameResult result = jsonName(null, namingStrategy);
+            this.jsonName = result.name;
+            this.hasExplicitJsonName = result.explicit;
             this.aliases = jsonAliases();
         }
 
@@ -390,7 +411,10 @@ public abstract class JacksonCodeGenerator {
             return new String[0];
         }
 
-        private String jsonName(MethodInfo constructor, PropertyNamingStrategy namingStrategy) {
+        private record JsonNameResult(String name, boolean explicit) {
+        }
+
+        private JsonNameResult jsonName(MethodInfo constructor, PropertyNamingStrategy namingStrategy) {
             AnnotationInstance jsonProperty = annotations.get(JsonProperty.class.getName());
             if (jsonProperty == null && constructor != null) {
                 jsonProperty = constructor.parameters().stream()
@@ -402,13 +426,13 @@ public abstract class JacksonCodeGenerator {
             if (jsonProperty != null) {
                 AnnotationValue value = jsonProperty.value();
                 if (value != null && !value.asString().isEmpty()) {
-                    return value.asString();
+                    return new JsonNameResult(value.asString(), true);
                 }
             }
             if (namingStrategy != null) {
-                return namingStrategy.nameForField(null, null, fieldName);
+                return new JsonNameResult(namingStrategy.nameForField(null, null, fieldName), true);
             }
-            return fieldName;
+            return new JsonNameResult(fieldName, false);
         }
 
         private String fieldName() {
@@ -427,10 +451,6 @@ public abstract class JacksonCodeGenerator {
                 return methodName.substring(3, 4).toLowerCase() + methodName.substring(4);
             }
             return methodName;
-        }
-
-        boolean hasUnknownAnnotation() {
-            return annotations.keySet().stream().anyMatch(FieldSpecs::isUnknownAnnotation);
         }
 
         boolean isIgnoredField() {

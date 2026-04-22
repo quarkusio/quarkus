@@ -14,7 +14,9 @@ import java.util.stream.Collectors;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.WebApplicationException;
@@ -111,6 +113,20 @@ public class SimpleJsonResource extends SuperClass<Person> {
     @Path("/dog-echo")
     @Consumes(MediaType.APPLICATION_JSON)
     public Dog echoDog(Dog dog) {
+        return dog;
+    }
+
+    @PUT
+    @Path("/dog-echo-put")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Dog echoDogPut(Dog dog) {
+        return dog;
+    }
+
+    @PATCH
+    @Path("/dog-echo-patch")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Dog echoDogPatch(Dog dog) {
         return dog;
     }
 
@@ -493,6 +509,14 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return item.getContent().getName();
     }
 
+    @POST
+    @Path("/multiGenericInput")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public String multiGenericInputTest(Pair<Item, Score> pair) {
+        return pair.getFirst().getName() + "/" + pair.getSecond().getCategory() + "/" + pair.getSecond().getValue();
+    }
+
     @GET
     @Path("/interface")
     public ContainerDTO interfaceTest() {
@@ -548,6 +572,22 @@ public class SimpleJsonResource extends SuperClass<Person> {
     }
 
     @POST
+    @Path("/product-price")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public ProductPrice echoProductPrice(ProductPrice productPrice) {
+        return productPrice;
+    }
+
+    @PUT
+    @Path("/product-price")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public ProductPrice echoProductPricePut(ProductPrice productPrice) {
+        return productPrice;
+    }
+
+    @POST
     @Path("/primitive-types-bean")
     public PrimitiveTypesBean echoPrimitiveTypesBean(PrimitiveTypesBean bean) {
         return bean;
@@ -557,6 +597,29 @@ public class SimpleJsonResource extends SuperClass<Person> {
     @Path("/primitive-types-record")
     public PrimitiveTypesRecord echoPrimitiveTypesRecord(PrimitiveTypesRecord record) {
         return record;
+    }
+
+    @POST
+    @Path("/default-value-holder")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public DefaultValueHolder echoDefaultValueHolder(DefaultValueHolder holder) {
+        return holder;
+    }
+
+    @POST
+    @Path("/optional-holder")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public String echoOptionalHolder(OptionalHolder holder) {
+        // Access the Score object to verify it was deserialized to the correct type,
+        // not to a LinkedHashMap (which would cause a ClassCastException)
+        String scoreCategory = holder.getScore()
+                .map(Score::getCategory)
+                .orElse("none");
+        return "{\"name\":" + holder.getName().map(n -> "\"" + n + "\"").orElse("null")
+                + ",\"count\":" + holder.getCount().map(Object::toString).orElse("null")
+                + ",\"scoreCategory\":\"" + scoreCategory + "\"}";
     }
 
     public static class UnquotedFieldsPersonSerialization implements BiFunction<ObjectMapper, Type, ObjectWriter> {
@@ -656,5 +719,13 @@ public class SimpleJsonResource extends SuperClass<Person> {
     @Produces(MediaType.APPLICATION_JSON)
     public AnnotationNamingRequest annotationNamingSer() {
         return new AnnotationNamingRequest("Bob");
+    }
+
+    @POST
+    @Path("/any-setter")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public String anySetter(AnySetterRequest request) {
+        return "{\"known\":\"" + request.getKnown() + "\",\"extras_size\":" + request.getExtras().size() + "}";
     }
 }

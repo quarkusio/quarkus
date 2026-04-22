@@ -69,8 +69,6 @@ import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.Level;
 
-import com.fasterxml.jackson.databind.Module;
-
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
@@ -195,6 +193,8 @@ public final class HibernateOrmProcessor {
     private static final String INTEGRATOR_SERVICE_FILE = "META-INF/services/org.hibernate.integrator.spi.Integrator";
 
     private static final String JAKARTA_DATA_REPOSITORY_ANNOTATION = "jakarta.data.repository.Repository";
+
+    private static final String JACKSON_DATABIND_MODULE = "com.fasterxml.jackson.databind.Module";
 
     static {
         // configure ByteBuddy for build reproducibility
@@ -361,7 +361,7 @@ public final class HibernateOrmProcessor {
         }
         // Hibernate's default FormatMapper relying on Jackson requires
         // service loading to discover modules in the classpath.
-        serviceProviders.produce(ServiceProviderBuildItem.allProvidersFromClassPath(Module.class.getName()));
+        serviceProviders.produce(ServiceProviderBuildItem.allProvidersFromClassPath(JACKSON_DATABIND_MODULE));
     }
 
     @BuildStep

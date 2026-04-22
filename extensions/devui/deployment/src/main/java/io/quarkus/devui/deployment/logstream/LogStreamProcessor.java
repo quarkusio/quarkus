@@ -21,11 +21,13 @@ import io.quarkus.devui.runtime.logstream.LogStreamRecorder;
 import io.quarkus.devui.runtime.logstream.MutinyLogHandler;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
+import io.quarkus.devui.spi.buildtime.DevMcpBuildTimeTool;
 import io.quarkus.runtime.RuntimeValue;
 
 /**
  * Processor for Log stream in Dev UI
  */
+@DevMcpBuildTimeTool(name = "forceRestart", description = "Force a Quarkus application restart")
 public class LogStreamProcessor {
 
     private final String namespace = "devui-logstream";

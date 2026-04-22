@@ -38,6 +38,7 @@ import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
+import io.quarkus.devui.spi.buildtime.DevMcpBuildTimeTool;
 import io.quarkus.info.BuildInfo;
 import io.quarkus.info.GitInfo;
 import io.quarkus.info.JavaInfo;
@@ -51,6 +52,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
 
+@DevMcpBuildTimeTool(name = "getApplicationAndEnvironmentInfo", description = "Information about the environment where this Quarkus application is running. Things like Operating System, Java version, Git information and application details.")
 public class InfoProcessor {
 
     private static final Logger log = Logger.getLogger(InfoProcessor.class);

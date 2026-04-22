@@ -9,7 +9,8 @@ when performing that type of work.
 - **Update documentation.** When changes affect user-facing behavior, config, or
   APIs, update the relevant `.adoc` files in `docs/src/main/asciidoc/`.
 - **Add or update tests.** Bug fixes need a reproducer test. New features need
-  tests. Test in both JVM and native mode for non-trivial changes.
+  tests. Test in both JVM and native mode for non-trivial changes. Prefer
+  AssertJ for assertions.
 - **You are responsible for what you submit.** Validate all changes. Do not
   submit AI-generated code without human oversight.
 

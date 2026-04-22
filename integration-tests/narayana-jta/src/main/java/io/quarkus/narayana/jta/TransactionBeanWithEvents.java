@@ -53,7 +53,7 @@ public class TransactionBeanWithEvents {
         return destroyedCount;
     }
 
-    static int getCommited() {
+    static int getCommitted() {
         return commitCount;
     }
 

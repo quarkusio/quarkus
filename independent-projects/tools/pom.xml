@@ -71,7 +71,6 @@
         <module>codestarts</module>
         <module>base-codestarts</module>
         <module>devtools-common</module>
-        <module>utilities</module>
         <module>analytics-common</module>
     </modules>
     <dependencyManagement>
@@ -140,11 +139,6 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-devtools-message-writer</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-devtools-utilities</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

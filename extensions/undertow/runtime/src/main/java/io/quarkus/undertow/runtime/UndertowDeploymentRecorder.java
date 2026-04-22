@@ -109,7 +109,6 @@ import io.undertow.servlet.spec.ServletContextImpl;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.ImmediateAuthenticationMechanismFactory;
 import io.undertow.vertx.VertxHttpExchange;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -440,16 +439,12 @@ public class UndertowDeploymentRecorder {
                         event.getBody());
                 exchange.setPushHandler(VertxHttpRecorder.getRootHandler());
 
-                // Note that we can't add an end handler in a separate HttpCompressionHandler because VertxHttpExchange does set
-                // its own end handler and so the end handlers added previously are just ignored...
                 if (!compressMediaTypes.isEmpty()) {
-                    event.addEndHandler(new Handler<AsyncResult<Void>>() {
+                    event.addHeadersEndHandler(new Handler<Void>() {
 
                         @Override
-                        public void handle(AsyncResult<Void> result) {
-                            if (result.succeeded()) {
-                                HttpCompressionHandler.compressIfNeeded(event, compressMediaTypes);
-                            }
+                        public void handle(Void result) {
+                            HttpCompressionHandler.compressIfNeeded(event, compressMediaTypes);
                         }
                     });
                 }

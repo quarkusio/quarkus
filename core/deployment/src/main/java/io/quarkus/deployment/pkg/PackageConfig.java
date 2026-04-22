@@ -183,6 +183,11 @@ public interface PackageConfig {
         boolean addRunnerSuffix();
 
         /**
+         * Tree-shaking configuration.
+         */
+        TreeShakeConfig treeShake();
+
+        /**
          * Indicates a list of dependency for which the jar will use artifactId.type filename scheme
          * Each dependency needs to be expressed in the following format:
          * <p>

@@ -527,7 +527,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
             if(err.error.message){
                 notifier.showErrorMessage(err.message + ". " + msg('Please check your logs.', { id: 'workspace-check-logs' }));
             }else {
-                notifier.showErrorMessage(msg('An error occured.', { id: 'workspace-error' }) + " " + msg('Please check your logs.', { id: 'workspace-check-logs' }));
+                notifier.showErrorMessage(msg('An error occurred.', { id: 'workspace-error' }) + " " + msg('Please check your logs.', { id: 'workspace-check-logs' }));
             }
         });
     }

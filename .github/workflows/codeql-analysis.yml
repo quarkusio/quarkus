@@ -46,7 +46,7 @@ jobs:
           ${{ steps.cache-key.outputs.m2-monthly-cache-key }}-
 
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v4
+      uses: github/codeql-action/init@v4.35.1
       with:
         languages: java-kotlin
         queries: security-extended
@@ -56,4 +56,4 @@ jobs:
         ./mvnw -T1C -e -B --settings .github/mvn-settings.xml --fail-at-end -DskipTests -DskipITs -Denforcer.skip -DskipDocs -Dforbiddenapis.skip -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-test-modules install
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v4
+      uses: github/codeql-action/analyze@v4.35.1

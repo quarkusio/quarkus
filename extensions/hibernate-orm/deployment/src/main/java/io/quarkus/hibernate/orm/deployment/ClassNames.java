@@ -503,6 +503,26 @@ public final class ClassNames {
             createConstant("org.geolatte.geom.codec.MySqlWkbDecoder"),
             createConstant("org.geolatte.geom.codec.HANAWkbDecoder"));
 
+    public static final List<DotName> HIBERNATE_VECTOR_TYPE_CONTRIBUTORS = List.of(
+            createConstant("org.hibernate.vector.internal.PGVectorTypeContributor"),
+            createConstant("org.hibernate.vector.internal.OracleVectorTypeContributor"),
+            createConstant("org.hibernate.vector.internal.MariaDBTypeContributor"),
+            createConstant("org.hibernate.vector.internal.MySQLTypeContributor"),
+            createConstant("org.hibernate.vector.internal.DB2VectorTypeContributor"),
+            createConstant("org.hibernate.vector.internal.CockroachTypeContributor"),
+            createConstant("org.hibernate.vector.internal.HANAVectorTypeContributor"),
+            createConstant("org.hibernate.vector.internal.SQLServerTypeContributor"));
+
+    public static final List<DotName> HIBERNATE_VECTOR_FUNCTION_CONTRIBUTORS = List.of(
+            createConstant("org.hibernate.vector.internal.PGVectorFunctionContributor"),
+            createConstant("org.hibernate.vector.internal.OracleVectorFunctionContributor"),
+            createConstant("org.hibernate.vector.internal.MariaDBFunctionContributor"),
+            createConstant("org.hibernate.vector.internal.MySQLFunctionContributor"),
+            createConstant("org.hibernate.vector.internal.DB2VectorFunctionContributor"),
+            createConstant("org.hibernate.vector.internal.CockroachFunctionContributor"),
+            createConstant("org.hibernate.vector.internal.HANAVectorFunctionContributor"),
+            createConstant("org.hibernate.vector.internal.SQLServerVectorFunctionContributor"));
+
     public static final DotName HIBERNATE_ORM_PROCESSOR = createConstant(
             "io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor");
 

@@ -64,10 +64,6 @@ fixes, documentation, examples... But first, read this page (including the small
   * [Check security vulnerabilities](#check-security-vulnerabilities)
   * [External Maven repositories](#external-maven-repositories)
 - [LLM Usage Policy](#llm-usage-policy)
-  * [Acceptable Use of LLMs](#acceptable-use-of-llms)
-  * [Unacceptable Use](#unacceptable-use)
-  * [Consequences](#consequences)
-  * [If in Doubt](#if-in-doubt)
 - [The small print](#the-small-print)
 - [Frequently Asked Questions](#frequently-asked-questions)
 
@@ -106,7 +102,7 @@ what you would expect to see. Don't forget to indicate your Quarkus, Java, Maven
 Sometimes a bug has been fixed in the `main` branch of Quarkus and you want to confirm it is fixed for your own
 application. There are two simple options for testing the `main` branch:
 
-* either use the snapshots we publish daily on [GitHub Packages](https://github.com/quarkusio/quarkus/packages)
+* either use the snapshots we publish daily on <https://central.sonatype.com/repository/maven-snapshots>
 * or build Quarkus locally
 
 The following is a quick summary aimed at allowing you to quickly test `main`. If you are interested in learning more details, refer to
@@ -114,36 +110,23 @@ the [Build section](#build) and the [Usage section](#usage).
 
 ### Using snapshots
 
-Snapshots are published daily with version `999-SNAPSHOT` to GitHub Packages, so you will have to wait for a snapshot containing the commits you are interested in.
+Snapshots are published daily with version `999-SNAPSHOT`, so you will have to wait for a snapshot containing the commits you are interested in.
 
-> **Note:** GitHub Packages requires authentication even for reading public packages.
-> You will need a GitHub Personal Access Token with the `read:packages` scope.
-> You can create one at <https://github.com/settings/tokens>.
-
-Add the GitHub Packages repository as a Maven repository **and** a plugin
-repository in your `settings.xml` (which should be placed in the `.m2` directory within your home directory).
-Replace `YOUR_GITHUB_USERNAME` and `YOUR_GITHUB_TOKEN` with your credentials
-(you can also use environment variables or [Maven password encryption](https://maven.apache.org/guides/mini/guide-encryption.html) to avoid storing credentials in plain text):
+Then just add <https://central.sonatype.com/repository/maven-snapshots> as a Maven repository **and** a plugin
+repository in your `settings xml` (which should be placed in the `.m2` directory within your home directory):
 
 ```xml
 
 <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
-    <servers>
-        <server>
-            <id>github-quarkus</id>
-            <username>YOUR_GITHUB_USERNAME</username>
-            <password>YOUR_GITHUB_TOKEN</password>
-        </server>
-    </servers>
     <profiles>
         <profile>
             <id>quarkus-snapshots</id>
             <repositories>
                 <repository>
-                    <id>github-quarkus</id>
-                    <url>https://maven.pkg.github.com/quarkusio/quarkus</url>
+                    <id>quarkus-snapshots-repository</id>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
                     <releases>
                         <enabled>false</enabled>
                     </releases>
@@ -154,8 +137,8 @@ Replace `YOUR_GITHUB_USERNAME` and `YOUR_GITHUB_TOKEN` with your credentials
             </repositories>
             <pluginRepositories>
                 <pluginRepository>
-                    <id>github-quarkus</id>
-                    <url>https://maven.pkg.github.com/quarkusio/quarkus</url>
+                    <id>quarkus-snapshots-plugin-repository</id>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
                     <releases>
                         <enabled>false</enabled>
                     </releases>
@@ -171,6 +154,8 @@ Replace `YOUR_GITHUB_USERNAME` and `YOUR_GITHUB_TOKEN` with your credentials
     </activeProfiles>
 </settings>
 ```
+
+You can check the last publication date here: <https://central.sonatype.com/service/rest/repository/browse/maven-snapshots/io/quarkus/quarkus-core/999-SNAPSHOT/>.
 
 ### Building main
 
@@ -865,14 +850,10 @@ repositories {
 }
 ```
 
-**Note**  Use the following definition in `repositories` section when using daily snapshot builds instead of local builds (requires authentication, see [Using snapshots](#using-snapshots)):
+**Note**  Use the following definition in `repositories` section when using daily snapshot builds instead of local builds:
 ```gradle
     maven {
-        url 'https://maven.pkg.github.com/quarkusio/quarkus'
-        credentials {
-            username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_USERNAME")
-            password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
-        }
+        url 'https://central.sonatype.com/repository/maven-snapshots/'
     }
 ```
 
@@ -963,34 +944,9 @@ When a dependency relies on an external repository that is not Maven Central, we
 
 ## LLM Usage Policy
 
-At Quarkus, we welcome tools that help developers become more productive — including Large Language Models (LLMs) and Agents like ChatGPT, GitHub Copilot, and others.
+The Quarkus project has a dedicated AI and LLM usage policy that applies to all contributions (issues, pull requests, comments, discussions, and other project interactions).
 
-However, recent patterns of use have led to increased moderation burden, low-value contributions, and reduced community signal. To ensure a healthy and productive community, the following expectations apply:
-
-### Acceptable Use of LLMs
-
-- LLMs may be used to **assist your development** — e.g. drafting code, writing documentation, proposing fixes — as long as **you understand, validate**, and **take responsibility for the results.**
-- You should only submit contributions (PRs, comments, discussions, issues) that reflect your **own understanding** and **intent**, not what an Agent/LLM "spit out."
-- You may use Agents/LLMs to help you **write better**, but not to **post more**.
-
-### Unacceptable Use
-
-- Submitting code, tests, comments, or issues that appear to be **copied directly from an LLM with little or no human oversight** is **not acceptable**.
-- Posting **large volumes of low-effort suggestions, vague issues, or links with no context** — even if technically accurate — is considered spam.
-- Submitting **AI-generated tests that do not validate actual behavior** or meaningfully cover functionality is not helpful and will be rejected.
-- Using bots, agents, or automated tools to open PRs, file issues, or post content **without human authorship and responsibility** is not allowed.
-
-### Consequences
-
-- We may close issues, PRs, or discussions that violate this policy without detailed explanation.
-- Repeated violations may result in temporary or permanent restrictions from participating in the project.
-
-### If in Doubt
-
-If you're unsure whether your use of Agent/LLMs is acceptable — ask! We're happy to help contributors learn how to use AI tools effectively **without creating noise**.
-
-> This isn’t about banning AI — it’s about keeping Quarkus collaborative, human-driven, and focused on quality.
-
+Please read the [AI and LLM Usage Policy](AI_POLICY.md) before opening issues or pull requests.
 
 
 ## The small print

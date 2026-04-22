@@ -286,6 +286,9 @@ public class SkillProcessor {
         sb.append("name: ").append(skillName).append("\n");
         sb.append("description: >-\n  Coding patterns, testing guidelines, and configuration reference for the ")
                 .append(extInfo.name).append(" Quarkus extension.\n");
+        if (extInfo.categories != null && !extInfo.categories.isEmpty()) {
+            sb.append("categories: \"").append(String.join(", ", extInfo.categories)).append("\"\n");
+        }
         if ((extInfo.guide != null && !extInfo.guide.isBlank())
                 || (extInfo.quickstart != null && !extInfo.quickstart.isBlank())) {
             sb.append("metadata:\n");

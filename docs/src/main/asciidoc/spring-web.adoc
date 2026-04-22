@@ -34,7 +34,7 @@ The solution is located in the `spring-web-quickstart` link:{quickstarts-tree-ur
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: spring-web-quickstart
-:create-app-extensions: spring-web,rest-jackson
+:create-app-extensions: spring-web
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates a project which imports the `spring-web` extension.
@@ -42,7 +42,7 @@ This command generates a project which imports the `spring-web` extension.
 If you already have your Quarkus project configured, you can add the `spring-web` extension
 to your project by running the following command in your project base directory:
 
-:add-extension-extensions: spring-web,rest-jackson
+:add-extension-extensions: spring-web
 include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
@@ -54,23 +54,15 @@ This will add the following to your build file:
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-spring-web</artifactId>
 </dependency>
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-rest-jackson</artifactId>
-</dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
 implementation("io.quarkus:quarkus-spring-web")
-implementation("io.quarkus:quarkus-rest-jackson")
 ----
 
-[IMPORTANT]
-====
-`quarkus-spring-web` needs to be complemented with either `quarkus-rest-jackson` or `quarkus-resteasy-jackson` in order to work.
-====
+NOTE: `quarkus-spring-web` requires a JSON serialization extension such as `quarkus-rest-jackson` or `quarkus-resteasy-jackson`. If none is present in your project dependencies, `quarkus-rest-jackson` will be added automatically as the default provider.
 
 == GreetingController
 

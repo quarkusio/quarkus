@@ -216,7 +216,7 @@
         <prometheus.version>0.16.0</prometheus.version>
         <!-- Dev UI -->
         <importmap.version>1.0.11</importmap.version>
-        <webauthn4j.version>0.28.0.RELEASE</webauthn4j.version>
+        <webauthn4j.version>0.30.3.RELEASE</webauthn4j.version>
     </properties>
 
     <pluginRepositories>

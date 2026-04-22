@@ -28,6 +28,7 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
@@ -52,6 +53,7 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
     protected final TransformedClassesBuildItem transformedClasses;
     protected final List<GeneratedClassBuildItem> generatedClasses;
     protected final List<GeneratedResourceBuildItem> generatedResources;
+    protected final List<GeneratedServiceProviderBuildItem> generatedServiceProviders;
     protected final Set<ArtifactKey> removedArtifactKeys;
     protected final ExecutorService executorService;
     protected final ResolvedJVMRequirements jvmRequirements;
@@ -65,6 +67,7 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
             TransformedClassesBuildItem transformedClasses,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
+            List<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             Set<ArtifactKey> removedArtifactKeys,
             ExecutorService executorService,
             ResolvedJVMRequirements jvmRequirements) {
@@ -77,6 +80,7 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
         this.transformedClasses = transformedClasses;
         this.generatedClasses = generatedClasses;
         this.generatedResources = generatedResources;
+        this.generatedServiceProviders = generatedServiceProviders;
         this.removedArtifactKeys = removedArtifactKeys;
         this.executorService = executorService;
         this.jvmRequirements = jvmRequirements;
@@ -200,11 +204,15 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
             if (ignoredEntriesPredicate.test(i.getName())) {
                 continue;
             }
-            if (i.getName().startsWith("META-INF/services/")) {
-                concatenatedEntries.computeIfAbsent(i.getName(), (u) -> new ArrayList<>()).add(i.getData());
-                continue;
-            }
             archiveCreator.addFile(i.getData(), i.getName(), ArchiveCreator.CURRENT_APPLICATION);
+        }
+
+        // generated service providers go directly into the concatenated entries map
+        for (GeneratedServiceProviderBuildItem item : generatedServiceProviders) {
+            String path = "META-INF/services/" + item.getServiceInterfaceName();
+            byte[] content = (item.getImplementationClassName() + System.lineSeparator())
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            concatenatedEntries.computeIfAbsent(path, (u) -> new ArrayList<>()).add(content);
         }
 
         // then the root archive files, note that in the case of Uberjars, dependencies will be added last

@@ -526,6 +526,18 @@ public class StartupActionImpl implements StartupAction {
                 }
                 data.put(i.getName(), i.getData());
             }
+            // merge generated service providers into META-INF/services/ entries
+            Map<String, StringBuilder> serviceProviders = new java.util.LinkedHashMap<>();
+            for (io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem i : buildResult
+                    .consumeMulti(io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem.class)) {
+                serviceProviders.computeIfAbsent("META-INF/services/" + i.getServiceInterfaceName(),
+                        k -> new StringBuilder())
+                        .append(i.getImplementationClassName())
+                        .append(System.lineSeparator());
+            }
+            for (Map.Entry<String, StringBuilder> entry : serviceProviders.entrySet()) {
+                data.put(entry.getKey(), entry.getValue().toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
         }
         return data;
     }

@@ -23,12 +23,20 @@ public final class GeneratedResourceBuildItem extends MultiBuildItem {
     final boolean excludeFromDevCL;
 
     public GeneratedResourceBuildItem(String name, byte[] data) {
+        if (name.startsWith("META-INF/services/")) {
+            throw new IllegalArgumentException(
+                    "Use GeneratedServiceProviderBuildItem to register service providers instead of GeneratedResourceBuildItem");
+        }
         this.name = name;
         this.data = data;
         this.excludeFromDevCL = false;
     }
 
     public GeneratedResourceBuildItem(String name, byte[] data, boolean excludeFromDevCL) {
+        if (name.startsWith("META-INF/services/")) {
+            throw new IllegalArgumentException(
+                    "Use GeneratedServiceProviderBuildItem to register service providers instead of GeneratedResourceBuildItem");
+        }
         this.name = name;
         this.data = data;
         this.excludeFromDevCL = excludeFromDevCL;

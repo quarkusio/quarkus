@@ -31,9 +31,12 @@ import java.nio.file.Paths;
 import java.security.PrivateKey;
 import java.time.Instant;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import javax.crypto.SecretKey;
 
@@ -779,6 +782,73 @@ public class CodeFlowAuthorizationTest {
                     "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"
                             .getBytes(StandardCharsets.UTF_8));
         }
+    }
+
+    @Test
+    public void testConcurrentCodeFlowTokenRefreshWithEmitOn() throws Exception {
+        defineCodeFlowConcurrentRefreshStub();
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-concurrent-refresh");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            TextPage textPage = form.getInputByValue("login").click();
+            assertEquals("hello", textPage.getContent());
+
+            var cookies = new HashMap<String, String>();
+            for (var c : webClient.getCookieManager().getCookies()) {
+                cookies.put(c.getName(), c.getValue());
+            }
+
+            Thread.sleep(2000);
+            var errors = new CopyOnWriteArrayList<String>();
+            IntStream.range(0, 5).parallel().forEach(i -> {
+                var spec = RestAssured.given().redirects().follow(false);
+                for (var entry : cookies.entrySet()) {
+                    spec.cookie(entry.getKey(), entry.getValue());
+                }
+                var response = spec.get("http://localhost:8081/code-flow-concurrent-refresh");
+                if (response.statusCode() != 200) {
+                    errors.add("Request " + i + ": expected 200 but got " + response.statusCode()
+                            + ". Response: " + response.body().asString());
+                }
+            });
+            assertTrue(errors.isEmpty(), String.join("\n", errors));
+        } finally {
+            clearCache();
+        }
+    }
+
+    private void defineCodeFlowConcurrentRefreshStub() {
+        wireMockServer
+                .stubFor(WireMock.post("/auth/realms/quarkus/concurrent-refresh-token")
+                        .withRequestBody(containing("authorization_code"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "  \"access_token\": \""
+                                        + OidcWiremockTestResource.getAccessToken("alice", Set.of()) + "\",\n" +
+                                        "  \"refresh_token\": \"concurrent-refresh-token-1\",\n" +
+                                        "  \"id_token\": \"{{basic-scheme-id-token 'alice'}}\"\n" +
+                                        "}")
+                                .withTransformers("response-template")));
+
+        wireMockServer
+                .stubFor(WireMock.post("/auth/realms/quarkus/concurrent-refresh-token")
+                        .withRequestBody(containing("refresh_token=concurrent-refresh-token-1"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "  \"access_token\": \""
+                                        + OidcWiremockTestResource.getAccessToken("alice", Set.of()) + "\",\n" +
+                                        "  \"refresh_token\": \"concurrent-refresh-token-2\",\n" +
+                                        "  \"id_token\": \"{{basic-scheme-id-token 'alice'}}\"\n" +
+                                        "}")
+                                .withTransformers("response-template")
+                                .withFixedDelay(2000)));
     }
 
     private WebClient createWebClient() {

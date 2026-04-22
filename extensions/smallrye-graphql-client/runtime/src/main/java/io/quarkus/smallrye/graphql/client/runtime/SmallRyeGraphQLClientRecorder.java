@@ -139,7 +139,7 @@ public class SmallRyeGraphQLClientRecorder {
                 .ifPresent(tlsConfiguration -> {
                     transformed.setTlsKeyStoreOptions(tlsConfiguration.getKeyStoreOptions());
                     transformed.setTlsTrustStoreOptions(tlsConfiguration.getTrustStoreOptions());
-                    transformed.setSslOptions(tlsConfiguration.getSSLOptions());
+                    transformed.setSslOptions(tlsConfiguration.getClientSSLOptions());
                     tlsConfiguration.getHostnameVerificationAlgorithm()
                             .ifPresent(transformed::setHostnameVerificationAlgorithm);
                     transformed.setUsesSni(Boolean.valueOf(tlsConfiguration.usesSni()));

@@ -50,6 +50,6 @@ public class GraphQLClientCertificateUpdateEventListener {
         graphQLClientConfiguration
                 .setTlsTrustStoreOptions(updatedTlsConfiguration.getTrustStoreOptions());
         graphQLClientConfiguration
-                .setSslOptions(updatedTlsConfiguration.getSSLOptions()); // CLR
+                .setSslOptions(updatedTlsConfiguration.getClientSSLOptions()); // CLR
     }
 }

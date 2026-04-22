@@ -10,7 +10,8 @@ description: >
 ## Formatting
 
 - Quarkus uses 4-space indentation (no tabs)
-- The project enforces formatting via `formatter-maven-plugin` and `impsort-maven-plugin`
+- The project enforces formatting via `formatter-maven-plugin` and `impsort-maven-plugin`,
+  let the formatting plugins do their work, never use `-Dno-format`
 - Formatter config: `independent-projects/ide-config/src/main/resources/eclipse-format.xml`
 - Run `./mvnw process-sources` on your module to auto-format before committing
 - The build **will fail** on formatting violations
@@ -42,6 +43,8 @@ description: >
 - Avoid `static` imports except for well-known patterns (e.g., test assertions)
 - **Minimize lambdas and streams in runtime code** — reduces memory footprint for native
 - Prefer descriptive method and variable names over comments
+- Update existing code comments if your changes make them invalid
+- Never remove existing code comments that are still valid
 - Keep methods focused and short; extract when complexity warrants it
 - Use `Optional` for API return types that may be absent. In internal hot runtime
   code paths, direct null checks are acceptable for performance

@@ -5505,6 +5505,11 @@
                 <artifactId>hibernate-jpamodelgen</artifactId>
                 <version>${hibernate-orm.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.hibernate.orm</groupId>
+                <artifactId>hibernate-assistant</artifactId>
+                <version>${hibernate-orm.version}</version>
+            </dependency>
             <!-- Workaround for Maven relocations not being supported for
                  annotation processor paths in Maven Compiler Plugin
                  See https://github.com/apache/maven-compiler-plugin/pull/180#issuecomment-1876921475 -->
@@ -5598,11 +5603,6 @@
                         <artifactId>jandex</artifactId>
                     </exclusion>
                 </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.hibernate.tool</groupId>
-                <artifactId>hibernate-tools-language</artifactId>
-                <version>${hibernate-tools.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.postgresql</groupId>

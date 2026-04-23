@@ -55,8 +55,6 @@ import io.quarkus.opentelemetry.runtime.exporter.otlp.logs.VertxHttpLogRecordExp
 import io.quarkus.opentelemetry.runtime.exporter.otlp.metrics.NoopMetricExporter;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.metrics.VertxGrpcMetricExporter;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.metrics.VertxHttpMetricsExporter;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.sender.VertxGrpcSender;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.sender.VertxHttpSender;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.LateBoundSpanProcessor;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.RemoveableLateBoundSpanProcessor;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.VertxGrpcSpanExporter;
@@ -65,6 +63,8 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
+import io.smallrye.opentelemetry.senders.VertxGrpcSender;
+import io.smallrye.opentelemetry.senders.VertxHttpSender;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.net.PemKeyCertOptions;

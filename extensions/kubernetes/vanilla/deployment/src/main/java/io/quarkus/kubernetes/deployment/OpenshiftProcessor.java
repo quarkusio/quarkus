@@ -19,7 +19,6 @@ import io.dekorate.kubernetes.decorator.AddAnnotationDecorator;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddLabelDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
-import io.dekorate.openshift.decorator.ApplyReplicasToDeploymentConfigDecorator;
 import io.dekorate.s2i.config.S2iBuildConfig;
 import io.dekorate.s2i.config.S2iBuildConfigBuilder;
 import io.dekorate.s2i.decorator.AddBuilderImageStreamResourceDecorator;
@@ -291,15 +290,6 @@ public class OpenshiftProcessor extends BaseKubeProcessor<AddPortToOpenshiftConf
             for (Map.Entry<String, String> label : config.route().labels().entrySet()) {
                 context.add(new AddLabelDecorator(name, label.getKey(), label.getValue(), ROUTE));
             }
-        }
-
-        if (config.replicas() != 1) {
-            // This only affects DeploymentConfig
-            context.add(new ApplyReplicasToDeploymentConfigDecorator(name, config.replicas()));
-            // This only affects Deployment
-            context.add(new io.dekorate.kubernetes.decorator.ApplyReplicasToDeploymentDecorator(name, config.replicas()));
-            // This only affects StatefulSet
-            context.add(new ApplyReplicasToStatefulSetDecorator(name, config.replicas()));
         }
 
         config.containerName().ifPresent(containerName -> {

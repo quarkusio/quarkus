@@ -69,12 +69,6 @@ public interface KnativeConfig extends PlatformConfiguration {
     Map<String, TrafficConfig> traffic();
 
     /**
-     * If set to true, Quarkus will attempt to deploy the application to the target Kubernetes cluster
-     */
-    @WithDefault("false")
-    boolean deploy();
-
-    /**
      * If deploy is enabled, it will follow this strategy to update the resources to the target Kubernetes cluster.
      */
     @WithDefault("CreateOrUpdate")

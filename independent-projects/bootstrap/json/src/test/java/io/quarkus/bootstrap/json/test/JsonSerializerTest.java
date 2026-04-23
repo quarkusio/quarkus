@@ -206,6 +206,20 @@ class JsonSerializerTest {
         assertEquals("{\"emoji\":\"Hello 🌍\"}", json);
     }
 
+    @Test
+    void testUnrecognizedValueTypeFallsBackToString() throws IOException {
+        // Regression test for https://github.com/quarkusio/quarkus/issues/53775
+        // Before the fix, appendValue() threw IllegalStateException for unrecognized types.
+        // Extension dev-mode JVM option values (e.g. enable-native-access=ALL-UNNAMED)
+        // can produce java.lang.Module objects that must not crash the serializer.
+        JsonObjectBuilder builder = Json.object();
+        Module unnamedModule = ClassLoader.getSystemClassLoader().getUnnamedModule();
+        ((java.util.Map<String, Object>) builder).put("enable-native-access", unnamedModule);
+        String json = toJson(builder);
+        JsonObject parsed = JsonReader.of(json).read();
+        assertEquals(unnamedModule.toString(), ((JsonString) parsed.get("enable-native-access")).value());
+    }
+
     @Disabled("https://github.com/quarkusio/quarkus/issues/52196")
     @Test
     void testFluentApiIncompatibility() throws IOException {

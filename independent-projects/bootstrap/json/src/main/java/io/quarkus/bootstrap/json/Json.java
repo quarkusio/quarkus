@@ -538,7 +538,10 @@ public final class Json {
         } else if (value instanceof Boolean || value instanceof Integer || value instanceof Long) {
             appendable.append(value.toString());
         } else {
-            throw new IllegalStateException("Unsupported value type: " + value);
+            // Fallback: serialize as a JSON string using toString().
+            // Handles types such as java.lang.Module that can appear as extension
+            // dev-mode JVM option values (e.g. enable-native-access=ALL-UNNAMED).
+            appendStringValue(appendable, value.toString());
         }
     }
 

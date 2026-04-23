@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.jboss.logging.Logger;
 
@@ -30,6 +33,9 @@ public class VertxOutputStream extends OutputStream {
     private final AppendBuffer appendBuffer;
     private final HttpServerResponse response;
 
+    private final ReentrantLock lock = new ReentrantLock();
+    private final Condition drainCondition = lock.newCondition();
+
     private boolean committed;
     private boolean closed;
     private boolean waitingForDrain;
@@ -48,10 +54,13 @@ public class VertxOutputStream extends OutputStream {
                 throwable = event;
                 log.debugf(event, "IO Exception ");
                 request.connection().close();
-                synchronized (request.connection()) {
+                lock.lock();
+                try {
                     if (waitingForDrain) {
-                        request.connection().notifyAll();
+                        drainCondition.signalAll();
                     }
+                } finally {
+                    lock.unlock();
                 }
             }
         });
@@ -62,10 +71,13 @@ public class VertxOutputStream extends OutputStream {
         context.getRoutingContext().addEndHandler(new Handler<>() {
             @Override
             public void handle(AsyncResult<Void> event) {
-                synchronized (request.connection()) {
+                lock.lock();
+                try {
                     if (waitingForDrain) {
-                        request.connection().notifyAll();
+                        drainCondition.signalAll();
                     }
+                } finally {
+                    lock.unlock();
                 }
             }
         });
@@ -81,7 +93,8 @@ public class VertxOutputStream extends OutputStream {
             return;
         }
         //do all this in the same lock
-        synchronized (request.connection()) {
+        lock.lock();
+        try {
             try {
                 awaitWriteable();
                 if (last) {
@@ -97,16 +110,23 @@ public class VertxOutputStream extends OutputStream {
                 }
                 throw new IOException("Failed to write", e);
             }
+        } finally {
+            lock.unlock();
         }
     }
 
     private void awaitWriteable() throws IOException {
-        // is it running in an event loop?
         if (Context.isOnEventLoopThread()) {
-            // NEVER block the event loop!
+            // On the event loop: never block, but check for errors
+            if (throwable != null) {
+                throw new IOException(throwable);
+            }
+            if (response.closed()) {
+                throw new IOException("Connection has been closed");
+            }
             return;
         }
-        assert Thread.holdsLock(request.connection());
+        assert lock.isHeldByCurrentThread();
         while (response.writeQueueFull()) {
             if (throwable != null) {
                 throw new IOException(throwable);
@@ -117,7 +137,7 @@ public class VertxOutputStream extends OutputStream {
             try {
                 waitingForDrain = true;
                 // To make sure we don't get stuck waiting, we time out periodically
-                request.connection().wait(1000); // Verify every second
+                drainCondition.await(1, TimeUnit.SECONDS); // Verify every second
                 // Check for timeout / closed connection
                 if (request.response().ended() || request.response().closed()) {
                     if (throwable != null) {
@@ -159,18 +179,13 @@ public class VertxOutputStream extends OutputStream {
         if (closed) {
             throw new IOException("Stream is closed");
         }
-
-        int rem = len;
-        int idx = off;
         try {
-            while (rem > 0) {
-                final int written = appendBuffer.append(b, idx, rem);
-                if (written < rem) {
-                    writeBlocking(appendBuffer.clear(), false);
+            appendBuffer.appendAndDrain(b, off, len, new AppendBuffer.DrainHandler() {
+                @Override
+                public void drain(ByteBuf buffer, boolean finished) throws IOException {
+                    VertxOutputStream.this.writeBlocking(buffer, finished);
                 }
-                rem -= written;
-                idx += written;
-            }
+            });
         } catch (Exception e) {
             throw new IOException(e);
         }
@@ -240,10 +255,13 @@ public class VertxOutputStream extends OutputStream {
 
         @Override
         public void handle(Void event) {
-            synchronized (out.request.connection()) {
+            out.lock.lock();
+            try {
                 if (out.waitingForDrain) {
-                    out.request.connection().notifyAll();
+                    out.drainCondition.signalAll();
                 }
+            } finally {
+                out.lock.unlock();
             }
         }
     }

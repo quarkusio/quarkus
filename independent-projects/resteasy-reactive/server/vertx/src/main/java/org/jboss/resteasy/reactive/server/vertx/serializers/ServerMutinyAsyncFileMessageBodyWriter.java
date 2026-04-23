@@ -11,12 +11,15 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.Provider;
 
-import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
+import org.jboss.resteasy.reactive.server.vertx.VertxResteasyReactiveRequestContext;
 
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.mutiny.core.file.AsyncFile;
 
 @Provider
@@ -39,40 +42,33 @@ public class ServerMutinyAsyncFileMessageBodyWriter implements ServerMessageBody
 
     @Override
     public void writeResponse(AsyncFile file, Type genericType, ServerRequestContext context) throws WebApplicationException {
-        ResteasyReactiveRequestContext ctx = ((ResteasyReactiveRequestContext) context);
+        VertxResteasyReactiveRequestContext ctx = (VertxResteasyReactiveRequestContext) context;
         ctx.suspend();
         ServerHttpResponse response = context.serverResponse();
-        // this is only set by nice people, unfortunately
-        if (file.getReadLength() != Long.MAX_VALUE) {
-            response.setResponseHeader(HttpHeaders.CONTENT_LENGTH, String.valueOf(file.getReadLength()));
+
+        io.vertx.core.file.AsyncFile delegate = file.getDelegate();
+        if (delegate.getReadLength() != Long.MAX_VALUE) {
+            response.setResponseHeader(HttpHeaders.CONTENT_LENGTH, String.valueOf(delegate.getReadLength()));
         } else {
             response.setChunked(true);
         }
-        file.handler(buffer -> {
-            try {
-                response.write(buffer.getBytes());
-            } catch (Exception x) {
-                // believe it or not, this throws
-                ctx.resume(x);
-                return;
-            }
-            if (response.isWriteQueueFull()) {
-                file.pause();
-                response.addDrainHandler(file::resume);
-            }
-        });
 
-        file.endHandler(new Runnable() {
-            @Override
-            public void run() {
-                // we don't need to wait for the file to be closed, we just need to make sure it does get closed
-                //noinspection ResultOfMethodCallIgnored
-                file.close().subscribeAsCompletionStage();
-                response.end();
-                // Not sure if I need to resume, actually
-                ctx.resume();
-            }
-        });
+        HttpServerResponse httpResponse = ctx.vertxServerResponse();
+
+        delegate.pipe()
+                .endOnComplete(true)
+                .to(httpResponse)
+                .onComplete(new Handler<AsyncResult<Void>>() {
+                    @Override
+                    public void handle(AsyncResult<Void> ar) {
+                        delegate.close();
+                        if (ar.succeeded()) {
+                            ctx.resume();
+                        } else {
+                            ctx.resume(ar.cause());
+                        }
+                    }
+                });
     }
 
     @Override

@@ -46,6 +46,10 @@
             <artifactId>vertx-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus.vertx.utils</groupId>
+            <artifactId>quarkus-vertx-utils</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-web-client</artifactId>
         </dependency>

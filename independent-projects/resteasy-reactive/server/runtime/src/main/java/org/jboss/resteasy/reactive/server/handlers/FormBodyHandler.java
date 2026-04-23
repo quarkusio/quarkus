@@ -135,6 +135,15 @@ public class FormBodyHandler implements GenericRuntimeConfigurableServerRestHand
             }
             return res;
         }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            int res = delegate.read(b, off, len);
+            if (res > 0) {
+                baos.write(b, off, res);
+            }
+            return res;
+        }
     }
 
 }

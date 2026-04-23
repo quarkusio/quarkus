@@ -68,7 +68,16 @@ public class PublisherResponseHandler implements ServerRestHandler {
                     handleException(requestContext, t);
                 } else {
                     // send in the next item
-                    subscription.request(demand);
+                    if (requestContext.serverResponse().isWriteQueueFull()) {
+                        requestContext.serverResponse().addDrainHandler(new Runnable() {
+                            @Override
+                            public void run() {
+                                subscription.request(demand);
+                            }
+                        });
+                    } else {
+                        subscription.request(demand);
+                    }
                 }
             });
         }
@@ -119,7 +128,16 @@ public class PublisherResponseHandler implements ServerRestHandler {
                             // next item will need this prefix if json
                             nextJsonPrefix = encodeAsJsonArray ? "," : null;
                             // send in the next item
-                            subscription.request(demand);
+                            if (requestContext.serverResponse().isWriteQueueFull()) {
+                                requestContext.serverResponse().addDrainHandler(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        subscription.request(demand);
+                                    }
+                                });
+                            } else {
+                                subscription.request(demand);
+                            }
                         }
                         return null;
                     });

@@ -48,7 +48,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     protected final Vertx vertx;
     protected final RequestDispatcher dispatcher;
     protected final String rootPath;
-    protected final BufferAllocator allocator;
+    protected final int bufferSize;
     protected final CurrentIdentityAssociation association;
     protected final CurrentVertxRequest currentVertxRequest;
     protected final Executor executor;
@@ -58,12 +58,12 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     public VertxRequestHandler(Vertx vertx,
             ResteasyDeployment deployment,
             String rootPath,
-            BufferAllocator allocator, Executor executor, long readTimeout) {
+            int bufferSize, Executor executor, long readTimeout) {
         this.vertx = vertx;
         this.dispatcher = new RequestDispatcher((SynchronousDispatcher) deployment.getDispatcher(),
                 deployment.getProviderFactory(), null, Thread.currentThread().getContextClassLoader());
         this.rootPath = rootPath;
-        this.allocator = allocator;
+        this.bufferSize = bufferSize;
         this.executor = executor;
         this.readTimeout = readTimeout;
         this.customNotFoundExist = deployment.getProviderFactory()
@@ -134,7 +134,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             ResteasyHttpHeaders headers = VertxUtil.extractHttpHeaders(request);
             HttpServerResponse response = request.response();
             VertxHttpResponse vertxResponse = new VertxHttpResponse(request, dispatcher.getProviderFactory(),
-                    request.method(), allocator, output, routingContext);
+                    request.method(), bufferSize, output, routingContext);
 
             // using a supplier to make the remote Address resolution lazy: often it's not needed and it's not very cheap to create.
             LazyHostSupplier hostSupplier = new LazyHostSupplier(request);

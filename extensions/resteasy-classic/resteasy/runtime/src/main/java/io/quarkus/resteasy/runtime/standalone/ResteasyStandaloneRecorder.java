@@ -27,8 +27,6 @@ import org.jboss.resteasy.spi.ResourceInvoker;
 import org.jboss.resteasy.spi.ResteasyConfiguration;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
 import io.quarkus.resteasy.runtime.NonJaxRsClassMappings;
 import io.quarkus.resteasy.runtime.ResteasyVertxConfig;
 import io.quarkus.runtime.LaunchMode;
@@ -60,8 +58,6 @@ import io.vertx.ext.web.RoutingContext;
 public class ResteasyStandaloneRecorder {
 
     static final String RESTEASY_URI_INFO = ResteasyUriInfo.class.getName();
-
-    private static boolean useDirect = true;
 
     private static ResteasyDeployment deployment;
     private static String contextPath;
@@ -98,15 +94,13 @@ public class ResteasyStandaloneRecorder {
                 }
             }
         });
-        useDirect = !isVirtual;
     }
 
     public Handler<RoutingContext> vertxRequestHandler(Supplier<Vertx> vertx, Executor executor,
             Map<String, NonJaxRsClassMappings> nonJaxRsClassNameToMethodPaths) {
         if (deployment != null) {
             Handler<RoutingContext> handler = new VertxRequestHandler(vertx.get(), deployment, contextPath,
-                    new ResteasyVertxAllocator(
-                            runtimeConfig.responseBufferSize()),
+                    runtimeConfig.responseBufferSize(),
                     executor,
                     httpRuntimeConfig.getValue().readTimeout().toMillis());
 
@@ -135,7 +129,7 @@ public class ResteasyStandaloneRecorder {
             // allow customization of auth failures with exception mappers; this failure handler is only
             // used when auth failed before RESTEasy Classic began processing the request
             return new VertxRequestHandler(vertx.get(), deployment, contextPath,
-                    new ResteasyVertxAllocator(runtimeConfig.responseBufferSize()), executor,
+                    runtimeConfig.responseBufferSize(), executor,
                     httpRuntimeConfig.getValue().readTimeout().toMillis()) {
 
                 @Override
@@ -339,41 +333,4 @@ public class ResteasyStandaloneRecorder {
         return bounded;
     }
 
-    private static class ResteasyVertxAllocator implements BufferAllocator {
-
-        private final int bufferSize;
-
-        private ResteasyVertxAllocator(int bufferSize) {
-            this.bufferSize = bufferSize;
-        }
-
-        @Override
-        public ByteBuf allocateBuffer() {
-            return allocateBuffer(useDirect);
-        }
-
-        @Override
-        public ByteBuf allocateBuffer(boolean direct) {
-            return allocateBuffer(direct, bufferSize);
-        }
-
-        @Override
-        public ByteBuf allocateBuffer(int bufferSize) {
-            return allocateBuffer(useDirect, bufferSize);
-        }
-
-        @Override
-        public ByteBuf allocateBuffer(boolean direct, int bufferSize) {
-            if (direct) {
-                return PooledByteBufAllocator.DEFAULT.directBuffer(bufferSize);
-            } else {
-                return PooledByteBufAllocator.DEFAULT.heapBuffer(bufferSize);
-            }
-        }
-
-        @Override
-        public int getBufferSize() {
-            return bufferSize;
-        }
-    }
 }

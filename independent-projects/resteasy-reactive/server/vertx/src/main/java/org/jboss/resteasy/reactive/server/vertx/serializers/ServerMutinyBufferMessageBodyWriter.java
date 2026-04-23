@@ -11,8 +11,10 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.Provider;
 
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
+import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
+import org.jboss.resteasy.reactive.server.vertx.VertxResteasyReactiveRequestContext;
 
 import io.vertx.mutiny.core.buffer.Buffer;
 
@@ -35,6 +37,11 @@ public class ServerMutinyBufferMessageBodyWriter implements ServerMessageBodyWri
 
     @Override
     public void writeResponse(Buffer buffer, Type genericType, ServerRequestContext context) throws WebApplicationException {
-        context.serverResponse().end(buffer.getBytes());
+        ServerHttpResponse serverHttpResponse = context.serverResponse();
+        if (serverHttpResponse instanceof final VertxResteasyReactiveRequestContext resteasyContext) {
+            resteasyContext.end(buffer.getDelegate());
+        } else {
+            serverHttpResponse.end(buffer.getBytes());
+        }
     }
 }

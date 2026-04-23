@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -110,13 +111,13 @@ public class BeanGenerator extends AbstractGenerator {
     protected final Map<BeanInfo, String> beanToGeneratedName;
     protected final Map<BeanInfo, String> beanToGeneratedBaseName;
     protected final Predicate<DotName> injectionPointAnnotationsPredicate;
-    protected final List<Function<BeanInfo, Consumer<BlockCreator>>> suppressConditionGenerators;
+    protected final List<BiFunction<BeanInfo, ClassCreator, Consumer<BlockCreator>>> suppressConditionGenerators;
 
     public BeanGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate,
             PrivateMembersCollector privateMembers, boolean generateSources, ReflectionRegistration reflectionRegistration,
             Set<String> existingClasses, Map<BeanInfo, String> beanToGeneratedName,
             Predicate<DotName> injectionPointAnnotationsPredicate,
-            List<Function<BeanInfo, Consumer<BlockCreator>>> suppressConditionGenerators) {
+            List<BiFunction<BeanInfo, ClassCreator, Consumer<BlockCreator>>> suppressConditionGenerators) {
         super(generateSources, reflectionRegistration);
         this.annotationLiterals = annotationLiterals;
         this.applicationClassPredicate = applicationClassPredicate;
@@ -1950,8 +1951,8 @@ public class BeanGenerator extends AbstractGenerator {
         cc.method("isSuppressed", mc -> {
             mc.returning(boolean.class);
             mc.body(bc -> {
-                for (Function<BeanInfo, Consumer<BlockCreator>> generator : suppressConditionGenerators) {
-                    Consumer<BlockCreator> condition = generator.apply(bean);
+                for (BiFunction<BeanInfo, ClassCreator, Consumer<BlockCreator>> generator : suppressConditionGenerators) {
+                    Consumer<BlockCreator> condition = generator.apply(bean, cc);
                     if (condition != null) {
                         condition.accept(bc);
                     }

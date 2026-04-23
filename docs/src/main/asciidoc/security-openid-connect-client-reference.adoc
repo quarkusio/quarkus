@@ -1099,6 +1099,31 @@ public class OidcClientRequestCustomFilter extends AbstractOidcClientRequestFilt
 }
 ----
 
+==== SPIFFE JWT-SVID
+
+link:https://spiffe.io[SPIFFE] (Secure Production Identity Framework for Everyone) JWT-SVID tokens can be used as client assertions for client authentication.
+When the JWT source is set to `spiffe`, the `client_assertion_type` parameter is set to `urn:ietf:params:oauth:client-assertion-type:jwt-spiffe` instead of the JWT bearer `urn:ietf:params:oauth:client-assertion-type:jwt-bearer` value.
+
+Enable it as follows:
+
+[source,properties]
+----
+quarkus.oidc-client.auth-server-url=${auth-server-url}
+quarkus.oidc-client.client-id=quarkus-app
+quarkus.oidc-client.credentials.jwt.source=spiffe
+----
+
+Quarkus can load the SPIFFE JWT-SVID token from the file system.
+Configure the token path as follows:
+
+[source,properties]
+----
+quarkus.oidc-client.credentials.jwt.token-path=/var/run/secrets/tokens <1>
+----
+<1> Path to a SPIFFE JWT-SVID token.
+Quarkus loads a new token from the file system and reloads it when the token expires.
+The token's `sub` claim is verified to start with the `spiffe://` scheme.
+
 ==== Apple POST JWT
 
 Apple OpenID Connect provider uses the `client_secret_post` method, where the secret is a JWT produced with the `private_key_jwt` authentication method, but with Apple account-specific issuer and subject properties.

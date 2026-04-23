@@ -378,7 +378,9 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
                 CLIENT,
                 // JWT bearer token as used as a client assertion: https://www.rfc-editor.org/rfc/rfc7523#section-2.2
                 // This option is only supported by the OIDC client extension.
-                BEARER
+                BEARER,
+                // SPIFFE SVID token is used as a client assertion
+                SPIFFE
             }
 
             /**

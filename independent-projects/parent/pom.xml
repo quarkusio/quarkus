@@ -42,7 +42,7 @@
         <version.versions.plugin>2.21.0</version.versions.plugin>
         <version.yaml-properties.plugin>1.1.3</version.yaml-properties.plugin>
         <!-- Forbidden API checks -->
-        <version.forbiddenapis-maven-plugin>3.4</version.forbiddenapis-maven-plugin>
+        <version.forbiddenapis-maven-plugin>3.10</version.forbiddenapis-maven-plugin>
         <forbiddenapis-maven-plugin.phase>verify</forbiddenapis-maven-plugin.phase>
 
         <!-- Code format -->

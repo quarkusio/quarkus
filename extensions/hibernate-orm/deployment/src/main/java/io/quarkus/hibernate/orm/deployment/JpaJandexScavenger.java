@@ -64,11 +64,6 @@ public final class JpaJandexScavenger {
     private final List<JpaModelPersistenceUnitContributionBuildItem> persistenceUnitContributions;
     private final IndexView index;
     private final Set<String> ignorableNonIndexedClasses;
-    private Collector collector;
-
-    Collector getCollector() {
-        return collector;
-    }
 
     JpaJandexScavenger(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
@@ -82,8 +77,8 @@ public final class JpaJandexScavenger {
         this.ignorableNonIndexedClasses = ignorableNonIndexedClasses;
     }
 
-    public JpaModelBuildItem discoverModelAndRegisterForReflection() throws BuildException {
-        this.collector = new Collector();
+    Collector collectModel() throws BuildException {
+        Collector collector = new Collector();
 
         for (DotName packageAnnotation : ClassNames.PACKAGE_ANNOTATIONS) {
             enlistJPAModelAnnotatedPackages(collector, packageAnnotation);
@@ -107,6 +102,10 @@ public final class JpaJandexScavenger {
             enlistExplicitMappings(collector, persistenceUnitContribution);
         }
 
+        return collector;
+    }
+
+    JpaModelBuildItem buildModelFromCollector(Collector collector) {
         Set<String> managedClassNames = new HashSet<>(collector.entityTypes);
         managedClassNames.addAll(collector.modelTypes);
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(managedClassNames).methods().fields().build());
@@ -155,6 +154,10 @@ public final class JpaJandexScavenger {
 
         return new JpaModelBuildItem(collector.packages, collector.entityTypes, managedClassNames,
                 collector.potentialCdiBeanTypes, collector.xmlMappingsByPU);
+    }
+
+    public JpaModelBuildItem discoverModelAndRegisterForReflection() throws BuildException {
+        return buildModelFromCollector(collectModel());
     }
 
     private void enlistExplicitMappings(Collector collector,

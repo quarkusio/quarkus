@@ -524,8 +524,8 @@ public class JpaJandexScavengerTest {
                 index,
                 ignorableNonIndexedClasses);
 
-        JpaModelBuildItem result = scavenger.discoverModelAndRegisterForReflection();
-        JpaJandexScavenger.Collector collector = scavenger.getCollector();
+        JpaJandexScavenger.Collector collector = scavenger.collectModel();
+        JpaModelBuildItem result = scavenger.buildModelFromCollector(collector);
         return new ScavengerResult(result, collector.enumTypes, collector.javaTypes,
                 watchedFiles.stream().map(HotDeploymentWatchedFileBuildItem::getLocation).toList());
     }

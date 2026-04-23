@@ -363,6 +363,8 @@
                 <module>rest-client-reactive-multipart</module>
                 <module>rest-client-reactive-stork</module>
                 <module>packaging</module>
+                <module>signals</module>
+                <module>signals-command-mode</module>
                 <module>simple with space</module>
                 <module>picocli</module>
                 <module>picocli-native</module>

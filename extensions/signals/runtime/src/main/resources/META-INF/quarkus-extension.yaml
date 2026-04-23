@@ -1,0 +1,14 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Signals"
+description: "This extension enables application components to interact in a loosely coupled fashion, by emitting and receiving signals."
+metadata:
+  keywords:
+  - "cdi"
+  - "events"
+  - "messages"
+  - "receivers"
+  #guide: "https://quarkus.io/guides/signals"
+  categories:
+  - "core"
+  status: "experimental"

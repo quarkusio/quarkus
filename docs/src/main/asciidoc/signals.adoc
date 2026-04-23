@@ -1,0 +1,512 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Quarkus Signals
+include::_attributes.adoc[]
+:categories: miscellaneous
+:summary: Learn more about how application components can interact in a loosely coupled fashion
+:numbered:
+:sectnums:
+:sectnumlevels: 4
+:topics: events,signals,messages
+:extensions: io.quarkus:quarkus-signals
+:extension-status: experimental
+
+Signals allow application components to interact in a loosely coupled fashion, by emitting and receiving _signals_.
+A signal is an object -- optionally augmented with qualifiers and metadata -- that is emitted by one component and delivered to one or more _receivers_.
+
+Resolution:: The extension provides a type-safe resolution model, inspired by the https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1#events[CDI events].
+Emission Modes:: Inspired by the https://vertx.io/docs/vertx-core/java/#event_bus[Vert.x EventBus], the API supports unicast (point-to-point) and request-reply patterns in addition to the traditional multicast (publish-subscribe) pattern.
+Execution Model:: Receivers are always executed asynchronously and support both blocking and non-blocking logic. The execution model is determined from the method return type and annotations such as `@Blocking`, `@NonBlocking`, and `@RunOnVirtualThread`, following Quarkus conventions.
+
+== Installation
+
+If you already have your Quarkus project configured, you can add the `quarkus-signals` extension to your project by running the following command in your project base directory:
+
+:add-extension-extensions: quarkus-signals
+include::{includes}/devtools/extension-add.adoc[]
+
+Alternatively, add the following dependency to your project:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-signals</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-signals")
+----
+
+
+== Signal Components
+
+A signal consists of three parts:
+
+* A _signal object_ -- an instance of a Java class that carries the data.
+* An optional set of _qualifiers_ -- annotation instances that distinguish between different kinds of signals of the same type.
+* Optional _metadata_ -- arbitrary key-value pairs attached to the emission.
+
+The combination of signal type and qualifiers determines which receivers are notified when a signal is emitted.
+
+For example, suppose we have a signal object of type `OrderPlaced`:
+
+[source,java]
+----
+public record OrderPlaced(String orderId, BigDecimal total) {}
+----
+
+TIP: Signal objects should be immutable or thread-safe, because they can be accessed from multiple threads concurrently.
+
+We could define a qualifier to distinguish urgent orders:
+
+[source,java]
+----
+@Qualifier
+@Retention(RUNTIME)
+@Target({PARAMETER, FIELD})
+public @interface Urgent {}
+----
+
+== Emitting Signals
+
+The `Signal` interface is the entry point for emitting signals.
+An application component obtains a `Signal` instance by injecting it as a CDI bean:
+
+[source,java]
+----
+@Inject
+Signal<OrderPlaced> orderPlaced;
+----
+
+Any combination of qualifiers may be specified at the injection point:
+
+[source,java]
+----
+@Inject
+@Urgent
+Signal<OrderPlaced> urgentOrderPlaced;
+----
+
+=== Emission Modes
+
+A signal can be emitted in three modes.
+
+==== Publish (Multicast)
+
+Delivers the signal to _all_ matching receivers.
+
+[source,java]
+----
+// Fire-and-forget
+orderPlaced.publish(new OrderPlaced("123", BigDecimal.TEN));
+
+// Returns a Uni that completes when all receivers are done
+Uni<Void> result = orderPlaced.publishUni(new OrderPlaced("123", BigDecimal.TEN));
+----
+
+==== Send (Unicast)
+
+Delivers the signal to a _single_ matching receiver, selected in round-robin order.
+
+[source,java]
+----
+// Fire-and-forget
+orderPlaced.send(new OrderPlaced("123", BigDecimal.TEN));
+
+// Returns a Uni that completes when the receiver is done
+Uni<Void> result = orderPlaced.sendUni(new OrderPlaced("123", BigDecimal.TEN));
+----
+
+==== Request (Unicast, Request-Reply)
+
+Delivers the signal to a _single_ matching receiver and returns the response.
+Only receivers whose response type is assignable to the requested type are considered.
+
+[source,java]
+----
+// Blocking
+String confirmation = orderPlaced.request(new OrderPlaced("123", BigDecimal.TEN), String.class);
+
+// Reactive
+Uni<String> confirmation = orderPlaced.requestUni(new OrderPlaced("123", BigDecimal.TEN), String.class);
+----
+
+=== Selecting Subtypes and Qualifiers
+
+A child `Signal` can be obtained from an existing one in order to narrow the type or add qualifiers:
+
+[source,java]
+----
+// Add qualifiers
+Signal<OrderPlaced> urgent = orderPlaced.select(new Urgent.Literal());
+
+// Narrow the signal type
+Signal<TaskCreated> created = taskSignal.select(TaskCreated.class);
+
+// Combine both
+Signal<TaskCreated> urgentCreated = taskSignal.select(TaskCreated.class, new Urgent.Literal());
+----
+
+=== Signal Metadata
+
+Arbitrary key-value metadata can be attached to an emission.
+Receivers can access this metadata via the `SignalContext`.
+
+[source,java]
+----
+// Attach metadata to a single emission
+orderPlaced
+    .putMetadata("traceId", "abc-123")
+    .putMetadata("source", "web")
+    .publish(new OrderPlaced("123", BigDecimal.TEN));
+
+// Or replace all metadata at once
+orderPlaced
+    .setMetadata(Map.of("traceId", "abc-123", "source", "web"))
+    .publish(new OrderPlaced("123", BigDecimal.TEN));
+----
+
+NOTE: Both `putMetadata()` and `setMetadata()` return a new child `Signal` instance; the original instance is not modified.
+
+=== No Matching Receiver
+
+If no receiver matches the emitted signal:
+
+* `publish()` and `send()` succeed silently -- no error is raised.
+* `request()` returns `null`.
+* `publishUni()`, `sendUni()` and `requestUni()` complete with a `null` item.
+
+=== Lazy Uni Semantics
+
+The `Uni` returned by `publishUni()`, `sendUni()`, and `requestUni()` is _lazy_: no signal is emitted until the `Uni` is subscribed.
+Each subscription triggers a new, independent emission.
+
+[source,java]
+----
+Uni<Void> uni = orderPlaced.publishUni(new OrderPlaced("123", BigDecimal.TEN));
+// No signal has been emitted yet
+
+// First subscription — emits the signal
+uni.await().indefinitely();
+
+// Second subscription of the same Uni — emits the signal again
+uni.await().indefinitely();
+----
+
+=== Error Handling
+
+If a receiver throws an exception, the failure is propagated through the `Uni` returned by the reactive emission methods.
+For `send` and `request` emissions (unicast), the receiver's exception is propagated directly.
+For `publish` emissions (multicast), where multiple receivers may fail, the failures are wrapped in a `io.smallrye.mutiny.CompositeException`.
+
+For fire-and-forget methods (`publish()` and `send()`), receiver failures are logged but not propagated to the caller.
+
+== Receiver Methods
+
+A _receiver method_ is a non-private, non-static method declared on a CDI bean.
+It must have exactly one parameter annotated with `@Receives`.
+The type of the annotated parameter determines the _received signal type_.
+Additional parameters may be declared and are treated as injection points -- the container will obtain and inject the corresponding bean instances when the receiver is invoked, just like https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1#observes[CDI observer methods].
+
+[source,java]
+----
+@ApplicationScoped
+public class OrderHandlers {
+
+    void onOrderPlaced(@Receives OrderPlaced order, NotificationService notifications) {
+        notifications.send("Order placed: " + order.orderId());
+    }
+}
+----
+
+=== Qualifiers
+
+Qualifiers declared on the annotated parameter are used during type-safe resolution.
+If a receiver declares no qualifier, it has exactly one qualifier -- the default qualifier `@Default`.
+
+[source,java]
+----
+void onOrder(@Receives OrderPlaced order) { // <1>
+    // only receives signals emitted with no qualifier
+}
+
+void onUrgentOrder(@Receives @Urgent OrderPlaced order) { // <2>
+    // only receives signals emitted with the @Urgent qualifier
+}
+
+void onAnyOrder(@Receives @Any OrderPlaced order) { // <3>
+    // receives all OrderPlaced signals
+}
+----
+<1> Has qualifiers `[@Default]` and receives signals of type `OrderPlaced` emitted with no qualifier.
+<2> Has qualifiers `[@Urgent]` and receives signals of type `OrderPlaced` emitted with the `@Urgent` qualifier.
+<3> Has qualifiers `[@Any]` and receives all signals of type `OrderPlaced`.
+
+IMPORTANT: The fact that a receiver which declares no qualifier has exactly one qualifier -- `@Default` -- is the only difference from the CDI specification, where similar observer methods have an empty set of qualifiers and therefore match any events of a specific type.
+
+=== Return Values
+
+A receiver method may return a value, which is used as the response for `request` / `requestUni` emissions.
+The return value is ignored for `publish` and `send` emissions.
+The return type is also used during <<receiver-resolution>> -- only receivers whose response type is assignable to the requested type are considered.
+The method can return the value directly, or wrapped in a `Uni` or `CompletionStage`:
+
+[source,java]
+----
+// Blocking response
+String onOrderPlaced(@Receives OrderPlaced order) {
+    return "confirmed-" + order.orderId();
+}
+
+// Reactive response
+Uni<String> onOrderPlaced(@Receives OrderPlaced order) {
+    return Uni.createFrom().item("confirmed-" + order.orderId());
+}
+
+// Non-blocking response
+CompletionStage<String> onOrderPlaced(@Receives OrderPlaced order) {
+    return CompletableFuture.completedFuture("confirmed-" + order.orderId());
+}
+----
+
+=== Signal Context
+
+The annotated parameter may also be of type `SignalContext<T>` instead of the signal type directly.
+This gives the receiver access to the full signal context, including metadata, qualifiers, and emission type:
+
+[source,java]
+----
+void onOrder(@Receives SignalContext<OrderPlaced> ctx) {
+    OrderPlaced order = ctx.signal();
+    Map<String, Object> metadata = ctx.metadata();
+    Set<Annotation> qualifiers = ctx.qualifiers();
+    SignalContext.EmissionType emissionType = ctx.emissionType();
+    Type responseType = ctx.responseType(); // null if not a request-reply emission
+}
+----
+
+=== Execution Model
+
+The execution model determines how a receiver method is invoked.
+It is resolved using the following rules, in order of priority:
+
+. If the method is annotated with `@io.smallrye.common.annotation.RunOnVirtualThread`, the execution model is `VIRTUAL_THREAD`.
+. If the method is annotated with `@io.smallrye.common.annotation.Blocking`, the execution model is `BLOCKING`.
+. If the method is annotated with `@io.smallrye.common.annotation.NonBlocking`, the execution model is `NON_BLOCKING`.
+. If none of the above is present on the method, the declaring class is checked for the same annotations.
+. If no annotation is found, the default is derived from the method signature:
+* A method returning `Uni` or `CompletionStage` defaults to `NON_BLOCKING` -- when Vert.x is available, it is executed on the event loop.
+* Any other return type defaults to `BLOCKING` -- the method is offloaded to a worker thread.
+
+=== Request Context
+
+Each receiver execution is associated with a new CDI request context.
+This means that `@RequestScoped` beans injected into the receiver method or used by the bean that declares the receiver are unique to that particular invocation.
+
+== Programmatic Receivers
+
+Receivers can also be registered programmatically at runtime via the `Receivers` interface:
+
+[source,java]
+----
+@Inject
+Receivers receivers;
+----
+
+Use the fluent builder API to define and register a receiver:
+
+[source,java]
+----
+Registration reg = receivers.newReceiver(OrderPlaced.class)
+        .notify(ctx -> System.out.println("Received: " + ctx.signal()));
+----
+
+The `Registration` handle can be used to unregister the receiver later:
+
+[source,java]
+----
+reg.unregister();
+----
+
+=== Builder Options
+
+The builder supports the following options:
+
+[source,java]
+----
+Registration reg = receivers.newReceiver(OrderPlaced.class)
+        .setQualifiers(new Urgent.Literal())                        // <1>
+        .setExecutionModel(ExecutionModel.VIRTUAL_THREAD)           // <2>
+        .setResponseType(String.class)                              // <3>
+        .notify(ctx -> {                                            // <4>
+            return Uni.createFrom().item("processed-" + ctx.signal().orderId());
+        });
+----
+<1> Set qualifiers for type-safe resolution.
+<2> Set the execution model (`BLOCKING`, `NON_BLOCKING`, or `VIRTUAL_THREAD`).
+<3> Set the response type for request-reply patterns.
+<4> The callback receives a `SignalContext` and returns a `Uni`.
+
+For simple fire-and-forget receivers, a `Consumer`-based callback can be used:
+
+[source,java]
+----
+receivers.newReceiver(OrderPlaced.class)
+        .notify(ctx -> System.out.println(ctx.signal()));
+----
+
+For parameterized signal types, use `TypeLiteral`:
+
+[source,java]
+----
+receivers.newReceiver(new TypeLiteral<List<OrderPlaced>>() {})
+        .notify(ctx -> System.out.println(ctx.signal()));
+----
+
+[[receiver-resolution]]
+== Receiver Resolution
+
+When a signal is emitted, the container resolves the set of matching receivers using the signal type, qualifiers, and -- for request emissions -- the response type.
+The resolution rules are inspired by the https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1#observer_resolution[CDI observer resolution] rules:
+
+* A receiver matches if the signal type is assignable to the received signal type.
+* A receiver matches only if the receiver's qualifiers are a _subset_ of the signal's qualifiers.
+* For request emissions, a receiver matches only if its response type is assignable to the requested response type.
+
+Every signal implicitly carries the `@Any` qualifier.
+A `Signal` injection point with no qualifiers carries `@Default` (per the CDI specification).
+
+== Pipeline Pattern
+
+Receivers can inject `Signal` instances and emit new signals, enabling multi-stage processing pipelines.
+Each stage receives a signal, processes it, and forwards the result to the next stage using `request()` or `requestUni()`.
+
+[source,java]
+----
+@Singleton
+public class ValidationStage {
+
+    @Inject
+    Signal<ValidatedOrder> validatedOrder;
+
+    ShipmentConfirmation onPlaceOrder(@Receives PlaceOrder order) {
+        // Validate, then forward to the next stage and return its result
+        return validatedOrder.request(
+                new ValidatedOrder(order.orderId(), order.item(), order.quantity()),
+                ShipmentConfirmation.class);
+    }
+}
+
+@Singleton
+public class EnrichmentStage {
+
+    @Inject
+    Signal<EnrichedOrder> enrichedOrder;
+
+    Uni<ShipmentConfirmation> onValidatedOrder(@Receives ValidatedOrder order) {
+        int totalPrice = order.quantity() * 10;
+        return enrichedOrder.requestUni(
+                new EnrichedOrder(order.orderId(), order.item(), order.quantity(), totalPrice),
+                ShipmentConfirmation.class);
+    }
+}
+
+@Singleton
+public class ShipmentStage {
+
+    ShipmentConfirmation onEnrichedOrder(@Receives EnrichedOrder order) {
+        return new ShipmentConfirmation(order.orderId(), order.item(),
+                order.quantity(), order.totalPrice(), generateTrackingId());
+    }
+}
+----
+
+The pipeline is triggered by a single `request()` call, and the final response propagates back through all stages:
+
+[source,java]
+----
+@Inject
+Signal<PlaceOrder> placeOrder;
+
+ShipmentConfirmation confirmation = placeOrder.request(
+        new PlaceOrder("ORD-1", "Widget", 3), ShipmentConfirmation.class);
+----
+
+== SPI
+
+The `io.quarkus.signals.spi` package provides extension points for integrators.
+Both `SignalMetadataEnricher` and `ReceiverInterceptor` implementations must be CDI beans annotated with `@io.smallrye.common.annotation.Identifier` to define a unique identifier.
+
+=== Signal Metadata Enricher
+
+A `SignalMetadataEnricher` enriches the metadata of a signal emission _before_ any receiver is invoked.
+It is called once per emission (i.e., per call to `publish()`, `send()`, or `request()`), not per receiver.
+
+[source,java]
+----
+@Identifier("correlation-id")
+@Singleton
+public class CorrelationIdEnricher implements SignalMetadataEnricher {
+
+    @Override
+    public void enrich(EnrichmentContext context) {
+        context.putMetadata("correlationId", "corr-" + UUID.randomUUID());
+    }
+}
+----
+
+The `EnrichmentContext` provides access to the `SignalContext` and a `putMetadata()` method.
+An `IllegalArgumentException` is thrown if a metadata entry with the given key already exists.
+
+=== Receiver Interceptor
+
+A `ReceiverInterceptor` intercepts each receiver invocation.
+For multicast emissions (`publish`), it is called once per matching receiver.
+The interceptor must call `proceed()` to continue the interceptor chain and eventually invoke the receiver.
+It may transform the result, handle errors, or skip the invocation entirely by returning a different `Uni`.
+
+[source,java]
+----
+@Identifier("logging")
+@Singleton
+public class LoggingInterceptor implements ReceiverInterceptor {
+
+    @Override
+    public Uni<Object> intercept(InterceptionContext context) {
+        Log.infof("Invoking receiver for signal: %s", context.signalContext().signalType());
+        return context.proceed();
+    }
+}
+----
+
+=== Component Ordering
+
+The ordering of enrichers and interceptors relative to each other can be defined with the `@ComponentOrder` annotation.
+Components are referenced by their `@Identifier` value.
+
+[source,java]
+----
+@Identifier("correlation-id")
+@ComponentOrder(before = "timestamp") // <1>
+@Singleton
+public class CorrelationIdEnricher implements SignalMetadataEnricher {
+    // ...
+}
+
+@Identifier("timestamp")
+@Singleton
+public class TimestampEnricher implements SignalMetadataEnricher {
+    // ...
+}
+----
+<1> The `correlation-id` enricher runs _before_ the `timestamp` enricher.
+
+Cycles in the ordering are detected at build time and result in a deployment error.

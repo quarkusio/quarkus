@@ -640,6 +640,22 @@
                 <artifactId>quarkus-arc-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-signals</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-signals-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-signals-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
 
             <!-- Quarkus libraries -->
             <dependency>

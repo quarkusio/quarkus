@@ -195,104 +195,104 @@ public class JpaJandexScavengerTest {
     void entityAndHierarchyDiscovery() throws Exception {
         Index index = buildIndex(SimpleEntity.class, BaseMappedSuperclass.class);
 
-        ScavengerResult r = runScavenger(index);
-        r.entityClassesHave(SimpleEntity.class);
-        r.entityClassesDoNotHave(BaseMappedSuperclass.class);
-        r.managedClassesHave(SimpleEntity.class, BaseMappedSuperclass.class);
+        runScavenger(index)
+                .entityClassesHave(SimpleEntity.class)
+                .entityClassesDoNotHave(BaseMappedSuperclass.class)
+                .managedClassesHave(SimpleEntity.class, BaseMappedSuperclass.class);
     }
 
     @Test
     void embeddedFieldDiscovery() throws Exception {
         Index index = buildIndex(EntityWithEmbedded.class, SimpleEmbeddable.class);
 
-        ScavengerResult r = runScavenger(index);
-        r.entityClassesHave(EntityWithEmbedded.class);
-        r.entityClassesDoNotHave(SimpleEmbeddable.class);
-        r.managedClassesHave(SimpleEmbeddable.class);
+        runScavenger(index)
+                .entityClassesHave(EntityWithEmbedded.class)
+                .entityClassesDoNotHave(SimpleEmbeddable.class)
+                .managedClassesHave(SimpleEmbeddable.class);
     }
 
     @Test
     void embeddedIdOnMethodDiscovery() throws Exception {
         Index index = buildIndex(EntityWithEmbeddedId.class, SimpleEmbeddable.class);
 
-        ScavengerResult r = runScavenger(index);
-        r.entityClassesHave(EntityWithEmbeddedId.class);
-        r.entityClassesDoNotHave(SimpleEmbeddable.class);
-        r.managedClassesHave(SimpleEmbeddable.class);
+        runScavenger(index)
+                .entityClassesHave(EntityWithEmbeddedId.class)
+                .entityClassesDoNotHave(SimpleEmbeddable.class)
+                .managedClassesHave(SimpleEmbeddable.class);
     }
 
     @Test
     void elementCollectionDiscovery() throws Exception {
         Index index = buildIndex(EntityWithElementCollection.class, SimpleEmbeddable.class);
 
-        ScavengerResult r = runScavenger(index);
-        r.entityClassesHave(EntityWithElementCollection.class);
-        r.entityClassesDoNotHave(SimpleEmbeddable.class);
-        r.managedClassesHave(SimpleEmbeddable.class);
+        runScavenger(index)
+                .entityClassesHave(EntityWithElementCollection.class)
+                .entityClassesDoNotHave(SimpleEmbeddable.class)
+                .managedClassesHave(SimpleEmbeddable.class);
     }
 
     @Test
     void enumFieldDetection() throws Exception {
         Index index = buildIndex(EntityWithEnum.class, MyStatus.class);
 
-        ScavengerResult r = runScavenger(index);
-        r.entityClassesHave(EntityWithEnum.class);
-        r.entityClassesDoNotHave(MyStatus.class);
-        r.managedClassesDoNotHave(MyStatus.class);
+        runScavenger(index)
+                .entityClassesHave(EntityWithEnum.class)
+                .entityClassesDoNotHave(MyStatus.class)
+                .managedClassesDoNotHave(MyStatus.class);
     }
 
     @Test
     void entityInheritanceDiscovery() throws Exception {
         Index index = buildIndex(ChildEntity.class, SimpleEntity.class, BaseMappedSuperclass.class);
 
-        ScavengerResult r = runScavenger(index);
-        r.entityClassesHave(SimpleEntity.class, ChildEntity.class);
-        r.entityClassesDoNotHave(BaseMappedSuperclass.class);
-        r.managedClassesHave(SimpleEntity.class, ChildEntity.class, BaseMappedSuperclass.class);
+        runScavenger(index)
+                .entityClassesHave(SimpleEntity.class, ChildEntity.class)
+                .entityClassesDoNotHave(BaseMappedSuperclass.class)
+                .managedClassesHave(SimpleEntity.class, ChildEntity.class, BaseMappedSuperclass.class);
     }
 
     @Test
     void entityListenerDiscovery() throws Exception {
         Index index = buildIndex(EntityWithListener.class, MyListener.class);
 
-        ScavengerResult r = runScavenger(index);
-        r.entityClassesHave(EntityWithListener.class);
-        r.potentialCdiBeanClassNamesHave(MyListener.class);
+        runScavenger(index)
+                .entityClassesHave(EntityWithListener.class)
+                .potentialCdiBeanClassNamesHave(MyListener.class);
     }
 
     @Test
     void idClassDiscovery() throws Exception {
         Index index = buildIndex(EntityWithIdClass.class, MyIdClass.class);
 
-        ScavengerResult r = runScavenger(index);
-        r.entityClassesHave(EntityWithIdClass.class);
-        r.entityClassesDoNotHave(MyIdClass.class);
+        runScavenger(index)
+                .entityClassesHave(EntityWithIdClass.class)
+                .entityClassesDoNotHave(MyIdClass.class);
     }
 
     @Test
     void idClassIsManagedClass() throws Exception {
         Index index = buildIndex(EntityWithIdClass.class, MyIdClass.class);
 
-        ScavengerResult r = runScavenger(index);
-        r.managedClassesHave(MyIdClass.class);
+        runScavenger(index)
+                .managedClassesHave(MyIdClass.class);
     }
 
     @Test
     void xmlOnlyEntityDiscovery() throws Exception {
         Index index = buildIndex(XmlOnlyEntity.class, XmlOnlyMappedSuperclass.class, XmlOnlyEmbeddable.class);
 
-        ScavengerResult r = runScavenger(index, Collections.emptySet(), "META-INF/orm-test-discovery.xml");
-        r.entityClassesHave(XmlOnlyEntity.class);
-        r.entityClassesDoNotHave(XmlOnlyMappedSuperclass.class, XmlOnlyEmbeddable.class);
-        r.managedClassesHave(XmlOnlyEntity.class, XmlOnlyMappedSuperclass.class, XmlOnlyEmbeddable.class);
+        runScavenger(index, Collections.emptySet(), "META-INF/orm-test-discovery.xml")
+                .entityClassesHave(XmlOnlyEntity.class)
+                .entityClassesDoNotHave(XmlOnlyMappedSuperclass.class, XmlOnlyEmbeddable.class)
+                .managedClassesHave(XmlOnlyEntity.class, XmlOnlyMappedSuperclass.class, XmlOnlyEmbeddable.class);
     }
 
     @Test
     void parseHbmTest() throws Exception {
         Index index = buildIndex(NonAnnotatedComponentUsingEntity.class, NonAnnotatedComponent.class);
 
-        ScavengerResult r = runScavenger(index, Collections.emptySet(), "META-INF/hbm-component.xml");
-        r.entityClassesHave(NonAnnotatedComponentUsingEntity.class, NonAnnotatedComponent.class);
+        runScavenger(index, Collections.emptySet(), "META-INF/hbm-component.xml")
+                .entityClassesHave(NonAnnotatedComponentUsingEntity.class, NonAnnotatedComponent.class);
     }
 
     @Test
@@ -315,8 +315,8 @@ public class JpaJandexScavengerTest {
         Index index = buildIndex(SimpleEntity.class);
         Set<String> ignorable = Set.of(BaseMappedSuperclass.class.getName());
 
-        ScavengerResult r = runScavenger(index, ignorable);
-        r.entityClassesHave(SimpleEntity.class);
+        runScavenger(index, ignorable)
+                .entityClassesHave(SimpleEntity.class);
     }
 
     @Test
@@ -331,27 +331,27 @@ public class JpaJandexScavengerTest {
     void hbmSimpleEntityDiscovery() throws Exception {
         Index index = buildIndex(NonAnnotatedEntity.class);
 
-        ScavengerResult r = runScavenger(index, Collections.emptySet(), "META-INF/hbm-simple.xml");
-        r.entityClassesHave(NonAnnotatedEntity.class);
-        r.managedClassesHave(NonAnnotatedEntity.class);
+        runScavenger(index, Collections.emptySet(), "META-INF/hbm-simple.xml")
+                .entityClassesHave(NonAnnotatedEntity.class)
+                .managedClassesHave(NonAnnotatedEntity.class);
     }
 
     @Test
     void hbmFilterDefEntityDiscovery() throws Exception {
         Index index = buildIndex(NonAnnotatedEntity.class);
 
-        ScavengerResult r = runScavenger(index, Collections.emptySet(), "META-INF/hbm-filterdef.xml");
-        r.entityClassesHave(NonAnnotatedEntity.class);
-        r.managedClassesHave(NonAnnotatedEntity.class);
+        runScavenger(index, Collections.emptySet(), "META-INF/hbm-filterdef.xml")
+                .entityClassesHave(NonAnnotatedEntity.class)
+                .managedClassesHave(NonAnnotatedEntity.class);
     }
 
     @Test
     void ormSimpleEntityDiscovery() throws Exception {
         Index index = buildIndex(io.quarkus.hibernate.orm.xml.orm.NonAnnotatedEntity.class);
 
-        ScavengerResult r = runScavenger(index, Collections.emptySet(), "META-INF/orm-simple.xml");
-        r.entityClassesHave(io.quarkus.hibernate.orm.xml.orm.NonAnnotatedEntity.class);
-        r.managedClassesHave(io.quarkus.hibernate.orm.xml.orm.NonAnnotatedEntity.class);
+        runScavenger(index, Collections.emptySet(), "META-INF/orm-simple.xml")
+                .entityClassesHave(io.quarkus.hibernate.orm.xml.orm.NonAnnotatedEntity.class)
+                .managedClassesHave(io.quarkus.hibernate.orm.xml.orm.NonAnnotatedEntity.class);
     }
 
     @Test
@@ -359,28 +359,28 @@ public class JpaJandexScavengerTest {
         Index index = buildIndex(io.quarkus.hibernate.orm.xml.orm.NonAnnotatedEntity.class,
                 OtherNonAnnotatedEntity.class);
 
-        ScavengerResult r = runScavenger(index, Collections.emptySet(), "META-INF/orm-package.xml");
-        r.entityClassesHave(io.quarkus.hibernate.orm.xml.orm.NonAnnotatedEntity.class,
-                OtherNonAnnotatedEntity.class);
-        r.managedClassesHave(io.quarkus.hibernate.orm.xml.orm.NonAnnotatedEntity.class,
-                OtherNonAnnotatedEntity.class);
+        runScavenger(index, Collections.emptySet(), "META-INF/orm-package.xml")
+                .entityClassesHave(io.quarkus.hibernate.orm.xml.orm.NonAnnotatedEntity.class,
+                        OtherNonAnnotatedEntity.class)
+                .managedClassesHave(io.quarkus.hibernate.orm.xml.orm.NonAnnotatedEntity.class,
+                        OtherNonAnnotatedEntity.class);
     }
 
     @Test
     void converterAutoApplyDiscovery() throws Exception {
         Index index = buildIndex(EntityWithConvertedField.class, MyDataConverter.class, MyData.class);
 
-        ScavengerResult r = runScavenger(index);
-        r.entityClassesHave(EntityWithConvertedField.class);
-        r.potentialCdiBeanClassNamesHave(MyDataConverter.class);
+        runScavenger(index)
+                .entityClassesHave(EntityWithConvertedField.class)
+                .potentialCdiBeanClassNamesHave(MyDataConverter.class);
     }
 
     @Test
     void converterInAllModelClasses() throws Exception {
         Index index = buildIndex(EntityWithConvertedField.class, MyDataConverter.class, MyData.class);
 
-        ScavengerResult r = runScavenger(index);
-        r.allModelClassNamesHave(MyDataConverter.class);
+        runScavenger(index)
+                .allModelClassNamesHave(MyDataConverter.class);
     }
 
     @Test
@@ -388,49 +388,49 @@ public class JpaJandexScavengerTest {
         Index index = buildIndex(ParentEntity.class,
                 Class.forName("io.quarkus.hibernate.orm.packages.package-info"));
 
-        ScavengerResult r = runScavenger(index);
-        r.entityClassesHave(ParentEntity.class);
-        r.allModelPackageNamesHave("io.quarkus.hibernate.orm.packages");
+        runScavenger(index)
+                .entityClassesHave(ParentEntity.class)
+                .allModelPackageNamesHave("io.quarkus.hibernate.orm.packages");
     }
 
     @Test
     void hbmSimpleParseXmlPu() throws Exception {
         Index index = buildIndex(NonAnnotatedEntity.class);
 
-        ScavengerResult r = runScavenger(index, Collections.emptySet(), "META-INF/hbm-simple.xml");
-        r.xmlMappingsHavePU("default");
+        runScavenger(index, Collections.emptySet(), "META-INF/hbm-simple.xml")
+                .xmlMappingsHavePU("default");
     }
 
     @Test
     void hbmFilterDefParseXmlPu() throws Exception {
         Index index = buildIndex(NonAnnotatedEntity.class);
 
-        ScavengerResult r = runScavenger(index, Collections.emptySet(), "META-INF/hbm-filterdef.xml");
-        r.xmlMappingsHavePU("default");
+        runScavenger(index, Collections.emptySet(), "META-INF/hbm-filterdef.xml")
+                .xmlMappingsHavePU("default");
     }
 
     @Test
     void hbmComponentParseXmlPu() throws Exception {
         Index index = buildIndex(NonAnnotatedComponentUsingEntity.class, NonAnnotatedComponent.class);
 
-        ScavengerResult r = runScavenger(index, Collections.emptySet(), "META-INF/hbm-component.xml");
-        r.xmlMappingsHavePU("default");
+        runScavenger(index, Collections.emptySet(), "META-INF/hbm-component.xml")
+                .xmlMappingsHavePU("default");
     }
 
     @Test
     void ormOverrideParseXmlPu() throws Exception {
         Index index = buildIndex(AnnotatedEntity.class);
 
-        ScavengerResult r = runScavenger(index, Collections.emptySet(), "META-INF/orm-override.xml");
-        r.xmlMappingsHavePU("default");
+        runScavenger(index, Collections.emptySet(), "META-INF/orm-override.xml")
+                .xmlMappingsHavePU("default");
     }
 
     @Test
     void ormSimpleParseXmlPu() throws Exception {
         Index index = buildIndex(io.quarkus.hibernate.orm.xml.orm.NonAnnotatedEntity.class);
 
-        ScavengerResult r = runScavenger(index, Collections.emptySet(), "META-INF/orm-simple.xml");
-        r.xmlMappingsHavePU("default");
+        runScavenger(index, Collections.emptySet(), "META-INF/orm-simple.xml")
+                .xmlMappingsHavePU("default");
     }
 
     @Test
@@ -438,8 +438,8 @@ public class JpaJandexScavengerTest {
         Index index = buildIndex(io.quarkus.hibernate.orm.xml.orm.NonAnnotatedEntity.class,
                 OtherNonAnnotatedEntity.class);
 
-        ScavengerResult r = runScavenger(index, Collections.emptySet(), "META-INF/orm-package.xml");
-        r.xmlMappingsHavePU("default");
+        runScavenger(index, Collections.emptySet(), "META-INF/orm-package.xml")
+                .xmlMappingsHavePU("default");
     }
 
     @Test
@@ -456,49 +456,49 @@ public class JpaJandexScavengerTest {
     void enumFieldInEnumTypes() throws Exception {
         Index index = buildIndex(EntityWithEnum.class, MyStatus.class);
 
-        ScavengerResult r = runScavenger(index);
-        r.enumTypesHave(MyStatus.class);
+        runScavenger(index)
+                .enumTypesHave(MyStatus.class);
     }
 
     @Test
     void javaPackageInterfaceInJavaTypes() throws Exception {
         Index index = buildIndex(SerializableEntity.class);
 
-        ScavengerResult r = runScavenger(index);
-        r.javaTypesHave(Serializable.class);
+        runScavenger(index)
+                .javaTypesHave(Serializable.class);
     }
 
     @Test
     void noFileMappingShouldNotDiscoverEntitiesOrEnums() throws Exception {
         Index index = buildIndex(AnnotatedEntity.class);
 
-        ScavengerResult r = runScavenger(index, Collections.emptySet(), "no-file");
-        r.entityClassesHave(AnnotatedEntity.class);
+        runScavenger(index, Collections.emptySet(), "no-file")
+                .entityClassesHave(AnnotatedEntity.class);
     }
 
     @Test
     void noFileMappingShouldNotDiscoverEntities() throws Exception {
         Index index = buildIndex(NonAnnotatedEntity.class);
 
-        ScavengerResult r = runScavenger(index, Collections.emptySet(), "no-file");
-        r.entityClassesDoNotHave(NonAnnotatedEntity.class);
-        r.managedClassesDoNotHave(NonAnnotatedEntity.class);
+        runScavenger(index, Collections.emptySet(), "no-file")
+                .entityClassesDoNotHave(NonAnnotatedEntity.class)
+                .managedClassesDoNotHave(NonAnnotatedEntity.class);
     }
 
     @Test
     void xmlMappingFilesRegisteredForHotDeployment() throws Exception {
         Index index = buildIndex(io.quarkus.hibernate.orm.xml.orm.NonAnnotatedEntity.class);
 
-        ScavengerResult r = runScavenger(index, Collections.emptySet(), "META-INF/orm-simple.xml");
-        r.hotDeploymentWatchedFilesHave("META-INF/orm-simple.xml");
+        runScavenger(index, Collections.emptySet(), "META-INF/orm-simple.xml")
+                .hotDeploymentWatchedFilesHave("META-INF/orm-simple.xml");
     }
 
     @Test
     void implicitOrmXmlDiscovery() throws Exception {
         Index index = buildIndex(SimpleEntity.class, BaseMappedSuperclass.class);
 
-        ScavengerResult r = runScavenger(index);
-        r.xmlMappingsHavePU("default");
+        runScavenger(index)
+                .xmlMappingsHavePU("default");
     }
 
     private ScavengerResult runScavenger(Index index) throws Exception {

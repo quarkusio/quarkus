@@ -549,17 +549,17 @@ public class JpaJandexScavengerTest {
     private record ScavengerResult(JpaModelBuildItem result, Set<String> enumTypes, Set<String> javaTypes,
             List<String> hotDeploymentWatchedFiles) {
 
+        private static List<String> toNames(Class<?>... classes) {
+            return Arrays.stream(classes).map(Class::getName).toList();
+        }
+
         private ScavengerResult assertHas(Set<String> actual, Class<?>... classes) {
-            for (Class<?> clazz : classes) {
-                assertThat(actual).contains(clazz.getName());
-            }
+            assertThat(actual).containsAll(toNames(classes));
             return this;
         }
 
         private ScavengerResult assertDoesNotHave(Set<String> actual, Class<?>... classes) {
-            for (Class<?> clazz : classes) {
-                assertThat(actual).doesNotContain(clazz.getName());
-            }
+            assertThat(actual).doesNotContainAnyElementsOf(toNames(classes));
             return this;
         }
 
@@ -583,23 +583,17 @@ public class JpaJandexScavengerTest {
             Set<String> beanClassNames = result.getPotentialCdiBeanClassNames().stream()
                     .map(dn -> dn.toString())
                     .collect(Collectors.toSet());
-            for (Class<?> clazz : classes) {
-                assertThat(beanClassNames).contains(clazz.getName());
-            }
+            assertThat(beanClassNames).containsAll(toNames(classes));
             return this;
         }
 
         ScavengerResult allModelPackageNamesHave(String... packageNames) {
-            for (String pkg : packageNames) {
-                assertThat(result.getAllModelPackageNames()).contains(pkg);
-            }
+            assertThat(result.getAllModelPackageNames()).containsAll(Arrays.asList(packageNames));
             return this;
         }
 
         ScavengerResult allModelClassNamesHave(Class<?>... classes) {
-            for (Class<?> clazz : classes) {
-                assertThat(result.getAllModelClassNames()).contains(clazz.getName());
-            }
+            assertThat(result.getAllModelClassNames()).containsAll(toNames(classes));
             return this;
         }
 
@@ -609,23 +603,17 @@ public class JpaJandexScavengerTest {
         }
 
         ScavengerResult enumTypesHave(Class<?>... classes) {
-            for (Class<?> clazz : classes) {
-                assertThat(enumTypes).contains(clazz.getName());
-            }
+            assertThat(enumTypes).containsAll(toNames(classes));
             return this;
         }
 
         ScavengerResult javaTypesHave(Class<?>... classes) {
-            for (Class<?> clazz : classes) {
-                assertThat(javaTypes).contains(clazz.getName());
-            }
+            assertThat(javaTypes).containsAll(toNames(classes));
             return this;
         }
 
         ScavengerResult hotDeploymentWatchedFilesHave(String... fileNames) {
-            for (String fileName : fileNames) {
-                assertThat(hotDeploymentWatchedFiles).contains(fileName);
-            }
+            assertThat(hotDeploymentWatchedFiles).containsAll(Arrays.asList(fileNames));
             return this;
         }
     }

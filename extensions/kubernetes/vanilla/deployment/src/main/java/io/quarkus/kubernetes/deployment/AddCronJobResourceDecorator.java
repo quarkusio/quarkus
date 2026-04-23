@@ -1,13 +1,8 @@
 
 package io.quarkus.kubernetes.deployment;
 
-import java.util.HashMap;
-import java.util.List;
-
-import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.batch.v1.CronJob;
 import io.fabric8.kubernetes.api.model.batch.v1.CronJobBuilder;
-import io.fabric8.kubernetes.api.model.batch.v1.CronJobFluent;
 
 public class AddCronJobResourceDecorator extends BaseAddDeploymentResourceDecorator<CronJob, CronJobBuilder, CronJobConfig> {
     public AddCronJobResourceDecorator(String name, CronJobConfig config, DeploymentResourceKind toRemove) {
@@ -21,34 +16,20 @@ public class AddCronJobResourceDecorator extends BaseAddDeploymentResourceDecora
 
     @Override
     protected void initBuilderWithDefaults(CronJobBuilder builder, CronJobConfig config) {
-        CronJobFluent<?>.SpecNested<CronJobBuilder> spec = builder.editOrNewSpec();
+        final var spec = builder.editOrNewSpec();
 
-        var jobTemplateSpec = spec
-                .editOrNewJobTemplate()
-                .editOrNewSpec();
+        var jobTemplateSpec = spec.editOrNewJobTemplate().editOrNewSpec();
 
-        jobTemplateSpec.editOrNewSelector()
-                .endSelector()
-                .editOrNewTemplate()
-                .editOrNewSpec()
-                .endSpec()
-                .endTemplate();
+        // match labels for selector
+        // for some reason, tests want null selector if not explicitly set
+        if (jobTemplateSpec.hasSelector()) {
+            initMatchLabels(jobTemplateSpec.editSelector())
+                    .endSelector();
+        }
 
-        // defaults for:
-        // - match labels
-        if (jobTemplateSpec.buildSelector().getMatchLabels() == null) {
-            jobTemplateSpec.editSelector().withMatchLabels(new HashMap<>()).endSelector();
-        } else {
-            jobTemplateSpec.withSelector(null);
-        }
-        // - termination grace period seconds
-        if (jobTemplateSpec.buildTemplate().getSpec().getTerminationGracePeriodSeconds() == null) {
-            jobTemplateSpec.editTemplate().editSpec().withTerminationGracePeriodSeconds(10L).endSpec().endTemplate();
-        }
-        // - container
-        if (!containsContainerWithName(spec)) {
-            jobTemplateSpec.editTemplate().editSpec().addNewContainer().withName(name()).endContainer().endSpec().endTemplate();
-        }
+        // ensure defaults on template spec
+        podSpecDefaults(jobTemplateSpec.editOrNewTemplate().editOrNewSpec())
+                .endSpec().endTemplate();
 
         spec.withSuspend(config.suspend());
         spec.withConcurrencyPolicy(config.concurrencyPolicy().name());
@@ -65,28 +46,10 @@ public class AddCronJobResourceDecorator extends BaseAddDeploymentResourceDecora
         config.startingDeadlineSeconds().ifPresent(spec::withStartingDeadlineSeconds);
         config.timeZone().ifPresent(spec::withTimeZone);
 
-        jobTemplateSpec.withCompletionMode(config.completionMode().name());
-        jobTemplateSpec.editTemplate().editSpec().withRestartPolicy(config.restartPolicy().name()).endSpec().endTemplate();
-        config.parallelism().ifPresent(jobTemplateSpec::withParallelism);
-        config.completions().ifPresent(jobTemplateSpec::withCompletions);
-        config.backoffLimit().ifPresent(jobTemplateSpec::withBackoffLimit);
-        config.activeDeadlineSeconds().ifPresent(jobTemplateSpec::withActiveDeadlineSeconds);
-        config.ttlSecondsAfterFinished().ifPresent(jobTemplateSpec::withTtlSecondsAfterFinished);
+        // init job template from config
+        initFromConfig(jobTemplateSpec, config);
 
         jobTemplateSpec.endSpec().endJobTemplate();
         spec.endSpec();
-    }
-
-    private boolean containsContainerWithName(CronJobFluent<?>.SpecNested<CronJobBuilder> spec) {
-        var jobTemplate = spec.buildJobTemplate();
-        if (jobTemplate == null
-                || jobTemplate.getSpec() == null
-                || jobTemplate.getSpec().getTemplate() == null
-                || jobTemplate.getSpec().getTemplate().getSpec() == null) {
-            return false;
-        }
-
-        List<Container> containers = jobTemplate.getSpec().getTemplate().getSpec().getContainers();
-        return containers == null || containers.stream().anyMatch(c -> name().equals(c.getName()));
     }
 }

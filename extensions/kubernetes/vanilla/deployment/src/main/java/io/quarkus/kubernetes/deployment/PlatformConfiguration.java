@@ -24,6 +24,12 @@ public interface PlatformConfiguration extends EnvVarHolder {
     Optional<DeploymentResourceKind> deploymentKind();
 
     /**
+     * If set to true, Quarkus will attempt to deploy the application to the target Kubernetes cluster
+     */
+    @WithDefault("false")
+    boolean deploy();
+
+    /**
      * The name of the group this component belongs too.
      */
     Optional<String> partOf();

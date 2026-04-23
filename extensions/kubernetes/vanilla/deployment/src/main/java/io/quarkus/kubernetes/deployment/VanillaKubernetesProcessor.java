@@ -17,8 +17,6 @@ import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddIngressTlsDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.ApplyDeploymentStrategyDecorator;
-import io.dekorate.kubernetes.decorator.ApplyReplicasToDeploymentDecorator;
-import io.dekorate.kubernetes.decorator.ApplyReplicasToStatefulSetDecorator;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.deployment.Capabilities;
@@ -170,15 +168,6 @@ public class VanillaKubernetesProcessor extends BaseVanillaKubernetesProcessor {
         final var name = context.name();
 
         deploymentKindDecorators(context, capabilities);
-
-        if (config.replicas() != 1) {
-            // This only affects Deployment
-            context.add(new ApplyReplicasToDeploymentDecorator(name, config.replicas()));
-            // This only affects StatefulSet
-            context.add(new ApplyReplicasToStatefulSetDecorator(name, config.replicas()));
-        }
-
-        context.add(new AddSelectorToDeploymentDecorator(name));
 
         config.containerName().ifPresent(containerName -> context.add(new ChangeContainerNameDecorator(containerName)));
 

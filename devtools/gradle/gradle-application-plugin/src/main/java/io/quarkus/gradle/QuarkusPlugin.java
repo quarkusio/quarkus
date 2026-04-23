@@ -533,9 +533,10 @@ public class QuarkusPlugin implements Plugin<Project> {
 
         project.getPlugins().withId("org.jetbrains.kotlin.jvm", plugin -> {
             quarkusDev.configure(task -> task.shouldPropagateJavaCompilerArgs(false));
+            SourceSetContainer ssc = project.getExtensions().getByType(SourceSetContainer.class);
+            final SourceSet generatedSourceSet = ssc.getByName(QuarkusGenerateCode.QUARKUS_GENERATED_SOURCES);
+            final SourceSet generatedTestSourceSet = ssc.getByName(QuarkusGenerateCode.QUARKUS_TEST_GENERATED_SOURCES);
             tasks.named("compileKotlin", task -> {
-                final SourceSet generatedSourceSet = project.getExtensions().getByType(SourceSetContainer.class)
-                        .getByName(QuarkusGenerateCode.QUARKUS_GENERATED_SOURCES);
                 addCodeGenSourceDirs(task, generatedSourceSet);
                 task.dependsOn(quarkusGenerateCode);
                 task.mustRunAfter(quarkusGenerateCodeDev);
@@ -548,17 +549,31 @@ public class QuarkusPlugin implements Plugin<Project> {
                 }
             });
             tasks.named("compileTestKotlin", task -> {
-                final SourceSet generatedSourceSet = project.getExtensions().getByType(SourceSetContainer.class)
-                        .getByName(QuarkusGenerateCode.QUARKUS_TEST_GENERATED_SOURCES);
-                addCodeGenSourceDirs(task, generatedSourceSet);
+                addCodeGenSourceDirs(task, generatedTestSourceSet);
                 task.dependsOn(quarkusGenerateCodeTests);
-                if (tasks.contains(new NamedImpl(generatedSourceSet.getCompileJavaTaskName()))) {
-                    task.mustRunAfter(tasks.named(generatedSourceSet.getCompileJavaTaskName()));
+                if (tasks.contains(new NamedImpl(generatedTestSourceSet.getCompileJavaTaskName()))) {
+                    task.mustRunAfter(tasks.named(generatedTestSourceSet.getCompileJavaTaskName()));
                 }
-                final String generatedSourcesCompileTaskName = generatedSourceSet.getCompileTaskName("kotlin");
+                final String generatedSourcesCompileTaskName = generatedTestSourceSet.getCompileTaskName("kotlin");
                 if (tasks.contains(new NamedImpl(generatedSourcesCompileTaskName))) {
                     task.mustRunAfter(tasks.named(generatedSourcesCompileTaskName));
                 }
+            });
+            // kapt stub tasks don't inherit the source dirs injected into compileKotlin, so wire them explicitly.
+            // TODO: perhaps we should prioritize IDE devX and proper wiring into the main SS, and invert
+            //  the handling here: kapt should be the base case, and KSP should be the edge-case.
+            //  See issues [1] and [2] for full context.
+            //  * [1] https://github.com/quarkusio/quarkus/issues/29698
+            //  * [2] https://github.com/quarkusio/quarkus/issues/50486
+            project.getPlugins().withId("org.jetbrains.kotlin.kapt", kaptPlugin -> {
+                tasks.matching(t -> t.getName().equals("kaptGenerateStubsKotlin")).configureEach(task -> {
+                    addCodeGenSourceDirs(task, generatedSourceSet);
+                    task.dependsOn(quarkusGenerateCode);
+                });
+                tasks.matching(t -> t.getName().equals("kaptGenerateStubsTestKotlin")).configureEach(task -> {
+                    addCodeGenSourceDirs(task, generatedTestSourceSet);
+                    task.dependsOn(quarkusGenerateCodeTests);
+                });
             });
         });
     }

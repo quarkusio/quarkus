@@ -16,7 +16,7 @@
     <properties>
         <angus-activation.version>2.0.2</angus-activation.version>
         <angus-mail.version>2.0.4</angus-mail.version> <!-- keep in sync with angus-activation (mail depends on activation) -->
-        <bouncycastle.version>1.82</bouncycastle.version>
+        <bouncycastle.version>1.84</bouncycastle.version>
         <bouncycastle.fips.version>2.1.2</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>2.1.20</bouncycastle.tls.fips.version>
         <cyclonedx.version>11.0.1</cyclonedx.version>
@@ -4617,13 +4617,6 @@
                 <groupId>org.apache.kafka</groupId>
                 <artifactId>kafka-clients</artifactId>
                 <version>${kafka3.version}</version>
-                <!-- TODO: remove the exclusion after upgrading to kafka-clients depending on the new lz4-java groupId (at.yawk.lz4) -->
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.lz4</groupId>
-                        <artifactId>lz4-java</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>at.yawk.lz4</groupId>

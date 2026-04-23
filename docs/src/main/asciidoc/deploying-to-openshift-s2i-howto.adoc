@@ -35,15 +35,13 @@ You can deploy {project-name} applications to {openshift} with Java {jdk-version
 
 == Procedure
 
-. Open the `pom.xml` file, and set the Java version.
+. Open the `pom.xml` file, and set the Java version, where `${java.version}` is {jdk-version-all}.
 +
 [source,xml,subs=attributes+]
 ----
-<maven.compiler.source>${java.version}</maven.compiler.source>
-<maven.compiler.target>${java.version}</maven.compiler.target>
+<maven.compiler.release>${java.version}</maven.compiler.release>
 ----
-where ${java.version} is {jdk-version-all}.
-+
+
 . Package your application, by entering the following command:
 +
 [source,shell]
@@ -66,22 +64,22 @@ JAVA_APP_JAR=/deployments/quarkus-run.jar
 
 . Import the supported {openshift} image.
 +
-Java {jdk-version-earliest}:
+* Java {jdk-version-earliest}:
 +
-[source,subs="attributes+,+quotes"]
+[source,terminal,subs="attributes+",options="nowrap"]
 ----
 oc import-image {name-image-ubi9-open-jdk-17-short} --from={name-image-ubi9-open-jdk-17} --confirm
 ----
-Java {jdk-version-other}:
+* Java {jdk-version-other}:
 +
-[source,subs="attributes+,+quotes"]
+[source,terminal,subs="attributes+",options="nowrap"]
 ----
 oc import-image {name-image-ubi9-open-jdk-21-short} --from={name-image-ubi9-open-jdk-21} --confirm
 ----
 +
-Java {jdk-version-latest}:
+* Java {jdk-version-latest}:
 +
-[source,subs="attributes+,+quotes"]
+[source,terminal,subs="attributes+",options="nowrap"]
 ----
 oc import-image {name-image-ubi9-open-jdk-25-short} --from={name-image-ubi9-open-jdk-25} --confirm
 ----
@@ -100,32 +98,39 @@ For information about this image, see link:https://catalog.redhat.com/en/softwar
 
 . Build the project, create the application, and deploy the {openshift} service.
 +
-Java {jdk-version-earliest}:
+* Java {jdk-version-earliest}:
 +
-[source,xml,subs="attributes+,+quotes"]
+[source,terminal,subs="attributes+",options="nowrap"]
 ----
 oc new-app registry.access.redhat.com/ubi9/openjdk-17~<git_path> --name=<project_name>
 ----
-Java {jdk-version-other}:
+* Java {jdk-version-other}:
 +
-[source,xml,subs="attributes+,+quotes"]
+[source,terminal,subs="attributes+",options="nowrap"]
 ----
 oc new-app registry.access.redhat.com/ubi9/openjdk-21~<git_path> --name=<project_name>
 ----
 +
-Java {jdk-version-latest}:
+* Java {jdk-version-latest}:
 +
-[source,xml,subs="attributes+,+quotes"]
+[source,terminal,subs="attributes+",options="nowrap"]
 ----
 oc new-app registry.access.redhat.com/ubi9/openjdk-25~<git_path> --name=<project_name>
 ----
 +
-* Replace `<git_path>` with the path of the Git repository that hosts your Quarkus project.
-For example, for Java {jdk-version-other}: `oc new-app registry.access.redhat.com/ubi9/openjdk-21~https://github.com/johndoe/code-with-quarkus.git --name=code-with-quarkus`.
+.. Replace `<git_path>` with the path of the Git repository that hosts your Quarkus project.
++
+For example, for Java {jdk-version-other}:
++
+[source,terminal,subs="attributes+",options="nowrap"]
+----
+oc new-app registry.access.redhat.com/ubi9/openjdk-21~https://github.com/johndoe/code-with-quarkus.git --name=code-with-quarkus
+----
+{nbsp}
 +
 If you do not have SSH keys configured for the Git repository, when specifying the Git path, use the HTTPS URL instead of the SSH URL.
 
-* Replace `<project_name>` with the name of your application.
+.. Replace `<project_name>` with the name of your application.
 +
 [NOTE]
 ====
@@ -134,14 +139,14 @@ If you are deploying on IBM Z infrastructure, enter `oc new-app ubi9/openjdk-21~
 
 . To deploy an updated version of the project, push changes to the Git repository, and then run:
 +
-[source,xml,subs="attributes+,+quotes"]
+[source,terminal,subs="attributes+",options="nowrap"]
 ----
 oc start-build <project_name>
 ----
 +
 . To expose a route to the application, run the following command:
 +
-[source,shell,subs="attributes+,+quotes"]
+[source,terminal,subs="attributes+"]
 ----
 oc expose svc <project_name>
 ----
@@ -150,13 +155,13 @@ oc expose svc <project_name>
 
 . List the pods associated with your current {openshift} project:
 +
-[source,shell,subs="attributes+,+quotes"]
+[source,terminal,subs="attributes+"]
 ----
 oc get pods
 ----
 . To get the log output for your application's pod, run the following command, replacing `<pod_name>` with the name of the latest pod prefixed by your application name:
 +
-[source,shell,subs="attributes+,+quotes"]
+[source,terminal,subs="attributes+"]
 ----
 oc logs -f <pod_name>
 ----

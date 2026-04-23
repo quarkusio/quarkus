@@ -345,7 +345,7 @@ triage:
     - id: kubernetes
       labels: [area/kubernetes]
       titleBody: "kubernetes"
-      notify: [geoand]
+      notify: [geoand, metacosm]
       directories:
         - extensions/kubernetes/
         - extensions/kubernetes-client/
@@ -354,15 +354,15 @@ triage:
     - id: minikube
       labels: [area/kubernetes]
       titleBody: "minikube"
-      notify: [geoand]
+      notify: [geoand, metacosm]
     - id: openshift
       labels: [area/kubernetes]
       titleBody: "openshift"
-      notify: [geoand]
+      notify: [geoand, metacosm]
     - id: knative
       labels: [area/kubernetes]
       titleBody: "knative"
-      notify: [geoand]
+      notify: [geoand, metacosm]
     - id: container-image
       labels: [area/container-image]
       expression: |

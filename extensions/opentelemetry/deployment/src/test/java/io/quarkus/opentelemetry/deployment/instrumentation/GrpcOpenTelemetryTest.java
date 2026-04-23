@@ -200,6 +200,13 @@ public class GrpcOpenTelemetryTest {
         List<SpanData> spans = spanExporter.getFinishedSpanItems(6);
         assertEquals(6, spans.size());
 
+        // dump spans
+//        for (SpanData span : spans) {
+//            System.out.println(
+//                    span.getKind() + " " + span.getName() + " - " + span.getSpanId() + " - " + span.getParentSpanId() + " - "
+//                            + span.getAttributes().get(RPC_SYSTEM) + " - " + span.getAttributes().get(RPC_METHOD));
+//        }
+
         final SpanData first = getSpanByKindAndParentId(spans, INTERNAL, "0000000000000000");
         final SpanData grpcClient = getSpanByKindAndParentId(spans, CLIENT, first.getSpanId(),
                 span -> "grpc".equals(span.getAttributes().get(RPC_SYSTEM)));

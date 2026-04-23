@@ -12,7 +12,6 @@ import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.context.Scope;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Vertx;
-import io.vertx.core.spi.context.storage.ContextLocal;
 
 /**
  * Bridges the OpenTelemetry ContextStorage with the Vert.x Context. The default OpenTelemetry ContextStorage (based in
@@ -25,7 +24,7 @@ public enum QuarkusContextStorage implements ContextStorage {
 
     private static final Logger log = Logger.getLogger(QuarkusContextStorage.class);
     private static final String OTEL_CONTEXT = QuarkusContextStorage.class.getName() + ".otelContext";
-    private static final ContextLocal<Context> CONTEXT_OVERRIDE = ContextLocal.registerLocal(Context.class);
+    //    private static final ContextLocal<Context> CONTEXT_OVERRIDE = ContextLocal.registerLocal(Context.class);
 
     private static final ContextStorage FALLBACK_CONTEXT_STORAGE = MDCEnabledContextStorage.INSTANCE;
     static Vertx vertx;
@@ -133,10 +132,10 @@ public enum QuarkusContextStorage implements ContextStorage {
     public Context current() {
         io.vertx.core.Context current = getVertxContext();
         if (current != null) {
-            Context override = current.getLocal(CONTEXT_OVERRIDE);
-            if (override != null) {
-                return override;
-            }
+            //            Context override = current.getLocal(CONTEXT_OVERRIDE);
+            //            if (override != null) {
+            //                return override;
+            //            }
             return (Context) VertxContext.localContextData(current).get(OTEL_CONTEXT);
         } else {
             return FALLBACK_CONTEXT_STORAGE.current();
@@ -154,10 +153,10 @@ public enum QuarkusContextStorage implements ContextStorage {
         if (vertxContext == null || !isDuplicatedContext(vertxContext)) {
             return null;
         }
-        Context override = vertxContext.getLocal(CONTEXT_OVERRIDE);
-        if (override != null) {
-            return override;
-        }
+        //        Context override = vertxContext.getLocal(CONTEXT_OVERRIDE);
+        //        if (override != null) {
+        //            return override;
+        //        }
         return (Context) VertxContext.localContextData(vertxContext).get(OTEL_CONTEXT);
     }
 
@@ -167,18 +166,18 @@ public enum QuarkusContextStorage implements ContextStorage {
      * Used by gRPC interceptors whose makeCurrent() scopes get unwound by context propagation.
      */
     public static void setContextOverride(io.vertx.core.Context vertxContext, Context otelContext) {
-        if (vertxContext != null && isDuplicatedContext(vertxContext)) {
-            vertxContext.putLocal(CONTEXT_OVERRIDE, otelContext);
-        }
+        //        if (vertxContext != null && isDuplicatedContext(vertxContext)) {
+        //            vertxContext.putLocal(CONTEXT_OVERRIDE, otelContext);
+        //        }
     }
 
     /**
      * Clears the OTel context override from a Vert.x context.
      */
     public static void clearContextOverride(io.vertx.core.Context vertxContext) {
-        if (vertxContext != null) {
-            vertxContext.removeLocal(CONTEXT_OVERRIDE);
-        }
+        //        if (vertxContext != null) {
+        //            vertxContext.removeLocal(CONTEXT_OVERRIDE);
+        //        }
     }
 
     /**

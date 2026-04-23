@@ -8,10 +8,10 @@ import java.util.Map;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClientOptions;
-import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -42,7 +42,7 @@ final class KeycloakDevServicesUtils {
         HttpRequest<Buffer> request = client.postAbs(tokenUrl);
         request.putHeader(HttpHeaders.CONTENT_TYPE.toString(), HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString());
 
-        io.vertx.mutiny.core.MultiMap props = new io.vertx.mutiny.core.MultiMap(MultiMap.caseInsensitiveMultiMap());
+        io.vertx.core.MultiMap props = MultiMap.caseInsensitiveMultiMap();
         props.add("client_id", clientId);
         if (clientSecret != null) {
             props.add("client_secret", clientSecret);
@@ -73,7 +73,7 @@ final class KeycloakDevServicesUtils {
         }
     }
 
-    private static Buffer encodeForm(io.vertx.mutiny.core.MultiMap form) {
+    private static Buffer encodeForm(io.vertx.core.MultiMap form) {
         Buffer buffer = Buffer.buffer();
         for (Map.Entry<String, String> entry : form) {
             if (buffer.length() != 0) {

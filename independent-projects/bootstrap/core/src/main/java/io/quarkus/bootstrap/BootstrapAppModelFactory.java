@@ -287,7 +287,12 @@ public class BootstrapAppModelFactory {
         final String serializedModel = test ? System.getProperty(BootstrapConstants.SERIALIZED_TEST_APP_MODEL)
                 : System.getProperty(BootstrapConstants.SERIALIZED_APP_MODEL);
         if (serializedModel != null) {
-            final Path p = Paths.get(serializedModel);
+            // Strip surrounding quotes that may be present from Maven argLine expansion on Windows
+            String modelPath = serializedModel;
+            if (modelPath.length() > 1 && modelPath.startsWith("\"") && modelPath.endsWith("\"")) {
+                modelPath = modelPath.substring(1, modelPath.length() - 1);
+            }
+            final Path p = Paths.get(modelPath);
             if (Files.exists(p)) {
                 try {
                     return new CurationResult(ApplicationModelSerializer.deserialize(p));

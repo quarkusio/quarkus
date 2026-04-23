@@ -322,6 +322,7 @@ jobs:
     outputs:
       gib_args: ${{ steps.get-gib-config.outputs.gib_args }}
       gib_impacted: ${{ steps.get-gib-config.outputs.impacted_modules }}
+      gib_impacted_gav: ${{ steps.get-gib-config.outputs.impacted_modules_gav }}
     steps:
       - uses: runs-on/action@15385172809cc0346c6821b00c3c3dd2598785b4 # v2.1.0
       - name: Gradle Enterprise environment
@@ -400,6 +401,7 @@ jobs:
           PUSH_BRANCH: ${{ github.event_name == 'push' && github.ref_name }}
           GIB_DISABLED: ${{ needs.configure.outputs.maven-disable-gib }}
         run: |
+          GIB_IMPACTED_GAV='_all_'
           if [[ "$GIB_DISABLED" == "true" ]] || [[ "$PUSH_BRANCH" =~ ^main|[0-9]+\.[0-9]+$ ]] || [[ "$PULL_REQUEST_HEAD" =~ ^.*backport.*$ ]]; then
             GIB_ARGS=''
             GIB_IMPACTED='_all_'
@@ -432,6 +434,14 @@ jobs:
               GIB_ARGS=''
             fi
 
+            # Generate GAV-formatted impacted modules for quickstarts testing
+            if [[ "$GIB_IMPACTED" != '_all_' ]]; then
+              ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dscan=false -Dtcks -Dquickly-ci $GIB_ARGS -Dgib.logImpactedTo=gib-impacted-gav.log -Dgib.logImpactedFormat=gav validate
+              if [ -s gib-impacted-gav.log ]; then
+                GIB_IMPACTED_GAV=$(cat gib-impacted-gav.log)
+              fi
+            fi
+
             echo "GIB_ARGS: $GIB_ARGS"
           fi
 
@@ -441,6 +451,9 @@ jobs:
           # (see https://github.com/github/docs/issues/21529 and https://github.com/orgs/community/discussions/26288#discussioncomment-3876281)
           echo 'impacted_modules<<EOF' >> $GITHUB_OUTPUT
           echo "${GIB_IMPACTED}" >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+          echo 'impacted_modules_gav<<EOF' >> $GITHUB_OUTPUT
+          echo "${GIB_IMPACTED_GAV}" >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
       - name: Print disk usage after build
         run: .github/ci-disk-usage.sh
@@ -1218,13 +1231,30 @@ jobs:
         id: get-quarkus-version
         run: |
           echo "quarkus-version=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_OUTPUT
-      - name: Compile Quickstarts
+      - name: Clone Quickstarts
+        env:
+          QUICKSTARTS_BRANCH: ${{ steps.get-quickstarts-branch.outputs.result }}
+          QUICKSTARTS_REPO: https://github.com/quarkusio/quarkus-quickstarts.git
+        run: |
+          echo "Cloning repository: ${QUICKSTARTS_REPO} (branch: ${QUICKSTARTS_BRANCH})"
+          git clone --depth=1 -b "${QUICKSTARTS_BRANCH}" "${QUICKSTARTS_REPO}"
+      - name: Test Impacted Quickstarts
+        working-directory: quarkus-quickstarts
         env:
           CAPTURE_BUILD_SCAN: true
+          GIB_IMPACTED_GAV: ${{ needs.build-jdk17.outputs.gib_impacted_gav }}
         run: |
-          git clone --depth=1 -b ${{ steps.get-quickstarts-branch.outputs.result }} https://github.com/quarkusio/quarkus-quickstarts.git && cd quarkus-quickstarts
+          echo "=== GIB_IMPACTED_GAV ==="
+          echo "$GIB_IMPACTED_GAV"
+          echo "========================"
           QUARKUS_VERSION_ARGS="-Dquarkus.platform.version=${{ steps.get-quarkus-version.outputs.quarkus-version }}"
-          export LANG=en_US && ./mvnw -e -B -fae --global-settings ../.github/mvn-settings.xml --settings .github/mvn-settings.xml clean verify -DskipTests -Dquarkus.platform.group-id=io.quarkus $QUARKUS_VERSION_ARGS
+          if [ "$GIB_IMPACTED_GAV" == '_all_' ]; then
+            export LANG=en_US && ./mvnw -e -B -fae --global-settings ../.github/mvn-settings.xml --settings .github/mvn-settings.xml verify -Dquarkus.platform.group-id=io.quarkus $QUARKUS_VERSION_ARGS
+          else
+            echo "$GIB_IMPACTED_GAV" > gib-dependencies.log
+            export LANG=en_US && ./mvnw -e -B -fae --global-settings ../.github/mvn-settings.xml --settings .github/mvn-settings.xml verify -Dquarkus.platform.group-id=io.quarkus $QUARKUS_VERSION_ARGS \
+              -Dincremental=true -Dgib.loadImpactedDependenciesFrom=gib-dependencies.log
+          fi
       - name: Prepare build reports archive
         if: always()
         run: |

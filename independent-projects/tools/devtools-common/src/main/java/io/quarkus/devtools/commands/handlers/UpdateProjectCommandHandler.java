@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Scanner;
@@ -19,6 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.devtools.commands.UpdateProject;
@@ -32,6 +34,8 @@ import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.JavaVersion;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.devtools.project.buildfile.MavenProjectBuildFile;
+import io.quarkus.devtools.project.extensions.ExtensionManager;
 import io.quarkus.devtools.project.state.ProjectState;
 import io.quarkus.devtools.project.update.ExtensionUpdateInfo;
 import io.quarkus.devtools.project.update.PlatformInfo;
@@ -66,6 +70,11 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
         }
         final ApplicationModel appModel = invocation.getValue(UpdateProject.APP_MODEL);
         final ExtensionCatalog targetCatalog = invocation.getValue(UpdateProject.TARGET_CATALOG);
+        ExtensionManager extensionManager = invocation.getQuarkusProject().getExtensionManager();
+        if (extensionManager instanceof MavenProjectBuildFile maven) {
+            warnOnPomPropertyDrift(targetCatalog, maven::getRawPomProperty, invocation.getQuarkusProject().log());
+        }
+
         final ProjectState currentState = resolveProjectState(appModel,
                 invocation.getQuarkusProject().getExtensionsCatalog());
         final ArtifactCoords currentQuarkusPlatformBom = getProjectQuarkusPlatformBOM(currentState);
@@ -86,15 +95,18 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
         final ProjectExtensionsUpdateInfo extensionsUpdateInfo = ProjectUpdateInfos.resolveExtensionsUpdateInfo(
                 currentState,
                 recommendedState);
-        boolean shouldUpdate = logUpdates(invocation.getQuarkusProject(), currentState, recommendedState, platformUpdateInfo,
+        boolean shouldUpdate = logUpdates(invocation.getQuarkusProject(), currentState, recommendedState,
+                platformUpdateInfo,
                 extensionsUpdateInfo,
                 invocation.log());
         Boolean rewrite = invocation.getValue(UpdateProject.REWRITE, null);
         boolean rewriteDryRun = invocation.getValue(UpdateProject.REWRITE_DRY_RUN, false);
+
         if (shouldUpdate) {
             final QuarkusProject quarkusProject = invocation.getQuarkusProject();
             final BuildTool buildTool = quarkusProject.getExtensionManager().getBuildTool();
-            // TODO targetCatalog shouldn't be used here, since it might not be the recommended one according to the calculated recommended state
+            // TODO targetCatalog shouldn't be used here, since it might not be the
+            // recommended one according to the calculated recommended state
             String kotlinVersion = getMetadata(targetCatalog, "project", "properties", "kotlin-version");
             final Optional<Integer> updateJavaVersion = resolveUpdateJavaVersion(extensionsUpdateInfo, projectJavaVersion);
             QuarkusUpdates.ProjectUpdateRequest request = new QuarkusUpdates.ProjectUpdateRequest(
@@ -201,7 +213,7 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
         try (Scanner scanner = new Scanner(new FilterInputStream(System.in) {
             @Override
             public void close() throws IOException {
-                //don't close System.in!
+                // don't close System.in!
             }
         })) {
             return scanner.nextLine();
@@ -235,7 +247,8 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
         return null;
     }
 
-    private static QuarkusCommandOutcome<Void> ensureQuarkusBomVersionIsNotNull(ArtifactCoords bomCoords, MessageWriter log) {
+    private static QuarkusCommandOutcome<Void> ensureQuarkusBomVersionIsNotNull(ArtifactCoords bomCoords,
+            MessageWriter log) {
         if (bomCoords == null) {
             String error = "The project state is missing the Quarkus platform BOM";
             log.error(error);
@@ -392,7 +405,7 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private <T> T getMetadata(ExtensionCatalog catalog, String... path) {
+    private static <T> T getMetadata(ExtensionCatalog catalog, String... path) {
         Object currentValue = catalog.getMetadata();
         for (String pathElement : path) {
             if (!(currentValue instanceof Map)) {
@@ -405,4 +418,24 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
         return (T) currentValue;
     }
 
+    static void warnOnPomPropertyDrift(ExtensionCatalog target, Function<String, String> localProperty,
+            MessageWriter log) {
+        checkDrift("compiler-plugin.version", "compiler-plugin-version", localProperty, target, log);
+        checkDrift("surefire-plugin.version", "surefire-plugin-version", localProperty, target, log);
+        checkDrift("maven.compiler.release", "recommended-java-version", localProperty, target, log);
+    }
+
+    private static void checkDrift(String pomPropName, String catalogKey,
+            Function<String, String> localProperty, ExtensionCatalog target, MessageWriter log) {
+        String localValue = localProperty.apply(pomPropName);
+        if (localValue == null)
+            return;
+        String expected = getMetadata(target, "project", "properties", catalogKey);
+        if (expected == null)
+            return;
+        if (!Objects.equals(localValue, expected)) {
+            log.warn("Project property '%s' is '%s' but the target stream recommends '%s'."
+                    + " Consider updating it in your pom.xml.", pomPropName, localValue, expected);
+        }
+    }
 }

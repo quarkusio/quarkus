@@ -423,7 +423,7 @@ public class BuildTimeEnabledProcessor {
             if (regexPattern != null) {
                 return regexPattern.matcher(actualValue).matches();
             }
-            return expectedStringValue.equalsIgnoreCase(actualValue);
+            return expectedStringValue.equals(actualValue);
         }
 
         static BuildProperty from(AnnotationInstance instance) {

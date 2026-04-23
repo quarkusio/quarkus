@@ -7,7 +7,7 @@ package io.quarkus.arc.properties;
 public enum StringValueMatch {
 
     /**
-     * Exact string equality (the default).
+     * Exact, case-sensitive string equality (the default).
      */
     EQ,
 

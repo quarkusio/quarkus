@@ -72,8 +72,8 @@ import io.quarkus.runtime.configuration.MemorySize;
 import io.smallrye.mutiny.TimeoutException;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
-import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 

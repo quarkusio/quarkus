@@ -123,7 +123,7 @@ public final class GraalVM {
          * The minimum version of GraalVM supported by Quarkus.
          * Versions prior to this are expected to cause major issues.
          */
-        public static final Version MINIMUM = VERSION_23_1_0;
+        public static final Version MINIMUM = VERSION_25_0_0;
         /**
          * The current version of GraalVM supported by Quarkus.
          * This version is the one actively being tested and is expected to give the best experience.

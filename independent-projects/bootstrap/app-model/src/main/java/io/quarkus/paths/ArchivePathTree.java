@@ -253,6 +253,18 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
         return archive.toString();
     }
 
+    /**
+     * Thread-safe view of an open archive backed by a {@link FileSystem}.
+     * <p>
+     * I/O methods clear the calling thread's interrupt flag before accessing the filesystem
+     * and restore it afterwards. This works around a JDK issue (JDK-8316882) where
+     * {@code ZipFileSystem} shares a single {@code FileChannel} across all threads, and
+     * an interrupted thread causes that channel to be closed (via {@code InterruptibleChannel}),
+     * making the entire filesystem unusable for all other threads.
+     * <p>
+     * This does not protect against an interrupt arriving mid-read, which would still
+     * close the channel. That case requires a JDK-level fix.
+     */
     protected class OpenArchivePathTree extends OpenContainerPathTree {
 
         private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -330,55 +342,75 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
         @Override
         protected <T> T apply(String resourceName, Function<PathVisit, T> func, boolean manifestEnabled) {
             lock.readLock().lock();
+            final boolean interrupted = Thread.interrupted();
             try {
                 ensureOpen();
                 return super.apply(resourceName, func, manifestEnabled);
             } finally {
                 lock.readLock().unlock();
+                if (interrupted) {
+                    Thread.currentThread().interrupt();
+                }
             }
         }
 
         @Override
         public void accept(String resourceName, Consumer<PathVisit> consumer) {
             lock.readLock().lock();
+            final boolean interrupted = Thread.interrupted();
             try {
                 ensureOpen();
                 super.accept(resourceName, consumer);
             } finally {
                 lock.readLock().unlock();
+                if (interrupted) {
+                    Thread.currentThread().interrupt();
+                }
             }
         }
 
         @Override
         public void walk(PathVisitor visitor) {
             lock.readLock().lock();
+            final boolean interrupted = Thread.interrupted();
             try {
                 ensureOpen();
                 super.walk(visitor);
             } finally {
                 lock.readLock().unlock();
+                if (interrupted) {
+                    Thread.currentThread().interrupt();
+                }
             }
         }
 
         @Override
         public void walkRaw(PathVisitor visitor) {
             lock.readLock().lock();
+            final boolean interrupted = Thread.interrupted();
             try {
                 ensureOpen();
                 super.walkRaw(visitor);
             } finally {
                 lock.readLock().unlock();
+                if (interrupted) {
+                    Thread.currentThread().interrupt();
+                }
             }
         }
 
         @Override
         public void walkIfContains(String resourceDirName, PathVisitor visitor) {
             lock.readLock().lock();
+            final boolean interrupted = Thread.interrupted();
             try {
                 ensureOpen();
                 super.walkIfContains(resourceDirName, visitor);
             } finally {
                 lock.readLock().unlock();
+                if (interrupted) {
+                    Thread.currentThread().interrupt();
+                }
             }
         }
 
@@ -390,22 +422,30 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
         @Override
         public boolean contains(String resourceName) {
             lock.readLock().lock();
+            final boolean interrupted = Thread.interrupted();
             try {
                 ensureOpen();
                 return super.contains(resourceName);
             } finally {
                 lock.readLock().unlock();
+                if (interrupted) {
+                    Thread.currentThread().interrupt();
+                }
             }
         }
 
         @Override
         public Path getPath(String resourceName) {
             lock.readLock().lock();
+            final boolean interrupted = Thread.interrupted();
             try {
                 ensureOpen();
                 return super.getPath(resourceName);
             } finally {
                 lock.readLock().unlock();
+                if (interrupted) {
+                    Thread.currentThread().interrupt();
+                }
             }
         }
 

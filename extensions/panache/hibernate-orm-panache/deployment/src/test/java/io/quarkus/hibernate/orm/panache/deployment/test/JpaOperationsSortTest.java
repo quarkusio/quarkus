@@ -75,4 +75,64 @@ public class JpaOperationsSortTest {
         Sort sort1 = Sort.by("foo.`bar`").disableEscaping();
         assertEquals(" ORDER BY foo.`bar`", PanacheJpaUtil.toOrderBy(sort1));
     }
+
+    @Test
+    public void testCaseInsensitiveSorting() {
+        Sort sort = Sort.ascendingIgnoreCase("name");
+        assertEquals(" ORDER BY LOWER(`name`)", PanacheJpaUtil.toOrderBy(sort));
+    }
+
+    @Test
+    public void testCaseInsensitiveSortingDescending() {
+        Sort sort = Sort.descendingIgnoreCase("name");
+        assertEquals(" ORDER BY LOWER(`name`) DESC", PanacheJpaUtil.toOrderBy(sort));
+    }
+
+    @Test
+    public void testCaseInsensitiveSortingWithNullPrecedence() {
+        Sort sort = Sort.ascendingIgnoreCase("name").nullsFirst();
+        assertEquals(" ORDER BY LOWER(`name`) NULLS FIRST", PanacheJpaUtil.toOrderBy(sort));
+    }
+
+    @Test
+    public void testMixedCaseSensitiveAndInsensitive() {
+        Sort sort = Sort.by("category").andIgnoreCase("name", Sort.Direction.Descending);
+        assertEquals(" ORDER BY `category` , LOWER(`name`) DESC", PanacheJpaUtil.toOrderBy(sort));
+    }
+
+    @Test
+    public void testCaseInsensitiveEmbeddedColumn() {
+        Sort sort = Sort.ascendingIgnoreCase("author.name");
+        assertEquals(" ORDER BY LOWER(`author`.`name`)", PanacheJpaUtil.toOrderBy(sort));
+    }
+
+    @Test
+    public void testCaseInsensitiveDisabledEscaping() {
+        Sort sort = Sort.ascendingIgnoreCase("name").disableEscaping();
+        assertEquals(" ORDER BY LOWER(name)", PanacheJpaUtil.toOrderBy(sort));
+    }
+
+    @Test
+    public void testIgnoreCaseFluentAPI() {
+        Sort sort = Sort.by("name", "author").ignoreCase();
+        assertEquals(" ORDER BY LOWER(`name`) , LOWER(`author`)", PanacheJpaUtil.toOrderBy(sort));
+    }
+
+    @Test
+    public void testCaseInsensitiveMultipleColumns() {
+        Sort sort = Sort.ascendingIgnoreCase("name", "author");
+        assertEquals(" ORDER BY LOWER(`name`) , LOWER(`author`)", PanacheJpaUtil.toOrderBy(sort));
+    }
+
+    @Test
+    public void testNullsFirstConvenience() {
+        Sort sort = Sort.by("foo").nullsFirst();
+        assertEquals(" ORDER BY `foo` NULLS FIRST", PanacheJpaUtil.toOrderBy(sort));
+    }
+
+    @Test
+    public void testNullsLastConvenience() {
+        Sort sort = Sort.by("foo").nullsLast();
+        assertEquals(" ORDER BY `foo` NULLS LAST", PanacheJpaUtil.toOrderBy(sort));
+    }
 }

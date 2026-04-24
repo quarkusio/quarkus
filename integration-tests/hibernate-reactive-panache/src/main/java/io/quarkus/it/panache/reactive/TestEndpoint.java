@@ -2377,6 +2377,54 @@ public class TestEndpoint {
     }
 
     @GET
+    @Path("testCaseInsensitiveSorting")
+    @WithTransaction
+    public Uni<String> testCaseInsensitiveSorting() {
+        return Person.deleteAll()
+                .flatMap(v -> {
+                    Person apple = new Person();
+                    apple.name = "apple";
+                    apple.uniqueName = "1";
+
+                    Person BANANA = new Person();
+                    BANANA.name = "BANANA";
+                    BANANA.uniqueName = "2";
+
+                    Person cherry = new Person();
+                    cherry.name = "cherry";
+                    cherry.uniqueName = "3";
+
+                    return Person.persist(apple, BANANA, cherry);
+                }).flatMap(p -> {
+                    // Test case-insensitive ascending sort
+                    return Person.findAll(Sort.ascendingIgnoreCase("name")).list();
+                }).flatMap(list -> {
+                    assertEquals(3, list.size());
+                    assertEquals("apple", ((Person) list.get(0)).name);
+                    assertEquals("BANANA", ((Person) list.get(1)).name);
+                    assertEquals("cherry", ((Person) list.get(2)).name);
+
+                    // Test case-insensitive descending sort
+                    return Person.findAll(Sort.descendingIgnoreCase("name")).list();
+                }).flatMap(list -> {
+                    assertEquals(3, list.size());
+                    assertEquals("cherry", ((Person) list.get(0)).name);
+                    assertEquals("BANANA", ((Person) list.get(1)).name);
+                    assertEquals("apple", ((Person) list.get(2)).name);
+
+                    // Test fluent API
+                    return Person.findAll(Sort.by("name").ignoreCase()).list();
+                }).flatMap(list -> {
+                    assertEquals(3, list.size());
+                    assertEquals("apple", ((Person) list.get(0)).name);
+                    assertEquals("BANANA", ((Person) list.get(1)).name);
+                    assertEquals("cherry", ((Person) list.get(2)).name);
+
+                    return Person.deleteAll();
+                }).map(v -> "OK");
+    }
+
+    @GET
     @Path("26308")
     @WithTransaction
     public Uni<String> testBug26308() {

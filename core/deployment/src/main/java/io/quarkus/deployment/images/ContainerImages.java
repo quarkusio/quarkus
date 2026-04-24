@@ -1,5 +1,7 @@
 package io.quarkus.deployment.images;
 
+import java.util.regex.Pattern;
+
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem.JavaVersion.Status;
 
@@ -72,6 +74,8 @@ public class ContainerImages {
     public static final String QUARKUS_MICRO_IMAGE = UBI9_QUARKUS_MICRO_IMAGE;
 
     // === Runtime images for containers (JVM)
+    private static final Pattern RUN_JAVA_IMAGE_MATCHER = Pattern
+            .compile("^registry\\.access\\.redhat\\.com/ubi\\d+/openjdk-\\d+-runtime(?::[\\w.\\-]+)?$");
 
     // UBI 8 OpenJDK 17 Runtime - https://catalog.redhat.com/software/containers/ubi8/openjdk-17-runtime/618bdc5f843af1624c4e4ba8
     public static final String UBI8_JAVA_17_IMAGE_NAME = "registry.access.redhat.com/ubi8/openjdk-17-runtime";
@@ -164,5 +168,9 @@ public class ContainerImages {
         }
 
         return UBI9_JAVA_17;
+    }
+
+    public static boolean containsRunJava(String baseJvmImage) {
+        return RUN_JAVA_IMAGE_MATCHER.matcher(baseJvmImage).matches();
     }
 }

@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -23,6 +24,7 @@ import io.quarkus.deployment.QuarkusAugmentor;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
@@ -90,6 +92,7 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
             builder.addFinal(GeneratedClassBuildItem.class);
             builder.addFinal(MainClassBuildItem.class);
             builder.addFinal(GeneratedResourceBuildItem.class);
+            builder.addFinal(GeneratedServiceProviderBuildItem.class);
             builder.addFinal(TransformedClassesBuildItem.class);
             builder.addFinal(DeploymentResultBuildItem.class);
             // note: quarkus.package.type is deprecated
@@ -116,6 +119,17 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
                 }
                 for (GeneratedResourceBuildItem i : buildResult.consumeMulti(GeneratedResourceBuildItem.class)) {
                     result.put(i.getName(), i.getData());
+                }
+                Map<String, StringBuilder> serviceProviders = new LinkedHashMap<>();
+                for (GeneratedServiceProviderBuildItem i : buildResult
+                        .consumeMulti(GeneratedServiceProviderBuildItem.class)) {
+                    serviceProviders.computeIfAbsent("META-INF/services/" + i.getServiceInterfaceName(),
+                            k -> new StringBuilder())
+                            .append(i.getImplementationClassName())
+                            .append(System.lineSeparator());
+                }
+                for (Map.Entry<String, StringBuilder> entry : serviceProviders.entrySet()) {
+                    result.put(entry.getKey(), entry.getValue().toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
                 }
                 for (Map.Entry<Path, Set<TransformedClassesBuildItem.TransformedClass>> entry : buildResult
                         .consume(TransformedClassesBuildItem.class).getTransformedClassesByJar().entrySet()) {

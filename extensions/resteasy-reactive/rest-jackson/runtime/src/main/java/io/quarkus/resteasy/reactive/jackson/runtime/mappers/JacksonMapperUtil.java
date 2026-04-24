@@ -27,6 +27,18 @@ import io.quarkus.security.identity.SecurityIdentity;
 
 public class JacksonMapperUtil {
 
+    public static boolean isViewIncluded(Class<?> activeView, Class<?>[] viewClasses) {
+        if (activeView == null) {
+            return true;
+        }
+        for (Class<?> viewClass : viewClasses) {
+            if (viewClass.isAssignableFrom(activeView)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static boolean includeSecureField(SerializerProvider serializerProvider, String[] rolesAllowed) {
         return serializerProvider.getConfig().getFilterProvider() == null || includeSecureField(rolesAllowed);
     }

@@ -61,15 +61,6 @@ public interface JvmModulesReconfigurer {
             logger.debugf(e, "Failed to initialize ReflectiveAccessModulesReconfigurer");
         }
 
-        //Next let's try the approach based on --add-exports being set on JVM boot:
-        logger.debugf("Attempting to initialize DirectExportedModulesAPIModulesReconfigurer");
-        try {
-            return new DirectExportedModulesAPIModulesReconfigurer();
-        } catch (RuntimeException e) {
-            //Intentionally not warning, we'll do a single warning below to not be overwhelming.
-            logger.debugf(e, "Failed to initialize DirectExportedModulesAPIModulesReconfigurer");
-        }
-
         //ONE actionable warning:
         //N.B. this is the only warning in this complex block, so to provide a single clear direction to the user;
         //the "add-opens=java.base" seems to be our preference, so that's what we suggest setting.

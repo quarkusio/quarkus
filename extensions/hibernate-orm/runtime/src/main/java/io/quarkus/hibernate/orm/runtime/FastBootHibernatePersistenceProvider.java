@@ -208,10 +208,11 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                 throw new IllegalStateException(
                         "Attempting to boot a deactivated Hibernate ORM persistence unit");
             }
-            RuntimeSettings runtimeSettings = buildRuntimeSettings(persistenceUnitName, recordedState, puConfig);
+            RuntimeSettingsResult runtimeSettingsResult = buildRuntimeSettings(persistenceUnitName, recordedState,
+                    puConfig);
 
             StandardServiceRegistry standardServiceRegistry = rewireMetadataAndExtractServiceRegistry(persistenceUnitName,
-                    recordedState, puConfig, runtimeSettings);
+                    recordedState, puConfig, runtimeSettingsResult.settings());
 
             final Object cdiBeanManager = Arc.container().beanManager();
             final Object validatorFactory = Arc.container().instance("quarkus-hibernate-validator-factory").get();
@@ -220,23 +221,28 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                     persistenceUnit,
                     metadata /* Uses the StandardServiceRegistry references by this! */,
                     standardServiceRegistry /* Mostly ignored! (yet needs to match) */,
-                    runtimeSettings,
+                    runtimeSettingsResult.settings(),
                     validatorFactory, cdiBeanManager, recordedState.getMultiTenancyStrategy(),
                     true,
                     recordedState.getBuildTimeSettings().getSource().getBuiltinFormatMapperBehaviour(),
-                    recordedState.getBuildTimeSettings().getSource().getJsonFormatterCustomizationCheck());
+                    recordedState.getBuildTimeSettings().getSource().getJsonFormatterCustomizationCheck(),
+                    runtimeSettingsResult.importScripts());
         }
 
         log.debug("Found no matching persistence units");
         return null;
     }
 
-    private RuntimeSettings buildRuntimeSettings(String persistenceUnitName, RecordedState recordedState,
+    private record RuntimeSettingsResult(RuntimeSettings settings, SchemaToolingUtil.PreparedImportScripts importScripts) {
+    }
+
+    private RuntimeSettingsResult buildRuntimeSettings(String persistenceUnitName, RecordedState recordedState,
             HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig) {
         final BuildTimeSettings buildTimeSettings = recordedState.getBuildTimeSettings();
         final IntegrationSettings integrationSettings = recordedState.getIntegrationSettings();
         Builder runtimeSettingsBuilder = new Builder(buildTimeSettings, integrationSettings);
-        unzipZipFilesAndReplaceZipsInImportFiles(runtimeSettingsBuilder);
+        SchemaToolingUtil.PreparedImportScripts importScripts = unzipZipFilesAndReplaceZipsInImportFiles(
+                runtimeSettingsBuilder);
 
         Optional<String> dataSourceName = recordedState.getBuildTimeSettings().getSource().getDataSource();
         if (dataSourceName.isPresent()) {
@@ -337,7 +343,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             }
         }
 
-        return runtimeSettingsBuilder.build();
+        return new RuntimeSettingsResult(runtimeSettingsBuilder.build(), importScripts);
     }
 
     public static boolean isPostgresOrDB2(BuildTimeSettings buildTimeSettings) {
@@ -346,10 +352,13 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                 || DatabaseKind.isDB2(dbKind.toString());
     }
 
-    private void unzipZipFilesAndReplaceZipsInImportFiles(Builder runtimeSettingsBuilder) {
-        String newValue = SchemaToolingUtil.unzipZipFilesAndReplaceZips(
+    private SchemaToolingUtil.PreparedImportScripts unzipZipFilesAndReplaceZipsInImportFiles(
+            Builder runtimeSettingsBuilder) {
+        SchemaToolingUtil.PreparedImportScripts importScripts = SchemaToolingUtil.unzipZipFilesAndReplaceZips(
                 (String) runtimeSettingsBuilder.get(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE));
-        runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE, newValue);
+        runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE,
+                importScripts.getRewrittenValue());
+        return importScripts;
     }
 
     private StandardServiceRegistry rewireMetadataAndExtractServiceRegistry(String persistenceUnitName, RecordedState rs,

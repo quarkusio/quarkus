@@ -16,7 +16,7 @@ public class AgroalOpenTelemetryWrapper {
             DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig) {
         OpenTelemetryDataSource otelDataSource = (OpenTelemetryDataSource) JdbcTelemetry
                 .builder(openTelemetry)
-                .setDataSourceInstrumenterEnabled(dataSourceJdbcRuntimeConfig.telemetryTraceConnection())
+                .setDataSourceInstrumenterEnabled(dataSourceJdbcRuntimeConfig.telemetry().traceConnection())
                 .build()
                 .wrap(originalDataSource);
         return new OpenTelemetryAgroalDataSource(originalDataSource, otelDataSource);

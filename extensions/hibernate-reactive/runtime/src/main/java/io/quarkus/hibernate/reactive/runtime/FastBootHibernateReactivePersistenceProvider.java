@@ -179,7 +179,8 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             final IntegrationSettings integrationSettings = recordedState.getIntegrationSettings();
             RuntimeSettings.Builder runtimeSettingsBuilder = new RuntimeSettings.Builder(buildTimeSettings,
                     integrationSettings);
-            unzipZipFilesAndReplaceZipsInImportFiles(runtimeSettingsBuilder);
+            SchemaToolingUtil.PreparedImportScripts importScripts = unzipZipFilesAndReplaceZipsInImportFiles(
+                    runtimeSettingsBuilder);
 
             HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig = hibernateOrmRuntimeConfig.persistenceUnits()
                     .get(persistenceUnit.getName());
@@ -275,17 +276,21 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
                     validatorFactory, cdiBeanManager, recordedState.getMultiTenancyStrategy(),
                     !blockingSessionFactoryExists,
                     recordedState.getBuildTimeSettings().getSource().getBuiltinFormatMapperBehaviour(),
-                    recordedState.getBuildTimeSettings().getSource().getJsonFormatterCustomizationCheck());
+                    recordedState.getBuildTimeSettings().getSource().getJsonFormatterCustomizationCheck(),
+                    importScripts);
         }
 
         log.debug("Found no matching persistence units");
         return null;
     }
 
-    private void unzipZipFilesAndReplaceZipsInImportFiles(Builder runtimeSettingsBuilder) {
-        String newValue = SchemaToolingUtil.unzipZipFilesAndReplaceZips(
+    private SchemaToolingUtil.PreparedImportScripts unzipZipFilesAndReplaceZipsInImportFiles(
+            Builder runtimeSettingsBuilder) {
+        SchemaToolingUtil.PreparedImportScripts importScripts = SchemaToolingUtil.unzipZipFilesAndReplaceZips(
                 (String) runtimeSettingsBuilder.get(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE));
-        runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE, newValue);
+        runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE,
+                importScripts.getRewrittenValue());
+        return importScripts;
     }
 
     private StandardServiceRegistry rewireMetadataAndExtractServiceRegistry(String persistenceUnitName,

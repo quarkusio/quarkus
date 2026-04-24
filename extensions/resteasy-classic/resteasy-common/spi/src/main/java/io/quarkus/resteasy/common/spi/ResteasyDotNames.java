@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.common.spi;
 
+import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -96,7 +97,10 @@ public final class ResteasyDotNames {
 
         @Override
         public boolean test(MethodInfo methodInfo) {
-            return methodInfo.hasAnnotation(JSON_IGNORE)
+            // Non-public methods are not required by JSON serialisation, and may lead to leaking of implementation
+            // types that we should not register.
+            return !Modifier.isPublic(methodInfo.flags())
+                    || methodInfo.hasAnnotation(JSON_IGNORE)
                     || methodInfo.hasAnnotation(JSONB_TRANSIENT)
                     || methodInfo.hasAnnotation(XML_TRANSIENT);
         }

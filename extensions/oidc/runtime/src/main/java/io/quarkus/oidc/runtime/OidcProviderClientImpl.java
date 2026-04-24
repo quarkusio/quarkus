@@ -281,7 +281,8 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     }
 
     Uni<AuthorizationCodeTokens> refreshAuthorizationCodeTokens(String refreshToken) {
-        return refreshTokenToTokensUni.computeIfAbsent(refreshToken, rt -> {
+        var ctx = Vertx.currentContext();
+        Uni<AuthorizationCodeTokens> refreshUni = refreshTokenToTokensUni.computeIfAbsent(refreshToken, rt -> {
             final MultiMap refreshGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
             refreshGrantParams.add(OidcConstants.GRANT_TYPE, OidcConstants.REFRESH_TOKEN_GRANT);
             refreshGrantParams.add(OidcConstants.REFRESH_TOKEN_VALUE, rt);
@@ -297,6 +298,10 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
                 throw t;
             }
         });
+        if (ctx != null) {
+            return refreshUni.emitOn(command -> ctx.runOnContext(ignored -> command.run()));
+        }
+        return refreshUni;
     }
 
     public Uni<Boolean> revokeAccessToken(String accessToken) {

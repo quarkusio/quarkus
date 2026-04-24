@@ -9,7 +9,8 @@ when performing that type of work.
 - **Update documentation.** When changes affect user-facing behavior, config, or
   APIs, update the relevant `.adoc` files in `docs/src/main/asciidoc/`.
 - **Add or update tests.** Bug fixes need a reproducer test. New features need
-  tests. Test in both JVM and native mode for non-trivial changes.
+  tests. Test in both JVM and native mode for non-trivial changes. Prefer
+  AssertJ for assertions.
 - **You are responsible for what you submit.** Validate all changes. Do not
   submit AI-generated code without human oversight.
 
@@ -50,12 +51,12 @@ Quarkus has a split classloading model — the #1 source of mistakes:
 ## Build Commands
 
 ```bash
-./mvnw -Dquickly                           # Quick full build (skip tests/docs/native)
-./mvnw install -f extensions/<name>/       # Build one extension
-./mvnw install -f core/ -DskipTests        # Build core
-./mvnw verify -f extensions/<name>/        # Run extension tests
-./mvnw test -Dtest=MyTest                  # Run single test
-./mvnw verify -f integration-tests/<name>/ -Dnative  # Native tests
+./mvnw -Dquickly                                                                          # Quick full build (skip tests/docs/native)
+./mvnw install -f extensions/<name>/                                                      # Build one extension
+./mvnw install -f core/ -DskipTests                                                       # Build core
+./mvnw verify -f extensions/<name>/ -Dtest-containers -Dstart-containers                  # Run extension tests
+./mvnw test -Dtest=MyTest -Dtest-containers -Dstart-containers                            # Run single test
+./mvnw verify -f integration-tests/<name>/ -Dtest-containers -Dstart-containers -Dnative  # Native tests
 ```
 
 Set `MAVEN_OPTS="-Xmx4g"`. Always use `install` (not just `compile`).
@@ -65,14 +66,27 @@ If you change a runtime module, rebuild its deployment module too.
 |------|---------|
 | `-Dquickly` | Skip tests, ITs, docs, native, validation |
 | `-Dnative` | Build and test native image |
-| `-Dno-format` | Skip formatting check |
 | `-DskipTests` | Skip unit tests |
 | `-Dincremental` | Only build changed modules |
+| `-Dtest-containers -Dstart-containers` | Auto-start containers for tests (always use when running tests) |
+
+**Do NOT use `-Dno-format`** to skip formatting checks. Formatting and
+import sorting are applied automatically during compilation — there is no
+need for a separate step. Let the build fix formatting for you.
+
+## Editing Rules
+
+- **Preserve existing comments.** When editing a section of code, keep all
+  existing comments that are not directly invalidated by your change. Never
+  drop comments from code you are not modifying.
 
 ## Coding Style Essentials
 
 - 4-space indentation, enforced by `formatter-maven-plugin` — run
   `./mvnw process-sources` to auto-format
+- **Never manually sort or reorder imports** — `impsort-maven-plugin` handles
+  import ordering automatically. Just add imports where needed; do not make
+  edits whose sole purpose is reorganizing imports.
 - Use **JBoss Logging** (`org.jboss.logging.Logger`), not SLF4J/JUL/Log4j
 - No `@author` tags, no wildcard imports
 - Naming: `<Feature>Processor.java`, `<Feature>Recorder.java`,

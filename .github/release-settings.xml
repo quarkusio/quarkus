@@ -11,7 +11,7 @@
             <username>${env.SONATYPE_USERNAME}</username>
             <password>${env.SONATYPE_PASSWORD}</password>
             <configuration>
-                <njord.publisher>deploy</njord.publisher>
+                <njord.publisher>sonatype-cp</njord.publisher>
                 <njord.releaseUrl>njord:template:release-sca</njord.releaseUrl>
                 <njord.snapshotUrl>njord:template:snapshot-sca</njord.snapshotUrl>
             </configuration>

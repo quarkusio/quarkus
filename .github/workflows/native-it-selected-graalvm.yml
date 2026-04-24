@@ -67,7 +67,7 @@ jobs:
         run: |
           echo "GE_TAGS=jdk-17" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Initial JDK 17 Build" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           ref: ${{ inputs.BRANCH }}
           # this is important for GIB to work
@@ -95,7 +95,7 @@ jobs:
           echo "quarkus-metadata-cache-key=quarkus-metadata-cache-${CURRENT_WEEK}-${{ github.ref_name }}" >> $GITHUB_OUTPUT
           echo "quarkus-metadata-cache-key-default=quarkus-metadata-cache-${CURRENT_WEEK}-${{ github.event.repository.default_branch }}" >> $GITHUB_OUTPUT
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
         with:
           path: ~/.m2/repository
           # This will always fail but we will default to the best matching restore keys
@@ -108,7 +108,7 @@ jobs:
       - name: Verify virtual-threads-tests.json
         run: ./.github/verify-tests-json.sh virtual-threads-tests.json integration-tests/virtual-threads/
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@v2.1
+        uses: gradle/develocity-actions/setup-maven@974e8dbcbda40db6828fc35f349c80a7c0e71529 # v2.1
         with:
           capture-strategy: ON_DEMAND
           job-name: "Initial JDK 17 Build"
@@ -199,7 +199,7 @@ jobs:
       native_matrix: ${{ steps.calc-native-matrix.outputs.matrix }}
       virtual_threads_matrix: ${{ steps.calc-virtual-threads-matrix.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Calculate matrix from native-tests.json
         id: calc-native-matrix
         run: |
@@ -236,9 +236,9 @@ jobs:
           category=$(echo -n '${{matrix.category}}' | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]-' '-' | sed -E 's/-+/-/g')
           echo "GE_TAGS=virtual-thread-native-${category}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Native Tests - Virtual Thread - ${{matrix.category}}" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
         with:
           path: ~/.m2/repository
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
@@ -271,7 +271,7 @@ jobs:
             cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
           fi
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@v2.1
+        uses: gradle/develocity-actions/setup-maven@974e8dbcbda40db6828fc35f349c80a7c0e71529 # v2.1
         with:
           capture-strategy: ON_DEMAND
           job-name: "Native Tests - Virtual Thread - ${{matrix.category}}"
@@ -321,7 +321,7 @@ jobs:
           category=$(echo -n '${{matrix.category}}' | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]-' '-' | sed -E 's/-+/-/g')
           echo "GE_TAGS=native-${category}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Native Tests - ${{matrix.category}}" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Set up JDK 17
@@ -343,7 +343,7 @@ jobs:
             cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
           fi
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
         with:
           path: ~/.m2/repository
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
@@ -358,7 +358,7 @@ jobs:
       - name: Extract .m2/repository/io/quarkus
         run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@v2.1
+        uses: gradle/develocity-actions/setup-maven@974e8dbcbda40db6828fc35f349c80a7c0e71529 # v2.1
         with:
           capture-strategy: ON_DEMAND
           job-name: "Native Tests - ${{matrix.category}}"
@@ -412,7 +412,7 @@ jobs:
     needs: [build-jdk17,native-tests,virtual-thread-native-tests]
     if: always()
     steps:
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           path: build-reports-artifacts
       - name: Set up JDK 17

@@ -231,7 +231,7 @@ quarkus.oidc.credentials.jwt.token-path=/var/run/secrets/tokens <2>
 ----
 <1> Use a JWT bearer token to authenticate the OIDC provider client.
 For more information, see the link:https://www.rfc-editor.org/rfc/rfc7523#section-2.2[Using JWTs for Client Authentication] section.
-<2> Path to a JWT bearer token. 
+<2> Path to a JWT bearer token.
 Quarkus loads a new token from the filesystem and reloads it when the token expires.
 
 ==== Additional JWT authentication options
@@ -408,7 +408,7 @@ public class OidcDiscoveryRequestCustomizer implements OidcRequestFilter {
 
 `OidcRequestContextProperties` can be used to access request properties.
 Currently, you can use a `tenand_id` key to access the OIDC tenant ID and a `grant_type` key to access the grant type that the OIDC provider uses to acquire tokens.
-The `grant_type` can only be set to either an `authorization_code` or `refresh_token` grant type when requests are made to the token endpoint. 
+The `grant_type` can only be set to either an `authorization_code` or `refresh_token` grant type when requests are made to the token endpoint.
 It is `null` in all other cases.
 
 `OidcRequestFilter` can customize a request body by preparing an instance of `io.vertx.mutiny.core.buffer.Buffer`
@@ -971,7 +971,7 @@ quarkus.oidc.authentication.pkce-required=true
 quarkus.oidc.authentication.state-secret=eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU
 ----
 
-If you already have a 32-character client secret, you do not need to set the  `quarkus.oidc.authentication.pkce-secret` property unless you prefer to use a different secret key.
+If you already have a 32-character client secret, you do not need to set the `quarkus.oidc.authentication.state-secret` property unless you prefer to use a different secret key.
 This secret will be auto-generated if it is not configured, and if fallback to the client secret is not possible when the client secret is less than 16 characters.
 
 The secret key is required to encrypt a randomly generated PKCE `code_verifier` while the user is redirected to an OIDC provider with the `code_challenge` query parameter to authenticate.
@@ -1112,10 +1112,10 @@ When the user is redirected back to Quarkus to complete the authorization code f
 
 The default state cookie age is 5 minutes, and you can change it with a `quarkus.oidc.authentication.state-cookie-age` Duration property.
 
-Quarkus creates a unique state cookie name every time a new authorization code flow is started to support multi-tab authentication. 
+Quarkus creates a unique state cookie name every time a new authorization code flow is started to support multi-tab authentication.
 Many concurrent authentication requests on behalf of the same user can cause multiple state cookies to be created.
 
-If you do not want to allow your users to use multiple browser tabs to authenticate, disable this by specifying `quarkus.oidc.authentication.allow-multiple-code-flows=false`. 
+If you do not want to allow your users to use multiple browser tabs to authenticate, disable this by specifying `quarkus.oidc.authentication.allow-multiple-code-flows=false`.
 This action also ensures that the same state cookie name is created for every new user authentication.
 
 [[token-state-manager]]

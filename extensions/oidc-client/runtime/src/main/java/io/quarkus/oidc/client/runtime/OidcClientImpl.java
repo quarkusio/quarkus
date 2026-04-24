@@ -29,12 +29,12 @@ import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt.Source;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniOnItem;
+import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonObject;
-import io.vertx.mutiny.core.MultiMap;
-import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -130,7 +130,7 @@ public class OidcClientImpl implements OidcClient {
         OidcRequestContextProperties requestProps = getRequestProps(null);
 
         if (tokenRevokeUri != null) {
-            MultiMap tokenRevokeParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+            MultiMap tokenRevokeParams = MultiMap.caseInsensitiveMultiMap();
             tokenRevokeParams.set(OidcConstants.REVOCATION_TOKEN, accessToken);
             return postRequest(requestProps, OidcEndpoint.Type.TOKEN_REVOCATION, client.postAbs(tokenRevokeUri),
                     tokenRevokeParams, additionalParameters, Operation.REVOKE)
@@ -432,7 +432,7 @@ public class OidcClientImpl implements OidcClient {
     }
 
     private static MultiMap copyMultiMap(MultiMap oldMap) {
-        MultiMap newMap = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+        MultiMap newMap = MultiMap.caseInsensitiveMultiMap();
         newMap.addAll(oldMap);
         return newMap;
     }

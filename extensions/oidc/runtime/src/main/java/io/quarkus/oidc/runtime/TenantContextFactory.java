@@ -38,6 +38,7 @@ import io.quarkus.tls.TlsConfigurationRegistry;
 import io.smallrye.mutiny.TimeoutException;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.PoolOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -454,11 +455,13 @@ final class TenantContextFactory {
         String authServerUriString = OidcCommonUtils.getAuthServerUrl(oidcConfig);
 
         WebClientOptions options = new WebClientOptions();
+        PoolOptions poolOptions = new PoolOptions();
         options.setFollowRedirects(oidcConfig.followRedirects());
-        OidcCommonUtils.setHttpClientOptions(oidcConfig, options, tlsSupport.forConfig(oidcConfig.tls()),
+        OidcCommonUtils.setHttpClientOptions(oidcConfig, options, poolOptions,
+                tlsSupport.forConfig(oidcConfig.tls()),
                 proxyConfigurationRegistry);
         var mutinyVertx = new io.vertx.mutiny.core.Vertx(vertx);
-        WebClient client = WebClient.create(mutinyVertx, options);
+        WebClient client = WebClient.create(mutinyVertx, options, poolOptions);
 
         Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters = OidcUtils.getOidcRequestFilters(oidcConfig);
         Map<OidcEndpoint.Type, List<OidcResponseFilter>> oidcResponseFilters = OidcUtils.getOidcResponseFilters(oidcConfig);

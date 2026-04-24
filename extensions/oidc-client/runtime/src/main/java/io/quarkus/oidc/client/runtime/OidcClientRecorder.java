@@ -29,9 +29,10 @@ import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.PoolOptions;
 import io.vertx.ext.web.client.WebClientOptions;
-import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
 @Recorder
@@ -105,12 +106,14 @@ public class OidcClientRecorder {
         }
 
         WebClientOptions options = new WebClientOptions();
+        PoolOptions poolOptions = new PoolOptions();
         options.setFollowRedirects(oidcConfig.followRedirects());
-        OidcCommonUtils.setHttpClientOptions(oidcConfig, options, tlsSupport.forConfig(oidcConfig.tls()),
+        OidcCommonUtils.setHttpClientOptions(oidcConfig, options, poolOptions,
+                tlsSupport.forConfig(oidcConfig.tls()),
                 proxyConfigurationRegistry);
 
         var mutinyVertx = new io.vertx.mutiny.core.Vertx(vertx);
-        WebClient client = WebClient.create(mutinyVertx, options);
+        WebClient client = WebClient.create(mutinyVertx, options, poolOptions);
 
         Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters = OidcCommonUtils.getOidcRequestFilters();
         Map<OidcEndpoint.Type, List<OidcResponseFilter>> oidcResponseFilters = OidcCommonUtils.getOidcResponseFilters();
@@ -164,7 +167,7 @@ public class OidcClientRecorder {
         MultiMap tokenGrantParams = null;
 
         if (oidcConfig.grant().type() != Grant.Type.REFRESH) {
-            tokenGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+            tokenGrantParams = MultiMap.caseInsensitiveMultiMap();
             setGrantClientParams(oidcConfig, tokenGrantParams, grantType);
 
             if (oidcConfig.grantOptions() != null) {
@@ -203,7 +206,7 @@ public class OidcClientRecorder {
             }
         }
 
-        MultiMap commonRefreshGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+        MultiMap commonRefreshGrantParams = MultiMap.caseInsensitiveMultiMap();
         setGrantClientParams(oidcConfig, commonRefreshGrantParams, OidcConstants.REFRESH_TOKEN_GRANT);
 
         return OidcClientImpl.of(client, metadata.tokenRequestUri, metadata.tokenRevokeUri, grantType,

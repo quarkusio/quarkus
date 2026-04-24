@@ -99,7 +99,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager, OidcTenantConfig oidcTenantConfig) {
-        final Map<String, Cookie> cookies = context.request().cookieMap();
+        final Map<String, Cookie> cookies = OidcUtils.cookieSetToMap(context.request().cookies());
         final String sessionCookieValue = OidcUtils.getSessionCookie(context.data(), cookies, oidcTenantConfig);
 
         // If the session is already established then try to re-authenticate
@@ -288,7 +288,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             }
             MultiMap queries = redirectContext.additionalQueryParams();
             if (!queries.isEmpty()) {
-                String encoded = OidcCommonUtils.encodeForm(new io.vertx.mutiny.core.MultiMap(queries)).toString();
+                String encoded = OidcCommonUtils.encodeForm(queries).toString();
                 String sep = redirectUri.lastIndexOf("?") > 0 ? AMP : QUESTION_MARK;
                 redirectUri += (sep + encoded);
             }
@@ -343,7 +343,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private String getRequestParametersAsQuery(RoutingContext context, MultiMap requestParams, OidcTenantConfig oidcConfig) {
         if (ResponseMode.FORM_POST == oidcConfig.authentication().responseMode().orElse(ResponseMode.QUERY)) {
-            return OidcCommonUtils.encodeForm(new io.vertx.mutiny.core.MultiMap(requestParams)).toString();
+            return OidcCommonUtils.encodeForm(requestParams).toString();
         } else {
             return context.request().query();
         }

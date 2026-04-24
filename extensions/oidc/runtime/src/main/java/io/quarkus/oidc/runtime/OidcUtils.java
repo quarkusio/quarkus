@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -159,8 +160,19 @@ public final class OidcUtils {
     }
 
     public static String getSessionCookie(RoutingContext context, OidcTenantConfig oidcTenantConfig) {
-        final Map<String, Cookie> cookies = context.request().cookieMap();
+        final Map<String, Cookie> cookies = cookieSetToMap(context.request().cookies());
         return getSessionCookie(context.data(), cookies, oidcTenantConfig);
+    }
+
+    static Map<String, Cookie> cookieSetToMap(Set<Cookie> cookieSet) {
+        if (cookieSet.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, Cookie> cookieMap = new HashMap<>();
+        for (Cookie cookie : cookieSet) {
+            cookieMap.put(cookie.getName(), cookie);
+        }
+        return cookieMap;
     }
 
     public static String getSessionCookie(Map<String, Object> context, Map<String, Cookie> cookies,
@@ -484,7 +496,7 @@ public final class OidcUtils {
     }
 
     public static String removeCookie(RoutingContext context, OidcTenantConfig oidcConfig, String cookieName) {
-        ServerCookie cookie = (ServerCookie) context.cookieMap().get(cookieName);
+        ServerCookie cookie = (ServerCookie) context.request().getCookie(cookieName);
         String cookieValue = null;
         if (cookie != null) {
             cookieValue = cookie.getValue();

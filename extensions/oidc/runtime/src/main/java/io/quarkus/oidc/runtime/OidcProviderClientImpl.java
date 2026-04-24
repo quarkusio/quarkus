@@ -35,11 +35,11 @@ import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.
 import io.quarkus.security.credential.TokenCredential;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniOnItem;
+import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonObject;
-import io.vertx.mutiny.core.MultiMap;
-import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -225,7 +225,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     }
 
     public Uni<TokenIntrospection> introspectAccessToken(final String token) {
-        final MultiMap introspectionParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+        final MultiMap introspectionParams = MultiMap.caseInsensitiveMultiMap();
         introspectionParams.add(OidcConstants.INTROSPECTION_TOKEN, token);
         introspectionParams.add(OidcConstants.INTROSPECTION_TOKEN_TYPE_HINT, OidcConstants.ACCESS_TOKEN_VALUE);
         final OidcRequestContextProperties requestProps = getRequestProps(null, null);
@@ -264,7 +264,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     }
 
     Uni<AuthorizationCodeTokens> getAuthorizationCodeTokens(String code, String redirectUri, String codeVerifier) {
-        final MultiMap codeGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+        final MultiMap codeGrantParams = MultiMap.caseInsensitiveMultiMap();
         codeGrantParams.add(OidcConstants.GRANT_TYPE, OidcConstants.AUTHORIZATION_CODE);
         codeGrantParams.add(OidcConstants.CODE_FLOW_CODE, code);
         codeGrantParams.add(OidcConstants.CODE_FLOW_REDIRECT_URI, redirectUri);
@@ -282,7 +282,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
 
     Uni<AuthorizationCodeTokens> refreshAuthorizationCodeTokens(String refreshToken) {
         return refreshTokenToTokensUni.computeIfAbsent(refreshToken, rt -> {
-            final MultiMap refreshGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+            final MultiMap refreshGrantParams = MultiMap.caseInsensitiveMultiMap();
             refreshGrantParams.add(OidcConstants.GRANT_TYPE, OidcConstants.REFRESH_TOKEN_GRANT);
             refreshGrantParams.add(OidcConstants.REFRESH_TOKEN_VALUE, rt);
             final OidcRequestContextProperties requestProps = getRequestProps(OidcConstants.REFRESH_TOKEN_GRANT);
@@ -315,7 +315,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
 
         if (metadata.getRevocationUri() != null) {
             OidcRequestContextProperties requestProps = getRequestProps(null, null);
-            MultiMap tokenRevokeParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+            MultiMap tokenRevokeParams = MultiMap.caseInsensitiveMultiMap();
             tokenRevokeParams.set(OidcConstants.REVOCATION_TOKEN, token);
             tokenRevokeParams.set(OidcConstants.REVOCATION_TOKEN_TYPE_HINT, tokenTypeHint);
 
@@ -451,8 +451,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         boolean hasClientSecretProvider = hasClientSecretProvider();
         if (hasClientSecretProvider) {
             // copy to avoid duplications on credentials refresh
-            var delegate = io.vertx.core.MultiMap.caseInsensitiveMultiMap().addAll(formBody.getDelegate());
-            newFormBody = new MultiMap(delegate);
+            newFormBody = MultiMap.caseInsensitiveMultiMap().addAll(formBody);
         } else {
             newFormBody = formBody;
         }

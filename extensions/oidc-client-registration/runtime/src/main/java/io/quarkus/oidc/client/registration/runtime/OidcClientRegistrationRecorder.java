@@ -32,6 +32,7 @@ import io.quarkus.tls.TlsConfigurationRegistry;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.PoolOptions;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
@@ -130,12 +131,13 @@ public class OidcClientRegistrationRecorder {
         }
 
         WebClientOptions options = new WebClientOptions();
+        PoolOptions poolOptions = new PoolOptions();
         options.setFollowRedirects(oidcConfig.followRedirects());
-        OidcCommonUtils.setHttpClientOptions(oidcConfig, options,
+        OidcCommonUtils.setHttpClientOptions(oidcConfig, options, poolOptions,
                 tlsSupport.forConfig(oidcConfig.tls().tlsConfigurationName()), proxyConfigurationRegistrySupplier.get());
 
         final io.vertx.mutiny.core.Vertx vertx = new io.vertx.mutiny.core.Vertx(vertxSupplier.get());
-        WebClient client = WebClient.create(vertx, options);
+        WebClient client = WebClient.create(vertx, options, poolOptions);
 
         Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters = OidcCommonUtils.getOidcRequestFilters();
         Map<OidcEndpoint.Type, List<OidcResponseFilter>> oidcResponseFilters = OidcCommonUtils.getOidcResponseFilters();

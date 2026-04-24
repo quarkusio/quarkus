@@ -207,7 +207,6 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
             archiveCreator.addFile(i.getData(), i.getName(), ArchiveCreator.CURRENT_APPLICATION);
         }
 
-        // generated service providers go directly into the concatenated entries map
         for (GeneratedServiceProviderBuildItem item : generatedServiceProviders) {
             String path = "META-INF/services/" + item.getServiceInterfaceName();
             byte[] content = (item.getImplementationClassName() + System.lineSeparator())

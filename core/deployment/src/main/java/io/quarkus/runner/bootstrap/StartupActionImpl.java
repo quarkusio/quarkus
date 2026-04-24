@@ -526,7 +526,6 @@ public class StartupActionImpl implements StartupAction {
                 }
                 data.put(i.getName(), i.getData());
             }
-            // merge generated service providers into META-INF/services/ entries
             Map<String, StringBuilder> serviceProviders = new java.util.LinkedHashMap<>();
             for (io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem i : buildResult
                     .consumeMulti(io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem.class)) {

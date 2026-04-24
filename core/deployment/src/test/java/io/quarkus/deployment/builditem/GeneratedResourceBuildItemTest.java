@@ -1,22 +1,15 @@
 package io.quarkus.deployment.builditem;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
 class GeneratedResourceBuildItemTest {
 
     @Test
-    void throwsForServiceProviderPath() {
-        assertThrows(IllegalArgumentException.class,
+    void acceptsServiceProviderPath() {
+        assertDoesNotThrow(
                 () -> new GeneratedResourceBuildItem("META-INF/services/com.example.Foo", new byte[0]));
-    }
-
-    @Test
-    void throwsForServiceProviderPathWithDeprecatedConstructor() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new GeneratedResourceBuildItem("META-INF/services/com.example.Foo", new byte[0], false));
     }
 
     @Test

@@ -3,6 +3,9 @@ package io.quarkus.spring.data.deployment.generate;
 import static io.quarkus.spring.data.deployment.DotNames.JPA_NAMED_QUERIES;
 import static io.quarkus.spring.data.deployment.DotNames.JPA_NAMED_QUERY;
 
+import java.lang.constant.ClassDesc;
+import java.lang.constant.ConstantDescs;
+import java.lang.constant.MethodTypeDesc;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -17,7 +20,8 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
-import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo2.desc.ClassMethodDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.spring.data.deployment.DotNames;
 
 public final class GenerationUtil {
@@ -57,15 +61,78 @@ public final class GenerationUtil {
         return result;
     }
 
-    // Used in case where we can't simply use MethodDescriptor.of(MethodInfo)
-    // because that used the class of the method
-    static MethodDescriptor toMethodDescriptor(String generatedClassName, MethodInfo methodInfo) {
+    /**
+     * Build a method key string for tracking existing methods in a Set.
+     */
+    static String methodKey(String name, String returnType, String... paramTypes) {
+        return name + "(" + String.join(",", paramTypes) + ")" + returnType;
+    }
+
+    /**
+     * Build a method key string from a MethodInfo for a given generated class.
+     */
+    static String methodKey(String generatedClassName, MethodInfo methodInfo) {
         final List<String> parameterTypesStr = new ArrayList<>();
         for (Type parameter : methodInfo.parameterTypes()) {
             parameterTypesStr.add(parameter.name().toString());
         }
-        return MethodDescriptor.ofMethod(generatedClassName, methodInfo.name(), methodInfo.returnType().name().toString(),
+        return methodKey(methodInfo.name(), methodInfo.returnType().name().toString(),
                 parameterTypesStr.toArray(new String[0]));
+    }
+
+    /**
+     * Create a MethodTypeDesc from the return type and parameter types.
+     */
+    static MethodTypeDesc toMethodTypeDesc(String returnType, String... paramTypes) {
+        ClassDesc retDesc = toClassDesc(returnType);
+        ClassDesc[] paramDescs = new ClassDesc[paramTypes.length];
+        for (int i = 0; i < paramTypes.length; i++) {
+            paramDescs[i] = toClassDesc(paramTypes[i]);
+        }
+        return MethodTypeDesc.of(retDesc, paramDescs);
+    }
+
+    /**
+     * Convert a dot-separated class name or primitive type name to a ClassDesc.
+     * Also handles JVM array type descriptors like {@code [Ljava.lang.Object;} and
+     * dot-name array forms like {@code java.lang.Object[]}.
+     */
+    static ClassDesc toClassDesc(String typeName) {
+        // Handle JVM internal array descriptors (e.g. "[Ljava.lang.Object;", "[[I")
+        if (typeName.startsWith("[")) {
+            return ClassDesc.ofDescriptor(typeName.replace('.', '/'));
+        }
+        // Handle dot-name array forms (e.g. "java.lang.Object[]")
+        if (typeName.endsWith("[]")) {
+            String componentType = typeName.substring(0, typeName.length() - 2);
+            return toClassDesc(componentType).arrayType();
+        }
+        return switch (typeName) {
+            case "void" -> ConstantDescs.CD_void;
+            case "boolean" -> ConstantDescs.CD_boolean;
+            case "byte" -> ConstantDescs.CD_byte;
+            case "short" -> ConstantDescs.CD_short;
+            case "int" -> ConstantDescs.CD_int;
+            case "long" -> ConstantDescs.CD_long;
+            case "float" -> ConstantDescs.CD_float;
+            case "double" -> ConstantDescs.CD_double;
+            case "char" -> ConstantDescs.CD_char;
+            default -> ClassDesc.of(typeName);
+        };
+    }
+
+    /**
+     * Build a MethodDesc for a method in a generated class from a MethodInfo.
+     * Used in case where we can't simply use the declaring class from MethodInfo.
+     */
+    static MethodDesc toMethodDesc(String generatedClassName, MethodInfo methodInfo) {
+        final List<String> parameterTypesStr = new ArrayList<>();
+        for (Type parameter : methodInfo.parameterTypes()) {
+            parameterTypesStr.add(parameter.name().toString());
+        }
+        String returnType = methodInfo.returnType().name().toString();
+        MethodTypeDesc mtd = toMethodTypeDesc(returnType, parameterTypesStr.toArray(new String[0]));
+        return ClassMethodDesc.of(ClassDesc.of(generatedClassName), methodInfo.name(), mtd);
     }
 
     static AnnotationInstance getNamedQueryForMethod(MethodInfo methodInfo, ClassInfo entityClassInfo) {

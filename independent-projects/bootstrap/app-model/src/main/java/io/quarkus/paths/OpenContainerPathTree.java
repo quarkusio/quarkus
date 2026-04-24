@@ -1,7 +1,5 @@
 package io.quarkus.paths;
 
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -10,40 +8,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.regex.Pattern;
 
 public abstract class OpenContainerPathTree extends PathTreeWithManifest implements OpenPathTree {
-
-    private static final boolean USE_WINDOWS_ABSOLUTE_PATH_PATTERN = !FileSystems.getDefault().getSeparator().equals("/");
-
-    private static volatile Pattern windowsAbsolutePathPattern;
-
-    private static Pattern windowsAbsolutePathPattern() {
-        return windowsAbsolutePathPattern == null ? windowsAbsolutePathPattern = Pattern.compile("[a-zA-Z]:\\\\.*")
-                : windowsAbsolutePathPattern;
-    }
-
-    static boolean isAbsolutePath(String path) {
-        return path != null && !path.isEmpty()
-                && (path.charAt(0) == '/' // we want to check for '/' on every OS
-                        || USE_WINDOWS_ABSOLUTE_PATH_PATTERN
-                                && (windowsAbsolutePathPattern().matcher(path).matches())
-                        || path.startsWith(FileSystems.getDefault().getSeparator()));
-    }
-
-    static void ensureResourcePath(FileSystem fs, String path) {
-        if (isAbsolutePath(path)) {
-            throw new IllegalArgumentException("Expected a path relative to the root of the path tree but got " + path);
-        }
-        // this is to disallow reading outside the path tree root
-        if (path != null && path.contains("..")) {
-            for (Path pathElement : fs.getPath(path)) {
-                if (pathElement.toString().equals("..")) {
-                    throw new IllegalArgumentException("'..' cannot be used in resource paths, but got " + path);
-                }
-            }
-        }
-    }
 
     protected PathFilter pathFilter;
 
@@ -107,7 +73,7 @@ public abstract class OpenContainerPathTree extends PathTreeWithManifest impleme
         if (!Files.exists(rootPath)) {
             return;
         }
-        PathTreeVisit.walk(rootPath, rootPath, rootPath, pathFilter, getMultiReleaseMapping(),
+        PathTreeVisit.walk(getContainerPath(), rootPath, rootPath, pathFilter, getMultiReleaseMapping(),
                 visitor);
 
     }
@@ -118,7 +84,7 @@ public abstract class OpenContainerPathTree extends PathTreeWithManifest impleme
         if (!Files.exists(rootPath)) {
             return;
         }
-        PathTreeVisit.walk(rootPath, rootPath, rootPath, pathFilter, Map.of(), visitor);
+        PathTreeVisit.walk(getContainerPath(), rootPath, rootPath, pathFilter, Map.of(), visitor);
 
     }
 
@@ -133,11 +99,11 @@ public abstract class OpenContainerPathTree extends PathTreeWithManifest impleme
         if (!Files.exists(walkDir)) {
             return;
         }
-        PathTreeVisit.walk(getRootPath(), getRootPath(), walkDir, pathFilter, getMultiReleaseMapping(), visitor);
+        PathTreeVisit.walk(getContainerPath(), getRootPath(), walkDir, pathFilter, getMultiReleaseMapping(), visitor);
     }
 
     private void ensureResourcePath(String path) {
-        ensureResourcePath(getRootPath().getFileSystem(), path);
+        PathTreeVisit.ensureResourcePath(getRootPath().getFileSystem(), path);
     }
 
     @Override
@@ -150,7 +116,7 @@ public abstract class OpenContainerPathTree extends PathTreeWithManifest impleme
         if (!Files.exists(path)) {
             return func.apply(null);
         }
-        return PathTreeVisit.process(getRootPath(), getRootPath(), path, pathFilter, func);
+        return PathTreeVisit.process(getContainerPath(), getRootPath(), path, pathFilter, func);
     }
 
     @Override
@@ -165,7 +131,7 @@ public abstract class OpenContainerPathTree extends PathTreeWithManifest impleme
             consumer.accept(null);
             return;
         }
-        PathTreeVisit.consume(getRootPath(), getRootPath(), path, pathFilter, consumer);
+        PathTreeVisit.consume(getContainerPath(), getRootPath(), path, pathFilter, consumer);
     }
 
     @Override

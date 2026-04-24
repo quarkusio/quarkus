@@ -2,6 +2,8 @@ package io.quarkus.paths;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -9,9 +11,41 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 class PathTreeVisit implements PathVisit {
+
+    private static final boolean USE_WINDOWS_ABSOLUTE_PATH_PATTERN = !FileSystems.getDefault().getSeparator().equals("/");
+
+    private static volatile Pattern windowsAbsolutePathPattern;
+
+    private static Pattern windowsAbsolutePathPattern() {
+        return windowsAbsolutePathPattern == null ? windowsAbsolutePathPattern = Pattern.compile("[a-zA-Z]:\\\\.*")
+                : windowsAbsolutePathPattern;
+    }
+
+    static boolean isAbsolutePath(String path) {
+        return path != null && !path.isEmpty()
+                && (path.charAt(0) == '/' // we want to check for '/' on every OS
+                        || USE_WINDOWS_ABSOLUTE_PATH_PATTERN
+                                && (windowsAbsolutePathPattern().matcher(path).matches())
+                        || path.startsWith(FileSystems.getDefault().getSeparator()));
+    }
+
+    static void ensureResourcePath(FileSystem fs, String path) {
+        if (isAbsolutePath(path)) {
+            throw new IllegalArgumentException("Expected a path relative to the root of the path tree but got " + path);
+        }
+        // this is to disallow reading outside the path tree root
+        if (path != null && path.contains("..")) {
+            for (Path pathElement : fs.getPath(path)) {
+                if (pathElement.toString().equals("..")) {
+                    throw new IllegalArgumentException("'..' cannot be used in resource paths, but got " + path);
+                }
+            }
+        }
+    }
 
     static void walk(Path root, Path rootDir, Path walkDir, PathFilter pathFilter, Map<String, String> multiReleaseMapping,
             PathVisitor visitor) {

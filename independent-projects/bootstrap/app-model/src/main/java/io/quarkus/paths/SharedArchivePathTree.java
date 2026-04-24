@@ -1,15 +1,17 @@
 package io.quarkus.paths;
 
 import java.io.IOException;
-import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
+import io.quarkus.fs.util.rozip.ReadOnlyZipFileSystem;
 
 /**
  * While {@link ArchivePathTree} implementation is thread-safe, this implementation
@@ -71,7 +73,7 @@ class SharedArchivePathTree extends ArchivePathTree {
 
         private final AtomicInteger users = new AtomicInteger(1);
 
-        protected SharedOpenArchivePathTree(FileSystem fs) {
+        protected SharedOpenArchivePathTree(ReadOnlyZipFileSystem fs) {
             super(fs);
             openCount.incrementAndGet();
         }
@@ -107,18 +109,28 @@ class SharedArchivePathTree extends ArchivePathTree {
 
         @Override
         public void close() throws IOException {
+            // Fast path: if other users remain, no cleanup needed — avoid the write lock entirely.
+            if (users.decrementAndGet() > 0) {
+                return;
+            }
+            // Slow path: we may be the last user. Acquire the write lock to perform cleanup.
+            // Re-check under the lock because between our decrement and lock acquisition,
+            // another thread could have called acquire() (incrementing users) and then closed
+            // (decrementing back to 0), meaning two threads both saw 0 and race for the lock.
+            // The !isOpen() guard handles this: the first closer sets open=false via super.close(),
+            // so the second closer sees !isOpen() and skips the duplicate cleanup.
             writeLock().lock();
-            final boolean close = users.decrementAndGet() == 0;
             try {
-                if (close) {
-                    if (lastOpen == this) {
-                        lastOpen = null;
-                    }
-                    if (openCount.decrementAndGet() == 0) {
-                        removeFromCache(archive);
-                    }
-                    super.close();
+                if (users.get() > 0 || !isOpen()) {
+                    return;
                 }
+                if (lastOpen == this) {
+                    lastOpen = null;
+                }
+                if (openCount.decrementAndGet() == 0) {
+                    removeFromCache(archive);
+                }
+                super.close();
             } finally {
                 writeLock().unlock();
             }
@@ -138,7 +150,7 @@ class SharedArchivePathTree extends ArchivePathTree {
     private static class CallerOpenPathTree implements OpenPathTree {
 
         private final SharedOpenArchivePathTree delegate;
-        private volatile boolean closed;
+        private final AtomicBoolean closed = new AtomicBoolean();
 
         private CallerOpenPathTree(SharedOpenArchivePathTree delegate) {
             this.delegate = delegate;
@@ -156,7 +168,7 @@ class SharedArchivePathTree extends ArchivePathTree {
 
         @Override
         public boolean isOpen() {
-            return !closed && delegate.isOpen();
+            return !closed.get() && delegate.isOpen();
         }
 
         @Override
@@ -221,18 +233,10 @@ class SharedArchivePathTree extends ArchivePathTree {
 
         @Override
         public void close() throws IOException {
-            if (closed) {
+            if (!closed.compareAndSet(false, true)) {
                 return;
             }
-            delegate.writeLock().lock();
-            try {
-                if (!closed) {
-                    closed = true;
-                    delegate.close();
-                }
-            } finally {
-                delegate.writeLock().unlock();
-            }
+            delegate.close();
         }
 
         @Override

@@ -1,5 +1,4 @@
 import { QwcHotReloadElement, html, css } from 'qwc-hot-reload-element';
-import 'qwc-no-data';
 import { basepath } from 'devui-data';
 import { JsonRpc } from 'jsonrpc';
 import '@vaadin/button';
@@ -16,20 +15,43 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
   routerController = new RouterController('devmcp');
 
   static styles = css`
-    .serverDetails {
+    :host {
       display: flex;
+      flex-direction: column;
       gap: 20px;
-      padding-top: 40px;
+    }
+    .section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .sectionHeader {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.1em;
+      font-weight: bold;
+    }
+    .sectionDescription {
+      color: var(--lumo-secondary-text-color);
+      font-size: 0.95em;
+      line-height: 1.5;
+    }
+    .prerequisite {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85em;
+      color: var(--lumo-secondary-text-color);
+      padding: 8px 12px;
+      background-color: var(--lumo-contrast-5pct);
+      border-radius: 4px;
     }
     .serverDetailsText {
       display: flex;
       flex-direction: column;
       gap: 3px;
-    }
-    .connected {
-      display: flex;
-      gap: 10px;
-      padding: 5px;
+      padding: 10px 0;
     }
     .unlistedLinks {
       display: flex;
@@ -43,7 +65,6 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
       filter: brightness(150%);
     }
     .ideConfigurations {
-      padding-top: 30px;
       width: 100%;
     }
     .ideConfigHeader {
@@ -86,6 +107,36 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
     .docsLink a:hover {
       text-decoration: underline;
     }
+    .separator {
+      border: none;
+      border-top: 1px solid var(--lumo-contrast-10pct);
+      margin: 10px 0;
+    }
+    .statusBadge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.85em;
+      width: fit-content;
+    }
+    .statusEnabled {
+      background-color: var(--lumo-success-color-10pct);
+      color: var(--lumo-success-text-color);
+    }
+    .statusDisabled {
+      background-color: var(--lumo-contrast-5pct);
+      color: var(--lumo-secondary-text-color);
+    }
+    .clientList {
+      list-style: none;
+      padding: 0;
+      margin: 5px 0;
+    }
+    .clientList li {
+      padding: 3px 0;
+    }
   `;
 
   static properties = {
@@ -117,50 +168,12 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
   }
 
   render() {
-    const readMoreLink = 'https://quarkus.io/guides/dev-mcp';
-    const readMoreText = msg('Read more about Dev MCP', { id: 'devmcp-read-more-link' });
-
-    if (this._configuration?.enabled) {
-      if (this._connectedClients) {
-        const count = this._connectedClients.length;
-        return html`
-          <qwc-no-data
-            .message=${html`${msg('Connected MCP clients', { id: 'devmcp-connected-title' })}: ${count}`}
-            .link=${readMoreLink}
-            .linkText=${readMoreText}
-          >
-            <ul>
-              ${this._connectedClients.map(
-                (client) => html`<li>${client.name} ${client.version}</li>`
-              )}
-            </ul>
-            ${this._renderServerDetails()}
-          </qwc-no-data>
-          ${this._renderUnlistedPagesLinks()}
-        `;
-      } else {
-        return html`
-          <qwc-no-data
-            .message=${msg('No MCP client is connected to Dev MCP.', { id: 'devmcp-no-clients' })}
-            .link=${readMoreLink}
-            .linkText=${readMoreText}
-          >
-            ${this._renderServerDetails()}
-          </qwc-no-data>
-          ${this._renderUnlistedPagesLinks()}
-        `;
-      }
-    } else {
-      return html`
-        <qwc-no-data
-          .message=${msg('Dev MCP is not enabled.', { id: 'devmcp-not-enabled' })}
-          .link=${readMoreLink}
-          .linkText=${readMoreText}
-        >
-          ${this._renderEnableButton()}
-        </qwc-no-data>
-      `;
-    }
+    return html`
+      ${this._renderAgentMcpSection()}
+      <hr class="separator">
+      ${this._renderDevMcpSection()}
+      ${this._renderUnlistedPagesLinks()}
+    `;
   }
 
   hotReload() {
@@ -180,6 +193,109 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
     });
   }
 
+  _renderAgentMcpSection() {
+    return html`
+      <div class="section">
+        <div class="sectionHeader">
+          <vaadin-icon icon="font-awesome-solid:robot"></vaadin-icon>
+          <span>${msg('Quarkus Agent MCP', { id: 'devmcp-agent-title' })}</span>
+        </div>
+        <div class="sectionDescription">
+          ${msg('The recommended way to connect an AI coding agent to your Quarkus application. The Quarkus Agent MCP server manages the application lifecycle, proxies Dev MCP tools, provides documentation search, and delivers extension-specific coding skills.', { id: 'devmcp-agent-description' })}
+        </div>
+        <div class="prerequisite">
+          <vaadin-icon icon="font-awesome-solid:circle-info"></vaadin-icon>
+          <span>
+            ${msg('Requires', { id: 'devmcp-jbang-prereq' })}
+            <a href="https://www.jbang.dev/download/" target="_blank" rel="noopener noreferrer">JBang</a>
+          </span>
+        </div>
+        ${this._renderIdeConfigurations(this._getAgentMcpConfigurations())}
+      </div>
+    `;
+  }
+
+  _renderDevMcpSection() {
+    const readMoreLink = 'https://quarkus.io/guides/dev-mcp';
+    return html`
+      <div class="section">
+        <div class="sectionHeader">
+          <vaadin-icon icon="font-awesome-solid:plug"></vaadin-icon>
+          <span>${msg('Dev MCP Server', { id: 'devmcp-server-title' })}</span>
+        </div>
+        ${this._configuration?.enabled
+          ? html`
+              <span class="statusBadge statusEnabled">
+                <vaadin-icon icon="font-awesome-solid:circle-check"></vaadin-icon>
+                ${msg('Enabled', { id: 'devmcp-status-enabled' })}
+              </span>
+              ${this._connectedClients?.length > 0
+                ? html`
+                    <span>${msg('Connected MCP clients', { id: 'devmcp-connected-title' })}: ${this._connectedClients.length}</span>
+                    <ul class="clientList">
+                      ${this._connectedClients.map((client) => html`<li>${client.name} ${client.version}</li>`)}
+                    </ul>
+                  `
+                : html`<span class="sectionDescription">${msg('No MCP client is connected to Dev MCP.', { id: 'devmcp-no-clients' })}</span>`
+              }
+              ${this._renderDirectConnectionDetails()}
+              ${this._renderDisableButton()}
+            `
+          : html`
+              <span class="statusBadge statusDisabled">
+                <vaadin-icon icon="font-awesome-solid:circle-xmark"></vaadin-icon>
+                ${msg('Not enabled', { id: 'devmcp-status-disabled' })}
+              </span>
+              <div class="sectionDescription">
+                ${msg('Dev MCP provides direct access to development tools on the running application. The Quarkus Agent MCP server will manage this automatically.', { id: 'devmcp-disabled-description' })}
+              </div>
+              ${this._renderEnableButton()}
+            `
+        }
+        <span class="docsLink">
+          <a href="${readMoreLink}" target="_blank" rel="noopener noreferrer">
+            ${msg('Read more about Dev MCP', { id: 'devmcp-read-more-link' })}
+            <vaadin-icon icon="font-awesome-solid:arrow-up-right-from-square" style="font-size: 0.8em;"></vaadin-icon>
+          </a>
+        </span>
+      </div>
+    `;
+  }
+
+  _renderDirectConnectionDetails() {
+    return html`
+      <vaadin-details>
+        <div slot="summary" class="ideConfigHeader">
+          <vaadin-icon icon="font-awesome-solid:link"></vaadin-icon>
+          <span>${msg('Direct connection', { id: 'devmcp-direct-title' })}</span>
+        </div>
+        <div class="ideConfigContent">
+          <div class="sectionDescription">
+            ${msg('Connect an MCP client directly to the Dev MCP endpoint on this running application.', { id: 'devmcp-direct-description' })}
+          </div>
+          <div class="serverDetailsText">
+            <span>
+              <b>${msg('Protocol:', { id: 'devmcp-protocol-label' })}</b>
+              ${msg('Remote Streamable HTTP', { id: 'devmcp-protocol' })}
+            </span>
+            <span>
+              <b>${msg('URL:', { id: 'devmcp-url-label' })}</b>
+              ${this._mcpPath}
+              <vaadin-button
+                theme="tertiary small"
+                .title=${msg('Copy to clipboard', { id: 'devmcp-copy-title' })}
+                @click=${() => this._copyToClipboard(this._mcpPath)}
+              >
+                <vaadin-icon icon="font-awesome-solid:clipboard" slot="prefix" class="btn-icon"></vaadin-icon>
+              </vaadin-button>
+            </span>
+          </div>
+          ${this._renderIdeConfigurations(this._getDirectMcpConfigurations())}
+        </div>
+      </vaadin-details>
+    `;
+  }
+
   _renderEnableButton() {
     return html`<vaadin-button theme="primary success" @click=${this._enableDevMcp}>
       ${msg('Enable Dev MCP', { id: 'devmcp-enable' })}
@@ -190,32 +306,6 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
     return html`<vaadin-button theme="primary warning" @click=${this._disableDevMcp}>
       ${msg('Disable Dev MCP', { id: 'devmcp-disable' })}
     </vaadin-button>`;
-  }
-
-  _renderServerDetails() {
-    return html`<div class="serverDetails">
-      <vaadin-icon icon="font-awesome-solid:circle-info"></vaadin-icon>
-      <div class="serverDetailsText">
-        <span>${msg('Connect to the Quarkus Dev MCP Server with:', { id: 'devmcp-connect-instr' })}</span>
-        <span>
-          <b>${msg('Protocol:', { id: 'devmcp-protocol-label' })}</b>
-          ${msg('Remote Streamable HTTP', { id: 'devmcp-protocol' })}
-        </span>
-        <span>
-          <b>${msg('URL:', { id: 'devmcp-url-label' })}</b>
-          ${this._mcpPath}
-          <vaadin-button
-            theme="tertiary small"
-            .title=${msg('Copy to clipboard', { id: 'devmcp-copy-title' })}
-            @click=${() => this._copyToClipboard(this._mcpPath)}
-          >
-            <vaadin-icon icon="font-awesome-solid:clipboard" slot="prefix" class="btn-icon"></vaadin-icon>
-          </vaadin-button>
-        </span>
-      <div/>
-    </div>
-    ${this._renderDisableButton()}
-    ${this._renderIdeConfigurations()}`;
   }
 
   _renderUnlistedPagesLinks() {
@@ -259,17 +349,70 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
     }
   }
 
-  _getIdeConfigurations() {
+  _getAgentMcpConfigurations() {
     return [
       {
-        name: 'Cursor',
-        icon: 'font-awesome-solid:code',
-        file: '~/.cursor/mcp.json',
-        docsUrl: 'https://docs.cursor.com/context/mcp',
+        name: 'Claude Code',
+        icon: 'font-awesome-solid:terminal',
+        file: 'Run in terminal',
+        docsUrl: 'https://github.com/quarkusio/quarkus-agent-mcp',
+        configString: 'claude mcp add quarkus-agent -- jbang quarkus-agent-mcp@quarkusio'
+      },
+      {
+        name: 'OpenCode',
+        icon: 'font-awesome-solid:terminal',
+        file: 'opencode.json',
+        docsUrl: 'https://opencode.ai/docs/mcp-servers/',
+        config: {
+          mcp: {
+            'quarkus-agent': {
+              type: 'local',
+              command: ['jbang', 'quarkus-agent-mcp@quarkusio']
+            }
+          }
+        }
+      },
+      {
+        name: 'Cline',
+        icon: 'font-awesome-solid:terminal',
+        file: 'Cline MCP Settings (via UI)',
+        docsUrl: 'https://docs.cline.bot/mcp-servers/configuring-mcp-servers',
         config: {
           mcpServers: {
-            'quarkus-mcp': {
-              url: this._mcpPath
+            'quarkus-agent': {
+              command: 'jbang',
+              args: ['quarkus-agent-mcp@quarkusio'],
+              disabled: false
+            }
+          }
+        }
+      },
+      {
+        name: 'Goose',
+        icon: 'font-awesome-solid:feather',
+        file: '~/.config/goose/config.yaml',
+        docsUrl: 'https://block.github.io/goose/docs/getting-started/using-extensions',
+        configString: `extensions:
+  quarkus-agent:
+    name: Quarkus Agent MCP
+    type: stdio
+    cmd: jbang
+    args:
+      - quarkus-agent-mcp@quarkusio
+    enabled: true`
+      },
+      {
+        name: 'Zed',
+        icon: 'font-awesome-solid:bolt',
+        file: '~/.config/zed/settings.json',
+        docsUrl: 'https://zed.dev/docs/ai/mcp',
+        config: {
+          context_servers: {
+            'quarkus-agent': {
+              command: {
+                path: 'jbang',
+                args: ['quarkus-agent-mcp@quarkusio']
+              }
             }
           }
         }
@@ -277,13 +420,28 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
       {
         name: 'VS Code (GitHub Copilot)',
         icon: 'font-awesome-brands:microsoft',
-        file: '.vscode/mcp.json',
+        file: 'User Profile mcp.json (use "MCP: Open User Configuration" command)',
         docsUrl: 'https://code.visualstudio.com/docs/copilot/chat/mcp-servers',
         config: {
           servers: {
-            'quarkus-mcp': {
-              type: 'sse',
-              url: this._mcpPath
+            'quarkus-agent': {
+              type: 'stdio',
+              command: 'jbang',
+              args: ['quarkus-agent-mcp@quarkusio']
+            }
+          }
+        }
+      },
+      {
+        name: 'Cursor',
+        icon: 'font-awesome-solid:code',
+        file: '.cursor/mcp.json',
+        docsUrl: 'https://docs.cursor.com/context/mcp',
+        config: {
+          mcpServers: {
+            'quarkus-agent': {
+              command: 'jbang',
+              args: ['quarkus-agent-mcp@quarkusio']
             }
           }
         }
@@ -295,9 +453,57 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
         docsUrl: 'https://modelcontextprotocol.io/quickstart/user',
         config: {
           mcpServers: {
+            'quarkus-agent': {
+              command: 'jbang',
+              args: ['quarkus-agent-mcp@quarkusio']
+            }
+          }
+        }
+      },
+      {
+        name: 'Windsurf',
+        icon: 'font-awesome-solid:wind',
+        file: '~/.codeium/windsurf/mcp_config.json',
+        docsUrl: 'https://docs.windsurf.com/windsurf/cascade/mcp',
+        config: {
+          mcpServers: {
+            'quarkus-agent': {
+              command: 'jbang',
+              args: ['quarkus-agent-mcp@quarkusio']
+            }
+          }
+        }
+      },
+      {
+        name: 'JetBrains IDEs',
+        icon: 'font-awesome-solid:cube',
+        file: 'Settings | Tools | AI Assistant | MCP Servers',
+        docsUrl: 'https://www.jetbrains.com/help/idea/mcp-server.html',
+        config: {
+          servers: {
+            'quarkus-agent': {
+              type: 'stdio',
+              command: 'jbang',
+              args: ['quarkus-agent-mcp@quarkusio']
+            }
+          }
+        }
+      }
+    ];
+  }
+
+  _getDirectMcpConfigurations() {
+    return [
+      {
+        name: 'OpenCode',
+        icon: 'font-awesome-solid:terminal',
+        file: 'opencode.json',
+        docsUrl: 'https://opencode.ai/docs/mcp-servers/',
+        config: {
+          mcp: {
             'quarkus-mcp': {
-              command: 'npx',
-              args: ['-y', 'mcp-remote', this._mcpPath]
+              type: 'remote',
+              url: this._mcpPath
             }
           }
         }
@@ -324,9 +530,67 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
         configString: `extensions:
   quarkus-mcp:
     name: Quarkus MCP
-    type: sse
+    type: streamable_http
     uri: ${this._mcpPath}
     enabled: true`
+      },
+      {
+        name: 'Zed',
+        icon: 'font-awesome-solid:bolt',
+        file: '~/.config/zed/settings.json',
+        docsUrl: 'https://zed.dev/docs/ai/mcp',
+        prerequisite: 'Requires Node.js and npx',
+        config: {
+          context_servers: {
+            'quarkus-mcp': {
+              command: {
+                path: 'npx',
+                args: ['-y', 'mcp-remote', this._mcpPath]
+              }
+            }
+          }
+        }
+      },
+      {
+        name: 'VS Code (GitHub Copilot)',
+        icon: 'font-awesome-brands:microsoft',
+        file: 'User Profile mcp.json (use "MCP: Open User Configuration" command)',
+        docsUrl: 'https://code.visualstudio.com/docs/copilot/chat/mcp-servers',
+        config: {
+          servers: {
+            'quarkus-mcp': {
+              url: this._mcpPath
+            }
+          }
+        }
+      },
+      {
+        name: 'Cursor',
+        icon: 'font-awesome-solid:code',
+        file: '~/.cursor/mcp.json',
+        docsUrl: 'https://docs.cursor.com/context/mcp',
+        config: {
+          mcpServers: {
+            'quarkus-mcp': {
+              url: this._mcpPath
+            }
+          }
+        }
+      },
+      {
+        name: 'Claude Desktop',
+        icon: 'font-awesome-solid:desktop',
+        file: '~/Library/Application Support/Claude/claude_desktop_config.json (macOS) or %APPDATA%\\Claude\\claude_desktop_config.json (Windows)',
+        docsUrl: 'https://modelcontextprotocol.io/quickstart/user',
+        prerequisite: 'Requires Node.js and npx',
+        config: {
+          mcpServers: {
+            'quarkus-mcp': {
+              command: 'npx',
+              args: ['-y', 'mcp-remote', this._mcpPath]
+            }
+          }
+        }
       },
       {
         name: 'Windsurf',
@@ -337,22 +601,6 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
           mcpServers: {
             'quarkus-mcp': {
               serverUrl: this._mcpPath
-            }
-          }
-        }
-      },
-      {
-        name: 'Zed',
-        icon: 'font-awesome-solid:bolt',
-        file: '~/.config/zed/settings.json',
-        docsUrl: 'https://zed.dev/docs/ai/mcp',
-        config: {
-          context_servers: {
-            'quarkus-mcp': {
-              command: {
-                path: 'npx',
-                args: ['-y', 'mcp-remote', this._mcpPath]
-              }
             }
           }
         }
@@ -373,8 +621,7 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
     ];
   }
 
-  _renderIdeConfigurations() {
-    const configs = this._getIdeConfigurations();
+  _renderIdeConfigurations(configs) {
     return html`
       <div class="ideConfigurations">
         ${configs.map((ide) => this._renderIdeConfigPanel(ide))}
@@ -394,6 +641,14 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
           <div class="configFile">
             <b>${msg('Configuration file:', { id: 'devmcp-config-file' })}</b> ${ide.file}
           </div>
+          ${ide.prerequisite
+            ? html`
+                <div class="prerequisite">
+                  <vaadin-icon icon="font-awesome-solid:circle-info"></vaadin-icon>
+                  <span>${ide.prerequisite}</span>
+                </div>
+              `
+            : ''}
           <div class="codeBlockHeader">
             <span class="docsLink">
               <a href="${ide.docsUrl}" target="_blank" rel="noopener noreferrer">

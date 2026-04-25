@@ -1,21 +1,22 @@
 package io.quarkus.observability.deployment.devui;
 
+import java.util.Map;
 import java.util.function.BooleanSupplier;
 
-import io.quarkus.arc.processor.BuiltinScope;
+import org.apache.commons.lang3.StringUtils;
+
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.IsDevelopment;
-import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
-import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
+import io.quarkus.devui.spi.page.ExternalPageBuilder;
 import io.quarkus.devui.spi.page.FooterPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.WebComponentPageBuilder;
-import io.quarkus.observability.runtime.ObservabilityJsonRPCService;
 import io.quarkus.observability.runtime.config.ObservabilityConfiguration;
 
 /**
@@ -36,36 +37,43 @@ public class ObservabilityDevUIProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     void createVersion(BuildProducer<CardPageBuildItem> cardPageBuildItemBuildProducer,
-            BuildProducer<FooterPageBuildItem> footerProducer) {
+            BuildProducer<FooterPageBuildItem> footerProducer,
+            DevServicesLauncherConfigResultBuildItem devServicesConfig) {
 
-        final CardPageBuildItem card = new CardPageBuildItem();
+        Map<String, String> runtimeConfig = devServicesConfig.getConfig();
 
-        // Grafana
-        card.addPage(Page.externalPageBuilder("Grafana UI")
-                .icon("font-awesome-solid:chart-line")
-                .doNotEmbed()
-                .dynamicUrlJsonRPCMethodName("getGrafanaEndpoint"));
+        // LGTM
+        String grafanaUrl = runtimeConfig.getOrDefault("grafana.endpoint", "");
+        if (StringUtils.isNotEmpty(grafanaUrl)) {
+            final CardPageBuildItem card = new CardPageBuildItem();
 
-        // Open Telemetry
-        card.addPage(Page.externalPageBuilder("OpenTelemetry Port")
-                .icon("font-awesome-solid:binoculars")
-                .doNotEmbed()
-                .url("https://opentelemetry.io/")
-                .dynamicLabelJsonRPCMethodName("getOtelEndpoint"));
+            // Grafana
+            grafanaUrl = StringUtils.prependIfMissing(grafanaUrl, "http://");
+            card.addPage(Page.externalPageBuilder("Grafana UI")
+                    .url(grafanaUrl, grafanaUrl)
+                    .doNotEmbed()
+                    .isHtmlContent()
+                    .icon("font-awesome-solid:chart-line"));
 
-        cardPageBuildItemBuildProducer.produce(card);
+            // Open Telemetry
+            final ExternalPageBuilder otelPage = Page.externalPageBuilder("OpenTelemetry Port")
+                    .icon("font-awesome-solid:binoculars")
+                    .doNotEmbed()
+                    .url("https://opentelemetry.io/")
+                    .staticLabel(StringUtils
+                            .substringAfterLast(runtimeConfig.getOrDefault("otel-collector.url", "0"), ":"));
+            card.addPage(otelPage);
 
-        // LGTM Container Log Console
-        WebComponentPageBuilder logPageBuilder = Page.webComponentPageBuilder()
-                .icon("font-awesome-solid:chart-line")
-                .title("LGTM")
-                .componentLink("qwc-lgtm-log.js");
+            card.setCustomCard("qwc-lgtm-card.js");
+            cardPageBuildItemBuildProducer.produce(card);
 
-        footerProducer.produce(new FooterPageBuildItem(logPageBuilder));
-    }
+            // LGTM Container Log Console
+            WebComponentPageBuilder mailLogPageBuilder = Page.webComponentPageBuilder()
+                    .icon("font-awesome-solid:chart-line")
+                    .title("LGTM")
+                    .componentLink("qwc-lgtm-log.js");
 
-    @BuildStep(onlyIf = IsLocalDevelopment.class)
-    public JsonRPCProvidersBuildItem createJsonRPCService() {
-        return new JsonRPCProvidersBuildItem(ObservabilityJsonRPCService.class, BuiltinScope.SINGLETON.getName());
+            footerProducer.produce(new FooterPageBuildItem(mailLogPageBuilder));
+        }
     }
 }

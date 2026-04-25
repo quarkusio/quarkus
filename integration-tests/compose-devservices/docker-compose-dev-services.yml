@@ -14,7 +14,7 @@ services:
         aliases:
           - kafka
     volumes:
-      - './kafka.sh:/work/kafka.sh'
+      - './kafka.sh:/work/kafka.sh:z'
     configs:
       - source: broker
         target: /server.properties
@@ -38,8 +38,8 @@ services:
       - '5672'
       - '15672'
     volumes:
-      - './src/test/resources/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json'
-      - './src/test/resources/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf'
+      - './src/test/resources/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:z'
+      - './src/test/resources/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:z'
   redis:
     profiles: ["redis"]
     image: docker.io/library/redis:7

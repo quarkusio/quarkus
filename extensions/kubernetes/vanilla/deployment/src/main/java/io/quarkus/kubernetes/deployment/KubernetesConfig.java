@@ -17,7 +17,7 @@ import io.smallrye.config.WithDefault;
  */
 @ConfigMapping(prefix = "quarkus.kubernetes")
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
-public interface KubernetesConfig extends PlatformConfiguration {
+public interface KubernetesConfig extends PlatformConfiguration, ReplicasAware {
 
     @Override
     default String targetPlatformName() {
@@ -43,12 +43,6 @@ public interface KubernetesConfig extends PlatformConfiguration {
     RollingUpdateConfig rollingUpdate();
 
     /**
-     * The number of desired pods
-     */
-    @WithDefault("1")
-    Integer replicas();
-
-    /**
      * The nodePort to set when serviceType is set to node-port.
      */
     OptionalInt nodePort();
@@ -62,10 +56,4 @@ public interface KubernetesConfig extends PlatformConfiguration {
      * Optionally set directory generated Kubernetes resources will be written to. Default is `target/kubernetes`.
      */
     Optional<String> outputDirectory();
-
-    /**
-     * If set to true, Quarkus will attempt to deploy the application to the target Kubernetes cluster
-     */
-    @WithDefault("false")
-    boolean deploy();
 }

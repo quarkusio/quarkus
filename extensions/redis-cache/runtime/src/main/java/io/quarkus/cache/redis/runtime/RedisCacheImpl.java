@@ -4,7 +4,13 @@ import java.lang.reflect.Type;
 import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -124,6 +130,15 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
             }).runSubscriptionOn(MutinyHelper.blockingExecutor(vertx.getDelegate(), false));
         } else {
             return Uni.createFrom().item(valueLoader.apply(key));
+        }
+    }
+
+    private <K, V> Uni<Map<K, V>> computeValues(Collection<K> keys,
+            Function<Collection<K>, Map<K, V>> valueLoader, boolean isWorkerThread) {
+        if (isWorkerThread) {
+            return Uni.createFrom().item(() -> valueLoader.apply(keys)).runSubscriptionOn(MutinyHelper.blockingExecutor(vertx.getDelegate(), false));
+        } else {
+            return Uni.createFrom().item(valueLoader.apply(keys));
         }
     }
 
@@ -358,6 +373,247 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                 return doGet(redisConnection, encodedKey, type, marshaller);
             }
         });
+    }
+
+    @Override
+    public <K, V> Uni<Map<K, V>> getAll(Collection<K> keys) {
+        enforceDefaultType("getAll");
+        return doGetAll(keys, classOfValue);
+    }
+
+    @Override
+    public <K, V> Uni<Map<K, V>> getAll(Collection<K> keys, Class<V> clazz) {
+        return doGetAll(keys, (Type) clazz);
+    }
+
+    @Override
+    public <K, V> Uni<Map<K, V>> getAll(Collection<K> keys, TypeLiteral<V> type) {
+        return doGetAll(keys, type.getType());
+    }
+
+    @Override
+    public <K, V> Uni<Map<K, V>> getAll(Collection<K> keys, Function<Collection<K>, Map<K, V>> valueLoader) {
+        enforceDefaultType("getAll");
+        return doGetAll(keys, classOfValue, valueLoader);
+    }
+
+    @Override
+    public <K, V> Uni<Map<K, V>> getAll(Collection<K> keys, Class<V> clazz,
+            Function<Collection<K>, Map<K, V>> valueLoader) {
+        return doGetAll(keys, (Type) clazz, valueLoader);
+    }
+
+    @Override
+    public <K, V> Uni<Map<K, V>> getAll(Collection<K> keys, TypeLiteral<V> type,
+            Function<Collection<K>, Map<K, V>> valueLoader) {
+        return doGetAll(keys, type.getType(), valueLoader);
+    }
+
+    @Override
+    public <K, V> Uni<Map<K, V>> getAllAsync(Collection<K> keys,
+            Function<Collection<K>, Uni<Map<K, V>>> valueLoader) {
+        enforceDefaultType("getAllAsync");
+        return doGetAllAsync(keys, classOfValue, valueLoader);
+    }
+
+    @Override
+    public <K, V> Uni<Map<K, V>> getAllAsync(Collection<K> keys, Class<V> clazz,
+            Function<Collection<K>, Uni<Map<K, V>>> valueLoader) {
+        return doGetAllAsync(keys, (Type) clazz, valueLoader);
+    }
+
+    @Override
+    public <K, V> Uni<Map<K, V>> getAllAsync(Collection<K> keys, TypeLiteral<V> type,
+            Function<Collection<K>, Uni<Map<K, V>>> valueLoader) {
+        return doGetAllAsync(keys, type.getType(), valueLoader);
+    }
+
+    @Override
+    public <K, V> Uni<Void> putAll(Map<K, V> map) {
+        Objects.requireNonNull(map, "map must not be null");
+        if (map.isEmpty()) {
+            return Uni.createFrom().voidItem();
+        }
+        if (cacheInfo.expireAfterWrite.isPresent()) {
+            long ttlSeconds = cacheInfo.expireAfterWrite.get().toSeconds();
+            List<Request> requests = new ArrayList<>(map.size());
+            for (Map.Entry<K, V> entry : map.entrySet()) {
+                if (entry.getValue() == null) {
+                    throw new IllegalArgumentException("Cannot cache `null` value (key: " + entry.getKey() + ")");
+                }
+                byte[] encodedKey = marshaller.encode(computeActualKey(encodeKey(entry.getKey())));
+                byte[] encodedValue = marshaller.encode(entry.getValue());
+                requests.add(Request.cmd(Command.SET).arg(encodedKey).arg(encodedValue)
+                        .arg("EX").arg(ttlSeconds));
+            }
+            return redis.batch(requests).replaceWithVoid();
+        } else {
+            Request request = Request.cmd(Command.MSET);
+            for (Map.Entry<K, V> entry : map.entrySet()) {
+                if (entry.getValue() == null) {
+                    throw new IllegalArgumentException("Cannot cache `null` value (key: " + entry.getKey() + ")");
+                }
+                request.arg(marshaller.encode(computeActualKey(encodeKey(entry.getKey()))));
+                request.arg(marshaller.encode(entry.getValue()));
+            }
+            return redis.send(request).replaceWithVoid();
+        }
+    }
+
+    /**
+     * Core MGET implementation. Issues a single {@code MGET} for all keys and returns only the
+     * entries that are present in Redis. If {@code expire-after-access} is configured, a batch of
+     * {@code EXPIRE} commands is pipelined after the {@code MGET} to refresh the TTL for each hit.
+     */
+    private <K, V> Uni<Map<K, V>> doGetAll(Collection<K> keys, Type type) {
+        Objects.requireNonNull(keys, "keys must not be null");
+        if (keys.isEmpty()) {
+            return Uni.createFrom().item(Collections.emptyMap());
+        }
+        List<K> keyList = new ArrayList<>(keys);
+
+        Request request = Request.cmd(Command.MGET);
+        for (K key : keyList) {
+            request.arg(marshaller.encode(computeActualKey(encodeKey(key))));
+        }
+
+        return redis.send(request)
+                .map(response -> {
+                    Map<K, V> result = new LinkedHashMap<>();
+                    for (int i = 0; i < keyList.size(); i++) {
+                        V value = marshaller.decode(type, response.get(i));
+                        if (value != null) {
+                            result.put(keyList.get(i), value);
+                        }
+                    }
+                    return result;
+                })
+                .chain(result -> {
+                    if (cacheInfo.expireAfterAccess.isEmpty() || result.isEmpty()) {
+                        return Uni.createFrom().item(result);
+                    }
+                    long ttlSeconds = cacheInfo.expireAfterAccess.get().toSeconds();
+                    List<Request> expireRequests = new ArrayList<>(result.size());
+                    for (K hitKey : result.keySet()) {
+                        expireRequests.add(Request.cmd(Command.EXPIRE)
+                                .arg(marshaller.encode(computeActualKey(encodeKey(hitKey))))
+                                .arg(ttlSeconds));
+                    }
+                    return redis.batch(expireRequests).replaceWith(result);
+                });
+    }
+
+    /**
+     * MGET with a synchronous value loader. Cache misses are loaded in bulk with a single loader
+     * invocation and the results are written back via {@link #putAll}.
+     */
+    private <K, V> Uni<Map<K, V>> doGetAll(Collection<K> keys, Type type,
+            Function<Collection<K>, Map<K, V>> valueLoader) {
+        Objects.requireNonNull(keys, "keys must not be null");
+        if (cacheInfo.useOptimisticLocking) {
+            return Uni.createFrom().failure(new UnsupportedOperationException(
+                    "Cannot use `getAll` method with a value loader when optimistic locking is enabled for cache "
+                            + getName()));
+        }
+        if (keys.isEmpty()) {
+            return Uni.createFrom().item(Collections.emptyMap());
+        }
+        boolean isWorkerThread = blockingAllowedSupplier.get();
+
+        return this.<K, V>doGetAll(keys, type)
+                .onFailure(RedisCacheImpl::isRecomputableError)
+                .recoverWithUni(e -> {
+                    log.warn("Unable to connect to Redis, recomputing cached values", e);
+                    return computeValues(keys, valueLoader, isWorkerThread);
+                })
+                .chain(cached -> {
+                    List<K> missKeys = new ArrayList<>();
+                    for (K key : keys) {
+                        if (!cached.containsKey(key)) {
+                            missKeys.add(key);
+                        }
+                    }
+                    if (missKeys.isEmpty()) {
+                        return Uni.createFrom().item(cached);
+                    }
+                    return computeValues(missKeys, valueLoader, isWorkerThread)
+                            .chain(loaded -> {
+                                for (Map.Entry<K, V> entry : loaded.entrySet()) {
+                                    if (entry.getValue() == null) {
+                                        throw new IllegalArgumentException(
+                                                "Cannot cache `null` value (key: " + entry.getKey() + ")");
+                                    }
+                                }
+                                return putAll(loaded)
+                                        .map(ignored -> {
+                                            Map<K, V> merged = new LinkedHashMap<>();
+                                            for (K key : keys) {
+                                                if (cached.containsKey(key)) {
+                                                    merged.put(key, cached.get(key));
+                                                } else if (loaded.containsKey(key)) {
+                                                    merged.put(key, loaded.get(key));
+                                                }
+                                            }
+                                            return merged;
+                                        });
+                            });
+                });
+    }
+
+    /**
+     * MGET with an asynchronous value loader. Cache misses are loaded in bulk with a single async
+     * loader invocation and the results are written back via {@link #putAll}.
+     */
+    private <K, V> Uni<Map<K, V>> doGetAllAsync(Collection<K> keys, Type type,
+            Function<Collection<K>, Uni<Map<K, V>>> valueLoader) {
+        Objects.requireNonNull(keys, "keys must not be null");
+        if (cacheInfo.useOptimisticLocking) {
+            return Uni.createFrom().failure(new UnsupportedOperationException(
+                    "Cannot use `getAllAsync` method with a value loader when optimistic locking is enabled for cache "
+                            + getName()));
+        }
+        if (keys.isEmpty()) {
+            return Uni.createFrom().item(Collections.emptyMap());
+        }
+
+        return this.<K, V> doGetAll(keys, type)
+                .onFailure(RedisCacheImpl::isRecomputableError)
+                .recoverWithUni(e -> {
+                    log.warn("Unable to connect to Redis, recomputing cached values", e);
+                    return valueLoader.apply(keys);
+                })
+                .chain(cached -> {
+                    List<K> missKeys = new ArrayList<>();
+                    for (K key : keys) {
+                        if (!cached.containsKey(key)) {
+                            missKeys.add(key);
+                        }
+                    }
+                    if (missKeys.isEmpty()) {
+                        return Uni.createFrom().item(cached);
+                    }
+                    return valueLoader.apply(missKeys)
+                            .chain(loaded -> {
+                                for (Map.Entry<K, V> entry : loaded.entrySet()) {
+                                    if (entry.getValue() == null) {
+                                        throw new IllegalArgumentException(
+                                                "Cannot cache `null` value (key: " + entry.getKey() + ")");
+                                    }
+                                }
+                                return putAll(loaded)
+                                        .map(ignored -> {
+                                            Map<K, V> merged = new LinkedHashMap<>();
+                                            for (K key : keys) {
+                                                if (cached.containsKey(key)) {
+                                                    merged.put(key, cached.get(key));
+                                                } else if (loaded.containsKey(key)) {
+                                                    merged.put(key, loaded.get(key));
+                                                }
+                                            }
+                                            return merged;
+                                        });
+                            });
+                });
     }
 
     @Override

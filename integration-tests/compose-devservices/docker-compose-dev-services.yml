@@ -14,7 +14,7 @@ services:
         aliases:
           - kafka
     volumes:
-      - './kafka.sh:/work/kafka.sh'
+      - './kafka.sh:/work/kafka.sh:z'
     configs:
       - source: broker
         target: /server.properties

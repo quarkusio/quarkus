@@ -38,6 +38,7 @@ import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathVisit;
 import io.quarkus.paths.PathVisitor;
+import io.quarkus.sbom.Purl;
 
 public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuilder<T> {
 
@@ -303,6 +304,11 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
             return false;
         }
         return true;
+    }
+
+    protected static Purl mavenPurl(ResolvedDependency dep) {
+        return Purl.maven(dep.getGroupId(), dep.getArtifactId(), dep.getVersion(),
+                dep.getType(), dep.getClassifier().isEmpty() ? null : dep.getClassifier());
     }
 
     protected static String suffixToClassifier(String suffix) {

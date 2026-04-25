@@ -9,7 +9,7 @@ import io.quarkus.bootstrap.app.JarResult;
 import io.quarkus.bootstrap.app.SbomResult;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
-import io.quarkus.sbom.ApplicationManifestConfig;
+import io.quarkus.sbom.CoreSbomContributionConfig;
 
 /**
  * Provides information about the primary JAR artifact generated
@@ -21,7 +21,7 @@ public final class JarBuildItem extends SimpleBuildItem {
     private final Path libraryDir;
     private final PackageConfig.JarConfig.JarType type;
     private final String classifier;
-    private final ApplicationManifestConfig manifestConfig;
+    private final CoreSbomContributionConfig coreSbomConfig;
 
     public JarBuildItem(Path path, Path originalArtifact, Path libraryDir, PackageConfig.JarConfig.JarType type,
             String classifier) {
@@ -29,13 +29,13 @@ public final class JarBuildItem extends SimpleBuildItem {
     }
 
     public JarBuildItem(Path path, Path originalArtifact, Path libraryDir, PackageConfig.JarConfig.JarType type,
-            String classifier, ApplicationManifestConfig manifestConfig) {
+            String classifier, CoreSbomContributionConfig manifestConfig) {
         this.path = path;
         this.originalArtifact = originalArtifact;
         this.libraryDir = libraryDir;
         this.type = type;
         this.classifier = classifier;
-        this.manifestConfig = manifestConfig;
+        this.coreSbomConfig = manifestConfig;
     }
 
     public boolean isUberJar() {
@@ -62,8 +62,8 @@ public final class JarBuildItem extends SimpleBuildItem {
         return classifier;
     }
 
-    public ApplicationManifestConfig getManifestConfig() {
-        return manifestConfig;
+    public CoreSbomContributionConfig getCoreSbomConfig() {
+        return coreSbomConfig;
     }
 
     public JarResult toJarResult() {

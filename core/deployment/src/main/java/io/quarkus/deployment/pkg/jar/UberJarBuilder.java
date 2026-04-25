@@ -39,8 +39,8 @@ import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.OpenPathTree;
-import io.quarkus.sbom.ApplicationComponent;
-import io.quarkus.sbom.ApplicationManifestConfig;
+import io.quarkus.sbom.ComponentDescriptor;
+import io.quarkus.sbom.CoreSbomContributionConfig;
 
 public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
@@ -133,15 +133,15 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                     .setFlags(appArtifact.getFlags())
                     .build();
         }
-        final ApplicationManifestConfig.Builder manifestBuilder = ApplicationManifestConfig.builder()
-                .setMainComponent(ApplicationComponent.builder()
+        final CoreSbomContributionConfig.Builder manifestBuilder = CoreSbomContributionConfig.builder()
+                .setMainComponent(ComponentDescriptor.builder()
+                        .setPurl(mavenPurl(appArtifact))
                         .setPath(runnerJar)
-                        .setResolvedDependency(appArtifact)
-                        .build())
+                        .build(), appArtifact)
                 .setRunnerPath(runnerJar);
         for (ResolvedDependency dep : curateOutcome.getApplicationModel().getDependencies()) {
-            final ApplicationComponent.Builder comp = ApplicationComponent.builder()
-                    .setResolvedDependency(dep);
+            final ComponentDescriptor.Builder comp = ComponentDescriptor.builder()
+                    .setPurl(mavenPurl(dep));
             if (!dep.getResolvedPaths().isEmpty()) {
                 comp.setPath(dep.getResolvedPaths().iterator().next());
             }
@@ -149,9 +149,9 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             if (pedigree != null) {
                 comp.setPedigree(pedigree);
             }
-            manifestBuilder.addComponent(comp.build());
+            manifestBuilder.addComponent(comp.build(), dep);
         }
-        final ApplicationManifestConfig manifestConfig = manifestBuilder.build();
+        final CoreSbomContributionConfig manifestConfig = manifestBuilder.build();
 
         return new JarBuildItem(runnerJar, originalJar, null, UBER_JAR,
                 suffixToClassifier(packageConfig.computedRunnerSuffix()), manifestConfig);

@@ -61,8 +61,9 @@ import io.quarkus.runtime.graal.DisableLoggingFeature;
 import io.quarkus.runtime.graal.GraalVM.Distribution;
 import io.quarkus.runtime.graal.JVMChecksFeature;
 import io.quarkus.runtime.graal.SkipConsoleServiceProvidersFeature;
-import io.quarkus.sbom.ApplicationComponent;
-import io.quarkus.sbom.ApplicationManifestConfig;
+import io.quarkus.sbom.ComponentDescriptor;
+import io.quarkus.sbom.CoreSbomContributionConfig;
+import io.quarkus.sbom.Purl;
 import io.smallrye.common.cpu.CPU;
 import io.smallrye.common.os.OS;
 import io.smallrye.common.process.AbnormalExitException;
@@ -108,12 +109,13 @@ public class NativeImageBuildStep {
         NativeImageBuildItem.GraalVMVersion graalVMVersion = image.getGraalVMInfo();
         return new ArtifactResultBuildItem(image.getPath(), ARTIFACT_RESULT_TYPE,
                 graalVMVersion.toMap(),
-                ApplicationManifestConfig.builder()
+                CoreSbomContributionConfig.builder()
                         .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
-                        .setMainComponent(ApplicationComponent.builder()
-                                .setVersion(curateOutcomeBuildItem.getApplicationModel().getAppArtifact().getVersion())
-                                .setPath(image.getPath())
-                                .setDependencies(List.of(curateOutcomeBuildItem.getApplicationModel().getAppArtifact())))
+                        .setMainComponent(ComponentDescriptor.builder()
+                                .setPurl(Purl.generic(image.getPath().getFileName().toString(),
+                                        curateOutcomeBuildItem.getApplicationModel().getAppArtifact().getVersion()))
+                                .setPath(image.getPath()),
+                                List.of(curateOutcomeBuildItem.getApplicationModel().getAppArtifact()))
                         .setRunnerPath(image.getPath())
                         .build());
     }
@@ -189,12 +191,13 @@ public class NativeImageBuildStep {
         return new ArtifactResultBuildItem(nativeImageSourceJarBuildItem.getPath(),
                 "native-sources",
                 Collections.emptyMap(),
-                ApplicationManifestConfig.builder()
+                CoreSbomContributionConfig.builder()
                         .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
-                        .setMainComponent(ApplicationComponent.builder()
-                                .setVersion(curateOutcomeBuildItem.getApplicationModel().getAppArtifact().getVersion())
-                                .setPath(nativeImageSourceJarBuildItem.getPath())
-                                .setResolvedDependency(curateOutcomeBuildItem.getApplicationModel().getAppArtifact()))
+                        .setMainComponent(ComponentDescriptor.builder()
+                                .setPurl(Purl.generic(nativeImageSourceJarBuildItem.getPath().getFileName().toString(),
+                                        curateOutcomeBuildItem.getApplicationModel().getAppArtifact().getVersion()))
+                                .setPath(nativeImageSourceJarBuildItem.getPath()),
+                                curateOutcomeBuildItem.getApplicationModel().getAppArtifact())
                         .setRunnerPath(nativeImageSourceJarBuildItem.getPath())
                         .build());
     }

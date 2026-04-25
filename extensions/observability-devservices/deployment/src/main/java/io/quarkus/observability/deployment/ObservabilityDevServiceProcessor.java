@@ -1,16 +1,14 @@
 package io.quarkus.observability.deployment;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
@@ -24,25 +22,22 @@ import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
-import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
-import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
-import io.quarkus.deployment.console.StartupLogCompressor;
+import io.quarkus.deployment.builditem.Startable;
 import io.quarkus.deployment.dev.devservices.ContainerInfo;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
-import io.quarkus.deployment.logging.LoggingSetupBuildItem;
+import io.quarkus.deployment.dev.devservices.RunningContainer;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.observability.common.config.ContainerConfig;
 import io.quarkus.observability.common.config.ContainerConfigUtil;
 import io.quarkus.observability.common.config.ModulesConfiguration;
-import io.quarkus.observability.deployment.devui.ObservabilityDevServicesConfigBuildItem;
 import io.quarkus.observability.devresource.Container;
 import io.quarkus.observability.devresource.DevResourceLifecycleManager;
 import io.quarkus.observability.devresource.DevResources;
@@ -56,9 +51,6 @@ import io.quarkus.runtime.metrics.MetricsFactory;
 class ObservabilityDevServiceProcessor {
     private static final Logger log = Logger.getLogger(ObservabilityDevServiceProcessor.class);
 
-    private static final Map<String, DevServicesResultBuildItem.RunningDevService> devServices = new ConcurrentHashMap<>();
-    private static final Map<String, ContainerConfig> capturedDevServicesConfigurations = new ConcurrentHashMap<>();
-    private static final Map<String, Boolean> firstStart = new ConcurrentHashMap<>();
     private static final DotName OTLP_REGISTRY = DotName.createSimple("io.micrometer.registry.otlp.OtlpMeterRegistry");
 
     public static class IsEnabled implements BooleanSupplier {
@@ -84,16 +76,12 @@ class ObservabilityDevServiceProcessor {
     public void startContainers(LaunchModeBuildItem launchMode,
             DockerStatusBuildItem dockerStatusBuildItem,
             ObservabilityConfiguration configuration,
-            Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
-            CuratedApplicationShutdownBuildItem closeBuildItem,
             DevServicesComposeProjectBuildItem composeProjectBuildItem,
-            LoggingSetupBuildItem loggingSetupBuildItem,
             DevServicesConfig devServicesConfig,
             BuildProducer<DevServicesResultBuildItem> services,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> properties,
             Capabilities capabilities,
-            Optional<MetricsCapabilityBuildItem> metricsConfiguration,
-            BuildProducer<ObservabilityDevServicesConfigBuildItem> configBuildProducer) {
+            Optional<MetricsCapabilityBuildItem> metricsConfiguration) {
 
         if (!configuration.enabled()) {
             log.infof("Observability dev services are disabled in config");
@@ -111,107 +99,96 @@ class ObservabilityDevServiceProcessor {
         //noinspection ResultOfMethodCallIgnored
         resources.stream().collect(Collectors.toMap(this::devId, Function.identity()));
 
-        @SuppressWarnings("rawtypes")
-        Stream<DevResourceLifecycleManager> stream = resources.stream();
-        if (configuration.parallel()) {
-            stream = stream.parallel();
-        }
+        ExtensionsCatalog catalog = new ExtensionsCatalog(
+                QuarkusClassLoader::isResourcePresentAtRuntime,
+                QuarkusClassLoader::isClassPresentAtRuntime,
+                capabilities.isPresent(Capability.OPENTELEMETRY_TRACER) ||
+                        capabilities.isPresent(Capability.OPENTELEMETRY_METRICS) ||
+                        capabilities.isPresent(Capability.OPENTELEMETRY_LOGS),
+                hasMicrometerOtlp(metricsConfiguration));
 
-        stream.forEach(dev -> {
+        for (DevResourceLifecycleManager<ContainerConfig> dev : resources) {
             String devId = devId(dev);
 
-            // only do get, not remove, so it can be re-used
-            DevServicesResultBuildItem.RunningDevService devService = devServices.get(devId);
-            ContainerConfig currentDevServicesConfiguration = dev.config(
-                    configuration,
-                    new ExtensionsCatalog(
-                            QuarkusClassLoader::isResourcePresentAtRuntime,
-                            QuarkusClassLoader::isClassPresentAtRuntime,
-                            capabilities.isPresent(Capability.OPENTELEMETRY_TRACER) ||
-                                    capabilities.isPresent(Capability.OPENTELEMETRY_METRICS) ||
-                                    capabilities.isPresent(Capability.OPENTELEMETRY_LOGS),
-                            hasMicrometerOtlp(metricsConfiguration)));
+            ContainerConfig currentDevServicesConfiguration = dev.config(configuration, catalog);
 
-            if (devService != null) {
-                ContainerConfig capturedDevServicesConfiguration = capturedDevServicesConfigurations.get(devId);
-                boolean equalConfig = ContainerConfigUtil.isEqual(capturedDevServicesConfiguration,
-                        currentDevServicesConfiguration);
-                if (equalConfig) {
-                    log.debugf("Equal config, re-using existing %s container", devId);
-                    services.produce(devService.toBuildItem());
-                    return;
-                }
-                try {
-                    devService.close();
-                } catch (Throwable e) {
-                    log.errorf("Failed to stop %s container", devId, e);
-                }
+            if (!currentDevServicesConfiguration.enabled()) {
+                log.debugf("Not starting Dev Services for %s as it has been disabled in the config", devId);
+                continue;
             }
 
-            devServices.remove(devId); // clean-up
-            capturedDevServicesConfigurations.put(devId, currentDevServicesConfiguration);
+            if (!dev.enable()) {
+                continue;
+            }
 
-            // override some OTel, etc defaults - rates, intervals, delays, ...
             Map<String, Object> propertiesToOverride = ContainerConfigUtil
                     .propertiesToOverride(currentDevServicesConfiguration);
             propertiesToOverride
                     .forEach((k, v) -> properties.produce(new RunTimeConfigurationDefaultBuildItem(k, v.toString())));
             log.infof("Dev Service %s properties override: %s", devId, propertiesToOverride);
 
-            StartupLogCompressor compressor = new StartupLogCompressor(
-                    (launchMode.isTest() ? "(test) " : "") + devId + " Dev Services Starting:",
-                    consoleInstalledBuildItem,
-                    loggingSetupBuildItem,
-                    s -> false,
-                    s -> s.contains(getClass().getSimpleName()) ||
-                            s.contains("Resource") ||
-                            s.contains("Container")); // log if it comes from this class or Resource / Container
-            try {
-                DevServicesResultBuildItem.RunningDevService newDevService = startContainer(
-                        devId,
-                        composeProjectBuildItem,
-                        dev,
-                        currentDevServicesConfiguration,
-                        configuration,
-                        devServicesConfig.timeout());
-                if (newDevService == null) {
-                    compressor.closeAndDumpCaptured();
-                    return;
-                } else {
-                    compressor.close();
-                }
-
-                devService = newDevService;
-                devServices.put(devId, newDevService);
-                configBuildProducer.produce(new ObservabilityDevServicesConfigBuildItem(newDevService.getConfig()));
-            } catch (Throwable t) {
-                compressor.closeAndDumpCaptured();
-                throw new RuntimeException(t);
+            DevServicesResultBuildItem discovered = discoverRunningService(dev, devId, composeProjectBuildItem,
+                    currentDevServicesConfiguration, launchMode.getLaunchMode());
+            if (discovered != null) {
+                services.produce(discovered);
+            } else {
+                services.produce(
+                        DevServicesResultBuildItem.owned()
+                                .feature(Feature.OBSERVABILITY)
+                                .serviceName(devId)
+                                .serviceConfig(currentDevServicesConfiguration)
+                                .startable(() -> new ObservabilityStartable(dev, currentDevServicesConfiguration,
+                                        configuration, devServicesConfig.timeout()))
+                                .configResolver(ObservabilityStartable::getDevServiceConfig)
+                                .postStartHook(s -> log.infof("Dev Service %s started, config: %s",
+                                        devId, s.getDevServiceConfig()))
+                                .build());
             }
+        }
+    }
 
-            if (firstStart.computeIfAbsent(devId, x -> true)) {
-                Runnable closeTask = new Runnable() {
-                    @Override
-                    public void run() {
-                        DevServicesResultBuildItem.RunningDevService current = devServices.get(devId);
-                        if (current != null) {
-                            try {
-                                current.close();
-                            } catch (Throwable t) {
-                                log.errorf("Failed to stop %s container", devId, t);
-                            }
-                        }
-                        firstStart.remove(devId);
-                        //noinspection resource
-                        devServices.remove(devId);
-                        capturedDevServicesConfigurations.remove(devId);
-                    }
-                };
-                closeBuildItem.addCloseTask(closeTask, true);
+    private DevServicesResultBuildItem discoverRunningService(
+            DevResourceLifecycleManager<ContainerConfig> dev, String devId,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
+            ContainerConfig capturedDevServicesConfiguration, LaunchMode launchMode) {
+
+        ContainerLocator containerLocator = new ContainerLocator(capturedDevServicesConfiguration.label(), 0);
+        Map<String, String> config = new LinkedHashMap<>();
+        Optional<String> containerId = containerLocator
+                .locateContainer(capturedDevServicesConfiguration.serviceName(),
+                        capturedDevServicesConfiguration.shared(),
+                        launchMode,
+                        (p, ca) -> config.putAll(dev.config(p, ca.getHost(), ca.getPort())));
+
+        if (containerId.isPresent()) {
+            log.infof("Dev Service %s re-used, config: %s", devId, config);
+            return DevServicesResultBuildItem.discovered()
+                    .feature(Feature.OBSERVABILITY)
+                    .containerId(containerId.get())
+                    .config(config)
+                    .build();
+        }
+
+        List<RunningContainer> composeContainers = ComposeLocator.locateContainer(composeProjectBuildItem,
+                List.of(capturedDevServicesConfiguration.imageName(), capturedDevServicesConfiguration.serviceName()),
+                launchMode);
+        if (!composeContainers.isEmpty()) {
+            RunningContainer r = composeContainers.get(0);
+            Map<String, String> cfg = new LinkedHashMap<>();
+            for (ContainerInfo.ContainerPort port : r.containerInfo().exposedPorts()) {
+                cfg.putAll(dev.config(port.privatePort(),
+                        DockerClientFactory.instance().dockerHostIpAddress(),
+                        port.publicPort()));
             }
+            log.infof("Compose Dev Service %s started, config: %s", devId, cfg);
+            return DevServicesResultBuildItem.discovered()
+                    .feature(Feature.OBSERVABILITY)
+                    .containerId(r.containerInfo().id())
+                    .config(cfg)
+                    .build();
+        }
 
-            services.produce(devService.toBuildItem());
-        });
+        return null;
     }
 
     private static boolean hasMicrometerOtlp(Optional<MetricsCapabilityBuildItem> metricsConfiguration) {
@@ -222,63 +199,49 @@ class ObservabilityDevServiceProcessor {
         return false;
     }
 
-    private DevServicesResultBuildItem.RunningDevService startContainer(
-            String devId,
-            DevServicesComposeProjectBuildItem composeProjectBuildItem,
-            DevResourceLifecycleManager<ContainerConfig> dev,
-            ContainerConfig capturedDevServicesConfiguration,
-            ModulesConfiguration root,
-            Optional<Duration> timeout) {
+    static final class ObservabilityStartable implements Startable {
+        private final DevResourceLifecycleManager<ContainerConfig> dev;
+        private final ContainerConfig config;
+        private final ModulesConfiguration root;
+        private final Optional<Duration> timeout;
 
-        if (!capturedDevServicesConfiguration.enabled()) {
-            // explicitly disabled
-            log.debugf("Not starting Dev Services for %s as it has been disabled in the config", devId);
-            return null;
+        private Container<?> container;
+        private Map<String, String> devServiceConfig;
+
+        ObservabilityStartable(DevResourceLifecycleManager<ContainerConfig> dev,
+                ContainerConfig config, ModulesConfiguration root, Optional<Duration> timeout) {
+            this.dev = dev;
+            this.config = config;
+            this.root = root;
+            this.timeout = timeout;
         }
 
-        if (!dev.enable()) {
-            return null;
+        @Override
+        public void start() {
+            container = dev.container(config, root);
+            timeout.ifPresent(container::withStartupTimeout);
+            devServiceConfig = dev.start();
         }
 
-        final Supplier<DevServicesResultBuildItem.RunningDevService> defaultContainerSupplier = new Supplier<DevServicesResultBuildItem.RunningDevService>() {
-            @Override
-            public DevServicesResultBuildItem.RunningDevService get() {
-                Container<?> container = dev.container(capturedDevServicesConfiguration, root);
-                timeout.ifPresent(container::withStartupTimeout);
-                Map<String, String> config = dev.start();
-                log.infof("Dev Service %s started, config: %s", devId, config);
-                return new DevServicesResultBuildItem.RunningDevService(
-                        Feature.OBSERVABILITY.getName(), container.getContainerId(),
-                        container.closeableCallback(capturedDevServicesConfiguration.serviceName()), config);
+        @Override
+        public String getConnectionInfo() {
+            return container != null ? container.getContainerId() : "not started";
+        }
+
+        @Override
+        public String getContainerId() {
+            return container != null ? container.getContainerId() : null;
+        }
+
+        @Override
+        public void close() throws IOException {
+            if (container != null) {
+                container.closeableCallback(config.serviceName()).close();
             }
-        };
+        }
 
-        Map<String, String> config = new LinkedHashMap<>(); // old config
-        ContainerLocator containerLocator = new ContainerLocator(capturedDevServicesConfiguration.label(), 0); // can be 0, as we don't use it
-        return containerLocator
-                .locateContainer(
-                        capturedDevServicesConfiguration.serviceName(), capturedDevServicesConfiguration.shared(),
-                        LaunchMode.current(), (p, ca) -> config.putAll(dev.config(p, ca.getHost(), ca.getPort())))
-                .map(cid -> {
-                    log.infof("Dev Service %s re-used, config: %s", devId, config);
-                    return new DevServicesResultBuildItem.RunningDevService(Feature.OBSERVABILITY.getName(), cid,
-                            null, config);
-                })
-                .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
-                        List.of(capturedDevServicesConfiguration.imageName(), capturedDevServicesConfiguration.serviceName()),
-                        LaunchMode.current())
-                        .stream().findFirst()
-                        .map(r -> {
-                            Map<String, String> cfg = new LinkedHashMap<>();
-                            for (ContainerInfo.ContainerPort port : r.containerInfo().exposedPorts()) {
-                                cfg.putAll(dev.config(port.privatePort(),
-                                        DockerClientFactory.instance().dockerHostIpAddress(),
-                                        port.publicPort()));
-                            }
-                            log.infof("Compose Dev Service %s started, config: %s", devId, cfg);
-                            return new DevServicesResultBuildItem.RunningDevService(Feature.OBSERVABILITY.getName(),
-                                    r.containerInfo().id(), null, cfg);
-                        }))
-                .orElseGet(defaultContainerSupplier);
+        public Map<String, String> getDevServiceConfig() {
+            return devServiceConfig != null ? devServiceConfig : Map.of();
+        }
     }
 }

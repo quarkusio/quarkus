@@ -21,6 +21,7 @@ This guide covers:
 * <<sbom-endpoint,SBOM REST Endpoint>> — exposing embedded dependency SBOMs via a REST endpoint
 * <<distribution-sboms,Distribution SBOMs>> — generating SBOMs that manifest the final application distribution after a build
 * <<vulnerability-scanning,Vulnerability scanning>> — using generated SBOMs with tools such as Grype to identify known vulnerabilities
+* <<extension-sbom-contributions,Extension SBOM contributions>> — contributing additional components to the application SBOM from Quarkus extensions
 
 All SBOM generation in this guide follows the https://cyclonedx.org/[CycloneDX] specification.
 
@@ -474,3 +475,78 @@ This approach is useful for scanning applications that are already deployed, for
 |`quarkus:component:scope` |`runtime` or `development` |Indicates whether a component is a runtime or a build/development time dependency of an application.
 |`quarkus:component:location` |String representing a file system path using `/` as a path element |Used in SBOMs with schema versions 1.4 or older. Starting from schema 1.5, `evidence.occurrences.location` is used instead. This property is used only if a component is found in the distribution. The value is a relative path to a file pointing to the location of a component in a distribution using `/` as a path element separator.
 |===
+
+[[extension-sbom-contributions]]
+== Extension SBOM Contributions
+
+By default, Quarkus generates SBOMs from the application's Maven dependency model and the packaging output.
+Extensions that manage additional software components — for example, npm packages or other non-Maven artifacts — can contribute those components to the application SBOM by producing `SbomContributionBuildItem` instances from their `@BuildStep` methods.
+
+Extension contributions are merged with the core application contribution by the SBOM generator.
+Components marked as top-level will appear as direct dependencies of the main application component in the generated SBOM.
+
+=== API Overview
+
+Extension SBOM contributions are built from the following classes:
+
+* `io.quarkus.sbom.Purl` — identifies a software component using the https://github.com/package-url/purl-spec[Package URL] specification. Factory methods are provided for Maven, npm, and generic component types.
+* `io.quarkus.sbom.ComponentDescriptor` — describes a software component with its PURL, scope, integrity hash, and other metadata.
+* `io.quarkus.sbom.ComponentDependencies` — describes the dependency relationships of a component, referencing other components by their bom-ref.
+* `io.quarkus.sbom.SbomContribution` — groups component descriptors and their dependency relationships into a single contribution.
+* `io.quarkus.deployment.sbom.SbomContributionBuildItem` — a `MultiBuildItem` that carries an `SbomContribution` to the SBOM generator.
+
+=== Example
+
+The following example shows a `@BuildStep` method that contributes npm packages to the application SBOM:
+
+[source,java]
+----
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.sbom.SbomContributionBuildItem;
+import io.quarkus.sbom.ComponentDependencies;
+import io.quarkus.sbom.ComponentDescriptor;
+import io.quarkus.sbom.Purl;
+import io.quarkus.sbom.SbomContribution;
+
+@BuildStep
+SbomContributionBuildItem contributeNpmComponents() {
+
+    // Describe an npm package
+    ComponentDescriptor react = ComponentDescriptor.builder()
+            .setPurl(Purl.npm(null, "react", "18.2.0"))
+            .setScope(ComponentDescriptor.SCOPE_RUNTIME)
+            .setIntegrity("sha512-...")  // SRI hash from package-lock.json
+            .setTopLevel(true)           // direct dependency of the application
+            .build();
+
+    // Describe a transitive npm dependency
+    ComponentDescriptor loosEnvify = ComponentDescriptor.builder()
+            .setPurl(Purl.npm(null, "loose-envify", "1.4.0"))
+            .setScope(ComponentDescriptor.SCOPE_RUNTIME)
+            .build();
+
+    // Describe the dependency relationship: react depends on loose-envify
+    ComponentDependencies reactDeps = ComponentDependencies.builder()
+            .setBomRef(react.getBomRef())
+            .addDependsOn(loosEnvify.getBomRef())
+            .build();
+
+    // Build the contribution
+    SbomContribution contribution = SbomContribution.builder()
+            .addComponent(react)
+            .addComponent(loosEnvify)
+            .addDependency(reactDeps)
+            .build();
+
+    return new SbomContributionBuildItem(contribution);
+}
+----
+
+=== Key Points
+
+* Extensions must not designate a main component — only the core application contribution does that.
+* Components from any package ecosystem can be contributed using the appropriate `Purl` type (e.g., `Purl.npm(...)`, `Purl.maven(...)`, `Purl.generic(...)`, or `Purl.of(type, ...)` for other ecosystems).
+* Set `topLevel(true)` on components that are direct dependencies of the application (e.g., packages declared in `package.json`). Transitive dependencies should not be marked as top-level.
+* The `scope` field classifies components as `runtime` or `development` dependencies, which is recorded in the SBOM as the `quarkus:component:scope` property.
+* The `integrity` field can carry an SRI-format hash (e.g., from lock files) for component verification.
+* Dependency relationships are optional. If you only need to list components without expressing their dependency graph, use `SbomContribution.ofComponents(...)`.

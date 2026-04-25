@@ -6,9 +6,9 @@ import org.junit.jupiter.api.BeforeEach;
 
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
-import io.quarkus.sbom.ApplicationComponent;
+import io.quarkus.sbom.ComponentDescriptor;
 
-public class ApplicationManifestUberJarTest extends ApplicationManifestTestBase {
+public class SbomContributionUberJarTest extends SbomContributionTestBase {
 
     @Override
     protected TsArtifact composeApplication() {
@@ -56,49 +56,49 @@ public class ApplicationManifestUberJarTest extends ApplicationManifestTestBase 
                     artifactCoords("other-lib"),
                     artifactCoords("my-ext"),
                     artifactCoords("my-ext-deployment"));
-            assertDependencyScope(comp, ApplicationComponent.SCOPE_RUNTIME);
+            assertDependencyScope(comp, ComponentDescriptor.SCOPE_RUNTIME);
         });
 
         expectMavenComponent(artifactCoords("acme-lib"), comp -> {
             assertNoDistributionPath(comp);
             assertVersion(comp, TsArtifact.DEFAULT_VERSION);
             assertDependencies(comp, artifactCoords("acme-common"));
-            assertDependencyScope(comp, ApplicationComponent.SCOPE_RUNTIME);
+            assertDependencyScope(comp, ComponentDescriptor.SCOPE_RUNTIME);
         });
 
         expectMavenComponent(artifactCoords("acme-common"), comp -> {
             assertNoDistributionPath(comp);
             assertVersion(comp, TsArtifact.DEFAULT_VERSION);
             assertDependencies(comp, artifactCoords("acme-transitive"));
-            assertDependencyScope(comp, ApplicationComponent.SCOPE_RUNTIME);
+            assertDependencyScope(comp, ComponentDescriptor.SCOPE_RUNTIME);
         });
 
         expectMavenComponent(artifactCoords("acme-transitive"), comp -> {
             assertNoDistributionPath(comp);
             assertVersion(comp, TsArtifact.DEFAULT_VERSION);
             assertDependencies(comp);
-            assertDependencyScope(comp, ApplicationComponent.SCOPE_RUNTIME);
+            assertDependencyScope(comp, ComponentDescriptor.SCOPE_RUNTIME);
         });
 
         expectMavenComponent(artifactCoords("other-lib"), comp -> {
             assertNoDistributionPath(comp);
             assertVersion(comp, TsArtifact.DEFAULT_VERSION);
             assertDependencies(comp, artifactCoords("acme-common"));
-            assertDependencyScope(comp, ApplicationComponent.SCOPE_RUNTIME);
+            assertDependencyScope(comp, ComponentDescriptor.SCOPE_RUNTIME);
         });
 
         expectMavenComponent(artifactCoords("my-lib"), comp -> {
             assertNoDistributionPath(comp);
             assertVersion(comp, TsArtifact.DEFAULT_VERSION);
             assertDependencies(comp, artifactCoords("acme-common"));
-            assertDependencyScope(comp, ApplicationComponent.SCOPE_RUNTIME);
+            assertDependencyScope(comp, ComponentDescriptor.SCOPE_RUNTIME);
         });
 
         expectMavenComponent(artifactCoords("my-ext"), comp -> {
             assertNoDistributionPath(comp);
             assertVersion(comp, TsArtifact.DEFAULT_VERSION);
             assertDependencies(comp, artifactCoords("my-lib"));
-            assertDependencyScope(comp, ApplicationComponent.SCOPE_RUNTIME);
+            assertDependencyScope(comp, ComponentDescriptor.SCOPE_RUNTIME);
         });
 
         expectMavenComponent(artifactCoords("my-ext-deployment"), comp -> {
@@ -107,7 +107,7 @@ public class ApplicationManifestUberJarTest extends ApplicationManifestTestBase 
             assertDependencies(comp,
                     artifactCoords("my-ext"),
                     artifactCoords("other-lib"));
-            assertDependencyScope(comp, ApplicationComponent.SCOPE_DEVELOPMENT);
+            assertDependencyScope(comp, ComponentDescriptor.SCOPE_DEVELOPMENT);
         });
     }
 }

@@ -86,7 +86,7 @@ public class JarResultBuildStep {
         return new ArtifactResultBuildItem(jarBuildItem.getPath(), "jar",
                 jarBuildItem.getLibraryDir() == null ? Map.of()
                         : Map.of("library-dir", jarBuildItem.getLibraryDir().toString()),
-                jarBuildItem.getManifestConfig());
+                jarBuildItem.getCoreSbomConfig());
     }
 
     @SuppressWarnings("deprecation") // JarType#LEGACY_JAR

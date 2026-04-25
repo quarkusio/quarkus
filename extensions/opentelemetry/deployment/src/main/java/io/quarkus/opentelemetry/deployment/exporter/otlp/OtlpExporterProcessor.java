@@ -43,6 +43,7 @@ public class OtlpExporterProcessor {
 
     private static final DotName METRIC_EXPORTER = DotName.createSimple(MetricExporter.class.getName());
     private static final DotName LOG_RECORD_EXPORTER = DotName.createSimple(LogRecordExporter.class.getName());
+    private static final DotName SPAN_EXPORTER = DotName.createSimple(SpanExporter.class.getName());
     private static final DotName OKHTTP_INTERCEPTOR = DotName.createSimple("okhttp3.Interceptor");
 
     static class OtlpTracingExporterEnabled implements BooleanSupplier {
@@ -146,14 +147,12 @@ public class OtlpExporterProcessor {
             List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
-        if (!externalOtelExporterBuildItem.isEmpty() && !otelBuildConfig.defaultExporterEnabled()) {
-            // unless explicitly configured we don't want to create the default one if there is an external exporter.
-            // External exporter also use synthetic beans. However, synthetic beans don't show in the BeanDiscoveryFinishedBuildItem
-            return;
-        }
+        // Check if any exporter already exists (External Synthetic or CDI Bean)
+        boolean externalExporterExists = !externalOtelExporterBuildItem.isEmpty() ||
+                !beanDiscovery.beanStream().withBeanType(SPAN_EXPORTER).isEmpty();
 
-        if (!beanDiscovery.beanStream().withBeanType(DotName.createSimple(SpanExporter.class.getName())).isEmpty()
-                && !otelBuildConfig.defaultExporterEnabled()) {
+        // return only if an exporter exists AND the coexistence flag is NOT enabled
+        if (externalExporterExists && !otelBuildConfig.defaultExporterEnabled()) {
             return;
         }
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem
@@ -180,15 +179,12 @@ public class OtlpExporterProcessor {
             CoreVertxBuildItem vertxBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
-        if (!externalOtelExporterBuildItem.isEmpty() && !otelBuildConfig.defaultExporterEnabled()) {
-            // unless explicitly configured we don't want to create the default one if there is an external exporter.
-            // External exporter also use synthetic beans. However, synthetic beans don't show in the BeanDiscoveryFinishedBuildItem
-            return;
-        }
+        // Check if any exporter already exists (External Synthetic or CDI Bean)
+        boolean externalExporterExists = !externalOtelExporterBuildItem.isEmpty() ||
+                !beanDiscovery.beanStream().withBeanType(METRIC_EXPORTER).isEmpty();
 
-        if (!beanDiscovery.beanStream().withBeanType(METRIC_EXPORTER).isEmpty()
-                && !otelBuildConfig.defaultExporterEnabled()) {
-            // unless explicitly configured if there is a MetricExporter bean impl around, we don't want to create the default one
+        // return only if an exporter exists AND the coexistence flag is NOT enabled
+        if (externalExporterExists && !otelBuildConfig.defaultExporterEnabled()) {
             return;
         }
 
@@ -216,15 +212,12 @@ public class OtlpExporterProcessor {
             CoreVertxBuildItem vertxBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
-        if (!externalOtelExporterBuildItem.isEmpty() && !otelBuildConfig.defaultExporterEnabled()) {
-            // unless explicitly configured we don't want to create the default one if there is an external exporter.
-            // External exporter also use synthetic beans. However, synthetic beans don't show in the BeanDiscoveryFinishedBuildItem
-            return;
-        }
+        // Check if any exporter already exists (External Synthetic or CDI Bean)
+        boolean externalExporterExists = !externalOtelExporterBuildItem.isEmpty() ||
+                !beanDiscovery.beanStream().withBeanType(LOG_RECORD_EXPORTER).isEmpty();
 
-        if (!beanDiscovery.beanStream().withBeanType(LOG_RECORD_EXPORTER).isEmpty()
-                && !otelBuildConfig.defaultExporterEnabled()) {
-            // unless explicitly configured if there is a MetricExporter bean impl around, we don't want to create the default one
+        // return only if an exporter exists AND the coexistence flag is NOT enabled
+        if (externalExporterExists && !otelBuildConfig.defaultExporterEnabled()) {
             return;
         }
 

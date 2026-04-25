@@ -5,15 +5,10 @@ import static io.opentelemetry.semconv.HttpAttributes.HTTP_ROUTE;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
-import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Alternative;
 import jakarta.enterprise.inject.Produces;
-import jakarta.enterprise.inject.spi.Bean;
-import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.GET;
@@ -21,15 +16,16 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Response;
 
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.logs.data.LogRecordData;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.data.SpanData;
-import io.opentelemetry.sdk.trace.export.SpanExporter;
 
 @Path("")
 public class ExporterResource {
@@ -40,7 +36,7 @@ public class ExporterResource {
     @Inject
     InMemoryLogRecordExporter inMemoryLogRecordExporter;
     @Inject
-    BeanManager beanManager;
+    OpenTelemetry openTelemetry;
 
     @GET
     @Path("/reset")
@@ -95,12 +91,14 @@ public class ExporterResource {
     }
 
     @GET
-    @Path("/export/count")
-    public String countExporters() {
-        Set<Bean<?>> beans = beanManager.getBeans(SpanExporter.class);
-        return beans.stream()
-                .map(bean -> bean.getBeanClass().getName())
-                .collect(Collectors.joining(","));
+    @Path("/active-span-exporters")
+    public List<String> getExporters() {
+        OpenTelemetrySdk sdk = (OpenTelemetrySdk) openTelemetry;
+        return sdk.getSdkTracerProvider()
+                .toString()
+                .lines()
+                .filter(line -> line.contains("SpanExporter"))
+                .collect(Collectors.toList());
     }
 
     private static boolean isPathFound(String path, Attributes attributes) {
@@ -118,8 +116,6 @@ public class ExporterResource {
     static class InMemorySpanExporterProducer {
         @Produces
         @Singleton
-        @Priority(1)
-        @Alternative
         InMemorySpanExporter inMemorySpanExporter() {
             return InMemorySpanExporter.create();
         }
@@ -129,8 +125,6 @@ public class ExporterResource {
     static class InMemoryMetricExporterProducer {
         @Produces
         @Singleton
-        @Priority(1)
-        @Alternative
         InMemoryMetricExporter inMemoryMetricsExporter() {
             return InMemoryMetricExporter.create();
         }
@@ -140,8 +134,6 @@ public class ExporterResource {
     static class InMemoryLogRecordExporterProducer {
         @Produces
         @Singleton
-        @Priority(1)
-        @Alternative
         public InMemoryLogRecordExporter createInMemoryExporter() {
             return InMemoryLogRecordExporter.create();
         }

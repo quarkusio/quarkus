@@ -136,7 +136,8 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
     private <K, V> Uni<Map<K, V>> computeValues(Collection<K> keys,
             Function<Collection<K>, Map<K, V>> valueLoader, boolean isWorkerThread) {
         if (isWorkerThread) {
-            return Uni.createFrom().item(() -> valueLoader.apply(keys)).runSubscriptionOn(MutinyHelper.blockingExecutor(vertx.getDelegate(), false));
+            return Uni.createFrom().item(() -> valueLoader.apply(keys))
+                    .runSubscriptionOn(MutinyHelper.blockingExecutor(vertx.getDelegate(), false));
         } else {
             return Uni.createFrom().item(valueLoader.apply(keys));
         }
@@ -520,7 +521,7 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
         }
         boolean isWorkerThread = blockingAllowedSupplier.get();
 
-        return this.<K, V>doGetAll(keys, type)
+        return this.<K, V> doGetAll(keys, type)
                 .onFailure(RedisCacheImpl::isRecomputableError)
                 .recoverWithUni(e -> {
                     log.warn("Unable to connect to Redis, recomputing cached values", e);

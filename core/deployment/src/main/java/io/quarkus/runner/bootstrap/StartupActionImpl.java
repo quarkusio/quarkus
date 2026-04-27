@@ -430,15 +430,11 @@ public class StartupActionImpl implements StartupAction {
                                 log.error("Failed to run close task", t);
                             }
                         }
-                        // This will read the state of the curated application at the time of closing;
-                        // If the caller of close knows that the 'next' application shares a curated application, it can set eligible for reuse to true
-                        if (!curatedApplication.isEligibleForReuse()) {
-                            if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.TEST
-                                    && !curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication()) {
-                                //for tests, we just always shut down the curated application, as it is only used once
-                                //dev mode might be about to restart, so we leave it
-                                curatedApplication.close();
-                            }
+                        if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.TEST
+                                && !curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication()) {
+                            //for tests, we just always shut down the curated application, as it is only used once
+                            //dev mode might be about to restart, so we leave it
+                            curatedApplication.close();
                         }
                     }
                 }

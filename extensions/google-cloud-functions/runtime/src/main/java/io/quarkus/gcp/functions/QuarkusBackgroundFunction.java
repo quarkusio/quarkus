@@ -85,6 +85,13 @@ public final class QuarkusBackgroundFunction implements RawBackgroundFunction {
         }
     }
 
+    public static void clearState() {
+        delegate = null;
+        parameterType = null;
+        rawDelegate = null;
+        delegateClassLoader = null;
+    }
+
     @Override
     public void accept(String event, Context context) throws Exception {
         if (!started) {

@@ -60,6 +60,11 @@ public final class QuarkusHttpFunction implements HttpFunction {
         }
     }
 
+    static void clearState() {
+        delegate = null;
+        delegateClassLoader = null;
+    }
+
     @Override
     public void service(HttpRequest httpRequest, HttpResponse httpResponse) throws Exception {
         if (!started) {

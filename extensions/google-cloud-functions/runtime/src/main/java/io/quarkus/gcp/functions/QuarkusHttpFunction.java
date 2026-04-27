@@ -13,8 +13,8 @@ import io.quarkus.runtime.Application;
 
 public final class QuarkusHttpFunction implements HttpFunction {
 
-    protected static final String deploymentStatus;
-    protected static boolean started = false;
+    private static final String deploymentStatus;
+    private static boolean started = false;
 
     private static volatile HttpFunction delegate;
     private static volatile ClassLoader delegateClassLoader;

@@ -14,10 +14,11 @@ import com.google.gson.Gson;
 import io.quarkus.arc.Arc;
 import io.quarkus.runtime.Application;
 
+@SuppressWarnings({ "rawtypes", "unchecked" })
 public final class QuarkusBackgroundFunction implements RawBackgroundFunction {
 
-    protected static final String deploymentStatus;
-    protected static boolean started = false;
+    private static final String deploymentStatus;
+    private static boolean started = false;
 
     private static volatile BackgroundFunction delegate;
     private static volatile Class<?> parameterType;

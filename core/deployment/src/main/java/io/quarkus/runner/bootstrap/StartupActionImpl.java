@@ -62,7 +62,7 @@ public class StartupActionImpl implements StartupAction {
 
     private final CuratedApplication curatedApplication;
     private final QuarkusClassLoader runtimeClassLoader;
-    private ClassLoader deploymentClassLoader;
+    private QuarkusClassLoader deploymentClassLoader;
 
     private final String mainClassName;
     private final String applicationClassName;
@@ -92,7 +92,7 @@ public class StartupActionImpl implements StartupAction {
         this.devServicesRegistry = buildResult.consumeOptional(DevServicesRegistryBuildItem.class);
         this.devServicesCustomizers = buildResult.consumeMulti(DevServicesCustomizerBuildItem.class);
         this.additionalConfigBuildItems = buildResult.consumeMulti(DevServicesAdditionalConfigBuildItem.class);
-        this.deploymentClassLoader = buildResult.getDeploymentClassLoader();
+        this.deploymentClassLoader = (QuarkusClassLoader) buildResult.getDeploymentClassLoader();
 
         QuarkusClassLoader baseClassLoader = curatedApplication.getOrCreateBaseRuntimeClassLoader();
         QuarkusClassLoader runtimeClassLoader;
@@ -221,6 +221,7 @@ public class StartupActionImpl implements StartupAction {
 
     private void doClose() {
         devServicesStarted = false;
+        deploymentClassLoader.close();
         deploymentClassLoader = null;
         try {
             runtimeClassLoader.loadClass(Quarkus.class.getName()).getMethod("blockingExit").invoke(null);
@@ -416,6 +417,7 @@ public class StartupActionImpl implements StartupAction {
                         } finally {
                             Thread.currentThread().setContextClassLoader(original);
                             runtimeClassLoader.close();
+                            deploymentClassLoader.close();
                         }
                     } finally {
                         ForkJoinClassLoading.setForkJoinClassLoader(ClassLoader.getSystemClassLoader());

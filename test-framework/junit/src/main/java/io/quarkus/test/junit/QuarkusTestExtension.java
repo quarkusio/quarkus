@@ -615,7 +615,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             throw new IllegalStateException(
                     "Internal error: ClassLoader " + incomingClassLoader + " does not have a linked curated application.");
         }
-        incomingCuratedApplication.setEligibleForReuse(isSameCuratedApplication);
 
         // Let's clear the class-based caches of JDK/libraries when we switch to another application
         if (!isSameCuratedApplication) {

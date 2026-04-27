@@ -266,7 +266,18 @@ public abstract class JacksonCodeGenerator {
 
     private void registerTypeToBeGenerated(String typeName) {
         ClassInfo classInfo = jandexIndex.getClassByName(typeName);
-        if (classInfo != null && !vetoedClass(classInfo, typeName) && shouldGenerateCodeFor(classInfo)) {
+        if (classInfo == null) {
+            return;
+        }
+        if (vetoedClass(classInfo, typeName)) {
+            if (classInfo.isSealed()) {
+                for (DotName subClassName : classInfo.permittedSubclasses()) {
+                    registerTypeToBeGenerated(subClassName.toString());
+                }
+            }
+            return;
+        }
+        if (shouldGenerateCodeFor(classInfo)) {
             toBeGenerated.add(classInfo);
         }
     }

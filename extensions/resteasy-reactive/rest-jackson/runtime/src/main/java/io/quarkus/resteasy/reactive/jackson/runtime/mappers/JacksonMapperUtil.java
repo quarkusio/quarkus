@@ -173,12 +173,25 @@ public class JacksonMapperUtil {
             generator.writePOJO(value);
             return;
         }
-        JsonSerializer<Object> serializer = serializerProvider.findValueSerializer(value.getClass());
+        JsonSerializer<Object> serializer = serializerProvider.findTypedValueSerializer(value.getClass(), true, null);
         if (serializer != null) {
             serializer.serialize(value, generator, serializerProvider);
         } else {
             generator.writePOJO(value);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static void serializeCollection(Object value, Class<?> collectionClass, Class<?> elementClass,
+            JsonGenerator generator, SerializerProvider serializerProvider) throws IOException {
+        if (value == null) {
+            generator.writeNull();
+            return;
+        }
+        JavaType collectionType = serializerProvider.getTypeFactory()
+                .constructCollectionType((Class<? extends Collection>) collectionClass, elementClass);
+        JsonSerializer<Object> serializer = serializerProvider.findValueSerializer(collectionType);
+        serializer.serialize(value, generator, serializerProvider);
     }
 
     public enum SerializationInclude {

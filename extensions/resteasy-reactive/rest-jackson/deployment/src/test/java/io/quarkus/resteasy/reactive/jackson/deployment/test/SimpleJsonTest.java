@@ -31,7 +31,9 @@ public class SimpleJsonTest extends AbstractSimpleJsonTest {
                                     ItemJsonValuePublicMethod.class, ItemJsonValuePublicField.class,
                                     ItemJsonValuePrivateMethod.class, ItemJsonValuePrivateField.class, StringWrapper.class,
                                     JsonAliasRecord.class, AnnotationNamingRequest.class, Pair.class, Score.class,
-                                    ProductPrice.class, DefaultValueHolder.class, OptionalHolder.class, AnySetterRequest.class)
+                                    ProductPrice.class, DefaultValueHolder.class, OptionalHolder.class, AnySetterRequest.class,
+                                    UnwrappedResult.class, UnwrappedResultsResponse.class, Detail.class, ErrorInfo.class,
+                                    PolymorphicItemResponse.class, PolymorphicItem.class)
                             .addAsResource(new StringAsset("admin-expression=admin\n" +
                                     "user-expression=user\n" +
                                     "birth-date-roles=alice,bob\n" +

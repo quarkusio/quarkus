@@ -393,15 +393,29 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
             primitiveBytecode.invokeVirtualMethod(primitiveWriter, ctx.jsonGenerator, arg);
 
         } else {
+            FieldKind fieldKind = null;
             if (pkgName != null) {
-                registerTypeToBeGenerated(fieldSpecs.fieldType, typeName);
+                fieldKind = registerTypeToBeGenerated(fieldSpecs.fieldType, typeName);
                 writeFieldName(fieldSpecs, bytecode, ctx, pkgName);
             }
 
-            MethodDescriptor serializePojoMethod = MethodDescriptor.ofMethod(JacksonMapperUtil.class.getName(),
-                    "serializePojo",
-                    void.class, Object.class, JsonGenerator.class, SerializerProvider.class);
-            bytecode.invokeStaticMethod(serializePojoMethod, arg, ctx.jsonGenerator, ctx.serializerProvider);
+            if (fieldKind == FieldKind.LIST || fieldKind == FieldKind.SET) {
+                String elementTypeName = fieldSpecs.fieldType.asParameterizedType().arguments().get(0).name().toString();
+                String collectionClassName = fieldKind == FieldKind.SET
+                        ? "java.util.Set"
+                        : "java.util.List";
+                MethodDescriptor serializeCollectionMethod = MethodDescriptor.ofMethod(JacksonMapperUtil.class.getName(),
+                        "serializeCollection",
+                        void.class, Object.class, Class.class, Class.class, JsonGenerator.class, SerializerProvider.class);
+                bytecode.invokeStaticMethod(serializeCollectionMethod, arg,
+                        bytecode.loadClass(collectionClassName), bytecode.loadClass(elementTypeName),
+                        ctx.jsonGenerator, ctx.serializerProvider);
+            } else {
+                MethodDescriptor serializePojoMethod = MethodDescriptor.ofMethod(JacksonMapperUtil.class.getName(),
+                        "serializePojo",
+                        void.class, Object.class, JsonGenerator.class, SerializerProvider.class);
+                bytecode.invokeStaticMethod(serializePojoMethod, arg, ctx.jsonGenerator, ctx.serializerProvider);
+            }
         }
     }
 

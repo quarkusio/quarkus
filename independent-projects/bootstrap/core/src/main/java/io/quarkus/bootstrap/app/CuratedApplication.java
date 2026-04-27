@@ -68,7 +68,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
     final ApplicationModel appModel;
 
     final AtomicInteger runtimeClassLoaderCount = new AtomicInteger();
-    private boolean eligibleForReuse = false;
+    private final AtomicInteger activeRuntimeClassLoaderCount = new AtomicInteger();
 
     CuratedApplication(QuarkusBootstrap quarkusBootstrap, CurationResult curationResult,
             ConfiguredClassLoading configuredClassLoading) {
@@ -76,10 +76,6 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         this.curationResult = curationResult;
         this.appModel = curationResult.getApplicationModel();
         this.configuredClassLoading = configuredClassLoading;
-    }
-
-    public void setEligibleForReuse(boolean eligible) {
-        this.eligibleForReuse = eligible;
     }
 
     public boolean isFlatClassPath() {
@@ -466,7 +462,12 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         for (Path root : configuredClassLoading.getAdditionalClasspathElements()) {
             builder.addNormalPriorityElement(ClassPathElement.fromPath(root, true));
         }
-        return builder.build();
+        activeRuntimeClassLoaderCount.incrementAndGet();
+        QuarkusClassLoader runtimeClassLoader = builder.build();
+        runtimeClassLoader.addCloseTask(() -> {
+            activeRuntimeClassLoaderCount.decrementAndGet();
+        });
+        return runtimeClassLoader;
     }
 
     public boolean isReloadableArtifact(ArtifactKey key) {
@@ -479,6 +480,9 @@ public class CuratedApplication implements Serializable, AutoCloseable {
 
     @Override
     public void close() {
+        if (activeRuntimeClassLoaderCount.get() > 0) {
+            return;
+        }
         if (augmentClassLoader != null) {
             augmentClassLoader.close();
             augmentClassLoader = null;
@@ -488,10 +492,6 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             baseRuntimeClassLoader = null;
         }
         augmentationElements.clear();
-    }
-
-    public boolean isEligibleForReuse() {
-        return eligibleForReuse;
     }
 
     /**

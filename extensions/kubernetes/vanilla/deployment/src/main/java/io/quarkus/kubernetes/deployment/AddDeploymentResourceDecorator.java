@@ -20,7 +20,7 @@ public class AddDeploymentResourceDecorator
         final var spec = builder.editOrNewSpec();
 
         // match labels for selector
-        initMatchLabels(spec.editOrNewSelector())
+        initSelectorMatchLabels(spec.editOrNewSelector())
                 .endSelector();
 
         // replicas

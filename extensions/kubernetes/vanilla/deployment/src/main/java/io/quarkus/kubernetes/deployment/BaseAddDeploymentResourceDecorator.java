@@ -24,7 +24,6 @@ import io.fabric8.kubernetes.api.model.batch.v1.JobSpecFluent;
 abstract class BaseAddDeploymentResourceDecorator<T extends HasMetadata, B extends VisitableBuilder<T, B>, C>
         extends BaseAddResourceDecorator<T, B, C> {
     private final Predicate<HasMetadata> toRemovePredicate;
-    private final DeploymentResourceKind kind;
 
     /**
      * Create a new decorator to handle deployment-like resources, optionally handling the removal of the default deployment
@@ -39,8 +38,7 @@ abstract class BaseAddDeploymentResourceDecorator<T extends HasMetadata, B exten
      */
     public BaseAddDeploymentResourceDecorator(String name, DeploymentResourceKind toAdd, C config,
             DeploymentResourceKind toRemove) {
-        super(name, config);
-        this.kind = toAdd;
+        super(name, toAdd.getKind(), toAdd.getApiVersion(), config);
         if (toRemove != null && toRemove != toAdd) {
             toRemovePredicate = hm -> match(hm, toRemove.getApiVersion(), toRemove.getKind(), name);
         } else {
@@ -61,16 +59,6 @@ abstract class BaseAddDeploymentResourceDecorator<T extends HasMetadata, B exten
                 }
             }
         }
-    }
-
-    @Override
-    protected String kind() {
-        return kind.getKind();
-    }
-
-    @Override
-    protected String apiVersion() {
-        return kind.getApiVersion();
     }
 
     protected int replicas(Integer initialValue, ReplicasAware config) {

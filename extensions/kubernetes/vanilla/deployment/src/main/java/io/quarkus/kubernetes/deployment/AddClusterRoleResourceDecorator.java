@@ -1,33 +1,30 @@
 package io.quarkus.kubernetes.deployment;
 
+import static io.quarkus.kubernetes.deployment.Constants.CLUSTER_ROLE;
+
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
-import io.fabric8.kubernetes.api.model.KubernetesListBuilder;
+import io.fabric8.kubernetes.api.model.rbac.ClusterRole;
 import io.fabric8.kubernetes.api.model.rbac.ClusterRoleBuilder;
 import io.fabric8.kubernetes.api.model.rbac.PolicyRule;
 
-class AddClusterRoleResourceDecorator extends AbstractRoleResourceDecorator {
+class AddClusterRoleResourceDecorator extends BaseAddRBACDecorator<ClusterRole, ClusterRoleBuilder> {
     private final List<PolicyRule> rules;
 
     public AddClusterRoleResourceDecorator(String deploymentName, String name, Map<String, String> labels,
             List<PolicyRule> rules) {
-        super(deploymentName, name, labels);
+        super(name, CLUSTER_ROLE, deploymentName, labels);
         this.rules = rules;
     }
 
-    public void visit(KubernetesListBuilder list) {
-        Optional<Map<String, String>> maybeRoleLabels = preVisit(list);
-        if (maybeRoleLabels.isEmpty()) {
-            return;
-        }
+    @Override
+    protected ClusterRoleBuilder builderWithName(String name) {
+        return new ClusterRoleBuilder().withNewMetadata().withName(name).endMetadata();
+    }
 
-        list.addToItems(new ClusterRoleBuilder()
-                .withNewMetadata()
-                .withName(name)
-                .withLabels(maybeRoleLabels.get())
-                .endMetadata()
-                .withRules(rules));
+    @Override
+    protected void initBuilderWithDefaults(ClusterRoleBuilder builder, Void config) {
+        updateMetadata(builder.editOrNewMetadata(), null).endMetadata().withRules(rules);
     }
 }

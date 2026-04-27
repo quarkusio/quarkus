@@ -26,7 +26,7 @@ public class AddStatefulSetResourceDecorator
         }
 
         // match labels for selector
-        initMatchLabels(spec.editOrNewSelector())
+        initSelectorMatchLabels(spec.editOrNewSelector())
                 .endSelector();
 
         // replicas

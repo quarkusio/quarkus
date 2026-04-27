@@ -619,6 +619,11 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
         // Let's clear the class-based caches of JDK/libraries when we switch to another application
         if (!isSameCuratedApplication) {
+            // Reset the old CuratedApplication's reuse flag so its close handler
+            // (in StartupActionImpl.run()) actually calls curatedApplication.close()
+            if (previousCuratedApplication != null) {
+                previousCuratedApplication.setEligibleForReuse(false);
+            }
             ClearCache.clearCaches();
         }
 

@@ -17,6 +17,7 @@ public final class QuarkusHttpFunction implements HttpFunction {
     protected static boolean started = false;
 
     private static volatile HttpFunction delegate;
+    private static volatile ClassLoader delegateClassLoader;
 
     static {
         StringWriter error = new StringWriter();
@@ -49,8 +50,9 @@ public final class QuarkusHttpFunction implements HttpFunction {
 
     static void setDelegate(String selectedDelegate) {
         if (selectedDelegate != null) {
+            delegateClassLoader = Thread.currentThread().getContextClassLoader();
             try {
-                Class<?> clazz = Class.forName(selectedDelegate, false, Thread.currentThread().getContextClassLoader());
+                Class<?> clazz = Class.forName(selectedDelegate, false, delegateClassLoader);
                 delegate = (HttpFunction) Arc.container().instance(clazz).get();
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
@@ -70,6 +72,12 @@ public final class QuarkusHttpFunction implements HttpFunction {
                     "(or there is multiple one and none selected inside your application.properties)");
         }
 
-        delegate.service(httpRequest, httpResponse);
+        ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
+        try {
+            Thread.currentThread().setContextClassLoader(delegateClassLoader);
+            delegate.service(httpRequest, httpResponse);
+        } finally {
+            Thread.currentThread().setContextClassLoader(currentCl);
+        }
     }
 }

@@ -22,6 +22,7 @@ public final class QuarkusBackgroundFunction implements RawBackgroundFunction {
     private static volatile BackgroundFunction delegate;
     private static volatile Class<?> parameterType;
     private static volatile RawBackgroundFunction rawDelegate;
+    private static volatile ClassLoader delegateClassLoader;
 
     static {
         StringWriter error = new StringWriter();
@@ -53,9 +54,10 @@ public final class QuarkusBackgroundFunction implements RawBackgroundFunction {
     }
 
     static void setDelegates(String selectedDelegate, String selectedRawDelegate) {
+        delegateClassLoader = Thread.currentThread().getContextClassLoader();
         if (selectedDelegate != null) {
             try {
-                Class<?> clazz = Class.forName(selectedDelegate, false, Thread.currentThread().getContextClassLoader());
+                Class<?> clazz = Class.forName(selectedDelegate, false, delegateClassLoader);
                 for (Method method : clazz.getDeclaredMethods()) {
                     if (method.getName().equals("accept")) {
                         // the first parameter of the accept method is the event, we need to register it's type to
@@ -74,7 +76,7 @@ public final class QuarkusBackgroundFunction implements RawBackgroundFunction {
 
         if (selectedRawDelegate != null) {
             try {
-                Class<?> clazz = Class.forName(selectedRawDelegate, false, Thread.currentThread().getContextClassLoader());
+                Class<?> clazz = Class.forName(selectedRawDelegate, false, delegateClassLoader);
                 rawDelegate = (RawBackgroundFunction) Arc.container().instance(clazz).get();
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
@@ -94,22 +96,23 @@ public final class QuarkusBackgroundFunction implements RawBackgroundFunction {
                     "(or there is multiple one and none selected inside your application.properties)");
         }
 
-        if (rawDelegate != null) {
-            rawDelegate.accept(event, context);
-        } else {
-            // here we emulate a BackgroundFunction from a RawBackgroundFunction
-            // so we need to un-marshall the JSON into the delegate parameter type
-            // this is done via Gson as it's the library that GCF uses internally for the same purpose
-            // see NewBackgroundFunctionExecutor.TypedFunctionExecutor<T>
-            // from the functions-framework-java https://github.com/GoogleCloudPlatform/functions-framework-java
-            Gson gson = new Gson();
-            try {
-                Object eventObj = gson.fromJson(event, parameterType);
-                delegate.accept(eventObj, context);
-            } catch (JsonParseException e) {
-                throw new RuntimeException("Could not parse received event payload into type "
-                        + parameterType.getCanonicalName(), e);
+        ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
+        try {
+            Thread.currentThread().setContextClassLoader(delegateClassLoader);
+            if (rawDelegate != null) {
+                rawDelegate.accept(event, context);
+            } else {
+                Gson gson = new Gson();
+                try {
+                    Object eventObj = gson.fromJson(event, parameterType);
+                    delegate.accept(eventObj, context);
+                } catch (JsonParseException e) {
+                    throw new RuntimeException("Could not parse received event payload into type "
+                            + parameterType.getCanonicalName(), e);
+                }
             }
+        } finally {
+            Thread.currentThread().setContextClassLoader(currentCl);
         }
     }
 }

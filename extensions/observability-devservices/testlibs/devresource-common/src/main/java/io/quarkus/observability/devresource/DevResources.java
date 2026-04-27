@@ -22,21 +22,21 @@ public class DevResources {
     private static volatile boolean started = false;
 
     /**
+     * Load fresh dev resource instances from ServiceLoader.
+     *
      * @return list of found dev resources.
      */
     public static synchronized List<DevResourceLifecycleManager> resources() {
-        if (resources == null) {
-            log.debug("Activating dev resources");
+        log.debug("Activating dev resources");
 
-            resources = ServiceLoader
-                    .load(DevResourceLifecycleManager.class, Thread.currentThread().getContextClassLoader())
-                    .stream()
-                    .map(ServiceLoader.Provider::get)
-                    .sorted(Comparator.comparing(DevResourceLifecycleManager::order))
-                    .collect(Collectors.toList());
+        resources = ServiceLoader
+                .load(DevResourceLifecycleManager.class, Thread.currentThread().getContextClassLoader())
+                .stream()
+                .map(ServiceLoader.Provider::get)
+                .sorted(Comparator.comparing(DevResourceLifecycleManager::order))
+                .collect(Collectors.toList());
 
-            log.debugf("Found dev resources: %s", resources);
-        }
+        log.debugf("Found dev resources: %s", resources);
         return resources;
     }
 
@@ -48,8 +48,9 @@ public class DevResources {
     static synchronized Map<String, String> ensureStarted() {
         if (!started) {
             started = true;
+            resources();
             try {
-                for (var res : resources()) {
+                for (var res : resources) {
                     res.initDev();
                 }
             } catch (Exception e) {
@@ -58,7 +59,7 @@ public class DevResources {
             }
             try {
                 var map = new HashMap<String, String>();
-                for (var res : resources()) {
+                for (var res : resources) {
                     var resMap = res.start();
                     log.infof("Dev resource [%s] contributed config: %s", res.getClass().getSimpleName(), resMap);
                     map.putAll(resMap);
@@ -76,15 +77,17 @@ public class DevResources {
      * Stops all dev resources.
      */
     public static synchronized void stop() {
-        if (map != null) {
-            for (var i = resources().listIterator(resources().size()); i.hasPrevious();) {
+        if (resources != null) {
+            for (var i = resources.listIterator(resources.size()); i.hasPrevious();) {
                 try {
                     i.previous().stop();
                 } catch (Exception e) {
                     log.warn("Exception stopping dev resource", e);
                 }
             }
-            map = null;
         }
+        map = Map.of();
+        started = false;
+        resources = null;
     }
 }

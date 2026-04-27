@@ -79,7 +79,9 @@ public class GoOfflineMojo extends AbstractMojo {
                 project.getVersion());
 
         final MavenArtifactResolver resolver = getResolver();
-        final BootstrapAppModelResolver appModelResolver = new BootstrapAppModelResolver(resolver);
+        boolean useLegacy = BootstrapAppModelResolver.isLegacyModelResolver(project.getProperties());
+        final BootstrapAppModelResolver appModelResolver = new BootstrapAppModelResolver(resolver)
+                .setLegacyModelResolver(useLegacy);
 
         final Set<String> excludedScopes;
         if (mode.equals("all")) {

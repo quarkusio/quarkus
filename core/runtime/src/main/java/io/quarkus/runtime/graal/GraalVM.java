@@ -120,10 +120,12 @@ public final class GraalVM {
         }
 
         /**
-         * The minimum version of GraalVM supported by Quarkus.
-         * Versions prior to this are expected to cause major issues.
+         * The minimum version of GraalVM known to work with Quarkus (even with some issues).
+         * Versions prior to this are expected to cause major issues and are thus not allowed.
+         *
+         * See {@link #MINIMUM_SUPPORTED} for the minimum fully supported version.
          */
-        public static final Version MINIMUM = VERSION_25_0_0;
+        public static final Version MINIMUM = VERSION_23_1_0;
         /**
          * The current version of GraalVM supported by Quarkus.
          * This version is the one actively being tested and is expected to give the best experience.
@@ -133,7 +135,7 @@ public final class GraalVM {
          * The minimum version of GraalVM officially supported by Quarkus.
          * Versions prior to this are expected to work but are not given the same level of testing or priority.
          */
-        public static final Version MINIMUM_SUPPORTED = MINIMUM;
+        public static final Version MINIMUM_SUPPORTED = VERSION_25_0_0;
 
         private static final String DEFAULT_JDK_VERSION = "25";
         protected final String fullVersion;

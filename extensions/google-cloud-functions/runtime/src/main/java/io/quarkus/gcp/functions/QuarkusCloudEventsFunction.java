@@ -59,6 +59,11 @@ public final class QuarkusCloudEventsFunction implements CloudEventsFunction {
         }
     }
 
+    public static void clearState() {
+        delegate = null;
+        delegateClassLoader = null;
+    }
+
     @Override
     public void accept(CloudEvent cloudEvent) throws Exception {
         if (!started) {

@@ -88,10 +88,12 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBuildItem;
@@ -310,6 +312,8 @@ class RestClientReactiveProcessor {
             List<ClientResponseFilterBuildItem> clientResponseFilters,
             BuildProducer<GeneratedBeanBuildItem> generatedBeansProducer,
             BuildProducer<GeneratedClassBuildItem> generatedClassesProducer,
+            BuildProducer<GeneratedResourceBuildItem> generatedResourcesProducer,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeansProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer,
             BuildProducer<ExecutionModelAnnotationsAllowedBuildItem> executionModelAnnotationsAllowedProducer,
@@ -366,7 +370,8 @@ class RestClientReactiveProcessor {
 
         MultivaluedMap<String, GeneratedClassResult> generatedProviders = new QuarkusMultivaluedHashMap<>();
         Gizmo classGizmo = Gizmo
-                .create(new GeneratedClassGizmo2Adaptor(generatedClassesProducer, null, true));
+                .create(new GeneratedClassGizmo2Adaptor(generatedClassesProducer, generatedResourcesProducer,
+                        constantBootstraps, true));
         populateClientExceptionMapperFromAnnotations(index, classGizmo, reflectiveClassesProducer,
                 executionModelAnnotationsAllowedProducer)
                 .forEach(generatedProviders::add);

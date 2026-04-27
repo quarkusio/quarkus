@@ -76,6 +76,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.gizmo2.Const;
@@ -97,6 +98,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.PermissionsAllowed;
+import io.quarkus.vertx.http.deployment.BodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
@@ -277,9 +279,10 @@ class ReactiveRoutesProcessor {
             List<AnnotatedRouteFilterBuildItem> routeFilterBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<GeneratedResourceBuildItem> generatedResource,
+            final BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
-            io.quarkus.vertx.http.deployment.BodyHandlerBuildItem bodyHandler,
+            BodyHandlerBuildItem bodyHandler,
             BuildProducer<RouteBuildItem> routeProducer,
             BuildProducer<FilterBuildItem> filterProducer,
             List<RequireBodyHandlerBuildItem> bodyHandlerRequired,
@@ -305,7 +308,9 @@ class ReactiveRoutesProcessor {
                 return GeneratedClassGizmo2Adaptor.isApplicationClass(className);
             }
         };
-        Gizmo gizmo = Gizmo.create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, appClassPredicate))
+        Gizmo gizmo = Gizmo
+                .create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, constantBootstraps,
+                        appClassPredicate))
                 .withDebugInfo(false)
                 .withParameters(false);
         IndexView index = beanArchive.getIndex();

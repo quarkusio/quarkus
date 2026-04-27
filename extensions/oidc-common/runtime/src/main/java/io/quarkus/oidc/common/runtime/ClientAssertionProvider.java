@@ -14,6 +14,13 @@ public sealed interface ClientAssertionProvider permits KubernetesServiceClientA
     String getClientAssertion();
 
     /**
+     * Gets the client assertion type.
+     *
+     * @return client assertion type
+     */
+    String getClientAssertionType();
+
+    /**
      * Closes this provider. Use this method to cancel the periodic scheduled task.
      */
     void close();

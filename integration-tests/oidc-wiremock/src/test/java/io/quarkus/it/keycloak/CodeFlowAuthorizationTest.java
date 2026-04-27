@@ -77,7 +77,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 @QuarkusTest
-@QuarkusTestResource(OidcWiremockTestResource.class)
+@QuarkusTestResource(CustomOidcWiremockTestResource.class)
 public class CodeFlowAuthorizationTest {
 
     @OidcWireMock
@@ -385,6 +385,42 @@ public class CodeFlowAuthorizationTest {
         clearCache();
         doTestCodeFlowUserInfoDynamicGithubUpdate();
         clearCache();
+    }
+
+    @Test
+    public void testCodeFlowJwtBearerAuthentication() throws Exception {
+        defineCodeFlowJwtBearerAndSpiffeTokenStubs();
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-jwt-bearer-auth");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            TextPage textPage = form.getInputByValue("login").click();
+            assertEquals("alice:alice", textPage.getContent());
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testCodeFlowSpiffeAuthentication() throws Exception {
+        defineCodeFlowJwtBearerAndSpiffeTokenStubs();
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-spiffe-auth");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            TextPage textPage = form.getInputByValue("login").click();
+            assertEquals("alice:alice", textPage.getContent());
+
+            webClient.getCookieManager().clearCookies();
+        }
     }
 
     @Test
@@ -1074,6 +1110,35 @@ public class CodeFlowAuthorizationTest {
                                         OidcWiremockTestResource.generateJwtToken("bob", Set.of(), "sub", "ID",
                                                 Set.of("quarkus-web-app"))
                                         + "\""
+                                        + "}")));
+    }
+
+    private void defineCodeFlowJwtBearerAndSpiffeTokenStubs() {
+        wireMockServer
+                .stubFor(WireMock.post("/auth/realms/quarkus/jwt-bearer-auth-token")
+                        .withRequestBody(containing("authorization_code"))
+                        .withRequestBody(
+                                containing(
+                                        "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer"))
+                        .withRequestBody(containing("client_assertion=ey"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "  \"access_token\": \""
+                                        + OidcWiremockTestResource.getAccessToken("alice", Set.of()) + "\""
+                                        + "}")));
+        wireMockServer
+                .stubFor(WireMock.post("/auth/realms/quarkus/spiffe-auth-token")
+                        .withRequestBody(containing("authorization_code"))
+                        .withRequestBody(
+                                containing(
+                                        "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-spiffe"))
+                        .withRequestBody(containing("client_assertion=ey"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "  \"access_token\": \""
+                                        + OidcWiremockTestResource.getAccessToken("alice", Set.of()) + "\""
                                         + "}")));
     }
 

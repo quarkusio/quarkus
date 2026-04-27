@@ -234,6 +234,23 @@ For more information, see the link:https://www.rfc-editor.org/rfc/rfc7523#sectio
 <2> Path to a JWT bearer token.
 Quarkus loads a new token from the filesystem and reloads it when the token expires.
 
+.Example: Using a SPIFFE JWT-SVID token to authenticate a client
+
+link:https://spiffe.io[SPIFFE] (Secure Production Identity Framework for Everyone) JWT-SVID tokens can be used as client assertions for client authentication.
+When the JWT source is set to `spiffe`, the `client_assertion_type` parameter is set to `urn:ietf:params:oauth:client-assertion-type:jwt-spiffe` and the token's `sub` claim must contain a valid SPIFFE ID starting with `spiffe://`.
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus/
+quarkus.oidc.client-id=quarkus-app
+quarkus.oidc.credentials.jwt.source=spiffe <1>
+quarkus.oidc.credentials.jwt.token-path=/var/run/secrets/tokens <2>
+----
+<1> Use a SPIFFE JWT-SVID token to authenticate the OIDC provider client.
+<2> Path to a SPIFFE JWT-SVID token.
+Quarkus loads a new token from the filesystem and reloads it when the token expires.
+The token's `sub` claim is verified to start with the `spiffe://` scheme.
+
 ==== Additional JWT authentication options
 
 If `client_secret_jwt`, `private_key_jwt`, or an Apple `post_jwt` authentication method is used, then you can customize the JWT signature algorithm, key identifier, audience, subject, and issuer.

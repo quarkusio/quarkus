@@ -7,6 +7,7 @@ public final class OidcConstants {
     public static final String CLIENT_ASSERTION = "client_assertion";
     public static final String CLIENT_ASSERTION_TYPE = "client_assertion_type";
     public static final String JWT_BEARER_CLIENT_ASSERTION_TYPE = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer";
+    public static final String SPIFFE_SVID_CLIENT_ASSERTION_TYPE = "urn:ietf:params:oauth:client-assertion-type:jwt-spiffe";
     public static final String JWT_BEARER_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:jwt-bearer";
     public static final String JWT_BEARER_GRANT_ASSERTION = "assertion";
     public static final String EXCHANGE_GRANT_SUBJECT_TOKEN = "subject_token";

@@ -204,6 +204,20 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                     .sorted(Comparator.comparing(GeneratedResourceBuildItem::getName)).toList()) {
                 archiveCreator.addFileIfNotExists(i.getData(), i.getName());
             }
+
+            if (!generatedServiceProviders.isEmpty()) {
+                Map<String, List<byte[]>> serviceProviderEntries = new HashMap<>();
+                for (GeneratedServiceProviderBuildItem item : generatedServiceProviders) {
+                    serviceProviderEntries
+                            .computeIfAbsent("META-INF/services/" + item.getServiceInterfaceName(),
+                                    k -> new ArrayList<>())
+                            .add((item.getImplementationClassName() + System.lineSeparator())
+                                    .getBytes(StandardCharsets.UTF_8));
+                }
+                for (Map.Entry<String, List<byte[]>> entry : serviceProviderEntries.entrySet()) {
+                    archiveCreator.addFile(entry.getValue(), entry.getKey());
+                }
+            }
         }
         if (decompiler != null) {
             wasDecompiledSuccessfully &= decompiler.decompile(generatedZip);

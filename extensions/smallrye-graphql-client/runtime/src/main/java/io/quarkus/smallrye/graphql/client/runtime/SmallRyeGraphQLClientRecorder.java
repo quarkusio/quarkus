@@ -1,14 +1,18 @@
 package io.quarkus.smallrye.graphql.client.runtime;
 
+import static io.quarkus.tls.runtime.config.TlsConfig.DEFAULT_NAME;
 import static io.smallrye.graphql.client.impl.GraphQLClientConfiguration.ProxyType.HTTP;
 import static io.smallrye.graphql.client.impl.GraphQLClientConfiguration.ProxyType.SOCKS4;
 import static io.smallrye.graphql.client.impl.GraphQLClientConfiguration.ProxyType.SOCKS5;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -23,6 +27,7 @@ import io.quarkus.proxy.ProxyConfiguration;
 import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.tls.TlsConfiguration;
@@ -34,10 +39,15 @@ import io.smallrye.graphql.client.typesafe.api.TypesafeGraphQLClientBuilder;
 import io.smallrye.graphql.client.vertx.VertxManager;
 import io.smallrye.graphql.client.vertx.typesafe.VertxTypesafeGraphQLClientBuilder;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpClient;
 
 @Recorder
 public class SmallRyeGraphQLClientRecorder {
     private final Logger logger = Logger.getLogger(SmallRyeGraphQLClientRecorder.class);
+
+    private static final Map<String, List<HttpClient>> tlsConfigNameToVertxHttpClients = new ConcurrentHashMap<>();
+    private static final Map<Object, TlsClientInfo> typesafeInstanceToTlsInfo = Collections
+            .synchronizedMap(new IdentityHashMap<>());
 
     private final RuntimeValue<GraphQLClientsConfig> runtimeConfig;
 
@@ -49,11 +59,59 @@ public class SmallRyeGraphQLClientRecorder {
         return new Function<>() {
             @Override
             public T apply(SyntheticCreationalContext<T> context) {
-                TypesafeGraphQLClientBuilder builder = TypesafeGraphQLClientBuilder.newBuilder();
+                VertxTypesafeGraphQLClientBuilder builder = (VertxTypesafeGraphQLClientBuilder) TypesafeGraphQLClientBuilder
+                        .newBuilder();
                 ClientModels clientModels = context.getInjectedReference(ClientModels.class);
-                return (((VertxTypesafeGraphQLClientBuilder) builder).clientModels(clientModels)).build(targetClassName);
+                builder.clientModels(clientModels);
+                T result = builder.build(targetClassName);
+
+                HttpClient httpClient = builder.getHttpClient();
+                if (httpClient != null) {
+                    String configKey = builder.getConfigKey();
+                    GraphQLClientsConfig config = Arc.container().instance(GraphQLClientsConfig.class).get();
+                    if (config != null && configKey != null) {
+                        GraphQLClientConfig clientConfig = config.clients().get(configKey);
+                        if (clientConfig != null) {
+                            String tlsConfigName = clientConfig.tlsConfigurationName().orElse(DEFAULT_NAME);
+                            registerReloadableHttpClient(tlsConfigName, httpClient);
+                            typesafeInstanceToTlsInfo.put(result,
+                                    new TlsClientInfo(tlsConfigName, httpClient));
+                        }
+                    }
+                }
+
+                return result;
             }
         };
+    }
+
+    public static void registerReloadableHttpClient(String tlsConfigName, HttpClient httpClient) {
+        tlsConfigNameToVertxHttpClients.computeIfAbsent(tlsConfigName, s -> new ArrayList<>(1)).add(httpClient);
+    }
+
+    public static void removeReloadableHttpClient(String tlsConfigName, HttpClient httpClient) {
+        if (tlsConfigName == null) {
+            return;
+        }
+        List<HttpClient> httpClients = tlsConfigNameToVertxHttpClients.get(tlsConfigName);
+        if (httpClients != null) {
+            httpClients.remove(httpClient);
+        }
+    }
+
+    public static TlsClientInfo removeInstanceTlsInfo(Object typesafeClientInstance) {
+        return typesafeInstanceToTlsInfo.remove(typesafeClientInstance);
+    }
+
+    public static List<HttpClient> clientsUsingTlsConfig(String tlsConfigName) {
+        return tlsConfigNameToVertxHttpClients.getOrDefault(tlsConfigName, Collections.emptyList());
+    }
+
+    public void cleanUp(ShutdownContext shutdown) {
+        shutdown.addShutdownTask(() -> {
+            tlsConfigNameToVertxHttpClients.clear();
+            typesafeInstanceToTlsInfo.clear();
+        });
     }
 
     public void setTypesafeApiClasses(List<String> apiClassNames) {
@@ -241,5 +299,8 @@ public class SmallRyeGraphQLClientRecorder {
             }
         }
         return Optional.empty();
+    }
+
+    record TlsClientInfo(String tlsConfigName, HttpClient httpClient) {
     }
 }

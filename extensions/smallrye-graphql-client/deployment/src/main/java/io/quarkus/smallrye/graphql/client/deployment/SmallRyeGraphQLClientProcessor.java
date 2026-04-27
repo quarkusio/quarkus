@@ -42,6 +42,7 @@ import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
@@ -50,6 +51,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientBuildConfig;
 import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientCertificateUpdateEventListener;
 import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientSupport;
+import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientTlsCleanupDestroyer;
 import io.quarkus.smallrye.graphql.client.runtime.SmallRyeGraphQLClientRecorder;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.smallrye.graphql.client.model.ClientModels;
@@ -154,6 +156,7 @@ public class SmallRyeGraphQLClientProcessor {
                     .scope(scope == null ? BuiltinScope.APPLICATION.getInfo() : scope.getInfo())
                     .addInjectionPoint(ClassType.create(DotName.createSimple(ClientModels.class)))
                     .createWith(recorder.typesafeClientSupplier(apiClass))
+                    .destroyer(GraphQLClientTlsCleanupDestroyer.class)
                     .unremovable()
                     .done();
             syntheticBeans.produce(bean);
@@ -257,8 +260,10 @@ public class SmallRyeGraphQLClientProcessor {
     @BuildStep
     @Record(RUNTIME_INIT)
     void setGlobalVertxInstance(CoreVertxBuildItem vertxBuildItem,
-            SmallRyeGraphQLClientRecorder recorder) {
+            SmallRyeGraphQLClientRecorder recorder,
+            ShutdownContextBuildItem shutdown) {
         recorder.setGlobalVertxInstance(vertxBuildItem.getVertx());
+        recorder.cleanUp(shutdown);
     }
 
     @BuildStep

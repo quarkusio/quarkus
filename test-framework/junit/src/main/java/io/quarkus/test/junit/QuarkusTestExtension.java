@@ -602,26 +602,27 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         }
         boolean isNewApplication = isNewApplication(state, extensionContext.getRequiredTestClass());
 
-        QuarkusClassLoader cl = getClassLoaderFromTestClass(extensionContext.getRequiredTestClass());
+        QuarkusClassLoader incomingClassLoader = getClassLoaderFromTestClass(extensionContext.getRequiredTestClass());
 
-        CuratedApplication curatedApplication = runningQuarkusApplication != null
+        CuratedApplication previousCuratedApplication = runningQuarkusApplication != null
                 ? ((QuarkusClassLoader) runningQuarkusApplication.getClassLoader())
                         .getCuratedApplication()
                 : null;
-        boolean isSameCuratedApplication = cl.getCuratedApplication() == curatedApplication;
+        CuratedApplication incomingCuratedApplication = incomingClassLoader.getCuratedApplication();
+        boolean isSameCuratedApplication = incomingCuratedApplication == previousCuratedApplication;
 
-        if (cl.getCuratedApplication() == null) {
+        if (incomingCuratedApplication == null) {
             throw new IllegalStateException(
-                    "Internal error: ClassLoader " + cl + " does not have a linked curated application.");
+                    "Internal error: ClassLoader " + incomingClassLoader + " does not have a linked curated application.");
         }
-        cl.getCuratedApplication().setEligibleForReuse(isSameCuratedApplication);
+        incomingCuratedApplication.setEligibleForReuse(isSameCuratedApplication);
 
         // Let's clear the class-based caches of JDK/libraries when we switch to another application
         if (!isSameCuratedApplication) {
             ClearCache.clearCaches();
         }
 
-        if (cl.isClosed()) {
+        if (incomingClassLoader.isClosed()) {
             throw new IllegalStateException(
                     "Internal error. Attempting to run tests using an application which has already been closed. Is a non-default test order being used?");
         }

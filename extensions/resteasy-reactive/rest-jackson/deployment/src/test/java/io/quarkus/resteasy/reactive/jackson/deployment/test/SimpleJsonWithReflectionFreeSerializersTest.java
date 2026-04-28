@@ -1,6 +1,9 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.function.Supplier;
+import java.util.logging.Level;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -41,15 +44,8 @@ public class SimpleJsonWithReflectionFreeSerializersTest extends AbstractSimpleJ
                                     "quarkus.rest.jackson.optimization.enable-reflection-free-serializers=true\n"),
                                     "application.properties");
                 }
-            });
-
-    // The following assertions have been commented out because at the moment it is discovering classes with unknown
-    // Jackson annotations, for which it cannot generate a serializer and then the log messages are no longer empty.
-    // We plan to add support for those outstanding annotations, but before the focus is to check that the mechanism
-    // falling back to standard reflection-based Jackson serializers works as expected.
-
-    //            .setLogRecordPredicate(record -> record.getLevel().equals(Level.INFO)
-    //                    && record.getLoggerName().equals(
-    //                            "io.quarkus.resteasy.reactive.jackson.deployment.processor.JacksonCodeGenerator"))
-    //            .assertLogRecords(records -> assertThat(records).isEmpty());
+            }).setLogRecordPredicate(record -> record.getLevel().equals(Level.INFO)
+                    && record.getLoggerName().equals(
+                            "io.quarkus.resteasy.reactive.jackson.deployment.processor.JacksonCodeGenerator"))
+            .assertLogRecords(records -> assertThat(records).isEmpty());
 }

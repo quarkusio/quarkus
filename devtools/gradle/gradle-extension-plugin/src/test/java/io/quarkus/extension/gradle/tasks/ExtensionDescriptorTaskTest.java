@@ -9,6 +9,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
+import org.gradle.testkit.runner.BuildResult;
+import org.gradle.testkit.runner.GradleRunner;
+import org.gradle.testkit.runner.TaskOutcome;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -157,6 +160,29 @@ public class ExtensionDescriptorTaskTest {
         assertThat(extensionDescriptor.get("name").asText()).isEqualTo("extension-name");
         assertThat(extensionDescriptor.has("description")).isTrue();
         assertThat(extensionDescriptor.get("description").asText()).isEqualTo("this is a sample extension");
+    }
+
+    @Test
+    public void shouldFailOnInvalidStatusArray() throws IOException {
+        TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(), ""));
+        File metaInfDir = new File(testProjectDir, "src/main/resources/META-INF");
+        metaInfDir.mkdirs();
+        String invalid = "name: extension-name\n" +
+                "metadata:\n" +
+                "  status:\n" +
+                "  - stable\n" +
+                "  - deprecated\n";
+        TestUtils.writeFile(new File(metaInfDir, "quarkus-extension.yaml"), invalid);
+
+        BuildResult result = GradleRunner.create()
+                .withPluginClasspath()
+                .withProjectDir(testProjectDir)
+                .withArguments("extensionDescriptor", "-S")
+                .buildAndFail();
+
+        assertThat(result.task(":extensionDescriptor").getOutcome()).isEqualTo(TaskOutcome.FAILED);
+        assertThat(result.getOutput()).contains("Invalid quarkus-extension.yaml metadata");
+        assertThat(result.getOutput()).contains("status");
     }
 
     @Test

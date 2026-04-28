@@ -45,6 +45,7 @@ import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
+import io.quarkus.platform.tools.ExtensionMetadataValidator;
 
 /**
  * Task that generates extension descriptor files.
@@ -247,6 +248,12 @@ public class ExtensionDescriptorTask extends DefaultTask {
 
         if (!extObject.has("description") && projectInfo.containsKey("description")) {
             extObject.put("description", projectInfo.get("description"));
+        }
+
+        try {
+            ExtensionMetadataValidator.validate(extObject);
+        } catch (IOException e) {
+            throw new GradleException(e.getMessage(), e.getCause());
         }
 
         final DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter();

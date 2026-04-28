@@ -5,6 +5,7 @@ plugins {
 dependencies {
     implementation(libs.jackson.databind)
     implementation(libs.jackson.dataformat.yaml)
+    implementation(libs.json.schema.validator)
 }
 
 group = "io.quarkus.extension"

@@ -195,10 +195,6 @@ interface PermissionSecurityChecks {
                 throw new RuntimeException("@PermissionChecker method '%s' declares checked exceptions which is not allowed"
                         .formatted(toString(checkerMethod)));
             }
-            if (checkerMethod.parametersCount() == 0) {
-                throw new RuntimeException(
-                        "@PermissionChecker method '%s' must have at least one parameter".formatted(toString(checkerMethod)));
-            }
 
             // Permission constructor: permission name, <<secured-method-parameters>>...
             // Permission checker method: [optionally at any place SecurityIdentity], <<secured-method-parameters>>...

@@ -15,7 +15,6 @@ import java.util.function.Supplier;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.SupplierMap;
 
 /**
  * BuildItem for discovered (running) or to be started dev services.
@@ -211,14 +210,14 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
     }
 
     public Map<String, String> getConfig(Startable startable) {
-        SupplierMap<String, String> map = new SupplierMap<>();
+        Map<String, String> map = new HashMap<>();
         // To make sure static config does make it into a config source, include it here
         if (config != null && !config.isEmpty()) {
             map.putAll(config);
         }
         if (applicationConfigProvider != null) {
             for (Map.Entry<String, Function<Startable, String>> entry : applicationConfigProvider.entrySet()) {
-                map.put(entry.getKey(), () -> entry.getValue().apply(startable));
+                map.put(entry.getKey(), entry.getValue().apply(startable));
             }
         }
         return map;
@@ -229,12 +228,10 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
      */
     @Deprecated(since = "3.27", forRemoval = true)
     public Map<String, String> getOverrideConfig(Startable startable) {
-
-        SupplierMap<String, String> map = new SupplierMap<>();
-
+        Map<String, String> map = new HashMap<>();
         if (highPriorityConfig != null) {
             for (String key : highPriorityConfig) {
-                map.put(key, () -> applicationConfigProvider.get(key).apply(startable));
+                map.put(key, applicationConfigProvider.get(key).apply(startable));
             }
         }
         return map;

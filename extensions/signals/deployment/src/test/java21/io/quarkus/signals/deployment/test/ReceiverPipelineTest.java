@@ -59,7 +59,7 @@ public class ReceiverPipelineTest {
     @Test
     public void testPipeline() {
         // Kick off the pipeline: PlaceOrder → ValidatedOrder → EnrichedOrder → ShipmentConfirmation
-        ShipmentConfirmation confirmation = placeOrder.requestUni(new PlaceOrder("ORD-1", "Widget", 3),
+        ShipmentConfirmation confirmation = placeOrder.reactive().request(new PlaceOrder("ORD-1", "Widget", 3),
                 ShipmentConfirmation.class)
                 .ifNoItem().after(Duration.ofSeconds(5)).fail()
                 .await().indefinitely();
@@ -80,11 +80,11 @@ public class ReceiverPipelineTest {
     @Test
     public void testPipelineMultipleOrders() {
         ShipmentConfirmation c1 = placeOrder
-                .requestUni(new PlaceOrder("A", "Gadget", 2), ShipmentConfirmation.class)
+                .reactive().request(new PlaceOrder("A", "Gadget", 2), ShipmentConfirmation.class)
                 .ifNoItem().after(Duration.ofSeconds(5)).fail()
                 .await().indefinitely();
         ShipmentConfirmation c2 = placeOrder
-                .requestUni(new PlaceOrder("B", "Gizmo", 5), ShipmentConfirmation.class)
+                .reactive().request(new PlaceOrder("B", "Gizmo", 5), ShipmentConfirmation.class)
                 .ifNoItem().after(Duration.ofSeconds(5)).fail()
                 .await().indefinitely();
 
@@ -147,7 +147,7 @@ public class ReceiverPipelineTest {
         Uni<ShipmentConfirmation> onValidatedOrder(@Receives ValidatedOrder order) {
             log.add("enrich:" + order.orderId());
             int totalPrice = order.quantity() * 10;
-            return enrichedOrder.requestUni(
+            return enrichedOrder.reactive().request(
                     new EnrichedOrder(order.orderId(), order.item(), order.quantity(), totalPrice),
                     ShipmentConfirmation.class);
         }

@@ -92,7 +92,7 @@ public class ReceiversTest {
                     return Uni.createFrom().item("processed_" + ctx.signal().id());
                 });
 
-        String result = order.requestUni(new Order("42"), String.class)
+        String result = order.reactive().request(new Order("42"), String.class)
                 .ifNoItem()
                 .after(Duration.ofSeconds(1))
                 .fail()
@@ -162,7 +162,7 @@ public class ReceiversTest {
                     return Uni.createFrom().item("ok");
                 });
 
-        String result = order.requestUni(new Order("req-ctx"), String.class)
+        String result = order.reactive().request(new Order("req-ctx"), String.class)
                 .ifNoItem().after(Duration.ofSeconds(5)).fail()
                 .await().indefinitely();
 

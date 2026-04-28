@@ -29,7 +29,7 @@ public class SignalsApp implements QuarkusApplication {
         }
 
         receivers.blockingCount.set(0);
-        signal.publishUni(new Cmd("multi"))
+        signal.reactive().publish(new Cmd("multi"))
                 .await().indefinitely();
         if (receivers.blockingCount.get() == 0) {
             System.err.println("publish failed: not all receivers were invoked (blocking="

@@ -31,7 +31,7 @@ public class SignalPrimitiveReturnTest {
 
     @Test
     public void testPrimitiveSignalAndResponse() {
-        int result = signal.requestUni(42, Integer.class)
+        int result = signal.reactive().request(42, Integer.class)
                 .ifNoItem()
                 .after(Duration.ofSeconds(1))
                 .fail()

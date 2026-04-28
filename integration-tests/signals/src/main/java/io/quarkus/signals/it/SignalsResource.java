@@ -21,7 +21,7 @@ public class SignalsResource {
     @GET
     @Path("{name}")
     public Uni<String> hello(@RestPath String name) {
-        return signal.requestUni(new HelloName(name), HelloMessage.class).map(HelloMessage::text);
+        return signal.reactive().request(new HelloName(name), HelloMessage.class).map(HelloMessage::text);
     }
 
     @GET

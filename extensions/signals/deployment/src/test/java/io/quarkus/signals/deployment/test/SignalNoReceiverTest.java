@@ -39,14 +39,14 @@ public class SignalNoReceiverTest {
 
     @Test
     public void testPublishUniNoReceiver() {
-        Uni<Void> result = orphan.publishUni(new Orphan("nobody"));
+        Uni<Void> result = orphan.reactive().publish(new Orphan("nobody"));
         assertNull(result.ifNoItem().after(Duration.ofSeconds(1)).fail()
                 .await().indefinitely());
     }
 
     @Test
     public void testSendUniNoReceiver() {
-        Uni<Void> result = orphan.sendUni(new Orphan("nobody"));
+        Uni<Void> result = orphan.reactive().send(new Orphan("nobody"));
         assertNull(result.ifNoItem().after(Duration.ofSeconds(1)).fail()
                 .await().indefinitely());
     }
@@ -58,7 +58,7 @@ public class SignalNoReceiverTest {
 
     @Test
     public void testRequestUniNoReceiver() {
-        String result = orphan.requestUni(new Orphan("nobody"), String.class)
+        String result = orphan.reactive().request(new Orphan("nobody"), String.class)
                 .ifNoItem()
                 .after(Duration.ofSeconds(1))
                 .fail()

@@ -75,7 +75,7 @@ public class RequestScopeIsolationTest {
         @ActivateRequestContext
         Uni<Void> sendBlocking() {
             int outerIdentity = identityService.getId();
-            return blockingSignal.requestUni(new BlockingCmd(), Integer.class)
+            return blockingSignal.reactive().request(new BlockingCmd(), Integer.class)
                     .onItem().invoke(receiverIdentity -> {
                         assertEquals(outerIdentity, identityService.getId());
                         assertNotEquals(outerIdentity, receiverIdentity.intValue(),
@@ -87,7 +87,7 @@ public class RequestScopeIsolationTest {
         @ActivateRequestContext
         Uni<Void> sendReactive() {
             int outerIdentity = identityService.getId();
-            return reactiveSignal.requestUni(new ReactiveCmd(), Integer.class)
+            return reactiveSignal.reactive().request(new ReactiveCmd(), Integer.class)
                     .onItem().invoke(receiverIdentity -> {
                         assertEquals(outerIdentity, identityService.getId());
                         assertNotEquals(outerIdentity, receiverIdentity.intValue(),

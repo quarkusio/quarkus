@@ -54,7 +54,7 @@ public class ReceiverFailureVirtualThreadTest {
                 });
         try {
             var failure = assertThrows(CompositeException.class,
-                    () -> cmd.publishUni(new Cmd("v"))
+                    () -> cmd.reactive().publish(new Cmd("v"))
                             .ifNoItem().after(Duration.ofSeconds(5)).fail()
                             .await().indefinitely());
             assertInstanceOf(IllegalStateException.class, failure.getCauses().get(0));
@@ -76,7 +76,7 @@ public class ReceiverFailureVirtualThreadTest {
                 });
         try {
             assertThrows(IllegalStateException.class,
-                    () -> cmd.sendUni(new Cmd("v"))
+                    () -> cmd.reactive().send(new Cmd("v"))
                             .ifNoItem().after(Duration.ofSeconds(5)).fail()
                             .await().indefinitely());
         } finally {
@@ -98,7 +98,7 @@ public class ReceiverFailureVirtualThreadTest {
                 });
         try {
             assertThrows(IllegalStateException.class,
-                    () -> cmd.requestUni(new Cmd("v"), String.class)
+                    () -> cmd.reactive().request(new Cmd("v"), String.class)
                             .ifNoItem().after(Duration.ofSeconds(5)).fail()
                             .await().indefinitely());
         } finally {
@@ -109,7 +109,7 @@ public class ReceiverFailureVirtualThreadTest {
     @Test
     public void testDeclarativePublishFailureVirtualThread() {
         var failure = assertThrows(CompositeException.class,
-                () -> virtualSignal.publishUni(new VirtualCmd())
+                () -> virtualSignal.reactive().publish(new VirtualCmd())
                         .ifNoItem().after(Duration.ofSeconds(5)).fail()
                         .await().indefinitely());
         assertInstanceOf(IllegalStateException.class, failure.getCauses().get(0));
@@ -118,7 +118,7 @@ public class ReceiverFailureVirtualThreadTest {
     @Test
     public void testDeclarativeSendFailureVirtualThread() {
         assertThrows(IllegalStateException.class,
-                () -> virtualSignal.sendUni(new VirtualCmd())
+                () -> virtualSignal.reactive().send(new VirtualCmd())
                         .ifNoItem().after(Duration.ofSeconds(5)).fail()
                         .await().indefinitely());
     }

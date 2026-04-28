@@ -44,7 +44,7 @@ public class EmitOnRequestContextTest {
         RequestScopedService.DESTROYED.clear();
         receiver.threadNames.clear();
 
-        String result = signal.requestUni(new Cmd(), String.class)
+        String result = signal.reactive().request(new Cmd(), String.class)
                 .ifNoItem().after(Duration.ofSeconds(5)).fail()
                 .await().indefinitely();
 

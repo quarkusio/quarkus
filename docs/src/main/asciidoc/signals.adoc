@@ -109,7 +109,7 @@ Delivers the signal to _all_ matching receivers.
 orderPlaced.publish(new OrderPlaced("123", BigDecimal.TEN));
 
 // Returns a Uni that completes when all receivers are done
-Uni<Void> result = orderPlaced.publishUni(new OrderPlaced("123", BigDecimal.TEN));
+Uni<Void> result = orderPlaced.reactive().publish(new OrderPlaced("123", BigDecimal.TEN));
 ----
 
 ==== Send (Unicast)
@@ -122,7 +122,7 @@ Delivers the signal to a _single_ matching receiver, selected in round-robin ord
 orderPlaced.send(new OrderPlaced("123", BigDecimal.TEN));
 
 // Returns a Uni that completes when the receiver is done
-Uni<Void> result = orderPlaced.sendUni(new OrderPlaced("123", BigDecimal.TEN));
+Uni<Void> result = orderPlaced.reactive().send(new OrderPlaced("123", BigDecimal.TEN));
 ----
 
 ==== Request (Unicast, Request-Reply)
@@ -136,7 +136,7 @@ Only receivers whose response type is assignable to the requested type are consi
 String confirmation = orderPlaced.request(new OrderPlaced("123", BigDecimal.TEN), String.class);
 
 // Reactive
-Uni<String> confirmation = orderPlaced.requestUni(new OrderPlaced("123", BigDecimal.TEN), String.class);
+Uni<String> confirmation = orderPlaced.reactive().request(new OrderPlaced("123", BigDecimal.TEN), String.class);
 ----
 
 === Selecting Subtypes and Qualifiers
@@ -182,16 +182,16 @@ If no receiver matches the emitted signal:
 
 * `publish()` and `send()` succeed silently -- no error is raised.
 * `request()` returns `null`.
-* `publishUni()`, `sendUni()` and `requestUni()` complete with a `null` item.
+* `reactive().publish()`, `reactive().send()` and `reactive().request()` complete with a `null` item.
 
 === Lazy Uni Semantics
 
-The `Uni` returned by `publishUni()`, `sendUni()`, and `requestUni()` is _lazy_: no signal is emitted until the `Uni` is subscribed.
+The `Uni` returned by `reactive().publish()`, `reactive().send()`, and `reactive().request()` is _lazy_: no signal is emitted until the `Uni` is subscribed.
 Each subscription triggers a new, independent emission.
 
 [source,java]
 ----
-Uni<Void> uni = orderPlaced.publishUni(new OrderPlaced("123", BigDecimal.TEN));
+Uni<Void> uni = orderPlaced.reactive().publish(new OrderPlaced("123", BigDecimal.TEN));
 // No signal has been emitted yet
 
 // First subscription — emits the signal
@@ -254,7 +254,7 @@ IMPORTANT: The fact that a receiver which declares no qualifier has exactly one 
 
 === Return Values
 
-A receiver method may return a value, which is used as the response for `request` / `requestUni` emissions.
+A receiver method may return a value, which is used as the response for `request` / `reactive().request()` emissions.
 The return value is ignored for `publish` and `send` emissions.
 The return type is also used during <<receiver-resolution>> -- only receivers whose response type is assignable to the requested type are considered.
 The method can return the value directly, or wrapped in a `Uni` or `CompletionStage`:
@@ -387,7 +387,7 @@ A `Signal` injection point with no qualifiers carries `@Default` (per the CDI sp
 == Pipeline Pattern
 
 Receivers can inject `Signal` instances and emit new signals, enabling multi-stage processing pipelines.
-Each stage receives a signal, processes it, and forwards the result to the next stage using `request()` or `requestUni()`.
+Each stage receives a signal, processes it, and forwards the result to the next stage using `request()` or `reactive().request()`.
 
 [source,java]
 ----
@@ -413,7 +413,7 @@ public class EnrichmentStage {
 
     Uni<ShipmentConfirmation> onValidatedOrder(@Receives ValidatedOrder order) {
         int totalPrice = order.quantity() * 10;
-        return enrichedOrder.requestUni(
+        return enrichedOrder.reactive().request(
                 new EnrichedOrder(order.orderId(), order.item(), order.quantity(), totalPrice),
                 ShipmentConfirmation.class);
     }

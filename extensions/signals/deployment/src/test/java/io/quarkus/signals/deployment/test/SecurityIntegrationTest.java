@@ -43,14 +43,14 @@ public class SecurityIntegrationTest {
         MyReceivers.CMDS.clear();
 
         IdentityMock.setUpAuth(IdentityMock.ADMIN);
-        String result = signal.requestUni(new Cmd("Hello"), String.class)
+        String result = signal.reactive().request(new Cmd("Hello"), String.class)
                 .ifNoItem().after(Duration.ofSeconds(5)).fail()
                 .await().indefinitely();
         assertEquals("hello", result);
 
         assertThrows(UnauthorizedException.class, () -> {
             IdentityMock.setUpAuth(IdentityMock.ANONYMOUS);
-            signal.requestUni(new Cmd("Hi"), String.class)
+            signal.reactive().request(new Cmd("Hi"), String.class)
                     .ifNoItem().after(Duration.ofSeconds(5)).fail()
                     .await().indefinitely();
         });

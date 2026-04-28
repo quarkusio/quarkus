@@ -23,7 +23,7 @@ import io.quarkus.signals.spi.Receiver;
 import io.quarkus.signals.spi.SignalMetadataEnricher;
 import io.smallrye.mutiny.Uni;
 
-public class SignalImpl<T> implements Signal<T> {
+class SignalImpl<T> implements Signal<T> {
 
     private static final Logger LOG = Logger.getLogger(SignalImpl.class);
 
@@ -31,12 +31,14 @@ public class SignalImpl<T> implements Signal<T> {
     private final Set<Annotation> qualifiers;
     private final Map<String, Object> metadata;
     private final ReceiverManager manager;
+    private final ReactiveEmission<T> emission;
 
     SignalImpl(Type signalType, Set<Annotation> qualifiers, Map<String, Object> metadata, ReceiverManager manager) {
         this.signalType = signalType;
         this.qualifiers = qualifiers;
         this.metadata = metadata;
         this.manager = manager;
+        this.emission = new ReactiveEmissionImpl<>();
     }
 
     @Override
@@ -82,82 +84,42 @@ public class SignalImpl<T> implements Signal<T> {
     }
 
     @Override
+    public ReactiveEmission<T> reactive() {
+        return emission;
+    }
+
+    @Override
     public void publish(T signal) {
-        publishUni(signal).subscribe().with(NOOP);
-    }
-
-    @Override
-    public Uni<Void> publishUni(T signal) {
-        List<Receiver<?, ?>> receivers = manager.resolveReceivers(signalType, qualifiers);
-        if (receivers.isEmpty()) {
-            return Uni.createFrom().voidItem();
-        }
-        return Uni.createFrom().deferred(new Supplier<Uni<? extends Void>>() {
-            @Override
-            public Uni<Void> get() {
-                var signalContext = enrich(signal, SignalContext.EmissionType.PUBLISH, null);
-                List<Uni<Object>> unis = new ArrayList<>(receivers.size());
-                for (Receiver<?, ?> receiver : receivers) {
-                    unis.add(manager.executeReceiver(cast(receiver), signalContext));
-                }
-                return Uni.join().all(unis).andCollectFailures().replaceWithVoid();
-            }
-        });
-    }
-
-    @Override
-    public <R> Uni<R> requestUni(T signal, Class<R> responseType) {
-        return requestUni(signal, (Type) responseType);
-    }
-
-    @Override
-    public <R> Uni<R> requestUni(T signal, TypeLiteral<R> responseType) {
-        return requestUni(signal, responseType.getType());
-    }
-
-    private <R> Uni<R> requestUni(T signal, Type responseType) {
-        var receiver = manager.nextReceiver(signalType, qualifiers, responseType);
-        if (receiver != null) {
-            return Uni.createFrom().deferred(new Supplier<Uni<? extends R>>() {
-                @Override
-                public Uni<R> get() {
-                    var signalContext = enrich(signal, SignalContext.EmissionType.REQUEST, responseType);
-                    return cast(manager.executeReceiver(cast(receiver), signalContext));
-                }
-            });
-        } else {
-            LOG.debugf("No receiver matches signal type [%s], qualifiers %s and response type [%s]", signalType, qualifiers,
-                    responseType);
-            return Uni.createFrom().nullItem();
-        }
+        emission.publish(signal).subscribe().with(NOOP_VOID_ITEM, NOOP_FAILURE);
     }
 
     @Override
     public void send(T signal) {
-        sendUni(signal).subscribe().with(NOOP);
+        emission.send(signal).subscribe().with(NOOP_VOID_ITEM, NOOP_FAILURE);
     }
 
     @Override
-    public Uni<Void> sendUni(T signal) {
-        var receiver = manager.nextReceiver(signalType, qualifiers, null);
-        if (receiver != null) {
-            return Uni.createFrom().deferred(new Supplier<Uni<? extends Void>>() {
-                @Override
-                public Uni<Void> get() {
-                    var signalContext = enrich(signal, SignalContext.EmissionType.SEND, null);
-                    return manager.executeReceiver(cast(receiver), signalContext)
-                            .replaceWithVoid();
-                }
-            });
-        } else {
-            return Uni.createFrom().voidItem();
-        }
+    public <R> R request(T signal, Class<R> responseType) {
+        return emission.request(signal, responseType).await().indefinitely();
     }
 
-    private static final Consumer<Void> NOOP = new Consumer<Void>() {
+    @Override
+    public <R> R request(T signal, TypeLiteral<R> responseType) {
+        return emission.request(signal, responseType).await().indefinitely();
+    }
+
+    private static final Consumer<Void> NOOP_VOID_ITEM = new Consumer<Void>() {
 
         @Override
         public void accept(Void t) {
+            // noop
+        }
+    };
+
+    private static final Consumer<Throwable> NOOP_FAILURE = new Consumer<Throwable>() {
+
+        @Override
+        public void accept(Throwable t) {
             // noop
         }
     };
@@ -185,6 +147,73 @@ public class SignalImpl<T> implements Signal<T> {
     @SuppressWarnings("unchecked")
     private static <T> T cast(Object obj) {
         return (T) obj;
+    }
+
+    class ReactiveEmissionImpl<S> implements ReactiveEmission<S> {
+
+        @Override
+        public Uni<Void> publish(S signal) {
+            List<Receiver<?, ?>> receivers = manager.resolveReceivers(signalType, qualifiers);
+            if (receivers.isEmpty()) {
+                return Uni.createFrom().voidItem();
+            }
+            return Uni.createFrom().deferred(new Supplier<Uni<? extends Void>>() {
+                @Override
+                public Uni<Void> get() {
+                    var signalContext = enrich(signal, SignalContext.EmissionType.PUBLISH, null);
+                    List<Uni<Object>> unis = new ArrayList<>(receivers.size());
+                    for (Receiver<?, ?> receiver : receivers) {
+                        unis.add(manager.executeReceiver(cast(receiver), signalContext));
+                    }
+                    return Uni.join().all(unis).andCollectFailures().replaceWithVoid();
+                }
+            });
+        }
+
+        @Override
+        public Uni<Void> send(S signal) {
+            var receiver = manager.nextReceiver(signalType, qualifiers, null);
+            if (receiver != null) {
+                return Uni.createFrom().deferred(new Supplier<Uni<? extends Void>>() {
+                    @Override
+                    public Uni<Void> get() {
+                        var signalContext = enrich(signal, SignalContext.EmissionType.SEND, null);
+                        return manager.executeReceiver(cast(receiver), signalContext)
+                                .replaceWithVoid();
+                    }
+                });
+            } else {
+                return Uni.createFrom().voidItem();
+            }
+        }
+
+        @Override
+        public <R> Uni<R> request(S signal, Class<R> responseType) {
+            return request(signal, (Type) responseType);
+        }
+
+        @Override
+        public <R> Uni<R> request(S signal, TypeLiteral<R> responseType) {
+            return request(signal, responseType.getType());
+        }
+
+        private <R> Uni<R> request(S signal, Type responseType) {
+            var receiver = manager.nextReceiver(signalType, qualifiers, responseType);
+            if (receiver != null) {
+                return Uni.createFrom().deferred(new Supplier<Uni<? extends R>>() {
+                    @Override
+                    public Uni<R> get() {
+                        var signalContext = enrich(signal, SignalContext.EmissionType.REQUEST, responseType);
+                        return cast(manager.executeReceiver(cast(receiver), signalContext));
+                    }
+                });
+            } else {
+                LOG.debugf("No receiver matches signal type [%s], qualifiers %s and response type [%s]", signalType, qualifiers,
+                        responseType);
+                return Uni.createFrom().nullItem();
+            }
+        }
+
     }
 
     static class EnrichmentContextImpl implements SignalMetadataEnricher.EnrichmentContext {

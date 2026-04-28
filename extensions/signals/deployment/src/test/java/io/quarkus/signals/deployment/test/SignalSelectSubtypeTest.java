@@ -49,7 +49,7 @@ public class SignalSelectSubtypeTest {
 
         // Select TaskCompleted subtype — should reach only the TaskCompleted receiver
         Uni<String> uni = taskEvent.select(TaskCompleted.class)
-                .requestUni(new TaskCompleted("deploy"), String.class);
+                .reactive().request(new TaskCompleted("deploy"), String.class);
         String result = uni.ifNoItem()
                 .after(Duration.ofSeconds(1))
                 .fail()

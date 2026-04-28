@@ -47,7 +47,7 @@ public class DependentParamDestroyedTest {
         assertEquals("destroyed", DependentService.EVENTS.get(1));
 
         DependentService.EVENTS.clear();
-        String result = cmd2.requestUni(new Cmd2("reactive"), String.class)
+        String result = cmd2.reactive().request(new Cmd2("reactive"), String.class)
                 .ifNoItem()
                 .after(Duration.ofSeconds(1))
                 .fail()

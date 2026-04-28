@@ -33,12 +33,12 @@ import io.smallrye.mutiny.Uni;
  * <p>
  * A signal can be emitted in three ways:
  * <ul>
- * <li>{@link #publish(Object)} and {@link #publishUni(Object)} &mdash; delivers the signal to <em>all</em> matching
- * receivers (multicast).</li>
- * <li>{@link #send(Object)} and {@link #sendUni(Object)} &mdash; delivers the signal to a <em>single</em> matching
- * receiver, selected in round-robin order (unicast).</li>
- * <li>{@link #request(Object, Class)} &mdash; delivers the signal to a <em>single</em> matching receiver and returns the
- * response (unicast, request-reply).</li>
+ * <li>{@link #publish(Object)} and {@link ReactiveEmission#publish(Object)} &mdash; delivers the signal to <em>all</em>
+ * matching receivers (multicast).</li>
+ * <li>{@link #send(Object)} and {@link ReactiveEmission#send(Object)} &mdash; delivers the signal to a <em>single</em>
+ * matching receiver, selected in round-robin order (unicast).</li>
+ * <li>{@link #request(Object, Class)} and {@link ReactiveEmission#request(Object, Class)} &mdash; delivers the signal to a
+ * <em>single</em> matching receiver and returns the response (unicast, request-reply).</li>
  * </ul>
  *
  * For an injected {@code Signal}:
@@ -121,25 +121,15 @@ public interface Signal<T> {
      * <p>
      * All receivers are executed asynchronously.
      * If no receiver matches, the method succeeds silently.
+     * <p>
+     * To perform additional logic when all receivers have completed, use {@link #reactive()} and then
+     * {@link ReactiveEmission#publish(Object)}.
      *
      * @param signal the signal object
-     * @see #publishUni(Object)
+     * @see ReactiveEmission#publish(Object)
      * @see Receives
      */
     void publish(T signal);
-
-    /**
-     * Sends a signal to <em>all</em> receivers matching the specified signal type and qualifiers (multicast).
-     * <p>
-     * All receivers are executed asynchronously.
-     * If no receiver matches, the returned {@link Uni} completes with {@code null}.
-     *
-     * @param signal the signal object
-     * @return a {@link Uni} that completes when all receivers are executed
-     * @see #publish(Object)
-     */
-    @CheckReturnValue
-    Uni<Void> publishUni(T signal);
 
     /**
      * Sends a signal to a <em>single</em> receiver matching the specified signal type and qualifiers
@@ -147,95 +137,131 @@ public interface Signal<T> {
      * <p>
      * If multiple receivers match, one is selected in round-robin order.
      * If no receiver matches, the method succeeds silently.
+     * <p>
+     * To perform additional logic when the receiver has completed, use {@link #reactive()} and then
+     * {@link ReactiveEmission#send(Object)}.
      *
      * @param signal the signal object
-     * @see #sendUni(Object)
+     * @see ReactiveEmission#send(Object)
      * @see Receives
      */
     void send(T signal);
 
     /**
-     * Sends a signal to a <em>single</em> receiver matching the specified signal type and qualifiers
-     * (unicast).
-     * <p>
-     * If multiple receivers match, one is selected in round-robin order.
-     * If no receiver matches, the returned {@link Uni} completes with {@code null}.
-     *
-     * @param signal the signal object
-     * @return a {@link Uni} that completes when a receiver is executed
-     * @see #send(Object)
-     */
-    @CheckReturnValue
-    Uni<Void> sendUni(T signal);
-
-    /**
      * Sends a signal to a <em>single</em> receiver matching the specified signal type, response type and qualifiers, and
-     * blocks until the response is available (unicast, request-reply).
+     * blocks the current thread until the response is available (unicast, request-reply).
      * <p>
      * If multiple receivers match, one is selected in round-robin order.
      * If no receiver matches, returns {@code null}.
+     * <p>
+     * For a non-blocking variant, use {@link #reactive()} and then {@link ReactiveEmission#request(Object, Class)}.
      *
      * @param <R> the response type
      * @param signal the signal object
      * @param responseType the expected response type
      * @return the receiver's response, or {@code null} if no receiver matches
-     * @see #requestUni(Object, Class)
+     * @see ReactiveEmission#request(Object, Class)
      * @see Receives
      */
-    default <R> R request(T signal, Class<R> responseType) {
-        return requestUni(signal, responseType).await().indefinitely();
-    }
+    <R> R request(T signal, Class<R> responseType);
 
     /**
      * Sends a signal to a <em>single</em> receiver matching the specified signal type, response type and qualifiers, and
-     * blocks until the response is available (unicast, request-reply).
+     * blocks the current thread until the response is available (unicast, request-reply).
      * <p>
      * If multiple receivers match, one is selected in round-robin order.
      * If no receiver matches, returns {@code null}.
+     * <p>
+     * For a non-blocking variant, use {@link #reactive()} and then {@link ReactiveEmission#request(Object, TypeLiteral)}.
      *
      * @param <R> the response type
      * @param signal the signal object
      * @param responseType a {@link TypeLiteral} representing the expected response type
      * @return the receiver's response, or {@code null} if no receiver matches
-     * @see #requestUni(Object, TypeLiteral)
+     * @see ReactiveEmission#request(Object, TypeLiteral)
      * @see Receives
      */
-    default <R> R request(T signal, TypeLiteral<R> responseType) {
-        return requestUni(signal, responseType).await().indefinitely();
+    <R> R request(T signal, TypeLiteral<R> responseType);
+
+    /**
+     * Returns a {@link ReactiveEmission} that provides reactive variants of the emission methods.
+     *
+     * @return the reactive emission
+     */
+    ReactiveEmission<T> reactive();
+
+    /**
+     * Provides reactive variants of the signal emission methods.
+     * <p>
+     * Each method returns a {@link Uni} that, when subscribed, emits the signal and completes when the receiver(s) finish.
+     * The returned {@code Uni} is <em>lazy</em>: no signal is emitted until the {@code Uni} is subscribed.
+     * Each subscription triggers a new, independent emission.
+     *
+     * @param <T> the type of the signal object
+     */
+    interface ReactiveEmission<T> {
+
+        /**
+         * Sends a signal to <em>all</em> receivers matching the specified signal type and qualifiers (multicast).
+         * <p>
+         * All receivers are executed asynchronously.
+         * If no receiver matches, the returned {@link Uni} completes with {@code null}.
+         *
+         * @param signal the signal object
+         * @return a {@link Uni} that completes when all receivers are executed
+         * @see Signal#publish(Object)
+         */
+        @CheckReturnValue
+        Uni<Void> publish(T signal);
+
+        /**
+         * Sends a signal to a <em>single</em> receiver matching the specified signal type and qualifiers
+         * (unicast).
+         * <p>
+         * If multiple receivers match, one is selected in round-robin order.
+         * If no receiver matches, the returned {@link Uni} completes with {@code null}.
+         *
+         * @param signal the signal object
+         * @return a {@link Uni} that completes when a receiver is executed
+         * @see Signal#send(Object)
+         */
+        @CheckReturnValue
+        Uni<Void> send(T signal);
+
+        /**
+         * Sends a signal to a <em>single</em> receiver matching the specified signal type, response type and qualifiers, and
+         * returns the response (unicast, request-reply).
+         * <p>
+         * If multiple receivers match, one is selected in round-robin order.
+         * If no receiver matches, the returned {@link Uni} completes with {@code null}.
+         *
+         * @param <R> the response type
+         * @param signal the signal object
+         * @param responseType the expected response type
+         * @return a {@link Uni} that completes with the receiver's response
+         * @see Signal#request(Object, Class)
+         * @see Receives
+         */
+        @CheckReturnValue
+        <R> Uni<R> request(T signal, Class<R> responseType);
+
+        /**
+         * Sends a signal to a <em>single</em> receiver matching the specified signal type, response type and qualifiers, and
+         * returns the response (unicast, request-reply).
+         * <p>
+         * If multiple receivers match, one is selected in round-robin order.
+         * If no receiver matches, the returned {@link Uni} completes with {@code null}.
+         *
+         * @param <R> the response type
+         * @param signal the signal object
+         * @param responseType a {@link TypeLiteral} representing the expected response type
+         * @return a {@link Uni} that completes with the receiver's response
+         * @see Signal#request(Object, TypeLiteral)
+         * @see Receives
+         */
+        @CheckReturnValue
+        <R> Uni<R> request(T signal, TypeLiteral<R> responseType);
+
     }
-
-    /**
-     * Sends a signal to a <em>single</em> receiver matching the specified signal type, response type and qualifiers, and
-     * returns the response (unicast, request-reply).
-     * <p>
-     * If multiple receivers match, one is selected in round-robin order.
-     * If no receiver matches, the returned {@link Uni} completes with {@code null}.
-     *
-     * @param <R> the response type
-     * @param signal the signal object
-     * @param responseType the expected response type
-     * @return a {@link Uni} that completes with the receiver's response
-     * @see #request(Object, Class)
-     * @see Receives
-     */
-    @CheckReturnValue
-    <R> Uni<R> requestUni(T signal, Class<R> responseType);
-
-    /**
-     * Sends a signal to a <em>single</em> receiver matching the specified signal type, response type and qualifiers, and
-     * returns the response (unicast, request-reply).
-     * <p>
-     * If multiple receivers match, one is selected in round-robin order.
-     * If no receiver matches, the returned {@link Uni} completes with {@code null}.
-     *
-     * @param <R> the response type
-     * @param signal the signal object
-     * @param responseType a {@link TypeLiteral} representing the expected response type
-     * @return a {@link Uni} that completes with the receiver's response
-     * @see #request(Object, TypeLiteral)
-     * @see Receives
-     */
-    @CheckReturnValue
-    <R> Uni<R> requestUni(T signal, TypeLiteral<R> responseType);
 
 }

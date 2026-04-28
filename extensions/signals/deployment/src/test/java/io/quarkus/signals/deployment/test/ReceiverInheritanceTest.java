@@ -46,7 +46,7 @@ public class ReceiverInheritanceTest {
         overridingChild.sequence.clear();
         overridingReceiverChild.sequence.clear();
 
-        Uni<Void> result = msg.publishUni(new Msg("test"));
+        Uni<Void> result = msg.reactive().publish(new Msg("test"));
         result.ifNoItem().after(Duration.ofSeconds(5)).fail().await().indefinitely();
 
         // InheritingChild inherits the receiver method from BaseReceiver

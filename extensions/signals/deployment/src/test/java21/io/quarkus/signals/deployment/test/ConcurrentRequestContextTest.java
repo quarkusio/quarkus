@@ -89,30 +89,30 @@ public class ConcurrentRequestContextTest {
                 final int id = i;
 
                 // publish - delivers to all three receivers
-                futures.add(executor.submit(() -> signal.publishUni(new Cmd(id))
+                futures.add(executor.submit(() -> signal.reactive().publish(new Cmd(id))
                         .ifNoItem().after(Duration.ofSeconds(5)).fail()
                         .await().indefinitely()));
 
                 // send - delivers to one receiver (round-robin)
-                futures.add(executor.submit(() -> signal.sendUni(new Cmd(id))
+                futures.add(executor.submit(() -> signal.reactive().send(new Cmd(id))
                         .ifNoItem().after(Duration.ofSeconds(5)).fail()
                         .await().indefinitely()));
 
                 // request - use qualifiers to target each execution model
                 futures.add(executor.submit(() -> {
-                    String result = blockingSignal.requestUni(new Cmd(id), String.class)
+                    String result = blockingSignal.reactive().request(new Cmd(id), String.class)
                             .ifNoItem().after(Duration.ofSeconds(5)).fail()
                             .await().indefinitely();
                     assertThat(result).isEqualTo("blocking-" + id);
                 }));
                 futures.add(executor.submit(() -> {
-                    String result = reactiveSignal.requestUni(new Cmd(id), String.class)
+                    String result = reactiveSignal.reactive().request(new Cmd(id), String.class)
                             .ifNoItem().after(Duration.ofSeconds(5)).fail()
                             .await().indefinitely();
                     assertThat(result).isEqualTo("reactive-" + id);
                 }));
                 futures.add(executor.submit(() -> {
-                    String result = vtSignal.requestUni(new Cmd(id), String.class)
+                    String result = vtSignal.reactive().request(new Cmd(id), String.class)
                             .ifNoItem().after(Duration.ofSeconds(5)).fail()
                             .await().indefinitely();
                     assertThat(result).isEqualTo("vt-" + id);

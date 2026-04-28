@@ -45,7 +45,7 @@ public class ReceiverInheritanceComplexTest {
     public void testInheritedReceiverWithInjectedParams() {
         inheritingReceiver.sequence.clear();
 
-        Uni<Void> result = stringEnvelope.publishUni(new Envelope<>("alpha", "payload"));
+        Uni<Void> result = stringEnvelope.reactive().publish(new Envelope<>("alpha", "payload"));
         result.ifNoItem().after(Duration.ofSeconds(5)).fail().await().indefinitely();
 
         assertThat(inheritingReceiver.sequence).containsExactlyInAnyOrder("parent:alpha:true", "ctx:alpha");
@@ -57,7 +57,7 @@ public class ReceiverInheritanceComplexTest {
 
         String reply = stringEnvelope
                 .setMetadata(Map.of("priority", "high"))
-                .requestUni(new Envelope<>("beta", "data"), String.class)
+                .reactive().request(new Envelope<>("beta", "data"), String.class)
                 .ifNoItem().after(Duration.ofSeconds(5)).fail()
                 .await().indefinitely();
 
@@ -69,7 +69,7 @@ public class ReceiverInheritanceComplexTest {
     public void testOverriddenReceiverWithDifferentInjectedParams() {
         overridingReceiver.sequence.clear();
 
-        Uni<Void> result = stringEnvelope.publishUni(new Envelope<>("gamma", "content"));
+        Uni<Void> result = stringEnvelope.reactive().publish(new Envelope<>("gamma", "content"));
         result.ifNoItem().after(Duration.ofSeconds(5)).fail().await().indefinitely();
 
         assertThat(overridingReceiver.sequence).containsExactlyInAnyOrder("child:gamma:true", "ctx:gamma");

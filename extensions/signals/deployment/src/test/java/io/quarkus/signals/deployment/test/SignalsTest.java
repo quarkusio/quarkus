@@ -69,7 +69,7 @@ public class SignalsTest {
         assertThat(myReceivers.sequence).containsAnyOf("blocking_one_to_one", "blockingString_one_to_one");
 
         myReceivers.sequence.clear();
-        Uni<String> uni = reactiveFoo.requestUni(new Foo("req"), String.class);
+        Uni<String> uni = reactiveFoo.reactive().request(new Foo("req"), String.class);
         assertEquals("REQ", uni.ifNoItem()
                 .after(Duration.ofSeconds(1))
                 .fail()
@@ -78,7 +78,7 @@ public class SignalsTest {
         assertThat(myReceivers.sequence).contains("reactiveString_req");
 
         myReceivers.sequence.clear();
-        assertEquals("req", foo.requestUni(new Foo("REQ"), String.class)
+        assertEquals("req", foo.reactive().request(new Foo("REQ"), String.class)
                 .ifNoItem()
                 .after(Duration.ofSeconds(1))
                 .fail()
@@ -88,7 +88,7 @@ public class SignalsTest {
 
         // CompletionStage receiver
         myReceivers.sequence.clear();
-        assertEquals(3, asyncFoo.requestUni(new Foo("req"), Integer.class)
+        assertEquals(3, asyncFoo.reactive().request(new Foo("req"), Integer.class)
                 .ifNoItem()
                 .after(Duration.ofSeconds(1))
                 .fail()
@@ -98,7 +98,7 @@ public class SignalsTest {
 
         // No receiver matches the response type
         myReceivers.sequence.clear();
-        assertNull(foo.requestUni(new Foo("REQ"), int.class)
+        assertNull(foo.reactive().request(new Foo("REQ"), int.class)
                 .ifNoItem()
                 .after(Duration.ofSeconds(1))
                 .fail()

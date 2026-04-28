@@ -605,7 +605,9 @@ See also <<quarkus-hibernate-search-standalone-elasticsearch_quarkus-hibernate-s
 ====
 
 [TIP]
+====
 For more information about configuration of the Hibernate Search Standalone extension, refer to the <<configuration-reference,Configuration Reference>>.
+====
 
 == Creating a frontend
 

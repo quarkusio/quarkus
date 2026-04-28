@@ -52,7 +52,7 @@ metadata:
 <3> Short name that could be used to quickly locate an extension in the catalog of extensions provided by the dev tools to the users
 <4> Keywords that can be used to search for extensions in the extension catalog provided by the dev tools to the users
 <5> Categories the extension should appear under on https://code.quarkus.io[code.quarkus.io]. This field can be omitted, the extension will still be listed on https://code.quarkus.io[code.quarkus.io] but won't be categorized
-<6> Maturity status that could be `stable`, `preview`, `experimental`, `deprecated`. It is up to extension maintainers to evaluate the maturity status and communicate it to the users
+<6> Maturity status that could be `stable`, `preview`, `experimental`, `deprecated`. It is up to extension maintainers  to evaluate the maturity status and communicate it to the users
 <7> Link to the extension guide or documentation page
 <8> Link to an externally hosted image. This is used in the Quarkus dev tools as the extension icon. It should be square, and any resolution greater than 220 pixels. Supported formats are png, jpeg, tiff, webp, and svg. Alternatively, if you https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/customizing-your-repositorys-social-media-preview[set the social media preview] on the extension's source code repository, the tools will pick up that image.
 <9> https://quarkus.io/guides/extension-codestart[Codestart] information
@@ -61,10 +61,13 @@ metadata:
 To mark an extension as deprecated, set the status to `deprecated`:
 
 [source,yaml,subs=attributes+]
+
+
 ----
 metadata:
   status: "deprecated"
 ----
+
 
 And here is the final version of the file included in the runtime JAR augmented with other information collected by the Quarkus Maven plugin:
 

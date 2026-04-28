@@ -173,9 +173,11 @@ in a transaction.
 
 [NOTE]
 .GETs should not change application state.
+====
 Generally, you shouldn't do state updates in a `GET` REST method, but here it makes
 trying things out simpler. Let's assume what's being written is a logging "side effect",
 rather than a meaningful state changes!
+====
 
 Try out the updated endpoint by visiting http://localhost:8080/hello?name=Bloom.
 You should see a "Hello Bloom" message.

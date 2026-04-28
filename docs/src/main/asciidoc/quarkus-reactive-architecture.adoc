@@ -122,7 +122,9 @@ Mutiny provides everything you need to orchestrate asynchronous actions, includi
 It also offers a large set of operators to manipulate individual events and streams of events.
 
 [TIP]
+====
 Find more info about Mutiny and its usage in Quarkus on xref:mutiny-primer.adoc[Mutiny support documentation].
+====
 
 Co-routines are a way to write asynchronous code sequentially.
 It suspends the execution of the code during I/O and registers the rest of the code as the continuation.

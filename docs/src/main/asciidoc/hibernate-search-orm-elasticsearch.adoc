@@ -675,7 +675,9 @@ See also <<quarkus-hibernate-search-orm-elasticsearch_quarkus-hibernate-search-o
 ====
 
 [TIP]
+====
 For more information about configuration of the Hibernate Search ORM extension, refer to the <<configuration-reference,Configuration Reference>>.
+====
 
 == Creating a frontend
 

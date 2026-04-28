@@ -675,9 +675,11 @@ The observers can be either synchronous or asynchronous.
 * `io.quarkus.vertx.http.runtime.security.FormAuthenticationEvent`
 
 [TIP]
+====
 For more information about security events specific to the Quarkus OpenID Connect extension, please see
 the xref:security-oidc-code-flow-authentication.adoc#listen-to-authentication-events[Listening to important authentication events]
 section of the OIDC code flow mechanism for protecting web applications guide.
+====
 
 [source,java]
 ----

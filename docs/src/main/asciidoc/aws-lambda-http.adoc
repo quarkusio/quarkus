@@ -231,10 +231,12 @@ Value               https://234asdf234as.execute-api.us-east-1.amazonaws.com/
 The `Value` attribute is the root URL for your lambda. Copy it to your browser and add `hello` at the end.
 
 [NOTE]
+====
 Responses for binary types will be automatically encoded with base64.  This is different from the behavior using
 `quarkus:dev`, which will return the raw bytes.  Amazon's API has additional restrictions requiring the base64 encoding.
 In general, client code will automatically handle this encoding, but in certain custom situations, you should be aware
 you may need to manually manage that encoding.
+====
 
 == Deploying a native executable
 

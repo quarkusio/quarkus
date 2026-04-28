@@ -19,9 +19,11 @@ The extension will expose a customizable HTTP endpoint that simply greets the vi
 
 [NOTE]
 .Disclaimer
+====
 To be sure it's extra clear that you don't need an extension to add a Servlet to your application.
 This guide is a simplified example to explain the concepts of extensions development, see the xref:writing-extensions.adoc[full documentation] if you need more information.
 Keep in mind it's not representative of the power of moving things to build time or simplifying the build of native images.
+====
 
 == Prerequisites
 

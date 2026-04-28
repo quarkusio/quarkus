@@ -167,6 +167,17 @@ public interface DataSourceJdbcRuntimeConfig {
     Optional<AgroalConnectionPoolConfiguration.TransactionRequirement> transactionRequirement();
 
     /**
+     * Defines the behavior when a thread tries to acquire multiple connections from the pool.
+     * <p>
+     * {@code lenient} (the default) means no restriction.
+     * {@code warn} will log a warning when a thread already holds a connection and tries to acquire another one.
+     * {@code strict} will throw an exception in that situation.
+     */
+    @ConfigDocDefault("By default, multiple acquisition is allowed without any restriction.")
+    @WithDefault("lenient")
+    MultipleAcquisition multipleAcquisition();
+
+    /**
      * Other unspecified properties to be passed to the JDBC driver when creating new connections.
      */
     @ConfigDocMapKey("property-key")
@@ -177,4 +188,32 @@ public interface DataSourceJdbcRuntimeConfig {
      */
     DataSourceJdbcTelemetryConfig telemetry();
 
+    enum MultipleAcquisition {
+
+        /**
+         * Allow a thread to acquire multiple connections from the pool without any restriction.
+         * This is the default.
+         */
+        LENIENT(AgroalConnectionPoolConfiguration.MultipleAcquisitionAction.OFF),
+
+        /**
+         * Log a warning when a thread that already holds a connection tries to acquire another one.
+         */
+        WARN(AgroalConnectionPoolConfiguration.MultipleAcquisitionAction.WARN),
+
+        /**
+         * Throw an exception when a thread that already holds a connection tries to acquire another one.
+         */
+        STRICT(AgroalConnectionPoolConfiguration.MultipleAcquisitionAction.STRICT);
+
+        private final AgroalConnectionPoolConfiguration.MultipleAcquisitionAction action;
+
+        MultipleAcquisition(AgroalConnectionPoolConfiguration.MultipleAcquisitionAction action) {
+            this.action = action;
+        }
+
+        public AgroalConnectionPoolConfiguration.MultipleAcquisitionAction toAgroalAction() {
+            return action;
+        }
+    }
 }

@@ -74,6 +74,12 @@ public interface TlsBucketConfig {
     boolean alpn();
 
     /**
+     * Enables the hybrid key exchange protocol.
+     */
+    @WithDefault("false")
+    boolean hybrid();
+
+    /**
      * Sets the list of revoked certificates (paths to files).
      * <p>
      * A Certificate Revocation List (CRL) is a list of digital certificates that have been revoked by the issuing

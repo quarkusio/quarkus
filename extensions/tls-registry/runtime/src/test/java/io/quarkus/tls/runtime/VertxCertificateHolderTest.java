@@ -65,6 +65,11 @@ class VertxCertificateHolderTest {
             }
 
             @Override
+            public boolean hybrid() {
+                return true;
+            }
+
+            @Override
             public Duration handshakeTimeout() {
                 return Duration.ofSeconds(10);
             }
@@ -81,6 +86,11 @@ class VertxCertificateHolderTest {
     void testDefault() {
         assertFalse(holder.warnIfOldProtocols(Set.of(TlsBucketConfig.DEFAULT_TLS_PROTOCOLS), "test"));
         assertFalse(holder.warnIfOldProtocols(Set.of(TlsBucketConfig.DEFAULT_TLS_PROTOCOLS.toLowerCase()), "test"));
+    }
+
+    @Test
+    void testHybrid() {
+        assertTrue(holder.getSSLOptions().isUseHybrid());
     }
 
     @Test

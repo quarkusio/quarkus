@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.util.NameTransformer;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -192,6 +193,20 @@ public class JacksonMapperUtil {
                 .constructCollectionType((Class<? extends Collection>) collectionClass, elementClass);
         JsonSerializer<Object> serializer = serializerProvider.findValueSerializer(collectionType);
         serializer.serialize(value, generator, serializerProvider);
+    }
+
+    public static void serializeUnwrapped(Object value, JsonGenerator generator,
+            SerializerProvider serializerProvider) throws IOException {
+        if (value == null) {
+            return;
+        }
+        JsonSerializer<Object> serializer = serializerProvider.findValueSerializer(value.getClass());
+        if (serializer instanceof GeneratedSerializer gs) {
+            gs.serializeContent(value, generator, serializerProvider);
+        } else {
+            serializer.unwrappingSerializer(NameTransformer.NOP)
+                    .serialize(value, generator, serializerProvider);
+        }
     }
 
     public enum SerializationInclude {

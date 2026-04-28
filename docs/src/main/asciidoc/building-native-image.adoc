@@ -857,8 +857,10 @@ Native executables can be debugged using tools such as `gdb`.
 For this to be possible native executables need to be generated with debug symbols.
 
 [NOTE]
+====
 Debug symbol generation is only supported on Linux.
 Windows support is still under development, while macOS is not supported.
+====
 
 To generate debug symbols,
 add `-Dquarkus.native.debug.enabled=true` flag when generating the native executable.

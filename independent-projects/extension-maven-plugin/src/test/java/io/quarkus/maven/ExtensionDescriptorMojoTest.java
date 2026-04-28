@@ -113,6 +113,42 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
     }
 
     @Test
+    public void shouldFailOnInvalidStatusArray()
+            throws Exception {
+        ExtensionDescriptorMojo mojo = makeMojo("simple-pom-with-checks-disabled-invalid-status-array");
+
+        Path yamlPath = mojo.project.getBasedir().toPath().resolve("target/classes/META-INF/quarkus-extension.yaml");
+        Files.createDirectories(yamlPath.getParent());
+        Files.writeString(yamlPath, ""
+                + "name: \"an arbitrary name\"\n"
+                + "metadata:\n"
+                + "  status:\n"
+                + "  - \"stable\"\n"
+                + "  - \"deprecated\"\n");
+
+        Exception thrown = Assertions.assertThrows(MojoExecutionException.class, mojo::execute);
+        Assertions.assertTrue(thrown.getMessage().contains("Invalid quarkus-extension.yaml metadata"),
+                "Expected schema validation error but got:\n" + thrown.getMessage());
+        Assertions.assertTrue(thrown.getMessage().contains("status"),
+                "Expected status field to be mentioned but got:\n" + thrown.getMessage());
+    }
+
+    @Test
+    public void shouldAcceptDeprecatedStatus()
+            throws Exception {
+        ExtensionDescriptorMojo mojo = makeMojo("simple-pom-with-checks-disabled-deprecated-status");
+
+        Path yamlPath = mojo.project.getBasedir().toPath().resolve("target/classes/META-INF/quarkus-extension.yaml");
+        Files.createDirectories(yamlPath.getParent());
+        Files.writeString(yamlPath, ""
+                + "name: \"an arbitrary name\"\n"
+                + "metadata:\n"
+                + "  status: \"deprecated\"\n");
+
+        mojo.execute();
+    }
+
+    @Test
     public void shouldReadLocalParentsForScmInfo()
             throws Exception {
 

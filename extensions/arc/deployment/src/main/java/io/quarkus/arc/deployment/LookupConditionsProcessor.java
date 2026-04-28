@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -22,6 +21,7 @@ import org.jboss.jandex.IndexView;
 
 import io.quarkus.arc.lookup.LookupIfProperty;
 import io.quarkus.arc.lookup.LookupUnlessProperty;
+import io.quarkus.arc.processor.BeanGenerator;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.StereotypeInfo;
@@ -133,112 +133,112 @@ public class LookupConditionsProcessor {
             validateRegex(ann);
         }
 
-        generators.produce(new SuppressConditionGeneratorBuildItem(
-                new BiFunction<BeanInfo, ClassCreator, Consumer<BlockCreator>>() {
-                    final AtomicInteger patternCounter = new AtomicInteger();
+        generators.produce(new SuppressConditionGeneratorBuildItem(new Consumer<>() {
+            final AtomicInteger patternCounter = new AtomicInteger();
 
-                    @Override
-                    public Consumer<BlockCreator> apply(BeanInfo bean, ClassCreator cc) {
-                        Optional<AnnotationTarget> maybeTarget = bean.getTarget();
-                        if (maybeTarget.isPresent()) {
-                            AnnotationTarget target = maybeTarget.get();
-                            List<AnnotationInstance> ifPropertyList = new ArrayList<>(
-                                    target.declaredAnnotationsWithRepeatable(LOOK_UP_IF_PROPERTY, index));
-                            List<AnnotationInstance> unlessPropertyList = new ArrayList<>(
-                                    target.declaredAnnotationsWithRepeatable(LOOK_UP_UNLESS_PROPERTY, index));
-                            for (StereotypeInfo stereotype : bean.getStereotypes()) {
-                                var conditions = lookupConditionStereotypes.get(stereotype.getName());
-                                if (conditions != null) {
-                                    ifPropertyList.addAll(conditions.ifAnnotations());
-                                    unlessPropertyList.addAll(conditions.unlessAnnotations());
-                                }
-                            }
-                            if (!ifPropertyList.isEmpty() || !unlessPropertyList.isEmpty()) {
-                                // pre-create static Pattern fields for all REGEX annotations on this bean
-                                List<StaticFieldVar> ifPatternFields = new ArrayList<>();
-                                for (AnnotationInstance ann : ifPropertyList) {
-                                    ifPatternFields.add(createPatternFieldIfRegex(cc, ann));
-                                }
-                                List<StaticFieldVar> unlessPatternFields = new ArrayList<>();
-                                for (AnnotationInstance ann : unlessPropertyList) {
-                                    unlessPatternFields.add(createPatternFieldIfRegex(cc, ann));
-                                }
+            @Override
+            public void accept(BeanGenerator.SuppressConditionGeneration suppressConditionGeneration) {
+                BeanInfo bean = suppressConditionGeneration.bean();
+                Optional<AnnotationTarget> maybeTarget = bean.getTarget();
+                if (maybeTarget.isEmpty()) {
+                    return;
+                }
+                AnnotationTarget target = maybeTarget.get();
+                List<AnnotationInstance> ifPropertyList = new ArrayList<>(
+                        target.declaredAnnotationsWithRepeatable(LOOK_UP_IF_PROPERTY, index));
+                List<AnnotationInstance> unlessPropertyList = new ArrayList<>(
+                        target.declaredAnnotationsWithRepeatable(LOOK_UP_UNLESS_PROPERTY, index));
+                for (StereotypeInfo stereotype : bean.getStereotypes()) {
+                    var conditions = lookupConditionStereotypes.get(stereotype.getName());
+                    if (conditions != null) {
+                        ifPropertyList.addAll(conditions.ifAnnotations());
+                        unlessPropertyList.addAll(conditions.unlessAnnotations());
+                    }
+                }
 
-                                return new Consumer<BlockCreator>() {
-                                    @Override
-                                    public void accept(BlockCreator suppressed) {
-                                        // if at least one condition fails, we mark the bean as suppressed
-                                        // this means all conditions must pass, which is how we implement
-                                        // the documented "logical AND of all conditions" behavior
-                                        for (int i = 0; i < ifPropertyList.size(); i++) {
-                                            AnnotationInstance ifProperty = ifPropertyList.get(i);
-                                            String propertyName = ifProperty.value(NAME).asString();
-                                            String expectedStringValue = ifProperty.value(STRING_VALUE).asString();
-                                            AnnotationValue lookupIfMissingValue = ifProperty.value(LOOKUP_IF_MISSING);
-                                            boolean lookupIfMissing = lookupIfMissingValue != null
-                                                    && lookupIfMissingValue.asBoolean();
-                                            StaticFieldVar patternField = ifPatternFields.get(i);
-                                            Expr result;
-                                            if (patternField != null) {
-                                                result = suppressed.invokeStatic(SUPPRESS_IF_PROPERTY_REGEX,
-                                                        Const.of(propertyName),
-                                                        suppressed.getStaticField(patternField.desc()),
-                                                        Const.of(lookupIfMissing));
-                                            } else {
-                                                result = suppressed.invokeStatic(SUPPRESS_IF_PROPERTY,
-                                                        Const.of(propertyName),
-                                                        Const.of(expectedStringValue),
-                                                        Const.of(lookupIfMissing));
-                                            }
-                                            suppressed.if_(result, BlockCreator::returnTrue);
-                                        }
-                                        for (int i = 0; i < unlessPropertyList.size(); i++) {
-                                            AnnotationInstance unlessProperty = unlessPropertyList.get(i);
-                                            String propertyName = unlessProperty.value(NAME).asString();
-                                            String expectedStringValue = unlessProperty.value(STRING_VALUE).asString();
-                                            AnnotationValue lookupIfMissingValue = unlessProperty.value(LOOKUP_IF_MISSING);
-                                            boolean lookupIfMissing = lookupIfMissingValue != null
-                                                    && lookupIfMissingValue.asBoolean();
-                                            StaticFieldVar patternField = unlessPatternFields.get(i);
-                                            Expr result;
-                                            if (patternField != null) {
-                                                result = suppressed.invokeStatic(SUPPRESS_UNLESS_PROPERTY_REGEX,
-                                                        Const.of(propertyName),
-                                                        suppressed.getStaticField(patternField.desc()),
-                                                        Const.of(lookupIfMissing));
-                                            } else {
-                                                result = suppressed.invokeStatic(SUPPRESS_UNLESS_PROPERTY,
-                                                        Const.of(propertyName),
-                                                        Const.of(expectedStringValue),
-                                                        Const.of(lookupIfMissing));
-                                            }
-                                            suppressed.if_(result, BlockCreator::returnTrue);
-                                        }
-                                    }
-                                };
-                            }
-                        }
-                        return null;
+                if (!ifPropertyList.isEmpty() || !unlessPropertyList.isEmpty()) {
+                    ClassCreator cc = suppressConditionGeneration.beanClass();
+
+                    // pre-create static Pattern fields for all REGEX annotations on this bean
+                    List<StaticFieldVar> ifPatternFields = new ArrayList<>();
+                    for (AnnotationInstance ann : ifPropertyList) {
+                        ifPatternFields.add(createPatternFieldIfRegex(cc, ann));
+                    }
+                    List<StaticFieldVar> unlessPatternFields = new ArrayList<>();
+                    for (AnnotationInstance ann : unlessPropertyList) {
+                        unlessPatternFields.add(createPatternFieldIfRegex(cc, ann));
                     }
 
-                    private StaticFieldVar createPatternFieldIfRegex(ClassCreator cc, AnnotationInstance ann) {
-                        if (getMatch(ann) == StringValueMatch.REGEX) {
-                            String regex = ann.value(STRING_VALUE).asString();
-                            String fieldName = "REGEX_PATTERN_" + patternCounter.getAndIncrement();
-                            return cc.staticField(fieldName, sfc -> {
-                                sfc.setType(Pattern.class);
-                                sfc.final_();
-                                sfc.private_();
-                                sfc.setInitializer(bc -> {
-                                    bc.yield(bc.invokeStatic(
-                                            MethodDesc.of(Pattern.class, "compile", Pattern.class, String.class),
-                                            Const.of(regex)));
-                                });
-                            });
+                    BlockCreator bc = suppressConditionGeneration.method();
+
+                    // if at least one condition fails, we mark the bean as suppressed
+                    // this means all conditions must pass, which is how we implement
+                    // the documented "logical AND of all conditions" behavior
+                    for (int i = 0; i < ifPropertyList.size(); i++) {
+                        AnnotationInstance ifProperty = ifPropertyList.get(i);
+                        String propertyName = ifProperty.value(NAME).asString();
+                        String expectedStringValue = ifProperty.value(STRING_VALUE).asString();
+                        AnnotationValue lookupIfMissingValue = ifProperty.value(LOOKUP_IF_MISSING);
+                        boolean lookupIfMissing = lookupIfMissingValue != null
+                                && lookupIfMissingValue.asBoolean();
+                        StaticFieldVar patternField = ifPatternFields.get(i);
+                        Expr result;
+                        if (patternField != null) {
+                            result = bc.invokeStatic(SUPPRESS_IF_PROPERTY_REGEX,
+                                    Const.of(propertyName),
+                                    bc.getStaticField(patternField.desc()),
+                                    Const.of(lookupIfMissing));
+                        } else {
+                            result = bc.invokeStatic(SUPPRESS_IF_PROPERTY,
+                                    Const.of(propertyName),
+                                    Const.of(expectedStringValue),
+                                    Const.of(lookupIfMissing));
                         }
-                        return null;
+                        bc.if_(result, BlockCreator::returnTrue);
                     }
-                }));
+                    for (int i = 0; i < unlessPropertyList.size(); i++) {
+                        AnnotationInstance unlessProperty = unlessPropertyList.get(i);
+                        String propertyName = unlessProperty.value(NAME).asString();
+                        String expectedStringValue = unlessProperty.value(STRING_VALUE).asString();
+                        AnnotationValue lookupIfMissingValue = unlessProperty.value(LOOKUP_IF_MISSING);
+                        boolean lookupIfMissing = lookupIfMissingValue != null
+                                && lookupIfMissingValue.asBoolean();
+                        StaticFieldVar patternField = unlessPatternFields.get(i);
+                        Expr result;
+                        if (patternField != null) {
+                            result = bc.invokeStatic(SUPPRESS_UNLESS_PROPERTY_REGEX,
+                                    Const.of(propertyName),
+                                    bc.getStaticField(patternField.desc()),
+                                    Const.of(lookupIfMissing));
+                        } else {
+                            result = bc.invokeStatic(SUPPRESS_UNLESS_PROPERTY,
+                                    Const.of(propertyName),
+                                    Const.of(expectedStringValue),
+                                    Const.of(lookupIfMissing));
+                        }
+                        bc.if_(result, BlockCreator::returnTrue);
+                    }
+                }
+            }
+
+            private StaticFieldVar createPatternFieldIfRegex(ClassCreator cc, AnnotationInstance ann) {
+                if (getMatch(ann) == StringValueMatch.REGEX) {
+                    String regex = ann.value(STRING_VALUE).asString();
+                    String fieldName = "REGEX_PATTERN_" + patternCounter.getAndIncrement();
+                    return cc.staticField(fieldName, sfc -> {
+                        sfc.setType(Pattern.class);
+                        sfc.final_();
+                        sfc.private_();
+                        sfc.setInitializer(bc -> {
+                            bc.yield(bc.invokeStatic(
+                                    MethodDesc.of(Pattern.class, "compile", Pattern.class, String.class),
+                                    Const.of(regex)));
+                        });
+                    });
+                }
+                return null;
+            }
+        }));
     }
 
     private static StringValueMatch getMatch(AnnotationInstance annotation) {

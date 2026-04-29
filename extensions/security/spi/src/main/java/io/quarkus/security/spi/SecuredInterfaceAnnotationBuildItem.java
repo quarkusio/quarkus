@@ -56,4 +56,9 @@ public final class SecuredInterfaceAnnotationBuildItem extends MultiBuildItem {
     public static SecuredInterfaceAnnotationBuildItem ofMethodAnnotation(Class<?> annotation) {
         return new SecuredInterfaceAnnotationBuildItem(DotName.createSimple(annotation), SecuredAnnotationTargetKind.METHOD);
     }
+
+    public static SecuredInterfaceAnnotationBuildItem ofMethodAnnotation(String annotationName) {
+        return new SecuredInterfaceAnnotationBuildItem(DotName.createSimple(annotationName),
+                SecuredAnnotationTargetKind.METHOD);
+    }
 }

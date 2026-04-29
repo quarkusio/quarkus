@@ -49,15 +49,22 @@ public final class SecurityTransformerBuildItem extends SimpleBuildItem {
     private final Set<DotName> allSecurityAnnotations;
     private final Map<IndexView, SecurityTransformerCache> securityTransformerCache;
     private final Predicate<ClassInfo> isInterfaceWithTransformations;
+    // classes annotated with these annotations needs to included in the scanning for security annotations
     private final Set<DotName> securedAnnotations;
+    // we need to include its sub-interfaces in the scanning for security annotations
+    private final Set<DotName> securedTopLevelInterfaces;
+    private final boolean interfaceSecurityEnabled;
 
     public SecurityTransformerBuildItem(Map<AuthorizationType, Set<DotName>> authorizationTypeToSecurityAnnotations,
-            Predicate<ClassInfo> isInterfaceWithTransformations, Set<DotName> securedAnnotations) {
+            Predicate<ClassInfo> isInterfaceWithTransformations, Set<DotName> securedAnnotations,
+            boolean interfaceSecurityEnabled, Set<DotName> securedTopLevelInterfaces) {
         this.authorizationTypeToSecurityAnnotations = Collections.unmodifiableMap(authorizationTypeToSecurityAnnotations);
         this.allSecurityAnnotations = getAllSecurityAnnotations(authorizationTypeToSecurityAnnotations);
         this.securityTransformerCache = new ConcurrentHashMap<>();
         this.isInterfaceWithTransformations = isInterfaceWithTransformations;
         this.securedAnnotations = Collections.unmodifiableSet(securedAnnotations);
+        this.interfaceSecurityEnabled = interfaceSecurityEnabled;
+        this.securedTopLevelInterfaces = Collections.unmodifiableSet(securedTopLevelInterfaces);
     }
 
     public static SecurityTransformer createSecurityTransformer(IndexView indexView,
@@ -68,10 +75,6 @@ public final class SecurityTransformerBuildItem extends SimpleBuildItem {
     public static SecurityTransformer createSecurityTransformer(IndexView indexView,
             SecurityTransformerBuildItem transformerBuildItem) {
         return transformerBuildItem.getOrCreateTransformer(indexView);
-    }
-
-    public String[] getAllSecurityAnnotationNames() {
-        return allSecurityAnnotations.stream().map(DotName::toString).toArray(String[]::new);
     }
 
     private SecurityTransformer getOrCreateTransformer(IndexView indexView) {
@@ -91,7 +94,7 @@ public final class SecurityTransformerBuildItem extends SimpleBuildItem {
     }
 
     private SecurityTransformerBuildItem.InterfaceTransformationResult createInterfaceTransformations(IndexView index) {
-        if (isInterfaceWithTransformations != null) {
+        if (interfaceSecurityEnabled) {
             // e.g. interface with Jakarta Data @Repository, it may or may not have security annotations
             var possiblySecuredInterfaces = securedAnnotations.stream()
                     .map(index::getAnnotations)
@@ -112,6 +115,12 @@ public final class SecurityTransformerBuildItem extends SimpleBuildItem {
             // e.g. @Repository interface MyRepo extends MyParentRepo -> consider MyParentRepo
             Collection<ClassInfo> possiblySecuredParentInterfaces = collectParentInterfaces(possiblySecuredInterfaces,
                     securedAnnotations, index);
+
+            // add sub-interfaces of the top-level interfaces that should be secured
+            // e.g. if we wanted to detect annotations for PanacheRepository sub-interfaces
+            // we would need to detect MyRepo from: interface MyRepo extends PanacheRepository<MyEntity>
+            possiblySecuredParentInterfaces.addAll(collectSubInterfaces(securedTopLevelInterfaces, index));
+
             possiblySecuredInterfaces.addAll(possiblySecuredParentInterfaces);
 
             if (!possiblySecuredInterfaces.isEmpty()) {
@@ -190,6 +199,17 @@ public final class SecurityTransformerBuildItem extends SimpleBuildItem {
         return new InterfaceTransformationResult(null, List.of());
     }
 
+    private static Collection<ClassInfo> collectSubInterfaces(Set<DotName> securedTopLevelInterfaces, IndexView index) {
+        if (securedTopLevelInterfaces.isEmpty()) {
+            return Set.of();
+        }
+        Collection<ClassInfo> result = new HashSet<>();
+        securedTopLevelInterfaces.stream()
+                .flatMap(interfaceName -> index.getAllKnownSubinterfaces(interfaceName).stream())
+                .forEach(result::add);
+        return result;
+    }
+
     private static boolean isImplementingSecuredMethod(MethodInfo securedMethod, MethodInfo unsecuredMethod) {
         if (securedMethod.name().equals(unsecuredMethod.name())
                 && securedMethod.parametersCount() == unsecuredMethod.parametersCount()) {
@@ -233,7 +253,7 @@ public final class SecurityTransformerBuildItem extends SimpleBuildItem {
         return possiblySecuredInterfaces.stream()
                 .map(ci -> getParentInterfaces(index, ci, ignoredPackages))
                 .flatMap(Collection::stream)
-                .collect(toSet());
+                .collect(Collectors.toCollection(HashSet::new));
     }
 
     private static List<ClassInfo> getParentInterfaces(IndexView index, ClassInfo possiblySecuredInterface,
@@ -327,7 +347,7 @@ public final class SecurityTransformerBuildItem extends SimpleBuildItem {
         return false;
     }
 
-    private static Set<DotName> getAllSecurityAnnotations(
+    public static Set<DotName> getAllSecurityAnnotations(
             Map<AuthorizationType, Set<DotName>> authorizationTypeToSecurityAnnotations) {
         return authorizationTypeToSecurityAnnotations.values().stream()
                 .filter(Objects::nonNull)
@@ -426,7 +446,7 @@ public final class SecurityTransformerBuildItem extends SimpleBuildItem {
         }
 
         private boolean shouldCheckForSecurityAnnotations(ClassInfo ci, HashSet<String> checkedInterfaces) {
-            return isInterfaceWithTransformations != null
+            return interfaceSecurityEnabled
                     && (isInterfaceWithTransformations.test(ci) || possiblySecuredParentInterfaces.contains(ci.name()))
                     && checkedInterfaces.add(ci.name().toString());
         }
@@ -491,7 +511,7 @@ public final class SecurityTransformerBuildItem extends SimpleBuildItem {
                 indexedAnnotationInstances = annotationOverlay.index().getAnnotations(securityAnnotationName);
             }
 
-            if (interfaceTransformations == null || indexedAnnotationInstances.isEmpty()) {
+            if (!interfaceSecurityEnabled || indexedAnnotationInstances.isEmpty()) {
                 return indexedAnnotationInstances;
             }
 

@@ -1,6 +1,7 @@
 package io.quarkus.tests.dependentextension.deployment;
 
 import static io.quarkus.tests.dependentextension.Constants.QUARKUS_DEPENDENT_EXTENSION_BASE_URL;
+import static io.quarkus.tests.dependentextension.Constants.QUARKUS_DEPENDENT_EXTENSION_CONFIG_CONTAMINATED;
 import static io.quarkus.tests.dependentextension.Constants.QUARKUS_DEPENDENT_EXTENSION_SEES_DEPENDENCY;
 import static io.quarkus.tests.dependentextension.Constants.QUARKUS_OPTIONAL_DEPENDENT_EXTENSION_BASE_URL;
 import static io.quarkus.tests.dependentextension.Constants.QUARKUS_OPTIONAL_DEPENDENT_EXTENSION_SEES_DEPENDENCY;
@@ -12,6 +13,7 @@ import java.util.Map;
 
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.DevServicesAdditionalConfigBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
@@ -23,6 +25,18 @@ public class DependentDevServicesProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FEATURE);
+    }
+
+    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
+    DevServicesAdditionalConfigBuildItem detectConfigContamination() {
+        return new DevServicesAdditionalConfigBuildItem(devServicesConfig -> {
+            boolean hasDependentKey = devServicesConfig.containsKey(QUARKUS_DEPENDENT_EXTENSION_BASE_URL);
+            boolean hasSimpleKey = devServicesConfig.containsKey("acme.simpleextension.base-url");
+            if (hasDependentKey && hasSimpleKey) {
+                return Map.of(QUARKUS_DEPENDENT_EXTENSION_CONFIG_CONTAMINATED, "true");
+            }
+            return Map.of();
+        });
     }
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)

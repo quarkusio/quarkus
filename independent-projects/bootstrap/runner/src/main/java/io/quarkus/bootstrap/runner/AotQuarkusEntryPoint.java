@@ -1,14 +1,10 @@
 package io.quarkus.bootstrap.runner;
 
 import java.io.BufferedInputStream;
-import java.io.File;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.UndeclaredThrowableException;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -44,26 +40,13 @@ public class AotQuarkusEntryPoint {
     }
 
     private static void doRun(String... args) throws Throwable {
-        String path = null;
-        URL location = AotQuarkusEntryPoint.class.getProtectionDomain().getCodeSource().getLocation();
-        if (location == null) {
-            // account for https://bugs.openjdk.org/browse/JDK-8376576
-            String className = AotQuarkusEntryPoint.class.getSimpleName() + ".class";
-            URL resource = AotQuarkusEntryPoint.class.getResource(className);
-            if (resource != null) {
-                String fullPath = resource.toString();
-                if (fullPath.startsWith("jar:")) {
-                    path = fullPath.substring(9, fullPath.indexOf("!"));
-                }
-            }
-        } else {
-            path = location.getPath();
-        }
-        if (path == null) {
+        Path jarPath = QuarkusEntryPoint.resolveJarPath(
+                AotQuarkusEntryPoint.class.getProtectionDomain().getCodeSource().getLocation(),
+                AotQuarkusEntryPoint.class.getResource(AotQuarkusEntryPoint.class.getSimpleName() + ".class"));
+        if (jarPath == null) {
             throw new IllegalStateException("Unable to determine launch jar path");
         }
-        String decodedPath = URLDecoder.decode(path, StandardCharsets.UTF_8);
-        Path appRoot = new File(decodedPath).toPath().getParent().getParent().getParent();
+        Path appRoot = jarPath.getParent().getParent().getParent();
 
         // Load cached resources and main class name
         AotSerializedApplication app;

@@ -7,8 +7,6 @@ import java.util.function.Function;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
-import jakarta.transaction.Transactional;
-import jakarta.transaction.UserTransaction;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
@@ -23,9 +21,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.runtime.Startup;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
+import io.restassured.filter.log.LogDetail;
 
 public class FlywayDevModeCreateFromHibernateTest extends DevUIJsonRPCTest {
 
@@ -66,7 +66,11 @@ public class FlywayDevModeCreateFromHibernateTest extends DevUIJsonRPCTest {
                 "        return this;\n" +
                 "    }"));
         //added a field, should now fail (if hibernate were still in charge this would work)
-        RestAssured.get("fruit").then().statusCode(500);
+        RestAssured.get("fruit")
+                .then()
+                .log().ifValidationFails(LogDetail.BODY)
+                .statusCode(500)
+                .body(CoreMatchers.containsString("Column \"COLOR\" not found"));
         //now update out sql
         config.modifyResourceFile("db/create/V1.0.0__quarkus-flyway-deployment.sql", new Function<String, String>() {
             @Override
@@ -86,27 +90,18 @@ public class FlywayDevModeCreateFromHibernateTest extends DevUIJsonRPCTest {
         @Inject
         EntityManager entityManager;
 
-        @Inject
-        UserTransaction tx;
-
         @GET
         public List<Fruit> list() {
             return entityManager.createQuery("from Fruit", Fruit.class).getResultList();
         }
 
         @PostConstruct
-        @Transactional
-        public void add() throws Exception {
-            tx.begin();
-            try {
+        public void add() {
+            QuarkusTransaction.requiringNew().run(() -> {
                 Fruit f = new Fruit();
                 f.setName("Orange");
                 entityManager.persist(f);
-                tx.commit();
-            } catch (Exception e) {
-                tx.rollback();
-                throw e;
-            }
+            });
         }
 
     }

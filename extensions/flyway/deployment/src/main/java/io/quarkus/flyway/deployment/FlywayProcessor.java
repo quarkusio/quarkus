@@ -125,9 +125,8 @@ class FlywayProcessor {
         for (var dataSourceName : dataSourceNames) {
             FlywayDataSourceBuildTimeConfig flywayDataSourceBuildTimeConfig = flywayBuildTimeConfig
                     .datasources().get(dataSourceName);
-
             Collection<String> migrationLocations = discoverApplicationMigrations(
-                    flywayDataSourceBuildTimeConfig.locations());
+                    flywayDataSourceBuildTimeConfig.locations(), hotDeploymentProducer);
             applicationMigrationsToDs.put(dataSourceName, migrationLocations);
         }
         Set<String> datasourcesWithMigrations = new HashSet<>();
@@ -312,7 +311,8 @@ class FlywayProcessor {
         return result;
     }
 
-    private Collection<String> discoverApplicationMigrations(Collection<String> locations)
+    private Collection<String> discoverApplicationMigrations(Collection<String> locations,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentProducer)
             throws IOException {
         LinkedHashSet<String> applicationMigrationResources = new LinkedHashSet<>();
         // Locations can be a comma separated list
@@ -324,6 +324,11 @@ class FlywayProcessor {
             }
 
             String finalLocation = location;
+            // We need to restart/reprocess this if new migration files are added
+            hotDeploymentProducer.produce(HotDeploymentWatchedFileBuildItem.builder()
+                    .setRestartNeeded(true)
+                    .setLocationPredicate(l -> l.startsWith(finalLocation))
+                    .build());
             ClassPathUtils.consumeAsPaths(Thread.currentThread().getContextClassLoader(), location, path -> {
                 Set<String> applicationMigrations = null;
                 try {

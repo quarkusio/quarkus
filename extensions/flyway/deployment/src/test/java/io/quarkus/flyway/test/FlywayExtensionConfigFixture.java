@@ -113,7 +113,7 @@ public class FlywayExtensionConfigFixture {
     }
 
     public boolean baselineOnMigrate(String datasourceName) {
-        return getBooleanValue("quarkus.flyway.%s.baseline-on-migrate", datasourceName);
+        return getBooleanValue("quarkus.flyway.%s.baseline-on-migrate", datasourceName, false);
     }
 
     public boolean baselineOnMigrate(Configuration configuration) {
@@ -137,7 +137,7 @@ public class FlywayExtensionConfigFixture {
     }
 
     public boolean migrateAtStart(String datasourceName) {
-        return getBooleanValue("quarkus.flyway.migrate-at-start", datasourceName);
+        return getBooleanValue("quarkus.flyway.migrate-at-start", datasourceName, false);
     }
 
     public String username(String datasourceName) {
@@ -160,17 +160,21 @@ public class FlywayExtensionConfigFixture {
         return getValue(parameterName, datasourceName, Integer.class);
     }
 
-    private boolean getBooleanValue(String parameterName, String datasourceName) {
-        return getValue(parameterName, datasourceName, Boolean.class);
+    private boolean getBooleanValue(String parameterName, String datasourceName, boolean defaultValue) {
+        return getValue(parameterName, datasourceName, Boolean.class, defaultValue);
     }
 
     private <T> T getValue(String parameterName, String datasourceName, Class<T> type) {
-        return getValue(parameterName, datasourceName, type, this::log);
+        return getValue(parameterName, datasourceName, type, null, this::log);
     }
 
-    private <T> T getValue(String parameterName, String datasourceName, Class<T> type, Consumer<String> logger) {
+    private <T> T getValue(String parameterName, String datasourceName, Class<T> type, T defaultValue) {
+        return getValue(parameterName, datasourceName, type, defaultValue, this::log);
+    }
+
+    private <T> T getValue(String parameterName, String datasourceName, Class<T> type, T defaultValue, Consumer<String> logger) {
         String propertyName = fillin(parameterName, datasourceName);
-        T propertyValue = config.getValue(propertyName, type);
+        T propertyValue = config.getOptionalValue(propertyName, type).orElse(defaultValue);
         logger.accept("Config property " + propertyName + " = " + propertyValue);
         return propertyValue;
     }

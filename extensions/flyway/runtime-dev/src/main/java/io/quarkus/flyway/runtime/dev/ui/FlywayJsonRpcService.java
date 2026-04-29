@@ -22,7 +22,7 @@ import io.quarkus.dev.config.CurrentConfig;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.flyway.runtime.FlywayContainer;
 import io.quarkus.flyway.runtime.FlywayContainersSupplier;
-import io.quarkus.runtime.configuration.ConfigUtils;
+import io.quarkus.flyway.runtime.FlywayRuntimeConfig;
 
 public class FlywayJsonRpcService {
 
@@ -30,6 +30,7 @@ public class FlywayJsonRpcService {
     private Map<String, Supplier<String>> updateSqlSuppliers;
     private String artifactId;
     private Map<String, FlywayDatasource> datasources;
+    private FlywayRuntimeConfig runtimeConfig;
 
     @ConfigProperty(name = "quarkus.flyway.locations")
     private List<String> locations;
@@ -43,6 +44,10 @@ public class FlywayJsonRpcService {
 
     public void setUpdateSqlSuppliers(Map<String, Supplier<String>> updateSqlSuppliers) {
         this.updateSqlSuppliers = updateSqlSuppliers;
+    }
+
+    public void setConfig(FlywayRuntimeConfig runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
     }
 
     public void setArtifactId(String artifactId) {
@@ -122,7 +127,6 @@ public class FlywayJsonRpcService {
         Flyway flyway = getFlyway(ds);
         if (flyway != null) {
             if (script != null) {
-                Map<String, String> params = Map.of("ds", ds, "script", script, "artifactId", artifactId);
                 try {
                     if (locations.isEmpty()) {
                         return new FlywayActionResponse("error", "Datasource has no locations configured");
@@ -146,25 +150,30 @@ public class FlywayJsonRpcService {
                     FlywayDatasource flywayDatasource = datasources.get(ds);
                     flywayDatasource.hasMigrations = true;
                     flywayDatasource.createPossible = false;
+                    var dsConfig = runtimeConfig.datasources().get(ds);
                     Map<String, String> newConfig = new HashMap<>();
-                    boolean isBaselineOnMigrateConfigured = ConfigUtils
-                            .isPropertyPresent("quarkus.flyway.baseline-on-migrate");
-                    boolean isMigrateAtStartConfigured = ConfigUtils.isPropertyPresent("quarkus.flyway.migrate-at-start");
-                    boolean isCleanAtStartConfigured = ConfigUtils.isPropertyPresent("quarkus.flyway.clean-at-start");
-                    if (!isBaselineOnMigrateConfigured) {
+                    if (dsConfig.baselineOnMigrate().isEmpty()) {
                         newConfig.put("quarkus.flyway.baseline-on-migrate", "true");
                     }
-                    if (!isMigrateAtStartConfigured) {
+                    if (dsConfig.migrateAtStart().isEmpty()) {
                         newConfig.put("quarkus.flyway.migrate-at-start", "true");
                     }
                     for (var profile : of("test", "dev")) {
-                        if (!isCleanAtStartConfigured) {
+                        if (dsConfig.cleanAtStart().isEmpty()) {
                             newConfig.put("%" + profile + ".quarkus.flyway.clean-at-start", "true");
                         }
                     }
                     CurrentConfig.EDITOR.accept(newConfig);
-                    //force a scan, to make sure everything is up-to-date
-                    DevConsoleManager.getHotReplacementContext().doScan(true);
+                    // TODO ideally we'd force a scan here, but that fails because
+                    //  we end up closing the JsonRpcService that is currently executing...
+                    //  So for now we'll just rely on the next call to any API automatically triggering a restart.
+                    //  Note the line of code below has never actually worked since
+                    //  https://github.com/quarkusio/quarkus/commit/d68896ac48a0e4a6e95b60f3cb3af36e3bd98764#diff-b07030933573531c160a57f757c6949cb3d21dd4132f86656fac2e63413d24d8
+                    //  because:
+                    //  1. Adding a new Flyway file does not result in a restart; see https://github.com/quarkusio/quarkus/issues/25256
+                    //  2. The automatic addition of config was broken until the commit that commented out the line below.
+                    //  For ideas on how to fix this, see https://github.com/quarkusio/quarkus/pull/53884#discussion_r3162481517
+                    // DevConsoleManager.getHotReplacementContext().doScan(true);
                     return new FlywayActionResponse("success",
                             "Initial migration created, Flyway will now manage this datasource");
                 } catch (Throwable t) {

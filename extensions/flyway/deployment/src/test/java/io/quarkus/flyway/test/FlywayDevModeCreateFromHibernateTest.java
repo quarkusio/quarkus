@@ -78,9 +78,8 @@ public class FlywayDevModeCreateFromHibernateTest extends DevUIJsonRPCTest {
                 return s + "\nalter table FRUIT add column color VARCHAR;";
             }
         });
-        // TODO: This still fails.
-        //        RestAssured.get("fruit").then().statusCode(200)
-        //                .body("[0].name", CoreMatchers.is("Orange"));
+        RestAssured.get("fruit").then().statusCode(200)
+                .body("[0].name", CoreMatchers.is("Orange"));
     }
 
     @Path("/fruit")

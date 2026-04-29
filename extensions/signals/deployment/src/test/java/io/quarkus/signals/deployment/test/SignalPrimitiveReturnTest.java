@@ -2,8 +2,6 @@ package io.quarkus.signals.deployment.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.time.Duration;
-
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
@@ -17,7 +15,7 @@ import io.quarkus.test.QuarkusExtensionTest;
 /**
  * Verifies that a receiver method accepting and returning a primitive type is matched correctly.
  */
-public class SignalPrimitiveReturnTest {
+public class SignalPrimitiveReturnTest extends AbstractSignalTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
@@ -33,7 +31,7 @@ public class SignalPrimitiveReturnTest {
     public void testPrimitiveSignalAndResponse() {
         int result = signal.reactive().request(42, Integer.class)
                 .ifNoItem()
-                .after(Duration.ofSeconds(1))
+                .after(defaultTimeout())
                 .fail()
                 .await().indefinitely();
         assertEquals(84, result);

@@ -3,7 +3,6 @@ package io.quarkus.signals.deployment.test;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -21,7 +20,7 @@ import io.quarkus.signals.SignalContext;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
 
-public class ReceiverInheritanceComplexTest {
+public class ReceiverInheritanceComplexTest extends AbstractSignalTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
@@ -46,7 +45,7 @@ public class ReceiverInheritanceComplexTest {
         inheritingReceiver.sequence.clear();
 
         Uni<Void> result = stringEnvelope.reactive().publish(new Envelope<>("alpha", "payload"));
-        result.ifNoItem().after(Duration.ofSeconds(5)).fail().await().indefinitely();
+        result.ifNoItem().after(defaultTimeout()).fail().await().indefinitely();
 
         assertThat(inheritingReceiver.sequence).containsExactlyInAnyOrder("parent:alpha:true", "ctx:alpha");
     }
@@ -58,7 +57,7 @@ public class ReceiverInheritanceComplexTest {
         String reply = stringEnvelope
                 .setMetadata(Map.of("priority", "high"))
                 .reactive().request(new Envelope<>("beta", "data"), String.class)
-                .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                .ifNoItem().after(defaultTimeout()).fail()
                 .await().indefinitely();
 
         assertEquals("beta:high", reply);
@@ -70,7 +69,7 @@ public class ReceiverInheritanceComplexTest {
         overridingReceiver.sequence.clear();
 
         Uni<Void> result = stringEnvelope.reactive().publish(new Envelope<>("gamma", "content"));
-        result.ifNoItem().after(Duration.ofSeconds(5)).fail().await().indefinitely();
+        result.ifNoItem().after(defaultTimeout()).fail().await().indefinitely();
 
         assertThat(overridingReceiver.sequence).containsExactlyInAnyOrder("child:gamma:true", "ctx:gamma");
     }

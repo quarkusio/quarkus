@@ -25,7 +25,7 @@ import io.smallrye.mutiny.Uni;
  * is lazy: no signal is emitted until the {@link Uni} is subscribed, and each subscription
  * triggers a new, independent signal emission.
  */
-public class ResubscriptionTest {
+public class ResubscriptionTest extends AbstractSignalTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
@@ -49,12 +49,12 @@ public class ResubscriptionTest {
             Uni<Void> uni = signal.reactive().publish(new Ping("p"));
 
             // First subscription
-            uni.ifNoItem().after(Duration.ofSeconds(5)).fail()
+            uni.ifNoItem().after(defaultTimeout()).fail()
                     .await().indefinitely();
             assertEquals(1, received.size());
 
             // Second subscription of the same Uni — should trigger a new emission
-            uni.ifNoItem().after(Duration.ofSeconds(5)).fail()
+            uni.ifNoItem().after(defaultTimeout()).fail()
                     .await().indefinitely();
             assertEquals(2, received.size());
         } finally {
@@ -74,12 +74,12 @@ public class ResubscriptionTest {
             Uni<Void> uni = signal.reactive().send(new Ping("s"));
 
             // First subscription
-            uni.ifNoItem().after(Duration.ofSeconds(5)).fail()
+            uni.ifNoItem().after(defaultTimeout()).fail()
                     .await().indefinitely();
             assertEquals(1, count.get());
 
             // Second subscription of the same Uni — should trigger a new emission
-            uni.ifNoItem().after(Duration.ofSeconds(5)).fail()
+            uni.ifNoItem().after(defaultTimeout()).fail()
                     .await().indefinitely();
             assertEquals(2, count.get());
         } finally {
@@ -100,12 +100,12 @@ public class ResubscriptionTest {
             Uni<String> uni = signal.reactive().request(new Ping("r"), String.class);
 
             // First subscription
-            String first = uni.ifNoItem().after(Duration.ofSeconds(5)).fail()
+            String first = uni.ifNoItem().after(defaultTimeout()).fail()
                     .await().indefinitely();
             assertEquals("reply_1", first);
 
             // Second subscription of the same Uni — should trigger a new emission
-            String second = uni.ifNoItem().after(Duration.ofSeconds(5)).fail()
+            String second = uni.ifNoItem().after(defaultTimeout()).fail()
                     .await().indefinitely();
             assertEquals("reply_2", second);
         } finally {
@@ -127,7 +127,7 @@ public class ResubscriptionTest {
 
             Awaitility.await()
                     .during(Duration.ofMillis(500))
-                    .atMost(Duration.ofSeconds(1))
+                    .atMost(defaultTimeout())
                     .until(() -> count.get() == 0);
         } finally {
             reg.unregister();
@@ -148,7 +148,7 @@ public class ResubscriptionTest {
 
             Awaitility.await()
                     .during(Duration.ofMillis(500))
-                    .atMost(Duration.ofSeconds(1))
+                    .atMost(defaultTimeout())
                     .until(() -> count.get() == 0);
         } finally {
             reg.unregister();
@@ -171,7 +171,7 @@ public class ResubscriptionTest {
 
             Awaitility.await()
                     .during(Duration.ofMillis(500))
-                    .atMost(Duration.ofSeconds(1))
+                    .atMost(defaultTimeout())
                     .until(() -> count.get() == 0);
         } finally {
             reg.unregister();

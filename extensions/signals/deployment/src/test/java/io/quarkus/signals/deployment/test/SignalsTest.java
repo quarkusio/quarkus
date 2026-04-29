@@ -10,7 +10,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -34,7 +33,7 @@ import io.quarkus.signals.Signal;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
 
-public class SignalsTest {
+public class SignalsTest extends AbstractSignalTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
@@ -71,7 +70,7 @@ public class SignalsTest {
         myReceivers.sequence.clear();
         Uni<String> uni = reactiveFoo.reactive().request(new Foo("req"), String.class);
         assertEquals("REQ", uni.ifNoItem()
-                .after(Duration.ofSeconds(1))
+                .after(defaultTimeout())
                 .fail()
                 .await().indefinitely());
         assertEquals(1, myReceivers.sequence.size());
@@ -80,7 +79,7 @@ public class SignalsTest {
         myReceivers.sequence.clear();
         assertEquals("req", foo.reactive().request(new Foo("REQ"), String.class)
                 .ifNoItem()
-                .after(Duration.ofSeconds(1))
+                .after(defaultTimeout())
                 .fail()
                 .await().indefinitely());
         assertEquals(1, myReceivers.sequence.size());
@@ -90,7 +89,7 @@ public class SignalsTest {
         myReceivers.sequence.clear();
         assertEquals(3, asyncFoo.reactive().request(new Foo("req"), Integer.class)
                 .ifNoItem()
-                .after(Duration.ofSeconds(1))
+                .after(defaultTimeout())
                 .fail()
                 .await().indefinitely());
         assertEquals(1, myReceivers.sequence.size());
@@ -100,7 +99,7 @@ public class SignalsTest {
         myReceivers.sequence.clear();
         assertNull(foo.reactive().request(new Foo("REQ"), int.class)
                 .ifNoItem()
-                .after(Duration.ofSeconds(1))
+                .after(defaultTimeout())
                 .fail()
                 .await().indefinitely());
         assertEquals(0, myReceivers.sequence.size());

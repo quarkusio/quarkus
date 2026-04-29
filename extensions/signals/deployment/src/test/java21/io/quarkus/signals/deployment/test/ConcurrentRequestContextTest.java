@@ -8,7 +8,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -43,7 +42,7 @@ import io.smallrye.mutiny.Uni;
  * and verifies that every CDI request context activated by the built-in
  * {@code RequestContextInterceptor} is terminated correctly.
  */
-public class ConcurrentRequestContextTest {
+public class ConcurrentRequestContextTest extends AbstractSignalTest {
 
     static final int CONCURRENCY = 1000;
 
@@ -90,30 +89,30 @@ public class ConcurrentRequestContextTest {
 
                 // publish - delivers to all three receivers
                 futures.add(executor.submit(() -> signal.reactive().publish(new Cmd(id))
-                        .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                        .ifNoItem().after(defaultTimeout()).fail()
                         .await().indefinitely()));
 
                 // send - delivers to one receiver (round-robin)
                 futures.add(executor.submit(() -> signal.reactive().send(new Cmd(id))
-                        .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                        .ifNoItem().after(defaultTimeout()).fail()
                         .await().indefinitely()));
 
                 // request - use qualifiers to target each execution model
                 futures.add(executor.submit(() -> {
                     String result = blockingSignal.reactive().request(new Cmd(id), String.class)
-                            .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                            .ifNoItem().after(defaultTimeout()).fail()
                             .await().indefinitely();
                     assertThat(result).isEqualTo("blocking-" + id);
                 }));
                 futures.add(executor.submit(() -> {
                     String result = reactiveSignal.reactive().request(new Cmd(id), String.class)
-                            .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                            .ifNoItem().after(defaultTimeout()).fail()
                             .await().indefinitely();
                     assertThat(result).isEqualTo("reactive-" + id);
                 }));
                 futures.add(executor.submit(() -> {
                     String result = vtSignal.reactive().request(new Cmd(id), String.class)
-                            .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                            .ifNoItem().after(defaultTimeout()).fail()
                             .await().indefinitely();
                     assertThat(result).isEqualTo("vt-" + id);
                 }));
@@ -128,7 +127,7 @@ public class ConcurrentRequestContextTest {
 
         // publish hits 3 receivers, send hits 1, and 3 qualified requests hit 1 each
         int expectedContexts = CONCURRENCY * (3 + 1 + 3);
-        Awaitility.await().atMost(Duration.ofSeconds(5))
+        Awaitility.await().atMost(defaultTimeout())
                 .untilAsserted(() -> {
                     assertThat(RequestScopedTracker.CREATED)
                             .as("Each receiver invocation must get a unique request-scoped bean")

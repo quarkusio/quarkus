@@ -2,7 +2,6 @@ package io.quarkus.signals.deployment.test;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -17,7 +16,7 @@ import io.quarkus.signals.Signal;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
 
-public class ReceiverInheritanceTest {
+public class ReceiverInheritanceTest extends AbstractSignalTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
@@ -47,7 +46,7 @@ public class ReceiverInheritanceTest {
         overridingReceiverChild.sequence.clear();
 
         Uni<Void> result = msg.reactive().publish(new Msg("test"));
-        result.ifNoItem().after(Duration.ofSeconds(5)).fail().await().indefinitely();
+        result.ifNoItem().after(defaultTimeout()).fail().await().indefinitely();
 
         // InheritingChild inherits the receiver method from BaseReceiver
         assertThat(inheritingChild.sequence).containsExactly("parent_test");

@@ -3,7 +3,6 @@ package io.quarkus.signals.deployment.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -27,7 +26,7 @@ import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.common.annotation.Identifier;
 import io.smallrye.mutiny.Uni;
 
-public class SecurityIntegrationTest {
+public class SecurityIntegrationTest extends AbstractSignalTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
@@ -44,14 +43,14 @@ public class SecurityIntegrationTest {
 
         IdentityMock.setUpAuth(IdentityMock.ADMIN);
         String result = signal.reactive().request(new Cmd("Hello"), String.class)
-                .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                .ifNoItem().after(defaultTimeout()).fail()
                 .await().indefinitely();
         assertEquals("hello", result);
 
         assertThrows(UnauthorizedException.class, () -> {
             IdentityMock.setUpAuth(IdentityMock.ANONYMOUS);
             signal.reactive().request(new Cmd("Hi"), String.class)
-                    .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                    .ifNoItem().after(defaultTimeout()).fail()
                     .await().indefinitely();
         });
         assertEquals(1, MyReceivers.CMDS.size());

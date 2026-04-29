@@ -2,8 +2,6 @@ package io.quarkus.signals.deployment.test;
 
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import java.time.Duration;
-
 import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
@@ -16,7 +14,7 @@ import io.smallrye.mutiny.Uni;
 /**
  * Verifies that emitting a signal with no matching receivers does not fail.
  */
-public class SignalNoReceiverTest {
+public class SignalNoReceiverTest extends AbstractSignalTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
@@ -40,14 +38,14 @@ public class SignalNoReceiverTest {
     @Test
     public void testPublishUniNoReceiver() {
         Uni<Void> result = orphan.reactive().publish(new Orphan("nobody"));
-        assertNull(result.ifNoItem().after(Duration.ofSeconds(1)).fail()
+        assertNull(result.ifNoItem().after(defaultTimeout()).fail()
                 .await().indefinitely());
     }
 
     @Test
     public void testSendUniNoReceiver() {
         Uni<Void> result = orphan.reactive().send(new Orphan("nobody"));
-        assertNull(result.ifNoItem().after(Duration.ofSeconds(1)).fail()
+        assertNull(result.ifNoItem().after(defaultTimeout()).fail()
                 .await().indefinitely());
     }
 
@@ -60,7 +58,7 @@ public class SignalNoReceiverTest {
     public void testRequestUniNoReceiver() {
         String result = orphan.reactive().request(new Orphan("nobody"), String.class)
                 .ifNoItem()
-                .after(Duration.ofSeconds(1))
+                .after(defaultTimeout())
                 .fail()
                 .await().indefinitely();
         assertNull(result);

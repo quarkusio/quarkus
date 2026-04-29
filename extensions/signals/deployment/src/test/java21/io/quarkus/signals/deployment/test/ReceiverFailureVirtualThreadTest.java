@@ -3,7 +3,6 @@ package io.quarkus.signals.deployment.test;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.time.Duration;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -26,7 +25,7 @@ import io.smallrye.mutiny.Uni;
 /**
  * Virtual-thread-specific failure tests extracted from {@link ReceiverFailureTest}.
  */
-public class ReceiverFailureVirtualThreadTest {
+public class ReceiverFailureVirtualThreadTest extends AbstractSignalTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
@@ -55,7 +54,7 @@ public class ReceiverFailureVirtualThreadTest {
         try {
             var failure = assertThrows(CompositeException.class,
                     () -> cmd.reactive().publish(new Cmd("v"))
-                            .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                            .ifNoItem().after(defaultTimeout()).fail()
                             .await().indefinitely());
             assertInstanceOf(IllegalStateException.class, failure.getCauses().get(0));
         } finally {
@@ -77,7 +76,7 @@ public class ReceiverFailureVirtualThreadTest {
         try {
             assertThrows(IllegalStateException.class,
                     () -> cmd.reactive().send(new Cmd("v"))
-                            .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                            .ifNoItem().after(defaultTimeout()).fail()
                             .await().indefinitely());
         } finally {
             reg.unregister();
@@ -99,7 +98,7 @@ public class ReceiverFailureVirtualThreadTest {
         try {
             assertThrows(IllegalStateException.class,
                     () -> cmd.reactive().request(new Cmd("v"), String.class)
-                            .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                            .ifNoItem().after(defaultTimeout()).fail()
                             .await().indefinitely());
         } finally {
             reg.unregister();
@@ -110,7 +109,7 @@ public class ReceiverFailureVirtualThreadTest {
     public void testDeclarativePublishFailureVirtualThread() {
         var failure = assertThrows(CompositeException.class,
                 () -> virtualSignal.reactive().publish(new VirtualCmd())
-                        .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                        .ifNoItem().after(defaultTimeout()).fail()
                         .await().indefinitely());
         assertInstanceOf(IllegalStateException.class, failure.getCauses().get(0));
     }
@@ -119,7 +118,7 @@ public class ReceiverFailureVirtualThreadTest {
     public void testDeclarativeSendFailureVirtualThread() {
         assertThrows(IllegalStateException.class,
                 () -> virtualSignal.reactive().send(new VirtualCmd())
-                        .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                        .ifNoItem().after(defaultTimeout()).fail()
                         .await().indefinitely());
     }
 

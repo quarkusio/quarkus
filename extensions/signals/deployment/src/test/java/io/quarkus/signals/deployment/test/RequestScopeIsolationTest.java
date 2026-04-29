@@ -3,7 +3,6 @@ package io.quarkus.signals.deployment.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 
 import jakarta.annotation.PostConstruct;
@@ -25,7 +24,7 @@ import io.smallrye.mutiny.Uni;
  * The {@link RequestScoped} bean injected in the receiver must be a different instance
  * from the one obtained in the caller's request context.
  */
-public class RequestScopeIsolationTest {
+public class RequestScopeIsolationTest extends AbstractSignalTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
@@ -39,14 +38,14 @@ public class RequestScopeIsolationTest {
     @Test
     public void testBlockingReceiverHasSeparateRequestScope() {
         sender.sendBlocking()
-                .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                .ifNoItem().after(defaultTimeout()).fail()
                 .await().indefinitely();
     }
 
     @Test
     public void testReactiveReceiverHasSeparateRequestScope() {
         sender.sendReactive()
-                .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                .ifNoItem().after(defaultTimeout()).fail()
                 .await().indefinitely();
     }
 

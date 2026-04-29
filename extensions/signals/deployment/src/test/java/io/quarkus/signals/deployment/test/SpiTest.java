@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
@@ -33,7 +32,7 @@ import io.smallrye.mutiny.Uni;
 /**
  * Tests {@link SignalMetadataEnricher} and {@link ReceiverInterceptor} SPI.
  */
-public class SpiTest {
+public class SpiTest extends AbstractSignalTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
@@ -61,7 +60,7 @@ public class SpiTest {
         receivers.receivedContexts.clear();
 
         String result = signal.reactive().request(new Cmd("hello"), String.class)
-                .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                .ifNoItem().after(defaultTimeout()).fail()
                 .await().indefinitely();
 
         assertNotNull(result);
@@ -85,7 +84,7 @@ public class SpiTest {
         receivers.receivedContexts.clear();
 
         signal.reactive().request(new Cmd("order"), String.class)
-                .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                .ifNoItem().after(defaultTimeout()).fail()
                 .await().indefinitely();
 
         assertTrue(timestampEnricher.correlationIdPresentAtEnrichTime,
@@ -98,7 +97,7 @@ public class SpiTest {
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> {
             signal.putMetadata("correlationId", "existing")
                     .reactive().request(new Cmd("dup"), String.class)
-                    .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                    .ifNoItem().after(defaultTimeout()).fail()
                     .await().indefinitely();
         });
         assertTrue(e.getMessage().contains("correlationId"));
@@ -111,7 +110,7 @@ public class SpiTest {
         // LoggingInterceptor
         // TransformInterceptor uppercases String results
         String result = signal.reactive().request(new Cmd("hello"), String.class)
-                .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                .ifNoItem().after(defaultTimeout()).fail()
                 .await().indefinitely();
 
         assertEquals(1, loggingInterceptor.log.size());
@@ -126,7 +125,7 @@ public class SpiTest {
 
         // publish delivers to all receivers — interceptor should be called for each
         signal.reactive().publish(new Cmd("multi"))
-                .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                .ifNoItem().after(defaultTimeout()).fail()
                 .await().indefinitely();
 
         assertEquals(2, loggingInterceptor.log.size());
@@ -139,7 +138,7 @@ public class SpiTest {
         receivers.receiverRequestIds.clear();
 
         signal.reactive().request(new Cmd("ctx-test"), String.class)
-                .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                .ifNoItem().after(defaultTimeout()).fail()
                 .await().indefinitely();
 
         assertEquals(1, loggingInterceptor.interceptorRequestIds.size());

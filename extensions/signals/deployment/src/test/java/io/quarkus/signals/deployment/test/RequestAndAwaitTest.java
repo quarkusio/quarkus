@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import jakarta.enterprise.util.TypeLiteral;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
@@ -21,7 +22,7 @@ import io.smallrye.mutiny.Uni;
 /**
  * Verifies that {@link Signal#request(Object, Class)} blocks until the response is available.
  */
-public class RequestAndAwaitTest {
+public class RequestAndAwaitTest extends AbstractSignalTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
@@ -58,6 +59,28 @@ public class RequestAndAwaitTest {
     public void testReceiverFailure() {
         assertThrows(IllegalStateException.class,
                 () -> signal.request(new Cmd("fail"), String.class));
+    }
+
+    @Test
+    public void testRequestWithTypeLiteral() {
+        String result = signal.request(new Cmd("hello"), new TypeLiteral<String>() {
+        });
+        assertEquals("HELLO", result);
+    }
+
+    @Test
+    public void testRequestWithTypeLiteralNoMatch() {
+        Double result = signal.request(new Cmd("hello"), new TypeLiteral<Double>() {
+        });
+        assertNull(result);
+    }
+
+    @Test
+    public void testReactiveRequestWithTypeLiteral() {
+        String result = signal.reactive().request(new Cmd("hello"), new TypeLiteral<String>() {
+        }).ifNoItem().after(defaultTimeout()).fail()
+                .await().indefinitely();
+        assertEquals("HELLO", result);
     }
 
     @Singleton

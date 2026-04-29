@@ -1,9 +1,11 @@
 package io.quarkus.signals.deployment.test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -27,7 +29,7 @@ import io.smallrye.mutiny.Uni;
  * returned by {@link Signal.Emission#emit(Object)} for all execution models.
  * Tests both programmatic and declarative receivers.
  */
-public class ReceiverFailureTest {
+public class ReceiverFailureTest extends AbstractSignalTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
@@ -61,7 +63,7 @@ public class ReceiverFailureTest {
         try {
             var failure = assertThrows(CompositeException.class,
                     () -> cmd.reactive().publish(new Cmd("w"))
-                            .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                            .ifNoItem().after(defaultTimeout()).fail()
                             .await().indefinitely());
             assertInstanceOf(IllegalStateException.class, failure.getCauses().get(0));
         } finally {
@@ -83,7 +85,7 @@ public class ReceiverFailureTest {
         try {
             var failure = assertThrows(CompositeException.class,
                     () -> cmd.reactive().publish(new Cmd("e"))
-                            .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                            .ifNoItem().after(defaultTimeout()).fail()
                             .await().indefinitely());
             assertInstanceOf(IllegalStateException.class, failure.getCauses().get(0));
         } finally {
@@ -105,7 +107,7 @@ public class ReceiverFailureTest {
         try {
             assertThrows(IllegalStateException.class,
                     () -> cmd.reactive().send(new Cmd("w"))
-                            .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                            .ifNoItem().after(defaultTimeout()).fail()
                             .await().indefinitely());
         } finally {
             reg.unregister();
@@ -126,7 +128,7 @@ public class ReceiverFailureTest {
         try {
             assertThrows(IllegalStateException.class,
                     () -> cmd.reactive().send(new Cmd("e"))
-                            .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                            .ifNoItem().after(defaultTimeout()).fail()
                             .await().indefinitely());
         } finally {
             reg.unregister();
@@ -148,7 +150,7 @@ public class ReceiverFailureTest {
         try {
             assertThrows(IllegalStateException.class,
                     () -> cmd.reactive().request(new Cmd("w"), String.class)
-                            .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                            .ifNoItem().after(defaultTimeout()).fail()
                             .await().indefinitely());
         } finally {
             reg.unregister();
@@ -170,7 +172,7 @@ public class ReceiverFailureTest {
         try {
             assertThrows(IllegalStateException.class,
                     () -> cmd.reactive().request(new Cmd("e"), String.class)
-                            .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                            .ifNoItem().after(defaultTimeout()).fail()
                             .await().indefinitely());
         } finally {
             reg.unregister();
@@ -181,7 +183,7 @@ public class ReceiverFailureTest {
     public void testDeclarativePublishFailureWorkerThread() {
         var failure = assertThrows(CompositeException.class,
                 () -> workerSignal.reactive().publish(new WorkerCmd())
-                        .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                        .ifNoItem().after(defaultTimeout()).fail()
                         .await().indefinitely());
         assertInstanceOf(IllegalStateException.class, failure.getCauses().get(0));
     }
@@ -190,7 +192,7 @@ public class ReceiverFailureTest {
     public void testDeclarativePublishFailureEventLoop() {
         var failure = assertThrows(CompositeException.class,
                 () -> eventLoopSignal.reactive().publish(new EventLoopCmd())
-                        .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                        .ifNoItem().after(defaultTimeout()).fail()
                         .await().indefinitely());
         assertInstanceOf(IllegalStateException.class, failure.getCauses().get(0));
     }
@@ -199,7 +201,7 @@ public class ReceiverFailureTest {
     public void testDeclarativeSendFailureWorkerThread() {
         assertThrows(IllegalStateException.class,
                 () -> workerSignal.reactive().send(new WorkerCmd())
-                        .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                        .ifNoItem().after(defaultTimeout()).fail()
                         .await().indefinitely());
     }
 
@@ -207,8 +209,45 @@ public class ReceiverFailureTest {
     public void testDeclarativeSendFailureEventLoop() {
         assertThrows(IllegalStateException.class,
                 () -> eventLoopSignal.reactive().send(new EventLoopCmd())
-                        .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                        .ifNoItem().after(defaultTimeout()).fail()
                         .await().indefinitely());
+    }
+
+    @Test
+    public void testPublishPartialFailure() {
+        List<String> received = new CopyOnWriteArrayList<>();
+
+        // One receiver succeeds
+        var regOk = receivers.newReceiver(Cmd.class)
+                .notify(new Consumer<SignalContext<Cmd>>() {
+                    @Override
+                    public void accept(SignalContext<Cmd> ctx) {
+                        received.add("ok_" + ctx.signal().id());
+                    }
+                });
+        // Another receiver fails
+        var regFail = receivers.newReceiver(Cmd.class)
+                .notify(new Consumer<SignalContext<Cmd>>() {
+                    @Override
+                    public void accept(SignalContext<Cmd> ctx) {
+                        throw new IllegalStateException("partial-boom");
+                    }
+                });
+        try {
+            var failure = assertThrows(CompositeException.class,
+                    () -> cmd.reactive().publish(new Cmd("partial"))
+                            .ifNoItem().after(defaultTimeout()).fail()
+                            .await().indefinitely());
+            // The successful receiver should still have been invoked
+            assertEquals(1, received.size());
+            assertEquals("ok_partial", received.get(0));
+            // The composite exception should contain exactly one cause
+            assertEquals(1, failure.getCauses().size());
+            assertInstanceOf(IllegalStateException.class, failure.getCauses().get(0));
+        } finally {
+            regOk.unregister();
+            regFail.unregister();
+        }
     }
 
     record Cmd(String id) {

@@ -38,13 +38,14 @@ public class ReceiversVirtualThreadTest {
                 .notify(ctx -> {
                     virtualFlags.add(Thread.currentThread().isVirtual());
                 });
-
-        order.publish(new Order("vt"));
-        Awaitility.await().until(() -> virtualFlags.size() >= 1);
-        assertEquals(1, virtualFlags.size());
-        assertTrue(virtualFlags.get(0), "Receiver should be executed on a virtual thread");
-
-        reg.unregister();
+        try {
+            order.publish(new Order("vt"));
+            Awaitility.await().until(() -> virtualFlags.size() >= 1);
+            assertEquals(1, virtualFlags.size());
+            assertTrue(virtualFlags.get(0), "Receiver should be executed on a virtual thread");
+        } finally {
+            reg.unregister();
+        }
     }
 
     record Order(String id) {

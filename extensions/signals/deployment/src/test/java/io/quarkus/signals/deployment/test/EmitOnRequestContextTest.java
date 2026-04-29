@@ -2,7 +2,6 @@ package io.quarkus.signals.deployment.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
@@ -27,7 +26,7 @@ import io.smallrye.mutiny.Uni;
  * is terminated correctly even when a reactive receiver uses {@code emitOn} to switch
  * the executor for downstream Uni operators.
  */
-public class EmitOnRequestContextTest {
+public class EmitOnRequestContextTest extends AbstractSignalTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
@@ -45,7 +44,7 @@ public class EmitOnRequestContextTest {
         receiver.threadNames.clear();
 
         String result = signal.reactive().request(new Cmd(), String.class)
-                .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                .ifNoItem().after(defaultTimeout()).fail()
                 .await().indefinitely();
 
         assertThat(result).isEqualTo("done");
@@ -53,7 +52,7 @@ public class EmitOnRequestContextTest {
         assertThat(receiver.threadNames).hasSize(2);
         assertThat(receiver.threadNames.get(0)).isNotEqualTo(receiver.threadNames.get(1));
         // the request context must have been terminated
-        Awaitility.await().atMost(Duration.ofSeconds(5))
+        Awaitility.await().atMost(defaultTimeout())
                 .untilAsserted(() -> assertThat(RequestScopedService.DESTROYED).hasSize(1));
         assertThat(RequestScopedService.DESTROYED.get(0)).isEqualTo(receiver.threadNames.get(0));
     }

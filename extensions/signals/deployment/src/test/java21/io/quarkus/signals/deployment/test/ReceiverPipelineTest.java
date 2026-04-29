@@ -3,7 +3,6 @@ package io.quarkus.signals.deployment.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -29,7 +28,7 @@ import io.smallrye.mutiny.Uni;
  * <li>Stage 3 (virtual thread): receives {@link EnrichedOrder}, produces the final {@link ShipmentConfirmation}</li>
  * </ol>
  */
-public class ReceiverPipelineTest {
+public class ReceiverPipelineTest extends AbstractSignalTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
@@ -61,7 +60,7 @@ public class ReceiverPipelineTest {
         // Kick off the pipeline: PlaceOrder → ValidatedOrder → EnrichedOrder → ShipmentConfirmation
         ShipmentConfirmation confirmation = placeOrder.reactive().request(new PlaceOrder("ORD-1", "Widget", 3),
                 ShipmentConfirmation.class)
-                .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                .ifNoItem().after(defaultTimeout()).fail()
                 .await().indefinitely();
 
         assertEquals("ORD-1", confirmation.orderId());
@@ -81,11 +80,11 @@ public class ReceiverPipelineTest {
     public void testPipelineMultipleOrders() {
         ShipmentConfirmation c1 = placeOrder
                 .reactive().request(new PlaceOrder("A", "Gadget", 2), ShipmentConfirmation.class)
-                .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                .ifNoItem().after(defaultTimeout()).fail()
                 .await().indefinitely();
         ShipmentConfirmation c2 = placeOrder
                 .reactive().request(new PlaceOrder("B", "Gizmo", 5), ShipmentConfirmation.class)
-                .ifNoItem().after(Duration.ofSeconds(5)).fail()
+                .ifNoItem().after(defaultTimeout()).fail()
                 .await().indefinitely();
 
         assertEquals("A", c1.orderId());

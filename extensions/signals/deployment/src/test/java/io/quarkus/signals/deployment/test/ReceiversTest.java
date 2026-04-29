@@ -5,12 +5,12 @@ import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.util.AnnotationLiteral;
+import jakarta.enterprise.util.TypeLiteral;
 import jakarta.inject.Inject;
 import jakarta.inject.Qualifier;
 
@@ -26,15 +27,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.signals.Receivers;
 import io.quarkus.signals.Signal;
+import io.quarkus.signals.spi.Receiver.ExecutionModel;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
 
 /**
  * Verifies programmatic registration and unregistration of receivers via {@link Receivers}.
  */
-public class ReceiversTest {
+public class ReceiversTest extends AbstractSignalTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
@@ -91,15 +94,16 @@ public class ReceiversTest {
                 .notify(ctx -> {
                     return Uni.createFrom().item("processed_" + ctx.signal().id());
                 });
-
-        String result = order.reactive().request(new Order("42"), String.class)
-                .ifNoItem()
-                .after(Duration.ofSeconds(1))
-                .fail()
-                .await().indefinitely();
-        assertEquals("processed_42", result);
-
-        reg.unregister();
+        try {
+            String result = order.reactive().request(new Order("42"), String.class)
+                    .ifNoItem()
+                    .after(defaultTimeout())
+                    .fail()
+                    .await().indefinitely();
+            assertEquals("processed_42", result);
+        } finally {
+            reg.unregister();
+        }
     }
 
     @Test
@@ -112,23 +116,24 @@ public class ReceiversTest {
                 .notify(ctx -> {
                     received.add("priority_" + ctx.signal().id());
                 });
-
-        // Unqualified publish — should NOT reach the @Priority receiver
-        anyOrder.publish(new Order("1"));
         try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            // Unqualified publish — should NOT reach the @Priority receiver
+            anyOrder.publish(new Order("1"));
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            assertTrue(received.isEmpty(), "Qualified receiver should not receive unqualified signal");
+
+            // Qualified publish — should reach the @Priority receiver
+            anyOrder.select(Priority.Literal.INSTANCE).publish(new Order("2"));
+            Awaitility.await().until(() -> received.size() >= 1);
+            assertEquals(1, received.size());
+            assertEquals("priority_2", received.get(0));
+        } finally {
+            reg.unregister();
         }
-        assertTrue(received.isEmpty(), "Qualified receiver should not receive unqualified signal");
-
-        // Qualified publish — should reach the @Priority receiver
-        anyOrder.select(Priority.Literal.INSTANCE).publish(new Order("2"));
-        Awaitility.await().until(() -> received.size() >= 1);
-        assertEquals(1, received.size());
-        assertEquals("priority_2", received.get(0));
-
-        reg.unregister();
     }
 
     @Test
@@ -161,15 +166,79 @@ public class ReceiversTest {
                     requestBean.ping();
                     return Uni.createFrom().item("ok");
                 });
+        try {
+            String result = order.reactive().request(new Order("req-ctx"), String.class)
+                    .ifNoItem().after(defaultTimeout()).fail()
+                    .await().indefinitely();
 
-        String result = order.reactive().request(new Order("req-ctx"), String.class)
-                .ifNoItem().after(Duration.ofSeconds(5)).fail()
-                .await().indefinitely();
+            assertEquals("ok", result);
+            assertTrue(requestContextActive.get(),
+                    "Request context must be active during programmatic receiver notification");
+        } finally {
+            reg.unregister();
+        }
+    }
 
-        assertEquals("ok", result);
-        assertTrue(requestContextActive.get(), "Request context must be active during programmatic receiver notification");
+    @Test
+    public void testNewReceiverWithTypeLiteral() {
+        List<String> received = new CopyOnWriteArrayList<>();
 
-        reg.unregister();
+        var reg = receivers.newReceiver(new TypeLiteral<Order>() {
+        }).notify(ctx -> {
+            received.add("tl_" + ctx.signal().id());
+        });
+        try {
+            order.publish(new Order("tl1"));
+            Awaitility.await().until(() -> received.size() >= 1);
+            assertEquals(1, received.size());
+            assertEquals("tl_tl1", received.get(0));
+        } finally {
+            reg.unregister();
+        }
+    }
+
+    @Test
+    public void testSetExecutionModelBlocking() {
+        AtomicBoolean blockingAllowed = new AtomicBoolean();
+
+        var reg = receivers.newReceiver(Order.class)
+                .setExecutionModel(ExecutionModel.BLOCKING)
+                .setResponseType(String.class)
+                .notify(ctx -> {
+                    blockingAllowed.set(BlockingOperationControl.isBlockingAllowed());
+                    return Uni.createFrom().item("done");
+                });
+        try {
+            String result = order.reactive().request(new Order("em-blocking"), String.class)
+                    .ifNoItem().after(defaultTimeout()).fail()
+                    .await().indefinitely();
+            assertEquals("done", result);
+            assertTrue(blockingAllowed.get(), "BLOCKING execution model must allow blocking operations");
+        } finally {
+            reg.unregister();
+        }
+    }
+
+    @Test
+    public void testSetExecutionModelNonBlocking() {
+        AtomicBoolean blockingAllowed = new AtomicBoolean(true);
+
+        var reg = receivers.newReceiver(Order.class)
+                .setExecutionModel(ExecutionModel.NON_BLOCKING)
+                .setResponseType(String.class)
+                .notify(ctx -> {
+                    blockingAllowed.set(BlockingOperationControl.isBlockingAllowed());
+                    return Uni.createFrom().item("done");
+                });
+        try {
+            String result = order.reactive().request(new Order("em-nonblocking"), String.class)
+                    .ifNoItem().after(defaultTimeout()).fail()
+                    .await().indefinitely();
+            assertEquals("done", result);
+            assertFalse(blockingAllowed.get(), "NON_BLOCKING execution model must not allow blocking operations");
+        } finally {
+            reg.unregister();
+        }
     }
 
     record Order(String id) {

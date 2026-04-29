@@ -2,7 +2,6 @@ package io.quarkus.signals.deployment.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -24,7 +23,7 @@ import io.smallrye.mutiny.Uni;
  * Verifies that a {@link Dependent} bean injected as a parameter of a receiver method
  * is destroyed after the notification completes.
  */
-public class DependentParamDestroyedTest {
+public class DependentParamDestroyedTest extends AbstractSignalTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
@@ -49,7 +48,7 @@ public class DependentParamDestroyedTest {
         DependentService.EVENTS.clear();
         String result = cmd2.reactive().request(new Cmd2("reactive"), String.class)
                 .ifNoItem()
-                .after(Duration.ofSeconds(1))
+                .after(defaultTimeout())
                 .fail()
                 .await().indefinitely();
         assertEquals("reactive", result);

@@ -2,10 +2,10 @@ package io.quarkus.signals.deployment.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import jakarta.enterprise.util.TypeLiteral;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
@@ -22,7 +22,7 @@ import io.smallrye.mutiny.Uni;
  * Verifies that {@link Signal#select(Class, java.lang.annotation.Annotation...)} narrows
  * the signal type to a subtype for receiver matching.
  */
-public class SignalSelectSubtypeTest {
+public class SignalSelectSubtypeTest extends AbstractSignalTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
@@ -51,12 +51,27 @@ public class SignalSelectSubtypeTest {
         Uni<String> uni = taskEvent.select(TaskCompleted.class)
                 .reactive().request(new TaskCompleted("deploy"), String.class);
         String result = uni.ifNoItem()
-                .after(Duration.ofSeconds(1))
+                .after(defaultTimeout())
                 .fail()
                 .await().indefinitely();
         assertEquals("DEPLOY", result);
         assertEquals(1, receivers.sequence.size());
         assertEquals("completed_deploy", receivers.sequence.get(0));
+    }
+
+    @Test
+    public void testSelectSubtypeWithTypeLiteral() {
+        receivers.sequence.clear();
+
+        Uni<String> uni = taskEvent.select(new TypeLiteral<TaskCompleted>() {
+        }).reactive().request(new TaskCompleted("release"), String.class);
+        String result = uni.ifNoItem()
+                .after(defaultTimeout())
+                .fail()
+                .await().indefinitely();
+        assertEquals("RELEASE", result);
+        assertEquals(1, receivers.sequence.size());
+        assertEquals("completed_release", receivers.sequence.get(0));
     }
 
     @Singleton

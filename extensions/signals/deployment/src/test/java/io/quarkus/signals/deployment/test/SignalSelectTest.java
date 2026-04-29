@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -30,7 +29,7 @@ import io.smallrye.mutiny.Uni;
  * Verifies that {@link Signal#select(java.lang.annotation.Annotation...)} narrows
  * the set of matching receivers at runtime.
  */
-public class SignalSelectTest {
+public class SignalSelectTest extends AbstractSignalTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
@@ -51,7 +50,7 @@ public class SignalSelectTest {
         Uni<String> uni = msg.select(Urgent.Literal.INSTANCE)
                 .reactive().request(new Msg("fire"), String.class);
         String result = uni.ifNoItem()
-                .after(Duration.ofSeconds(1))
+                .after(defaultTimeout())
                 .fail()
                 .await().indefinitely();
         assertEquals("FIRE", result);

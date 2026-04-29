@@ -7,8 +7,8 @@ import org.jboss.jandex.DotName;
 import io.quarkus.signals.Receives;
 import io.quarkus.signals.Signal;
 import io.quarkus.signals.SignalContext;
-import io.quarkus.signals.spi.ComponentOrder;
 import io.quarkus.signals.spi.ReceiverInterceptor;
+import io.quarkus.signals.spi.RelativeOrder;
 import io.quarkus.signals.spi.SignalMetadataEnricher;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
@@ -26,7 +26,7 @@ class DotNames {
     static final DotName BLOCKING = DotName.createSimple(Blocking.class);
     static final DotName NON_BLOCKING = DotName.createSimple(NonBlocking.class);
     static final DotName IDENTIFIER = DotName.createSimple("io.smallrye.common.annotation.Identifier");
-    static final DotName COMPONENT_ORDER = DotName.createSimple(ComponentOrder.class);
+    static final DotName RELATIVE_ORDER = DotName.createSimple(RelativeOrder.class);
     static final DotName SIGNAL_METADATA_ENRICHER = DotName.createSimple(SignalMetadataEnricher.class);
     static final DotName RECEIVER_INTERCEPTOR = DotName.createSimple(ReceiverInterceptor.class);
 }

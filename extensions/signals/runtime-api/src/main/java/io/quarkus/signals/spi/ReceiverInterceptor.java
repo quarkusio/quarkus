@@ -7,7 +7,7 @@ import io.smallrye.mutiny.Uni;
  * Intercepts each receiver invocation.
  * <p>
  * Implementations must be CDI beans annotated with {@link io.smallrye.common.annotation.Identifier} to define a unique
- * identifier. The ordering of interceptors can be defined with {@link ComponentOrder}.
+ * identifier. The ordering of interceptors can be defined with {@link RelativeOrder}.
  * <p>
  * This SPI is called once per receiver invocation, i.e., for multicast emissions ({@code publish}) it is called for each
  * matching receiver.
@@ -17,14 +17,14 @@ import io.smallrye.mutiny.Uni;
  *
  * <pre>
  * &#064;Identifier("my-interceptor")
- * &#064;ComponentOrder(after = ReceiverInterceptor.ID_REQUEST_CONTEXT)
+ * &#064;RelativeOrder(after = ReceiverInterceptor.ID_REQUEST_CONTEXT)
  * &#064;Singleton
  * public class MyInterceptor implements ReceiverInterceptor {
  *     // ...
  * }
  * </pre>
  *
- * @see ComponentOrder
+ * @see RelativeOrder
  */
 public interface ReceiverInterceptor {
 

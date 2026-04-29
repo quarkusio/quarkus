@@ -16,7 +16,7 @@ import java.lang.annotation.Target;
  */
 @Target({ ElementType.TYPE, ElementType.METHOD, ElementType.FIELD })
 @Retention(RetentionPolicy.RUNTIME)
-public @interface ComponentOrder {
+public @interface RelativeOrder {
 
     /**
      * Identifiers of components that this component takes precedence over (i.e., this component has higher priority).

@@ -22,8 +22,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.signals.Receives;
 import io.quarkus.signals.Signal;
 import io.quarkus.signals.SignalContext;
-import io.quarkus.signals.spi.ComponentOrder;
 import io.quarkus.signals.spi.ReceiverInterceptor;
+import io.quarkus.signals.spi.RelativeOrder;
 import io.quarkus.signals.spi.SignalMetadataEnricher;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.common.annotation.Identifier;
@@ -78,7 +78,7 @@ public class SpiTest extends AbstractSignalTest {
 
     @Test
     public void testEnricherOrdering() {
-        // CorrelationIdEnricher runs before TimestampEnricher (@ComponentOrder)
+        // CorrelationIdEnricher runs before TimestampEnricher (@RelativeOrder)
         // TimestampEnricher sees correlationId in signal context because a new
         // SignalContext is created after each enricher run
         receivers.receivedContexts.clear();
@@ -180,7 +180,7 @@ public class SpiTest extends AbstractSignalTest {
     // --- Enrichers ---
 
     @Identifier("correlation-id")
-    @ComponentOrder(before = "timestamp")
+    @RelativeOrder(before = "timestamp")
     @Singleton
     public static class CorrelationIdEnricher implements SignalMetadataEnricher {
 
@@ -206,7 +206,7 @@ public class SpiTest extends AbstractSignalTest {
     // --- Interceptors ---
 
     @Identifier("logging")
-    @ComponentOrder(before = "transform", after = ID_REQUEST_CONTEXT)
+    @RelativeOrder(before = "transform", after = ID_REQUEST_CONTEXT)
     @Singleton
     public static class LoggingInterceptor implements ReceiverInterceptor {
 
@@ -225,7 +225,7 @@ public class SpiTest extends AbstractSignalTest {
     }
 
     @Identifier("transform")
-    @ComponentOrder(after = ID_REQUEST_CONTEXT)
+    @RelativeOrder(after = ID_REQUEST_CONTEXT)
     @Singleton
     public static class TransformInterceptor implements ReceiverInterceptor {
 

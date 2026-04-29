@@ -489,13 +489,13 @@ public class LoggingInterceptor implements ReceiverInterceptor {
 
 === Component Ordering
 
-The ordering of enrichers and interceptors relative to each other can be defined with the `@ComponentOrder` annotation.
+The ordering of enrichers and interceptors relative to each other can be defined with the `@RelativeOrder` annotation.
 Components are referenced by their `@Identifier` value.
 
 [source,java]
 ----
 @Identifier("correlation-id")
-@ComponentOrder(before = "timestamp") // <1>
+@RelativeOrder(before = "timestamp") // <1>
 @Singleton
 public class CorrelationIdEnricher implements SignalMetadataEnricher {
     // ...

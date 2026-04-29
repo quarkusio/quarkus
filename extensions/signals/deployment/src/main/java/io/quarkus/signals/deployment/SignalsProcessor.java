@@ -377,7 +377,7 @@ class SignalsProcessor {
                         "Multiple " + componentTypeName + " beans with the same @Identifier value detected: " + id);
             }
             if (bean.getTarget().isPresent()) {
-                AnnotationInstance orderAnnotation = bean.getTarget().get().declaredAnnotation(DotNames.COMPONENT_ORDER);
+                AnnotationInstance orderAnnotation = bean.getTarget().get().declaredAnnotation(DotNames.RELATIVE_ORDER);
                 if (orderAnnotation != null) {
                     AnnotationValue beforeValue = orderAnnotation.value("before");
                     if (beforeValue != null) {

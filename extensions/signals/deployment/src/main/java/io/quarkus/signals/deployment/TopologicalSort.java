@@ -39,7 +39,7 @@ class TopologicalSort {
             String from = entry.getKey();
             for (String to : entry.getValue()) {
                 if (!allIds.contains(to)) {
-                    LOG.debugf("%s '%s' declares @ComponentOrder(before = \"%s\") but no %s with @Identifier(\"%s\") exists",
+                    LOG.debugf("%s '%s' declares @RelativeOrder(before = \"%s\") but no %s with @Identifier(\"%s\") exists",
                             componentTypeName, from, to, componentTypeName, to);
                     continue;
                 }
@@ -54,7 +54,7 @@ class TopologicalSort {
             String to = entry.getKey();
             for (String from : entry.getValue()) {
                 if (!allIds.contains(from)) {
-                    LOG.debugf("%s '%s' declares @ComponentOrder(after = \"%s\") but no %s with @Identifier(\"%s\") exists",
+                    LOG.debugf("%s '%s' declares @RelativeOrder(after = \"%s\") but no %s with @Identifier(\"%s\") exists",
                             componentTypeName, to, from, componentTypeName, from);
                     continue;
                 }
@@ -88,7 +88,7 @@ class TopologicalSort {
             Set<String> remaining = new HashSet<>(allIds);
             remaining.removeAll(sorted);
             throw new IllegalStateException(
-                    "Cycle detected in @ComponentOrder declarations involving " + componentTypeName + "s: " + remaining);
+                    "Cycle detected in @RelativeOrder declarations involving " + componentTypeName + "s: " + remaining);
         }
 
         return sorted;

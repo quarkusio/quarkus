@@ -157,7 +157,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>redis:5.0.8-alpine</name>
+                                    <name>${redis.image}</name>
                                     <alias>quarkus-test-redis</alias>
                                     <run>
                                         <ports>

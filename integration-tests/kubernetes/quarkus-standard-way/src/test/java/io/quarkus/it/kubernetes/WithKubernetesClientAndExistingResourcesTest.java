@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -16,10 +17,13 @@ import io.fabric8.kubernetes.api.model.rbac.ClusterRole;
 import io.fabric8.kubernetes.api.model.rbac.PolicyRule;
 import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
 import io.fabric8.kubernetes.api.model.rbac.Subject;
+import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.Version;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesClusterRoleBuildItem;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.ProdBuildResults;
+import io.quarkus.test.ProdModeTestBuildStep;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
@@ -39,7 +43,26 @@ public class WithKubernetesClientAndExistingResourcesTest {
             .addBuildChainCustomizerEntries(
                     new QuarkusProdModeTest.BuildChainCustomizerEntry(
                             KubernetesWithCustomResourcesTest.CustomProjectRootBuildItemProducerProdMode.class,
-                            Collections.singletonList(CustomProjectRootBuildItem.class), Collections.emptyList()));
+                            Collections.singletonList(CustomProjectRootBuildItem.class), Collections.emptyList()))
+            // simulate an extension adding the same ClusterRole as the one deployed in the input manifests so that we can check that PolicyRules are merged
+            .addBuildChainCustomizerEntries(new QuarkusProdModeTest.BuildChainCustomizerEntry(
+                    ClusterRoleBuildItemProducerStep.class, List.of(KubernetesClusterRoleBuildItem.class), List.of()));
+
+    public static class ClusterRoleBuildItemProducerStep extends ProdModeTestBuildStep {
+
+        private static final io.quarkus.kubernetes.spi.PolicyRule RULE = new io.quarkus.kubernetes.spi.PolicyRule(List.of(""),
+                List.of("configmaps"), List.of("get"));
+
+        public ClusterRoleBuildItemProducerStep(Map<String, Object> testContext) {
+            super(testContext);
+        }
+
+        @Override
+        public void execute(BuildContext context) {
+            // cluster role name must match the one specified in the input manifest
+            context.produce(new KubernetesClusterRoleBuildItem("secrets", List.of(RULE), "kubernetes"));
+        }
+    }
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -92,9 +115,12 @@ public class WithKubernetesClientAndExistingResourcesTest {
             final var metadata = h.getMetadata();
             assertThat(metadata.getName()).isEqualTo("secrets");
             final var rules = clusterRole.getRules();
-            assertThat(rules).hasSize(1);
+            assertThat(rules).hasSize(2);
             final var rule = rules.get(0);
             assertThat(rule).isEqualTo(new PolicyRule(List.of(""), List.of(), List.of(), List.of("secrets"), List.of("*")));
+            final var r = ClusterRoleBuildItemProducerStep.RULE;
+            assertThat(rules.get(1))
+                    .isEqualTo(new PolicyRule(r.getApiGroups(), List.of(), List.of(), r.getResources(), r.getVerbs()));
         });
     }
 }

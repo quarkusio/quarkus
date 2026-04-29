@@ -3,6 +3,8 @@ package io.quarkus.flyway.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -14,6 +16,8 @@ import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.Location;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
+
+import io.quarkus.flyway.runtime.FlywayContainerUtil;
 
 /**
  * This fixture provides access to read the expected and the actual configuration of flyway.
@@ -61,11 +65,11 @@ public class FlywayExtensionConfigFixture {
     }
 
     public int callbacks(String datasourceName) {
-        return getStringValue("quarkus.flyway.%s.callbacks", datasourceName).split(",").length;
+        return getStringValue("callbacks", datasourceName).split(",").length;
     }
 
     public int connectRetries(String datasourceName) {
-        return getIntValue("quarkus.flyway.%s.connect-retries", datasourceName);
+        return getIntValue("connect-retries", datasourceName);
     }
 
     public int connectRetries(Configuration configuration) {
@@ -73,7 +77,7 @@ public class FlywayExtensionConfigFixture {
     }
 
     public String schemaNames(String datasourceName) {
-        return getStringValue("quarkus.flyway.%s.schemas", datasourceName);
+        return getStringValue("schemas", datasourceName);
     }
 
     public String schemaNames(Configuration configuration) {
@@ -81,7 +85,7 @@ public class FlywayExtensionConfigFixture {
     }
 
     public String tableName(String datasourceName) {
-        return getStringValue("quarkus.flyway.%s.table", datasourceName);
+        return getStringValue("table", datasourceName);
     }
 
     public String tableName(Configuration configuration) {
@@ -89,7 +93,7 @@ public class FlywayExtensionConfigFixture {
     }
 
     public String locations(String datasourceName) {
-        return getStringValue("quarkus.flyway.%s.locations", datasourceName);
+        return getStringValue("locations", datasourceName);
     }
 
     public String locations(Configuration configuration) {
@@ -97,7 +101,7 @@ public class FlywayExtensionConfigFixture {
     }
 
     public String sqlMigrationPrefix(String datasourceName) {
-        return getStringValue("quarkus.flyway.%s.sql-migration-prefix", datasourceName);
+        return getStringValue("sql-migration-prefix", datasourceName);
     }
 
     public String sqlMigrationPrefix(Configuration configuration) {
@@ -105,7 +109,7 @@ public class FlywayExtensionConfigFixture {
     }
 
     public String repeatableSqlMigrationPrefix(String datasourceName) {
-        return getStringValue("quarkus.flyway.%s.repeatable-sql-migration-prefix", datasourceName);
+        return getStringValue("repeatable-sql-migration-prefix", datasourceName);
     }
 
     public String repeatableSqlMigrationPrefix(Configuration configuration) {
@@ -113,7 +117,7 @@ public class FlywayExtensionConfigFixture {
     }
 
     public boolean baselineOnMigrate(String datasourceName) {
-        return getBooleanValue("quarkus.flyway.%s.baseline-on-migrate", datasourceName, false);
+        return getBooleanValue("baseline-on-migrate", datasourceName, false);
     }
 
     public boolean baselineOnMigrate(Configuration configuration) {
@@ -121,7 +125,7 @@ public class FlywayExtensionConfigFixture {
     }
 
     public String baselineVersion(String datasourceName) {
-        return getStringValue("quarkus.flyway.%s.baseline-version", datasourceName);
+        return getStringValue("baseline-version", datasourceName);
     }
 
     public String baselineVersion(Configuration configuration) {
@@ -129,7 +133,7 @@ public class FlywayExtensionConfigFixture {
     }
 
     public String baselineDescription(String datasourceName) {
-        return getStringValue("quarkus.flyway.%s.baseline-description", datasourceName);
+        return getStringValue("baseline-description", datasourceName);
     }
 
     public String baselineDescription(Configuration configuration) {
@@ -137,19 +141,19 @@ public class FlywayExtensionConfigFixture {
     }
 
     public boolean migrateAtStart(String datasourceName) {
-        return getBooleanValue("quarkus.flyway.migrate-at-start", datasourceName, false);
+        return getBooleanValue("migrate-at-start", datasourceName, false);
     }
 
     public String username(String datasourceName) {
-        return getStringValue("quarkus.flyway.%s.username", datasourceName);
+        return getStringValue("username", datasourceName);
     }
 
     public String password(String datasourceName) {
-        return getStringValue("quarkus.flyway.%s.password", datasourceName);
+        return getStringValue("password", datasourceName);
     }
 
     public String jdbcUrl(String datasourceName) {
-        return getStringValue("quarkus.flyway.%s.jdbc-url", datasourceName);
+        return getStringValue("jdbc-url", datasourceName);
     }
 
     private String getStringValue(String parameterName, String datasourceName) {
@@ -172,19 +176,21 @@ public class FlywayExtensionConfigFixture {
         return getValue(parameterName, datasourceName, type, defaultValue, this::log);
     }
 
-    private <T> T getValue(String parameterName, String datasourceName, Class<T> type, T defaultValue, Consumer<String> logger) {
-        String propertyName = fillin(parameterName, datasourceName);
-        T propertyValue = config.getOptionalValue(propertyName, type).orElse(defaultValue);
-        logger.accept("Config property " + propertyName + " = " + propertyValue);
+    private <T> T getValue(String parameterName, String datasourceName, Class<T> type, T defaultValue,
+            Consumer<String> logger) {
+        List<String> propertyNames = FlywayContainerUtil.flywayPropertyKeys(
+                datasourceName == null || datasourceName.isEmpty() ? null : datasourceName, parameterName);
+        Optional<T> propertyValueOptional = Optional.empty();
+        for (String propertyName : propertyNames) {
+            propertyValueOptional = config.getOptionalValue(propertyName, type);
+        }
+        T propertyValue = propertyValueOptional.orElse(defaultValue);
+        logger.accept("Config property " + propertyNames.get(0) + " = " + propertyValue);
         return propertyValue;
     }
 
     private void log(String content) {
         //activate for debugging
         // System.out.println(content);
-    }
-
-    private String fillin(String propertyName, String datasourceName) {
-        return String.format(propertyName, datasourceName).replace("..", ".");
     }
 }

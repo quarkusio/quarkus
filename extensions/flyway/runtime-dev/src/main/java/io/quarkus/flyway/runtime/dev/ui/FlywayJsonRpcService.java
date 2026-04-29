@@ -21,6 +21,7 @@ import org.flywaydb.core.api.output.MigrateResult;
 import io.quarkus.dev.config.CurrentConfig;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.flyway.runtime.FlywayContainer;
+import io.quarkus.flyway.runtime.FlywayContainerUtil;
 import io.quarkus.flyway.runtime.FlywayContainersSupplier;
 import io.quarkus.flyway.runtime.FlywayRuntimeConfig;
 
@@ -153,14 +154,15 @@ public class FlywayJsonRpcService {
                     var dsConfig = runtimeConfig.datasources().get(ds);
                     Map<String, String> newConfig = new HashMap<>();
                     if (dsConfig.baselineOnMigrate().isEmpty()) {
-                        newConfig.put("quarkus.flyway.baseline-on-migrate", "true");
+                        newConfig.put(FlywayContainerUtil.flywayPropertyKey(ds, "baseline-on-migrate"), "true");
                     }
                     if (dsConfig.migrateAtStart().isEmpty()) {
-                        newConfig.put("quarkus.flyway.migrate-at-start", "true");
+                        newConfig.put(FlywayContainerUtil.flywayPropertyKey(ds, "migrate-at-start"), "true");
                     }
                     for (var profile : of("test", "dev")) {
                         if (dsConfig.cleanAtStart().isEmpty()) {
-                            newConfig.put("%" + profile + ".quarkus.flyway.clean-at-start", "true");
+                            newConfig.put("%" + profile + "." + FlywayContainerUtil.flywayPropertyKey(ds, "clean-at-start"),
+                                    "true");
                         }
                     }
                     CurrentConfig.EDITOR.accept(newConfig);

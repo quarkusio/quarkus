@@ -2,7 +2,6 @@ package io.quarkus.reactive.transaction.runtime.pool;
 
 import org.jboss.logging.Logger;
 
-import io.vertx.codegen.annotations.Fluent;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -30,7 +29,6 @@ public class TransactionalContextConnection implements SqlConnection {
         this.connection = connection;
     }
 
-    @Fluent
     @Override
     public SqlConnection prepare(String sql, Handler<AsyncResult<PreparedStatement>> handler) {
         return connection.prepare(sql, handler);
@@ -41,7 +39,6 @@ public class TransactionalContextConnection implements SqlConnection {
         return connection.prepare(sql);
     }
 
-    @Fluent
     @Override
     public SqlConnection prepare(String sql, PrepareOptions options, Handler<AsyncResult<PreparedStatement>> handler) {
         return connection.prepare(sql, options, handler);
@@ -52,13 +49,11 @@ public class TransactionalContextConnection implements SqlConnection {
         return connection.prepare(sql, options);
     }
 
-    @Fluent
     @Override
     public SqlConnection exceptionHandler(Handler<Throwable> handler) {
         return connection.exceptionHandler(handler);
     }
 
-    @Fluent
     @Override
     public SqlConnection closeHandler(Handler<Void> handler) {
         return connection.closeHandler(handler);

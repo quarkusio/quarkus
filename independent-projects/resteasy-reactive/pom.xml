@@ -56,7 +56,7 @@
         <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version>
 
         <mutiny.version>3.2.0</mutiny.version>
-        <smallrye-mutiny-vertx-core.version>3.22.1</smallrye-mutiny-vertx-core.version>
+        <smallrye-mutiny-vertx-core.version>3.22.2</smallrye-mutiny-vertx-core.version>
         <smallrye-common.version>2.17.0</smallrye-common.version>
         <vertx.version>4.5.26</vertx.version>
         <rest-assured.version>6.0.0</rest-assured.version>

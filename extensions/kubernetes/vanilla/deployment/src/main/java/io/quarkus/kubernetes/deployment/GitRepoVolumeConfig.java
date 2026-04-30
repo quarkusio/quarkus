@@ -2,6 +2,7 @@ package io.quarkus.kubernetes.deployment;
 
 import java.util.Optional;
 
+// todo: remove? this isn't used anywhere
 public interface GitRepoVolumeConfig {
     /**
      * Git repository URL.

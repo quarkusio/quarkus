@@ -4,9 +4,9 @@ import io.fabric8.openshift.api.model.DeploymentConfig;
 import io.fabric8.openshift.api.model.DeploymentConfigBuilder;
 
 public class AddDeploymentConfigResourceDecorator
-        extends BaseAddDeploymentResourceDecorator<DeploymentConfig, DeploymentConfigBuilder, ReplicasAware> {
+        extends BaseAddDeploymentResourceDecorator<DeploymentConfig, DeploymentConfigBuilder, OpenShiftConfig> {
 
-    public AddDeploymentConfigResourceDecorator(String name, ReplicasAware config, DeploymentResourceKind toRemove) {
+    public AddDeploymentConfigResourceDecorator(String name, OpenShiftConfig config, DeploymentResourceKind toRemove) {
         super(name, DeploymentResourceKind.DeploymentConfig, config, toRemove);
     }
 
@@ -16,11 +16,11 @@ public class AddDeploymentConfigResourceDecorator
     }
 
     @Override
-    protected void initBuilderWithDefaults(DeploymentConfigBuilder builder, ReplicasAware config) {
+    protected void initBuilderWithDefaults(DeploymentConfigBuilder builder) {
         final var spec = builder.editOrNewSpec();
 
         // replicas
-        spec.withReplicas(replicas(spec.getReplicas(), config));
+        spec.withReplicas(replicas(spec.getReplicas(), replicasAwareOrNull()));
 
         // ensure defaults on template spec
         podSpecDefaults(spec.editOrNewTemplate().editOrNewSpec())

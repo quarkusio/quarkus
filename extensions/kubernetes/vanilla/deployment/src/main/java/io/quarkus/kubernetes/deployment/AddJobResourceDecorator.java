@@ -3,9 +3,9 @@ package io.quarkus.kubernetes.deployment;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
 import io.fabric8.kubernetes.api.model.batch.v1.JobBuilder;
 
-public class AddJobResourceDecorator extends BaseAddDeploymentResourceDecorator<Job, JobBuilder, JobConfig> {
+public class AddJobResourceDecorator extends BaseAddDeploymentResourceDecorator<Job, JobBuilder, PlatformConfiguration> {
 
-    public AddJobResourceDecorator(String name, JobConfig config, DeploymentResourceKind toRemove) {
+    public AddJobResourceDecorator(String name, PlatformConfiguration config, DeploymentResourceKind toRemove) {
         super(name, DeploymentResourceKind.Job, config, toRemove);
     }
 
@@ -15,7 +15,7 @@ public class AddJobResourceDecorator extends BaseAddDeploymentResourceDecorator<
     }
 
     @Override
-    protected void initBuilderWithDefaults(JobBuilder builder, JobConfig config) {
+    protected void initBuilderWithDefaults(JobBuilder builder) {
         final var spec = builder.editOrNewSpec();
 
         // match labels for selector
@@ -27,6 +27,7 @@ public class AddJobResourceDecorator extends BaseAddDeploymentResourceDecorator<
                 .endSpec().endTemplate();
 
         // initialize from config
+        final var config = config().job();
         spec.withSuspend(config.suspend());
         initFromConfig(spec, config);
 

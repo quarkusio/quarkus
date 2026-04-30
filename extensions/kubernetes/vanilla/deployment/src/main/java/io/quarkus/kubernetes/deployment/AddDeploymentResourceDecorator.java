@@ -5,8 +5,8 @@ import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 
 public class AddDeploymentResourceDecorator
-        extends BaseAddDeploymentResourceDecorator<Deployment, DeploymentBuilder, ReplicasAware> {
-    public AddDeploymentResourceDecorator(String name, ReplicasAware config, DeploymentResourceKind toRemove) {
+        extends BaseAddDeploymentResourceDecorator<Deployment, DeploymentBuilder, PlatformConfiguration> {
+    public AddDeploymentResourceDecorator(String name, PlatformConfiguration config, DeploymentResourceKind toRemove) {
         super(name, DeploymentResourceKind.Deployment, config, toRemove);
     }
 
@@ -16,7 +16,7 @@ public class AddDeploymentResourceDecorator
     }
 
     @Override
-    protected void initBuilderWithDefaults(DeploymentBuilder builder, ReplicasAware config) {
+    protected void initBuilderWithDefaults(DeploymentBuilder builder) {
         final var spec = builder.editOrNewSpec();
 
         // match labels for selector
@@ -24,7 +24,7 @@ public class AddDeploymentResourceDecorator
                 .endSelector();
 
         // replicas
-        spec.withReplicas(replicas(spec.getReplicas(), config));
+        spec.withReplicas(replicas(spec.getReplicas(), replicasAwareOrNull()));
 
         // ensure defaults on template spec
         podSpecDefaults(spec.editOrNewTemplate().editOrNewSpec())

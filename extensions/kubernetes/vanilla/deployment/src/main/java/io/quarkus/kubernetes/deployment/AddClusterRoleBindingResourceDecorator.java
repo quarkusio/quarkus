@@ -29,7 +29,7 @@ public class AddClusterRoleBindingResourceDecorator
     }
 
     @Override
-    protected void initBuilderWithDefaults(ClusterRoleBindingBuilder builder, Void config) {
+    protected void initBuilderWithDefaults(ClusterRoleBindingBuilder builder) {
         updateMetadata(builder.editOrNewMetadata(), null).endMetadata();
 
         builder.withNewRoleRef()

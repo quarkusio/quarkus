@@ -14,9 +14,11 @@ import com.fasterxml.jackson.core.SerializableString;
 import com.fasterxml.jackson.databind.BeanProperty;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.util.NameTransformer;
 
@@ -170,8 +172,16 @@ public class JacksonMapperUtil {
 
     public static void serializePojo(Object value, JsonGenerator generator, SerializerProvider serializerProvider)
             throws IOException {
+        serializePojo(value, null, generator, serializerProvider);
+    }
+
+    public static void serializePojo(Object value, Object bean, JsonGenerator generator,
+            SerializerProvider serializerProvider) throws IOException {
         if (value == null || value instanceof Map) {
             generator.writePOJO(value);
+            return;
+        }
+        if (value == bean && handleSelfReference(bean, generator, serializerProvider)) {
             return;
         }
         JsonSerializer<Object> serializer = serializerProvider.findTypedValueSerializer(value.getClass(), true, null);
@@ -180,6 +190,19 @@ public class JacksonMapperUtil {
         } else {
             generator.writePOJO(value);
         }
+    }
+
+    private static boolean handleSelfReference(Object bean, JsonGenerator generator,
+            SerializerProvider serializerProvider) throws IOException {
+        if (!serializerProvider.isEnabled(SerializationFeature.FAIL_ON_SELF_REFERENCES)) {
+            return false;
+        }
+        if (serializerProvider.isEnabled(SerializationFeature.WRITE_SELF_REFERENCES_AS_NULL)) {
+            generator.writeNull();
+            return true;
+        }
+        throw JsonMappingException.from(generator,
+                "Direct self-reference leading to cycle (through reference chain: " + bean.getClass().getName() + ")");
     }
 
     @SuppressWarnings("unchecked")

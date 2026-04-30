@@ -416,8 +416,9 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
             } else {
                 MethodDescriptor serializePojoMethod = MethodDescriptor.ofMethod(JacksonMapperUtil.class.getName(),
                         "serializePojo",
-                        void.class, Object.class, JsonGenerator.class, SerializerProvider.class);
-                bytecode.invokeStaticMethod(serializePojoMethod, arg, ctx.jsonGenerator, ctx.serializerProvider);
+                        void.class, Object.class, Object.class, JsonGenerator.class, SerializerProvider.class);
+                bytecode.invokeStaticMethod(serializePojoMethod, arg, ctx.valueHandle, ctx.jsonGenerator,
+                        ctx.serializerProvider);
             }
         }
     }

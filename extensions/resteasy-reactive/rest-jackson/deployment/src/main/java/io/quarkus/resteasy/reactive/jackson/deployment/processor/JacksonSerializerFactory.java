@@ -29,7 +29,6 @@ import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.databind.type.SimpleType;
 
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
@@ -42,6 +41,7 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.resteasy.reactive.jackson.runtime.mappers.GeneratedSerializer;
 import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
 
 /**
@@ -59,6 +59,7 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
  *     private int age;
  *
  *     &#64;SecureField(rolesAllowed = "admin")
+ *     &#64;JsonUnwrapped
  *     private Address address;
  *
  *     &#64;JsonView(Private.class)
@@ -81,7 +82,7 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
  * it generates the following {@code StdSerializer} implementation
  *
  * <pre>{@code
- * public class Person$quarkusjacksonserializer extends StdSerializer {
+ * public class Person$quarkusjacksonserializer extends GeneratedSerializer {
  *     static final String[] address_ROLES_ALLOWED = new String[] { "admin" };
  *     static final Class[] id_VIEW_CLASSES = new Class[] { Private.class };
  *
@@ -89,7 +90,7 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
  *         super(Person.class);
  *     }
  *
- *     public void serialize(Object object, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
+ *     public void serializeContent(Object object, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
  *             throws IOException {
  *         Person person = (Person) object;
  *         SerializationInclude serializationInclude = SerializationInclude.decode(object, serializerProvider);
@@ -100,9 +101,7 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
  *         if (JacksonMapperUtil.includeSecureField(serializerProvider, address_ROLES_ALLOWED)) {
  *             Address address = person.getAddress();
  *             if (serializationInclude.shouldSerialize(address)) {
- *                 JacksonMapperUtil.writeFieldName(jsonGenerator, propertyNamingStrategy, "address",
- *                         SerializedStrings$quarkusjacksonserializer.address);
- *                 JacksonMapperUtil.serializePojo(address, jsonGenerator, serializerProvider);
+ *                 JacksonMapperUtil.serializeUnwrapped(address, jsonGenerator, serializerProvider);
  *             }
  *         }
  *
@@ -160,7 +159,7 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
  * at each serialization.
  *
  * Note that in this case also the {@code Address} class has to be serialized in the same way, and then this factory triggers
- * the generation of a second StdSerializer also for it. More in general if during the generation of a serializer for a
+ * the generation of a second StdSerializer also for it. More in general, if during the generation of a serializer for a
  * given class it discovers a non-primitive field of another type for which a serializer hasn't been generated yet, this
  * factory enqueues a code generation also for that type. The same is valid for both arrays of that type, like
  * {@code Address[]}, and collections, like {@code List&lt;Address&gt}.
@@ -168,8 +167,7 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
 public class JacksonSerializerFactory extends JacksonCodeGenerator {
 
     private static final String CLASS_NAME_SUFFIX = "$quarkusjacksonserializer";
-    private static final String SUPER_CLASS_NAME = StdSerializer.class.getName();
-    private static final String JSON_GEN_CLASS_NAME = JsonGenerator.class.getName();
+    private static final String SUPER_CLASS_NAME = GeneratedSerializer.class.getName();
     private static final String SER_STRINGS_CLASS_NAME = "SerializedStrings$quarkusjacksonserializer";
 
     private final Map<String, Set<String>> generatedFields = new HashMap<>();
@@ -225,47 +223,45 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
 
     @Override
     protected boolean createSerializationMethod(ClassInfo classInfo, ClassCreator classCreator, String beanClassName) {
-        MethodCreator bytecode = classCreator.getMethodCreator("serialize", "void", "java.lang.Object", JSON_GEN_CLASS_NAME,
-                "com.fasterxml.jackson.databind.SerializerProvider")
-                .setModifiers(ACC_PUBLIC)
-                .addException(IOException.class);
-
-        boolean valid = serializeObject(classInfo, classCreator, beanClassName, bytecode);
-        bytecode.returnVoid();
-        return valid;
-    }
-
-    private boolean serializeObject(ClassInfo classInfo, ClassCreator classCreator, String beanClassName,
-            MethodCreator bytecode) {
-
         var jsonValueFieldSpecs = jsonValueFieldSpecs(classInfo);
         if (jsonValueFieldSpecs == null) {
             return false;
         }
 
-        SerializationContext ctx = new SerializationContext(bytecode, beanClassName);
+        boolean isJsonValue = jsonValueFieldSpecs.isPresent();
 
-        if (jsonValueFieldSpecs.isPresent()) {
-            serializeJsonValue(ctx, bytecode, jsonValueFieldSpecs.get());
-            return true;
+        // Generate serializeContent() — writes field content without object boundaries
+        MethodCreator contentMethod = classCreator.getMethodCreator("serializeContent", void.class,
+                Object.class, JsonGenerator.class, SerializerProvider.class)
+                .setModifiers(ACC_PUBLIC)
+                .addException(IOException.class);
+
+        if (isJsonValue) {
+            SerializationContext ctx = new SerializationContext(contentMethod, beanClassName);
+            serializeJsonValue(ctx, contentMethod, jsonValueFieldSpecs.get());
+        } else {
+            Set<String> serializedFields = new HashSet<>();
+            SerializationContext ctx = new SerializationContext(contentMethod, beanClassName);
+            serializeObjectData(classInfo, classCreator, contentMethod, ctx, serializedFields);
+            if (serializedFields.isEmpty()) {
+                throwExceptionForEmptyBean(beanClassName, contentMethod, contentMethod.getMethodParam(1));
+            }
+            classCreator.getMethodCreator("<clinit>", void.class).setModifiers(ACC_STATIC).returnVoid();
         }
+        contentMethod.returnVoid();
 
-        // jsonGenerator.writeStartObject();
-        MethodDescriptor writeStartObject = MethodDescriptor.ofMethod(JSON_GEN_CLASS_NAME, "writeStartObject", "void");
-        bytecode.invokeVirtualMethod(writeStartObject, ctx.jsonGenerator);
-
-        Set<String> serializedFields = new HashSet<>();
-        serializeObjectData(classInfo, classCreator, bytecode, ctx, serializedFields);
-
-        // jsonGenerator.writeEndObject();
-        MethodDescriptor writeEndObject = MethodDescriptor.ofMethod(JSON_GEN_CLASS_NAME, "writeEndObject", "void");
-        bytecode.invokeVirtualMethod(writeEndObject, ctx.jsonGenerator);
-
-        if (serializedFields.isEmpty()) {
-            throwExceptionForEmptyBean(beanClassName, bytecode, ctx.jsonGenerator);
+        if (isJsonValue) {
+            // @JsonValue: override serialize() to skip object boundaries
+            MethodCreator serialize = classCreator.getMethodCreator("serialize", void.class,
+                    Object.class, JsonGenerator.class, SerializerProvider.class)
+                    .setModifiers(ACC_PUBLIC)
+                    .addException(IOException.class);
+            MethodDescriptor serializeContentMd = MethodDescriptor.ofMethod(classCreator.getClassName(),
+                    "serializeContent", void.class, Object.class, JsonGenerator.class, SerializerProvider.class);
+            serialize.invokeVirtualMethod(serializeContentMd, serialize.getThis(),
+                    serialize.getMethodParam(0), serialize.getMethodParam(1), serialize.getMethodParam(2));
+            serialize.returnVoid();
         }
-
-        classCreator.getMethodCreator("<clinit>", void.class).setModifiers(ACC_STATIC).returnVoid();
 
         return true;
     }
@@ -289,7 +285,7 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
             return jsonValueMethodFieldSpecs.isPresent() ? null : jsonValueFieldFieldSpecs;
         }
         //  If none valid reflection-free JsonValue annotated target has been found,but
-        //  a non-public element annotated is present,just use standard Jackson
+        //  a non-public element annotated is present, just use standard Jackson
         //  serializer
         if (jsonValueMethodFieldSpecs.isEmpty() && jsonValueAnnotationFound) {
             return null;
@@ -365,14 +361,21 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
     }
 
     private void writeField(ClassInfo classInfo, FieldSpecs fieldSpecs, BytecodeCreator bytecode, SerializationContext ctx) {
-        String pkgName = classInfo.name().packagePrefixName().toString();
-        generatedFields.computeIfAbsent(pkgName, pkg -> new HashSet<>()).add(fieldSpecs.jsonName);
-
         ResultHandle arg = fieldSpecs.toValueReaderHandle(bytecode, ctx.valueHandle);
         bytecode = checkInclude(bytecode, ctx, arg);
 
-        String typeName = fieldSpecs.fieldType.name().toString();
-        writeFieldValue(fieldSpecs, bytecode, ctx, typeName, arg, pkgName);
+        if (fieldSpecs.isUnwrapped()) {
+            String typeName = fieldSpecs.fieldType.name().toString();
+            registerTypeToBeGenerated(fieldSpecs.fieldType, typeName);
+            MethodDescriptor serializeUnwrapped = MethodDescriptor.ofMethod(JacksonMapperUtil.class.getName(),
+                    "serializeUnwrapped", void.class, Object.class, JsonGenerator.class, SerializerProvider.class);
+            bytecode.invokeStaticMethod(serializeUnwrapped, arg, ctx.jsonGenerator, ctx.serializerProvider);
+        } else {
+            String pkgName = classInfo.name().packagePrefixName().toString();
+            generatedFields.computeIfAbsent(pkgName, pkg -> new HashSet<>()).add(fieldSpecs.jsonName);
+            String typeName = fieldSpecs.fieldType.name().toString();
+            writeFieldValue(fieldSpecs, bytecode, ctx, typeName, arg, pkgName);
+        }
     }
 
     private void writeFieldValue(FieldSpecs fieldSpecs, BytecodeCreator bytecode, SerializationContext ctx, String typeName,
@@ -388,20 +391,34 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
                 writeFieldName(fieldSpecs, primitiveBytecode, ctx, pkgName);
             }
 
-            MethodDescriptor primitiveWriter = MethodDescriptor.ofMethod(JSON_GEN_CLASS_NAME, primitiveMethodName, "void",
+            MethodDescriptor primitiveWriter = MethodDescriptor.ofMethod(JsonGenerator.class, primitiveMethodName, void.class,
                     fieldSpecs.writtenType());
             primitiveBytecode.invokeVirtualMethod(primitiveWriter, ctx.jsonGenerator, arg);
 
         } else {
+            FieldKind fieldKind = null;
             if (pkgName != null) {
-                registerTypeToBeGenerated(fieldSpecs.fieldType, typeName);
+                fieldKind = registerTypeToBeGenerated(fieldSpecs.fieldType, typeName);
                 writeFieldName(fieldSpecs, bytecode, ctx, pkgName);
             }
 
-            MethodDescriptor serializePojoMethod = MethodDescriptor.ofMethod(JacksonMapperUtil.class.getName(),
-                    "serializePojo",
-                    void.class, Object.class, JsonGenerator.class, SerializerProvider.class);
-            bytecode.invokeStaticMethod(serializePojoMethod, arg, ctx.jsonGenerator, ctx.serializerProvider);
+            if (fieldKind == FieldKind.LIST || fieldKind == FieldKind.SET) {
+                String elementTypeName = fieldSpecs.fieldType.asParameterizedType().arguments().get(0).name().toString();
+                String collectionClassName = fieldKind == FieldKind.SET
+                        ? "java.util.Set"
+                        : "java.util.List";
+                MethodDescriptor serializeCollectionMethod = MethodDescriptor.ofMethod(JacksonMapperUtil.class.getName(),
+                        "serializeCollection",
+                        void.class, Object.class, Class.class, Class.class, JsonGenerator.class, SerializerProvider.class);
+                bytecode.invokeStaticMethod(serializeCollectionMethod, arg,
+                        bytecode.loadClass(collectionClassName), bytecode.loadClass(elementTypeName),
+                        ctx.jsonGenerator, ctx.serializerProvider);
+            } else {
+                MethodDescriptor serializePojoMethod = MethodDescriptor.ofMethod(JacksonMapperUtil.class.getName(),
+                        "serializePojo",
+                        void.class, Object.class, JsonGenerator.class, SerializerProvider.class);
+                bytecode.invokeStaticMethod(serializePojoMethod, arg, ctx.jsonGenerator, ctx.serializerProvider);
+            }
         }
     }
 
@@ -420,7 +437,7 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
                         SerializedString.class.getName()));
 
         if (fieldSpecs.hasExplicitJsonName) {
-            MethodDescriptor writeFieldName = MethodDescriptor.ofMethod(JSON_GEN_CLASS_NAME, "writeFieldName", void.class,
+            MethodDescriptor writeFieldName = MethodDescriptor.ofMethod(JsonGenerator.class, "writeFieldName", void.class,
                     SerializableString.class);
             bytecode.invokeVirtualMethod(writeFieldName, ctx.jsonGenerator, serStringHandle);
         } else {

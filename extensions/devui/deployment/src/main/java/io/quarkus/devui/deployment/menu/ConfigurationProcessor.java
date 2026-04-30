@@ -258,7 +258,7 @@ public class ConfigurationProcessor {
             final String profileName = profile != null && !profile.isEmpty() ? "%" + profile + "." + name : name;
             final int lineNumber = findLineNumber(configPath, profileName);
             List<String> lines = Files.readAllLines(configPath, UTF_8);
-            if (lineNumber > 0 && lineNumber < lines.size()) {
+            if (lineNumber > 0 && lineNumber <= lines.size()) {
                 lines.set(lineNumber - 1, profileName + "=" + value);
             } else {
                 if (!lines.isEmpty() && !lines.get(lines.size() - 1).isEmpty()) {

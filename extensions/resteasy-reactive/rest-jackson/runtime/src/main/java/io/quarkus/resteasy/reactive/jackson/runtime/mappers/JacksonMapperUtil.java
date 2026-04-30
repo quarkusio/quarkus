@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.util.NameTransformer;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -173,11 +174,38 @@ public class JacksonMapperUtil {
             generator.writePOJO(value);
             return;
         }
-        JsonSerializer<Object> serializer = serializerProvider.findValueSerializer(value.getClass());
+        JsonSerializer<Object> serializer = serializerProvider.findTypedValueSerializer(value.getClass(), true, null);
         if (serializer != null) {
             serializer.serialize(value, generator, serializerProvider);
         } else {
             generator.writePOJO(value);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static void serializeCollection(Object value, Class<?> collectionClass, Class<?> elementClass,
+            JsonGenerator generator, SerializerProvider serializerProvider) throws IOException {
+        if (value == null) {
+            generator.writeNull();
+            return;
+        }
+        JavaType collectionType = serializerProvider.getTypeFactory()
+                .constructCollectionType((Class<? extends Collection>) collectionClass, elementClass);
+        JsonSerializer<Object> serializer = serializerProvider.findValueSerializer(collectionType);
+        serializer.serialize(value, generator, serializerProvider);
+    }
+
+    public static void serializeUnwrapped(Object value, JsonGenerator generator,
+            SerializerProvider serializerProvider) throws IOException {
+        if (value == null) {
+            return;
+        }
+        JsonSerializer<Object> serializer = serializerProvider.findValueSerializer(value.getClass());
+        if (serializer instanceof GeneratedSerializer gs) {
+            gs.serializeContent(value, generator, serializerProvider);
+        } else {
+            serializer.unwrappingSerializer(NameTransformer.NOP)
+                    .serialize(value, generator, serializerProvider);
         }
     }
 

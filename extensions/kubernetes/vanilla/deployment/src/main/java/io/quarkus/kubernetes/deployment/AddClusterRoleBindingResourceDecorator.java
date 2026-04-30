@@ -1,18 +1,16 @@
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.kubernetes.deployment.Constants.CLUSTER_ROLE;
-import static io.quarkus.kubernetes.deployment.Constants.RBAC_API_GROUP;
+import static io.quarkus.kubernetes.deployment.Constants.*;
 
 import java.util.Map;
-import java.util.Optional;
 
-import io.dekorate.utils.Strings;
-import io.fabric8.kubernetes.api.model.KubernetesListBuilder;
+import io.fabric8.kubernetes.api.model.rbac.ClusterRoleBinding;
 import io.fabric8.kubernetes.api.model.rbac.ClusterRoleBindingBuilder;
 import io.quarkus.kubernetes.spi.RoleRef;
 import io.quarkus.kubernetes.spi.Subject;
 
-public class AddClusterRoleBindingResourceDecorator extends AbstractRoleResourceDecorator {
+public class AddClusterRoleBindingResourceDecorator
+        extends BaseAddRBACDecorator<ClusterRoleBinding, ClusterRoleBindingBuilder> {
 
     private final RoleRef roleRef;
     private final Subject[] subjects;
@@ -20,37 +18,28 @@ public class AddClusterRoleBindingResourceDecorator extends AbstractRoleResource
     public AddClusterRoleBindingResourceDecorator(String deploymentName, String name, Map<String, String> labels,
             RoleRef roleRef,
             Subject... subjects) {
-        super(deploymentName, name, labels);
+        super(name, CLUSTER_ROLE_BINDING, deploymentName, labels);
         this.roleRef = roleRef;
         this.subjects = subjects;
     }
 
-    public void visit(KubernetesListBuilder list) {
-        Optional<Map<String, String>> maybeClusterRoleBindingLabels = preVisit(list);
-        if (maybeClusterRoleBindingLabels.isEmpty()) {
-            return;
-        }
+    @Override
+    protected ClusterRoleBindingBuilder builderWithName(String name) {
+        return new ClusterRoleBindingBuilder().withNewMetadata().withName(name).endMetadata();
+    }
 
-        ClusterRoleBindingBuilder builder = new ClusterRoleBindingBuilder()
-                .withNewMetadata()
-                .withName(name)
-                .withLabels(maybeClusterRoleBindingLabels.get())
-                .endMetadata()
-                .withNewRoleRef()
+    @Override
+    protected void initBuilderWithDefaults(ClusterRoleBindingBuilder builder, Void config) {
+        updateMetadata(builder.editOrNewMetadata(), null).endMetadata();
+
+        builder.withNewRoleRef()
                 .withKind(CLUSTER_ROLE)
                 .withName(roleRef.getName())
                 .withApiGroup(RBAC_API_GROUP)
                 .endRoleRef();
 
         for (Subject subject : subjects) {
-            builder.addNewSubject()
-                    .withApiGroup(subject.getApiGroup())
-                    .withKind(subject.getKind())
-                    .withName(Strings.defaultIfEmpty(subject.getName(), deploymentName))
-                    .withNamespace(subject.getNamespace())
-                    .endSubject();
+            builder.addToSubjects(createRBACSubject(subject));
         }
-
-        list.addToItems(builder.build());
     }
 }

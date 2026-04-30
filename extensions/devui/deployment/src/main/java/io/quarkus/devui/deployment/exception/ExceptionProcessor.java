@@ -15,10 +15,16 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.dev.ExceptionNotificationBuildItem;
 import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
+import io.quarkus.devui.spi.buildtime.DevMcpBuildTimeTool;
+import io.quarkus.devui.spi.buildtime.DevMcpParam;
 
 /**
  * Exposes the last exception (compilation, deployment, or runtime) as a Dev MCP tool.
  */
+@DevMcpBuildTimeTool(name = "getLastException", description = "Get the last exception that occurred in this Quarkus application. Returns compilation errors, deployment failures, hot-reload problems, or runtime exceptions with full stack traces and source locations.", params = {
+        @DevMcpParam(name = "maxCauseDepth", description = "Maximum depth for the cause chain (default 5)", required = false)
+})
+@DevMcpBuildTimeTool(name = "clearLastException", description = "Clear the last recorded runtime exception.")
 public class ExceptionProcessor {
 
     private static final String NAMESPACE = "devui-exceptions";

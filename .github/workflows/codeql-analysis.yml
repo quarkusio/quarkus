@@ -37,7 +37,7 @@ jobs:
         echo "m2-monthly-branch-cache-key=m2-cache-${CURRENT_MONTH}-${CURRENT_BRANCH}" >> $GITHUB_OUTPUT
         echo "m2-cache-key=m2-cache-${CURRENT_MONTH}-${CURRENT_BRANCH}-${CURRENT_WEEK}" >> $GITHUB_OUTPUT
     - name: Restore Maven Repository
-      uses: actions/cache/restore@v5
+      uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
       with:
         path: ~/.m2/repository
         key: ${{ steps.cache-key.outputs.m2-cache-key }}
@@ -46,7 +46,7 @@ jobs:
           ${{ steps.cache-key.outputs.m2-monthly-cache-key }}-
 
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v4
+      uses: github/codeql-action/init@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4.35.2
       with:
         languages: java-kotlin
         queries: security-extended
@@ -56,4 +56,4 @@ jobs:
         ./mvnw -T1C -e -B --settings .github/mvn-settings.xml --fail-at-end -DskipTests -DskipITs -Denforcer.skip -DskipDocs -Dforbiddenapis.skip -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-test-modules install
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v4
+      uses: github/codeql-action/analyze@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4.35.2

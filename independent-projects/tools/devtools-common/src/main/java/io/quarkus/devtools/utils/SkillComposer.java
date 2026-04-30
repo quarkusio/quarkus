@@ -2,7 +2,10 @@ package io.quarkus.devtools.utils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.StringJoiner;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -82,9 +85,15 @@ public final class SkillComposer {
         }
 
         final String guide = getNestedTextValue(extMeta, "metadata", "guide");
-        if (guide != null && !guide.isBlank()) {
+        final String categories = getNestedArrayAsString(extMeta, "metadata", "categories");
+        if ((guide != null && !guide.isBlank()) || (categories != null && !categories.isBlank())) {
             sb.append("metadata:\n");
-            sb.append("  guide: \"").append(escapeYamlString(guide)).append("\"\n");
+            if (guide != null && !guide.isBlank()) {
+                sb.append("  guide: \"").append(escapeYamlString(guide)).append("\"\n");
+            }
+            if (categories != null && !categories.isBlank()) {
+                sb.append("  categories: \"").append(escapeYamlString(categories)).append("\"\n");
+            }
         }
 
         sb.append("---\n\n");
@@ -100,6 +109,114 @@ public final class SkillComposer {
      */
     public static String compose(ObjectNode extMeta, String rawContent, String skillName) {
         return compose(extMeta, rawContent, skillName, "Apache-2.0");
+    }
+
+    /**
+     * Composes a skill document and appends an "Available Dev MCP Tools" section
+     * listing the extension's MCP-enabled methods.
+     *
+     * @param extMeta the parsed {@code quarkus-extension.yaml}
+     * @param rawContent the raw skill file content
+     * @param skillName the skill identifier
+     * @param mcpTools the MCP tools to include; if empty, no tools section is appended
+     */
+    public static String composeWithTools(ObjectNode extMeta, String rawContent, String skillName,
+            List<McpToolInfo> mcpTools) {
+        String enrichedContent = rawContent;
+        if (mcpTools != null && !mcpTools.isEmpty()) {
+            enrichedContent = rawContent.trim() + "\n\n" + formatMcpToolsSection(mcpTools, skillName);
+        }
+        return compose(extMeta, enrichedContent, skillName, "Apache-2.0");
+    }
+
+    /**
+     * Formats a markdown table listing Dev MCP tools for inclusion in a skill file.
+     *
+     * @param tools the MCP tools to format
+     * @param extensionName the extension name used as a prefix for fully qualified tool names
+     */
+    public static String formatMcpToolsSection(List<McpToolInfo> tools, String extensionName) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("### Available Dev MCP Tools\n\n");
+        sb.append("| Tool | Description | Parameters |\n");
+        sb.append("|------|-------------|------------|\n");
+
+        for (McpToolInfo tool : tools) {
+            String fullName = extensionName + "_" + tool.name();
+            sb.append("| `").append(fullName).append("` | ");
+            sb.append(escapeMarkdownTable(tool.description())).append(" | ");
+
+            if (tool.parameters() != null && !tool.parameters().isEmpty()) {
+                StringJoiner pj = new StringJoiner(", ");
+                for (Map.Entry<String, ParameterInfo> param : tool.parameters().entrySet()) {
+                    StringBuilder ps = new StringBuilder();
+                    ps.append("`").append(param.getKey()).append("`");
+                    if (param.getValue().required()) {
+                        ps.append(" (required)");
+                    }
+                    if (param.getValue().description() != null) {
+                        ps.append(": ").append(escapeMarkdownTable(param.getValue().description()));
+                    }
+                    pj.add(ps.toString());
+                }
+                sb.append(pj);
+            } else {
+                sb.append("\u2014");
+            }
+            sb.append(" |\n");
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * Describes an MCP tool discovered from an extension's annotated methods.
+     * Intentionally not a record — this class must be usable from modules targeting JDK 11.
+     */
+    public static final class McpToolInfo {
+        private final String name;
+        private final String description;
+        private final Map<String, ParameterInfo> parameters;
+
+        public McpToolInfo(String name, String description, Map<String, ParameterInfo> parameters) {
+            this.name = name;
+            this.description = description;
+            this.parameters = parameters;
+        }
+
+        public String name() {
+            return name;
+        }
+
+        public String description() {
+            return description;
+        }
+
+        public Map<String, ParameterInfo> parameters() {
+            return parameters;
+        }
+    }
+
+    /**
+     * Describes a parameter of an MCP tool.
+     * Intentionally not a record — this class must be usable from modules targeting JDK 11.
+     */
+    public static final class ParameterInfo {
+        private final String description;
+        private final boolean required;
+
+        public ParameterInfo(String description, boolean required) {
+            this.description = description;
+            this.required = required;
+        }
+
+        public String description() {
+            return description;
+        }
+
+        public boolean required() {
+            return required;
+        }
     }
 
     /**
@@ -124,6 +241,33 @@ public final class SkillComposer {
             return null;
         }
         return getTextValue((ObjectNode) parentNode, field);
+    }
+
+    /**
+     * Extracts a nested array (e.g. {@code metadata.categories}) and joins its text
+     * elements with {@code ", "}, returning {@code null} if the path is missing or empty.
+     */
+    private static String getNestedArrayAsString(ObjectNode node, String parent, String field) {
+        var parentNode = node.get(parent);
+        if (parentNode == null || parentNode.isNull() || !parentNode.isObject()) {
+            return null;
+        }
+        var arrayNode = parentNode.get(field);
+        if (arrayNode == null || arrayNode.isNull() || !arrayNode.isArray() || arrayNode.isEmpty()) {
+            return null;
+        }
+        StringJoiner joiner = new StringJoiner(", ");
+        for (var element : arrayNode) {
+            if (element.isTextual()) {
+                joiner.add(element.asText());
+            }
+        }
+        String result = joiner.toString();
+        return result.isEmpty() ? null : result;
+    }
+
+    private static String escapeMarkdownTable(String text) {
+        return text.replace("|", "\\|").replace("\n", " ");
     }
 
     private static String escapeYamlString(String value) {

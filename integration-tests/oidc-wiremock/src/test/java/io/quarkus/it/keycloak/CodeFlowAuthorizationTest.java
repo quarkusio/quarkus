@@ -31,9 +31,12 @@ import java.nio.file.Paths;
 import java.security.PrivateKey;
 import java.time.Instant;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import javax.crypto.SecretKey;
 
@@ -74,7 +77,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 @QuarkusTest
-@QuarkusTestResource(OidcWiremockTestResource.class)
+@QuarkusTestResource(CustomOidcWiremockTestResource.class)
 public class CodeFlowAuthorizationTest {
 
     @OidcWireMock
@@ -382,6 +385,42 @@ public class CodeFlowAuthorizationTest {
         clearCache();
         doTestCodeFlowUserInfoDynamicGithubUpdate();
         clearCache();
+    }
+
+    @Test
+    public void testCodeFlowJwtBearerAuthentication() throws Exception {
+        defineCodeFlowJwtBearerAndSpiffeTokenStubs();
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-jwt-bearer-auth");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            TextPage textPage = form.getInputByValue("login").click();
+            assertEquals("alice:alice", textPage.getContent());
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testCodeFlowSpiffeAuthentication() throws Exception {
+        defineCodeFlowJwtBearerAndSpiffeTokenStubs();
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-spiffe-auth");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            TextPage textPage = form.getInputByValue("login").click();
+            assertEquals("alice:alice", textPage.getContent());
+
+            webClient.getCookieManager().clearCookies();
+        }
     }
 
     @Test
@@ -781,6 +820,73 @@ public class CodeFlowAuthorizationTest {
         }
     }
 
+    @Test
+    public void testConcurrentCodeFlowTokenRefreshWithEmitOn() throws Exception {
+        defineCodeFlowConcurrentRefreshStub();
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-concurrent-refresh");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            TextPage textPage = form.getInputByValue("login").click();
+            assertEquals("hello", textPage.getContent());
+
+            var cookies = new HashMap<String, String>();
+            for (var c : webClient.getCookieManager().getCookies()) {
+                cookies.put(c.getName(), c.getValue());
+            }
+
+            Thread.sleep(2000);
+            var errors = new CopyOnWriteArrayList<String>();
+            IntStream.range(0, 5).parallel().forEach(i -> {
+                var spec = RestAssured.given().redirects().follow(false);
+                for (var entry : cookies.entrySet()) {
+                    spec.cookie(entry.getKey(), entry.getValue());
+                }
+                var response = spec.get("http://localhost:8081/code-flow-concurrent-refresh");
+                if (response.statusCode() != 200) {
+                    errors.add("Request " + i + ": expected 200 but got " + response.statusCode()
+                            + ". Response: " + response.body().asString());
+                }
+            });
+            assertTrue(errors.isEmpty(), String.join("\n", errors));
+        } finally {
+            clearCache();
+        }
+    }
+
+    private void defineCodeFlowConcurrentRefreshStub() {
+        wireMockServer
+                .stubFor(WireMock.post("/auth/realms/quarkus/concurrent-refresh-token")
+                        .withRequestBody(containing("authorization_code"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "  \"access_token\": \""
+                                        + OidcWiremockTestResource.getAccessToken("alice", Set.of()) + "\",\n" +
+                                        "  \"refresh_token\": \"concurrent-refresh-token-1\",\n" +
+                                        "  \"id_token\": \"{{basic-scheme-id-token 'alice'}}\"\n" +
+                                        "}")
+                                .withTransformers("response-template")));
+
+        wireMockServer
+                .stubFor(WireMock.post("/auth/realms/quarkus/concurrent-refresh-token")
+                        .withRequestBody(containing("refresh_token=concurrent-refresh-token-1"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "  \"access_token\": \""
+                                        + OidcWiremockTestResource.getAccessToken("alice", Set.of()) + "\",\n" +
+                                        "  \"refresh_token\": \"concurrent-refresh-token-2\",\n" +
+                                        "  \"id_token\": \"{{basic-scheme-id-token 'alice'}}\"\n" +
+                                        "}")
+                                .withTransformers("response-template")
+                                .withFixedDelay(2000)));
+    }
+
     private WebClient createWebClient() {
         WebClient webClient = new WebClient();
         webClient.setCssErrorHandler(new SilentCssErrorHandler());
@@ -1004,6 +1110,35 @@ public class CodeFlowAuthorizationTest {
                                         OidcWiremockTestResource.generateJwtToken("bob", Set.of(), "sub", "ID",
                                                 Set.of("quarkus-web-app"))
                                         + "\""
+                                        + "}")));
+    }
+
+    private void defineCodeFlowJwtBearerAndSpiffeTokenStubs() {
+        wireMockServer
+                .stubFor(WireMock.post("/auth/realms/quarkus/jwt-bearer-auth-token")
+                        .withRequestBody(containing("authorization_code"))
+                        .withRequestBody(
+                                containing(
+                                        "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer"))
+                        .withRequestBody(containing("client_assertion=ey"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "  \"access_token\": \""
+                                        + OidcWiremockTestResource.getAccessToken("alice", Set.of()) + "\""
+                                        + "}")));
+        wireMockServer
+                .stubFor(WireMock.post("/auth/realms/quarkus/spiffe-auth-token")
+                        .withRequestBody(containing("authorization_code"))
+                        .withRequestBody(
+                                containing(
+                                        "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-spiffe"))
+                        .withRequestBody(containing("client_assertion=ey"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "  \"access_token\": \""
+                                        + OidcWiremockTestResource.getAccessToken("alice", Set.of()) + "\""
                                         + "}")));
     }
 

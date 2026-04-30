@@ -167,6 +167,17 @@ public interface DataSourceJdbcRuntimeConfig {
     Optional<AgroalConnectionPoolConfiguration.TransactionRequirement> transactionRequirement();
 
     /**
+     * Defines the behavior when a thread tries to acquire multiple connections from the pool.
+     * <p>
+     * {@code lenient} (the default) means no restriction.
+     * {@code warn} will log a warning when a thread already holds a connection and tries to acquire another one.
+     * {@code strict} will throw an exception in that situation.
+     */
+    @ConfigDocDefault("By default, multiple acquisition is allowed without any restriction.")
+    @WithDefault("lenient")
+    MultipleAcquisition multipleAcquisition();
+
+    /**
      * Other unspecified properties to be passed to the JDBC driver when creating new connections.
      */
     @ConfigDocMapKey("property-key")
@@ -177,4 +188,45 @@ public interface DataSourceJdbcRuntimeConfig {
      */
     DataSourceJdbcTelemetryConfig telemetry();
 
+    /**
+     * Enable KeepAlive for this datasource. When enabled, the datasource will attempt to keep connections alive by sending
+     * periodic keep-alive messages to the database. Each JDBC driver has its own implementation of keep-alive, and the actual
+     * behavior may vary depending on the driver and database being used.
+     */
+    Optional<Boolean> enableKeepAlive();
+
+    /**
+     * The timeout value used for socket read operations. If reading from the server takes longer than this value, the
+     * connection is closed.
+     */
+    Optional<Duration> readTimeout();
+
+    enum MultipleAcquisition {
+
+        /**
+         * Allow a thread to acquire multiple connections from the pool without any restriction.
+         * This is the default.
+         */
+        LENIENT(AgroalConnectionPoolConfiguration.MultipleAcquisitionAction.OFF),
+
+        /**
+         * Log a warning when a thread that already holds a connection tries to acquire another one.
+         */
+        WARN(AgroalConnectionPoolConfiguration.MultipleAcquisitionAction.WARN),
+
+        /**
+         * Throw an exception when a thread that already holds a connection tries to acquire another one.
+         */
+        STRICT(AgroalConnectionPoolConfiguration.MultipleAcquisitionAction.STRICT);
+
+        private final AgroalConnectionPoolConfiguration.MultipleAcquisitionAction action;
+
+        MultipleAcquisition(AgroalConnectionPoolConfiguration.MultipleAcquisitionAction action) {
+            this.action = action;
+        }
+
+        public AgroalConnectionPoolConfiguration.MultipleAcquisitionAction toAgroalAction() {
+            return action;
+        }
+    }
 }

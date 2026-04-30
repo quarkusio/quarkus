@@ -43,15 +43,15 @@ triage:
     monitoredCategories: [33575230]
   guardedBranches:
     - ref: '3.33'
-      notify: [jmartisk, gsmet, gastaldi, rsvoboda, aloubyansky]
+      notify: [jmartisk, gsmet, rsvoboda, aloubyansky]
     - ref: '3.27'
-      notify: [jmartisk, gsmet, gastaldi, rsvoboda, aloubyansky]
+      notify: [jmartisk, gsmet, rsvoboda, aloubyansky]
     - ref: '3.20'
-      notify: [jmartisk, gsmet, gastaldi, rsvoboda, aloubyansky]
+      notify: [jmartisk, gsmet, rsvoboda, aloubyansky]
     - ref: '3.15'
-      notify: [jmartisk, gsmet, gastaldi, rsvoboda, aloubyansky]
+      notify: [jmartisk, gsmet, rsvoboda, aloubyansky]
     - ref: '3.8'
-      notify: [jmartisk, gsmet, gastaldi, rsvoboda, aloubyansky]
+      notify: [jmartisk, gsmet, rsvoboda, aloubyansky]
   rules:
     - id: amazon-lambda
       labels: [area/amazon-lambda]
@@ -345,7 +345,7 @@ triage:
     - id: kubernetes
       labels: [area/kubernetes]
       titleBody: "kubernetes"
-      notify: [geoand]
+      notify: [geoand, metacosm]
       directories:
         - extensions/kubernetes/
         - extensions/kubernetes-client/
@@ -354,15 +354,15 @@ triage:
     - id: minikube
       labels: [area/kubernetes]
       titleBody: "minikube"
-      notify: [geoand]
+      notify: [geoand, metacosm]
     - id: openshift
       labels: [area/kubernetes]
       titleBody: "openshift"
-      notify: [geoand]
+      notify: [geoand, metacosm]
     - id: knative
       labels: [area/kubernetes]
       titleBody: "knative"
-      notify: [geoand]
+      notify: [geoand, metacosm]
     - id: container-image
       labels: [area/container-image]
       expression: |

@@ -13,6 +13,7 @@ import java.util.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.model.MailingList;
 import org.apache.maven.model.Model;
+import org.cyclonedx.Format;
 import org.cyclonedx.Version;
 import org.cyclonedx.exception.GeneratorException;
 import org.cyclonedx.generators.BomGeneratorFactory;
@@ -74,10 +75,7 @@ public class CycloneDxSbomGenerator {
 
     private static final String CLASSIFIER_CYCLONEDX = "cyclonedx";
     private static final String FORMAT_ALL = "all";
-    private static final String FORMAT_JSON = "json";
-    private static final String FORMAT_XML = "xml";
-    private static final String DEFAULT_FORMAT = FORMAT_JSON;
-    private static final List<String> SUPPORTED_FORMATS = List.of(FORMAT_JSON, FORMAT_XML);
+    private static final String DEFAULT_FORMAT = "json";
 
     public static CycloneDxSbomGenerator newInstance() {
         return new CycloneDxSbomGenerator();
@@ -91,6 +89,7 @@ public class CycloneDxSbomGenerator {
     private String format;
     private EffectiveModelResolver modelResolver;
     private boolean includeLicenseText;
+    private boolean prettyPrint;
 
     private Version effectiveSchemaVersion;
 
@@ -139,12 +138,50 @@ public class CycloneDxSbomGenerator {
         return this;
     }
 
-    public List<SbomResult> generate() {
+    public CycloneDxSbomGenerator setPrettyPrint(boolean prettyPrint) {
         ensureNotGenerated();
-        Objects.requireNonNull(manifest, "Manifest is null");
+        this.prettyPrint = prettyPrint;
+        return this;
+    }
+
+    public List<String> generateText() {
+        final Bom bom = createSbom();
+        if (FORMAT_ALL.equalsIgnoreCase(format)) {
+            Format[] formats = Format.values();
+            final List<String> result = new ArrayList<>(formats.length);
+            for (Format format : formats) {
+                result.add(formatSbom(bom, format.getExtension()));
+            }
+            return result;
+        }
+        return List.of(formatSbom(bom, format == null ? DEFAULT_FORMAT : format));
+    }
+
+    public List<SbomResult> generate() {
         if (outputFile == null && outputDir == null) {
             throw new IllegalArgumentException("Either outputDir or outputFile must be provided");
         }
+        final Bom bom = createSbom();
+
+        if (FORMAT_ALL.equalsIgnoreCase(format)) {
+            if (outputFile != null) {
+                throw new IllegalArgumentException("Can't use output file " + outputFile + " with format '"
+                        + FORMAT_ALL + "', since it implies generating multiple files");
+            }
+            Format[] formats = Format.values();
+            final List<SbomResult> result = new ArrayList<>(formats.length);
+            for (Format format : formats) {
+                result.add(persistSbom(bom, getOutputFile(format.getExtension()), format.getExtension()));
+            }
+            return result;
+        }
+        var outputFile = getOutputFile(format == null ? DEFAULT_FORMAT : format);
+        return List.of(persistSbom(bom, outputFile, getFormat(outputFile)));
+    }
+
+    private Bom createSbom() {
+        ensureNotGenerated();
+        Objects.requireNonNull(manifest, "Manifest is null");
         generated = true;
 
         var bom = new Bom();
@@ -155,19 +192,7 @@ public class CycloneDxSbomGenerator {
         for (var c : manifest.getComponents()) {
             addComponent(bom, c);
         }
-        if (FORMAT_ALL.equalsIgnoreCase(format)) {
-            if (outputFile != null) {
-                throw new IllegalArgumentException("Can't use output file " + outputFile + " with format '"
-                        + FORMAT_ALL + "', since it implies generating multiple files");
-            }
-            final List<SbomResult> result = new ArrayList<>(SUPPORTED_FORMATS.size());
-            for (String format : SUPPORTED_FORMATS) {
-                result.add(persistSbom(bom, getOutputFile(format), format));
-            }
-            return result;
-        }
-        var outputFile = getOutputFile(format == null ? DEFAULT_FORMAT : format);
-        return List.of(persistSbom(bom, outputFile, getFormat(outputFile)));
+        return bom;
     }
 
     private void addComponent(Bom bom, ApplicationComponent component) {
@@ -441,25 +466,7 @@ public class CycloneDxSbomGenerator {
     }
 
     private SbomResult persistSbom(Bom bom, Path sbomFile, String format) {
-
-        var specVersion = getSchemaVersion();
-        final String sbomContent;
-        if (format.equalsIgnoreCase("json")) {
-            try {
-                sbomContent = BomGeneratorFactory.createJson(specVersion, bom).toJsonString();
-            } catch (Throwable e) {
-                throw new RuntimeException("Failed to generate an SBOM in JSON format", e);
-            }
-        } else if (format.equalsIgnoreCase("xml")) {
-            try {
-                sbomContent = BomGeneratorFactory.createXml(specVersion, bom).toXmlString();
-            } catch (GeneratorException e) {
-                throw new RuntimeException("Failed to generate an SBOM in XML format", e);
-            }
-        } else {
-            throw new RuntimeException(
-                    "Unsupported SBOM artifact type " + format + ", supported types are json and xml");
-        }
+        final String sbomContent = formatSbom(bom, format);
 
         var outputDir = sbomFile.getParent();
         if (outputDir != null) {
@@ -480,6 +487,33 @@ public class CycloneDxSbomGenerator {
 
         return new SbomResult(sbomFile, "CycloneDX", bom.getSpecVersion(), format, CLASSIFIER_CYCLONEDX,
                 manifest.getRunnerPath());
+    }
+
+    private String formatSbom(Bom bom, String format) {
+        var specVersion = getSchemaVersion();
+        final String sbomContent;
+        if (format.equalsIgnoreCase("json")) {
+            try {
+                sbomContent = BomGeneratorFactory.createJson(specVersion, bom).toJsonString(prettyPrint);
+            } catch (Throwable e) {
+                throw new RuntimeException("Failed to generate an SBOM in JSON format", e);
+            }
+        } else if (format.equalsIgnoreCase("xml")) {
+            try {
+                sbomContent = BomGeneratorFactory.createXml(specVersion, bom).toXmlString();
+            } catch (GeneratorException e) {
+                throw new RuntimeException("Failed to generate an SBOM in XML format", e);
+            }
+        } else {
+            var msg = new StringBuilder("Unsupported SBOM format ").append(format);
+            var supportedFormats = Format.values();
+            msg.append(". Supported formats are ").append(supportedFormats[0].getExtension());
+            for (int i = 1; i < supportedFormats.length; i++) {
+                msg.append(", ").append(supportedFormats[i].getExtension());
+            }
+            throw new IllegalArgumentException(msg.toString());
+        }
+        return sbomContent;
     }
 
     private Path getOutputFile(String defaultFormat) {

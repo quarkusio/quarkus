@@ -74,6 +74,12 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-security-spi</artifactId>
         </dependency>
+        <!-- For Hibernate ORM's JSON support; see HibernateOrmProcessor -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jackson-deployment</artifactId>
+            <optional>true</optional>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>

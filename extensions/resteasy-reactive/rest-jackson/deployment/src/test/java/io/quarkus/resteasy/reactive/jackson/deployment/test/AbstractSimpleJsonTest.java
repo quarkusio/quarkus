@@ -3,6 +3,7 @@ package io.quarkus.resteasy.reactive.jackson.deployment.test;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyOrNullString;
+import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
@@ -1253,5 +1254,29 @@ public abstract class AbstractSimpleJsonTest {
                 .statusCode(200)
                 .body("known", CoreMatchers.is("x"))
                 .body("extras_size", CoreMatchers.is(2));
+    }
+
+    @Test
+    void unwrapped_failedResult_shouldFlattenFieldsWithDiscriminator() {
+        given()
+                .when()
+                .get("/simple/unwrapped-result")
+                .then()
+                .statusCode(200)
+                .body("results[1].status", CoreMatchers.is("failed"))
+                .body("results[1].code", CoreMatchers.is("E001"))
+                .body("results[1].message", CoreMatchers.is("something went wrong"))
+                .body("results[1]", CoreMatchers.not(hasKey("error")));
+    }
+
+    @Test
+    void polymorphicItem_shouldIncludeTypeDiscriminator() {
+        given()
+                .when()
+                .get("/simple/polymorphic-item-ser")
+                .then()
+                .statusCode(200)
+                .body("item.type", CoreMatchers.is("type_a"))
+                .body("item.value", CoreMatchers.is("hello"));
     }
 }

@@ -1,9 +1,8 @@
 package io.quarkus.spring.data.deployment.generate;
 
-import static io.quarkus.gizmo.FieldDescriptor.of;
-import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
-
-import java.lang.reflect.Modifier;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.ConstantDescs;
+import java.lang.constant.MethodTypeDesc;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -38,14 +37,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 import io.quarkus.deployment.bean.JavaBeanUtil;
-import io.quarkus.gizmo.AssignableResultHandle;
-import io.quarkus.gizmo.BranchResult;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.creator.ClassCreator;
+import io.quarkus.gizmo2.desc.ClassMethodDesc;
+import io.quarkus.gizmo2.desc.FieldDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractManagedJpaOperations;
 import io.quarkus.hibernate.orm.panache.runtime.AdditionalJpaOperations;
@@ -60,16 +60,17 @@ public class StockMethodsAdder {
     private static Set<MethodInfo> ALL_SPRING_DATA_REPOSITORY_METHODS = null;
 
     private final IndexView index;
-    private final FieldDescriptor operationsField;
+    private final FieldDesc operationsField;
 
     public StockMethodsAdder(IndexView index, TypeBundle typeBundle) {
         this.index = index;
         String operationsName = typeBundle.operations().dotName().toString();
-        operationsField = of(operationsName, "INSTANCE", operationsName);
+        operationsField = FieldDesc.of(ClassDesc.of(operationsName), "INSTANCE", ClassDesc.of(operationsName));
     }
 
-    public void add(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
-            String generatedClassName, ClassInfo repositoryToImplement, DotName entityDotName, String idTypeStr) {
+    public void add(ClassCreator classCreator, FieldDesc entityClassFieldDescriptor,
+            String generatedClassName, ClassInfo repositoryToImplement, DotName entityDotName, String idTypeStr,
+            Set<String> existingMethods) {
 
         Set<MethodInfo> methodsOfExtendedSpringDataRepositories = methodsOfExtendedSpringDataRepositories(
                 repositoryToImplement);
@@ -77,148 +78,163 @@ public class StockMethodsAdder {
         Set<MethodInfo> allMethodsToBeImplemented = new LinkedHashSet<>(methodsOfExtendedSpringDataRepositories);
         allMethodsToBeImplemented.addAll(stockMethodsAddedToInterface);
 
-        Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult = new LinkedHashMap<>();
+        Map<String, Boolean> allMethodsToBeImplementedToResult = new LinkedHashMap<>();
         for (MethodInfo methodInfo : allMethodsToBeImplemented) {
-            allMethodsToBeImplementedToResult.put(GenerationUtil.toMethodDescriptor(generatedClassName, methodInfo), false);
+            allMethodsToBeImplementedToResult.put(GenerationUtil.methodKey(generatedClassName, methodInfo), false);
         }
 
         String entityTypeStr = entityDotName.toString();
 
-        // for all Spring Data repository methods we know how to implement, check if the generated class actually needs the method
-        // and if so generate the implementation while also keeping the proper records
-
         generateSave(classCreator, generatedClassName, entityDotName, entityTypeStr,
-                allMethodsToBeImplementedToResult, entityClassFieldDescriptor);
+                allMethodsToBeImplementedToResult, entityClassFieldDescriptor, existingMethods);
         generateSaveAndFlush(classCreator, generatedClassName, entityDotName, entityTypeStr,
-                allMethodsToBeImplementedToResult, entityClassFieldDescriptor);
+                allMethodsToBeImplementedToResult, entityClassFieldDescriptor, existingMethods);
         generateSaveAll(classCreator, entityClassFieldDescriptor, generatedClassName, entityDotName, entityTypeStr,
-                allMethodsToBeImplementedToResult);
-        generateFlush(classCreator, generatedClassName, allMethodsToBeImplementedToResult);
+                allMethodsToBeImplementedToResult, existingMethods);
+        generateFlush(classCreator, generatedClassName, allMethodsToBeImplementedToResult, existingMethods);
         generateFindById(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr, idTypeStr,
-                allMethodsToBeImplementedToResult);
+                allMethodsToBeImplementedToResult, existingMethods);
         generateExistsById(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr, idTypeStr,
-                allMethodsToBeImplementedToResult);
+                allMethodsToBeImplementedToResult, existingMethods);
         generateGetOne(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr, idTypeStr,
-                allMethodsToBeImplementedToResult);
+                allMethodsToBeImplementedToResult, existingMethods);
         generateGetReferenceById(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr, idTypeStr,
-                allMethodsToBeImplementedToResult);
+                allMethodsToBeImplementedToResult, existingMethods);
         generateGetById(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr, idTypeStr,
-                allMethodsToBeImplementedToResult);
+                allMethodsToBeImplementedToResult, existingMethods);
         generateFindAll(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr,
-                allMethodsToBeImplementedToResult);
+                allMethodsToBeImplementedToResult, existingMethods);
         generateFindAllWithSort(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr,
-                allMethodsToBeImplementedToResult);
+                allMethodsToBeImplementedToResult, existingMethods);
         generateFindAllWithPageable(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr,
-                allMethodsToBeImplementedToResult);
+                allMethodsToBeImplementedToResult, existingMethods);
         generateFindAllById(classCreator, entityClassFieldDescriptor, generatedClassName, entityDotName, entityTypeStr,
-                idTypeStr, allMethodsToBeImplementedToResult);
-        generateCount(classCreator, entityClassFieldDescriptor, generatedClassName, allMethodsToBeImplementedToResult);
+                idTypeStr, allMethodsToBeImplementedToResult, existingMethods);
+        generateCount(classCreator, entityClassFieldDescriptor, generatedClassName, allMethodsToBeImplementedToResult,
+                existingMethods);
         generateDeleteById(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr, idTypeStr,
-                allMethodsToBeImplementedToResult);
-        generateDelete(classCreator, generatedClassName, entityTypeStr, allMethodsToBeImplementedToResult);
-        generateDeleteAllWithIterable(classCreator, generatedClassName, entityTypeStr, allMethodsToBeImplementedToResult);
-        generateDeleteAll(classCreator, entityClassFieldDescriptor, generatedClassName, allMethodsToBeImplementedToResult);
+                allMethodsToBeImplementedToResult, existingMethods);
+        generateDelete(classCreator, generatedClassName, entityTypeStr, allMethodsToBeImplementedToResult, existingMethods);
+        generateDeleteAllWithIterable(classCreator, generatedClassName, entityTypeStr, allMethodsToBeImplementedToResult,
+                existingMethods);
+        generateDeleteAll(classCreator, entityClassFieldDescriptor, generatedClassName, allMethodsToBeImplementedToResult,
+                existingMethods);
         generateDeleteAllInBatch(classCreator, entityClassFieldDescriptor, generatedClassName,
-                allMethodsToBeImplementedToResult);
+                allMethodsToBeImplementedToResult, existingMethods);
         generateDeleteAllInBatchWithIterable(classCreator, generatedClassName, entityTypeStr,
-                allMethodsToBeImplementedToResult);
+                allMethodsToBeImplementedToResult, existingMethods);
         generateDeleteInBatchWithIterable(classCreator, generatedClassName, entityTypeStr,
-                allMethodsToBeImplementedToResult);
+                allMethodsToBeImplementedToResult, existingMethods);
         generateDeleteAllByIdInBatchWithIterable(classCreator, generatedClassName, entityTypeStr,
-                allMethodsToBeImplementedToResult);
+                allMethodsToBeImplementedToResult, existingMethods);
 
-        handleUnimplementedMethods(classCreator, allMethodsToBeImplementedToResult);
+        handleUnimplementedMethods(classCreator, generatedClassName, allMethodsToBeImplementedToResult, existingMethods);
     }
 
     private void generateSave(ClassCreator classCreator, String generatedClassName,
             DotName entityDotName, String entityTypeStr,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult,
-            FieldDescriptor entityClassFieldDescriptor) {
+            Map<String, Boolean> allMethodsToBeImplementedToResult,
+            FieldDesc entityClassFieldDescriptor, Set<String> existingMethods) {
 
-        MethodDescriptor saveDescriptor = MethodDescriptor.ofMethod(generatedClassName, "save", entityTypeStr,
-                entityTypeStr);
-        MethodDescriptor bridgeSaveDescriptor = MethodDescriptor.ofMethod(generatedClassName, "save", Object.class,
-                Object.class);
+        String saveKey = GenerationUtil.methodKey("save", entityTypeStr, entityTypeStr);
+        String bridgeSaveKey = GenerationUtil.methodKey("save", Object.class.getName(), Object.class.getName());
 
-        if (allMethodsToBeImplementedToResult.containsKey(saveDescriptor)
-                || allMethodsToBeImplementedToResult.containsKey(bridgeSaveDescriptor)) {
+        if (allMethodsToBeImplementedToResult.containsKey(saveKey)
+                || allMethodsToBeImplementedToResult.containsKey(bridgeSaveKey)) {
 
-            if (!classCreator.getExistingMethods().contains(saveDescriptor)) {
-                try (MethodCreator save = classCreator.getMethodCreator(saveDescriptor)) {
-                    save.addAnnotation(Transactional.class);
+            if (!existingMethods.contains(saveKey)) {
+                MethodTypeDesc saveMtd = GenerationUtil.toMethodTypeDesc(entityTypeStr, entityTypeStr);
+                classCreator.method("save", mc -> {
+                    mc.setType(saveMtd);
+                    mc.addAnnotation(Transactional.class);
+                    ParamVar entityParam = mc.parameter("entity");
 
-                    ResultHandle entity = save.getMethodParam(0);
-
-                    // if an entity is Persistable, then all we need to do is call isNew to determine if it's new or not
-                    if (isPersistable(entityDotName)) {
-                        ResultHandle isNew = save.invokeVirtualMethod(
-                                ofMethod(entityDotName.toString(), "isNew", boolean.class.toString()),
-                                entity);
-                        BranchResult isNewBranch = save.ifTrue(isNew);
-                        generatePersistAndReturn(entity, isNewBranch.trueBranch());
-                        generateMergeAndReturn(entity, isNewBranch.falseBranch(), entityClassFieldDescriptor);
-                    } else {
-                        AnnotationTarget idAnnotationTarget = getIdAnnotationTarget(entityDotName, index);
-                        ResultHandle idValue = generateObtainValue(save, entityDotName, entity, idAnnotationTarget);
-                        Type idType = getTypeOfTarget(idAnnotationTarget);
-                        Optional<AnnotationTarget> versionValueTarget = getVersionAnnotationTarget(entityDotName, index);
-
-                        // the following code generated bytecode that:
-                        // if there is a field annotated with @Version, calls 'persist' if the field is null, 'merge' otherwise
-                        // if there is no field annotated with @Version, then if the value of the field annotated with '@Id'
-                        // is "falsy", 'persist' is called, otherwise 'merge' is called
-
-                        if (versionValueTarget.isPresent()) {
-                            Type versionType = getTypeOfTarget(versionValueTarget.get());
-                            if (versionType instanceof PrimitiveType) {
-                                throw new IllegalArgumentException(
-                                        "The '@Version' annotation cannot be used on primitive types. Offending entity is '"
-                                                + entityDotName + "'.");
-                            }
-                            ResultHandle versionValue = generateObtainValue(save, entityDotName, entity,
-                                    versionValueTarget.get());
-                            BranchResult versionValueIsNullBranch = save.ifNull(versionValue);
-                            generatePersistAndReturn(entity, versionValueIsNullBranch.trueBranch());
-                            generateMergeAndReturn(entity, versionValueIsNullBranch.falseBranch(), entityClassFieldDescriptor);
-                        }
-
-                        BytecodeCreator idValueUnset;
-                        BytecodeCreator idValueSet;
-                        if (idType instanceof PrimitiveType) {
-                            if (!idType.name().equals(DotNames.PRIMITIVE_LONG)
-                                    && !idType.name().equals(DotNames.PRIMITIVE_INTEGER)) {
-                                throw new IllegalArgumentException("Id type of '" + entityDotName + "' is invalid.");
-                            }
-                            if (idType.name().equals(DotNames.PRIMITIVE_LONG)) {
-                                ResultHandle longObject = save.invokeStaticMethod(
-                                        MethodDescriptor.ofMethod(Long.class, "valueOf", Long.class, long.class), idValue);
-                                idValue = save.invokeVirtualMethod(MethodDescriptor.ofMethod(Long.class, "intValue", int.class),
-                                        longObject);
-                            }
-                            BranchResult idValueNonZeroBranch = save.ifNonZero(idValue);
-                            idValueSet = idValueNonZeroBranch.trueBranch();
-                            idValueUnset = idValueNonZeroBranch.falseBranch();
+                    mc.body(bc -> {
+                        // Read the static operations field and entity class field once and store in LocalVars
+                        // so they can be used across ifElse branches
+                        LocalVar opsVar = bc.localVar("ops", bc.getStaticField(operationsField));
+                        LocalVar entityClassVar = bc.localVar("entityClass",
+                                bc.get(mc.this_().field(entityClassFieldDescriptor)));
+                        if (isPersistable(entityDotName)) {
+                            Expr isNew = bc.invokeVirtual(
+                                    ClassMethodDesc.of(ClassDesc.of(entityDotName.toString()), "isNew",
+                                            MethodTypeDesc.of(ConstantDescs.CD_boolean)),
+                                    entityParam);
+                            bc.ifElse(isNew,
+                                    tb -> generatePersistAndReturn(entityParam, tb, opsVar),
+                                    fb -> generateMergeAndReturn(entityParam, fb, opsVar,
+                                            entityClassVar));
                         } else {
-                            BranchResult idValueNullBranch = save.ifNull(idValue);
-                            idValueSet = idValueNullBranch.falseBranch();
-                            idValueUnset = idValueNullBranch.trueBranch();
+                            AnnotationTarget idAnnotationTarget = getIdAnnotationTarget(entityDotName, index);
+                            Expr idValue = generateObtainValue(bc, entityDotName, entityParam, idAnnotationTarget);
+                            Type idType = getTypeOfTarget(idAnnotationTarget);
+                            Optional<AnnotationTarget> versionValueTarget = getVersionAnnotationTarget(entityDotName, index);
+
+                            if (versionValueTarget.isPresent()) {
+                                Type versionType = getTypeOfTarget(versionValueTarget.get());
+                                if (versionType instanceof PrimitiveType) {
+                                    throw new IllegalArgumentException(
+                                            "The '@Version' annotation cannot be used on primitive types. Offending entity is '"
+                                                    + entityDotName + "'.");
+                                }
+                                Expr versionValue = generateObtainValue(bc, entityDotName, entityParam,
+                                        versionValueTarget.get());
+                                bc.ifElse(bc.isNull(versionValue),
+                                        tb -> generatePersistAndReturn(entityParam, tb, opsVar),
+                                        fb -> generateMergeAndReturn(entityParam, fb, opsVar,
+                                                entityClassVar));
+                                // if version is present, we've handled both branches, so return here
+                                return;
+                            }
+
+                            if (idType instanceof PrimitiveType) {
+                                if (!idType.name().equals(DotNames.PRIMITIVE_LONG)
+                                        && !idType.name().equals(DotNames.PRIMITIVE_INTEGER)) {
+                                    throw new IllegalArgumentException(
+                                            "Id type of '" + entityDotName + "' is invalid.");
+                                }
+                                Expr idValueForComparison = idValue;
+                                if (idType.name().equals(DotNames.PRIMITIVE_LONG)) {
+                                    Expr longObject = bc.invokeStatic(
+                                            MethodDesc.of(Long.class, "valueOf", Long.class, long.class), idValue);
+                                    idValueForComparison = bc.invokeVirtual(
+                                            MethodDesc.of(Long.class, "intValue", int.class), longObject);
+                                }
+                                // ifNonZero equivalent: if id != 0 => idValueSet, if id == 0 => idValueUnset
+                                bc.ifElse(bc.ne(idValueForComparison, 0),
+                                        idValueSetBlock -> generateMergeAndReturn(entityParam, idValueSetBlock,
+                                                opsVar, entityClassVar),
+                                        idValueUnsetBlock -> generatePersistAndReturn(entityParam,
+                                                idValueUnsetBlock, opsVar));
+                            } else {
+                                bc.ifElse(bc.isNull(idValue),
+                                        idValueUnsetBlock -> generatePersistAndReturn(entityParam,
+                                                idValueUnsetBlock, opsVar),
+                                        idValueSetBlock -> generateMergeAndReturn(entityParam, idValueSetBlock,
+                                                opsVar, entityClassVar));
+                            }
                         }
-                        generatePersistAndReturn(entity, idValueUnset);
-                        generateMergeAndReturn(entity, idValueSet, entityClassFieldDescriptor);
-                    }
-                }
-                try (MethodCreator bridgeSave = classCreator.getMethodCreator(bridgeSaveDescriptor)) {
-                    MethodDescriptor save = MethodDescriptor.ofMethod(generatedClassName, "save", entityTypeStr,
-                            entityTypeStr);
-                    ResultHandle methodParam = bridgeSave.getMethodParam(0);
-                    ResultHandle castedMethodParam = bridgeSave.checkCast(methodParam, entityTypeStr);
-                    ResultHandle result = bridgeSave.invokeVirtualMethod(save, bridgeSave.getThis(), castedMethodParam);
-                    bridgeSave.returnValue(result);
-                }
+                    });
+                });
+                existingMethods.add(saveKey);
+
+                // Bridge method
+                MethodTypeDesc bridgeMtd = GenerationUtil.toMethodTypeDesc(Object.class.getName(), Object.class.getName());
+                MethodDesc saveDesc = ClassMethodDesc.of(ClassDesc.of(generatedClassName), "save", saveMtd);
+                classCreator.method("save", bmc -> {
+                    bmc.setType(bridgeMtd);
+                    ParamVar methodParam = bmc.parameter("entity");
+                    bmc.body(bbc -> {
+                        Expr castedParam = bbc.cast(methodParam, ClassDesc.of(entityTypeStr));
+                        Expr result = bbc.invokeVirtual(saveDesc, bmc.this_(), castedParam);
+                        bbc.return_(result);
+                    });
+                });
+                existingMethods.add(bridgeSaveKey);
             }
 
-            allMethodsToBeImplementedToResult.put(saveDescriptor, true);
-            allMethodsToBeImplementedToResult.put(bridgeSaveDescriptor, true);
+            allMethodsToBeImplementedToResult.put(saveKey, true);
+            allMethodsToBeImplementedToResult.put(bridgeSaveKey, true);
         }
     }
 
@@ -240,49 +256,46 @@ public class StockMethodsAdder {
         return isPersistable(superDotName);
     }
 
-    private void generatePersistAndReturn(ResultHandle entity, BytecodeCreator bytecodeCreator) {
-        bytecodeCreator.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(AbstractManagedJpaOperations.class, "persist", void.class, Object.class),
-                bytecodeCreator.readStaticField(operationsField),
+    private void generatePersistAndReturn(Expr entity, BlockCreator bc, Expr opsExpr) {
+        bc.invokeVirtual(
+                MethodDesc.of(AbstractManagedJpaOperations.class, "persist", void.class, Object.class),
+                opsExpr,
                 entity);
-        bytecodeCreator.returnValue(entity);
+        bc.return_(entity);
     }
 
-    private void generateMergeAndReturn(ResultHandle entity, BytecodeCreator bytecodeCreator,
-            FieldDescriptor entityClassFieldDescriptor) {
-        ResultHandle entityClass = bytecodeCreator.readInstanceField(entityClassFieldDescriptor, bytecodeCreator.getThis());
-        ResultHandle session = bytecodeCreator.invokeVirtualMethod(
-                ofMethod(AbstractManagedJpaOperations.class, "getSession", Session.class, Class.class),
-                bytecodeCreator.readStaticField(operationsField),
-                entityClass);
-        entity = bytecodeCreator.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(Session.class, "merge", Object.class, Object.class),
+    private void generateMergeAndReturn(Expr entity, BlockCreator bc, Expr opsExpr,
+            Expr entityClassExpr) {
+        Expr session = bc.invokeVirtual(
+                MethodDesc.of(AbstractManagedJpaOperations.class, "getSession", Session.class, Class.class),
+                opsExpr,
+                entityClassExpr);
+        Expr merged = bc.invokeInterface(
+                MethodDesc.of(Session.class, "merge", Object.class, Object.class),
                 session, entity);
-        bytecodeCreator.returnValue(entity);
+        bc.return_(merged);
     }
 
-    /**
-     * Given an annotation target, generate the bytecode that is needed to obtain its value
-     * either by reading the field or by calling the method.
-     * Meant to be called for annotations alike {@code @Id} or {@code @Version}
-     */
-    private ResultHandle generateObtainValue(MethodCreator methodCreator, DotName entityDotName, ResultHandle entity,
+    private Expr generateObtainValue(BlockCreator bc, DotName entityDotName, Expr entity,
             AnnotationTarget annotationTarget) {
         if (annotationTarget instanceof FieldInfo) {
             FieldInfo fieldInfo = annotationTarget.asField();
-            if (Modifier.isPublic(fieldInfo.flags())) {
-                return methodCreator.readInstanceField(of(fieldInfo), entity);
+            if (java.lang.reflect.Modifier.isPublic(fieldInfo.flags())) {
+                FieldDesc fd = FieldDesc.of(ClassDesc.of(fieldInfo.declaringClass().name().toString()),
+                        fieldInfo.name(), ClassDesc.of(fieldInfo.type().name().toString()));
+                return bc.get(entity.field(fd));
             }
 
             String getterMethodName = JavaBeanUtil.getGetterName(fieldInfo.name(), fieldInfo.type().name());
-            return methodCreator.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(entityDotName.toString(), getterMethodName, fieldInfo.type().name().toString()),
+            return bc.invokeVirtual(
+                    ClassMethodDesc.of(ClassDesc.of(entityDotName.toString()), getterMethodName,
+                            MethodTypeDesc.of(GenerationUtil.toClassDesc(fieldInfo.type().name().toString()))),
                     entity);
         }
         MethodInfo methodInfo = annotationTarget.asMethod();
-        return methodCreator.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(entityDotName.toString(), methodInfo.name(),
-                        methodInfo.returnType().name().toString()),
+        return bc.invokeVirtual(
+                ClassMethodDesc.of(ClassDesc.of(entityDotName.toString()), methodInfo.name(),
+                        MethodTypeDesc.of(GenerationUtil.toClassDesc(methodInfo.returnType().name().toString()))),
                 entity);
     }
 
@@ -295,728 +308,834 @@ public class StockMethodsAdder {
 
     private void generateSaveAndFlush(ClassCreator classCreator,
             String generatedClassName, DotName entityDotName, String entityTypeStr,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult, FieldDescriptor entityClassFieldDescriptor) {
+            Map<String, Boolean> allMethodsToBeImplementedToResult, FieldDesc entityClassFieldDescriptor,
+            Set<String> existingMethods) {
 
-        MethodDescriptor saveAndFlushDescriptor = MethodDescriptor.ofMethod(generatedClassName, "saveAndFlush", entityTypeStr,
-                entityTypeStr);
-        MethodDescriptor bridgeSaveAndFlushDescriptor = MethodDescriptor.ofMethod(generatedClassName, "saveAndFlush",
-                Object.class,
-                Object.class);
+        String saveAndFlushKey = GenerationUtil.methodKey("saveAndFlush", entityTypeStr, entityTypeStr);
+        String bridgeSaveAndFlushKey = GenerationUtil.methodKey("saveAndFlush", Object.class.getName(),
+                Object.class.getName());
 
-        if (allMethodsToBeImplementedToResult.containsKey(saveAndFlushDescriptor)
-                || allMethodsToBeImplementedToResult.containsKey(bridgeSaveAndFlushDescriptor)) {
+        if (allMethodsToBeImplementedToResult.containsKey(saveAndFlushKey)
+                || allMethodsToBeImplementedToResult.containsKey(bridgeSaveAndFlushKey)) {
 
-            if (!classCreator.getExistingMethods().contains(saveAndFlushDescriptor)) {
-                MethodDescriptor save = MethodDescriptor.ofMethod(generatedClassName, "save", entityTypeStr,
-                        entityTypeStr);
-
-                // we need to force the generation of findById since this method depends on it
-                allMethodsToBeImplementedToResult.put(save, false);
+            if (!existingMethods.contains(saveAndFlushKey)) {
+                // Force generation of save since this method depends on it
+                String saveKey = GenerationUtil.methodKey("save", entityTypeStr, entityTypeStr);
+                allMethodsToBeImplementedToResult.put(saveKey, false);
                 generateSave(classCreator, generatedClassName, entityDotName, entityTypeStr,
-                        allMethodsToBeImplementedToResult, entityClassFieldDescriptor);
+                        allMethodsToBeImplementedToResult, entityClassFieldDescriptor, existingMethods);
 
-                try (MethodCreator saveAndFlush = classCreator.getMethodCreator(saveAndFlushDescriptor)) {
-                    saveAndFlush.addAnnotation(Transactional.class);
+                MethodTypeDesc saveMtd = GenerationUtil.toMethodTypeDesc(entityTypeStr, entityTypeStr);
+                MethodDesc saveDesc = ClassMethodDesc.of(ClassDesc.of(generatedClassName), "save", saveMtd);
 
-                    ResultHandle entity = saveAndFlush.getMethodParam(0);
-                    entity = saveAndFlush.invokeVirtualMethod(save, saveAndFlush.getThis(), entity);
-                    saveAndFlush.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(AbstractManagedJpaOperations.class, "flush", void.class),
-                            saveAndFlush.readStaticField(operationsField));
-                    saveAndFlush.returnValue(entity);
-                }
-                try (MethodCreator bridgeSave = classCreator.getMethodCreator(bridgeSaveAndFlushDescriptor)) {
-                    MethodDescriptor saveAndFlush = MethodDescriptor.ofMethod(generatedClassName, "saveAndFlush", entityTypeStr,
-                            entityTypeStr);
-                    ResultHandle methodParam = bridgeSave.getMethodParam(0);
-                    ResultHandle castedMethodParam = bridgeSave.checkCast(methodParam, entityTypeStr);
-                    ResultHandle result = bridgeSave.invokeVirtualMethod(saveAndFlush, bridgeSave.getThis(), castedMethodParam);
-                    bridgeSave.returnValue(result);
-                }
+                classCreator.method("saveAndFlush", mc -> {
+                    mc.setType(saveMtd);
+                    mc.addAnnotation(Transactional.class);
+                    ParamVar entityParam = mc.parameter("entity");
+
+                    mc.body(bc -> {
+                        LocalVar ops = bc.localVar("ops", bc.getStaticField(operationsField));
+                        Expr savedEntity = bc.invokeVirtual(saveDesc, mc.this_(), entityParam);
+                        bc.invokeVirtual(
+                                MethodDesc.of(AbstractManagedJpaOperations.class, "flush", void.class),
+                                ops);
+                        bc.return_(savedEntity);
+                    });
+                });
+                existingMethods.add(saveAndFlushKey);
+
+                // Bridge method
+                MethodTypeDesc bridgeMtd = GenerationUtil.toMethodTypeDesc(Object.class.getName(), Object.class.getName());
+                MethodDesc saveAndFlushDesc = ClassMethodDesc.of(ClassDesc.of(generatedClassName), "saveAndFlush", saveMtd);
+                classCreator.method("saveAndFlush", bmc -> {
+                    bmc.setType(bridgeMtd);
+                    ParamVar methodParam = bmc.parameter("entity");
+                    bmc.body(bbc -> {
+                        Expr castedParam = bbc.cast(methodParam, ClassDesc.of(entityTypeStr));
+                        Expr result = bbc.invokeVirtual(saveAndFlushDesc, bmc.this_(), castedParam);
+                        bbc.return_(result);
+                    });
+                });
+                existingMethods.add(bridgeSaveAndFlushKey);
             }
 
-            allMethodsToBeImplementedToResult.put(saveAndFlushDescriptor, true);
-            allMethodsToBeImplementedToResult.put(bridgeSaveAndFlushDescriptor, true);
+            allMethodsToBeImplementedToResult.put(saveAndFlushKey, true);
+            allMethodsToBeImplementedToResult.put(bridgeSaveAndFlushKey, true);
         }
     }
 
-    private void generateSaveAll(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
+    private void generateSaveAll(ClassCreator classCreator, FieldDesc entityClassFieldDescriptor,
             String generatedClassName, DotName entityDotName, String entityTypeStr,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+            Map<String, Boolean> allMethodsToBeImplementedToResult, Set<String> existingMethods) {
 
-        MethodDescriptor saveAllDescriptor = MethodDescriptor.ofMethod(generatedClassName, "saveAll", List.class,
-                Iterable.class);
-        MethodDescriptor bridgeSaveAllDescriptor = MethodDescriptor.ofMethod(generatedClassName, "saveAll", Iterable.class,
-                Iterable.class);
+        String saveAllKey = GenerationUtil.methodKey("saveAll", List.class.getName(), Iterable.class.getName());
+        String bridgeSaveAllKey = GenerationUtil.methodKey("saveAll", Iterable.class.getName(), Iterable.class.getName());
 
-        if (allMethodsToBeImplementedToResult.containsKey(saveAllDescriptor)
-                || allMethodsToBeImplementedToResult.containsKey(bridgeSaveAllDescriptor)) {
+        if (allMethodsToBeImplementedToResult.containsKey(saveAllKey)
+                || allMethodsToBeImplementedToResult.containsKey(bridgeSaveAllKey)) {
 
-            if (!classCreator.getExistingMethods().contains(saveAllDescriptor)) {
-                MethodDescriptor save = MethodDescriptor.ofMethod(generatedClassName, "save", entityTypeStr,
-                        entityTypeStr);
+            if (!existingMethods.contains(saveAllKey)) {
+                MethodTypeDesc saveMtd = GenerationUtil.toMethodTypeDesc(entityTypeStr, entityTypeStr);
+                MethodDesc saveDesc = ClassMethodDesc.of(ClassDesc.of(generatedClassName), "save", saveMtd);
 
-                try (MethodCreator saveAll = classCreator.getMethodCreator(saveAllDescriptor)) {
-                    saveAll.setSignature(String.format("<S:L%s;>(Ljava/lang/Iterable<TS;>;)Ljava/util/List<TS;>;",
-                            entityTypeStr.replace('.', '/')));
-                    saveAll.addAnnotation(Transactional.class);
+                MethodTypeDesc saveAllMtd = GenerationUtil.toMethodTypeDesc(List.class.getName(), Iterable.class.getName());
+                classCreator.method("saveAll", mc -> {
+                    mc.setType(saveAllMtd);
+                    mc.addAnnotation(Transactional.class);
+                    ParamVar iterableParam = mc.parameter("entities");
 
-                    ResultHandle iterable = saveAll.getMethodParam(0);
-                    ResultHandle resultList = saveAll.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
+                    mc.body(bc -> {
+                        LocalVar resultList = bc.localVar("resultList",
+                                bc.new_(ClassDesc.of(ArrayList.class.getName())));
+                        LocalVar iteratorVar = bc.localVar("iterator",
+                                bc.invokeInterface(
+                                        MethodDesc.of(Iterable.class, "iterator", Iterator.class),
+                                        iterableParam));
 
-                    ResultHandle iterator = saveAll.invokeInterfaceMethod(
-                            ofMethod(Iterable.class, "iterator", Iterator.class),
-                            iterable);
-                    BytecodeCreator loop = saveAll.createScope();
-                    ResultHandle hasNextValue = loop.invokeInterfaceMethod(
-                            ofMethod(Iterator.class, "hasNext", boolean.class),
-                            iterator);
+                        bc.while_(
+                                cond -> {
+                                    Expr hasNext = cond.invokeInterface(
+                                            MethodDesc.of(Iterator.class, "hasNext", boolean.class),
+                                            iteratorVar);
+                                    cond.yield(hasNext);
+                                },
+                                body -> {
+                                    Expr next = body.invokeInterface(
+                                            MethodDesc.of(Iterator.class, "next", Object.class),
+                                            iteratorVar);
+                                    Expr saveResult = body.invokeVirtual(saveDesc, mc.this_(), next);
+                                    body.invokeInterface(
+                                            MethodDesc.of(List.class, "add", boolean.class, Object.class),
+                                            resultList, saveResult);
+                                });
 
-                    BranchResult hasNextBranch = loop.ifNonZero(hasNextValue);
-                    BytecodeCreator hasNext = hasNextBranch.trueBranch();
-                    BytecodeCreator doesNotHaveNext = hasNextBranch.falseBranch();
-                    ResultHandle next = hasNext.invokeInterfaceMethod(
-                            ofMethod(Iterator.class, "next", Object.class),
-                            iterator);
-                    ResultHandle saveResult = hasNext.invokeVirtualMethod(save, hasNext.getThis(), next);
-                    hasNext.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(List.class, "add", boolean.class, Object.class),
-                            resultList, saveResult);
-                    hasNext.continueScope(loop);
+                        bc.return_(resultList);
+                    });
+                });
+                existingMethods.add(saveAllKey);
 
-                    doesNotHaveNext.breakScope(loop);
-
-                    saveAll.returnValue(resultList);
-                }
-                try (MethodCreator bridgeSaveAll = classCreator.getMethodCreator(bridgeSaveAllDescriptor)) {
-                    MethodDescriptor saveAll = MethodDescriptor.ofMethod(generatedClassName, "saveAll",
-                            List.class.getName(), Iterable.class);
-                    ResultHandle result = bridgeSaveAll.invokeVirtualMethod(saveAll, bridgeSaveAll.getThis(),
-                            bridgeSaveAll.getMethodParam(0));
-                    bridgeSaveAll.returnValue(result);
-                }
+                // Bridge method
+                MethodTypeDesc bridgeMtd = GenerationUtil.toMethodTypeDesc(Iterable.class.getName(), Iterable.class.getName());
+                MethodDesc saveAllDesc = ClassMethodDesc.of(ClassDesc.of(generatedClassName), "saveAll", saveAllMtd);
+                classCreator.method("saveAll", bmc -> {
+                    bmc.setType(bridgeMtd);
+                    ParamVar methodParam = bmc.parameter("entities");
+                    bmc.body(bbc -> {
+                        Expr result = bbc.invokeVirtual(saveAllDesc, bmc.this_(), methodParam);
+                        bbc.return_(result);
+                    });
+                });
+                existingMethods.add(bridgeSaveAllKey);
             }
 
-            allMethodsToBeImplementedToResult.put(saveAllDescriptor, true);
-            allMethodsToBeImplementedToResult.put(bridgeSaveAllDescriptor, true);
+            allMethodsToBeImplementedToResult.put(saveAllKey, true);
+            allMethodsToBeImplementedToResult.put(bridgeSaveAllKey, true);
         }
     }
 
     private void generateFlush(ClassCreator classCreator, String generatedClassName,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+            Map<String, Boolean> allMethodsToBeImplementedToResult, Set<String> existingMethods) {
 
-        MethodDescriptor flushDescriptor = MethodDescriptor.ofMethod(generatedClassName, "flush", void.class.getName());
+        String flushKey = GenerationUtil.methodKey("flush", void.class.getName());
 
-        if (allMethodsToBeImplementedToResult.containsKey(flushDescriptor)) {
-
-            if (!classCreator.getExistingMethods().contains(flushDescriptor)) {
-                try (MethodCreator flush = classCreator.getMethodCreator(flushDescriptor)) {
-                    flush.addAnnotation(Transactional.class);
-                    flush.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(AbstractManagedJpaOperations.class, "flush", void.class),
-                            flush.readStaticField(operationsField));
-                    flush.returnValue(null);
-                }
+        if (allMethodsToBeImplementedToResult.containsKey(flushKey)) {
+            if (!existingMethods.contains(flushKey)) {
+                classCreator.method("flush", mc -> {
+                    mc.returning(void.class);
+                    mc.addAnnotation(Transactional.class);
+                    mc.body(bc -> {
+                        LocalVar ops = bc.localVar("ops", bc.getStaticField(operationsField));
+                        bc.invokeVirtual(
+                                MethodDesc.of(AbstractManagedJpaOperations.class, "flush", void.class),
+                                ops);
+                        bc.return_();
+                    });
+                });
+                existingMethods.add(flushKey);
             }
-
-            allMethodsToBeImplementedToResult.put(flushDescriptor, true);
+            allMethodsToBeImplementedToResult.put(flushKey, true);
         }
     }
 
-    private void generateFindById(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
+    private void generateFindById(ClassCreator classCreator, FieldDesc entityClassFieldDescriptor,
             String generatedClassName, String entityTypeStr, String idTypeStr,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+            Map<String, Boolean> allMethodsToBeImplementedToResult, Set<String> existingMethods) {
 
-        MethodDescriptor findByIdDescriptor = MethodDescriptor.ofMethod(generatedClassName, "findById",
-                Optional.class.getName(), idTypeStr);
-        MethodDescriptor bridgeFindByIdDescriptor = MethodDescriptor.ofMethod(generatedClassName, "findById",
-                Optional.class.getName(), Object.class);
+        String findByIdKey = GenerationUtil.methodKey("findById", Optional.class.getName(), idTypeStr);
+        String bridgeFindByIdKey = GenerationUtil.methodKey("findById", Optional.class.getName(), Object.class.getName());
 
-        if (allMethodsToBeImplementedToResult.containsKey(findByIdDescriptor)
-                || allMethodsToBeImplementedToResult.containsKey(bridgeFindByIdDescriptor)) {
+        if (allMethodsToBeImplementedToResult.containsKey(findByIdKey)
+                || allMethodsToBeImplementedToResult.containsKey(bridgeFindByIdKey)) {
 
-            if (!classCreator.getExistingMethods().contains(findByIdDescriptor)) {
-                try (MethodCreator findById = classCreator.getMethodCreator(findByIdDescriptor)) {
-                    findById.setSignature(String.format("(L%s;)Ljava/util/Optional<L%s;>;",
-                            idTypeStr.replace('.', '/'), entityTypeStr.replace('.', '/')));
-                    ResultHandle id = findById.getMethodParam(0);
-                    ResultHandle entity = findById.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(AbstractManagedJpaOperations.class, "findById", Object.class, Class.class,
-                                    Object.class),
-                            findById.readStaticField(operationsField),
-                            findById.readInstanceField(entityClassFieldDescriptor, findById.getThis()), id);
-                    ResultHandle optional = findById.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(Optional.class, "ofNullable", Optional.class, Object.class),
-                            entity);
-                    findById.returnValue(optional);
-                }
-                try (MethodCreator bridgeFindById = classCreator.getMethodCreator(bridgeFindByIdDescriptor)) {
-                    MethodDescriptor findById = MethodDescriptor.ofMethod(generatedClassName, "findById",
-                            Optional.class.getName(),
-                            idTypeStr);
-                    ResultHandle methodParam = bridgeFindById.getMethodParam(0);
-                    ResultHandle castedMethodParam = bridgeFindById.checkCast(methodParam, idTypeStr);
-                    ResultHandle result = bridgeFindById.invokeVirtualMethod(findById, bridgeFindById.getThis(),
-                            castedMethodParam);
-                    bridgeFindById.returnValue(result);
-                }
+            if (!existingMethods.contains(findByIdKey)) {
+                MethodTypeDesc findByIdMtd = GenerationUtil.toMethodTypeDesc(Optional.class.getName(), idTypeStr);
+                classCreator.method("findById", mc -> {
+                    mc.setType(findByIdMtd);
+                    ParamVar idParam = mc.parameter("id");
+                    mc.body(bc -> {
+                        LocalVar ops = bc.localVar("ops", bc.getStaticField(operationsField));
+                        LocalVar entityClass = bc.localVar("entityClass",
+                                bc.get(mc.this_().field(entityClassFieldDescriptor)));
+                        Expr entity = bc.invokeVirtual(
+                                MethodDesc.of(AbstractManagedJpaOperations.class, "findById", Object.class, Class.class,
+                                        Object.class),
+                                ops, entityClass, idParam);
+                        Expr optional = bc.invokeStatic(
+                                MethodDesc.of(Optional.class, "ofNullable", Optional.class, Object.class),
+                                entity);
+                        bc.return_(optional);
+                    });
+                });
+                existingMethods.add(findByIdKey);
+
+                // Bridge method
+                MethodTypeDesc bridgeMtd = GenerationUtil.toMethodTypeDesc(Optional.class.getName(), Object.class.getName());
+                MethodDesc findByIdDesc = ClassMethodDesc.of(ClassDesc.of(generatedClassName), "findById", findByIdMtd);
+                classCreator.method("findById", bmc -> {
+                    bmc.setType(bridgeMtd);
+                    ParamVar methodParam = bmc.parameter("id");
+                    bmc.body(bbc -> {
+                        Expr castedParam = bbc.cast(methodParam, ClassDesc.of(idTypeStr));
+                        Expr result = bbc.invokeVirtual(findByIdDesc, bmc.this_(), castedParam);
+                        bbc.return_(result);
+                    });
+                });
+                existingMethods.add(bridgeFindByIdKey);
             }
 
-            allMethodsToBeImplementedToResult.put(findByIdDescriptor, true);
-            allMethodsToBeImplementedToResult.put(bridgeFindByIdDescriptor, true);
+            allMethodsToBeImplementedToResult.put(findByIdKey, true);
+            allMethodsToBeImplementedToResult.put(bridgeFindByIdKey, true);
         }
     }
 
-    private void generateExistsById(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
+    private void generateExistsById(ClassCreator classCreator, FieldDesc entityClassFieldDescriptor,
             String generatedClassName, String entityTypeStr, String idTypeStr,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+            Map<String, Boolean> allMethodsToBeImplementedToResult, Set<String> existingMethods) {
 
-        MethodDescriptor existsByIdDescriptor = MethodDescriptor.ofMethod(generatedClassName, "existsById",
-                boolean.class, idTypeStr);
-        MethodDescriptor bridgeExistsByIdDescriptor = MethodDescriptor.ofMethod(generatedClassName, "existsById", boolean.class,
-                Object.class);
+        String existsByIdKey = GenerationUtil.methodKey("existsById", boolean.class.getName(), idTypeStr);
+        String bridgeExistsByIdKey = GenerationUtil.methodKey("existsById", boolean.class.getName(), Object.class.getName());
 
-        if (allMethodsToBeImplementedToResult.containsKey(existsByIdDescriptor)
-                || allMethodsToBeImplementedToResult.containsKey(bridgeExistsByIdDescriptor)) {
+        if (allMethodsToBeImplementedToResult.containsKey(existsByIdKey)
+                || allMethodsToBeImplementedToResult.containsKey(bridgeExistsByIdKey)) {
 
-            if (!classCreator.getExistingMethods().contains(existsByIdDescriptor)) {
-                MethodDescriptor findById = MethodDescriptor.ofMethod(generatedClassName, "findById",
-                        Optional.class.getName(),
-                        idTypeStr);
-
-                // we need to force the generation of findById since this method depends on it
-                allMethodsToBeImplementedToResult.put(findById, false);
+            if (!existingMethods.contains(existsByIdKey)) {
+                // Force generation of findById
+                String findByIdKey = GenerationUtil.methodKey("findById", Optional.class.getName(), idTypeStr);
+                allMethodsToBeImplementedToResult.put(findByIdKey, false);
                 generateFindById(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr, idTypeStr,
-                        allMethodsToBeImplementedToResult);
+                        allMethodsToBeImplementedToResult, existingMethods);
 
-                try (MethodCreator existsById = classCreator.getMethodCreator(existsByIdDescriptor)) {
+                MethodTypeDesc findByIdMtd = GenerationUtil.toMethodTypeDesc(Optional.class.getName(), idTypeStr);
+                MethodDesc findByIdDesc = ClassMethodDesc.of(ClassDesc.of(generatedClassName), "findById", findByIdMtd);
 
-                    ResultHandle methodParam = existsById.getMethodParam(0);
-                    ResultHandle optional = existsById.invokeVirtualMethod(findById, existsById.getThis(),
-                            methodParam);
-                    ResultHandle isPresent = existsById.invokeVirtualMethod(
-                            ofMethod(Optional.class, "isPresent", boolean.class),
-                            optional);
-                    existsById.returnValue(isPresent);
-                }
-                try (MethodCreator bridgeExistsById = classCreator.getMethodCreator(bridgeExistsByIdDescriptor)) {
-                    MethodDescriptor existsById = MethodDescriptor.ofMethod(generatedClassName, "existsById",
-                            boolean.class.getName(),
-                            idTypeStr);
-                    ResultHandle methodParam = bridgeExistsById.getMethodParam(0);
-                    ResultHandle castedMethodParam = bridgeExistsById.checkCast(methodParam, idTypeStr);
-                    ResultHandle result = bridgeExistsById.invokeVirtualMethod(existsById, bridgeExistsById.getThis(),
-                            castedMethodParam);
-                    bridgeExistsById.returnValue(result);
-                }
+                MethodTypeDesc existsByIdMtd = GenerationUtil.toMethodTypeDesc(boolean.class.getName(), idTypeStr);
+                classCreator.method("existsById", mc -> {
+                    mc.setType(existsByIdMtd);
+                    ParamVar idParam = mc.parameter("id");
+                    mc.body(bc -> {
+                        Expr optional = bc.invokeVirtual(findByIdDesc, mc.this_(), idParam);
+                        Expr isPresent = bc.invokeVirtual(
+                                MethodDesc.of(Optional.class, "isPresent", boolean.class),
+                                optional);
+                        bc.return_(isPresent);
+                    });
+                });
+                existingMethods.add(existsByIdKey);
+
+                // Bridge method
+                MethodTypeDesc bridgeMtd = GenerationUtil.toMethodTypeDesc(boolean.class.getName(), Object.class.getName());
+                MethodDesc existsByIdDesc = ClassMethodDesc.of(ClassDesc.of(generatedClassName), "existsById", existsByIdMtd);
+                classCreator.method("existsById", bmc -> {
+                    bmc.setType(bridgeMtd);
+                    ParamVar methodParam = bmc.parameter("id");
+                    bmc.body(bbc -> {
+                        Expr castedParam = bbc.cast(methodParam, ClassDesc.of(idTypeStr));
+                        Expr result = bbc.invokeVirtual(existsByIdDesc, bmc.this_(), castedParam);
+                        bbc.return_(result);
+                    });
+                });
+                existingMethods.add(bridgeExistsByIdKey);
             }
 
-            allMethodsToBeImplementedToResult.put(existsByIdDescriptor, true);
-            allMethodsToBeImplementedToResult.put(bridgeExistsByIdDescriptor, true);
+            allMethodsToBeImplementedToResult.put(existsByIdKey, true);
+            allMethodsToBeImplementedToResult.put(bridgeExistsByIdKey, true);
         }
     }
 
-    private void generateGetOne(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
+    private void generateGetOne(ClassCreator classCreator, FieldDesc entityClassFieldDescriptor,
             String generatedClassName, String entityTypeStr, String idTypeStr,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+            Map<String, Boolean> allMethodsToBeImplementedToResult, Set<String> existingMethods) {
         generateSpecificFindEntityReference(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr,
-                idTypeStr, "getOne", allMethodsToBeImplementedToResult);
-
+                idTypeStr, "getOne", allMethodsToBeImplementedToResult, existingMethods);
     }
 
-    private void generateGetById(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
+    private void generateGetById(ClassCreator classCreator, FieldDesc entityClassFieldDescriptor,
             String generatedClassName, String entityTypeStr, String idTypeStr,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
-
+            Map<String, Boolean> allMethodsToBeImplementedToResult, Set<String> existingMethods) {
         generateSpecificFindEntityReference(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr,
-                idTypeStr, "getById", allMethodsToBeImplementedToResult);
+                idTypeStr, "getById", allMethodsToBeImplementedToResult, existingMethods);
     }
 
-    private void generateGetReferenceById(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
+    private void generateGetReferenceById(ClassCreator classCreator, FieldDesc entityClassFieldDescriptor,
             String generatedClassName, String entityTypeStr, String idTypeStr,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
-
+            Map<String, Boolean> allMethodsToBeImplementedToResult, Set<String> existingMethods) {
         generateSpecificFindEntityReference(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr,
-                idTypeStr, "getReferenceById", allMethodsToBeImplementedToResult);
+                idTypeStr, "getReferenceById", allMethodsToBeImplementedToResult, existingMethods);
     }
 
-    private void generateSpecificFindEntityReference(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
+    private void generateSpecificFindEntityReference(ClassCreator classCreator, FieldDesc entityClassFieldDescriptor,
             String generatedClassName, String entityTypeStr, String idTypeStr, String actualMethodName,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
-        MethodDescriptor getReferenceByIdDescriptor = MethodDescriptor.ofMethod(generatedClassName, actualMethodName,
-                entityTypeStr, idTypeStr);
-        MethodDescriptor bridgegetReferenceByIdDescriptor = MethodDescriptor.ofMethod(generatedClassName, actualMethodName,
-                Object.class, Object.class);
+            Map<String, Boolean> allMethodsToBeImplementedToResult, Set<String> existingMethods) {
 
-        if (allMethodsToBeImplementedToResult.containsKey(getReferenceByIdDescriptor)
-                || allMethodsToBeImplementedToResult.containsKey(bridgegetReferenceByIdDescriptor)) {
+        String methodKey = GenerationUtil.methodKey(actualMethodName, entityTypeStr, idTypeStr);
+        String bridgeKey = GenerationUtil.methodKey(actualMethodName, Object.class.getName(), Object.class.getName());
 
-            if (!classCreator.getExistingMethods().contains(getReferenceByIdDescriptor)) {
-                try (MethodCreator findById = classCreator.getMethodCreator(getReferenceByIdDescriptor)) {
+        if (allMethodsToBeImplementedToResult.containsKey(methodKey)
+                || allMethodsToBeImplementedToResult.containsKey(bridgeKey)) {
 
-                    ResultHandle entity = findById.invokeStaticMethod(ofMethod(RepositorySupport.class, actualMethodName,
-                            Object.class, AbstractManagedJpaOperations.class, Class.class, Object.class),
-                            findById.readStaticField(operationsField),
-                            findById.readInstanceField(entityClassFieldDescriptor, findById.getThis()),
-                            findById.getMethodParam(0));
+            if (!existingMethods.contains(methodKey)) {
+                MethodTypeDesc mtd = GenerationUtil.toMethodTypeDesc(entityTypeStr, idTypeStr);
+                classCreator.method(actualMethodName, mc -> {
+                    mc.setType(mtd);
+                    ParamVar idParam = mc.parameter("id");
+                    mc.body(bc -> {
+                        LocalVar ops = bc.localVar("ops", bc.getStaticField(operationsField));
+                        LocalVar entityClass = bc.localVar("entityClass",
+                                bc.get(mc.this_().field(entityClassFieldDescriptor)));
+                        Expr entity = bc.invokeStatic(
+                                MethodDesc.of(RepositorySupport.class, actualMethodName,
+                                        Object.class, AbstractManagedJpaOperations.class, Class.class, Object.class),
+                                ops, entityClass, idParam);
+                        bc.return_(entity);
+                    });
+                });
+                existingMethods.add(methodKey);
 
-                    findById.returnValue(entity);
-                }
-                try (MethodCreator bridgeGetOne = classCreator.getMethodCreator(bridgegetReferenceByIdDescriptor)) {
-                    MethodDescriptor getReferenceById = MethodDescriptor.ofMethod(generatedClassName, actualMethodName,
-                            entityTypeStr, idTypeStr);
-                    ResultHandle methodParam = bridgeGetOne.getMethodParam(0);
-                    ResultHandle castedMethodParam = bridgeGetOne.checkCast(methodParam, idTypeStr);
-                    ResultHandle result = bridgeGetOne.invokeVirtualMethod(getReferenceById, bridgeGetOne.getThis(),
-                            castedMethodParam);
-                    bridgeGetOne.returnValue(result);
-                }
+                // Bridge method
+                MethodTypeDesc bridgeMtd = GenerationUtil.toMethodTypeDesc(Object.class.getName(), Object.class.getName());
+                MethodDesc refDesc = ClassMethodDesc.of(ClassDesc.of(generatedClassName), actualMethodName, mtd);
+                classCreator.method(actualMethodName, bmc -> {
+                    bmc.setType(bridgeMtd);
+                    ParamVar methodParam = bmc.parameter("id");
+                    bmc.body(bbc -> {
+                        Expr castedParam = bbc.cast(methodParam, ClassDesc.of(idTypeStr));
+                        Expr result = bbc.invokeVirtual(refDesc, bmc.this_(), castedParam);
+                        bbc.return_(result);
+                    });
+                });
+                existingMethods.add(bridgeKey);
             }
 
-            allMethodsToBeImplementedToResult.put(getReferenceByIdDescriptor, true);
-            allMethodsToBeImplementedToResult.put(bridgegetReferenceByIdDescriptor, true);
+            allMethodsToBeImplementedToResult.put(methodKey, true);
+            allMethodsToBeImplementedToResult.put(bridgeKey, true);
         }
     }
 
-    private void generateFindAll(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
-            String generatedClassName, String entityTypeStr, Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+    private void generateFindAll(ClassCreator classCreator, FieldDesc entityClassFieldDescriptor,
+            String generatedClassName, String entityTypeStr, Map<String, Boolean> allMethodsToBeImplementedToResult,
+            Set<String> existingMethods) {
 
-        MethodDescriptor findAllDescriptor = MethodDescriptor.ofMethod(generatedClassName, "findAll", List.class);
-        MethodDescriptor bridgeFindAllDescriptor = MethodDescriptor.ofMethod(generatedClassName, "findAll", Iterable.class);
+        String findAllKey = GenerationUtil.methodKey("findAll", List.class.getName());
+        String bridgeFindAllKey = GenerationUtil.methodKey("findAll", Iterable.class.getName());
 
-        if (allMethodsToBeImplementedToResult.containsKey(findAllDescriptor)
-                || allMethodsToBeImplementedToResult.containsKey(bridgeFindAllDescriptor)) {
+        if (allMethodsToBeImplementedToResult.containsKey(findAllKey)
+                || allMethodsToBeImplementedToResult.containsKey(bridgeFindAllKey)) {
 
-            if (!classCreator.getExistingMethods().contains(findAllDescriptor)) {
-                try (MethodCreator findAll = classCreator.getMethodCreator(findAllDescriptor)) {
-                    findAll.setSignature(String.format("()Ljava/util/List<L%s;>;",
-                            entityTypeStr.replace('.', '/')));
-                    ResultHandle panacheQuery = findAll.invokeVirtualMethod(
-                            ofMethod(AbstractManagedJpaOperations.class, "findAll", Object.class, Class.class),
-                            findAll.readStaticField(operationsField),
-                            findAll.readInstanceField(entityClassFieldDescriptor, findAll.getThis()));
-                    ResultHandle list = findAll.invokeInterfaceMethod(
-                            ofMethod(PanacheQuery.class, "list", List.class),
-                            panacheQuery);
-                    findAll.returnValue(list);
-                }
-                try (MethodCreator bridgeFindAll = classCreator.getMethodCreator(bridgeFindAllDescriptor)) {
-                    MethodDescriptor findAll = MethodDescriptor.ofMethod(generatedClassName, "findAll", List.class.getName());
-                    ResultHandle result = bridgeFindAll.invokeVirtualMethod(findAll, bridgeFindAll.getThis());
-                    bridgeFindAll.returnValue(result);
-                }
+            if (!existingMethods.contains(findAllKey)) {
+                classCreator.method("findAll", mc -> {
+                    mc.returning(List.class);
+                    mc.body(bc -> {
+                        LocalVar ops = bc.localVar("ops", bc.getStaticField(operationsField));
+                        LocalVar entityClass = bc.localVar("entityClass",
+                                bc.get(mc.this_().field(entityClassFieldDescriptor)));
+                        Expr panacheQuery = bc.invokeVirtual(
+                                MethodDesc.of(AbstractManagedJpaOperations.class, "findAll", Object.class, Class.class),
+                                ops, entityClass);
+                        Expr list = bc.invokeInterface(
+                                MethodDesc.of(PanacheQuery.class, "list", List.class),
+                                panacheQuery);
+                        bc.return_(list);
+                    });
+                });
+                existingMethods.add(findAllKey);
+
+                // Bridge method
+                MethodDesc findAllDesc = ClassMethodDesc.of(ClassDesc.of(generatedClassName), "findAll",
+                        MethodTypeDesc.of(ConstantDescs.CD_List));
+                classCreator.method("findAll", bmc -> {
+                    bmc.returning(Iterable.class);
+                    bmc.body(bbc -> {
+                        Expr result = bbc.invokeVirtual(findAllDesc, bmc.this_());
+                        bbc.return_(result);
+                    });
+                });
+                existingMethods.add(bridgeFindAllKey);
             }
 
-            allMethodsToBeImplementedToResult.put(findAllDescriptor, true);
-            allMethodsToBeImplementedToResult.put(bridgeFindAllDescriptor, true);
+            allMethodsToBeImplementedToResult.put(findAllKey, true);
+            allMethodsToBeImplementedToResult.put(bridgeFindAllKey, true);
         }
     }
 
-    private void generateFindAllWithSort(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
-            String generatedClassName, String entityTypeStr, Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+    private void generateFindAllWithSort(ClassCreator classCreator, FieldDesc entityClassFieldDescriptor,
+            String generatedClassName, String entityTypeStr, Map<String, Boolean> allMethodsToBeImplementedToResult,
+            Set<String> existingMethods) {
 
-        MethodDescriptor findAllDescriptor = MethodDescriptor.ofMethod(generatedClassName, "findAll", List.class, Sort.class);
-        MethodDescriptor bridgeFindAllDescriptor = MethodDescriptor.ofMethod(generatedClassName, "findAll", Iterable.class,
-                Sort.class);
+        String findAllKey = GenerationUtil.methodKey("findAll", List.class.getName(), Sort.class.getName());
+        String bridgeFindAllKey = GenerationUtil.methodKey("findAll", Iterable.class.getName(), Sort.class.getName());
 
-        if (allMethodsToBeImplementedToResult.containsKey(findAllDescriptor)
-                || allMethodsToBeImplementedToResult.containsKey(bridgeFindAllDescriptor)) {
+        if (allMethodsToBeImplementedToResult.containsKey(findAllKey)
+                || allMethodsToBeImplementedToResult.containsKey(bridgeFindAllKey)) {
 
-            if (!classCreator.getExistingMethods().contains(findAllDescriptor)) {
-                try (MethodCreator findAll = classCreator.getMethodCreator(findAllDescriptor)) {
-                    findAll.setSignature(String.format("(Lorg/springframework/data/domain/Sort;)Ljava/util/List<L%s;>;",
-                            entityTypeStr.replace('.', '/')));
+            if (!existingMethods.contains(findAllKey)) {
+                MethodTypeDesc findAllMtd = GenerationUtil.toMethodTypeDesc(List.class.getName(), Sort.class.getName());
+                classCreator.method("findAll", mc -> {
+                    mc.setType(findAllMtd);
+                    ParamVar sortParam = mc.parameter("sort");
+                    mc.body(bc -> {
+                        LocalVar ops = bc.localVar("ops", bc.getStaticField(operationsField));
+                        LocalVar entityClass = bc.localVar("entityClass",
+                                bc.get(mc.this_().field(entityClassFieldDescriptor)));
+                        Expr sort = bc.invokeStatic(
+                                MethodDesc.of(TypesConverter.class, "toPanacheSort",
+                                        io.quarkus.panache.common.Sort.class, Sort.class),
+                                sortParam);
 
-                    ResultHandle sort = findAll.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(TypesConverter.class, "toPanacheSort",
-                                    io.quarkus.panache.common.Sort.class,
-                                    org.springframework.data.domain.Sort.class),
-                            findAll.getMethodParam(0));
+                        Expr panacheQuery = bc.invokeVirtual(
+                                MethodDesc.of(AbstractManagedJpaOperations.class, "findAll", Object.class, Class.class,
+                                        io.quarkus.panache.common.Sort.class),
+                                ops, entityClass, sort);
+                        Expr list = bc.invokeInterface(
+                                MethodDesc.of(PanacheQuery.class, "list", List.class),
+                                panacheQuery);
+                        bc.return_(list);
+                    });
+                });
+                existingMethods.add(findAllKey);
 
-                    ResultHandle panacheQuery = findAll.invokeVirtualMethod(
-                            ofMethod(AbstractManagedJpaOperations.class, "findAll", Object.class, Class.class,
-                                    io.quarkus.panache.common.Sort.class),
-                            findAll.readStaticField(operationsField),
-                            findAll.readInstanceField(entityClassFieldDescriptor, findAll.getThis()), sort);
-                    ResultHandle list = findAll.invokeInterfaceMethod(
-                            ofMethod(PanacheQuery.class, "list", List.class),
-                            panacheQuery);
-                    findAll.returnValue(list);
-                }
-                try (MethodCreator bridgeFindAll = classCreator.getMethodCreator(bridgeFindAllDescriptor)) {
-                    MethodDescriptor findAll = MethodDescriptor.ofMethod(generatedClassName, "findAll", List.class.getName(),
-                            Sort.class);
-                    ResultHandle result = bridgeFindAll.invokeVirtualMethod(findAll, bridgeFindAll.getThis(),
-                            bridgeFindAll.getMethodParam(0));
-                    bridgeFindAll.returnValue(result);
-                }
+                // Bridge method
+                MethodDesc findAllDesc = ClassMethodDesc.of(ClassDesc.of(generatedClassName), "findAll", findAllMtd);
+                MethodTypeDesc bridgeMtd = GenerationUtil.toMethodTypeDesc(Iterable.class.getName(), Sort.class.getName());
+                classCreator.method("findAll", bmc -> {
+                    bmc.setType(bridgeMtd);
+                    ParamVar sortParam = bmc.parameter("sort");
+                    bmc.body(bbc -> {
+                        Expr result = bbc.invokeVirtual(findAllDesc, bmc.this_(), sortParam);
+                        bbc.return_(result);
+                    });
+                });
+                existingMethods.add(bridgeFindAllKey);
             }
 
-            allMethodsToBeImplementedToResult.put(findAllDescriptor, true);
-            allMethodsToBeImplementedToResult.put(bridgeFindAllDescriptor, true);
+            allMethodsToBeImplementedToResult.put(findAllKey, true);
+            allMethodsToBeImplementedToResult.put(bridgeFindAllKey, true);
         }
     }
 
-    private void generateFindAllWithPageable(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
-            String generatedClassName, String entityTypeStr, Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+    private void generateFindAllWithPageable(ClassCreator classCreator, FieldDesc entityClassFieldDescriptor,
+            String generatedClassName, String entityTypeStr, Map<String, Boolean> allMethodsToBeImplementedToResult,
+            Set<String> existingMethods) {
 
-        MethodDescriptor findAllDescriptor = MethodDescriptor.ofMethod(generatedClassName, "findAll", Page.class,
-                Pageable.class);
+        String findAllKey = GenerationUtil.methodKey("findAll", Page.class.getName(), Pageable.class.getName());
 
-        if (allMethodsToBeImplementedToResult.containsKey(findAllDescriptor)) {
+        if (allMethodsToBeImplementedToResult.containsKey(findAllKey)) {
+            if (!existingMethods.contains(findAllKey)) {
+                MethodTypeDesc findAllMtd = GenerationUtil.toMethodTypeDesc(Page.class.getName(), Pageable.class.getName());
+                classCreator.method("findAll", mc -> {
+                    mc.setType(findAllMtd);
+                    ParamVar pageableParam = mc.parameter("pageable");
+                    mc.body(bc -> {
+                        LocalVar ops = bc.localVar("ops", bc.getStaticField(operationsField));
+                        LocalVar entityClass = bc.localVar("entityClass",
+                                bc.get(mc.this_().field(entityClassFieldDescriptor)));
+                        LocalVar pageableSort = bc.localVar("pageableSort",
+                                bc.invokeInterface(
+                                        MethodDesc.of(Pageable.class, "getSort", Sort.class),
+                                        pageableParam));
+                        LocalVar panachePage = bc.localVar("panachePage",
+                                bc.invokeStatic(
+                                        MethodDesc.of(TypesConverter.class, "toPanachePage",
+                                                io.quarkus.panache.common.Page.class, Pageable.class),
+                                        pageableParam));
+                        LocalVar panacheSort = bc.localVar("panacheSort",
+                                bc.invokeStatic(
+                                        MethodDesc.of(TypesConverter.class, "toPanacheSort",
+                                                io.quarkus.panache.common.Sort.class, Sort.class),
+                                        pageableSort));
 
-            if (!classCreator.getExistingMethods().contains(findAllDescriptor)) {
-                try (MethodCreator findAll = classCreator.getMethodCreator(findAllDescriptor)) {
-                    findAll.setSignature(String.format(
-                            "(Lorg/springframework/data/domain/Pageable;)Lorg/springframework/data/domain/Page<L%s;>;",
-                            entityTypeStr.replace('.', '/')));
+                        // Build panacheQuery based on whether sort is null
+                        LocalVar panacheQueryVar = bc.localVar("panacheQuery",
+                                ConstantDescs.CD_Object,
+                                Const.ofNull(ConstantDescs.CD_Object));
 
-                    ResultHandle pageable = findAll.getMethodParam(0);
-                    ResultHandle pageableSort = findAll.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(Pageable.class, "getSort", Sort.class),
-                            pageable);
+                        bc.ifElse(bc.isNull(panacheSort),
+                                sortNullTrue -> {
+                                    Expr pqWithoutSort = sortNullTrue.invokeVirtual(
+                                            MethodDesc.of(AbstractManagedJpaOperations.class, "findAll", Object.class,
+                                                    Class.class),
+                                            ops, entityClass);
+                                    sortNullTrue.set(panacheQueryVar, pqWithoutSort);
+                                },
+                                sortNullFalse -> {
+                                    Expr pqWithSort = sortNullFalse.invokeVirtual(
+                                            MethodDesc.of(AbstractManagedJpaOperations.class, "findAll", Object.class,
+                                                    Class.class, io.quarkus.panache.common.Sort.class),
+                                            ops, entityClass, panacheSort);
+                                    sortNullFalse.set(panacheQueryVar, pqWithSort);
+                                });
 
-                    ResultHandle panachePage = findAll.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(TypesConverter.class, "toPanachePage",
-                                    io.quarkus.panache.common.Page.class, Pageable.class),
-                            pageable);
-                    ResultHandle panacheSort = findAll.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(TypesConverter.class, "toPanacheSort",
-                                    io.quarkus.panache.common.Sort.class,
-                                    org.springframework.data.domain.Sort.class),
-                            pageableSort);
+                        LocalVar panacheQuery = bc.localVar("pagedQuery",
+                                bc.invokeInterface(
+                                        MethodDesc.of(PanacheQuery.class, "page", PanacheQuery.class,
+                                                io.quarkus.panache.common.Page.class),
+                                        panacheQueryVar, panachePage));
+                        Expr list = bc.invokeInterface(
+                                MethodDesc.of(PanacheQuery.class, "list", List.class),
+                                panacheQuery);
+                        Expr count = bc.invokeInterface(
+                                MethodDesc.of(PanacheQuery.class, "count", long.class),
+                                panacheQuery);
+                        Expr pageResult = bc.new_(ClassDesc.of(PageImpl.class.getName()),
+                                list, pageableParam, count);
 
-                    // depending on whether there was a io.quarkus.panache.common.Sort returned, we need to execute a different findAll method
-                    BranchResult sortNullBranch = findAll.ifNull(panacheSort);
-                    BytecodeCreator sortNullTrue = sortNullBranch.trueBranch();
-                    BytecodeCreator sortNullFalse = sortNullBranch.falseBranch();
-                    AssignableResultHandle panacheQueryVar = findAll.createVariable(PanacheQuery.class);
-
-                    ResultHandle panacheQueryWithoutSort = sortNullTrue.invokeVirtualMethod(
-                            ofMethod(AbstractManagedJpaOperations.class, "findAll", Object.class, Class.class),
-                            sortNullTrue.readStaticField(operationsField),
-                            sortNullTrue.readInstanceField(entityClassFieldDescriptor, sortNullTrue.getThis()));
-                    sortNullTrue.assign(panacheQueryVar, panacheQueryWithoutSort);
-                    sortNullTrue.breakScope();
-
-                    ResultHandle panacheQueryWithSort = sortNullFalse.invokeVirtualMethod(
-                            ofMethod(AbstractManagedJpaOperations.class, "findAll", Object.class, Class.class,
-                                    io.quarkus.panache.common.Sort.class),
-                            sortNullFalse.readStaticField(operationsField),
-                            sortNullFalse.readInstanceField(entityClassFieldDescriptor, sortNullFalse.getThis()), panacheSort);
-                    sortNullFalse.assign(panacheQueryVar, panacheQueryWithSort);
-                    sortNullFalse.breakScope();
-
-                    ResultHandle panacheQuery = findAll.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(PanacheQuery.class, "page", PanacheQuery.class,
-                                    io.quarkus.panache.common.Page.class),
-                            panacheQueryVar, panachePage);
-                    ResultHandle list = findAll.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(PanacheQuery.class, "list", List.class),
-                            panacheQuery);
-                    ResultHandle count = findAll.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(PanacheQuery.class, "count", long.class),
-                            panacheQuery);
-                    ResultHandle pageResult = findAll.newInstance(
-                            MethodDescriptor.ofConstructor(PageImpl.class, List.class, Pageable.class, long.class),
-                            list, findAll.getMethodParam(0), count);
-
-                    findAll.returnValue(pageResult);
-                }
+                        bc.return_(pageResult);
+                    });
+                });
+                existingMethods.add(findAllKey);
             }
-
-            allMethodsToBeImplementedToResult.put(findAllDescriptor, true);
+            allMethodsToBeImplementedToResult.put(findAllKey, true);
         }
     }
 
-    private void generateFindAllById(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
+    private void generateFindAllById(ClassCreator classCreator, FieldDesc entityClassFieldDescriptor,
             String generatedClassName, DotName entityDotName, String entityTypeStr, String idTypeStr,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+            Map<String, Boolean> allMethodsToBeImplementedToResult, Set<String> existingMethods) {
 
-        MethodDescriptor findAllByIdDescriptor = MethodDescriptor.ofMethod(generatedClassName, "findAllById", List.class,
-                Iterable.class);
-        MethodDescriptor bridgeFindAllByIdDescriptor = MethodDescriptor.ofMethod(generatedClassName, "findAllById",
-                Iterable.class, Iterable.class);
+        String findAllByIdKey = GenerationUtil.methodKey("findAllById", List.class.getName(), Iterable.class.getName());
+        String bridgeFindAllByIdKey = GenerationUtil.methodKey("findAllById", Iterable.class.getName(),
+                Iterable.class.getName());
 
-        if (allMethodsToBeImplementedToResult.containsKey(findAllByIdDescriptor)
-                || allMethodsToBeImplementedToResult.containsKey(bridgeFindAllByIdDescriptor)) {
+        if (allMethodsToBeImplementedToResult.containsKey(findAllByIdKey)
+                || allMethodsToBeImplementedToResult.containsKey(bridgeFindAllByIdKey)) {
 
-            if (!classCreator.getExistingMethods().contains(findAllByIdDescriptor)) {
-                try (MethodCreator findAllById = classCreator.getMethodCreator(findAllByIdDescriptor)) {
-                    findAllById.setSignature(String.format("(Ljava/lang/Iterable<L%s;>;)Ljava/util/List<L%s;>;",
-                            idTypeStr.replace('.', '/'), entityTypeStr.replace('.', '/')));
+            if (!existingMethods.contains(findAllByIdKey)) {
+                MethodTypeDesc findAllByIdMtd = GenerationUtil.toMethodTypeDesc(List.class.getName(),
+                        Iterable.class.getName());
+                classCreator.method("findAllById", mc -> {
+                    mc.setType(findAllByIdMtd);
+                    ParamVar idsParam = mc.parameter("ids");
+                    mc.body(bc -> {
+                        LocalVar ops = bc.localVar("ops", bc.getStaticField(operationsField));
+                        LocalVar entityClass = bc.localVar("entityClass",
+                                bc.get(mc.this_().field(entityClassFieldDescriptor)));
+                        Expr list = bc.invokeStatic(
+                                MethodDesc.of(RepositorySupport.class, "findByIds",
+                                        List.class, AbstractManagedJpaOperations.class, Class.class, Iterable.class),
+                                ops, entityClass,
+                                idsParam);
+                        bc.return_(list);
+                    });
+                });
+                existingMethods.add(findAllByIdKey);
 
-                    ResultHandle entityClass = findAllById.readInstanceField(entityClassFieldDescriptor,
-                            findAllById.getThis());
-
-                    ResultHandle list = findAllById.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(RepositorySupport.class, "findByIds",
-                                    List.class, AbstractManagedJpaOperations.class, Class.class, Iterable.class),
-                            findAllById.readStaticField(operationsField),
-                            entityClass,
-                            findAllById.getMethodParam(0));
-
-                    findAllById.returnValue(list);
-                }
-                try (MethodCreator bridgeFindAllById = classCreator.getMethodCreator(bridgeFindAllByIdDescriptor)) {
-                    MethodDescriptor findAllById = MethodDescriptor.ofMethod(generatedClassName, "findAllById",
-                            List.class.getName(), Iterable.class);
-                    ResultHandle result = bridgeFindAllById.invokeVirtualMethod(findAllById, bridgeFindAllById.getThis(),
-                            bridgeFindAllById.getMethodParam(0));
-                    bridgeFindAllById.returnValue(result);
-                }
+                // Bridge method
+                MethodDesc findAllByIdDesc = ClassMethodDesc.of(ClassDesc.of(generatedClassName), "findAllById",
+                        findAllByIdMtd);
+                MethodTypeDesc bridgeMtd = GenerationUtil.toMethodTypeDesc(Iterable.class.getName(),
+                        Iterable.class.getName());
+                classCreator.method("findAllById", bmc -> {
+                    bmc.setType(bridgeMtd);
+                    ParamVar methodParam = bmc.parameter("ids");
+                    bmc.body(bbc -> {
+                        Expr result = bbc.invokeVirtual(findAllByIdDesc, bmc.this_(), methodParam);
+                        bbc.return_(result);
+                    });
+                });
+                existingMethods.add(bridgeFindAllByIdKey);
             }
 
-            allMethodsToBeImplementedToResult.put(findAllByIdDescriptor, true);
-            allMethodsToBeImplementedToResult.put(bridgeFindAllByIdDescriptor, true);
+            allMethodsToBeImplementedToResult.put(findAllByIdKey, true);
+            allMethodsToBeImplementedToResult.put(bridgeFindAllByIdKey, true);
         }
     }
 
-    private FieldInfo getIdField(AnnotationTarget idAnnotationTarget) {
-        if (idAnnotationTarget instanceof FieldInfo) {
-            return idAnnotationTarget.asField();
-        }
+    private void generateCount(ClassCreator classCreator, FieldDesc entityClassFieldDescriptor, String generatedClassName,
+            Map<String, Boolean> allMethodsToBeImplementedToResult, Set<String> existingMethods) {
 
-        MethodInfo methodInfo = idAnnotationTarget.asMethod();
-        String propertyName = JavaBeanUtil.getPropertyNameFromGetter(methodInfo.name());
-        ClassInfo entityClass = methodInfo.declaringClass();
-        FieldInfo field = entityClass.field(propertyName);
-        if (field == null) {
-            throw new IllegalArgumentException("Entity " + entityClass + " does not appear to have a field backing method"
-                    + methodInfo.name() + " which is annotated with @Id");
-        }
-        return field;
-    }
+        String countKey = GenerationUtil.methodKey("count", long.class.getName());
 
-    private void generateCount(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor, String generatedClassName,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
-
-        MethodDescriptor countDescriptor = MethodDescriptor.ofMethod(generatedClassName, "count", long.class);
-
-        if (allMethodsToBeImplementedToResult.containsKey(countDescriptor)) {
-            if (!classCreator.getExistingMethods().contains(countDescriptor)) {
-                try (MethodCreator count = classCreator.getMethodCreator(countDescriptor)) {
-                    ResultHandle result = count.invokeVirtualMethod(
-                            ofMethod(AbstractManagedJpaOperations.class, "count", long.class, Class.class),
-                            count.readStaticField(operationsField),
-                            count.readInstanceField(entityClassFieldDescriptor, count.getThis()));
-                    count.returnValue(result);
-                }
+        if (allMethodsToBeImplementedToResult.containsKey(countKey)) {
+            if (!existingMethods.contains(countKey)) {
+                classCreator.method("count", mc -> {
+                    mc.returning(long.class);
+                    mc.body(bc -> {
+                        LocalVar ops = bc.localVar("ops", bc.getStaticField(operationsField));
+                        LocalVar entityClass = bc.localVar("entityClass",
+                                bc.get(mc.this_().field(entityClassFieldDescriptor)));
+                        Expr result = bc.invokeVirtual(
+                                MethodDesc.of(AbstractManagedJpaOperations.class, "count", long.class, Class.class),
+                                ops, entityClass);
+                        bc.return_(result);
+                    });
+                });
+                existingMethods.add(countKey);
             }
-            allMethodsToBeImplementedToResult.put(countDescriptor, true);
+            allMethodsToBeImplementedToResult.put(countKey, true);
         }
     }
 
-    private void generateDeleteById(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
+    private void generateDeleteById(ClassCreator classCreator, FieldDesc entityClassFieldDescriptor,
             String generatedClassName, String entityTypeStr, String idTypeStr,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+            Map<String, Boolean> allMethodsToBeImplementedToResult, Set<String> existingMethods) {
 
-        MethodDescriptor deleteByIdDescriptor = MethodDescriptor.ofMethod(generatedClassName, "deleteById",
-                void.class.getName(), idTypeStr);
-        MethodDescriptor bridgeDeleteByIdDescriptor = MethodDescriptor.ofMethod(generatedClassName, "deleteById",
-                void.class, Object.class);
+        String deleteByIdKey = GenerationUtil.methodKey("deleteById", void.class.getName(), idTypeStr);
+        String bridgeDeleteByIdKey = GenerationUtil.methodKey("deleteById", void.class.getName(), Object.class.getName());
 
-        if (allMethodsToBeImplementedToResult.containsKey(deleteByIdDescriptor)
-                || allMethodsToBeImplementedToResult.containsKey(bridgeDeleteByIdDescriptor)) {
+        if (allMethodsToBeImplementedToResult.containsKey(deleteByIdKey)
+                || allMethodsToBeImplementedToResult.containsKey(bridgeDeleteByIdKey)) {
 
-            if (!classCreator.getExistingMethods().contains(deleteByIdDescriptor)) {
-                try (MethodCreator deleteById = classCreator.getMethodCreator(deleteByIdDescriptor)) {
-                    deleteById.addAnnotation(Transactional.class);
-                    ResultHandle id = deleteById.getMethodParam(0);
-                    ResultHandle entityClass = deleteById.readInstanceField(entityClassFieldDescriptor,
-                            deleteById.getThis());
+            if (!existingMethods.contains(deleteByIdKey)) {
+                MethodTypeDesc deleteByIdMtd = GenerationUtil.toMethodTypeDesc(void.class.getName(), idTypeStr);
+                classCreator.method("deleteById", mc -> {
+                    mc.setType(deleteByIdMtd);
+                    mc.addAnnotation(Transactional.class);
+                    ParamVar idParam = mc.parameter("id");
+                    mc.body(bc -> {
+                        LocalVar ops = bc.localVar("ops", bc.getStaticField(operationsField));
+                        LocalVar entityClass = bc.localVar("entityClass",
+                                bc.get(mc.this_().field(entityClassFieldDescriptor)));
+                        Expr deleted = bc.invokeVirtual(
+                                MethodDesc.of(AbstractManagedJpaOperations.class, "deleteById", boolean.class,
+                                        Class.class, Object.class),
+                                ops, entityClass, idParam);
 
-                    ResultHandle deleted = deleteById.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(AbstractManagedJpaOperations.class, "deleteById", boolean.class,
-                                    Class.class, Object.class),
-                            deleteById.readStaticField(operationsField), entityClass, id);
+                        bc.ifNot(deleted, deletedFalse -> {
+                            Expr idToString = deletedFalse.invokeVirtual(
+                                    MethodDesc.of(Object.class, "toString", String.class),
+                                    idParam);
+                            Expr formatArgsArray = deletedFalse.newArray(Object.class, idToString);
 
-                    BranchResult deletedBranch = deleteById.ifNonZero(deleted);
-                    BytecodeCreator deletedFalse = deletedBranch.falseBranch();
+                            Expr messageFormat = Const.of("No entity " + entityTypeStr + " with id %s exists");
+                            Expr message = deletedFalse.invokeStatic(
+                                    MethodDesc.of(String.class, "format", String.class, String.class, Object[].class),
+                                    messageFormat, formatArgsArray);
 
-                    ResultHandle idToString = deletedFalse.invokeVirtualMethod(
-                            ofMethod(Object.class, "toString", String.class),
-                            id);
-                    ResultHandle formatArgsArray = deletedFalse.newArray(Object.class, 1);
-                    deletedFalse.writeArrayValue(formatArgsArray, deletedFalse.load(0), idToString);
+                            deletedFalse.throw_(IllegalArgumentException.class, message);
+                        });
 
-                    ResultHandle messageFormat = deletedFalse.load("No entity " + entityTypeStr + " with id %s exists");
-                    ResultHandle message = deletedFalse.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(String.class, "format", String.class, String.class, Object[].class),
-                            messageFormat, formatArgsArray);
+                        bc.return_();
+                    });
+                });
+                existingMethods.add(deleteByIdKey);
 
-                    ResultHandle exception = deletedFalse.newInstance(
-                            MethodDescriptor.ofConstructor(IllegalArgumentException.class, String.class),
-                            message);
-                    deletedFalse.throwException(exception);
-                    deletedFalse.breakScope();
-
-                    deleteById.returnValue(null);
-                }
-                try (MethodCreator bridgeDeleteById = classCreator.getMethodCreator(bridgeDeleteByIdDescriptor)) {
-                    MethodDescriptor deleteById = MethodDescriptor.ofMethod(generatedClassName, "deleteById",
-                            void.class, idTypeStr);
-                    ResultHandle methodParam = bridgeDeleteById.getMethodParam(0);
-                    ResultHandle castedMethodParam = bridgeDeleteById.checkCast(methodParam, idTypeStr);
-                    ResultHandle result = bridgeDeleteById.invokeVirtualMethod(deleteById, bridgeDeleteById.getThis(),
-                            castedMethodParam);
-                    bridgeDeleteById.returnValue(result);
-                }
+                // Bridge method
+                MethodTypeDesc bridgeMtd = GenerationUtil.toMethodTypeDesc(void.class.getName(), Object.class.getName());
+                MethodDesc deleteByIdDesc = ClassMethodDesc.of(ClassDesc.of(generatedClassName), "deleteById", deleteByIdMtd);
+                classCreator.method("deleteById", bmc -> {
+                    bmc.setType(bridgeMtd);
+                    ParamVar methodParam = bmc.parameter("id");
+                    bmc.body(bbc -> {
+                        Expr castedParam = bbc.cast(methodParam, ClassDesc.of(idTypeStr));
+                        bbc.invokeVirtual(deleteByIdDesc, bmc.this_(), castedParam);
+                        bbc.return_();
+                    });
+                });
+                existingMethods.add(bridgeDeleteByIdKey);
             }
 
-            allMethodsToBeImplementedToResult.put(deleteByIdDescriptor, true);
-            allMethodsToBeImplementedToResult.put(bridgeDeleteByIdDescriptor, true);
+            allMethodsToBeImplementedToResult.put(deleteByIdKey, true);
+            allMethodsToBeImplementedToResult.put(bridgeDeleteByIdKey, true);
         }
     }
 
     private void generateDelete(ClassCreator classCreator, String generatedClassName, String entityTypeStr,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+            Map<String, Boolean> allMethodsToBeImplementedToResult, Set<String> existingMethods) {
 
-        MethodDescriptor deleteDescriptor = MethodDescriptor.ofMethod(generatedClassName, "delete",
-                void.class.toString(), entityTypeStr);
-        MethodDescriptor bridgeDeleteDescriptor = MethodDescriptor.ofMethod(generatedClassName, "delete", void.class,
-                Object.class);
+        String deleteKey = GenerationUtil.methodKey("delete", void.class.getName(), entityTypeStr);
+        String bridgeDeleteKey = GenerationUtil.methodKey("delete", void.class.getName(), Object.class.getName());
 
-        if (allMethodsToBeImplementedToResult.containsKey(deleteDescriptor)
-                || allMethodsToBeImplementedToResult.containsKey(bridgeDeleteDescriptor)) {
+        if (allMethodsToBeImplementedToResult.containsKey(deleteKey)
+                || allMethodsToBeImplementedToResult.containsKey(bridgeDeleteKey)) {
 
-            if (!classCreator.getExistingMethods().contains(deleteDescriptor)) {
-                try (MethodCreator delete = classCreator.getMethodCreator(deleteDescriptor)) {
-                    delete.addAnnotation(Transactional.class);
-                    ResultHandle entity = delete.getMethodParam(0);
-                    delete.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(AbstractManagedJpaOperations.class, "delete", void.class, Object.class),
-                            delete.readStaticField(operationsField), entity);
-                    delete.returnValue(null);
-                }
-                try (MethodCreator bridgeDelete = classCreator.getMethodCreator(bridgeDeleteDescriptor)) {
-                    MethodDescriptor delete = MethodDescriptor.ofMethod(generatedClassName, "delete", void.class.toString(),
-                            entityTypeStr);
-                    ResultHandle methodParam = bridgeDelete.getMethodParam(0);
-                    ResultHandle castedMethodParam = bridgeDelete.checkCast(methodParam, entityTypeStr);
-                    ResultHandle result = bridgeDelete.invokeVirtualMethod(delete, bridgeDelete.getThis(),
-                            castedMethodParam);
-                    bridgeDelete.returnValue(result);
-                }
+            if (!existingMethods.contains(deleteKey)) {
+                MethodTypeDesc deleteMtd = GenerationUtil.toMethodTypeDesc(void.class.getName(), entityTypeStr);
+                classCreator.method("delete", mc -> {
+                    mc.setType(deleteMtd);
+                    mc.addAnnotation(Transactional.class);
+                    ParamVar entityParam = mc.parameter("entity");
+                    mc.body(bc -> {
+                        LocalVar ops = bc.localVar("ops", bc.getStaticField(operationsField));
+                        bc.invokeVirtual(
+                                MethodDesc.of(AbstractManagedJpaOperations.class, "delete", void.class, Object.class),
+                                ops, entityParam);
+                        bc.return_();
+                    });
+                });
+                existingMethods.add(deleteKey);
+
+                // Bridge method
+                MethodTypeDesc bridgeMtd = GenerationUtil.toMethodTypeDesc(void.class.getName(), Object.class.getName());
+                MethodDesc deleteDesc = ClassMethodDesc.of(ClassDesc.of(generatedClassName), "delete", deleteMtd);
+                classCreator.method("delete", bmc -> {
+                    bmc.setType(bridgeMtd);
+                    ParamVar methodParam = bmc.parameter("entity");
+                    bmc.body(bbc -> {
+                        Expr castedParam = bbc.cast(methodParam, ClassDesc.of(entityTypeStr));
+                        bbc.invokeVirtual(deleteDesc, bmc.this_(), castedParam);
+                        bbc.return_();
+                    });
+                });
+                existingMethods.add(bridgeDeleteKey);
             }
         }
 
-        allMethodsToBeImplementedToResult.put(deleteDescriptor, true);
-        allMethodsToBeImplementedToResult.put(bridgeDeleteDescriptor, true);
+        allMethodsToBeImplementedToResult.put(deleteKey, true);
+        allMethodsToBeImplementedToResult.put(bridgeDeleteKey, true);
     }
 
     private void generateDeleteInBatchWithIterable(ClassCreator classCreator, String generatedClassName, String entityTypeStr,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+            Map<String, Boolean> allMethodsToBeImplementedToResult, Set<String> existingMethods) {
         generateSpecificDeleteAllWithIterable(classCreator, generatedClassName, entityTypeStr, "deleteInBatch",
-                allMethodsToBeImplementedToResult);
-
+                allMethodsToBeImplementedToResult, existingMethods);
     }
 
     private void generateDeleteAllInBatchWithIterable(ClassCreator classCreator, String generatedClassName,
-            String entityTypeStr,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+            String entityTypeStr, Map<String, Boolean> allMethodsToBeImplementedToResult, Set<String> existingMethods) {
         generateSpecificDeleteAllWithIterable(classCreator, generatedClassName, entityTypeStr, "deleteAllInBatch",
-                allMethodsToBeImplementedToResult);
-
+                allMethodsToBeImplementedToResult, existingMethods);
     }
 
     private void generateDeleteAllByIdInBatchWithIterable(ClassCreator classCreator, String generatedClassName,
-            String entityTypeStr,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+            String entityTypeStr, Map<String, Boolean> allMethodsToBeImplementedToResult, Set<String> existingMethods) {
         generateSpecificDeleteAllWithIterable(classCreator, generatedClassName, entityTypeStr, "deleteAllByIdInBatch",
-                allMethodsToBeImplementedToResult);
-
+                allMethodsToBeImplementedToResult, existingMethods);
     }
 
     private void generateDeleteAllWithIterable(ClassCreator classCreator, String generatedClassName, String entityTypeStr,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+            Map<String, Boolean> allMethodsToBeImplementedToResult, Set<String> existingMethods) {
         generateSpecificDeleteAllWithIterable(classCreator, generatedClassName, entityTypeStr, "deleteAll",
-                allMethodsToBeImplementedToResult);
-
+                allMethodsToBeImplementedToResult, existingMethods);
     }
 
     private void generateSpecificDeleteAllWithIterable(ClassCreator classCreator, String generatedClassName,
             String entityTypeStr, String actualMethodName,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+            Map<String, Boolean> allMethodsToBeImplementedToResult, Set<String> existingMethods) {
 
-        MethodDescriptor deleteAllWithIterableDescriptor = MethodDescriptor.ofMethod(generatedClassName, actualMethodName,
-                void.class, Iterable.class);
+        String key = GenerationUtil.methodKey(actualMethodName, void.class.getName(), Iterable.class.getName());
 
-        if (allMethodsToBeImplementedToResult.containsKey(deleteAllWithIterableDescriptor)) {
-            if (!classCreator.getExistingMethods().contains(deleteAllWithIterableDescriptor)) {
-                try (MethodCreator deleteAll = classCreator.getMethodCreator(deleteAllWithIterableDescriptor)) {
-                    deleteAll.setSignature(String.format("(Ljava/lang/Iterable<+L%s;>;)V",
-                            entityTypeStr.replace('.', '/')));
-                    deleteAll.addAnnotation(Transactional.class);
-                    ResultHandle entities = deleteAll.getMethodParam(0);
-                    deleteAll.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(RepositorySupport.class, "deleteAll",
-                                    void.class, AbstractManagedJpaOperations.class, Iterable.class),
-                            deleteAll.readStaticField(operationsField),
-                            entities);
-                    deleteAll.returnValue(null);
-                }
+        if (allMethodsToBeImplementedToResult.containsKey(key)) {
+            if (!existingMethods.contains(key)) {
+                MethodTypeDesc mtd = GenerationUtil.toMethodTypeDesc(void.class.getName(), Iterable.class.getName());
+                classCreator.method(actualMethodName, mc -> {
+                    mc.setType(mtd);
+                    mc.addAnnotation(Transactional.class);
+                    ParamVar entitiesParam = mc.parameter("entities");
+                    mc.body(bc -> {
+                        LocalVar ops = bc.localVar("ops", bc.getStaticField(operationsField));
+                        bc.invokeStatic(
+                                MethodDesc.of(RepositorySupport.class, "deleteAll",
+                                        void.class, AbstractManagedJpaOperations.class, Iterable.class),
+                                ops,
+                                entitiesParam);
+                        bc.return_();
+                    });
+                });
+                existingMethods.add(key);
             }
-            allMethodsToBeImplementedToResult.put(deleteAllWithIterableDescriptor, true);
+            allMethodsToBeImplementedToResult.put(key, true);
         }
     }
 
-    private void generateDeleteAll(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
-            String generatedClassName, Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+    private void generateDeleteAll(ClassCreator classCreator, FieldDesc entityClassFieldDescriptor,
+            String generatedClassName, Map<String, Boolean> allMethodsToBeImplementedToResult,
+            Set<String> existingMethods) {
 
-        MethodDescriptor deleteAllDescriptor = MethodDescriptor.ofMethod(generatedClassName, "deleteAll", void.class);
+        String deleteAllKey = GenerationUtil.methodKey("deleteAll", void.class.getName());
 
-        if (allMethodsToBeImplementedToResult.containsKey(deleteAllDescriptor)) {
-            if (!classCreator.getExistingMethods().contains(deleteAllDescriptor)) {
-                try (MethodCreator deleteAll = classCreator.getMethodCreator(deleteAllDescriptor)) {
-                    deleteAll.addAnnotation(Transactional.class);
-                    deleteAll.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(AdditionalJpaOperations.class, "deleteAllWithCascade", long.class,
-                                    AbstractManagedJpaOperations.class, Class.class.getName()),
-                            deleteAll.readStaticField(operationsField),
-                            deleteAll.readInstanceField(entityClassFieldDescriptor, deleteAll.getThis()));
-                    deleteAll.returnValue(null);
-                }
+        if (allMethodsToBeImplementedToResult.containsKey(deleteAllKey)) {
+            if (!existingMethods.contains(deleteAllKey)) {
+                classCreator.method("deleteAll", mc -> {
+                    mc.returning(void.class);
+                    mc.addAnnotation(Transactional.class);
+                    mc.body(bc -> {
+                        LocalVar ops = bc.localVar("ops", bc.getStaticField(operationsField));
+                        LocalVar entityClass = bc.localVar("entityClass",
+                                bc.get(mc.this_().field(entityClassFieldDescriptor)));
+                        bc.invokeStatic(
+                                MethodDesc.of(AdditionalJpaOperations.class, "deleteAllWithCascade", long.class,
+                                        AbstractManagedJpaOperations.class, Class.class),
+                                ops, entityClass);
+                        bc.return_();
+                    });
+                });
+                existingMethods.add(deleteAllKey);
             }
-            allMethodsToBeImplementedToResult.put(deleteAllDescriptor, true);
+            allMethodsToBeImplementedToResult.put(deleteAllKey, true);
         }
     }
 
-    private void generateDeleteAllInBatch(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
-            String generatedClassName, Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+    private void generateDeleteAllInBatch(ClassCreator classCreator, FieldDesc entityClassFieldDescriptor,
+            String generatedClassName, Map<String, Boolean> allMethodsToBeImplementedToResult,
+            Set<String> existingMethods) {
 
-        MethodDescriptor deleteAllInBatchDescriptor = MethodDescriptor.ofMethod(generatedClassName, "deleteAllInBatch",
-                void.class);
+        String deleteAllInBatchKey = GenerationUtil.methodKey("deleteAllInBatch", void.class.getName());
 
-        if (allMethodsToBeImplementedToResult.containsKey(deleteAllInBatchDescriptor)) {
-            if (!classCreator.getExistingMethods().contains(deleteAllInBatchDescriptor)) {
-                try (MethodCreator deleteAll = classCreator.getMethodCreator(deleteAllInBatchDescriptor)) {
-                    deleteAll.addAnnotation(Transactional.class);
-                    ResultHandle result = deleteAll.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(AbstractManagedJpaOperations.class, "deleteAll", long.class, Class.class),
-                            deleteAll.readStaticField(operationsField),
-                            deleteAll.readInstanceField(entityClassFieldDescriptor, deleteAll.getThis()));
-                    deleteAll.returnValue(result);
-                }
+        if (allMethodsToBeImplementedToResult.containsKey(deleteAllInBatchKey)) {
+            if (!existingMethods.contains(deleteAllInBatchKey)) {
+                classCreator.method("deleteAllInBatch", mc -> {
+                    mc.returning(void.class);
+                    mc.addAnnotation(Transactional.class);
+                    mc.body(bc -> {
+                        LocalVar ops = bc.localVar("ops", bc.getStaticField(operationsField));
+                        LocalVar entityClass = bc.localVar("entityClass",
+                                bc.get(mc.this_().field(entityClassFieldDescriptor)));
+                        bc.invokeVirtual(
+                                MethodDesc.of(AbstractManagedJpaOperations.class, "deleteAll", long.class, Class.class),
+                                ops, entityClass);
+                        bc.return_();
+                    });
+                });
+                existingMethods.add(deleteAllInBatchKey);
             }
-            allMethodsToBeImplementedToResult.put(deleteAllInBatchDescriptor, true);
+            allMethodsToBeImplementedToResult.put(deleteAllInBatchKey, true);
         }
     }
 
-    private void handleUnimplementedMethods(ClassCreator classCreator,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
-        for (Map.Entry<MethodDescriptor, Boolean> entry : allMethodsToBeImplementedToResult.entrySet()) {
+    private void handleUnimplementedMethods(ClassCreator classCreator, String generatedClassName,
+            Map<String, Boolean> allMethodsToBeImplementedToResult, Set<String> existingMethods) {
+        for (Map.Entry<String, Boolean> entry : allMethodsToBeImplementedToResult.entrySet()) {
             if (entry.getValue()) { // ignore implemented methods
                 continue;
             }
 
-            try (MethodCreator methodCreator = classCreator.getMethodCreator(entry.getKey())) {
-                ResultHandle res = methodCreator.newInstance(
-                        MethodDescriptor.ofConstructor(FunctionalityNotImplemented.class, String.class, String.class),
-                        methodCreator.load(classCreator.getClassName().replace('/', '.')),
-                        methodCreator.load(entry.getKey().getName()));
-                methodCreator.throwException(res);
+            // Parse the method key to get name and types
+            String key = entry.getKey();
+            int parenOpen = key.indexOf('(');
+            int parenClose = key.indexOf(')');
+            String methodName = key.substring(0, parenOpen);
+            String paramsPart = key.substring(parenOpen + 1, parenClose);
+            String returnType = key.substring(parenClose + 1);
+
+            String[] paramTypes = paramsPart.isEmpty() ? new String[0] : paramsPart.split(",");
+
+            if (existingMethods.contains(key)) {
+                continue;
             }
+
+            MethodTypeDesc mtd = GenerationUtil.toMethodTypeDesc(returnType, paramTypes);
+            classCreator.method(methodName, mc -> {
+                mc.setType(mtd);
+                for (int i = 0; i < paramTypes.length; i++) {
+                    mc.parameter("p" + i);
+                }
+                mc.body(bc -> {
+                    Expr res = bc.new_(ClassDesc.of(FunctionalityNotImplemented.class.getName()),
+                            Const.of(generatedClassName.replace('/', '.')),
+                            Const.of(methodName));
+                    bc.throw_(res);
+                });
+            });
+            existingMethods.add(key);
         }
     }
 
@@ -1024,9 +1143,6 @@ public class StockMethodsAdder {
         return GenerationUtil.interfaceMethods(GenerationUtil.extendedSpringDataRepos(repositoryToImplement, index), index);
     }
 
-    // Spring Data allows users to add any of the methods of CrudRepository, PagingAndSortingRepository, JpaRepository
-    // to their interface declaration without having to make their repository extend any of those
-    // this is done so users have the ability to add only what they need
     private Set<MethodInfo> stockMethodsAddedToInterface(ClassInfo repositoryToImplement) {
         Set<MethodInfo> result = new LinkedHashSet<>();
 
@@ -1053,8 +1169,6 @@ public class StockMethodsAdder {
         return ALL_SPRING_DATA_REPOSITORY_METHODS;
     }
 
-    // Used to determine if a method with captured generic types can be considered the same as a target method
-    // This is rather naive but works in the constraints of Spring Data
     private boolean canMethodsBeConsideredSame(MethodInfo candidate, MethodInfo target) {
         if (!candidate.name().equals(target.name())) {
             return false;

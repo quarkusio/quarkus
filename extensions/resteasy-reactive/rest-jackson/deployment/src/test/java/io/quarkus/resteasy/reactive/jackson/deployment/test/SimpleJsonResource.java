@@ -728,4 +728,18 @@ public class SimpleJsonResource extends SuperClass<Person> {
     public String anySetter(AnySetterRequest request) {
         return "{\"known\":\"" + request.getKnown() + "\",\"extras_size\":" + request.getExtras().size() + "}";
     }
+
+    @GET
+    @Path("/unwrapped-result")
+    public UnwrappedResultsResponse unwrappedResult() {
+        return new UnwrappedResultsResponse(List.of(
+                new UnwrappedResult.Success(new Detail("abc", "hello")),
+                new UnwrappedResult.Failed(new ErrorInfo("E001", "something went wrong"))));
+    }
+
+    @GET
+    @Path("/polymorphic-item-ser")
+    public PolymorphicItemResponse polymorphicItemSer() {
+        return new PolymorphicItemResponse(new PolymorphicItem.TypeA("hello"));
+    }
 }

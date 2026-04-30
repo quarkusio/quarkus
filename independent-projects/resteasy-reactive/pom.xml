@@ -47,16 +47,16 @@
         <jandex.version>3.5.3</jandex.version>
         <bytebuddy.version>1.17.6</bytebuddy.version>
         <junit.version>6.0.3</junit.version>
-        <maven.version>3.9.14</maven.version>
+        <maven.version>3.9.15</maven.version>
         <assertj.version>3.27.7</assertj.version>
         <jboss-logging.version>3.6.3.Final</jboss-logging.version>
-        <jboss-logmanager.version>3.2.1.Final</jboss-logmanager.version>
+        <jboss-logmanager.version>3.2.2.Final</jboss-logmanager.version>
         <jakarta.annotation-api.version>3.0.0</jakarta.annotation-api.version>
         <gizmo.version>1.10.1</gizmo.version>
         <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version>
 
-        <mutiny.version>3.1.1</mutiny.version>
-        <smallrye-mutiny-vertx-core.version>3.21.6</smallrye-mutiny-vertx-core.version>
+        <mutiny.version>3.2.0</mutiny.version>
+        <smallrye-mutiny-vertx-core.version>3.22.1</smallrye-mutiny-vertx-core.version>
         <smallrye-common.version>2.17.0</smallrye-common.version>
         <vertx.version>4.5.26</vertx.version>
         <rest-assured.version>6.0.0</rest-assured.version>
@@ -70,7 +70,7 @@
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <mockito.version>5.21.0</mockito.version>
         <wiremock.version>3.13.2</wiremock.version>
-        <mutiny-zero.version>1.1.1</mutiny-zero.version>
+        <mutiny-zero.version>1.2.0</mutiny-zero.version>
     </properties>
 
     <modules>

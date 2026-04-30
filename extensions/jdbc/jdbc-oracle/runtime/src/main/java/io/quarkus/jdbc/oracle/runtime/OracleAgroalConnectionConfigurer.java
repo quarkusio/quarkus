@@ -1,5 +1,6 @@
 package io.quarkus.jdbc.oracle.runtime;
 
+import java.time.Duration;
 import java.util.Map;
 
 import io.agroal.api.configuration.supplier.AgroalDataSourceConfigurationSupplier;
@@ -14,7 +15,7 @@ public class OracleAgroalConnectionConfigurer implements AgroalConnectionConfigu
     /**
      * Oracle connection properties are documented here:
      * https://docs.oracle.com/en/database/oracle/oracle-database/21/jajdb/oracle/jdbc/OracleConnection.html#Transport_Layer_Security__TLS_SSL_
-     *
+     * <p>
      * SSL seems to be disabled by default, so rather than disabling it explicitly we check that the user didn't attempt to
      * enable it.
      */
@@ -33,4 +34,21 @@ public class OracleAgroalConnectionConfigurer implements AgroalConnectionConfigu
         dataSourceConfiguration.connectionPoolConfiguration().exceptionSorter(new OracleExceptionSorter());
     }
 
+    @Override
+    public void setKeepAlive(String databaseKind, AgroalDataSourceConfigurationSupplier dataSourceConfiguration,
+            Map<String, String> additionalJdbcProperties, boolean keepAlive) {
+        // Oracle keep-alive is configured via the "oracle.net.keepAlive" property. Defaults to false.
+        // https://docs.oracle.com/en/database/oracle/oracle-database/21/jajdb/oracle/jdbc/OracleConnection.html
+        dataSourceConfiguration.connectionPoolConfiguration().connectionFactoryConfiguration()
+                .jdbcProperty("oracle.net.keepAlive", Boolean.toString(keepAlive));
+    }
+
+    @Override
+    public void setReadTimeout(String databaseKind, AgroalDataSourceConfigurationSupplier dataSourceConfiguration,
+            Map<String, String> additionalJdbcProperties, Duration timeout) {
+        // Oracle socket timeout is configured via the "oracle.jdbc.ReadTimeout" property, which is in milliseconds
+        // https://docs.oracle.com/en/database/oracle/oracle-database/21/jajdb/oracle/jdbc/OracleConnection.html
+        dataSourceConfiguration.connectionPoolConfiguration().connectionFactoryConfiguration()
+                .jdbcProperty("oracle.jdbc.ReadTimeout", Long.toString(timeout.toMillis()));
+    }
 }

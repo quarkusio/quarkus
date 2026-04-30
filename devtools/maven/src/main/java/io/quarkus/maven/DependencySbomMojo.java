@@ -83,6 +83,12 @@ public class DependencySbomMojo extends AbstractMojo {
     String schemaVersion;
 
     /**
+     * Whether to pretty-print the generated SBOM output. The default is {@code false}
+     */
+    @Parameter(property = "quarkus.dependency.sbom.pretty-print", defaultValue = "false")
+    boolean prettyPrint;
+
+    /**
      * Whether to limit application dependencies to only those that are included in the runtime
      */
     @Parameter(property = "quarkus.dependency.sbom.runtime-only")
@@ -107,6 +113,7 @@ public class DependencySbomMojo extends AbstractMojo {
                 .setEffectiveModelResolver(EffectiveModelResolver.of(getResolver()))
                 .setSchemaVersion(schemaVersion)
                 .setIncludeLicenseText(includeLicenseText)
+                .setPrettyPrint(prettyPrint)
                 .generate();
         getLog().info("The SBOM has been saved in " + outputFilePath);
     }

@@ -33,11 +33,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-panache-common</artifactId>
         </dependency>
-        <!-- For the metamodel generation -->
+        <!-- For the metamodel generation and now also for public API (Order/Sort) -->
         <dependency>
             <groupId>jakarta.data</groupId>
             <artifactId>jakarta.data-api</artifactId>
-            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>jakarta.json.bind</groupId>

@@ -34,17 +34,18 @@ import org.springframework.data.repository.query.QueryByExampleExecutor;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
-import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.GeneratedBeanGizmo2Adaptor;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
+import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.hibernate.orm.deployment.IgnorableNonIndexedClasses;
 import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.SqlLoadScriptDefaultBuildItem;
@@ -122,6 +123,7 @@ public class SpringDataJPAProcessor {
             Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<EntityToPersistenceUnitBuildItem> entityToPersistenceUnit) {
@@ -137,7 +139,8 @@ public class SpringDataJPAProcessor {
         addInterfacesExtendingIntermediateRepositories(indexView, interfacesExtendingRepository);
 
         removeNoRepositoryBeanClasses(interfacesExtendingRepository);
-        Set<String> entities = implementCrudRepositories(generatedBeans, generatedClasses, additionalBeans, reflectiveClasses,
+        Set<String> entities = implementCrudRepositories(generatedBeans, generatedClasses, generatedResources, additionalBeans,
+                reflectiveClasses,
                 interfacesExtendingRepository, indexView);
         determineEntityPersistenceUnits(jpaModelPersistenceUnitMapping, entities, "Spring Data JPA")
                 .forEach((e, pu) -> entityToPersistenceUnit.produce(new EntityToPersistenceUnitBuildItem(e, pu)));
@@ -243,12 +246,13 @@ public class SpringDataJPAProcessor {
     // generate a concrete class that will be used by Arc to resolve injection points
     private Set<String> implementCrudRepositories(BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             Set<ClassInfo> crudRepositoriesToImplement, IndexView index) {
 
-        ClassOutput beansClassOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
-        ClassOutput otherClassOutput = new GeneratedClassGizmoAdaptor(generatedClasses, true);
+        ClassOutput beansClassOutput = new GeneratedBeanGizmo2Adaptor(generatedBeans);
+        ClassOutput otherClassOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources, true);
 
         SpringDataRepositoryCreator repositoryCreator = new SpringDataRepositoryCreator(beansClassOutput, otherClassOutput,
                 index, (n) -> {

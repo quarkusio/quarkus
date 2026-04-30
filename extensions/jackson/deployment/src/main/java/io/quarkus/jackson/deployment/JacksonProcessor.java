@@ -56,6 +56,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
@@ -78,6 +79,7 @@ import io.quarkus.jackson.runtime.JacksonRecorder;
 import io.quarkus.jackson.runtime.JacksonSupport;
 import io.quarkus.jackson.runtime.ObjectMapperProducer;
 import io.quarkus.jackson.runtime.VertxHybridPoolObjectMapperCustomizer;
+import io.quarkus.jackson.runtime.graal.JacksonSerializerRegistrationFeature;
 import io.quarkus.jackson.spi.ClassPathJacksonModuleBuildItem;
 import io.quarkus.jackson.spi.JacksonModuleBuildItem;
 
@@ -133,6 +135,11 @@ public class JacksonProcessor {
     }
 
     @BuildStep
+    NativeImageFeatureBuildItem jacksonSerializerRegistrationFeature() {
+        return new NativeImageFeatureBuildItem(JacksonSerializerRegistrationFeature.class);
+    }
+
+    @BuildStep
     void register(
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -140,21 +147,13 @@ public class JacksonProcessor {
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder("com.fasterxml.jackson.databind.ser.std.SqlDateSerializer",
-                        "com.fasterxml.jackson.databind.ser.std.SqlTimeSerializer",
-                        "com.fasterxml.jackson.databind.deser.std.DateDeserializers$SqlDateDeserializer",
-                        "com.fasterxml.jackson.databind.deser.std.DateDeserializers$TimestampDeserializer",
-                        "com.fasterxml.jackson.annotation.SimpleObjectIdResolver")
+                ReflectiveClassBuildItem.builder("com.fasterxml.jackson.annotation.SimpleObjectIdResolver")
                         .reason(getClass().getName())
                         .methods().build());
         reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(
-                        "com.fasterxml.jackson.databind.ser.std.ClassSerializer",
-                        "com.fasterxml.jackson.databind.ext.CoreXMLSerializers",
-                        "com.fasterxml.jackson.databind.ext.CoreXMLDeserializers")
+                ReflectiveClassBuildItem.builder("com.fasterxml.jackson.databind.ser.std.ClassSerializer")
                         .reason(getClass().getName())
-                        .constructors()
-                        .build());
+                        .constructors().build());
 
         if (curateOutcomeBuildItem.getApplicationModel().getDependencies().stream().anyMatch(
                 x -> x.getGroupId().equals("com.fasterxml.jackson.module")

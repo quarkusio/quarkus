@@ -262,6 +262,15 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                     try {
                         // In a nested class with no tests in the outer profile, the running Quarkus application could be null
                         if (runningQuarkusApplication != null) {
+                            // Reset the reuse flag so the close handler in StartupActionImpl.run()
+                            // actually closes the CuratedApplication and releases its classloaders.
+                            // This must be done here (not in doClose()) because when switching between
+                            // test profiles with different classloaders, doClose() runs in the new
+                            // classloader context where runningQuarkusApplication is a different static field.
+                            ClassLoader cl = runningQuarkusApplication.getClassLoader();
+                            if (cl instanceof QuarkusClassLoader qcl && qcl.getCuratedApplication() != null) {
+                                qcl.getCuratedApplication().setEligibleForReuse(false);
+                            }
                             runningQuarkusApplication.close();
                         }
                     } catch (Exception e) {

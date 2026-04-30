@@ -104,3 +104,4 @@ run the TCKs:
 - Verify that build-time errors produce clear, actionable error messages
 - Container engine (Docker/Podman) is needed for dev-services tests
 - Parallel test execution is not supported
+- When writing a test that verifies a bug has been fixed, ensure that the test has run against the code that does not contain the fix and verify this test fails. This provides some confidence that the test does actually verify the fix; in other words, this addresses the `never trust a test you haven't seen fail` adage

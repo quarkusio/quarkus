@@ -1,8 +1,15 @@
 package io.quarkus.maven.components;
 
 import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Properties;
+import java.util.ServiceLoader;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -12,10 +19,24 @@ import org.apache.maven.MavenExecutionException;
 import org.apache.maven.SessionScoped;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Plugin;
+import org.apache.maven.model.PluginExecution;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.logging.Logger;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
+import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.collection.CollectRequest;
+import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.graph.DependencyFilter;
+import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.resolution.DependencyRequest;
+import org.eclipse.aether.resolution.DependencyResult;
+import org.eclipse.aether.util.artifact.JavaScopes;
+import org.eclipse.aether.util.filter.DependencyFilterUtils;
 
+import io.quarkus.deployment.dev.AnnotationProcessorPaths;
+import io.quarkus.deployment.dev.AnnotationProcessorProvider;
 import io.quarkus.maven.BuildAnalyticsProvider;
 import io.quarkus.maven.QuarkusBootstrapProvider;
 
@@ -61,6 +82,9 @@ public class BootstrapSessionListener extends AbstractMavenLifecycleParticipant 
         // bear in mind that this is just a convenience: we can't rely on Maven
         // extensions to be enabled - but when they are, we can make it more useful.
         injectSurefireTuning(session);
+
+        // Discover and inject annotation processors from extensions
+        discoverAndInjectAnnotationProcessors(session);
     }
 
     private void injectSurefireTuning(MavenSession session) {
@@ -178,6 +202,198 @@ public class BootstrapSessionListener extends AbstractMavenLifecycleParticipant 
             }
         }
         return false;
+    }
+
+    private void discoverAndInjectAnnotationProcessors(MavenSession session) {
+        RepositorySystem repoSystem = bootstrapProvider.repositorySystem();
+
+        for (MavenProject project : session.getProjects()) {
+            // Only process Quarkus projects
+            if (!isQuarkusPluginConfigured(project)) {
+                continue;
+            }
+
+            try {
+                // Resolve project dependencies (compile + runtime scope)
+                List<URL> urls = resolveDependencies(project, session, repoSystem);
+
+                logger.info("Discovering annotation processors for " + project.getArtifactId() +
+                        " with " + urls.size() + " resolved JARs");
+
+                // Discover annotation processors via SPI
+                try (URLClassLoader extensionClassLoader = new URLClassLoader(
+                        urls.toArray(new URL[0]),
+                        getClass().getClassLoader())) {
+
+                    ServiceLoader<AnnotationProcessorProvider> providers = ServiceLoader.load(
+                            AnnotationProcessorProvider.class, extensionClassLoader);
+
+                    Set<String> processors = new LinkedHashSet<>();
+                    for (AnnotationProcessorProvider provider : providers) {
+                        processors.addAll(provider.getAnnotationProcessors());
+                        String extensionCoord = AnnotationProcessorPaths.getExtensionCoordinate(provider);
+                        logger.info("Extension " + extensionCoord +
+                                " requires processors: " + provider.getAnnotationProcessors());
+                    }
+
+                    if (!processors.isEmpty()) {
+                        injectAnnotationProcessorsIntoCompiler(project, processors);
+                    }
+                }
+
+            } catch (Exception e) {
+                logger.warn("Failed to discover annotation processors for " +
+                        project.getArtifactId() + ": " + e.getMessage(), e);
+            }
+        }
+    }
+
+    private List<URL> resolveDependencies(MavenProject project, MavenSession session,
+            RepositorySystem repoSystem) throws Exception {
+        List<URL> urls = new ArrayList<>();
+
+        // Build collect request from project dependencies
+        CollectRequest collectRequest = new CollectRequest();
+        collectRequest.setRepositories(project.getRemoteProjectRepositories());
+
+        for (org.apache.maven.model.Dependency dep : project.getDependencies()) {
+            // Skip test-scoped dependencies
+            if ("test".equals(dep.getScope())) {
+                continue;
+            }
+
+            String coords = dep.getGroupId() + ":" + dep.getArtifactId() + ":"
+                    + (dep.getVersion() != null ? dep.getVersion() : "");
+            Artifact artifact = new DefaultArtifact(coords);
+            collectRequest.addDependency(new Dependency(artifact, dep.getScope()));
+
+            // For Quarkus runtime artifacts, also add corresponding deployment module
+            if ("io.quarkus".equals(dep.getGroupId()) &&
+                    dep.getArtifactId().startsWith("quarkus-") &&
+                    !dep.getArtifactId().endsWith("-deployment")) {
+
+                String deploymentArtifactId = dep.getArtifactId() + "-deployment";
+                String deploymentCoords = dep.getGroupId() + ":" + deploymentArtifactId + ":"
+                        + (dep.getVersion() != null ? dep.getVersion() : "");
+                Artifact deploymentArtifact = new DefaultArtifact(deploymentCoords);
+                collectRequest.addDependency(new Dependency(deploymentArtifact, JavaScopes.COMPILE));
+
+                logger.debug("Added deployment dependency: " + deploymentCoords);
+            }
+        }
+
+        // Resolve dependencies
+        DependencyFilter filter = DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE, JavaScopes.RUNTIME);
+        DependencyRequest dependencyRequest = new DependencyRequest(collectRequest, filter);
+
+        DependencyResult result = repoSystem.resolveDependencies(
+                session.getRepositorySession(), dependencyRequest);
+
+        // Collect resolved artifact files
+        for (ArtifactResult ar : result.getArtifactResults()) {
+            if (ar.getArtifact().getFile() != null) {
+                urls.add(ar.getArtifact().getFile().toURI().toURL());
+            }
+        }
+
+        return urls;
+    }
+
+    private void injectAnnotationProcessorsIntoCompiler(MavenProject project, Set<String> processors) {
+        Plugin compilerPlugin = findPlugin(project, "maven-compiler-plugin");
+        if (compilerPlugin == null) {
+            logger.debug("No maven-compiler-plugin configured for " + project.getArtifactId() +
+                    ", skipping annotation processor injection");
+            return;
+        }
+
+        // Set on plugin-level configuration
+        addProcessorsToConfiguration(compilerPlugin, processors, project);
+
+        // Also set on all executions
+        for (PluginExecution execution : compilerPlugin.getExecutions()) {
+            addProcessorsToConfiguration(execution, processors, project);
+        }
+    }
+
+    private void addProcessorsToConfiguration(Object configHolder, Set<String> processors, MavenProject project) {
+        Xpp3Dom configuration;
+        if (configHolder instanceof Plugin) {
+            configuration = (Xpp3Dom) ((Plugin) configHolder).getConfiguration();
+            if (configuration == null) {
+                configuration = new Xpp3Dom("configuration");
+                ((Plugin) configHolder).setConfiguration(configuration);
+            }
+        } else if (configHolder instanceof PluginExecution) {
+            configuration = (Xpp3Dom) ((PluginExecution) configHolder).getConfiguration();
+            if (configuration == null) {
+                configuration = new Xpp3Dom("configuration");
+                ((PluginExecution) configHolder).setConfiguration(configuration);
+            }
+        } else {
+            return;
+        }
+
+        // Get or create annotationProcessorPaths
+        Xpp3Dom processorPaths = configuration.getChild("annotationProcessorPaths");
+        if (processorPaths == null) {
+            processorPaths = new Xpp3Dom("annotationProcessorPaths");
+            configuration.addChild(processorPaths);
+        }
+
+        // Collect already configured processors to avoid duplicates
+        Set<String> existing = new HashSet<>();
+        for (Xpp3Dom path : processorPaths.getChildren("path")) {
+            Xpp3Dom groupId = path.getChild("groupId");
+            Xpp3Dom artifactId = path.getChild("artifactId");
+            if (groupId != null && artifactId != null) {
+                existing.add(groupId.getValue() + ":" + artifactId.getValue());
+            }
+        }
+
+        // Add new processors
+        for (String processor : processors) {
+            String[] parts = processor.split(":");
+            if (parts.length >= 2) {
+                String coord = parts[0] + ":" + parts[1];
+
+                if (!existing.contains(coord)) {
+                    Xpp3Dom path = new Xpp3Dom("path");
+                    Xpp3Dom groupId = new Xpp3Dom("groupId");
+                    groupId.setValue(parts[0]);
+                    Xpp3Dom artifactId = new Xpp3Dom("artifactId");
+                    artifactId.setValue(parts[1]);
+                    path.addChild(groupId);
+                    path.addChild(artifactId);
+
+                    // Optional version (if provided)
+                    if (parts.length >= 3) {
+                        Xpp3Dom version = new Xpp3Dom("version");
+                        version.setValue(parts[2]);
+                        path.addChild(version);
+                    }
+
+                    processorPaths.addChild(path);
+                    logger.info("Auto-configured annotation processor: " + processor +
+                            " for " + project.getArtifactId());
+                }
+            }
+        }
+
+        // Enable dependency management for processor versions
+        Xpp3Dom useDepMgmt = configuration.getChild("annotationProcessorPathsUseDepMgmt");
+        if (useDepMgmt == null) {
+            useDepMgmt = new Xpp3Dom("annotationProcessorPathsUseDepMgmt");
+            useDepMgmt.setValue("true");
+            configuration.addChild(useDepMgmt);
+        }
+
+        // Ensure annotation processing is NOT disabled (proc should be "only" or not set)
+        Xpp3Dom proc = configuration.getChild("proc");
+        if (proc != null && "none".equals(proc.getValue())) {
+            logger.warn("Annotation processing is disabled (proc=none) for " + project.getArtifactId() +
+                    ", cannot auto-configure processors");
+        }
     }
 
     public boolean isEnabled() {

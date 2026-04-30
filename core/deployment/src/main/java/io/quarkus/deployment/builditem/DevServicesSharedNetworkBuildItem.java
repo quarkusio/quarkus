@@ -40,10 +40,10 @@ public final class DevServicesSharedNetworkBuildItem extends MultiBuildItem {
         return source;
     }
 
-    /* Property used by factory to retrieve the source of instanciation. */
+    /* Property used by factory to retrieve the source of instantiation. */
     public static final String SOURCE_PROPERTY = "source";
 
-    /* Value of source field when instanciation origin is unknown. */
+    /* Value of source field when instantiation origin is unknown. */
     public static final String UNKNOWN_SOURCE = "unknown";
 
     /**

@@ -6,7 +6,7 @@
     <parent>
         <artifactId>quarkus-observability-testlibs</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>3.35.999-SNAPSHOT</version>
+        <version>3.35.1</version>
     </parent>
 
     <artifactId>quarkus-observability-devresource-lgtm</artifactId>

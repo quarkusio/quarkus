@@ -1210,3 +1210,103 @@ If your delete query does not start with `delete`, we support the following addi
 - `from EntityName ...` which will expand to `delete from EntityName ...`
 - `<singleAttribute>` (and single parameter) which will expand to `delete from EntityName where <singleAttribute> = ?`
 - `<query>` will expand to `delete from EntityName where <query>`
+
+==== Secure Panache repositories
+
+Quarkus Security provides an initial support for securing Panache Repositories with security annotations.
+
+.Example inner repository with method-level security annotations
+[source,java]
+----
+@Entity
+public class Cat extends PanacheEntity {
+    public String name;
+
+    public interface SecuredRepo {
+        @PermissionsAllowed("cat:list")
+        @PermissionsAllowed("cat:read")
+        @Find
+        List<Cat> findByName(String name);
+    }
+}
+----
+
+.Example standalone repository with class-level security annotation
+[source,java]
+----
+@RolesAllowed("admin")
+public interface SecuredCatRepo extends PanacheManagedBlockingRepository<Cat> {
+
+    @Find
+    List<Cat> findByName(String name);
+
+}
+----
+
+[WARNING]
+====
+In the example above, only methods directly declared on the `SecuredCatRepo` interface are secured.
+Methods inherited from `PanacheRepository`, such as `findById`, `persist`, or `deleteAll`, are not secured because type-level annotations only affect the type they annotate.
+====
+
+[IMPORTANT]
+====
+Currently, generic interface methods using type variables or wildcards cannot be secured reliably with standard security annotations.
+Therefore, you must not attempt to secure such methods and instead use two alternatives described below.
+
+.Example repository with a generic method using a type variable
+[source,java]
+----
+@Entity
+public class Cat extends PanacheEntity {
+    public String name;
+
+    public interface ParentRepo<T extends Cat> {
+
+        @Find
+        List<T> findAll(Order<T> order);
+
+    }
+
+    public interface ChildRepo extends ParentRepo<Cat> {
+    }
+}
+----
+
+Alternative 1: Apply a security annotation to the calling method in your REST layer:
+
+[source,java]
+----
+@Path("cat")
+public class CatResource {
+
+    @Inject
+    Cat.ChildRepo childRepo;
+
+    @PermissionsAllowed("cat:list")
+    @GET
+    public List<Cat> findAll() {
+        return childRepo.findAll(Order.by());
+    }
+
+}
+----
+
+Alternative 2: Replace the type variable `T` with a concrete type in the repository interface:
+
+[source,java]
+----
+@Entity
+public class Cat extends PanacheEntity {
+    public String name;
+
+    public interface Repo {
+
+        @PermissionsAllowed("cat:list")
+        @Find
+        List<Cat> findAll(Order<Cat> order);
+
+    }
+}
+----
+====

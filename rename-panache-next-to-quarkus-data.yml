@@ -1,0 +1,404 @@
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.data.RenamePanacheNextToQuarkusDataJpa
+displayName: Rename Panache Next to Quarkus Data JPA
+description: |
+  Renames the hibernate-panache-next extension to quarkus-data-jpa.
+
+  io.quarkus.hibernate.panache.*          →  io.quarkus.data.jpa.*
+
+  PanacheEntity                           →  DataEntity
+  PanacheEntityBase                       →  DataEntityBase
+  PanacheRepository                       →  DataRepository
+  PanacheQuery / BlockingQuery / Reactive →  DataQuery / DataBlockingQuery / DataReactiveQuery
+  PanacheStateless*                       →  Data*
+  PanacheManaged*                         →  Managed*
+  PanacheHibernate*                       →  QuarkusDataJpa*
+  Panache (utility)                       →  QuarkusData
+  Panache{Operations,Marker,Switcher,...} →  QuarkusData*
+
+  quarkus-hibernate-panache-next          →  quarkus-data-jpa
+  extensions/panache/hibernate-panache-next/  →  extensions/quarkus-data/quarkus-data-jpa/
+  hibernate-panache-next.adoc             →  quarkus-data-jpa.adoc
+  HibernatePanacheNextCodestartIT         →  QuarkusDataJpaCodestartIT
+  "Hibernate with Panache Next"           →  "Quarkus Data JPA"
+tags:
+  - quarkus
+  - quarkus-data
+
+recipeList:
+
+  # =====================================================================
+  # Java: Class renames — Infrastructure (Panache* → QuarkusData*)
+  # ChangeType MUST run before ChangePackage: ChangeType uses original FQNs
+  # to find types, so if ChangePackage runs first the FQNs won't match.
+  # =====================================================================
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.runtime.PanacheHibernateRecorder
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.runtime.QuarkusDataJpaRecorder
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.deployment.PanacheHibernateResourceProcessor
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.deployment.QuarkusDataJpaResourceProcessor
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.deployment.PanacheEntityClassBuildItem
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.deployment.QuarkusDataEntityClassBuildItem
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.PanacheEntityMarker
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.QuarkusDataEntityMarker
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.PanacheRepositorySwitcher
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.QuarkusDataRepositorySwitcher
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.PanacheRepositoryQueries
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.QuarkusDataRepositoryQueries
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.blocking.PanacheRepositoryBlockingQueries
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.blocking.QuarkusDataRepositoryBlockingQueries
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.reactive.PanacheRepositoryReactiveQueries
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.reactive.QuarkusDataRepositoryReactiveQueries
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.runtime.spi.PanacheBlockingOperations
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.runtime.spi.QuarkusDataBlockingOperations
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.runtime.spi.PanacheReactiveOperations
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.runtime.spi.QuarkusDataReactiveOperations
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.runtime.spi.PanacheOperations
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.runtime.spi.QuarkusDataOperations
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.Panache
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.QuarkusData
+
+  # =====================================================================
+  # Java: Class renames — Stateless (PanacheStateless* → Data*)
+  # =====================================================================
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.PanacheEntity
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.DataEntity
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.PanacheEntityBase
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.DataEntityBase
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.PanacheRepository
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.DataRepository
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.PanacheQuery
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.DataQuery
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.blocking.PanacheBlockingQuery
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.blocking.DataBlockingQuery
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.reactive.PanacheReactiveQuery
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.reactive.DataReactiveQuery
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.runtime.orm.PanacheBlockingQueryImpl
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.runtime.orm.DataBlockingQueryImpl
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.stateless.PanacheStatelessEntityOperations
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.stateless.DataEntityOperations
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.stateless.PanacheStatelessRepositoryOperations
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.stateless.DataRepositoryOperations
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.stateless.blocking.PanacheStatelessBlockingEntity
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.stateless.blocking.DataBlockingEntity
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.stateless.blocking.PanacheStatelessBlockingRepository
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.stateless.blocking.DataBlockingRepository
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.stateless.blocking.PanacheStatelessBlockingRepositoryBase
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.stateless.blocking.DataBlockingRepositoryBase
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.stateless.blocking.PanacheStatelessBlockingRepositoryOperations
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.stateless.blocking.DataBlockingRepositoryOperations
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.stateless.blocking.PanacheStatelessBlockingRepositoryQueries
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.stateless.blocking.DataBlockingRepositoryQueries
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.stateless.reactive.PanacheStatelessReactiveEntity
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.stateless.reactive.DataReactiveEntity
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.stateless.reactive.PanacheStatelessReactiveRepository
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.stateless.reactive.DataReactiveRepository
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.stateless.reactive.PanacheStatelessReactiveRepositoryBase
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.stateless.reactive.DataReactiveRepositoryBase
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.stateless.reactive.PanacheStatelessReactiveRepositoryOperations
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.stateless.reactive.DataReactiveRepositoryOperations
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.stateless.reactive.PanacheStatelessReactiveRepositoryQueries
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.stateless.reactive.DataReactiveRepositoryQueries
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.runtime.hr.PanacheStatelessReactiveQueryImpl
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.runtime.hr.DataReactiveQueryImpl
+
+  # =====================================================================
+  # Java: Class renames — Managed (PanacheManaged* → Managed*)
+  # =====================================================================
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.managed.PanacheManagedEntityOperations
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.managed.ManagedEntityOperations
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.managed.PanacheManagedRepositoryOperations
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.managed.ManagedRepositoryOperations
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.managed.blocking.PanacheManagedBlockingEntity
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.managed.blocking.ManagedBlockingEntity
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.managed.blocking.PanacheManagedBlockingRepository
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.managed.blocking.ManagedBlockingRepository
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.managed.blocking.PanacheManagedBlockingRepositoryBase
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.managed.blocking.ManagedBlockingRepositoryBase
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.managed.blocking.PanacheManagedBlockingRepositoryOperations
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.managed.blocking.ManagedBlockingRepositoryOperations
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.managed.blocking.PanacheManagedBlockingRepositoryQueries
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.managed.blocking.ManagedBlockingRepositoryQueries
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.managed.reactive.PanacheManagedReactiveEntity
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.managed.reactive.ManagedReactiveEntity
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.managed.reactive.PanacheManagedReactiveRepository
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.managed.reactive.ManagedReactiveRepository
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.managed.reactive.PanacheManagedReactiveRepositoryBase
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.managed.reactive.ManagedReactiveRepositoryBase
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.managed.reactive.PanacheManagedReactiveRepositoryOperations
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.managed.reactive.ManagedReactiveRepositoryOperations
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.managed.reactive.PanacheManagedReactiveRepositoryQueries
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.managed.reactive.ManagedReactiveRepositoryQueries
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.hibernate.panache.runtime.hr.PanacheManagedReactiveQueryImpl
+      newFullyQualifiedTypeName: io.quarkus.data.jpa.runtime.hr.ManagedReactiveQueryImpl
+
+  # =====================================================================
+  # Java: Package rename (MUST run after ChangeType — ChangeType uses original
+  # FQNs to find types, so ChangePackage would break those lookups if it ran first)
+  # This only affects io.quarkus.hibernate.panache.*, NOT Panache 1 packages
+  # like io.quarkus.hibernate.orm.panache or io.quarkus.hibernate.reactive.panache
+  # (different hierarchy). The script also scopes the run via -pl to avoid
+  # renaming references to these classes in other modules.
+  # =====================================================================
+  - org.openrewrite.java.ChangePackage:
+      oldPackageName: io.quarkus.hibernate.panache
+      newPackageName: io.quarkus.data.jpa
+      recursive: true
+
+  # =====================================================================
+  # Maven: Dependency artifact renames (updates BOM and consuming POMs)
+  # =====================================================================
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: io.quarkus
+      oldArtifactId: quarkus-hibernate-panache-next
+      newArtifactId: quarkus-data-jpa
+      changeManagedDependency: true
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: io.quarkus
+      oldArtifactId: quarkus-hibernate-panache-next-deployment
+      newArtifactId: quarkus-data-jpa-deployment
+      changeManagedDependency: true
+
+  # =====================================================================
+  # Text: FindAndReplace for non-Java files (codestarts, YAML, docs, POMs)
+  # =====================================================================
+
+  # Artifact ID in codestart templates (.qute files, not parsed as Java)
+  - org.openrewrite.text.FindAndReplace:
+      find: quarkus-hibernate-panache-next
+      replace: quarkus-data-jpa
+      filePattern: "**/*.qute,**/*.qute.xml,**/*.qute.java"
+  - org.openrewrite.text.FindAndReplace:
+      find: hibernate-panache-next
+      replace: quarkus-data-jpa
+      filePattern: "**/*.qute,**/*.qute.xml,**/*.qute.java"
+
+  # Guide URLs everywhere
+  - org.openrewrite.text.FindAndReplace:
+      find: guides/hibernate-panache-next
+      replace: guides/quarkus-data-jpa
+      filePattern: "**/*.adoc,**/*.md,**/*.yaml,**/*.yml,**/*.java,**/*.qute,**/*.qute.java,**/*.qute.xml"
+
+  # Display names
+  - org.openrewrite.text.FindAndReplace:
+      find: Quarkus - Hibernate with Panache Next
+      replace: Quarkus - Quarkus Data JPA
+      filePattern: "**/*.xml,**/*.yaml,**/*.yml,**/*.adoc"
+  - org.openrewrite.text.FindAndReplace:
+      find: Hibernate with Panache Next
+      replace: Quarkus Data JPA
+      filePattern: "**/*.xml,**/*.yaml,**/*.yml,**/*.adoc,**/*.md,**/*.qute.java,**/*.qute.md"
+  - org.openrewrite.text.FindAndReplace:
+      find: Panache Next
+      replace: Quarkus Data JPA
+      filePattern: "**/*.xml,**/*.yaml,**/*.yml,**/*.adoc,**/*.md"
+
+  # Package references in codestart templates and snapshots
+  - org.openrewrite.text.FindAndReplace:
+      find: io.quarkus.hibernate.panache
+      replace: io.quarkus.data.jpa
+      filePattern: "**/*.qute.java,**/*.qute.md"
+  # Class names in codestart templates
+  - org.openrewrite.text.FindAndReplace:
+      find: PanacheEntity
+      replace: DataEntity
+      filePattern: "**/*.qute.java"
+  - org.openrewrite.text.FindAndReplace:
+      find: PanacheRepository
+      replace: DataRepository
+      filePattern: "**/*.qute.java"
+
+  # Extension metadata YAML
+  - org.openrewrite.text.FindAndReplace:
+      find: '"Hibernate with Panache Next"'
+      replace: '"Quarkus Data JPA"'
+      filePattern: "**/quarkus-extension.yaml"
+
+  # Documentation (.adoc) — only the panache-next doc (not Panache 1 docs)
+  - org.openrewrite.text.FindAndReplace:
+      find: io.quarkus.hibernate.panache
+      replace: io.quarkus.data.jpa
+      filePattern: "**/hibernate-panache-next.adoc,**/quarkus-data-jpa.adoc"
+  - org.openrewrite.text.FindAndReplace:
+      find: quarkus-hibernate-panache-next
+      replace: quarkus-data-jpa
+      filePattern: "**/hibernate-panache-next.adoc,**/quarkus-data-jpa.adoc"
+  - org.openrewrite.text.FindAndReplace:
+      find: hibernate-panache-next
+      replace: quarkus-data-jpa
+      filePattern: "**/hibernate-panache-next.adoc,**/quarkus-data-jpa.adoc"
+  - org.openrewrite.text.FindAndReplace:
+      find: PanacheEntity
+      replace: DataEntity
+      filePattern: "**/hibernate-panache-next.adoc,**/quarkus-data-jpa.adoc"
+  - org.openrewrite.text.FindAndReplace:
+      find: PanacheRepository
+      replace: DataRepository
+      filePattern: "**/hibernate-panache-next.adoc,**/quarkus-data-jpa.adoc"
+  - org.openrewrite.text.FindAndReplace:
+      find: PanacheQuery
+      replace: DataQuery
+      filePattern: "**/hibernate-panache-next.adoc,**/quarkus-data-jpa.adoc"
+
+  # Integration test snapshots
+  - org.openrewrite.text.FindAndReplace:
+      find: io.quarkus.hibernate.panache
+      replace: io.quarkus.data.jpa
+      filePattern: "**/__snapshots__/**"
+  - org.openrewrite.text.FindAndReplace:
+      find: PanacheEntity
+      replace: DataEntity
+      filePattern: "**/__snapshots__/**"
+  - org.openrewrite.text.FindAndReplace:
+      find: PanacheRepository
+      replace: DataRepository
+      filePattern: "**/__snapshots__/**"
+  - org.openrewrite.text.FindAndReplace:
+      find: guides/hibernate-panache-next
+      replace: guides/quarkus-data-jpa
+      filePattern: "**/__snapshots__/**"
+  - org.openrewrite.text.FindAndReplace:
+      find: Hibernate with Panache Next
+      replace: Quarkus Data JPA
+      filePattern: "**/__snapshots__/**"
+
+  # Integration test class rename (Java file — must use ChangeType, not FindAndReplace)
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.quarkus.devtools.codestarts.quarkus.HibernatePanacheNextCodestartIT
+      newFullyQualifiedTypeName: io.quarkus.devtools.codestarts.quarkus.QuarkusDataJpaCodestartIT
+
+  # =====================================================================
+  # File renames
+  # =====================================================================
+  - org.openrewrite.RenameFile:
+      fileMatcher: "**/hibernate-panache-next.adoc"
+      fileName: quarkus-data-jpa.adoc
+
+  # Move integration test snapshot directory
+  - org.openrewrite.MoveFile:
+      folder: integration-tests/devtools/src/test/resources/__snapshots__/HibernatePanacheNextCodestartIT
+      moveTo: integration-tests/devtools/src/test/resources/__snapshots__/QuarkusDataJpaCodestartIT
+
+  # =====================================================================
+  # POM: Project's own artifact IDs (ChangeTagValue on XPath /project/artifactId)
+  # =====================================================================
+  - org.openrewrite.xml.ChangeTagValue:
+      elementName: /project/artifactId
+      oldValue: quarkus-hibernate-panache-next-parent
+      newValue: quarkus-data-jpa-parent
+  - org.openrewrite.xml.ChangeTagValue:
+      elementName: /project/artifactId
+      oldValue: quarkus-hibernate-panache-next-deployment
+      newValue: quarkus-data-jpa-deployment
+  - org.openrewrite.xml.ChangeTagValue:
+      elementName: /project/artifactId
+      oldValue: quarkus-hibernate-panache-next
+      newValue: quarkus-data-jpa
+
+  # POM: Display names
+  - org.openrewrite.xml.ChangeTagValue:
+      elementName: /project/name
+      oldValue: "Quarkus - Hibernate with Panache Next"
+      newValue: "Quarkus - Quarkus Data JPA"
+  - org.openrewrite.xml.ChangeTagValue:
+      elementName: /project/name
+      oldValue: "Quarkus - Hibernate with Panache Next - Runtime"
+      newValue: "Quarkus - Quarkus Data JPA - Runtime"
+  - org.openrewrite.xml.ChangeTagValue:
+      elementName: /project/name
+      oldValue: "Quarkus - Hibernate with Panache Next - Deployment"
+      newValue: "Quarkus - Quarkus Data JPA - Deployment"
+
+  # POM: Parent POM change
+  - org.openrewrite.maven.ChangeParentPom:
+      oldGroupId: io.quarkus
+      oldArtifactId: quarkus-panache-parent
+      newArtifactId: quarkus-data-parent
+      newVersion: 999-SNAPSHOT
+
+  # POM: Remove old module from panache parent
+  # RemoveXmlTag can't target by content, so we use FindAndReplace
+  - org.openrewrite.text.FindAndReplace:
+      find: "        <module>hibernate-panache-next</module>\n"
+      replace: ""
+      filePattern: "**/extensions/panache/pom.xml"
+
+  # POM: Add quarkus-data module to extensions/pom.xml
+  - org.openrewrite.xml.AddOrUpdateChildTag:
+      parentXPath: /project/modules
+      newChildTag: "<module>quarkus-data</module>"
+      replaceExisting: false
+
+  # POM: Create quarkus-data umbrella parent POM
+  - org.openrewrite.xml.CreateXmlFile:
+      relativeFileName: extensions/quarkus-data/pom.xml
+      fileContents: |
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project xmlns="http://maven.apache.org/POM/4.0.0"
+                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+            <modelVersion>4.0.0</modelVersion>
+            <parent>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-extensions-parent</artifactId>
+                <version>999-SNAPSHOT</version>
+                <relativePath>../pom.xml</relativePath>
+            </parent>
+            <artifactId>quarkus-data-parent</artifactId>
+            <name>Quarkus - Extensions - Quarkus Data</name>
+            <packaging>pom</packaging>
+            <modules>
+                <module>quarkus-data-jpa</module>
+            </modules>
+        </project>
+
+  # POM: BOM and docs POM (fallback in case ChangeDependency didn't catch everything)
+  - org.openrewrite.text.FindAndReplace:
+      find: quarkus-hibernate-panache-next
+      replace: quarkus-data-jpa
+      filePattern: "**/bom/application/pom.xml,**/docs/pom.xml,**/devtools/bom-descriptor-json/pom.xml"

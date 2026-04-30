@@ -4,6 +4,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.fabric8.kubernetes.api.model.PodSecurityContext;
+import io.fabric8.kubernetes.api.model.PodSecurityContextBuilder;
+import io.fabric8.kubernetes.api.model.SELinuxOptions;
+import io.fabric8.kubernetes.api.model.SELinuxOptionsBuilder;
+import io.fabric8.kubernetes.api.model.Sysctl;
+import io.fabric8.kubernetes.api.model.WindowsSecurityContextOptions;
+import io.fabric8.kubernetes.api.model.WindowsSecurityContextOptionsBuilder;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 
 public interface SecurityContextConfig {
@@ -55,10 +62,27 @@ public interface SecurityContextConfig {
      */
     Optional<PodFSGroupChangePolicy> fsGroupChangePolicy();
 
+    /**
+     * Controls whether a process can gain more privileges than its parent process.
+     * This directly controls whether the {@code no_new_privs} flag gets set on the container process.
+     * Always true when the container:
+     * <ul>
+     * <li>is run as privileged, or</li>
+     * <li>has {@code CAP_SYS_ADMIN}</li>
+     * </ul>
+     */
+    Optional<Boolean> allowPrivilegeEscalation();
+
+    /**
+     * Mounts the container's root filesystem as read-only
+     */
+    Optional<Boolean> readOnlyRootFilesystem();
+
     default boolean isAnyPropertySet() {
         return seLinuxOptions().isAnyPropertySet() || windowsOptions().isAnyPropertySet() || runAsUser().isPresent()
                 || runAsGroup().isPresent() || runAsNonRoot().isPresent() || supplementalGroups().isPresent()
-                || fsGroup().isPresent() || !sysctls().isEmpty() || fsGroupChangePolicy().isPresent();
+                || fsGroup().isPresent() || !sysctls().isEmpty() || fsGroupChangePolicy().isPresent()
+                || allowPrivilegeEscalation().isPresent() || readOnlyRootFilesystem().isPresent();
     }
 
     interface SeLinuxOptions {
@@ -127,5 +151,51 @@ public interface SecurityContextConfig {
          * Pod. This the default behavior.
          */
         Always;
+    }
+
+    default PodSecurityContext buildSecurityContext() {
+        PodSecurityContextBuilder securityContextBuilder = new PodSecurityContextBuilder();
+
+        runAsUser().ifPresent(securityContextBuilder::withRunAsUser);
+        runAsGroup().ifPresent(securityContextBuilder::withRunAsGroup);
+        runAsNonRoot().ifPresent(securityContextBuilder::withRunAsNonRoot);
+        supplementalGroups().ifPresent(securityContextBuilder::addAllToSupplementalGroups);
+        fsGroup().ifPresent(securityContextBuilder::withFsGroup);
+        sysctls().entrySet().stream()
+                .map(e -> new Sysctl(e.getKey(), e.getValue()))
+                .forEach(securityContextBuilder::addToSysctls);
+        fsGroupChangePolicy().map(Enum::name).ifPresent(securityContextBuilder::withFsGroupChangePolicy);
+        buildSeLinuxOptions().ifPresent(securityContextBuilder::withSeLinuxOptions);
+        buildWindowsOptions().ifPresent(securityContextBuilder::withWindowsOptions);
+
+        return securityContextBuilder.build();
+    }
+
+    default Optional<WindowsSecurityContextOptions> buildWindowsOptions() {
+        final var windowsOptions = windowsOptions();
+        if (windowsOptions.isAnyPropertySet()) {
+            WindowsSecurityContextOptionsBuilder builder = new WindowsSecurityContextOptionsBuilder();
+            windowsOptions.gmsaCredentialSpec().ifPresent(builder::withGmsaCredentialSpec);
+            windowsOptions.gmsaCredentialSpecName().ifPresent(builder::withGmsaCredentialSpecName);
+            windowsOptions.hostProcess().ifPresent(builder::withHostProcess);
+            windowsOptions.runAsUserName().ifPresent(builder::withRunAsUserName);
+            return Optional.of(builder.build());
+        }
+
+        return Optional.empty();
+    }
+
+    default Optional<SELinuxOptions> buildSeLinuxOptions() {
+        final var seLinuxOptions = seLinuxOptions();
+        if (seLinuxOptions.isAnyPropertySet()) {
+            SELinuxOptionsBuilder builder = new SELinuxOptionsBuilder();
+            seLinuxOptions.user().ifPresent(builder::withUser);
+            seLinuxOptions.role().ifPresent(builder::withRole);
+            seLinuxOptions.level().ifPresent(builder::withLevel);
+            seLinuxOptions.type().ifPresent(builder::withType);
+            return Optional.of(builder.build());
+        }
+
+        return Optional.empty();
     }
 }

@@ -60,7 +60,6 @@ public class SimpleSpanProcessorTest {
     }
 
     @Test
-    @Order(1)
     void activeProcessorIsSimpleSpanProcessorWithBatchShutdown() throws Exception {
         SpanProcessor activeProcessor = TestUtil.getActiveSpanProcessor(openTelemetry);
         assertNotNull(activeProcessor);
@@ -71,7 +70,6 @@ public class SimpleSpanProcessorTest {
     }
 
     @Test
-    @Order(2)
     void delegateIsSimpleSpanProcessor() throws Exception {
         SpanProcessor activeProcessor = TestUtil.getActiveSpanProcessor(openTelemetry);
         SpanProcessor delegate = TestUtil.getSimpleSpanProcessorDelegate(activeProcessor);
@@ -81,7 +79,6 @@ public class SimpleSpanProcessorTest {
     }
 
     @Test
-    @Order(3)
     void replacedBatchProcessorIsRetained() throws Exception {
         SpanProcessor activeProcessor = TestUtil.getActiveSpanProcessor(openTelemetry);
         SpanProcessor replacedBatchProcessor = TestUtil.getReplacedBatchProcessor(activeProcessor);
@@ -91,7 +88,6 @@ public class SimpleSpanProcessorTest {
     }
 
     @Test
-    @Order(4)
     void spansAreExportedThroughSimpleProcessor() {
         Tracer tracer = openTelemetry.getTracer("test");
 
@@ -104,7 +100,6 @@ public class SimpleSpanProcessorTest {
     }
 
     @Test
-    @Order(5)
     void multipleSpansAreExportedCorrectly() {
         Tracer tracer = openTelemetry.getTracer("test");
 

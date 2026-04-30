@@ -19,12 +19,10 @@ import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Singleton;
 
-import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.common.Clock;
-import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.logs.LogRecordProcessor;
 import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessor;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
@@ -37,12 +35,9 @@ import io.opentelemetry.sdk.metrics.internal.MeterConfig;
 import io.opentelemetry.sdk.metrics.internal.SdkMeterProviderUtil;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.IdGenerator;
-import io.opentelemetry.sdk.trace.ReadWriteSpan;
-import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder;
 import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
-import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.quarkus.arc.All;
@@ -50,6 +45,7 @@ import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.propagation.TextMapPropagatorCustomizer;
 import io.quarkus.opentelemetry.runtime.tracing.DropTargetsSampler;
+import io.quarkus.opentelemetry.runtime.tracing.SimpleSpanProcessorWithBatchShutdown;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.TracerUtil;
 import io.quarkus.runtime.ApplicationConfig;
@@ -76,56 +72,6 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
             if (biFunction != null) {
                 builder.addLogRecordProcessorCustomizer(biFunction);
             }
-        }
-    }
-
-    final class SimpleSpanProcessorWithBatchShutdown implements SpanProcessor {
-        private final SpanProcessor delegate;
-        private final SpanProcessor replacedBatchProcessor;
-
-        SimpleSpanProcessorWithBatchShutdown(SpanExporter spanExporter, SpanProcessor replacedBatchProcessor) {
-            this.delegate = SimpleSpanProcessor.create(spanExporter);
-            this.replacedBatchProcessor = replacedBatchProcessor;
-        }
-
-        @Override
-        public void onStart(Context parentContext, ReadWriteSpan span) {
-            delegate.onStart(parentContext, span);
-        }
-
-        @Override
-        public boolean isStartRequired() {
-            return delegate.isStartRequired();
-        }
-
-        @Override
-        public void onEnd(ReadableSpan span) {
-            delegate.onEnd(span);
-        }
-
-        @Override
-        public boolean isEndRequired() {
-            return delegate.isEndRequired();
-        }
-
-        @Override
-        public CompletableResultCode forceFlush() {
-            return delegate.forceFlush();
-        }
-
-        @Override
-        public CompletableResultCode shutdown() {
-            return CompletableResultCode.ofAll(List.of(
-                    delegate.shutdown(),
-                    replacedBatchProcessor.shutdown()));
-        }
-
-        @Override
-        public String toString() {
-            return "SimpleSpanProcessorWithBatchShutdown{" +
-                    "delegate=" + delegate +
-                    ", replacedBatchProcessor=" + replacedBatchProcessor +
-                    '}';
         }
     }
 
@@ -290,6 +236,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                             if (oTelBuildConfig.simple()) {
                                 return new SimpleSpanProcessorWithBatchShutdown(spanExporter, spanProcessor);
                             }
+                            // NoopSpanExporter is package friendly
                             if ("NoopSpanExporter".equals(spanExporter.getClass().getSimpleName())) {
                                 return SpanProcessor.composite();
                             }

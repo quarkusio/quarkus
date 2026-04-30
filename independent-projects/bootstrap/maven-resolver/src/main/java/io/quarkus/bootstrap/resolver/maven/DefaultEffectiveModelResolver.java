@@ -104,7 +104,13 @@ class DefaultEffectiveModelResolver implements EffectiveModelResolver {
             } catch (BootstrapMavenException e) {
                 throw new RuntimeException("Failed to resolve " + parentPom, e);
             }
-            rawModel.getParent().setRelativePath(pomFile.toPath().getParent().relativize(parentPomPath).toString());
+            try {
+                rawModel.getParent()
+                        .setRelativePath(pomFile.toPath().getParent().relativize(parentPomPath).toString());
+            } catch (IllegalArgumentException e) {
+                // on Windows, relativize fails when paths have different roots;
+                // the model builder will fall back to the ModelResolver to locate the parent
+            }
 
             String repoUrl = null;
             for (RemoteRepository r : repos) {

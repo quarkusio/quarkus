@@ -163,12 +163,25 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
         final var defaultDeploymentKind = defaultDeploymentKind();
 
         switch (deploymentKind) {
-            case Deployment -> context.add(new AddDeploymentResourceDecorator(name, defaultDeploymentKind));
+            case Deployment ->
+                context.add(new AddDeploymentResourceDecorator(name, replicasAwareOrNull(), defaultDeploymentKind));
             case Job -> context.add(new AddJobResourceDecorator(name, config().job(), defaultDeploymentKind));
             case CronJob ->
                 context.add(new AddCronJobResourceDecorator(name, config().cronJob(), defaultDeploymentKind));
             case StatefulSet ->
-                context.add(new AddStatefulSetResourceDecorator(name, defaultDeploymentKind));
+                context.add(new AddStatefulSetResourceDecorator(name, replicasAwareOrNull(), defaultDeploymentKind));
+            //noinspection deprecation
+            case DeploymentConfig ->
+                context.add(new AddDeploymentConfigResourceDecorator(name, replicasAwareOrNull(), defaultDeploymentKind));
+        }
+    }
+
+    private ReplicasAware replicasAwareOrNull() {
+        final var config = config();
+        if (config instanceof ReplicasAware replicasAware) {
+            return replicasAware;
+        } else {
+            return null;
         }
     }
 

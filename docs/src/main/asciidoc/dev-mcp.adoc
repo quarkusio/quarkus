@@ -35,62 +35,9 @@ image::dev_mcp_settings.png[Dev MCP Settings]
 Extensions can contribute additional tools and resources to the Dev MCP server. The integration is similar to contributing to the xref:dev-ui.adoc[Dev UI], but descriptions are mandatory. 
 A single JSON‑RPC service can be used for both Dev UI and Dev MCP; methods without a description only show up in Dev UI, while methods with a description appear in both.
 
-=== MCP resources
-
-A resource is data exposed by your extension. There are two ways to create a resource.
-
-==== MCP Resources against build time data
-
-Build‑time data that is already exposed to the xref:dev-ui.adoc#optional-build-time-data[Dev UI] can also be made available to Dev MCP. Provide a description when calling `addBuildTimeData()`:
-
-[source,java]
-----
-footerPageBuildItem.addBuildTimeData(
-    "jokes",
-    jokesBuildItem.getJokes(),
-    "Some funny jokes that the user might enjoy"
-);
-----
-
-The extra `description` argument is new: without it the data only appears in the Dev UI. Once supplied, the `jokes` data becomes an MCP resource, however, by default this resource will be disabled. You can change the default by passing in `true` as another parameter after description, that will change this default to be enabled. Users can change this in Dev UI anyway, so this is just a sensible default.
-
-[source,java]
-----
-footerPageBuildItem.addBuildTimeData(
-    "jokes",
-    jokesBuildItem.getJokes(),
-    "Some funny jokes that the user might enjoy",
-    true
-);
-----
-
-==== MCP Resources against a recorded value
-
-To expose recorded values (data produced at runtime by a recorder) as an MCP resource, define a xref:dev-ui.adoc#jsonrpc-against-a-recorded-value[build‑time action] in the deployment module. The action must include a description:
-
-[source,java]
-----
-@BuildStep(onlyIf = IsLocalDevelopment.class)
-BuildTimeActionBuildItem createBuildTimeActions() {
-    BuildTimeActionBuildItem item = new BuildTimeActionBuildItem(); //<1>
-    item.actionBuilder() //<2>
-            .methodName("getMyRecordedValue")
-            .description("A well‑thought‑out description") //<3>
-            .runtime(runtimeValue) //<4>
-            .build();
-    return item;
-}
-----
-<1> Return or produce a `BuildTimeActionBuildItem`.
-<2> Use the builder to configure the action.
-<3> Set a human‑readable description.
-<4> Provide the runtime value returned by your recorder.
-
-By default this resource will be disabled, and the user has to enable it in Dev UI. You can change this default by adding `.enableMcpFunctionByDefault()` in the builder method.
-
 === Extension skills
 
-Extensions can ship a `quarkus-skill.md` file to provide AI coding agents with extension-specific coding guidelines, testing patterns, and common pitfalls. During the Quarkus build, all skill files are automatically discovered, composed with extension metadata (name, description, guide URL), and aggregated into a single `io.quarkus:quarkus-extension-skills` JAR following the https://agentskills.io/specification[Agent Skills specification]. This JAR is published to Maven Central with each Quarkus release and is compatible with https://www.skillsjars.com[SkillsJars].
+Extensions can ship a `quarkus-skill.md` file to provide AI coding agents with extension-specific coding guidelines, testing patterns, and common pitfalls. During the Quarkus build, all skill files are automatically discovered, composed with extension metadata (name, description, guide URL, categories), and aggregated into a single `io.quarkus:quarkus-extension-skills` JAR following the https://agentskills.io/specification[Agent Skills specification]. This JAR is published to Maven Central with each Quarkus release and is compatible with https://www.skillsjars.com[SkillsJars].
 
 ==== Adding a skill file to your extension
 
@@ -103,7 +50,7 @@ my-extension/deployment/src/main/resources/META-INF/quarkus-skill.md
 
 That's it. No pom.xml changes are needed. The Quarkus build automatically discovers all `quarkus-skill.md` files across all extensions and aggregates them into the `quarkus-extension-skills` artifact.
 
-If your extension's runtime module has a `description` field in `META-INF/quarkus-extension.yaml`, it will be included in the composed skill's YAML frontmatter to help AI agents discover and understand your extension. While optional, providing a description is recommended:
+If your extension's runtime module has a `description` field in `META-INF/quarkus-extension.yaml`, it will be included in the composed skill's YAML frontmatter to help AI agents discover and understand your extension. The `categories` field under `metadata` is also included, allowing AI agents to group skills by category. While optional, providing a description and categories is recommended:
 
 [source,yaml]
 ----
@@ -112,6 +59,8 @@ description: "A concise description of what this extension does"
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
 metadata:
   guide: "https://quarkus.io/guides/my-extension"
+  categories:
+  - "web"
 ----
 
 The file should contain concise, actionable Markdown content. Focus on what an AI agent needs to know to use your extension correctly:
@@ -145,8 +94,9 @@ Example for a hypothetical extension:
 
 The skill file content is **not** shipped as-is. During the Quarkus build, the `aggregate-skills` goal scans the source tree for all `quarkus-skill.md` files and composes each one with extension metadata to produce a `SKILL.md` file at `META-INF/skills/{extension-name}/SKILL.md` inside the aggregated JAR. The composed document follows the https://agentskills.io/specification[Agent Skills specification] and includes:
 
-1. **YAML frontmatter** — the skill name, extension description from `quarkus-extension.yaml`, license, and guide URL as structured metadata for agent discovery.
+1. **YAML frontmatter** — the skill name, extension description from `quarkus-extension.yaml`, license, guide URL, and categories as structured metadata for agent discovery.
 2. **Skill body** — the patterns, testing guidelines, and pitfalls authored by the extension developer.
+3. **Dev MCP tools** — the skill is automatically enriched with an "Available Dev MCP Tools" section listing each MCP tool the extension enables by default, including tool names, descriptions, and parameters. Tools are discovered from runtime methods annotated with both `@JsonRpcDescription` and `@DevMCPEnableByDefault`, and from deployment processor classes annotated with `@DevMcpBuildTimeTool`.
 
 Example of a composed `SKILL.md`:
 
@@ -158,11 +108,43 @@ description: "A brief description of the extension from quarkus-extension.yaml"
 license: Apache-2.0
 metadata:
   guide: https://quarkus.io/guides/my-extension
+  categories: "web, data"
 ---
 
 ### Data Access
 ...
+
+### Available Dev MCP Tools
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `quarkus-my-extension_getData` | Get current status | — |
+| `quarkus-my-extension_updateValue` | Update a value | `name` (required): The name, `value` (required): The new value |
 ----
+
+The Dev MCP tools section is appended during the Quarkus build by the `aggregate-skills` Maven goal. Only tools that are enabled by default are included. All modules are scanned via Jandex on compiled classes. The enriched skills are baked into the `quarkus-extension-skills` JAR published with each Quarkus release.
+
+For **runtime methods**, add both `@JsonRpcDescription` and `@DevMCPEnableByDefault` annotations on the method (see <<MCP Tools against the Runtime classpath>>).
+
+For **deployment build-time actions**, annotate the processor class with `@DevMcpBuildTimeTool`:
+
+[source,java]
+----
+@DevMcpBuildTimeTool(name = "updateProperty", // <1>
+    description = "Update a configuration property", // <2>
+    params = {
+        @DevMcpParam(name = "name", description = "The property name"), // <3>
+        @DevMcpParam(name = "value", description = "The new value")
+    })
+public class ConfigurationProcessor {
+    // ...
+}
+----
+<1> The tool name, matching the `methodName` in the builder chain.
+<2> A human-readable description of what this tool does.
+<3> Parameter descriptions. Use `required = false` for optional parameters.
+
+The annotation is repeatable — add one per tool on the same class. This is the deployment-classpath counterpart of `@JsonRpcDescription` + `@DevMCPEnableByDefault` used on runtime methods.
 
 ==== What NOT to put in the skill file
 
@@ -242,6 +224,59 @@ BuildTimeActionBuildItem createBuildTimeActions() {
 The code in the `function` runs on the deployment classpath. The function can return a plain value, a `CompletionStage` or `CompletableFuture` for asynchronous work.
 
 By default this tool will be disabled, and the user has to enable it in Dev UI. You can change this default by adding `.enableMcpFunctionByDefault()` in the builder method.
+
+=== MCP resources
+
+A resource is data exposed by your extension. There are two ways to create a resource.
+
+==== MCP Resources against build time data
+
+Build‑time data that is already exposed to the xref:dev-ui.adoc#optional-build-time-data[Dev UI] can also be made available to Dev MCP. Provide a description when calling `addBuildTimeData()`:
+
+[source,java]
+----
+footerPageBuildItem.addBuildTimeData(
+    "jokes",
+    jokesBuildItem.getJokes(),
+    "Some funny jokes that the user might enjoy"
+);
+----
+
+The extra `description` argument is new: without it the data only appears in the Dev UI. Once supplied, the `jokes` data becomes an MCP resource, however, by default this resource will be disabled. You can change the default by passing in `true` as another parameter after description, that will change this default to be enabled. Users can change this in Dev UI anyway, so this is just a sensible default.
+
+[source,java]
+----
+footerPageBuildItem.addBuildTimeData(
+    "jokes",
+    jokesBuildItem.getJokes(),
+    "Some funny jokes that the user might enjoy",
+    true
+);
+----
+
+==== MCP Resources against a recorded value
+
+To expose recorded values (data produced at runtime by a recorder) as an MCP resource, define a xref:dev-ui.adoc#jsonrpc-against-a-recorded-value[build‑time action] in the deployment module. The action must include a description:
+
+[source,java]
+----
+@BuildStep(onlyIf = IsLocalDevelopment.class)
+BuildTimeActionBuildItem createBuildTimeActions() {
+    BuildTimeActionBuildItem item = new BuildTimeActionBuildItem(); //<1>
+    item.actionBuilder() //<2>
+            .methodName("getMyRecordedValue")
+            .description("A well‑thought‑out description") //<3>
+            .runtime(runtimeValue) //<4>
+            .build();
+    return item;
+}
+----
+<1> Return or produce a `BuildTimeActionBuildItem`.
+<2> Use the builder to configure the action.
+<3> Set a human‑readable description.
+<4> Provide the runtime value returned by your recorder.
+
+By default this resource will be disabled, and the user has to enable it in Dev UI. You can change this default by adding `.enableMcpFunctionByDefault()` in the builder method.
 
 === JSON‑RPC usage
 

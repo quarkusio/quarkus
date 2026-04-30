@@ -17,11 +17,13 @@ import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devui.deployment.DevUIConfig;
 import io.quarkus.devui.deployment.InternalPageBuildItem;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
+import io.quarkus.devui.spi.buildtime.DevMcpBuildTimeTool;
 import io.quarkus.devui.spi.page.Page;
 
 /**
  * This creates DevServices Page
  */
+@DevMcpBuildTimeTool(name = "getDevServices", description = "Get all the DevServices started by this Quarkus app, including information on container and the config that is being set automatically")
 public class DevServicesProcessor {
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)

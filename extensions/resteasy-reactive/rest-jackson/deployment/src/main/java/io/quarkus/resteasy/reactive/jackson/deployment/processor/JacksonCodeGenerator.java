@@ -33,6 +33,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
@@ -52,6 +56,21 @@ import io.quarkus.resteasy.reactive.jackson.SecureField;
 public abstract class JacksonCodeGenerator {
 
     private static final Logger log = Logger.getLogger(JacksonCodeGenerator.class);
+
+    private static final Set<String> SUPPORTED_JACKSON_ANNOTATIONS = Set.of(
+            JsonAlias.class.getName(),
+            JsonAnySetter.class.getName(),
+            JsonCreator.class.getName(),
+            JsonIgnore.class.getName(),
+            JsonIgnoreProperties.class.getName(),
+            JsonNaming.class.getName(),
+            JsonProperty.class.getName(),
+            JsonSubTypes.class.getName(),
+            JsonTypeInfo.class.getName(),
+            JsonTypeName.class.getName(),
+            JsonUnwrapped.class.getName(),
+            JsonValue.class.getName(),
+            JsonView.class.getName());
 
     protected final BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
     protected final IndexView jandexIndex;
@@ -266,7 +285,18 @@ public abstract class JacksonCodeGenerator {
 
     private void registerTypeToBeGenerated(String typeName) {
         ClassInfo classInfo = jandexIndex.getClassByName(typeName);
-        if (classInfo != null && !vetoedClass(classInfo, typeName) && shouldGenerateCodeFor(classInfo)) {
+        if (classInfo == null) {
+            return;
+        }
+        if (vetoedClass(classInfo, typeName)) {
+            if (classInfo.isSealed()) {
+                for (DotName subClassName : classInfo.permittedSubclasses()) {
+                    registerTypeToBeGenerated(subClassName.toString());
+                }
+            }
+            return;
+        }
+        if (shouldGenerateCodeFor(classInfo)) {
             toBeGenerated.add(classInfo);
         }
     }
@@ -475,16 +505,9 @@ public abstract class JacksonCodeGenerator {
             return annotations.get(JsonIgnore.class.getName()) != null;
         }
 
-        private static final Set<String> SUPPORTED_JACKSON_ANNOTATIONS = Set.of(
-                JsonProperty.class.getName(),
-                JsonIgnore.class.getName(),
-                JsonIgnoreProperties.class.getName(),
-                JsonAnySetter.class.getName(),
-                JsonCreator.class.getName(),
-                JsonAlias.class.getName(),
-                JsonNaming.class.getName(),
-                JsonValue.class.getName(),
-                JsonView.class.getName());
+        boolean isUnwrapped() {
+            return annotations.get(JsonUnwrapped.class.getName()) != null;
+        }
 
         static boolean isUnknownAnnotation(String ann) {
             if (ann.startsWith("com.fasterxml.jackson.")) {

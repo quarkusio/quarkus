@@ -108,55 +108,82 @@ endpoint will be traced without any required code changes.
 
 === Create the configuration
 
-
 :opentelemetry-config:
 include::{includes}/opentelemetry-config.adoc[]
 
-== Run the application
+== See data
 
-First we need to start a system to visualise the OpenTelemetry data.
-We have 2 options:
+Before starting the app, please set up the system to visualize the OpenTelemetry data.
+We have several options:
 
-* Start an all-in-one Grafana OTel LGTM system for traces and metrics.
-* Jaeger system just for traces.
+* Start an all-in-one Grafana OTel LGTM Dev Service for traces, logs and metrics
+* Jaeger system just for traces
+* Logging exporter
 
 === Grafana OTel LGTM option
+A Dev Service that will receive your app's telemetry. Only the dependency is needed.
 
 * Take a look at: xref:observability-devservices-lgtm.adoc[Getting Started with Grafana-OTel-LGTM].
 
-This features a Quarkus Dev service including a Grafana for visualizing data, Loki to store logs, Tempo to store traces and Prometheus to store metrics. Also provides an OTel collector to receive the data.
+This features a Quarkus Dev Service including a Grafana for visualizing data, Loki to store logs, Tempo to store traces and Prometheus to store metrics. Also provides an OTel collector to receive the data.
 
-=== Jaeger to see traces option
+=== Jaeger v2 to see traces option
 
-Configure and start the https://opentelemetry.io/docs/collector/[OpenTelemetry Collector] to receive, process and export telemetry data to https://www.jaegertracing.io/[Jaeger] that will display the captured traces.
+Jaeger V2 is a tool to visualize spans, and it's based on OpenTelemetry collector. There is no need to install a separate collector.
+More details are available in https://medium.com/jaegertracing/towards-jaeger-v2-moar-opentelemetry-2f8239bee48e[this blog post].
+
+Start the OpenTelemetry Collector and Jaeger system via the following Docker command:
+
+[source,shell]
+----
+docker run -it \
+  -p 16686:16686 \
+  -p 4317:4317 \
+  -p 4318:4318 \
+jaegertracing/jaeger:latest
+----
+
+Where:
+|===
+|Port | Purpose
+
+|16686
+|Jaeger UI
+
+|4317
+|OpenTelemetry collector. OTLP protobuf gRPC receiver.
+
+|4318
+|OpenTelemetry collector. OTLP protobuf HTTP receiver.
+
+|===
+
+Other ports are available in the https://www.jaegertracing.io/docs/2.17/architecture/apis/#write-apis[Jaeger documentation].
+
+=== Logging exporter
+You can output all traces to the console by setting the exporter to `logging` in the `application.properties` file:
+
+[source,properties]
+----
+quarkus.otel.traces.exporter=logging
+----
 
 [NOTE]
 ====
-Jaeger-all-in-one includes the Jaeger agent, an OTel collector, and the query service/UI.
-You do not need to install a separated collector. You can directly send the trace data to Jaeger (after enabling OTLP receivers there, see e.g. this
-https://medium.com/jaegertracing/introducing-native-support-for-opentelemetry-in-jaeger-eb661be8183c[blog entry] for details).
+Usually there is no need to set the `quarkus.otel.traces.exporter` property. The default value is `cdi` and is managed by Quarkus.
 ====
 
-Start the OpenTelemetry Collector and Jaeger system via the following `docker-compose.yml` file that you can launch via `docker-compose up -d`:
+This dependency must be added to the project:
 
-[source,yaml,subs="attributes"]
+[source,xml]
 ----
-version: "2"
-services:
+<dependency>
+    <groupId>io.opentelemetry</groupId>
+    <artifactId>opentelemetry-exporter-logging</artifactId>
+</dependency>
+----
 
-  # Jaeger
-  jaeger-all-in-one:
-    image: jaegertracing/all-in-one:latest
-    ports:
-      - "16686:16686" # Jaeger UI
-      - "14268:14268" # Receive legacy OpenTracing traces, optional
-      - "4317:4317"   # OTLP gRPC receiver
-      - "4318:4318"   # OTLP HTTP receiver
-      - "14250:14250" # Receive from external otel-collector, optional
-    environment:
-      - COLLECTOR_OTLP_ENABLED=true
-----
-You should remove the optional ports you don't need them.
+== Run the application
 
 === Start the application
 

@@ -87,6 +87,13 @@ run the TCKs:
 ./mvnw verify -f tcks/<area>/ -Ptcks
 ```
 
+## Assertions
+
+- **Prefer AssertJ** (`org.assertj.core.api.Assertions.assertThat`) over JUnit 5
+  assertions (`org.junit.jupiter.api.Assertions`). AssertJ provides fluent,
+  readable assertions and better failure messages.
+- Use RestAssured for HTTP endpoint testing.
+
 ## Key Rules
 
 - Do NOT use `@QuarkusTest` in deployment module tests — use `QuarkusExtensionTest`

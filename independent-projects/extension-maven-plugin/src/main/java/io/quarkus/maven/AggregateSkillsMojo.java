@@ -11,7 +11,9 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
@@ -21,6 +23,16 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.Index;
+import org.jboss.jandex.IndexReader;
+import org.jboss.jandex.Indexer;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodParameterInfo;
+import org.jboss.jandex.Type;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -209,19 +221,225 @@ public class AggregateSkillsMojo extends AbstractMojo {
                 .getParent() // src
                 .getParent(); // runtime
         String skillName = readArtifactIdFromPom(runtimeDir.resolve("pom.xml"));
+        Path extensionDir = runtimeDir.getParent();
         if (skillName == null) {
             // Fallback to directory name
-            Path extensionDir = runtimeDir.getParent();
             skillName = extensionDir != null ? extensionDir.getFileName().toString() : "unknown";
         }
 
-        final String composed = SkillComposer.compose(extMeta, rawContent, skillName);
+        // Discover MCP tools from compiled classes and deployment source
+        List<SkillComposer.McpToolInfo> mcpTools = discoverMcpTools(extensionDir);
+
+        final String composed;
+        if (!mcpTools.isEmpty()) {
+            composed = SkillComposer.composeWithTools(extMeta, rawContent, skillName, mcpTools);
+            getLog().debug("Composed skill: " + skillName + " with " + mcpTools.size()
+                    + " MCP tools from " + entry.skillFile);
+        } else {
+            composed = SkillComposer.compose(extMeta, rawContent, skillName);
+            getLog().debug("Composed skill: " + skillName + " from " + entry.skillFile);
+        }
+
         final Path outputPath = outputDirectory.toPath()
                 .resolve(SkillComposer.outputSkillPath(skillName));
         Files.createDirectories(outputPath.getParent());
         Files.writeString(outputPath, composed, StandardCharsets.UTF_8);
+    }
 
-        getLog().debug("Composed skill: " + skillName + " from " + entry.skillFile);
+    /**
+     * Discovers MCP tools from an extension's modules by scanning compiled classes via Jandex:
+     * <ol>
+     * <li>Runtime/runtime-dev modules for {@code @JsonRpcDescription} + {@code @DevMCPEnableByDefault} methods</li>
+     * <li>Deployment module for {@code @DevMcpBuildTimeTool} annotations on processor classes</li>
+     * </ol>
+     */
+    private List<SkillComposer.McpToolInfo> discoverMcpTools(Path extensionDir) {
+        List<SkillComposer.McpToolInfo> tools = new ArrayList<>();
+
+        if (extensionDir == null || !Files.isDirectory(extensionDir)) {
+            return tools;
+        }
+
+        // 1. Scan runtime-dev and runtime compiled classes via Jandex
+        for (String moduleName : List.of("runtime-dev", RUNTIME)) {
+            Path classesDir = extensionDir.resolve(moduleName).resolve("target/classes");
+            if (Files.isDirectory(classesDir)) {
+                tools.addAll(scanAnnotatedMethods(classesDir));
+            }
+        }
+
+        // 2. Scan deployment compiled classes for @DevMcpBuildTimeTool annotations
+        Path deploymentClasses = extensionDir.resolve(DEPLOYMENT).resolve("target/classes");
+        if (Files.isDirectory(deploymentClasses)) {
+            tools.addAll(scanBuildTimeToolAnnotations(deploymentClasses));
+        }
+
+        // Deduplicate by tool name (a method may be discovered from both sources)
+        Map<String, SkillComposer.McpToolInfo> deduplicated = new LinkedHashMap<>();
+        for (SkillComposer.McpToolInfo tool : tools) {
+            deduplicated.putIfAbsent(tool.name(), tool);
+        }
+        return new ArrayList<>(deduplicated.values());
+    }
+
+    // ── Jandex scanning for @JsonRpcDescription methods ──────────────────────
+
+    private static final DotName JSON_RPC_DESCRIPTION = DotName
+            .createSimple("io.quarkus.runtime.annotations.JsonRpcDescription");
+    private static final DotName DEV_MCP_ENABLE_BY_DEFAULT = DotName
+            .createSimple("io.quarkus.runtime.annotations.DevMCPEnableByDefault");
+    private static final DotName OPTIONAL = DotName.createSimple("java.util.Optional");
+
+    /**
+     * Indexes compiled classes in the given directory and extracts methods
+     * annotated with both {@code @JsonRpcDescription} and {@code @DevMCPEnableByDefault}.
+     * Methods without {@code @DevMCPEnableByDefault} are not enabled by default and
+     * are excluded from skill files.
+     */
+    private List<SkillComposer.McpToolInfo> scanAnnotatedMethods(Path classesDir) {
+        List<SkillComposer.McpToolInfo> tools = new ArrayList<>();
+
+        Index index;
+        try {
+            index = indexClasses(classesDir);
+        } catch (IOException e) {
+            getLog().debug("Failed to index classes in " + classesDir + ": " + e.getMessage());
+            return tools;
+        }
+
+        for (AnnotationInstance ann : index.getAnnotations(JSON_RPC_DESCRIPTION)) {
+            if (ann.target().kind() != AnnotationTarget.Kind.METHOD) {
+                continue;
+            }
+
+            MethodInfo method = ann.target().asMethod();
+
+            // Skip constructors, void methods, and non-public methods
+            if (method.name().equals("<init>")
+                    || method.returnType().kind() == Type.Kind.VOID
+                    || !java.lang.reflect.Modifier.isPublic(method.flags())) {
+                continue;
+            }
+
+            // Only include methods that are enabled by default
+            if (!method.hasAnnotation(DEV_MCP_ENABLE_BY_DEFAULT)) {
+                continue;
+            }
+
+            AnnotationValue descValue = ann.value();
+            if (descValue == null || descValue.asString().isBlank()) {
+                continue;
+            }
+
+            // Extract parameter info
+            Map<String, SkillComposer.ParameterInfo> params = new LinkedHashMap<>();
+            for (MethodParameterInfo param : method.parameters()) {
+                boolean required = !OPTIONAL.equals(param.type().name());
+                String paramDesc = null;
+                AnnotationInstance paramAnn = param.annotation(JSON_RPC_DESCRIPTION);
+                if (paramAnn != null && paramAnn.value() != null) {
+                    paramDesc = paramAnn.value().asString();
+                }
+                params.put(param.name(), new SkillComposer.ParameterInfo(paramDesc, required));
+            }
+
+            tools.add(new SkillComposer.McpToolInfo(method.name(), descValue.asString(), params));
+        }
+
+        return tools;
+    }
+
+    /**
+     * Creates a Jandex index by scanning all {@code .class} files in the given directory.
+     */
+    private Index indexClasses(Path classesDir) throws IOException {
+        // First try a pre-built index
+        Path indexFile = classesDir.resolve("META-INF/jandex.idx");
+        if (Files.isRegularFile(indexFile)) {
+            try (InputStream is = Files.newInputStream(indexFile)) {
+                return new IndexReader(is).read();
+            } catch (Exception e) {
+                getLog().debug("Failed to read existing Jandex index, re-indexing: " + e.getMessage());
+            }
+        }
+
+        // Fall back to on-the-fly indexing
+        Indexer indexer = new Indexer();
+        try (var stream = Files.walk(classesDir)) {
+            stream.filter(p -> p.toString().endsWith(".class"))
+                    .forEach(p -> {
+                        try (InputStream is = Files.newInputStream(p)) {
+                            indexer.index(is);
+                        } catch (IOException e) {
+                            getLog().debug("Failed to index " + p + ": " + e.getMessage());
+                        }
+                    });
+        }
+        return indexer.complete();
+    }
+
+    // ── Jandex scanning for @DevMcpBuildTimeTool annotations on deployment classes ──
+
+    private static final DotName DEV_MCP_BUILD_TIME_TOOL = DotName
+            .createSimple("io.quarkus.devui.spi.buildtime.DevMcpBuildTimeTool");
+    private static final DotName DEV_MCP_BUILD_TIME_TOOLS = DotName
+            .createSimple("io.quarkus.devui.spi.buildtime.DevMcpBuildTimeTools");
+
+    /**
+     * Scans compiled deployment classes for {@code @DevMcpBuildTimeTool} annotations
+     * and extracts tool metadata.
+     */
+    private List<SkillComposer.McpToolInfo> scanBuildTimeToolAnnotations(Path classesDir) {
+        Index index;
+        try {
+            index = indexClasses(classesDir);
+        } catch (IOException e) {
+            getLog().debug("Failed to index deployment classes in " + classesDir + ": " + e.getMessage());
+            return new ArrayList<>();
+        }
+        return scanBuildTimeToolAnnotations(index);
+    }
+
+    static List<SkillComposer.McpToolInfo> scanBuildTimeToolAnnotations(Index index) {
+        List<SkillComposer.McpToolInfo> tools = new ArrayList<>();
+
+        // Handle both single and repeatable (container) annotations
+        for (AnnotationInstance ann : index.getAnnotations(DEV_MCP_BUILD_TIME_TOOL)) {
+            tools.add(buildTimeToolFromAnnotation(ann));
+        }
+        for (AnnotationInstance container : index.getAnnotations(DEV_MCP_BUILD_TIME_TOOLS)) {
+            AnnotationValue valueArray = container.value();
+            if (valueArray != null) {
+                for (AnnotationInstance ann : valueArray.asNestedArray()) {
+                    tools.add(buildTimeToolFromAnnotation(ann));
+                }
+            }
+        }
+
+        return tools;
+    }
+
+    private static SkillComposer.McpToolInfo buildTimeToolFromAnnotation(AnnotationInstance ann) {
+        String name = ann.value("name").asString();
+        String description = ann.value("description").asString();
+
+        Map<String, SkillComposer.ParameterInfo> params = new LinkedHashMap<>();
+        AnnotationValue paramsValue = ann.value("params");
+        if (paramsValue != null) {
+            for (AnnotationInstance paramAnn : paramsValue.asNestedArray()) {
+                String paramName = paramAnn.value("name").asString();
+                AnnotationValue paramDescValue = paramAnn.value("description");
+                String paramDesc = paramDescValue != null ? paramDescValue.asString() : null;
+                if (paramDesc != null && paramDesc.isEmpty()) {
+                    paramDesc = null;
+                }
+                AnnotationValue requiredValue = paramAnn.value("required");
+                boolean required = requiredValue == null || requiredValue.asBoolean();
+                params.put(paramName, new SkillComposer.ParameterInfo(paramDesc, required));
+            }
+        }
+
+        return new SkillComposer.McpToolInfo(name, description, params.isEmpty() ? null : params);
     }
 
     /**

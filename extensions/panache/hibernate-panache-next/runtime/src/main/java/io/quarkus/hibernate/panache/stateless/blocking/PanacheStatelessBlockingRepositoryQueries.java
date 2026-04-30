@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import jakarta.data.Order;
 import jakarta.persistence.LockModeType;
 
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
@@ -12,7 +13,6 @@ import io.quarkus.hibernate.panache.blocking.PanacheBlockingQuery;
 import io.quarkus.hibernate.panache.blocking.PanacheRepositoryBlockingQueries;
 import io.quarkus.hibernate.panache.runtime.spi.PanacheBlockingOperations;
 import io.quarkus.hibernate.panache.runtime.spi.PanacheOperations;
-import io.quarkus.panache.common.Sort;
 
 public interface PanacheStatelessBlockingRepositoryQueries<Entity, Id> extends PanacheRepositoryBlockingQueries<Entity, Id> {
     private Class<? extends Entity> getEntityClass() {
@@ -49,8 +49,8 @@ public interface PanacheStatelessBlockingRepositoryQueries<Entity, Id> extends P
     }
 
     @Override
-    default PanacheBlockingQuery<Entity> find(String query, Sort sort, Object... params) {
-        return (PanacheBlockingQuery<Entity>) operations().find(getEntityClass(), query, sort, params);
+    default PanacheBlockingQuery<Entity> find(String query, Order<?> order, Object... params) {
+        return (PanacheBlockingQuery<Entity>) operations().find(getEntityClass(), query, order, params);
     }
 
     @Override
@@ -59,8 +59,8 @@ public interface PanacheStatelessBlockingRepositoryQueries<Entity, Id> extends P
     }
 
     @Override
-    default PanacheBlockingQuery<Entity> find(String query, Sort sort, Map<String, Object> params) {
-        return (PanacheBlockingQuery<Entity>) operations().find(getEntityClass(), query, sort, params);
+    default PanacheBlockingQuery<Entity> find(String query, Order<?> order, Map<String, Object> params) {
+        return (PanacheBlockingQuery<Entity>) operations().find(getEntityClass(), query, order, params);
     }
 
     @Override
@@ -69,8 +69,8 @@ public interface PanacheStatelessBlockingRepositoryQueries<Entity, Id> extends P
     }
 
     @Override
-    default PanacheBlockingQuery<Entity> findAll(Sort sort) {
-        return (PanacheBlockingQuery<Entity>) operations().findAll(getEntityClass(), sort);
+    default PanacheBlockingQuery<Entity> findAll(Order<?> order) {
+        return (PanacheBlockingQuery<Entity>) operations().findAll(getEntityClass(), order);
     }
 
     @Override
@@ -79,8 +79,8 @@ public interface PanacheStatelessBlockingRepositoryQueries<Entity, Id> extends P
     }
 
     @Override
-    default List<Entity> list(String query, Sort sort, Object... params) {
-        return (List<Entity>) operations().list(getEntityClass(), query, sort, params);
+    default List<Entity> list(String query, Order<?> order, Object... params) {
+        return (List<Entity>) operations().list(getEntityClass(), query, order, params);
     }
 
     @Override
@@ -89,8 +89,8 @@ public interface PanacheStatelessBlockingRepositoryQueries<Entity, Id> extends P
     }
 
     @Override
-    default List<Entity> list(String query, Sort sort, Map<String, Object> params) {
-        return (List<Entity>) operations().list(getEntityClass(), query, sort, params);
+    default List<Entity> list(String query, Order<?> order, Map<String, Object> params) {
+        return (List<Entity>) operations().list(getEntityClass(), query, order, params);
     }
 
     @Override
@@ -99,8 +99,8 @@ public interface PanacheStatelessBlockingRepositoryQueries<Entity, Id> extends P
     }
 
     @Override
-    default List<Entity> listAll(Sort sort) {
-        return (List<Entity>) operations().listAll(getEntityClass(), sort);
+    default List<Entity> listAll(Order<?> order) {
+        return (List<Entity>) operations().listAll(getEntityClass(), order);
     }
 
     @Override
@@ -109,8 +109,8 @@ public interface PanacheStatelessBlockingRepositoryQueries<Entity, Id> extends P
     }
 
     @Override
-    default Stream<Entity> stream(String query, Sort sort, Object... params) {
-        return (Stream<Entity>) operations().stream(getEntityClass(), query, sort, params);
+    default Stream<Entity> stream(String query, Order<?> order, Object... params) {
+        return (Stream<Entity>) operations().stream(getEntityClass(), query, order, params);
     }
 
     @Override
@@ -119,13 +119,13 @@ public interface PanacheStatelessBlockingRepositoryQueries<Entity, Id> extends P
     }
 
     @Override
-    default Stream<Entity> stream(String query, Sort sort, Map<String, Object> params) {
-        return (Stream<Entity>) operations().stream(getEntityClass(), query, sort, params);
+    default Stream<Entity> stream(String query, Order<?> order, Map<String, Object> params) {
+        return (Stream<Entity>) operations().stream(getEntityClass(), query, order, params);
     }
 
     @Override
-    default Stream<Entity> streamAll(Sort sort) {
-        return (Stream<Entity>) operations().streamAll(getEntityClass(), sort);
+    default Stream<Entity> streamAll(Order<?> order) {
+        return (Stream<Entity>) operations().streamAll(getEntityClass(), order);
     }
 
     @Override

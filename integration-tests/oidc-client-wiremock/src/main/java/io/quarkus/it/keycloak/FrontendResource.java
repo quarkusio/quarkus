@@ -43,6 +43,10 @@ public class FrontendResource {
     JwtBearerFileAuthenticationOidcClient jwtBearerFileAuthenticationOidcClient;
 
     @Inject
+    @RestClient
+    SpiffeAuthenticationOidcClient spiffeAuthenticationOidcClient;
+
+    @Inject
     @NamedOidcClient("non-standard-response")
     Tokens tokens;
 
@@ -116,6 +120,12 @@ public class FrontendResource {
     @Path("echoTokenJwtBearerAuthenticationFromFile")
     public String echoTokenJwtBearerAuthenticationFromFile() {
         return jwtBearerFileAuthenticationOidcClient.echoToken();
+    }
+
+    @GET
+    @Path("echoTokenSpiffeAuthentication")
+    public String echoTokenSpiffeAuthentication() {
+        return spiffeAuthenticationOidcClient.echoToken();
     }
 
     @GET

@@ -100,6 +100,14 @@ public class MappingTest {
     }
 
     @Test
+    public void testNoopPost() {
+        RestAssured.given().contentType("application/json")
+                .body("{}")
+                .post("/noop")
+                .then().statusCode(204);
+    }
+
+    @Test
     public void testDefaultMapping() {
         RestAssured.given().contentType("application/json")
                 .header("ce-id", UUID.randomUUID().toString())

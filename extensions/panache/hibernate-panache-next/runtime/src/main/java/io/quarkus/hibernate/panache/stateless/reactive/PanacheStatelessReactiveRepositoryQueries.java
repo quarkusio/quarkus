@@ -3,6 +3,7 @@ package io.quarkus.hibernate.panache.stateless.reactive;
 import java.util.List;
 import java.util.Map;
 
+import jakarta.data.Order;
 import jakarta.persistence.LockModeType;
 
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
@@ -10,7 +11,6 @@ import io.quarkus.hibernate.panache.reactive.PanacheReactiveQuery;
 import io.quarkus.hibernate.panache.reactive.PanacheRepositoryReactiveQueries;
 import io.quarkus.hibernate.panache.runtime.spi.PanacheOperations;
 import io.quarkus.hibernate.panache.runtime.spi.PanacheReactiveOperations;
-import io.quarkus.panache.common.Sort;
 import io.smallrye.mutiny.Uni;
 
 public interface PanacheStatelessReactiveRepositoryQueries<Entity, Id> extends PanacheRepositoryReactiveQueries<Entity, Id> {
@@ -38,8 +38,8 @@ public interface PanacheStatelessReactiveRepositoryQueries<Entity, Id> extends P
     }
 
     @Override
-    default PanacheReactiveQuery<Entity> find(String query, Sort sort, Object... params) {
-        return (PanacheReactiveQuery<Entity>) operations().find(getEntityClass(), query, sort, params);
+    default PanacheReactiveQuery<Entity> find(String query, Order<?> order, Object... params) {
+        return (PanacheReactiveQuery<Entity>) operations().find(getEntityClass(), query, order, params);
     }
 
     @Override
@@ -48,8 +48,8 @@ public interface PanacheStatelessReactiveRepositoryQueries<Entity, Id> extends P
     }
 
     @Override
-    default PanacheReactiveQuery<Entity> find(String query, Sort sort, Map<String, Object> params) {
-        return (PanacheReactiveQuery<Entity>) operations().find(getEntityClass(), query, sort, params);
+    default PanacheReactiveQuery<Entity> find(String query, Order<?> order, Map<String, Object> params) {
+        return (PanacheReactiveQuery<Entity>) operations().find(getEntityClass(), query, order, params);
     }
 
     @Override
@@ -58,8 +58,8 @@ public interface PanacheStatelessReactiveRepositoryQueries<Entity, Id> extends P
     }
 
     @Override
-    default PanacheReactiveQuery<Entity> findAll(Sort sort) {
-        return (PanacheReactiveQuery<Entity>) operations().findAll(getEntityClass(), sort);
+    default PanacheReactiveQuery<Entity> findAll(Order<?> order) {
+        return (PanacheReactiveQuery<Entity>) operations().findAll(getEntityClass(), order);
     }
 
     @Override
@@ -68,8 +68,8 @@ public interface PanacheStatelessReactiveRepositoryQueries<Entity, Id> extends P
     }
 
     @Override
-    default Uni<List<Entity>> list(String query, Sort sort, Object... params) {
-        return (Uni) operations().list(getEntityClass(), query, sort, params);
+    default Uni<List<Entity>> list(String query, Order<?> order, Object... params) {
+        return (Uni) operations().list(getEntityClass(), query, order, params);
     }
 
     @Override
@@ -78,8 +78,8 @@ public interface PanacheStatelessReactiveRepositoryQueries<Entity, Id> extends P
     }
 
     @Override
-    default Uni<List<Entity>> list(String query, Sort sort, Map<String, Object> params) {
-        return (Uni) operations().list(getEntityClass(), query, sort, params);
+    default Uni<List<Entity>> list(String query, Order<?> order, Map<String, Object> params) {
+        return (Uni) operations().list(getEntityClass(), query, order, params);
     }
 
     @Override
@@ -88,8 +88,8 @@ public interface PanacheStatelessReactiveRepositoryQueries<Entity, Id> extends P
     }
 
     @Override
-    default Uni<List<Entity>> listAll(Sort sort) {
-        return (Uni) operations().listAll(getEntityClass(), sort);
+    default Uni<List<Entity>> listAll(Order<?> order) {
+        return (Uni) operations().listAll(getEntityClass(), order);
     }
 
     @Override

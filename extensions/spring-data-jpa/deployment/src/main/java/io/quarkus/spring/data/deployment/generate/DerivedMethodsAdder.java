@@ -1,8 +1,9 @@
 package io.quarkus.spring.data.deployment.generate;
 
-import static io.quarkus.gizmo.FieldDescriptor.of;
 import static io.quarkus.spring.data.deployment.generate.GenerationUtil.getNamedQueryForMethod;
 
+import java.lang.constant.ClassDesc;
+import java.lang.constant.MethodTypeDesc;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,12 +27,16 @@ import org.springframework.data.domain.Sort;
 
 import io.quarkus.deployment.bean.JavaBeanUtil;
 import io.quarkus.deployment.util.JandexUtil;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.ClassOutput;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.creator.ClassCreator;
+import io.quarkus.gizmo2.desc.ClassMethodDesc;
+import io.quarkus.gizmo2.desc.FieldDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractManagedJpaOperations;
 import io.quarkus.hibernate.orm.panache.runtime.AdditionalJpaOperations;
 import io.quarkus.panache.common.deployment.TypeBundle;
@@ -44,7 +49,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
 
     private final IndexView index;
     private final String operationsName;
-    private final FieldDescriptor operationsField;
+    private final FieldDesc operationsField;
     private final ClassOutput nonBeansClassOutput;
     private final Consumer<String> projectionClassCreatedCallback;
 
@@ -52,13 +57,14 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
             Consumer<String> projectionClassCreatedCallback) {
         this.index = index;
         operationsName = typeBundle.operations().dotName().toString();
-        operationsField = of(operationsName, "INSTANCE", operationsName);
+        operationsField = FieldDesc.of(ClassDesc.of(operationsName), "INSTANCE", ClassDesc.of(operationsName));
         this.nonBeansClassOutput = nonBeansClassOutput;
         this.projectionClassCreatedCallback = projectionClassCreatedCallback;
     }
 
-    public void add(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
-            String generatedClassName, ClassInfo repositoryClassInfo, ClassInfo entityClassInfo) {
+    public void add(ClassCreator classCreator, FieldDesc entityClassFieldDescriptor,
+            String generatedClassName, ClassInfo repositoryClassInfo, ClassInfo entityClassInfo,
+            Set<String> existingMethods) {
         MethodNameParser methodNameParser = new MethodNameParser(entityClassInfo, index);
         LinkedHashSet<MethodInfo> repoMethods = new LinkedHashSet<>(repositoryClassInfo.methods());
 
@@ -80,7 +86,8 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
                 continue;
             }
 
-            if (classCreator.getExistingMethods().contains(GenerationUtil.toMethodDescriptor(generatedClassName, method))) {
+            String methodKey = GenerationUtil.methodKey(generatedClassName, method);
+            if (existingMethods.contains(methodKey)) {
                 continue;
             }
 
@@ -125,162 +132,188 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
                         + " does not match the number of parameter needed (inferred from the method name)");
             }
 
-            try (MethodCreator methodCreator = classCreator.getMethodCreator(method.name(), returnType.name().toString(),
-                    parameterTypesStr)) {
-                ResultHandle paramsArray = methodCreator.newArray(Object.class, parseResult.getParamCount());
-                for (int i = 0; i < queryParameterIndexes.size(); i++) {
-                    methodCreator.writeArrayValue(paramsArray, methodCreator.load(i),
-                            methodCreator.getMethodParam(queryParameterIndexes.get(i)));
+            // Need effectively final copies for use in lambdas
+            final Integer finalPageableParameterIndex = pageableParameterIndex;
+            final Integer finalSortParameterIndex = sortParameterIndex;
+
+            MethodTypeDesc mtd = GenerationUtil.toMethodTypeDesc(returnType.name().toString(), parameterTypesStr);
+            classCreator.method(method.name(), mc -> {
+                mc.setType(mtd);
+
+                // Add @Transactional for delete queries before calling body()
+                if (parseResult.getQueryType() == MethodNameParser.QueryType.DELETE) {
+                    mc.addAnnotation(Transactional.class);
                 }
 
-                if (parseResult.getQueryType() == MethodNameParser.QueryType.SELECT) {
-                    if (parseResult.getSort() != null && sortParameterIndex != null) {
-                        throw new IllegalArgumentException(
-                                method.name() + " of Repository " + repositoryClassInfo + " contains both a "
-                                        + DotNames.SPRING_DATA_SORT + " parameter and a sort operation");
+                // Declare parameters
+                ParamVar[] params = new ParamVar[parameters.size()];
+                for (int i = 0; i < parameters.size(); i++) {
+                    params[i] = mc.parameter("p" + i);
+                }
+
+                mc.body(bc -> {
+                    // Store static field and instance field in LocalVars so they can be reused
+                    LocalVar ops = bc.localVar("ops", bc.getStaticField(operationsField));
+                    LocalVar entityClass = bc.localVar("entityClass",
+                            bc.get(mc.this_().field(entityClassFieldDescriptor)));
+
+                    // Build params array for query parameters
+                    LocalVar paramsArray = bc.localVar("paramsArray",
+                            bc.newEmptyArray(Object.class, parseResult.getParamCount()));
+                    for (int i = 0; i < queryParameterIndexes.size(); i++) {
+                        bc.set(paramsArray.elem(i), params[queryParameterIndexes.get(i)]);
                     }
 
-                    // ensure that Sort is correctly handled whether it's specified in the method name or via a Sort method param
-                    String finalQuery = parseResult.getQuery();
-                    ResultHandle sort = methodCreator.loadNull();
-                    if (sortParameterIndex != null) {
-                        sort = methodCreator.invokeStaticMethod(
-                                MethodDescriptor.ofMethod(TypesConverter.class, "toPanacheSort",
-                                        io.quarkus.panache.common.Sort.class,
-                                        org.springframework.data.domain.Sort.class),
-                                methodCreator.getMethodParam(sortParameterIndex));
-                    } else if (parseResult.getSort() != null) {
-                        finalQuery += PanacheJpaUtil.toOrderBy(parseResult.getSort());
-                    } else if (pageableParameterIndex != null) {
-                        ResultHandle pageable = methodCreator.getMethodParam(pageableParameterIndex);
-                        ResultHandle pageableSort = methodCreator.invokeInterfaceMethod(
-                                MethodDescriptor.ofMethod(Pageable.class, "getSort", Sort.class),
-                                pageable);
-                        sort = methodCreator.invokeStaticMethod(
-                                MethodDescriptor.ofMethod(TypesConverter.class, "toPanacheSort",
-                                        io.quarkus.panache.common.Sort.class,
-                                        org.springframework.data.domain.Sort.class),
-                                pageableSort);
-                    }
+                    if (parseResult.getQueryType() == MethodNameParser.QueryType.SELECT) {
+                        if (parseResult.getSort() != null && finalSortParameterIndex != null) {
+                            throw new IllegalArgumentException(
+                                    method.name() + " of Repository " + repositoryClassInfo + " contains both a "
+                                            + DotNames.SPRING_DATA_SORT + " parameter and a sort operation");
+                        }
 
-                    // call JpaOperations.find()
-                    ResultHandle panacheQuery = methodCreator.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(AbstractManagedJpaOperations.class, "find", Object.class,
-                                    Class.class, String.class, io.quarkus.panache.common.Sort.class, Object[].class),
-                            methodCreator.readStaticField(operationsField),
-                            methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
-                            methodCreator.load(finalQuery), sort, paramsArray);
+                        // ensure that Sort is correctly handled whether it's specified in the method name or via a Sort method param
+                        String finalQuery = parseResult.getQuery();
+                        Expr sort = Const.ofNull(ClassDesc.of(io.quarkus.panache.common.Sort.class.getName()));
+                        if (finalSortParameterIndex != null) {
+                            sort = bc.invokeStatic(
+                                    MethodDesc.of(TypesConverter.class, "toPanacheSort",
+                                            io.quarkus.panache.common.Sort.class,
+                                            org.springframework.data.domain.Sort.class),
+                                    params[finalSortParameterIndex]);
+                        } else if (parseResult.getSort() != null) {
+                            finalQuery += PanacheJpaUtil.toOrderBy(parseResult.getSort());
+                        } else if (finalPageableParameterIndex != null) {
+                            Expr pageable = params[finalPageableParameterIndex];
+                            Expr pageableSort = bc.invokeInterface(
+                                    MethodDesc.of(Pageable.class, "getSort", Sort.class),
+                                    pageable);
+                            sort = bc.invokeStatic(
+                                    MethodDesc.of(TypesConverter.class, "toPanacheSort",
+                                            io.quarkus.panache.common.Sort.class,
+                                            org.springframework.data.domain.Sort.class),
+                                    pageableSort);
+                        }
 
-                    Type resultType = extractResultType(repositoryClassInfo, method);
+                        // call JpaOperations.find()
+                        Expr panacheQuery = bc.invokeVirtual(
+                                MethodDesc.of(AbstractManagedJpaOperations.class, "find", Object.class,
+                                        Class.class, String.class, io.quarkus.panache.common.Sort.class, Object[].class),
+                                ops, entityClass,
+                                Const.of(finalQuery), sort, paramsArray);
 
-                    DotName customResultTypeName = resultType.name();
+                        Type resultType = extractResultType(repositoryClassInfo, method);
 
-                    if (customResultTypeName.equals(entityClassInfo.name())
-                            || isHibernateSupportedReturnType(customResultTypeName)) {
-                        // no special handling needed
-                        customResultTypeName = null;
-                    } else {
-                        // If the custom type is an interface, we need to generate the implementation
-                        ClassInfo resultClassInfo = index.getClassByName(customResultTypeName);
-                        if (Modifier.isInterface(resultClassInfo.flags())) {
-                            // Find the implementation name, and use that for subsequent query result generation
-                            customResultTypeName = customResultTypeImplNames.computeIfAbsent(customResultTypeName,
-                                    k -> createSimpleInterfaceImpl(k, entityClassInfo.name()));
+                        DotName customResultTypeName = resultType.name();
 
-                            // Remember the parameters for this usage of the custom type, we'll deal with it later
-                            customResultTypes.computeIfAbsent(customResultTypeName,
-                                    k -> new ArrayList<>()).add(method.name());
+                        if (customResultTypeName.equals(entityClassInfo.name())
+                                || isHibernateSupportedReturnType(customResultTypeName)) {
+                            // no special handling needed
+                            customResultTypeName = null;
                         } else {
+                            // If the custom type is an interface, we need to generate the implementation
+                            ClassInfo resultClassInfo = index.getClassByName(customResultTypeName);
+                            if (Modifier.isInterface(resultClassInfo.flags())) {
+                                // Find the implementation name, and use that for subsequent query result generation
+                                customResultTypeName = customResultTypeImplNames.computeIfAbsent(customResultTypeName,
+                                        k -> createSimpleInterfaceImpl(k, entityClassInfo.name()));
+
+                                // Remember the parameters for this usage of the custom type, we'll deal with it later
+                                customResultTypes.computeIfAbsent(customResultTypeName,
+                                        k -> new ArrayList<>()).add(method.name());
+                            } else {
+                                throw new IllegalArgumentException(
+                                        method.name() + " of Repository " + repositoryClassInfo
+                                                + " can only use interfaces to map results to non-entity types.");
+                            }
+                        }
+
+                        generateFindQueryResultHandling(bc, panacheQuery, finalPageableParameterIndex, params,
+                                repositoryClassInfo, entityClassInfo, returnType.name(), parseResult.getTopCount(),
+                                method.name(), customResultTypeName,
+                                entityClassInfo.name().toString());
+
+                    } else if (parseResult.getQueryType() == MethodNameParser.QueryType.COUNT) {
+                        if (!DotNames.PRIMITIVE_LONG.equals(returnType.name())
+                                && !DotNames.LONG.equals(returnType.name())) {
                             throw new IllegalArgumentException(
                                     method.name() + " of Repository " + repositoryClassInfo
-                                            + " can only use interfaces to map results to non-entity types.");
+                                            + " is meant to be a count query and can therefore only have a long return type");
+                        }
+                        if ((finalSortParameterIndex != null) || finalPageableParameterIndex != null) {
+                            throw new IllegalArgumentException(
+                                    method.name() + " of Repository " + repositoryClassInfo
+                                            + " is meant to be a count query and therefore doesn't " +
+                                            "support Pageable and Sort method parameters");
+                        }
+
+                        // call JpaOperations.count()
+                        Expr count = bc.invokeVirtual(
+                                MethodDesc.of(AbstractManagedJpaOperations.class, "count", long.class,
+                                        Class.class, String.class, Object[].class),
+                                ops, entityClass,
+                                Const.of(parseResult.getQuery()), paramsArray);
+
+                        handleLongReturnValue(bc, count, returnType.name());
+
+                    } else if (parseResult.getQueryType() == MethodNameParser.QueryType.EXISTS) {
+                        if (!DotNames.PRIMITIVE_BOOLEAN.equals(returnType.name())
+                                && !DotNames.BOOLEAN.equals(returnType.name())) {
+                            throw new IllegalArgumentException(
+                                    method.name() + " of Repository " + repositoryClassInfo
+                                            + " is meant to be an exists query and can therefore only have a boolean return type");
+                        }
+                        if ((finalSortParameterIndex != null) || finalPageableParameterIndex != null) {
+                            throw new IllegalArgumentException(
+                                    method.name() + " of Repository " + repositoryClassInfo
+                                            + " is meant to be a count query and therefore doesn't " +
+                                            "support Pageable and Sort method parameters");
+                        }
+
+                        // call JpaOperations.exists()
+                        Expr exists = bc.invokeVirtual(
+                                MethodDesc.of(AbstractManagedJpaOperations.class, "exists", boolean.class,
+                                        Class.class, String.class, Object[].class),
+                                ops, entityClass,
+                                Const.of(parseResult.getQuery()), paramsArray);
+
+                        handleBooleanReturnValue(bc, exists, returnType.name());
+
+                    } else if (parseResult.getQueryType() == MethodNameParser.QueryType.DELETE) {
+                        if (!DotNames.PRIMITIVE_LONG.equals(returnType.name()) && !DotNames.LONG.equals(returnType.name())
+                                && !DotNames.VOID.equals(returnType.name())) {
+                            throw new IllegalArgumentException(
+                                    method.name() + " of Repository " + repositoryClassInfo
+                                            + " is meant to be a delete query and can therefore only have a void or long return type");
+                        }
+                        if ((finalSortParameterIndex != null) || finalPageableParameterIndex != null) {
+                            throw new IllegalArgumentException(
+                                    method.name() + " of Repository " + repositoryClassInfo
+                                            + " is meant to be a delete query and therefore doesn't " +
+                                            "support Pageable and Sort method parameters");
+                        }
+
+                        AnnotationInstance modifyingAnnotation = method.annotation(DotNames.SPRING_DATA_MODIFYING);
+                        handleFlushAutomatically(modifyingAnnotation, bc, entityClass);
+
+                        // call JpaOperations.delete()
+                        Expr delete = bc.invokeStatic(
+                                MethodDesc.of(AdditionalJpaOperations.class, "deleteWithCascade",
+                                        long.class, AbstractManagedJpaOperations.class, Class.class, String.class,
+                                        Object[].class),
+                                ops, entityClass,
+                                Const.of(parseResult.getQuery()), paramsArray);
+
+                        handleClearAutomatically(modifyingAnnotation, bc, entityClass);
+
+                        if (DotNames.VOID.equals(returnType.name())) {
+                            bc.return_();
+                        } else {
+                            handleLongReturnValue(bc, delete, returnType.name());
                         }
                     }
-
-                    generateFindQueryResultHandling(methodCreator, panacheQuery, pageableParameterIndex, repositoryClassInfo,
-                            entityClassInfo, returnType.name(), parseResult.getTopCount(), method.name(), customResultTypeName,
-                            entityClassInfo.name().toString());
-
-                } else if (parseResult.getQueryType() == MethodNameParser.QueryType.COUNT) {
-                    if (!DotNames.PRIMITIVE_LONG.equals(returnType.name()) && !DotNames.LONG.equals(returnType.name())) {
-                        throw new IllegalArgumentException(
-                                method.name() + " of Repository " + repositoryClassInfo
-                                        + " is meant to be a count query and can therefore only have a long return type");
-                    }
-                    if ((sortParameterIndex != null) || pageableParameterIndex != null) {
-                        throw new IllegalArgumentException(
-                                method.name() + " of Repository " + repositoryClassInfo
-                                        + " is meant to be a count query and therefore doesn't " +
-                                        "support Pageable and Sort method parameters");
-                    }
-
-                    // call JpaOperations.count()
-                    ResultHandle count = methodCreator.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(AbstractManagedJpaOperations.class, "count", long.class,
-                                    Class.class, String.class, Object[].class),
-                            methodCreator.readStaticField(operationsField),
-                            methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
-                            methodCreator.load(parseResult.getQuery()), paramsArray);
-
-                    handleLongReturnValue(methodCreator, count, returnType.name());
-
-                } else if (parseResult.getQueryType() == MethodNameParser.QueryType.EXISTS) {
-                    if (!DotNames.PRIMITIVE_BOOLEAN.equals(returnType.name()) && !DotNames.BOOLEAN.equals(returnType.name())) {
-                        throw new IllegalArgumentException(
-                                method.name() + " of Repository " + repositoryClassInfo
-                                        + " is meant to be an exists query and can therefore only have a boolean return type");
-                    }
-                    if ((sortParameterIndex != null) || pageableParameterIndex != null) {
-                        throw new IllegalArgumentException(
-                                method.name() + " of Repository " + repositoryClassInfo
-                                        + " is meant to be a count query and therefore doesn't " +
-                                        "support Pageable and Sort method parameters");
-                    }
-
-                    // call JpaOperations.exists()
-                    ResultHandle exists = methodCreator.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(AbstractManagedJpaOperations.class, "exists", boolean.class,
-                                    Class.class, String.class, Object[].class),
-                            methodCreator.readStaticField(operationsField),
-                            methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
-                            methodCreator.load(parseResult.getQuery()), paramsArray);
-
-                    handleBooleanReturnValue(methodCreator, exists, returnType.name());
-
-                } else if (parseResult.getQueryType() == MethodNameParser.QueryType.DELETE) {
-                    if (!DotNames.PRIMITIVE_LONG.equals(returnType.name()) && !DotNames.LONG.equals(returnType.name())
-                            && !DotNames.VOID.equals(returnType.name())) {
-                        throw new IllegalArgumentException(
-                                method.name() + " of Repository " + repositoryClassInfo
-                                        + " is meant to be a delete query and can therefore only have a void or long return type");
-                    }
-                    if ((sortParameterIndex != null) || pageableParameterIndex != null) {
-                        throw new IllegalArgumentException(
-                                method.name() + " of Repository " + repositoryClassInfo
-                                        + " is meant to be a delete query and therefore doesn't " +
-                                        "support Pageable and Sort method parameters");
-                    }
-                    methodCreator.addAnnotation(Transactional.class);
-
-                    AnnotationInstance modifyingAnnotation = method.annotation(DotNames.SPRING_DATA_MODIFYING);
-                    handleFlushAutomatically(modifyingAnnotation, methodCreator, entityClassFieldDescriptor);
-
-                    // call JpaOperations.delete()
-                    ResultHandle delete = methodCreator.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(AdditionalJpaOperations.class, "deleteWithCascade",
-                                    long.class, AbstractManagedJpaOperations.class, Class.class, String.class, Object[].class),
-                            methodCreator.readStaticField(operationsField),
-                            methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
-                            methodCreator.load(parseResult.getQuery()), paramsArray);
-
-                    handleClearAutomatically(modifyingAnnotation, methodCreator, entityClassFieldDescriptor);
-
-                    if (DotNames.VOID.equals(returnType.name())) {
-                        methodCreator.returnValue(null);
-                    }
-                    handleLongReturnValue(methodCreator, delete, returnType.name());
-                }
-            }
+                });
+            });
+            existingMethods.add(methodKey);
         }
         for (Map.Entry<DotName, DotName> mapping : customResultTypeImplNames.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey()).toList()) {
@@ -334,11 +367,14 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
 
         ClassInfo interfaceInfo = index.getClassByName(interfaceName);
 
-        try (ClassCreator implClassCreator = ClassCreator.builder().classOutput(nonBeansClassOutput)
-                .interfaces(interfaceName.toString()).className(implName.toString())
-                .build()) {
+        Gizmo gizmo = Gizmo.create(nonBeansClassOutput);
+        gizmo.class_(implName.toString(), implClassCreator -> {
+            implClassCreator.implements_(ClassDesc.of(interfaceName.toString()));
 
-            Map<String, FieldDescriptor> fields = new HashMap<>(3);
+            // Add default constructor
+            implClassCreator.defaultConstructor();
+
+            Map<String, FieldDesc> fields = new HashMap<>(3);
 
             for (MethodInfo method : interfaceInfo.methods()) {
                 String getterName = method.name();
@@ -351,43 +387,55 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
                 }
                 DotName fieldTypeName = returnType.name();
 
-                FieldDescriptor field = implClassCreator.getFieldCreator(propertyName, fieldTypeName.toString())
-                        .getFieldDescriptor();
+                FieldDesc field = implClassCreator.field(propertyName, ifc -> {
+                    ifc.setType(GenerationUtil.toClassDesc(fieldTypeName.toString()));
+                });
 
                 // create getter (based on the interface)
-                try (MethodCreator getter = implClassCreator.getMethodCreator(getterName, returnType.name().toString())) {
-                    getter.setModifiers(Modifier.PUBLIC);
-                    getter.returnValue(getter.readInstanceField(field, getter.getThis()));
-                }
+                MethodTypeDesc getterMtd = GenerationUtil.toMethodTypeDesc(returnType.name().toString());
+                implClassCreator.method(getterName, mc -> {
+                    mc.setType(getterMtd);
+                    mc.public_();
+                    mc.body(bc -> {
+                        bc.return_(bc.get(mc.this_().field(field)));
+                    });
+                });
 
                 fields.put(getterName, field);
             }
 
-            // Add static methods to convert from Object[] to this type
+            // Add static methods to convert from entity to this type
             for (String queryMethod : queryMethods) {
-                try (MethodCreator convert = implClassCreator.getMethodCreator("convert_" + queryMethod,
-                        implName.toString(), entityClassInfo.name().toString())) {
-                    convert.setModifiers(Modifier.STATIC | Modifier.PUBLIC);
+                MethodTypeDesc convertMtd = GenerationUtil.toMethodTypeDesc(implName.toString(),
+                        entityClassInfo.name().toString());
+                implClassCreator.staticMethod("convert_" + queryMethod, smc -> {
+                    smc.setType(convertMtd);
+                    smc.public_();
+                    ParamVar entityParam = smc.parameter("entity");
 
-                    ResultHandle newObject = convert.newInstance(MethodDescriptor.ofConstructor(implName.toString()));
+                    smc.body(bc -> {
+                        LocalVar newObject = bc.localVar("newObject",
+                                bc.new_(ClassDesc.of(implName.toString())));
 
-                    ResultHandle entity = convert.getMethodParam(0);
-                    final List<MethodInfo> availableMethods = availableMethods(entityClassInfo, index);
-                    for (Map.Entry<String, FieldDescriptor> field : fields.entrySet()) {
-                        if (!getterExists(availableMethods, field.getKey())) {
-                            throw new IllegalArgumentException(field.getKey() + " method does not exists in "
-                                    + entityClassInfo.name().toString() + " class.");
+                        final List<MethodInfo> availableMethods = availableMethods(entityClassInfo, index);
+                        for (Map.Entry<String, FieldDesc> field : fields.entrySet()) {
+                            if (!getterExists(availableMethods, field.getKey())) {
+                                throw new IllegalArgumentException(field.getKey() + " method does not exists in "
+                                        + entityClassInfo.name().toString() + " class.");
+                            }
+
+                            FieldDesc f = field.getValue();
+                            Expr getterResult = bc.invokeVirtual(
+                                    ClassMethodDesc.of(ClassDesc.of(entityClassInfo.name().toString()), field.getKey(),
+                                            MethodTypeDesc.of(f.type())),
+                                    entityParam);
+                            bc.set(newObject.field(f), getterResult);
                         }
-
-                        FieldDescriptor f = field.getValue();
-                        convert.writeInstanceField(f, newObject, convert.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(entityClassInfo.name().toString(), field.getKey(), f.getType()),
-                                entity));
-                    }
-                    convert.returnValue(newObject);
-                }
+                        bc.return_(newObject);
+                    });
+                });
             }
-        }
+        });
     }
 
     private static List<MethodInfo> availableMethods(ClassInfo entityClassInfo, IndexView index) {

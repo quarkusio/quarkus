@@ -78,7 +78,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     private final OidcTenantConfig oidcConfig;
     private final String introspectionBasicAuthScheme;
     private final Key clientJwtKey;
-    private final boolean jwtBearerAuthentication;
+    private final boolean jwtAssertionProvided;
     private final ClientAssertionProvider clientAssertionProvider;
     private final Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters;
     private final Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters;
@@ -99,10 +99,10 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         this.metadata = metadata;
         this.oidcConfig = oidcConfig;
         this.clientSecretBasicAuthScheme = clientCredentials.clientSecretBasicAuthScheme;
-        this.jwtBearerAuthentication = oidcConfig.credentials().jwt()
-                .source() == OidcClientCommonConfig.Credentials.Jwt.Source.BEARER;
+        this.jwtAssertionProvided = oidcConfig.credentials().jwt()
+                .source() != OidcClientCommonConfig.Credentials.Jwt.Source.CLIENT;
         this.clientAssertionProvider = getClientAssertionProvider(vertx, oidcConfig.credentials(), OIDCException::new);
-        this.clientJwtKey = jwtBearerAuthentication ? null : clientCredentials.clientJwtKey;
+        this.clientJwtKey = jwtAssertionProvided ? null : clientCredentials.clientJwtKey;
         this.introspectionBasicAuthScheme = initIntrospectionBasicAuthScheme(oidcConfig);
         this.requestFilters = requestFilters;
         this.responseFilters = responseFilters;
@@ -281,7 +281,8 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     }
 
     Uni<AuthorizationCodeTokens> refreshAuthorizationCodeTokens(String refreshToken) {
-        return refreshTokenToTokensUni.computeIfAbsent(refreshToken, rt -> {
+        var ctx = Vertx.currentContext();
+        Uni<AuthorizationCodeTokens> refreshUni = refreshTokenToTokensUni.computeIfAbsent(refreshToken, rt -> {
             final MultiMap refreshGrantParams = MultiMap.caseInsensitiveMultiMap();
             refreshGrantParams.add(OidcConstants.GRANT_TYPE, OidcConstants.REFRESH_TOKEN_GRANT);
             refreshGrantParams.add(OidcConstants.REFRESH_TOKEN_VALUE, rt);
@@ -297,6 +298,10 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
                 throw t;
             }
         });
+        if (ctx != null) {
+            return refreshUni.emitOn(command -> ctx.runOnContext(ignored -> command.run()));
+        }
+        return refreshUni;
     }
 
     public Uni<Boolean> revokeAccessToken(String accessToken) {
@@ -366,15 +371,16 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
                 if (hasClientSecretProvider()) {
                     credentialsToRetry = PreparedHttpRequest.CredentialsToRetry.CLIENT_SECRET_BASIC_AUTH_SCHEME;
                 }
-            } else if (jwtBearerAuthentication) {
+            } else if (jwtAssertionProvided) {
                 final String clientAssertion = clientAssertionProvider.getClientAssertion();
                 if (clientAssertion == null) {
                     throw new OIDCException(String.format(
-                            "Cannot get token for tenant '%s' because a JWT bearer client_assertion is not available",
-                            oidcConfig.tenantId().get()));
+                            "Cannot get token for tenant '%s' because a %s client_assertion is not available",
+                            oidcConfig.tenantId().get(),
+                            OidcCommonUtils.getClientAssertionTokenType(oidcConfig.credentials().jwt().source())));
                 }
                 formBody.add(OidcConstants.CLIENT_ASSERTION, clientAssertion);
-                formBody.add(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
+                formBody.add(OidcConstants.CLIENT_ASSERTION_TYPE, clientAssertionProvider.getClientAssertionType());
             } else if (clientJwtKey != null) {
                 String jwt = OidcCommonUtils.signJwtWithKey(oidcConfig, metadata.getTokenUri(), clientJwtKey);
                 if (OidcCommonUtils.isClientSecretPostJwtAuthRequired(oidcConfig.credentials())) {

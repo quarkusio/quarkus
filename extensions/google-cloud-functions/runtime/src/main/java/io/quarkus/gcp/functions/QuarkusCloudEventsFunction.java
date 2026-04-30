@@ -12,10 +12,11 @@ import io.quarkus.runtime.Application;
 
 public final class QuarkusCloudEventsFunction implements CloudEventsFunction {
 
-    protected static final String deploymentStatus;
-    protected static boolean started = false;
+    private static final String deploymentStatus;
+    private static boolean started = false;
 
     private static volatile CloudEventsFunction delegate;
+    private static volatile ClassLoader delegateClassLoader;
 
     static {
         StringWriter error = new StringWriter();
@@ -48,13 +49,19 @@ public final class QuarkusCloudEventsFunction implements CloudEventsFunction {
 
     static void setDelegate(String selectedDelegate) {
         if (selectedDelegate != null) {
+            delegateClassLoader = Thread.currentThread().getContextClassLoader();
             try {
-                Class<?> clazz = Class.forName(selectedDelegate, false, Thread.currentThread().getContextClassLoader());
+                Class<?> clazz = Class.forName(selectedDelegate, false, delegateClassLoader);
                 delegate = (CloudEventsFunction) Arc.container().instance(clazz).get();
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    public static void clearState() {
+        delegate = null;
+        delegateClassLoader = null;
     }
 
     @Override
@@ -69,6 +76,12 @@ public final class QuarkusCloudEventsFunction implements CloudEventsFunction {
                     "(or there is multiple one and none selected inside your application.properties)");
         }
 
-        delegate.accept(cloudEvent);
+        ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
+        try {
+            Thread.currentThread().setContextClassLoader(delegateClassLoader);
+            delegate.accept(cloudEvent);
+        } finally {
+            Thread.currentThread().setContextClassLoader(currentCl);
+        }
     }
 }

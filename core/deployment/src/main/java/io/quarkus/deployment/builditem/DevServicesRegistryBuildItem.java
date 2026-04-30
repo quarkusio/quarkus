@@ -143,7 +143,7 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
     }
 
     private void reallyStart(DevServicesResultBuildItem request, List<DevServicesCustomizerBuildItem> customizers,
-            List<DevServicesAdditionalConfigBuildItem> additionalConfigBuildItems, Map<String, String> configs) {
+            List<DevServicesAdditionalConfigBuildItem> additionalConfigBuildItems, Map<String, String> allDevServicesConfig) {
         StartupLogCompressor compressor = new StartupLogCompressor("Dev Services Startup", null, null);
         try {
             Supplier<Startable> startableSupplier = request.getStartableSupplier();
@@ -163,7 +163,7 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
             if (dependencies != null && !dependencies.isEmpty()) {
                 for (DevServicesResultBuildItem.DevServiceConfigDependency<? extends Startable> dependency : dependencies) {
 
-                    var value = configs.get(dependency.requiredConfigKey());
+                    var value = allDevServicesConfig.get(dependency.requiredConfigKey());
                     if (value != null) {
                         ((BiConsumer<Startable, String>) dependency.valueInjector()).accept(startable, value);
                     } else {
@@ -175,7 +175,7 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
             var optionalDependencies = request.getOptionalDependencies();
             if (optionalDependencies != null && !optionalDependencies.isEmpty()) {
                 for (DevServicesResultBuildItem.DevServiceConfigDependency<? extends Startable> dependency : optionalDependencies) {
-                    var value = configs.get(dependency.requiredConfigKey());
+                    var value = allDevServicesConfig.get(dependency.requiredConfigKey());
                     if (value != null) {
                         ((BiConsumer<Startable, String>) dependency.valueInjector()).accept(startable, value);
                     }
@@ -187,23 +187,27 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
 
                 Map<String, String> config = request.getConfig(startable);
                 Map<String, String> overrideConfig = request.getOverrideConfig(startable);
-                configs.putAll(config);
-                configs.putAll(overrideConfig);
 
-                // We do not "copy" the config map here since it is created within the request.getConfig:
-                // Some extensions may rely on adding/overriding config properties
-                //  depending on the results of the started dev services,
-                //  e.g. Hibernate Search/ORM may change the default schema management
-                //  if it detects that it runs over a dev service datasource/Elasticsearch distribution.
+                // Track this service's own config separately from the shared map,
+                // so that each RunningService only exposes its own keys.
+                // The shared map is used for inter-service dependency resolution
+                // and DevServicesAdditionalConfigBuildItem evaluation.
+                Map<String, String> currentDevServiceConfig = new HashMap<>();
+                currentDevServiceConfig.putAll(config);
+                currentDevServiceConfig.putAll(overrideConfig);
+
                 for (DevServicesAdditionalConfigBuildItem additionalConfigBuildItem : additionalConfigBuildItems) {
                     Map<String, String> extraFromBuildItem = additionalConfigBuildItem.getConfigProvider()
-                            .provide(configs);
+                            .provide(currentDevServiceConfig);
                     if (!extraFromBuildItem.isEmpty()) {
-                        configs.putAll(extraFromBuildItem);
+                        currentDevServiceConfig.putAll(extraFromBuildItem);
                     }
                 }
+
+                allDevServicesConfig.putAll(currentDevServiceConfig);
+
                 RunningService service = new RunningService(request.getName(), request.getDescription(),
-                        configs, request.getOverrideConfig(startable), startable.getContainerId(), startable);
+                        currentDevServiceConfig, overrideConfig, startable.getContainerId(), startable);
                 this.addRunningService(request.getName(), request.getServiceName(), request.getServiceConfig(), service);
                 compressor.close();
 

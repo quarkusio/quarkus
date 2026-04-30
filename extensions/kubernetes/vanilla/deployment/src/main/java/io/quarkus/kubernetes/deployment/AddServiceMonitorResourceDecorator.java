@@ -7,6 +7,7 @@ import io.fabric8.kubernetes.api.model.ObjectMeta;
 
 public class AddServiceMonitorResourceDecorator extends ResourceProvidingDecorator<KubernetesListBuilder> {
 
+    // todo: move to use BaseAddResourceDecorator
     private final String scheme;
     private final String targetPort;
     private final String path;

@@ -16,6 +16,7 @@ public final class CardPageBuildItem extends AbstractPageBuildItem {
 
     private Optional<Card> optionalCard = Optional.empty();
     private List<LibraryLink> libraryVersions;
+    private List<CardAction> cardActions;
 
     private String darkLogo;
     private String lightLogo;
@@ -54,6 +55,20 @@ public final class CardPageBuildItem extends AbstractPageBuildItem {
 
     public boolean hasLibraryVersions() {
         return this.libraryVersions != null && !this.libraryVersions.isEmpty();
+    }
+
+    public void addAction(CardAction action) {
+        if (cardActions == null)
+            cardActions = new ArrayList<>();
+        cardActions.add(action);
+    }
+
+    public List<CardAction> getCardActions() {
+        return this.cardActions == null ? Collections.emptyList() : this.cardActions;
+    }
+
+    public boolean hasCardActions() {
+        return this.cardActions != null && !this.cardActions.isEmpty();
     }
 
     public void setLogo(String darkLogo, String lightLogo) {

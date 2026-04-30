@@ -85,7 +85,6 @@ However, if you want to continue to use `DeploymentConfig`, it is still possible
 . To add the `quarkus-openshift` extension to your project, use one of the following methods:
 * Configure the `pom.xml` file:
 +
-.pom.xml
 [source,xml,subs="+quotes,attributes+"]
 ----
 <dependency>
@@ -160,14 +159,14 @@ oc login
 oc project -q
 ----
 . Use one of the following steps to go to the required {openshift} project:
-.. If the project already exists, switch to the project:
+* If the project already exists, switch to the project:
 +
 [source,shell]
 ----
 oc project <project_name>
 ----
 +
-.. If the project does not exist, create a new project:
+* If the project does not exist, create a new project:
 +
 [source,shell]
 ----
@@ -180,7 +179,7 @@ You can build and deploy by using any of the following deployment options:
 
 * xref:deploying-to-openshift-howto.adoc[With a single step]
 * xref:deploying-to-openshift-docker-howto.adoc[By using a Docker build strategy]
-* xref:deploying-to-openshift-S2I-howto.adoc[By using a Source-to-Image (S2I) strategy]
+* xref:deploying-to-openshift-s2i-howto.adoc[By using a Source-to-Image (S2I) strategy]
 * xref:deploying-to-openshift-native-howto.adoc[Compiled to native executables]
 
 ifndef::no-configuring-application-manually[]
@@ -203,7 +202,7 @@ For example:
 
 [source,properties]
 ----
-quarkus.openshift.base-jvm-image=image-registry.openshift-image-registry.svc:5000/some-project/openjdk-11:17.1.16.
+quarkus.openshift.base-jvm-image=image-registry.openshift-image-registry.svc:5000/some-project/openjdk-17:17.1.16
 ----
 
 [NOTE]
@@ -493,31 +492,6 @@ A conflict between two definitions, for example, mistakenly assigning both a val
 You can fix the issue before you deploy your application to your cluster, where it might be more difficult to diagnose the source of the issue.
 
 Similarly, two redundant definitions, for example, defining an injection from the same secret twice, does not cause an issue but reports a warning to inform you that you might not have intended to duplicate that definition.
-
-[[env-vars-backwards]]
-===== Backwards compatibility
-
-Previous versions of the OpenShift extension supported a different syntax to add environment variables.
-The older syntax is still supported but is deprecated, and it is advised that you migrate to the new syntax.
-
-.Old syntax versus new syntax
-|====
-|                               |Old                                                    | New                                                 |
-| Plain variable                |`quarkus.openshift.env-vars.my-env-var.value=foobar`  | `quarkus.openshift.env.vars.my-env-var=foobar`     |
-| From field                    |`quarkus.openshift.env-vars.my-env-var.field=foobar`  | `quarkus.openshift.env.fields.my-env-var=foobar`   |
-| All from `ConfigMap`          |`quarkus.openshift.env-vars.xxx.configmap=foobar`     | `quarkus.openshift.env.configmaps=foobar`          |
-| All from `Secret`             |`quarkus.openshift.env-vars.xxx.secret=foobar`        | `quarkus.openshift.env.secrets=foobar`             |
-| From one `Secret` field       |`quarkus.openshift.env-vars.foo.secret=foobar`        | `quarkus.openshift.env.mapping.foo.from-secret=foobar` |
-|                               |`quarkus.openshift.env-vars.foo.value=field`          | `quarkus.openshift.env.mapping.foo.with-key=field` |
-| From one `ConfigMap` field    |`quarkus.openshift.env-vars.foo.configmap=foobar`     | `quarkus.openshift.env.mapping.foo.from-configmap=foobar` |
-|                               |`quarkus.openshift.env-vars.foo.value=field`          | `quarkus.openshift.env.mapping.foo.with-key=field` |
-|====
-
-[NOTE]
-====
- If you redefine the same variable by using the new syntax while keeping the old syntax, only the new version is kept, and a warning will be issued to alert you of the problem.
- For example, if you define both `quarkus.openshift.env-vars.my-env-var.value=foobar` and `quarkus.openshift.env.vars.my-env-var=newValue`, the extension generates an environment variable `MY_ENV_VAR=newValue` and issues a warning.
-====
 
 === Mounting volumes
 

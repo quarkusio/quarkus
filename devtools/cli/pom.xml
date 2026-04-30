@@ -12,6 +12,7 @@
 
     <properties>
         <quarkus.package.jar.type>uber-jar</quarkus.package.jar.type>
+        <quarkus.package.jar.tree-shake.mode>classes</quarkus.package.jar.tree-shake.mode>
     </properties>
 
     <artifactId>quarkus-cli</artifactId>

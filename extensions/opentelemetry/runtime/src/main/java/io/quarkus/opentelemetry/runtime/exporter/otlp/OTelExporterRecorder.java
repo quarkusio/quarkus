@@ -18,6 +18,8 @@ import java.util.function.Supplier;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.util.TypeLiteral;
 
+import org.jboss.logging.Logger;
+
 import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.exporter.internal.ExporterBuilderUtil;
 import io.opentelemetry.exporter.internal.grpc.GrpcExporter;
@@ -74,6 +76,7 @@ import io.vertx.core.net.ProxyOptions;
 @SuppressWarnings("deprecation")
 @Recorder
 public class OTelExporterRecorder {
+    private static final Logger LOG = Logger.getLogger(OTelExporterRecorder.class);
     public static final String BASE2EXPONENTIAL_AGGREGATION_NAME = AggregationUtil
             .aggregationName(Aggregation.base2ExponentialBucketHistogram());
 
@@ -404,6 +407,9 @@ public class OTelExporterRecorder {
                         continue;
                     }
                     String[] parts = header.split("=", 2);
+                    if (parts.length < 2) {
+                        continue;
+                    }
                     String key = parts[0].trim();
                     String value = parts[1].trim();
                     headersMap.put(key, value);
@@ -507,6 +513,9 @@ public class OTelExporterRecorder {
                         }
                     });
             if (trustAll) {
+                LOG.warn("OpenTelemetry exporter TLS is configured with trustAll=true." +
+                        " This disables certificate and hostname verification, making the connection vulnerable to" +
+                        " MITM attacks. This should not be used in production.");
                 options.setTrustAll(true);
                 options.setVerifyHost(false);
             }

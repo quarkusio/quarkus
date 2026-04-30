@@ -3,7 +3,6 @@ package io.quarkus.csrf.reactive.runtime;
 import java.security.SecureRandom;
 import java.util.Base64;
 
-import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.core.MediaType;
@@ -37,10 +36,10 @@ public class CsrfRequestResponseReactiveFilter {
 
     private final SecureRandom secureRandom = new SecureRandom();
 
-    @Inject
-    RestCsrfConfigHolder configHolder;
+    private final RestCsrfConfigHolder configHolder;
 
-    public CsrfRequestResponseReactiveFilter() {
+    public CsrfRequestResponseReactiveFilter(RestCsrfConfigHolder configHolder) {
+        this.configHolder = configHolder;
     }
 
     /**
@@ -232,7 +231,7 @@ public class CsrfRequestResponseReactiveFilter {
 
             String cookieValue = null;
             if (config.tokenSignatureKey().isPresent()) {
-                byte[] csrfTokenBytes = (byte[]) routing.get(CSRF_TOKEN_BYTES_KEY);
+                byte[] csrfTokenBytes = routing.get(CSRF_TOKEN_BYTES_KEY);
 
                 if (csrfTokenBytes == null) {
                     LOG.debug("CSRF Request Filter did not set the property " + CSRF_TOKEN_BYTES_KEY
@@ -241,7 +240,7 @@ public class CsrfRequestResponseReactiveFilter {
                 }
                 cookieValue = CsrfTokenUtils.signCsrfToken(csrfTokenBytes, config.tokenSignatureKey().get());
             } else {
-                String csrfToken = (String) routing.get(CSRF_TOKEN_KEY);
+                String csrfToken = routing.get(CSRF_TOKEN_KEY);
 
                 if (csrfToken == null) {
                     LOG.debug("CSRF Request Filter did not set the property " + CSRF_TOKEN_KEY
@@ -279,11 +278,11 @@ public class CsrfRequestResponseReactiveFilter {
 
     private static void createCookie(String cookieTokenValue, RoutingContext routing, RestCsrfConfig config) {
 
-        Cookie cookie = Cookie.cookie(config.cookieName(), cookieTokenValue);
-        cookie.setHttpOnly(config.cookieHttpOnly());
-        cookie.setSecure(config.cookieForceSecure() || routing.request().isSSL());
-        cookie.setMaxAge(config.cookieMaxAge().toSeconds());
-        cookie.setPath(config.cookiePath());
+        Cookie cookie = Cookie.cookie(config.cookieName(), cookieTokenValue)
+                .setHttpOnly(config.cookieHttpOnly())
+                .setSecure(config.cookieForceSecure() || routing.request().isSSL())
+                .setMaxAge(config.cookieMaxAge().toSeconds())
+                .setPath(config.cookiePath());
         if (config.cookieDomain().isPresent()) {
             cookie.setDomain(config.cookieDomain().get());
         }
@@ -291,13 +290,9 @@ public class CsrfRequestResponseReactiveFilter {
     }
 
     private static boolean requestMethodIsSafe(ContainerRequestContext context) {
-        switch (context.getMethod()) {
-            case "GET":
-            case "HEAD":
-            case "OPTIONS":
-                return true;
-            default:
-                return false;
-        }
+        return switch (context.getMethod()) {
+            case "GET", "HEAD", "OPTIONS" -> true;
+            default -> false;
+        };
     }
 }

@@ -69,7 +69,7 @@ public class OidcClientImpl implements OidcClient {
     private final MultiMap commonRefreshGrantParams;
     private final String grantType;
     private final Key clientJwtKey;
-    private final boolean jwtBearerAuthentication;
+    private final boolean jwtAssertionProvided;
     private final OidcClientConfig oidcConfig;
     private final Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters;
     private final Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters;
@@ -93,8 +93,8 @@ public class OidcClientImpl implements OidcClient {
         this.requestFilters = requestFilters;
         this.responseFilters = responseFilters;
         this.clientSecretBasicAuthScheme = clientCredentials.clientSecretBasicAuthScheme;
-        this.jwtBearerAuthentication = oidcClientConfig.credentials().jwt().source() == Source.BEARER;
-        this.clientJwtKey = jwtBearerAuthentication ? null : clientCredentials.clientJwtKey;
+        this.jwtAssertionProvided = oidcClientConfig.credentials().jwt().source() != Source.CLIENT;
+        this.clientJwtKey = jwtAssertionProvided ? null : clientCredentials.clientJwtKey;
         this.clientSecret = clientCredentials.clientSecret;
         this.clientAssertionProvider = getClientAssertionProvider(vertx, oidcClientConfig.credentials(),
                 OidcClientException::new);
@@ -210,7 +210,7 @@ public class OidcClientImpl implements OidcClient {
             if (hasClientSecretProvider()) {
                 credentialsToRetry = PreparedPostRequest.CredentialsToRetry.CLIENT_SECRET_BASIC_AUTH_SCHEME;
             }
-        } else if (jwtBearerAuthentication) {
+        } else if (jwtAssertionProvided) {
             String clientAssertion = additionalGrantParameters.get(OidcConstants.CLIENT_ASSERTION);
             if (clientAssertion == null && clientAssertionProvider != null) {
                 clientAssertion = clientAssertionProvider.getClientAssertion();
@@ -220,12 +220,15 @@ public class OidcClientImpl implements OidcClient {
             }
             if (clientAssertion == null) {
                 String errorMessage = String.format(
-                        "%s OidcClient can not complete the %s grant request because a JWT bearer client_assertion is missing",
-                        oidcConfig.id().get(), (isRefresh(op) ? OidcConstants.REFRESH_TOKEN_GRANT : grantType));
+                        "%s OidcClient can not complete the %s grant request because a %s client_assertion is missing",
+                        oidcConfig.id().get(), (isRefresh(op) ? OidcConstants.REFRESH_TOKEN_GRANT : grantType),
+                        OidcCommonUtils.getClientAssertionTokenType(oidcConfig.credentials().jwt().source()));
                 LOG.error(errorMessage);
                 throw new OidcClientException(errorMessage);
             }
-            body.set(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
+            body.set(OidcConstants.CLIENT_ASSERTION_TYPE,
+                    clientAssertionProvider != null ? clientAssertionProvider.getClientAssertionType()
+                            : OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
         } else if (clientJwtKey != null) {
             // if it is a refresh then a map has already been copied
             body = !isRefresh(op) ? copyMultiMap(body) : body;

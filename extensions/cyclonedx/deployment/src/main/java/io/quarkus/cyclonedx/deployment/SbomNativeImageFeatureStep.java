@@ -24,13 +24,14 @@ import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.desc.ClassMethodDesc;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.gizmo2.desc.MethodDesc;
+import io.quarkus.runtime.graal.GraalVM;
 
 /**
  * Generates a GraalVM {@link Feature} that embeds the application SBOM
  * into the native image as {@code sbom} and {@code sbom_length} global symbols,
  * following the <a href="https://www.graalvm.org/jdk25/security-guide/native-image/sbom/">GraalVM SBOM spec</a>.
  * <p>
- * Internal GraalVM APIs ({@code CGlobalDataFactory}, {@code CGlobalDataFeature}, {@code Word})
+ * Internal GraalVM APIs ({@code CGlobalDataFactory}, {@code CGlobalDataFeature}, {@code WordFactory})
  * are referenced via {@link ClassMethodDesc} to avoid compile-time dependencies.
  */
 public class SbomNativeImageFeatureStep {
@@ -49,28 +50,55 @@ public class SbomNativeImageFeatureStep {
             "close", void.class);
     private static final MethodDesc BAOS_TO_BYTE_ARRAY = MethodDesc.of(ByteArrayOutputStream.class,
             "toByteArray", byte[].class);
+    private static final MethodDesc BAOS_CLOSE = MethodDesc.of(ByteArrayOutputStream.class,
+            "close", void.class);
     private static final ConstructorDesc GZIP_OUTPUT_STREAM_CTOR = ConstructorDesc.of(
             GZIPOutputStream.class, OutputStream.class);
 
+    private static final MethodDesc GRAALVM_VERSION_GET_CURRENT = MethodDesc.of(GraalVM.Version.class, "getCurrent",
+            GraalVM.Version.class);
+    private static final MethodDesc GRAALVM_VERSION_COMPARE_TO = MethodDesc.of(GraalVM.Version.class, "compareTo", int.class,
+            int[].class);
+
+    // GraalVM <= 25.0: com.oracle.svm.core.c
     private static final ClassDesc CD_CGLOBAL_DATA = ClassDesc.of("com.oracle.svm.core.c.CGlobalData");
     private static final ClassDesc CD_CGLOBAL_DATA_FACTORY = ClassDesc.of("com.oracle.svm.core.c.CGlobalDataFactory");
+
+    // GraalVM >= 25.1: com.oracle.svm.guest.staging.c
+    private static final ClassDesc CD_CGLOBAL_DATA_STAGING = ClassDesc.of("com.oracle.svm.guest.staging.c.CGlobalData");
+    private static final ClassDesc CD_CGLOBAL_DATA_FACTORY_STAGING = ClassDesc.of(
+            "com.oracle.svm.guest.staging.c.CGlobalDataFactory");
+
     private static final ClassDesc CD_CGLOBAL_DATA_FEATURE = ClassDesc.of("com.oracle.svm.hosted.c.CGlobalDataFeature");
-    private static final ClassDesc CD_WORD = ClassDesc.of("jdk.graal.compiler.word.Word");
     private static final ClassDesc CD_UNSIGNED_WORD = ClassDesc.of("org.graalvm.word.UnsignedWord");
     private static final ClassDesc CD_WORD_BASE = ClassDesc.of("org.graalvm.word.WordBase");
+    private static final ClassDesc CD_WORD_FACTORY = ClassDesc.of("org.graalvm.word.WordFactory");
 
+    // GraalVM <= 25.0 method descriptors
     private static final ClassMethodDesc CREATE_BYTES = ClassMethodDesc.of(
             CD_CGLOBAL_DATA_FACTORY, "createBytes", CD_CGLOBAL_DATA,
             ClassDesc.of("java.util.function.Supplier"), ClassDesc.of("java.lang.String"));
     private static final ClassMethodDesc CREATE_WORD = ClassMethodDesc.of(
             CD_CGLOBAL_DATA_FACTORY, "createWord", CD_CGLOBAL_DATA,
             CD_WORD_BASE, ClassDesc.of("java.lang.String"));
-    private static final ClassMethodDesc CGLOBAL_DATA_FEATURE_SINGLETON = ClassMethodDesc.of(
-            CD_CGLOBAL_DATA_FEATURE, "singleton", CD_CGLOBAL_DATA_FEATURE);
     private static final ClassMethodDesc REGISTER_WITH_GLOBAL_SYMBOL = ClassMethodDesc.of(
             CD_CGLOBAL_DATA_FEATURE, "registerWithGlobalSymbol", ClassDesc.ofDescriptor("V"), CD_CGLOBAL_DATA);
-    private static final ClassMethodDesc WORD_UNSIGNED = ClassMethodDesc.of(
-            CD_WORD, "unsigned", CD_UNSIGNED_WORD, ClassDesc.ofDescriptor("J"));
+
+    // GraalVM >= 25.1 method descriptors
+    private static final ClassMethodDesc CREATE_BYTES_STAGING = ClassMethodDesc.of(
+            CD_CGLOBAL_DATA_FACTORY_STAGING, "createBytes", CD_CGLOBAL_DATA_STAGING,
+            ClassDesc.of("java.util.function.Supplier"), ClassDesc.of("java.lang.String"));
+    private static final ClassMethodDesc CREATE_WORD_STAGING = ClassMethodDesc.of(
+            CD_CGLOBAL_DATA_FACTORY_STAGING, "createWord", CD_CGLOBAL_DATA_STAGING,
+            CD_WORD_BASE, ClassDesc.of("java.lang.String"));
+    private static final ClassMethodDesc REGISTER_WITH_GLOBAL_SYMBOL_STAGING = ClassMethodDesc.of(
+            CD_CGLOBAL_DATA_FEATURE, "registerWithGlobalSymbol", ClassDesc.ofDescriptor("V"), CD_CGLOBAL_DATA_STAGING);
+
+    private static final ClassMethodDesc CGLOBAL_DATA_FEATURE_SINGLETON = ClassMethodDesc.of(
+            CD_CGLOBAL_DATA_FEATURE, "singleton", CD_CGLOBAL_DATA_FEATURE);
+    private static final ClassMethodDesc WORD_FACTORY_UNSIGNED = ClassMethodDesc.of(
+            CD_WORD_FACTORY, "unsigned", CD_UNSIGNED_WORD, ClassDesc.ofDescriptor("J"));
+    private static final MethodDesc PRINT_STACK_TRACE = MethodDesc.of(Throwable.class, "printStackTrace", void.class);
 
     @BuildStep
     void generateSbomEmbedFeature(
@@ -78,6 +106,7 @@ public class SbomNativeImageFeatureStep {
             BuildProducer<GeneratedNativeImageClassBuildItem> nativeImageClass,
             BuildProducer<NativeImageFeatureBuildItem> features,
             BuildProducer<JPMSExportBuildItem> jpmsExports) {
+
         if (embeddedSbomMetadata.isEmpty()) {
             return;
         }
@@ -86,9 +115,13 @@ public class SbomNativeImageFeatureStep {
         String resourceName = metadata.getResourceName();
         boolean isCompressed = metadata.isCompressed();
 
-        jpmsExports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.c"));
         jpmsExports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.hosted.c"));
-        jpmsExports.produce(new JPMSExportBuildItem("jdk.graal.compiler", "jdk.graal.compiler.word"));
+        // GraalVM <= 25.0
+        jpmsExports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.c",
+                null, GraalVM.Version.VERSION_25_1_0));
+        // GraalVM >= 25.1
+        jpmsExports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.guest.staging",
+                "com.oracle.svm.guest.staging.c", GraalVM.Version.VERSION_25_1_0));
 
         Gizmo g = Gizmo.create(new GeneratedClassGizmo2Adaptor(
                 item -> nativeImageClass
@@ -132,26 +165,54 @@ public class SbomNativeImageFeatureStep {
                                 tb.invokeVirtual(GZIP_WRITE, gout, resourceBytes);
                                 tb.invokeVirtual(GZIP_CLOSE, gout);
                                 sbomBytes = tb.localVar("sbomBytes", tb.invokeVirtual(BAOS_TO_BYTE_ARRAY, bout));
+                                tb.invokeVirtual(BAOS_CLOSE, bout);
                             }
 
-                            Expr supplier = tb.lambda(Supplier.class, lc -> {
+                            LocalVar supplier = tb.localVar("supplier", tb.lambda(Supplier.class, lc -> {
                                 var capturedBytes = lc.capture(sbomBytes);
                                 lc.body(lb -> lb.return_(capturedBytes));
-                            });
+                            }));
 
-                            LocalVar sbomData = tb.localVar("sbomData",
-                                    tb.invokeStatic(CREATE_BYTES, supplier, Const.of("sbom")));
+                            LocalVar unsignedLen = tb.localVar("unsignedLen",
+                                    tb.invokeStatic(WORD_FACTORY_UNSIGNED,
+                                            tb.cast(sbomBytes.length(), long.class)));
+
+                            LocalVar graalVMVersion = tb.localVar("graalVMVersion",
+                                    tb.invokeStatic(GRAALVM_VERSION_GET_CURRENT));
+
                             LocalVar cgFeature = tb.localVar("cgFeature",
                                     tb.invokeStatic(CGLOBAL_DATA_FEATURE_SINGLETON));
-                            tb.invokeVirtual(REGISTER_WITH_GLOBAL_SYMBOL, cgFeature, sbomData);
+                            // GraalVM >= 25.1: use com.oracle.svm.guest.staging.c
+                            tb.ifElse(tb.ge(
+                                    tb.invokeVirtual(GRAALVM_VERSION_COMPARE_TO,
+                                            graalVMVersion,
+                                            tb.newArray(int.class, Const.of(25), Const.of(1))),
+                                    0), newPath -> {
+                                        LocalVar sbomData = newPath.localVar("sbomData",
+                                                newPath.invokeStatic(CREATE_BYTES_STAGING, supplier,
+                                                        Const.of("sbom")));
+                                        newPath.invokeVirtual(REGISTER_WITH_GLOBAL_SYMBOL_STAGING, cgFeature,
+                                                sbomData);
 
-                            Expr unsignedLen = tb.invokeStatic(WORD_UNSIGNED,
-                                    tb.cast(sbomBytes.length(), long.class));
-                            LocalVar sbomLenData = tb.localVar("sbomLenData",
-                                    tb.invokeStatic(CREATE_WORD, unsignedLen, Const.of("sbom_length")));
-                            tb.invokeVirtual(REGISTER_WITH_GLOBAL_SYMBOL, cgFeature, sbomLenData);
+                                        LocalVar sbomLenData = newPath.localVar("sbomLenData",
+                                                newPath.invokeStatic(CREATE_WORD_STAGING, unsignedLen,
+                                                        Const.of("sbom_length")));
+                                        newPath.invokeVirtual(REGISTER_WITH_GLOBAL_SYMBOL_STAGING, cgFeature,
+                                                sbomLenData);
+                                    }, oldPath -> {
+                                        // GraalVM <= 25.0: use com.oracle.svm.core.c
+                                        LocalVar sbomData = oldPath.localVar("sbomData",
+                                                oldPath.invokeStatic(CREATE_BYTES, supplier, Const.of("sbom")));
+                                        oldPath.invokeVirtual(REGISTER_WITH_GLOBAL_SYMBOL, cgFeature, sbomData);
+
+                                        LocalVar sbomLenData = oldPath.localVar("sbomLenData",
+                                                oldPath.invokeStatic(CREATE_WORD, unsignedLen,
+                                                        Const.of("sbom_length")));
+                                        oldPath.invokeVirtual(REGISTER_WITH_GLOBAL_SYMBOL, cgFeature, sbomLenData);
+                                    });
                         });
                         t.catch_(Exception.class, "e", (cb, e) -> {
+                            cb.invokeVirtual(PRINT_STACK_TRACE, e);
                             cb.throw_(RuntimeException.class, e);
                         });
                     });

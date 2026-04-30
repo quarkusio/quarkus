@@ -27,6 +27,10 @@ public class OpenTelemetryMpContextPropagationProvider implements ThreadContextP
                     return new ThreadContextController() {
                         @Override
                         public void endContext() throws IllegalStateException {
+                            io.opentelemetry.context.Context active = QuarkusContextStorage.INSTANCE.current();
+                            if (active != null && active != context) {
+                                return;
+                            }
                             Span span = Span.fromContext(currentContext);
                             if (span != null && span.isRecording()) {
                                 QuarkusContextStorage.INSTANCE.attach(currentContext);

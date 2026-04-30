@@ -608,7 +608,7 @@ public class OTelExporterRecorder {
                     for (String cert : trustCert.certs().get()) {
                         pemTrustOptions.addCertPath(cert);
                     }
-                    options.setPemTrustOptions(pemTrustOptions);
+                    options.setTrustOptions(pemTrustOptions);
                 }
             }
         }

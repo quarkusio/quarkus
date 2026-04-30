@@ -318,51 +318,22 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
-     * Clears out the object ref from the context to force a new one to be created and prevent thread crosstalk.
-     * Should be used before adding data to the VertxMCD context on a new thread.
+     * Removes the specified MDC keys from the context's MDC map in place.
+     * Non-discard keys are preserved. This method is safe for concurrent use
+     * when multiple threads share the same Vert.x context.
      *
-     * @param vertxContext
-     */
-    void clearVertxMdcFromContext(Context vertxContext) {
-        if (vertxContext != null) {
-            vertxContext.removeLocal(MDC_LOCAL);
-        }
-    }
-
-    /**
-     * Clears out the object ref from the context to force a new one to be created and prevent thread crosstalk.
-     * Also copies to the new reference any previous data not in the set of MDC keys to discard.
-     *
-     * @param vertxContext
-     * @param discardMdcKeys Entries not to be copied over to the new MDC
+     * @param vertxContext the Vert.x context
+     * @param discardMdcKeys keys to remove from the MDC
      */
     public void reinitializeVertxMdc(Context vertxContext, Set<String> discardMdcKeys) {
-        if (vertxContext == null || vertxContext.getLocal(MDC_LOCAL) == null) {
-            // nothing to do
+        if (vertxContext == null || discardMdcKeys == null || discardMdcKeys.isEmpty()) {
             return;
         }
-
-        if (VertxMDC.INSTANCE.isEmpty(vertxContext)) {
-            // clear the object ref to force a new one and prevent crosstalk
-            VertxMDC.INSTANCE.clearVertxMdcFromContext(vertxContext);
+        ConcurrentHashMap<String, Object> data = vertxContext.getLocal(MDC_LOCAL);
+        if (data == null) {
             return;
         }
-
-        final Map<String, Object> carryover = new HashMap<>();
-        final boolean hasDiscardKeys = discardMdcKeys == null || discardMdcKeys.isEmpty();
-        for (Map.Entry<String, Object> entry : VertxMDC.INSTANCE.getEntrySet()) {
-            final String key = entry.getKey();
-            final Object value = entry.getValue();
-            // Not taking chances with null values
-            if (key != null && value != null && (hasDiscardKeys || !discardMdcKeys.contains(key))) {
-                carryover.put(key, value);
-            }
-        }
-
-        // clear the object ref to force a new one and prevent crosstalk
-        VertxMDC.INSTANCE.clearVertxMdcFromContext(vertxContext);
-        // Preserving relevant data
-        VertxMDC.INSTANCE.putAll(carryover, vertxContext);
+        discardMdcKeys.forEach(data::remove);
     }
 
     /**

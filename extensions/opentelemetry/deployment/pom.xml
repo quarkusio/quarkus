@@ -165,6 +165,11 @@
             <artifactId>log4j2-jboss-logmanager</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-vertx</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

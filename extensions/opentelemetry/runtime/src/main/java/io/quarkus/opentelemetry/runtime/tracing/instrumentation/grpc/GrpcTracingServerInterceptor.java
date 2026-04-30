@@ -1,10 +1,13 @@
 package io.quarkus.opentelemetry.runtime.tracing.instrumentation.grpc;
 
 import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INSTRUMENTATION_NAME;
+import static io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx.GrpcHttpInstrumenterVertxTracer.GRPC_HTTP_CLIENT_ADDRESS;
+import static io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx.GrpcHttpInstrumenterVertxTracer.GRPC_HTTP_PROTOCOL_VERSION;
+import static io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx.GrpcHttpInstrumenterVertxTracer.GRPC_HTTP_URL_SCHEME;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.Collections;
+import java.util.concurrent.ConcurrentHashMap;
 
 import jakarta.inject.Singleton;
 
@@ -16,18 +19,24 @@ import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import io.grpc.Status;
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
-import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.instrumentation.api.incubator.semconv.rpc.RpcServerAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
+import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
 import io.opentelemetry.instrumentation.api.semconv.network.NetworkAttributesExtractor;
 import io.opentelemetry.instrumentation.api.semconv.network.NetworkAttributesGetter;
 import io.opentelemetry.instrumentation.api.semconv.network.ServerAttributesExtractor;
 import io.opentelemetry.instrumentation.api.semconv.network.ServerAttributesGetter;
+import io.opentelemetry.semconv.ClientAttributes;
+import io.opentelemetry.semconv.NetworkAttributes;
+import io.opentelemetry.semconv.UrlAttributes;
 import io.quarkus.grpc.GlobalInterceptor;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
+import io.smallrye.common.vertx.VertxContext;
+import io.vertx.core.Vertx;
 
 @Singleton
 @GlobalInterceptor
@@ -50,7 +59,7 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
                 .addAttributesExtractor(new GrpcStatusCodeExtractor())
                 .setSpanStatusExtractor(new GrpcSpanStatusExtractor());
 
-        this.instrumenter = builder.buildServerInstrumenter(new GrpcTextMapGetter());
+        this.instrumenter = builder.buildInstrumenter(SpanKindExtractor.alwaysServer());
     }
 
     @Override
@@ -64,11 +73,33 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
         if (shouldStart) {
             Context spanContext = instrumenter.start(parentContext, grpcRequest);
             Scope scope = spanContext.makeCurrent();
+            addHttpAttributes(spanContext);
             TracingServerCall<ReqT, RespT> tracingServerCall = new TracingServerCall<>(call, spanContext, scope, grpcRequest);
             return new TracingServerCallListener<>(next.startCall(tracingServerCall, headers), spanContext, scope, grpcRequest);
         }
 
         return next.startCall(call, headers);
+    }
+
+    private static void addHttpAttributes(Context spanContext) {
+        io.vertx.core.Context vertxContext = Vertx.currentContext();
+        if (vertxContext == null || !VertxContext.isDuplicatedContext(vertxContext)) {
+            return;
+        }
+        ConcurrentHashMap<String, Object> data = VertxContext.localContextData(vertxContext);
+        Span span = Span.fromContext(spanContext);
+        String scheme = (String) data.get(GRPC_HTTP_URL_SCHEME);
+        if (scheme != null) {
+            span.setAttribute(UrlAttributes.URL_SCHEME, scheme);
+        }
+        String clientAddress = (String) data.get(GRPC_HTTP_CLIENT_ADDRESS);
+        if (clientAddress != null) {
+            span.setAttribute(ClientAttributes.CLIENT_ADDRESS, clientAddress);
+        }
+        String protocolVersion = (String) data.get(GRPC_HTTP_PROTOCOL_VERSION);
+        if (protocolVersion != null) {
+            span.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_VERSION, protocolVersion);
+        }
     }
 
     static class GrpcServerNetworkAttributesGetter implements NetworkAttributesGetter<GrpcRequest, Status>,
@@ -99,22 +130,6 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
                 return (InetSocketAddress) address;
             }
             return null;
-        }
-    }
-
-    private static class GrpcTextMapGetter implements TextMapGetter<GrpcRequest> {
-        @Override
-        public Iterable<String> keys(final GrpcRequest carrier) {
-            return carrier.getMetadata() != null ? carrier.getMetadata().keys() : Collections.emptySet();
-        }
-
-        @Override
-        public String get(final GrpcRequest carrier, final String key) {
-            if (carrier != null && carrier.getMetadata() != null) {
-                return carrier.getMetadata().get(Metadata.Key.of(key, Metadata.ASCII_STRING_MARSHALLER));
-            } else {
-                return null;
-            }
         }
     }
 

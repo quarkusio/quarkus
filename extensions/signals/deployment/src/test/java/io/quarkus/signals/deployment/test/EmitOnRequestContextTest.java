@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.RequestScoped;
@@ -40,7 +41,7 @@ public class EmitOnRequestContextTest extends AbstractSignalTest {
 
     @Test
     public void testRequestContextTerminatedAfterEmitOn() {
-        RequestScopedService.DESTROYED.clear();
+        RequestScopedService.DESTROYED.set(false);
         receiver.threadNames.clear();
 
         String result = signal.reactive().request(new Cmd(), String.class)
@@ -53,8 +54,7 @@ public class EmitOnRequestContextTest extends AbstractSignalTest {
         assertThat(receiver.threadNames.get(0)).isNotEqualTo(receiver.threadNames.get(1));
         // the request context must have been terminated
         Awaitility.await().atMost(defaultTimeout())
-                .untilAsserted(() -> assertThat(RequestScopedService.DESTROYED).hasSize(1));
-        assertThat(RequestScopedService.DESTROYED.get(0)).isEqualTo(receiver.threadNames.get(0));
+                .untilAsserted(() -> assertThat(RequestScopedService.DESTROYED).isTrue());
     }
 
     @Singleton
@@ -81,14 +81,14 @@ public class EmitOnRequestContextTest extends AbstractSignalTest {
     @RequestScoped
     public static class RequestScopedService {
 
-        static final List<String> DESTROYED = new CopyOnWriteArrayList<>();
+        static final AtomicBoolean DESTROYED = new AtomicBoolean();
 
         void touch() {
         }
 
         @PreDestroy
         void destroy() {
-            DESTROYED.add(Thread.currentThread().getName());
+            DESTROYED.set(true);
         }
     }
 

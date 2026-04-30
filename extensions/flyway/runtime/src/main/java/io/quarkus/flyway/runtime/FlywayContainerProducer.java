@@ -44,7 +44,7 @@ public class FlywayContainerProducer {
     }
 
     public FlywayContainer createFlyway(DataSource dataSource, String dataSourceName, boolean hasMigrations,
-            boolean createPossible) {
+            boolean createPossible, Set<String> ressourcesLocations) {
         FlywayDataSourceRuntimeConfig matchingRuntimeConfig = flywayRuntimeConfig.datasources().get(dataSourceName);
         FlywayDataSourceBuildTimeConfig matchingBuildTimeConfig = flywayBuildConfig.datasources().get(dataSourceName);
         final Collection<Callback> callbacks = QuarkusPathLocationScanner.callbacksForDataSource(dataSourceName);
@@ -57,7 +57,7 @@ public class FlywayContainerProducer {
                 matchingRuntimeConfig.migrateAtStart().orElse(false),
                 matchingRuntimeConfig.repairAtStart(), matchingRuntimeConfig.validateAtStart(),
                 dataSourceName, hasMigrations,
-                createPossible);
+                createPossible, ressourcesLocations);
     }
 
     private List<FlywayConfigurationCustomizer> matchingConfigCustomizers(

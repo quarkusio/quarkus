@@ -11,9 +11,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.output.CleanResult;
 import org.flywaydb.core.api.output.MigrateResult;
@@ -32,12 +32,6 @@ public class FlywayJsonRpcService {
     private String artifactId;
     private Map<String, FlywayDatasource> datasources;
     private FlywayRuntimeConfig runtimeConfig;
-
-    @ConfigProperty(name = "quarkus.flyway.locations")
-    private List<String> locations;
-
-    @ConfigProperty(name = "quarkus.flyway.clean-disabled")
-    private boolean cleanDisabled;
 
     public void setInitialSqlSuppliers(Map<String, Supplier<String>> initialSqlSuppliers) {
         this.initialSqlSuppliers = initialSqlSuppliers;
@@ -60,15 +54,14 @@ public class FlywayJsonRpcService {
             datasources = new HashMap<>();
             Collection<FlywayContainer> flywayContainers = new FlywayContainersSupplier().get();
             for (FlywayContainer fc : flywayContainers) {
+                var dsName = fc.getDataSourceName();
                 datasources.put(fc.getDataSourceName(),
-                        new FlywayDatasource(fc.getDataSourceName(), fc.isHasMigrations(), fc.isCreatePossible()));
+                        new FlywayDatasource(dsName, fc.isHasMigrations(), fc.isCreatePossible(),
+                                runtimeConfig.datasources().get(dsName).cleanDisabled(),
+                                fc.getResourceLocations()));
             }
         }
         return datasources.values();
-    }
-
-    public boolean isCleanDisabled() {
-        return this.cleanDisabled;
     }
 
     public FlywayActionResponse clean(String ds) {
@@ -126,11 +119,14 @@ public class FlywayJsonRpcService {
         String script = found.get();
 
         Flyway flyway = getFlyway(ds);
+
         if (flyway != null) {
             if (script != null) {
                 try {
+                    FlywayDatasource flywayDatasource = datasources.get(ds);
+                    var locations = flywayDatasource.resourcesLocations;
                     if (locations.isEmpty()) {
-                        return new FlywayActionResponse("error", "Datasource has no locations configured");
+                        return new FlywayActionResponse("error", "Datasource has no locations configured in Java resources");
                     }
 
                     List<Path> resourcesDir = DevConsoleManager.getHotReplacementContext().getResourcesDir();
@@ -141,14 +137,13 @@ public class FlywayJsonRpcService {
                     // In the current project only
                     Path path = resourcesDir.get(0);
 
-                    Path migrationDir = path.resolve(locations.get(0));
+                    Path migrationDir = path.resolve(locations.iterator().next());
                     Files.createDirectories(migrationDir);
                     Path file = migrationDir.resolve(
                             "V1.0.0__" + artifactId + ".sql");
 
                     Files.writeString(file, script);
 
-                    FlywayDatasource flywayDatasource = datasources.get(ds);
                     flywayDatasource.hasMigrations = true;
                     flywayDatasource.createPossible = false;
                     var dsConfig = runtimeConfig.datasources().get(ds);
@@ -188,6 +183,8 @@ public class FlywayJsonRpcService {
     }
 
     public FlywayActionResponse update(String ds) {
+        this.getDatasources(); // Make sure we populated the datasources
+
         try {
             Supplier<String> found = updateSqlSuppliers.get(ds);
             if (found == null) {
@@ -201,8 +198,10 @@ public class FlywayJsonRpcService {
             if (flyway == null) {
                 return errorNoDatasource(ds);
             }
+            FlywayDatasource flywayDatasource = datasources.get(ds);
+            var locations = flywayDatasource.resourcesLocations;
             if (locations.isEmpty()) {
-                return new FlywayActionResponse("error", "Datasource has no locations configured");
+                return new FlywayActionResponse("error", "Datasource has no locations configured in Java resources");
             }
 
             List<Path> resourcesDir = DevConsoleManager.getHotReplacementContext().getResourcesDir();
@@ -212,7 +211,7 @@ public class FlywayJsonRpcService {
             // In the current project only
             Path path = resourcesDir.get(0);
 
-            Path migrationDir = path.resolve(locations.get(0));
+            Path migrationDir = path.resolve(locations.iterator().next());
             Files.createDirectories(migrationDir);
             DateTimeFormatter format = DateTimeFormatter.ofPattern("yyyy.MM.dd.HHmmss");
             String timestamp = LocalDateTime.now().format(format);
@@ -254,18 +253,20 @@ public class FlywayJsonRpcService {
         return null;
     }
 
-    public static class FlywayDatasource {
-        public String name;
+    public static final class FlywayDatasource {
+        public final String name;
         public boolean hasMigrations;
         public boolean createPossible;
+        public final boolean cleanDisabled;
+        public final Set<String> resourcesLocations;
 
-        public FlywayDatasource() {
-        }
-
-        public FlywayDatasource(String name, boolean hasMigrations, boolean createPossible) {
+        public FlywayDatasource(String name, boolean hasMigrations, boolean createPossible, boolean cleanDisabled,
+                Set<String> resourcesLocations) {
             this.name = name;
             this.hasMigrations = hasMigrations;
             this.createPossible = createPossible;
+            this.cleanDisabled = cleanDisabled;
+            this.resourcesLocations = resourcesLocations;
         }
     }
 

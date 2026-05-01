@@ -116,11 +116,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                     return;
                 }
 
-                for (int i = 0; i < clientRequestCustomizers.size(); i++) {
-                    clientRequestCustomizers.get(i).accept(httpClientRequest);
-                }
-
-                requestContext.setHttpClientRequest(httpClientRequest);
+                customizeRequest(httpClientRequest, requestContext);
 
                 // adapt headers to HTTP/2 depending on the underlying HTTP connection
                 ClientSendRequestHandler.this.adaptRequest(httpClientRequest);
@@ -254,6 +250,43 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                     reportFinish(event, requestContext);
                 }
             }
+        });
+    }
+
+    private void customizeRequest(HttpClientRequest httpClientRequest, RestClientRequestContext requestContext) {
+        installRedirectRequestCustomizer(httpClientRequest, requestContext);
+        for (int i = 0; i < clientRequestCustomizers.size(); i++) {
+            clientRequestCustomizers.get(i).accept(httpClientRequest);
+        }
+
+        requestContext.setHttpClientRequest(httpClientRequest);
+    }
+
+    private void installRedirectRequestCustomizer(HttpClientRequest httpClientRequest,
+            RestClientRequestContext requestContext) {
+        if (!followRedirects || clientRequestCustomizers.isEmpty()) {
+            return;
+        }
+        httpClientRequest.redirectHandler(response -> {
+            Function<HttpClientResponse, Future<RequestOptions>> redirectHandler = requestContext.getHttpClient()
+                    .redirectHandler();
+            if (redirectHandler == null) {
+                return Future.succeededFuture(null);
+            }
+            Future<RequestOptions> redirectOptions = redirectHandler.apply(response);
+            if (redirectOptions == null) {
+                return Future.succeededFuture(null);
+            }
+            return redirectOptions.compose(options -> {
+                if (options == null) {
+                    return Future.succeededFuture(null);
+                }
+                return requestContext.getHttpClient().request(options)
+                        .map(nextRequest -> {
+                            customizeRequest(nextRequest, requestContext);
+                            return nextRequest;
+                        });
+            });
         });
     }
 

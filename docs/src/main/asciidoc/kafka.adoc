@@ -2675,7 +2675,9 @@ otherwise you will get an `java.lang.AssertionError: No completion (or failure) 
 
 [TIP]
 ====
-If the Kafka Dev Service is available during tests, `KafkaCompanionResource` uses the created Kafka broker, otherwise it creates a Kafka broker using https://github.com/strimzi/test-container[Strimzi Test Container].
+If the Kafka Dev Service is available during tests, `KafkaCompanionResource` uses the created Kafka broker.
+If the `kafka.bootstrap.servers` system property or the `KAFKA_BOOTSTRAP_SERVERS` environment variable is set, `KafkaCompanionResource` connects to that broker instead.
+Otherwise, it creates a Kafka broker using https://github.com/strimzi/test-container[Strimzi Test Container].
 
 The configuration of the created Kafka broker can be customized using `@ResourceArg`, for example:
 [source,java]

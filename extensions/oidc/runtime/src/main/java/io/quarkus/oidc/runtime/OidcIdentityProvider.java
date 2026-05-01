@@ -340,25 +340,25 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     }
 
     private static String getTokenCertThumbprint(Map<String, Object> requestData, TokenVerificationResult t) {
-        JsonObject json = t.localVerificationResult != null ? t.localVerificationResult
-                : new JsonObject(t.introspectionResult.getIntrospectionString());
+        JsonObject json = t.localVerificationResult() != null ? t.localVerificationResult()
+                : new JsonObject(t.introspectionResult().getIntrospectionString());
         JsonObject cnf = json.getJsonObject(OidcConstants.CONFIRMATION_CLAIM);
         String thumbprint = cnf == null ? null : cnf.getString(OidcConstants.X509_SHA256_THUMBPRINT);
         if (thumbprint != null) {
-            requestData.put((t.introspectionResult == null ? OidcUtils.JWT_THUMBPRINT : OidcUtils.INTROSPECTION_THUMBPRINT),
+            requestData.put((t.introspectionResult() == null ? OidcUtils.JWT_THUMBPRINT : OidcUtils.INTROSPECTION_THUMBPRINT),
                     true);
         }
         return thumbprint;
     }
 
     private static String getDpopJwkThumbprint(Map<String, Object> requestData, TokenVerificationResult t) {
-        JsonObject json = t.localVerificationResult != null ? t.localVerificationResult
-                : new JsonObject(t.introspectionResult.getIntrospectionString());
+        JsonObject json = t.localVerificationResult() != null ? t.localVerificationResult()
+                : new JsonObject(t.introspectionResult().getIntrospectionString());
         JsonObject cnf = json.getJsonObject(OidcConstants.CONFIRMATION_CLAIM);
         String thumbprint = cnf == null ? null : cnf.getString(OidcConstants.DPOP_JWK_SHA256_THUMBPRINT);
         if (thumbprint != null) {
             requestData.put(
-                    (t.introspectionResult == null ? OidcUtils.DPOP_JWT_THUMBPRINT : OidcUtils.DPOP_INTROSPECTION_THUMBPRINT),
+                    (t.introspectionResult() == null ? OidcUtils.DPOP_JWT_THUMBPRINT : OidcUtils.DPOP_INTROSPECTION_THUMBPRINT),
                     true);
         }
         return thumbprint;
@@ -447,7 +447,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         // an introspection request.
         final TokenCredential tokenCred = request.getToken();
 
-        JsonObject tokenJson = result.localVerificationResult;
+        JsonObject tokenJson = result.localVerificationResult();
         if (tokenJson == null) {
             // JSON token representation may be null not only if it is an opaque access token
             // but also if it is JWT and no JWK with a matching kid is available, asynchronous
@@ -470,7 +470,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 JsonObject rolesJson = getRolesJson(requestData, resolvedContext, tokenCred, tokenJson,
                         userInfo);
                 SecurityIdentity securityIdentity = validateAndCreateIdentity(requestData, tokenCred,
-                        resolvedContext, tokenJson, rolesJson, userInfo, result.introspectionResult, request);
+                        resolvedContext, tokenJson, rolesJson, userInfo, result.introspectionResult(), request);
                 // If the primary token is a bearer access token then there's no point of checking if
                 // it should be refreshed as RT is only available for the code flow tokens
                 if (isIdToken(tokenCred)
@@ -495,7 +495,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             OidcUtils.setSecurityIdentityUserInfo(builder, userInfo);
             OidcUtils.setSecurityIdentityConfigMetadata(builder, resolvedContext);
             final String userName;
-            if (result.introspectionResult == null) {
+            if (result.introspectionResult() == null) {
                 if (resolvedContext.oidcConfig().token().allowOpaqueTokenIntrospection() &&
                         resolvedContext.oidcConfig().token().verifyAccessTokenWithUserInfo().orElse(false)) {
                     if (resolvedContext.oidcConfig().token().principalClaim().isPresent() && userInfo != null) {
@@ -509,13 +509,13 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                     return Uni.createFrom().failure(new AuthenticationFailedException(tokenMap(tokenCred)));
                 }
             } else {
-                OidcUtils.setSecurityIdentityIntrospection(builder, result.introspectionResult);
-                String principalName = result.introspectionResult.getUsername();
+                OidcUtils.setSecurityIdentityIntrospection(builder, result.introspectionResult());
+                String principalName = result.introspectionResult().getUsername();
                 if (principalName == null) {
-                    principalName = result.introspectionResult.getSubject();
+                    principalName = result.introspectionResult().getSubject();
                 }
                 userName = principalName != null ? principalName : "";
-                OidcUtils.setIntrospectionScopes(builder, result.introspectionResult);
+                OidcUtils.setIntrospectionScopes(builder, result.introspectionResult());
             }
             builder.setPrincipal(new Principal() {
                 @Override
@@ -574,10 +574,10 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 && requestData.get(REFRESH_TOKEN_GRANT_RESPONSE) != Boolean.TRUE
                 && requestData.get(NEW_AUTHENTICATION) != Boolean.TRUE) {
             Long expiry = null;
-            if (result.localVerificationResult != null) {
-                expiry = result.localVerificationResult.getLong(Claims.exp.name());
-            } else if (result.introspectionResult != null) {
-                expiry = result.introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_EXP);
+            if (result.localVerificationResult() != null) {
+                expiry = result.localVerificationResult().getLong(Claims.exp.name());
+            } else if (result.introspectionResult() != null) {
+                expiry = result.introspectionResult().getLong(OidcConstants.INTROSPECTION_TOKEN_EXP);
             }
             final long now = System.currentTimeMillis() / 1000;
             if (expiry == null && codeFlowAccessToken) {
@@ -607,7 +607,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             } else if (tokenCred instanceof IdTokenCredential
                     && resolvedContext.oidcConfig().roles().source().get() == Source.accesstoken) {
                 rolesJson = ((TokenVerificationResult) requestData
-                        .get(OidcUtils.CODE_ACCESS_TOKEN_RESULT)).localVerificationResult;
+                        .get(OidcUtils.CODE_ACCESS_TOKEN_RESULT)).localVerificationResult();
                 if (rolesJson == null) {
                     // JSON token representation may be null not only if it is an opaque access token
                     // but also if it is JWT and no JWK with a matching kid is available, asynchronous
@@ -789,7 +789,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             }
             return Uni.createFrom()
                     .item(validateAndCreateIdentity(Map.of(), request.getToken(), resolvedContext,
-                            result.localVerificationResult, result.localVerificationResult, null, null, request));
+                            result.localVerificationResult(), result.localVerificationResult(), null, null, request));
         } catch (Throwable t) {
             return Uni.createFrom().failure(t instanceof AuthenticationFailedException ? t
                     : new AuthenticationFailedException(t, tokenMap(request.getToken())));

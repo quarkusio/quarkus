@@ -20,6 +20,7 @@ import io.vertx.core.Vertx;
 public final class TenantConfigBean {
 
     private static final Logger LOG = Logger.getLogger(TenantConfigBean.class);
+    private static final int DELAY_5_SECONDS = 5000;
 
     private final Map<String, TenantConfigContext> staticTenantsConfig;
     private final Map<String, TenantConfigContext> dynamicTenantsConfig;
@@ -75,10 +76,14 @@ public final class TenantConfigBean {
         }
     }
 
-    Uni<TenantConfigContext> replaceDynamicTenantContext(OidcTenantConfig oidcConfig) {
+    Uni<TenantConfigContext> replaceDynamicTenantContext(OidcTenantConfig oidcConfig, Vertx vertx) {
         var tenantId = oidcConfig.tenantId().orElseThrow();
         LOG.debugf("Replacing the resolved tenant %s configuration with a new configuration", tenantId);
-        dynamicTenantsConfig.remove(tenantId);
+        var previousContext = dynamicTenantsConfig.remove(tenantId);
+        if (previousContext != null && previousContext.provider() != null) {
+            // even though we are replacing the context, it could be that other HTTP request is currently using it
+            vertx.setTimer(DELAY_5_SECONDS, ignored -> previousContext.provider().close());
+        }
         return createDynamicTenantContext(oidcConfig);
     }
 

@@ -74,7 +74,6 @@ import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
-import io.vertx.mutiny.ext.web.client.WebClient;
 
 public class OidcCommonUtils {
     public static final Duration CONNECTION_BACKOFF_DURATION = Duration.ofSeconds(2);
@@ -575,7 +574,7 @@ public class OidcCommonUtils {
         return true;
     }
 
-    public static Uni<JsonObject> discoverMetadata(WebClient client,
+    public static Uni<JsonObject> discoverMetadata(OidcWebClient client,
             Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters,
             OidcRequestContextProperties contextProperties, Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters,
             String discoveryUrl,
@@ -604,7 +603,7 @@ public class OidcCommonUtils {
 
     }
 
-    public static Uni<JsonObject> doDiscoverMetadata(WebClient client,
+    public static Uni<JsonObject> doDiscoverMetadata(OidcWebClient client,
             Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters,
             OidcRequestContextProperties requestProps, Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters,
             String discoveryUrl,

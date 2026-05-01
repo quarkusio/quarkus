@@ -25,6 +25,7 @@ import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.common.runtime.OidcWebClient;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniOnItem;
@@ -34,7 +35,6 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
-import io.vertx.mutiny.ext.web.client.WebClient;
 
 public class OidcClientRegistrationImpl implements OidcClientRegistration {
     private static final Logger LOG = Logger.getLogger(OidcClientRegistrationImpl.class);
@@ -42,7 +42,7 @@ public class OidcClientRegistrationImpl implements OidcClientRegistration {
     private static final String AUTHORIZATION_HEADER = String.valueOf(HttpHeaders.AUTHORIZATION);
     private static final String DEFAULT_ID = "Default";
 
-    private final WebClient client;
+    private final OidcWebClient client;
     private final long connectionDelayInMillisecs;
     private final String registrationUri;
     private final OidcClientRegistrationConfig oidcConfig;
@@ -51,7 +51,7 @@ public class OidcClientRegistrationImpl implements OidcClientRegistration {
     private final RegisteredClient registeredClient;
     private volatile boolean closed;
 
-    public OidcClientRegistrationImpl(WebClient client, long connectionDelayInMillisecs,
+    public OidcClientRegistrationImpl(OidcWebClient client, long connectionDelayInMillisecs,
             String registrationUri,
             OidcClientRegistrationConfig oidcConfig, RegisteredClient registeredClient,
             Map<Type, List<OidcRequestFilter>> oidcRequestFilters,
@@ -136,7 +136,7 @@ public class OidcClientRegistrationImpl implements OidcClientRegistration {
         return requestFilters.isEmpty() && responseFilters.isEmpty() ? null : new OidcRequestContextProperties();
     }
 
-    static Uni<RegisteredClient> registerClient(WebClient client,
+    static Uni<RegisteredClient> registerClient(OidcWebClient client,
             String registrationUri,
             OidcClientRegistrationConfig oidcConfig,
             Map<Type, List<OidcRequestFilter>> requestFilters,
@@ -150,7 +150,7 @@ public class OidcClientRegistrationImpl implements OidcClientRegistration {
     }
 
     static UniOnItem<HttpResponse<Buffer>> postRequest(OidcRequestContextProperties requestProps,
-            WebClient client, String registrationUri,
+            OidcWebClient client, String registrationUri,
             OidcClientRegistrationConfig oidcConfig,
             Map<Type, List<OidcRequestFilter>> filters, String clientRegJson) {
         HttpRequest<Buffer> request = client.postAbs(registrationUri);
@@ -180,7 +180,7 @@ public class OidcClientRegistrationImpl implements OidcClientRegistration {
     }
 
     static private Uni<RegisteredClient> newRegisteredClient(HttpResponse<Buffer> resp,
-            WebClient client, OidcClientRegistrationConfig oidcConfig,
+            OidcWebClient client, OidcClientRegistrationConfig oidcConfig,
             Map<Type, List<OidcRequestFilter>> requestFilters,
             Map<Type, List<OidcResponseFilter>> responseFilters,
             OidcRequestContextProperties requestProps) {

@@ -30,6 +30,7 @@ import io.quarkus.oidc.common.runtime.ClientAssertionProvider;
 import io.quarkus.oidc.common.runtime.OidcClientRedirectException;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.common.runtime.OidcWebClient;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret.Method;
 import io.quarkus.security.credential.TokenCredential;
@@ -42,7 +43,6 @@ import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
-import io.vertx.mutiny.ext.web.client.WebClient;
 
 public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
 
@@ -72,7 +72,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     private static final String APPLICATION_X_WWW_FORM_URLENCODED = HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString();
     private static final String APPLICATION_JSON = "application/json";
 
-    private final WebClient client;
+    private final OidcWebClient client;
     private final Vertx vertx;
     private final OidcConfigurationMetadata metadata;
     private final OidcTenantConfig oidcConfig;
@@ -90,7 +90,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
 
     private OidcProvider oidcProvider;
 
-    private OidcProviderClientImpl(WebClient client, Vertx vertx, OidcConfigurationMetadata metadata,
+    private OidcProviderClientImpl(OidcWebClient client, Vertx vertx, OidcConfigurationMetadata metadata,
             OidcTenantConfig oidcConfig, ClientCredentials clientCredentials,
             Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters,
             Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters) {
@@ -636,7 +636,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         return vertx;
     }
 
-    public WebClient getWebClient() {
+    public OidcWebClient getWebClient() {
         return client;
     }
 
@@ -647,7 +647,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         return op == TokenOperation.INTROSPECT;
     }
 
-    static Uni<OidcProviderClientImpl> of(WebClient client, Vertx vertx, OidcConfigurationMetadata metadata,
+    static Uni<OidcProviderClientImpl> of(OidcWebClient client, Vertx vertx, OidcConfigurationMetadata metadata,
             OidcTenantConfig oidcConfig,
             Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters,
             Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters) {

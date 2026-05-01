@@ -590,6 +590,16 @@ public class VertxHttpRecorder {
 
             mr.route().order(RouteConstants.ROUTE_ORDER_BODY_HANDLER_MANAGEMENT)
                     .handler(createBodyHandlerForManagementInterface());
+
+            Handler<RoutingContext> hostValidationHandler = HostValidationRecorder.hostValidationHandler(
+                    managementConfig.getValue().hostValidation(),
+                    managementConfig.getValue().host(),
+                    true);
+
+            if (hostValidationHandler != null) {
+                mr.route().order(RouteConstants.ROUTE_ORDER_HOST_VALIDATION_MANAGEMENT).handler(hostValidationHandler);
+            }
+
             if (managementConfig.getValue().cors().enabled()) {
                 mr.route().order(RouteConstants.ROUTE_ORDER_CORS_MANAGEMENT)
                         .handler(new CORSFilter(managementConfig.getValue().cors()));

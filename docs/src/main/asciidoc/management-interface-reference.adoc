@@ -225,6 +225,38 @@ IMPORTANT: Using both `Forwarded` and `X-Forwarded` headers can have security im
 
 Ensure that your proxy is configured to strip unexpected `Forwarded` or `X-Forwarded-*` headers from the client request.
 
+== HTTP Host header validation
+
+You can enable HTTP `Host` header validation with a `quarkus.management.host-validation.allowed-hosts` property.
+
+For example:
+
+[source, properties]
+----
+quarkus.management.host-validation.allowed-hosts=myservice.com,www.my-service.com,localhost
+----
+
+Alternatively, you can request that an HTTP `Host` header must contain only a valid localhost name:
+
+[source, properties]
+----
+quarkus.management.host-validation.require-localhost=true
+----
+
+In production and dev modes, when the `quarkus.management.host` property has a valid localhost name, and neither `quarkus.management.host-validation.allowed-hosts` nor `quarkus.management.host-validation.require-localhost` properties are enabled, HTTP `Host` header is expected to contain only a valid localhost name. Set `quarkus.management.host-validation.require-localhost=false` to avoid this restriction.
+
+[NOTE]
+====
+HTTP `Host` header contains a request URL authority and therefore may also include ports, for example, `localhost:9001`.
+
+The authority ports are not verified during the HTTP `Host` header verification. The port verification is more relevant for the same origin checks done by the <<management-cors>>. For example, if the server is launched at `localhost:9001` then the same origin CORS check passes only if the HTTP `Host` header is `localhost:9001` and fails if it is `localhost:9002`.
+====
+
+[NOTE]
+====
+When the management interface runs behind a proxy that does not rewrite a `Host` header with a host value from either `Forwarded: host` or `X-Forwarded-Host` headers, you can get the management interface's proxy handler do it instead, please see the <<reverse-proxy>> section for more details.
+====
+
 == Kubernetes
 
 When Quarkus generates the Kubernetes metadata, it checks if the management interface is enabled and configures the probes accordingly.
@@ -237,6 +269,7 @@ Health probes (using HTTP actions) and Prometheus scrape URLs are configured usi
 Until https://github.com/knative/serving/issues/8471[KNative#8471] is resolved, you cannot use the management interface, as KNative does not support containers will multiple exposed ports.
 ====
 
+[[management-cors]]
 == CORS filter
 
 To make your Quarkus management interface accessible to another application running on a different domain, you need to configure cross-origin resource sharing (CORS).

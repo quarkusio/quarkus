@@ -183,14 +183,14 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
                                     return Uni.createFrom().item(
                                             new UserInfo(
                                                     oidcProvider.verifyJwtToken(response.data(), true, false,
-                                                            null).localVerificationResult
+                                                            null).localVerificationResult()
                                                             .encode()));
                                 } catch (Throwable t) {
                                     if (t.getCause() instanceof UnresolvableKeyException) {
                                         LOG.debug(
                                                 "No matching JWK key is found, refreshing and repeating the signed UserInfo verification");
                                         return oidcProvider.refreshJwksAndVerifyJwtToken(response.data(), true, false, null)
-                                                .onItem().transform(v -> new UserInfo(v.localVerificationResult.encode()));
+                                                .onItem().transform(v -> new UserInfo(v.localVerificationResult().encode()));
                                     } else {
                                         LOG.debugf("Signed UserInfo verification has failed: %s", t.getMessage());
                                         return Uni.createFrom().failure(t);
@@ -200,7 +200,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
                                 return oidcProvider
                                         .getKeyResolverAndVerifyJwtToken(new TokenCredential(response.data(), "userinfo"), true,
                                                 false, null, true)
-                                        .onItem().transform(v -> new UserInfo(v.localVerificationResult.encode()));
+                                        .onItem().transform(v -> new UserInfo(v.localVerificationResult().encode()));
                             }
                         } else {
                             return Uni.createFrom().item(new UserInfo(response.data()));

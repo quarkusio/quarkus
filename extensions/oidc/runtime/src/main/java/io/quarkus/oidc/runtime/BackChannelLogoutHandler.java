@@ -173,7 +173,7 @@ public final class BackChannelLogoutHandler implements Handler<RoutingContext> {
                                                 .verifyLogoutJwtToken(encodedLogoutToken);
 
                                         if (verifyLogoutTokenClaims(result)) {
-                                            String key = result.localVerificationResult
+                                            String key = result.localVerificationResult()
                                                     .getString(
                                                             tenantContext.oidcConfig().logout().backchannel().logoutTokenKey());
                                             BackChannelLogoutTokenCache tokens = resolver.getBackChannelLogoutTokens()
@@ -215,18 +215,18 @@ public final class BackChannelLogoutHandler implements Handler<RoutingContext> {
 
         private boolean verifyLogoutTokenClaims(TokenVerificationResult result) {
             // events
-            JsonObject events = result.localVerificationResult.getJsonObject(OidcConstants.BACK_CHANNEL_EVENTS_CLAIM);
+            JsonObject events = result.localVerificationResult().getJsonObject(OidcConstants.BACK_CHANNEL_EVENTS_CLAIM);
             if (events == null || events.getJsonObject(OidcConstants.BACK_CHANNEL_EVENT_NAME) == null) {
                 LOG.debug("Back channel logout token does not have a valid 'events' claim");
                 return false;
             }
-            if (!result.localVerificationResult
+            if (!result.localVerificationResult()
                     .containsKey(tenantContext.oidcConfig().logout().backchannel().logoutTokenKey())) {
                 LOG.debugf("Back channel logout token does not have %s",
                         tenantContext.oidcConfig().logout().backchannel().logoutTokenKey());
                 return false;
             }
-            if (result.localVerificationResult.containsKey(Claims.nonce.name())) {
+            if (result.localVerificationResult().containsKey(Claims.nonce.name())) {
                 LOG.debug("Back channel logout token must not contain 'nonce' claim");
                 return false;
             }

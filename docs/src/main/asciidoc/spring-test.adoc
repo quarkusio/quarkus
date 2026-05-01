@@ -1,0 +1,155 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Testing Spring-style Applications in Quarkus
+include::_attributes.adoc[]
+:categories: compatibility,testing
+:summary: Quarkus supports the @SpringBootTest annotation out of the box, letting Spring developers write tests in a familiar style while running on the Quarkus runtime.
+:topics: spring,testing,compatibility
+:extensions: io.quarkus:quarkus-test-spring
+
+Spring developers migrating to Quarkus can keep using `@SpringBootTest` as they do in Spring Boot — no import change required.
+Under the hood, Quarkus treats `@SpringBootTest` as an alias for xref:getting-started-testing.adoc[`@QuarkusTest`]: it starts the Quarkus runtime and CDI container, not a Spring Application Context.
+
+[IMPORTANT]
+====
+`@SpringBootTest` in Quarkus is cosmetic. It is equivalent to `@QuarkusTest` and starts the Quarkus CDI container (ArC), not a Spring Application Context. Spring classes and annotations are used only for reading metadata.
+====
+
+== Prerequisites
+
+include::{includes}/prerequisites.adoc[]
+
+== Adding the dependency
+
+Add `quarkus-test-spring` to your project as a test-scoped dependency:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-test-spring</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.quarkus:quarkus-test-spring")
+----
+
+== Writing a test
+
+Use `@SpringBootTest` as you would in a Spring Boot project — the import stays the same:
+
+[source,java]
+----
+import org.springframework.boot.test.context.SpringBootTest; // <1>
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@SpringBootTest // <2>
+public class GreetingServiceTest {
+
+    @Inject // <3>
+    GreetingService greetingService;
+
+    @Test
+    public void testGreeting() {
+        assertEquals("Hello, Quarkus!", greetingService.greet("Quarkus"));
+    }
+}
+----
+<1> Keep the original Spring Boot import — no change needed.
+<2> Quarkus starts the application and makes CDI beans available for injection.
+<3> Use standard CDI `@Inject` (or `@Autowired` if you have `quarkus-spring-di` on the classpath).
+
+=== HTTP endpoint testing
+
+For testing REST endpoints, use https://rest-assured.io/[RestAssured] exactly as you would with `@QuarkusTest`:
+
+[source,java]
+----
+import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.Test;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.is;
+
+@SpringBootTest
+public class GreetingControllerTest {
+
+    @Test
+    public void testHelloEndpoint() {
+        given()
+            .when().get("/greeting")
+            .then()
+                .statusCode(200)
+                .body(is("Hello, Quarkus!"));
+    }
+}
+----
+
+=== Native executable testing
+
+To run the same tests against the packaged application (JVM or native mode), create a companion class annotated with `@QuarkusIntegrationTest` that extends your test:
+
+[source,java]
+----
+import io.quarkus.test.junit.QuarkusIntegrationTest;
+
+@QuarkusIntegrationTest
+public class GreetingControllerIT extends GreetingControllerTest {
+}
+----
+
+== Differences from Spring Boot's `@SpringBootTest`
+
+`@SpringBootTest` in Quarkus is intentionally simpler than in Spring Boot. The table below summarises the main differences:
+
+|===
+|Feature |Spring Boot |Quarkus
+
+|Application context
+|Spring Application Context
+|Quarkus CDI container (ArC)
+
+|Annotation attributes (`webEnvironment`, `classes`, `properties`, `args`)
+|Supported
+|Not supported — configure via xref:config-reference.adoc[Quarkus configuration] and xref:getting-started-testing.adoc#testing_different_profiles[test profiles]
+
+|Dependency injection in tests
+|`@Autowired`
+|`@Inject` (CDI) or `@Autowired` when `quarkus-spring-di` is present
+
+|Dev Services (databases, messaging, etc.)
+|Testcontainers via Spring Boot autoconfiguration
+|xref:dev-services.adoc[Quarkus Dev Services] — zero configuration required
+
+|MockBean
+|`@MockBean`
+|xref:getting-started-testing.adoc#mock-support[`@InjectMock`] from `quarkus-junit-mockito`
+
+|Test profiles
+|Spring profiles via `@ActiveProfiles`
+|xref:getting-started-testing.adoc#testing_different_profiles[`@TestProfile`]
+|===
+
+== More Spring guides
+
+Quarkus has more Spring compatibility features. See the following guides for more details:
+
+* xref:spring-di.adoc[Quarkus Extension for Spring DI]
+* xref:spring-web.adoc[Quarkus Extension for Spring Web API]
+* xref:spring-data-jpa.adoc[Quarkus Extension for Spring Data JPA]
+* xref:spring-data-rest.adoc[Quarkus Extension for Spring Data REST]
+* xref:spring-security.adoc[Quarkus Extension for Spring Security]
+* xref:spring-boot-properties.adoc[Quarkus Extension for Spring Boot properties]
+* xref:spring-cache.adoc[Quarkus Extension for Spring Cache]
+* xref:spring-scheduled.adoc[Quarkus Extension for Spring Scheduled]
+* xref:spring-cloud-config-client.adoc[Reading properties from Spring Cloud Config Server]

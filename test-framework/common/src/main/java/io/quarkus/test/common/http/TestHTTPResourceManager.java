@@ -17,6 +17,7 @@ import io.quarkus.test.common.ListeningAddress;
 import io.quarkus.value.registry.ValueRegistry;
 import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
 import io.smallrye.config.Config;
+import io.smallrye.config.SmallRyeConfig;
 
 public class TestHTTPResourceManager {
 
@@ -76,13 +77,17 @@ public class TestHTTPResourceManager {
             Config config,
             List<Function<Class<?>, String>> endpointProviders) {
 
-        Map<Class<?>, TestHTTPResourceProvider<?>> providers = getProviders();
+        Map<Class<?>, TestHTTPResourceProvider<?>> providers = null;
         Class<?> c = testCase.getClass();
         while (c != Object.class) {
             TestHTTPEndpoint classEndpointAnnotation = c.getAnnotation(TestHTTPEndpoint.class);
             for (Field f : c.getDeclaredFields()) {
                 TestHTTPResource resource = f.getAnnotation(TestHTTPResource.class);
                 if (resource != null) {
+                    if (config == null) {
+                        config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+                        providers = getProviders();
+                    }
                     TestHTTPResourceProvider<?> provider = providers.get(f.getType());
                     if (provider == null) {
                         throw new RuntimeException(

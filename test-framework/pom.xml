@@ -43,6 +43,7 @@
         <module>kafka-companion</module>
         <module>google-cloud-functions</module>
         <module>observability</module>
+        <module>spring-test</module>
     </modules>
 
     <build>

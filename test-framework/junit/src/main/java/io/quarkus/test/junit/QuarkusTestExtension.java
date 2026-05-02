@@ -262,15 +262,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                     try {
                         // In a nested class with no tests in the outer profile, the running Quarkus application could be null
                         if (runningQuarkusApplication != null) {
-                            // Reset the reuse flag so the close handler in StartupActionImpl.run()
-                            // actually closes the CuratedApplication and releases its classloaders.
-                            // This must be done here (not in doClose()) because when switching between
-                            // test profiles with different classloaders, doClose() runs in the new
-                            // classloader context where runningQuarkusApplication is a different static field.
-                            ClassLoader cl = runningQuarkusApplication.getClassLoader();
-                            if (cl instanceof QuarkusClassLoader qcl && qcl.getCuratedApplication() != null) {
-                                qcl.getCuratedApplication().setEligibleForReuse(false);
-                            }
                             runningQuarkusApplication.close();
                         }
                     } catch (Exception e) {
@@ -624,15 +615,9 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             throw new IllegalStateException(
                     "Internal error: ClassLoader " + incomingClassLoader + " does not have a linked curated application.");
         }
-        incomingCuratedApplication.setEligibleForReuse(isSameCuratedApplication);
 
         // Let's clear the class-based caches of JDK/libraries when we switch to another application
         if (!isSameCuratedApplication) {
-            // Reset the old CuratedApplication's reuse flag so its close handler
-            // (in StartupActionImpl.run()) actually calls curatedApplication.close()
-            if (previousCuratedApplication != null) {
-                previousCuratedApplication.setEligibleForReuse(false);
-            }
             ClearCache.clearCaches();
         }
 
@@ -646,6 +631,13 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         if ((state == null && !failedBoot) || (runningQuarkusApplication != null && isNewApplication)) {
             if (isNewApplication) {
                 if (state != null) {
+                    if (isSameCuratedApplication) {
+                        // When the next test uses the same CuratedApplication but a different
+                        // runtime classloader, we need to stop the running app without closing
+                        // the CuratedApplication. Set eligibleForReuse=true so the close handler
+                        // in StartupActionImpl.run() preserves it.
+                        incomingCuratedApplication.setEligibleForReuse(true);
+                    }
                     try {
                         state.close();
                     } catch (Throwable throwable) {

@@ -1,0 +1,136 @@
+package io.quarkus.smallrye.graphql.client.deployment.ssl;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+
+import jakarta.enterprise.event.Event;
+import jakarta.inject.Inject;
+
+import org.assertj.core.api.Assertions;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.tls.CertificateUpdatedEvent;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
+import io.smallrye.certs.Format;
+import io.smallrye.certs.junit5.Certificate;
+import io.smallrye.certs.junit5.Certificates;
+import io.smallrye.graphql.client.GraphQLClient;
+import io.smallrye.graphql.client.Response;
+import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
+import io.vertx.core.http.HttpServer;
+
+/**
+ * Tests TLS certificate reload for dynamic GraphQL clients.
+ * Dynamic clients are application-scoped (created once and cached in {@code NamedDynamicClients}),
+ * so reload must work via {@code httpClient.updateSSLOptions()}.
+ */
+@Certificates(baseDir = "target/certs", certificates = {
+        @Certificate(name = "wrong-test-reload", password = "password", formats = Format.PKCS12, client = true),
+        @Certificate(name = "test-reload", password = "password", formats = Format.PKCS12, client = true)
+})
+public class DynamicGraphQLClientTlsReloadApplicationScopedTest {
+
+    private static final int PORT = 63805;
+    private static final SSLTestingTools TOOLS = new SSLTestingTools();
+    private static final String EXPECTED_RESPONSE = "HelloWorld";
+    private static HttpServer server;
+
+    private static final File temp = new File("target/test-certificates-" + UUID.randomUUID());
+
+    private static final String CONFIGURATION = """
+            # No config - overridden in the test
+            """;
+
+    @RegisterExtension
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
+            .setArchiveProducer(
+                    () -> ShrinkWrap.create(JavaArchive.class)
+                            .add(new StringAsset(CONFIGURATION), "application.properties")
+                            .addClasses(SSLTestingTools.class))
+            .overrideRuntimeConfigKey("loc", temp.getAbsolutePath())
+            .overrideRuntimeConfigKey("quarkus.smallrye-graphql-client.my-client.tls-configuration-name", "my-tls-client")
+            .overrideRuntimeConfigKey("quarkus.tls.my-tls-client.key-store.p12.path", temp.getAbsolutePath() + "/tls.p12")
+            .overrideRuntimeConfigKey("quarkus.tls.my-tls-client.key-store.p12.password", "password")
+            .overrideRuntimeConfigKey("quarkus.smallrye-graphql-client.my-client.url", "https://127.0.0.1:" + PORT)
+            .overrideRuntimeConfigKey("quarkus.tls.my-tls-client.trust-all", "true")
+            .setBeforeAllCustomizer(() -> {
+                try {
+                    temp.mkdirs();
+                    Files.copy(new File("target/certs/wrong-test-reload-client-keystore.p12").toPath(),
+                            new File(temp, "/tls.p12").toPath());
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+
+    @Inject
+    @GraphQLClient("my-client")
+    DynamicGraphQLClient client;
+
+    @Inject
+    TlsConfigurationRegistry registry;
+
+    @ConfigProperty(name = "loc")
+    File certs;
+
+    @Inject
+    Event<CertificateUpdatedEvent> event;
+
+    @BeforeAll
+    static void setupServer() throws Exception {
+        server = TOOLS.runServer("target/certs/test-reload-keystore.p12",
+                "password", "target/certs/test-reload-server-truststore.p12",
+                "password");
+    }
+
+    @Test
+    void testReloading() throws IOException, ExecutionException, InterruptedException {
+        TlsConfiguration tlsClient = registry.get("my-tls-client").orElseThrow();
+        try {
+            client.executeSync("{ result }");
+            Assertions.fail("Should fail with wrong keystore");
+        } catch (Exception ex) {
+            assertHasCauseContainingMessage(ex, "certificate_unknown");
+        }
+
+        Files.copy(new File("target/certs/test-reload-client-keystore.p12").toPath(),
+                new File(certs, "/tls.p12").toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+        assertThat(tlsClient.reload()).isTrue();
+        event.fire(new CertificateUpdatedEvent("my-tls-client", tlsClient));
+
+        Response response = client.executeSync("{ result }");
+        assertThat(response.getData().getString("result")).isEqualTo(EXPECTED_RESPONSE);
+    }
+
+    @AfterAll
+    static void closeServer() {
+        server.close();
+        TOOLS.close();
+    }
+
+    private void assertHasCauseContainingMessage(Throwable t, String message) {
+        Throwable throwable = t;
+        while (throwable.getCause() != null) {
+            throwable = throwable.getCause();
+            if (throwable.getMessage().contains(message)) {
+                return;
+            }
+        }
+        throw new RuntimeException("Unexpected exception", t);
+    }
+}

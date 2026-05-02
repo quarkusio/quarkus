@@ -1279,4 +1279,15 @@ public abstract class AbstractSimpleJsonTest {
                 .body("item.type", CoreMatchers.is("type_a"))
                 .body("item.value", CoreMatchers.is("hello"));
     }
+
+    @Test
+    void sensor_metadata_shouldDeserialize() {
+        given()
+                .when()
+                .get("/simple/sensor-metadata")
+                .then()
+                .statusCode(200)
+                .body("metadata.CPU.description", CoreMatchers.is("CPU Power"))
+                .body("documentation", CoreMatchers.is("macOS powermetrics derived information"));
+    }
 }

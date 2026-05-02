@@ -198,6 +198,18 @@ public class DataSources {
             agroalConnectionConfigurer.disableSslSupport(resolvedDbKind, dataSourceConfiguration,
                     dataSourceJdbcRuntimeConfig.additionalJdbcProperties());
         }
+
+        if (dataSourceJdbcRuntimeConfig.enableKeepAlive().isPresent()) {
+            agroalConnectionConfigurer.setKeepAlive(resolvedDbKind, dataSourceConfiguration,
+                    dataSourceJdbcRuntimeConfig.additionalJdbcProperties(),
+                    dataSourceJdbcRuntimeConfig.enableKeepAlive().get());
+        }
+
+        if (dataSourceJdbcRuntimeConfig.readTimeout().isPresent()) {
+            agroalConnectionConfigurer.setReadTimeout(resolvedDbKind, dataSourceConfiguration,
+                    dataSourceJdbcRuntimeConfig.additionalJdbcProperties(), dataSourceJdbcRuntimeConfig.readTimeout().get());
+        }
+
         //we use a custom cache for two reasons:
         //fast thread local cache should be faster
         //and it prevents a thread local leak

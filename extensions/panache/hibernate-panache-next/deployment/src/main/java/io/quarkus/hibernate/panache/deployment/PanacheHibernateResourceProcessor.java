@@ -330,7 +330,7 @@ public final class PanacheHibernateResourceProcessor {
                                 // each impl. since some impl. may be detected for other reasons (like other interface)
                                 for (MethodInfo methodInfo : implBean.methods()) {
                                     if (methodInfo.name().equals(method.name())
-                                            && securityTransformer.hasSecurityAnnotation(method)) {
+                                            && securityTransformer.hasSecurityAnnotation(methodInfo)) {
                                         continue implBeanLoop;
                                     }
                                 }

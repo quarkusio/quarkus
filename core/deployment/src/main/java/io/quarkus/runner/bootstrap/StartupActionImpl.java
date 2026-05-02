@@ -13,12 +13,14 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,6 +48,7 @@ import io.quarkus.deployment.builditem.DevServicesRegistryBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.RuntimeApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
@@ -526,16 +529,16 @@ public class StartupActionImpl implements StartupAction {
                 }
                 data.put(i.getName(), i.getData());
             }
-            Map<String, StringBuilder> serviceProviders = new java.util.LinkedHashMap<>();
-            for (io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem i : buildResult
-                    .consumeMulti(io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem.class)) {
+            Map<String, StringBuilder> serviceProviders = new LinkedHashMap<>();
+            for (GeneratedServiceProviderBuildItem i : buildResult
+                    .consumeMulti(GeneratedServiceProviderBuildItem.class)) {
                 serviceProviders.computeIfAbsent("META-INF/services/" + i.getServiceInterfaceName(),
                         k -> new StringBuilder())
                         .append(i.getImplementationClassName())
                         .append(System.lineSeparator());
             }
             for (Map.Entry<String, StringBuilder> entry : serviceProviders.entrySet()) {
-                data.put(entry.getKey(), entry.getValue().toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                data.put(entry.getKey(), entry.getValue().toString().getBytes(StandardCharsets.UTF_8));
             }
         }
         return data;

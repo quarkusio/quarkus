@@ -1,5 +1,6 @@
 package io.quarkus.deployment.jbang;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -129,7 +130,7 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
                             .append(System.lineSeparator());
                 }
                 for (Map.Entry<String, StringBuilder> entry : serviceProviders.entrySet()) {
-                    result.put(entry.getKey(), entry.getValue().toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                    result.put(entry.getKey(), entry.getValue().toString().getBytes(StandardCharsets.UTF_8));
                 }
                 for (Map.Entry<Path, Set<TransformedClassesBuildItem.TransformedClass>> entry : buildResult
                         .consume(TransformedClassesBuildItem.class).getTransformedClassesByJar().entrySet()) {

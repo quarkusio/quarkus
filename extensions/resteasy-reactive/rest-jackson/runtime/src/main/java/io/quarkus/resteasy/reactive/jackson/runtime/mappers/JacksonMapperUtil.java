@@ -232,6 +232,22 @@ public class JacksonMapperUtil {
         }
     }
 
+    public static void serializeAnyGetterMap(Map<?, ?> map, JsonGenerator generator,
+            SerializerProvider serializerProvider) throws IOException {
+        if (map == null) {
+            return;
+        }
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            generator.writeFieldName(String.valueOf(entry.getKey()));
+            Object value = entry.getValue();
+            if (value == null) {
+                generator.writeNull();
+            } else {
+                serializePojo(value, null, generator, serializerProvider);
+            }
+        }
+    }
+
     public enum SerializationInclude {
 
         ALWAYS,

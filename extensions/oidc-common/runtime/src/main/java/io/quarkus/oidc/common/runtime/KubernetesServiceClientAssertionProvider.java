@@ -36,7 +36,7 @@ final class KubernetesServiceClientAssertionProvider implements ClientAssertionP
         if (source == Source.BEARER) {
             this.clientAssertionType = OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE;
             this.tokenType = "JWT bearer";
-        } else if (source == Source.SPIFFE) {
+        } else if (source == Source.SPIFFE_JWT) {
             this.clientAssertionType = OidcConstants.SPIFFE_SVID_CLIENT_ASSERTION_TYPE;
             this.tokenType = "SPIFFE JWT-SVID";
         } else {

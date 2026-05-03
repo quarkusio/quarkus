@@ -145,7 +145,7 @@ public interface OidcClientCommonConfig extends OidcCommonConfig {
                 /**
                  * SPIFFE SVID token is used as a client assertion: urn:ietf:params:oauth:client-assertion-type:jwt-spiffe
                  */
-                SPIFFE
+                SPIFFE_JWT
             }
 
             /**

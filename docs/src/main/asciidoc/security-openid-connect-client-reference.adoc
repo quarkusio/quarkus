@@ -1110,7 +1110,7 @@ Enable it as follows:
 ----
 quarkus.oidc-client.auth-server-url=${auth-server-url}
 quarkus.oidc-client.client-id=quarkus-app
-quarkus.oidc-client.credentials.jwt.source=spiffe
+quarkus.oidc-client.credentials.jwt.source=spiffe-jwt
 ----
 
 Quarkus can load the SPIFFE JWT-SVID token from the file system.

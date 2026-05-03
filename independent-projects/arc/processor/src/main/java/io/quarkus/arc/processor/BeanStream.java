@@ -310,6 +310,14 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
+     * @return the new stream of beans in deterministic order
+     */
+    public BeanStream reproducible() {
+        stream = stream.sorted(Reproducibility.BEAN_COMPARATOR);
+        return this;
+    }
+
+    /**
      * Terminal operation.
      *
      * @return the list of beans

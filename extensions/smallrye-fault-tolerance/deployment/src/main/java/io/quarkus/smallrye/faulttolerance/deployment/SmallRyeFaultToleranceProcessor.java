@@ -269,7 +269,7 @@ public class SmallRyeFaultToleranceProcessor {
         Map<String, Set<String>> existingGuards = new HashMap<>();
         Set<String> expectedGuards = new HashSet<>();
 
-        for (BeanInfo info : validationPhase.getContext().beans()) {
+        for (BeanInfo info : validationPhase.getContext().beans().reproducible()) {
             if (info.hasType(DotNames.GUARD) || info.hasType(DotNames.TYPED_GUARD)) {
                 info.getQualifier(DotNames.IDENTIFIER).ifPresent(idAnn -> {
                     String id = idAnn.value().asString();

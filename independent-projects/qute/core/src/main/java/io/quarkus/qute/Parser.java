@@ -487,7 +487,13 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             // Initialize the block
             Scope currentScope = scopeStack.peek();
             Scope newScope = lastSection.factory.initializeBlock(currentScope, block);
-            scopeStack.addFirst(newScope);
+            if (isEmptySection) {
+                // Self-closing section block, e.g. {#header/} inside {#include}
+                // End the block immediately so currentBlock reverts to main
+                lastSection.endBlock();
+            } else {
+                scopeStack.addFirst(newScope);
+            }
 
         } else {
             // => New section

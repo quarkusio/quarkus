@@ -967,8 +967,9 @@ public final class HibernateOrmProcessor {
             }
         };
 
-        Gizmo gizmo = Gizmo.create(new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources, generatedServiceProviders,
-                appClassPredicate))
+        Gizmo gizmo = Gizmo
+                .create(new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources, generatedServiceProviders,
+                        appClassPredicate))
                 .withDebugInfo(false)
                 .withParameters(false);
 

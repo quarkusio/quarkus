@@ -863,6 +863,10 @@ public final class HibernateOrmProcessor {
             unremovableBeans
                     .produce(new UnremovableBeanBuildItem(new BeanTypeExclusion(ClassNames.TENANT_CONNECTION_RESOLVER)));
             unremovableBeans.produce(new UnremovableBeanBuildItem(new BeanTypeExclusion(ClassNames.TENANT_RESOLVER)));
+            unremovableBeans
+                    .produce(new UnremovableBeanBuildItem(new BeanTypeExclusion(ClassNames.TYPED_TENANT_RESOLVER)));
+            unremovableBeans
+                    .produce(new UnremovableBeanBuildItem(new BeanTypeExclusion(ClassNames.TENANT_RESOLVER_MARKER)));
         }
     }
 

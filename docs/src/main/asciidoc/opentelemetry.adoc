@@ -265,6 +265,10 @@ The `quarkus.otel.exporter.otlp.protocol` property instructs Quarkus to switch t
 
 NOTE: If you change the protocol, you also need to change the port in the endpoint. The default port for `grpc` is `4317` and for `http/protobuf` is `4318`.
 
+The `quarkus.otel.exporter.otlp.memory-mode` property configures the memory allocation strategy for OTLP exporters.
+The default value `immutable-data` creates new serialization objects for each export.
+Setting it to `reusable-data` enables object pooling to reduce garbage collection pressure, which can be beneficial in memory-constrained environments.
+
 === Using CDI to produce a test exporter
 
 Leaving the default as CDI is particularly useful for tests. In the following example a Span exporter class is wired with CDI and then the telemetry can be used in test code.

@@ -10,6 +10,7 @@ import java.util.OptionalInt;
 
 import org.junit.jupiter.api.Test;
 
+import io.opentelemetry.sdk.common.export.MemoryMode;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.*;
 
 class OtlpExporterProviderTest {
@@ -179,6 +180,11 @@ class OtlpExporterProviderTest {
             @Override
             public ProxyConfig proxyOptions() {
                 return null;
+            }
+
+            @Override
+            public MemoryMode memoryMode() {
+                return MemoryMode.IMMUTABLE_DATA;
             }
 
             @Override

@@ -162,7 +162,8 @@ public class AbstractPathMatchingHttpSecurityPolicy {
 
     private static String getAuthMechanismName(RoutingContext routingContext,
             ImmutablePathMatcher<List<HttpMatcher>> pathMatcher) {
-        PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(routingContext.normalizedPath());
+        PathMatch<List<HttpMatcher>> toCheck = pathMatcher
+                .match(HttpSecurityUtils.pathWithoutMatrixParams(routingContext.normalizedPath()));
         if (toCheck.getValue() == null || toCheck.getValue().isEmpty()) {
             return null;
         }
@@ -184,6 +185,12 @@ public class AbstractPathMatchingHttpSecurityPolicy {
 
         if (policyMappingConfig.enabled().orElse(Boolean.TRUE)) {
             for (String path : policyMappingConfig.paths().orElse(Collections.emptyList())) {
+                if (path.indexOf(';') != -1) {
+                    throw new ConfigurationException("""
+                            HttpSecurityPolicy '%s' path contains a semicolon ';' character.
+                            Custom HttpSecurityPolicy bean must be used to check matrix parameters.
+                            """.formatted(path));
+                }
                 HttpMatcher m = new HttpMatcher(policyMappingConfig.authMechanism().orElse(null),
                         new HashSet<>(policyMappingConfig.methods().orElse(Collections.emptyList())), checker);
                 List<HttpMatcher> perms = new ArrayList<>();
@@ -197,7 +204,8 @@ public class AbstractPathMatchingHttpSecurityPolicy {
             ImmutablePathMatcher<List<HttpMatcher>> pathMatcher) {
         var result = new ArrayList<HttpSecurityPolicy>();
 
-        PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(context.normalizedPath());
+        String normalizedPath = context.normalizedPath();
+        PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(HttpSecurityUtils.pathWithoutMatrixParams(normalizedPath));
         if (toCheck.getValue() == null || toCheck.getValue().isEmpty()) {
             return result;
         }

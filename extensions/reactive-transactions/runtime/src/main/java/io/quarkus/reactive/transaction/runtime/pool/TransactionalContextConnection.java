@@ -2,8 +2,6 @@ package io.quarkus.reactive.transaction.runtime.pool;
 
 import org.jboss.logging.Logger;
 
-import io.vertx.codegen.annotations.Fluent;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.sqlclient.PrepareOptions;
@@ -30,21 +28,9 @@ public class TransactionalContextConnection implements SqlConnection {
         this.connection = connection;
     }
 
-    @Fluent
-    @Override
-    public SqlConnection prepare(String sql, Handler<AsyncResult<PreparedStatement>> handler) {
-        return connection.prepare(sql, handler);
-    }
-
     @Override
     public Future<PreparedStatement> prepare(String sql) {
         return connection.prepare(sql);
-    }
-
-    @Fluent
-    @Override
-    public SqlConnection prepare(String sql, PrepareOptions options, Handler<AsyncResult<PreparedStatement>> handler) {
-        return connection.prepare(sql, options, handler);
     }
 
     @Override
@@ -52,21 +38,14 @@ public class TransactionalContextConnection implements SqlConnection {
         return connection.prepare(sql, options);
     }
 
-    @Fluent
     @Override
     public SqlConnection exceptionHandler(Handler<Throwable> handler) {
         return connection.exceptionHandler(handler);
     }
 
-    @Fluent
     @Override
     public SqlConnection closeHandler(Handler<Void> handler) {
         return connection.closeHandler(handler);
-    }
-
-    @Override
-    public void begin(Handler<AsyncResult<Transaction>> handler) {
-        connection.begin(handler);
     }
 
     @Override
@@ -82,12 +61,6 @@ public class TransactionalContextConnection implements SqlConnection {
     @Override
     public boolean isSSL() {
         return connection.isSSL();
-    }
-
-    @Override
-    public void close(Handler<AsyncResult<Void>> handler) {
-        LOG.tracef("Calling no-op close on TransactionalContextConnection it will close after the closing of session");
-        handler.handle(Future.succeededFuture());
     }
 
     @Override

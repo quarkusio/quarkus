@@ -205,7 +205,7 @@ public class MockEventServer implements Closeable {
     }
 
     protected Buffer processEventBody(RoutingContext request) {
-        return request.getBody();
+        return request.body().buffer();
     }
 
     public void handleResponse(RoutingContext ctx) {
@@ -217,7 +217,7 @@ public class MockEventServer implements Closeable {
             return;
         }
         log.debugf("Sending response %s", requestId);
-        Buffer buffer = ctx.getBody();
+        Buffer buffer = ctx.body().buffer();
         processResponse(ctx, pending, buffer);
         ctx.response().setStatusCode(204);
         ctx.end();
@@ -266,7 +266,7 @@ public class MockEventServer implements Closeable {
             return;
         }
         log.debugf("Sending response %s", requestId);
-        Buffer buffer = ctx.getBody();
+        Buffer buffer = ctx.body().buffer();
         processError(ctx, pending, buffer);
         ctx.response().setStatusCode(204);
         ctx.end();

@@ -3,15 +3,16 @@ package io.quarkus.amazon.lambda.runtime;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jboss.logging.Logger;
+
 import io.netty.handler.codec.DecoderException;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.impl.logging.Logger;
-import io.vertx.core.impl.logging.LoggerFactory;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.ext.web.impl.RequestBodyImpl;
 import io.vertx.ext.web.impl.RoutingContextInternal;
 
 /**
@@ -20,7 +21,7 @@ import io.vertx.ext.web.impl.RoutingContextInternal;
  */
 public class MockBodyHandler implements BodyHandler {
 
-    private static final Logger LOG = LoggerFactory.getLogger(io.vertx.ext.web.handler.impl.BodyHandlerImpl.class);
+    private static final org.jboss.logging.Logger LOG = Logger.getLogger(io.vertx.ext.web.handler.impl.BodyHandlerImpl.class);
 
     private long bodyLimit = DEFAULT_BODY_LIMIT;
     private String uploadsDir;
@@ -189,7 +190,8 @@ public class MockBodyHandler implements BodyHandler {
             if (mergeFormAttributes && req.isExpectMultipart()) {
                 req.params().addAll(req.formAttributes());
             }
-            context.setBody(body);
+            // Vert.x 5 remove the possibility to pass a synthetic body.
+            ((RequestBodyImpl) context.body()).setBuffer(body);
             // release body as it may take lots of memory
             body = null;
 

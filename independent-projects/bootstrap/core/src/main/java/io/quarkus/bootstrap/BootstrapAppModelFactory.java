@@ -287,7 +287,10 @@ public class BootstrapAppModelFactory {
         final String serializedModel = test ? System.getProperty(BootstrapConstants.SERIALIZED_TEST_APP_MODEL)
                 : System.getProperty(BootstrapConstants.SERIALIZED_APP_MODEL);
         if (serializedModel != null) {
-            final Path p = Paths.get(serializedModel);
+            Path p = Paths.get(serializedModel);
+            if (!p.isAbsolute() && projectRoot != null) {
+                p = projectRoot.resolve(p);
+            }
             if (Files.exists(p)) {
                 try {
                     return new CurationResult(ApplicationModelSerializer.deserialize(p));

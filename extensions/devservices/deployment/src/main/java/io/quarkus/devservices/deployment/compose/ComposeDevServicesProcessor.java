@@ -33,10 +33,9 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.ContainerRuntimeStatusBuildItem;
-import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
+import io.quarkus.deployment.builditem.DevServicesRegistryBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
-import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
@@ -50,6 +49,7 @@ import io.quarkus.deployment.dev.devservices.RunningContainer;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.devservices.common.ContainerUtil;
+import io.quarkus.devservices.crossclassloader.runtime.RunningService;
 import io.quarkus.runtime.LaunchMode;
 import io.smallrye.mutiny.unchecked.Unchecked;
 
@@ -64,10 +64,6 @@ public class ComposeDevServicesProcessor {
     static final String PROJECT_PREFIX = "quarkus-devservices";
     // If you change this, please adapt similar field in io.quarkus.gradle.GradleUtils
     static final Pattern COMPOSE_FILE = Pattern.compile("(^docker-compose|^compose)(-dev(-)?service).*.(yml|yaml)");
-
-    static volatile ComposeRunningService runningCompose;
-    static volatile ComposeDevServiceCfg cfg;
-    static volatile boolean first = true;
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -95,33 +91,32 @@ public class ComposeDevServicesProcessor {
             ApplicationInfoBuildItem appInfo,
             LaunchModeBuildItem launchMode,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
-            CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
-            DockerStatusBuildItem dockerStatusBuildItem) throws IOException {
+            DockerStatusBuildItem dockerStatusBuildItem,
+            DevServicesRegistryBuildItem devServicesRegistry) throws IOException {
 
         ComposeDevServiceCfg configuration = new ComposeDevServiceCfg(composeBuildTimeConfig.devservices());
 
-        if (runningCompose != null) {
-            boolean shouldShutdownTheBroker = !configuration.equals(cfg);
-            if (!shouldShutdownTheBroker) {
-                return runningCompose.toComposeBuildItem();
-            }
-            try {
-                runningCompose.close();
-            } finally {
-                runningCompose = null;
-                cfg = null;
-            }
+        RunningService existingService = devServicesRegistry.getRunningServices(Feature.COMPOSE.getName(), null, configuration);
+        if (existingService != null) {
+            String projectName = existingService.configs().get(DOCKER_COMPOSE_PROJECT);
+            return rediscoverComposeProject(buildExecutor, configuration, projectName);
         }
+
+        // Only close this CuratedApplication's compose services (dev mode config change).
+        // Other CuratedApplications' compose projects are left alone to avoid destroying
+        // shared Docker networks that other dev services depend on.
+        devServicesRegistry.closeOwnRunningServices(Feature.COMPOSE.getName(), null);
 
         StartupLogCompressor compressor = new StartupLogCompressor(
                 (launchMode.isTest() ? "(test) " : "") + "Compose Dev Services Starting:",
                 consoleInstalledBuildItem, loggingSetupBuildItem, s -> s.getName().startsWith("ducttape")
                         || s.getName().equals("Process stdout") || s.getName().startsWith("build-"));
+        ComposeProjectResult result;
         try {
-            runningCompose = startCompose(buildExecutor, configuration, appInfo.getName(),
+            result = startCompose(buildExecutor, configuration, appInfo.getName(),
                     dockerStatusBuildItem, launchMode, composeBuildTimeConfig.devservices().startupTimeout());
-            if (runningCompose == null) {
+            if (result == null) {
                 compressor.closeAndDumpCaptured();
             } else {
                 compressor.close();
@@ -134,36 +129,25 @@ public class ComposeDevServicesProcessor {
             throw new RuntimeException(t);
         }
 
-        if (runningCompose == null) {
+        if (result == null) {
             return new DevServicesComposeProjectBuildItem();
         }
 
-        if (first) {
-            first = false;
-            Runnable closeTask = () -> {
-                if (runningCompose != null) {
-                    try {
-                        runningCompose.close();
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-                first = true;
-                runningCompose = null;
-                cfg = null;
-            };
-            closeBuildItem.addCloseTask(closeTask, true);
-        }
-        cfg = configuration;
+        RunningService service = new RunningService(
+                Feature.COMPOSE.getName(), "Compose project: " + result.projectName,
+                result.configs, Map.of(), null,
+                result.isOwner ? result.compose::stop : () -> {
+                });
+        devServicesRegistry.addRunningService(Feature.COMPOSE.getName(), null, configuration, service);
 
-        return runningCompose.toComposeBuildItem();
+        return toComposeBuildItem(result.compose);
     }
 
     @BuildStep
     public DevServicesResultBuildItem toDevServicesResult(DevServicesComposeProjectBuildItem composeBuildItem) {
         if (composeBuildItem.getProject() != null) {
             return DevServicesResultBuildItem.discovered()
-                    .name("Compose Dev Services")
+                    .feature(Feature.COMPOSE)
                     .description(String.format("Project: %s, Services: %s", composeBuildItem.getProject(),
                             String.join(", ", composeBuildItem.getComposeServices().keySet())))
                     .config(composeBuildItem.getConfig())
@@ -172,7 +156,22 @@ public class ComposeDevServicesProcessor {
         return null;
     }
 
-    private ComposeRunningService startCompose(Executor buildExecutor, ComposeDevServiceCfg cfg,
+    private DevServicesComposeProjectBuildItem rediscoverComposeProject(Executor buildExecutor,
+            ComposeDevServiceCfg cfg, String projectName) {
+        ComposeFiles composeFiles = new ComposeFiles(cfg.files);
+        ComposeProject compose = buildComposeProject(composeFiles, projectName, cfg, Optional.empty());
+        compose.discoverServiceInstances(false);
+        if (!compose.getServices().isEmpty()) {
+            if (!cfg.files.isEmpty()) {
+                compose.waitUntilServicesReady(buildExecutor);
+            }
+            log.infof("Reusing existing Compose services for project %s", projectName);
+            return toComposeBuildItem(compose);
+        }
+        return new DevServicesComposeProjectBuildItem();
+    }
+
+    private ComposeProjectResult startCompose(Executor buildExecutor, ComposeDevServiceCfg cfg,
             String appName,
             ContainerRuntimeStatusBuildItem dockerStatusBuildItem,
             LaunchModeBuildItem launchMode,
@@ -194,41 +193,14 @@ public class ComposeDevServicesProcessor {
         }
 
         ComposeFiles composeFiles = new ComposeFiles(cfg.files);
-        String projectName = (PROJECT_PREFIX + "-" + appName).toLowerCase();
-        if (launchMode.getLaunchMode() != LaunchMode.DEVELOPMENT && !cfg.reuseProjectForTests) {
-            if (composeFiles.getProjectName() != null) {
-                projectName = composeFiles.getProjectName();
-            }
-            projectName = projectName + "-" + RandomStringUtils.insecure().nextAlphabetic(6).toLowerCase();
-        } else {
-            if (cfg.project != null) {
-                projectName = cfg.project;
-            } else if (composeFiles.getProjectName() != null) {
-                projectName = composeFiles.getProjectName();
-            }
-        }
+        String projectName = computeProjectName(cfg, composeFiles, appName, launchMode.getLaunchMode());
 
         if (composeFiles.getServiceDefinitions().isEmpty()) {
             log.info("No service definitions specified");
             return null;
         }
 
-        ComposeProject.Builder builder = new ComposeProject.Builder(composeFiles, getComposeExecutable())
-                .withProject(projectName)
-                .withEnv(cfg.envVariables)
-                .withStopContainers(cfg.stopServices)
-                .withRyukEnabled(cfg.ryukEnabled)
-                .withProfiles(cfg.profiles)
-                .withOptions(cfg.options)
-                .withRemoveImages(cfg.removeImages)
-                .withRemoveVolumes(cfg.removeVolumes)
-                .withFollowContainerLogs(cfg.followContainerLogs)
-                .withScalingPreferences(cfg.scalingPreferences)
-                .withStopTimeout(cfg.stopTimeout)
-                .withBuild(cfg.build);
-
-        timeout.ifPresent(builder::withStartupTimeout);
-        ComposeProject compose = builder.build();
+        ComposeProject compose = buildComposeProject(composeFiles, projectName, cfg, timeout);
 
         // if compose is configured to not start services, only try discovering existing services
         if (!cfg.startServices) {
@@ -236,7 +208,7 @@ public class ComposeDevServicesProcessor {
             // discover existing services
             compose.discoverServiceInstances(true);
             if (!compose.getServices().isEmpty()) {
-                return new ComposeRunningService(compose, false);
+                return new ComposeProjectResult(compose, projectName, false);
             } else {
                 return null;
             }
@@ -249,7 +221,7 @@ public class ComposeDevServicesProcessor {
                 compose.waitUntilServicesReady(buildExecutor);
             }
             log.infof("Discovered existing Compose services for project %s", compose.getProject());
-            return new ComposeRunningService(compose, false);
+            return new ComposeProjectResult(compose, projectName, false);
         }
         // failed discovering existing services, no compose files found
         if (cfg.files.isEmpty()) {
@@ -274,37 +246,77 @@ public class ComposeDevServicesProcessor {
         }
         // Wait for services to be ready
         compose.waitUntilServicesReady(buildExecutor);
-        return new ComposeRunningService(compose, true);
+        return new ComposeProjectResult(compose, projectName, true);
     }
 
-    private static class ComposeRunningService extends RunningDevService {
-
-        private final Map<String, List<RunningContainer>> composeServices;
-        private final String defaultNetworkId;
-
-        public ComposeRunningService(ComposeProject compose, boolean isOwner) {
-            super(compose.getProject(), "compose", null, isOwner ? compose::stop : null, configs(compose));
-            this.composeServices = composeServices(compose);
-            this.defaultNetworkId = compose.getDefaultNetworkId();
+    private static String computeProjectName(ComposeDevServiceCfg cfg, ComposeFiles composeFiles,
+            String appName, LaunchMode launchMode) {
+        String projectName = (PROJECT_PREFIX + "-" + appName).toLowerCase();
+        if (launchMode != LaunchMode.DEVELOPMENT && !cfg.reuseProjectForTests) {
+            if (composeFiles.getProjectName() != null) {
+                projectName = composeFiles.getProjectName();
+            }
+            projectName = projectName + "-" + RandomStringUtils.insecure().nextAlphabetic(6).toLowerCase();
+        } else {
+            if (cfg.project != null) {
+                projectName = cfg.project;
+            } else if (composeFiles.getProjectName() != null) {
+                projectName = composeFiles.getProjectName();
+            }
         }
+        return projectName;
+    }
 
-        static Map<String, String> configs(ComposeProject compose) {
+    private ComposeProject buildComposeProject(ComposeFiles composeFiles, String projectName,
+            ComposeDevServiceCfg cfg, Optional<Duration> timeout) {
+        ComposeProject.Builder builder = new ComposeProject.Builder(composeFiles, getComposeExecutable())
+                .withProject(projectName)
+                .withEnv(cfg.envVariables)
+                .withStopContainers(cfg.stopServices)
+                .withRyukEnabled(cfg.ryukEnabled)
+                .withProfiles(cfg.profiles)
+                .withOptions(cfg.options)
+                .withRemoveImages(cfg.removeImages)
+                .withRemoveVolumes(cfg.removeVolumes)
+                .withFollowContainerLogs(cfg.followContainerLogs)
+                .withScalingPreferences(cfg.scalingPreferences)
+                .withStopTimeout(cfg.stopTimeout)
+                .withBuild(cfg.build);
+
+        timeout.ifPresent(builder::withStartupTimeout);
+        return builder.build();
+    }
+
+    private static DevServicesComposeProjectBuildItem toComposeBuildItem(ComposeProject compose) {
+        Map<String, String> configs = new HashMap<>();
+        configs.putAll(compose.getEnvVarConfig());
+        configs.putAll(compose.getExposedPortConfig());
+        configs.put(DOCKER_COMPOSE_PROJECT, compose.getProject());
+
+        Map<String, List<RunningContainer>> composeServices = compose.getServices().stream()
+                .collect(Collectors.groupingBy(ComposeServiceWaitStrategyTarget::getServiceName,
+                        Collectors.mapping(s -> ContainerUtil.toRunningContainer(s.getContainerInfo()),
+                                Collectors.toList())));
+
+        return new DevServicesComposeProjectBuildItem(compose.getProject(), compose.getDefaultNetworkId(),
+                composeServices, configs);
+    }
+
+    private static class ComposeProjectResult {
+        final ComposeProject compose;
+        final String projectName;
+        final boolean isOwner;
+        final Map<String, String> configs;
+
+        ComposeProjectResult(ComposeProject compose, String projectName, boolean isOwner) {
+            this.compose = compose;
+            this.projectName = projectName;
+            this.isOwner = isOwner;
             Map<String, String> configs = new HashMap<>();
             configs.putAll(compose.getEnvVarConfig());
             configs.putAll(compose.getExposedPortConfig());
             configs.put(DOCKER_COMPOSE_PROJECT, compose.getProject());
-            return configs;
-        }
-
-        static Map<String, List<RunningContainer>> composeServices(ComposeProject compose) {
-            return compose.getServices().stream()
-                    .collect(Collectors.groupingBy(ComposeServiceWaitStrategyTarget::getServiceName,
-                            Collectors.mapping(s -> ContainerUtil.toRunningContainer(s.getContainerInfo()),
-                                    Collectors.toList())));
-        }
-
-        public DevServicesComposeProjectBuildItem toComposeBuildItem() {
-            return new DevServicesComposeProjectBuildItem(getName(), defaultNetworkId, composeServices, getConfig());
+            this.configs = configs;
         }
     }
 

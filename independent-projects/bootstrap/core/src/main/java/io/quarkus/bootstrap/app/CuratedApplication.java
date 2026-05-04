@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -69,6 +70,9 @@ public class CuratedApplication implements Serializable, AutoCloseable {
 
     final AtomicInteger runtimeClassLoaderCount = new AtomicInteger();
     private boolean eligibleForReuse = false;
+
+    // Per-CuratedApplication context that survives across AugmentActionImpl instances
+    private final Map<Class<?>, Object> curatedApplicationContext = new ConcurrentHashMap<>();
 
     CuratedApplication(QuarkusBootstrap quarkusBootstrap, CurationResult curationResult,
             ConfiguredClassLoading configuredClassLoading) {
@@ -229,39 +233,96 @@ public class CuratedApplication implements Serializable, AutoCloseable {
 
     public synchronized QuarkusClassLoader getOrCreateAugmentClassLoader() {
         if (augmentClassLoader == null) {
-            //first run, we need to build all the class loaders
-            QuarkusClassLoader.Builder builder = QuarkusClassLoader.builder(
-                    "Augmentation Class Loader: " + quarkusBootstrap.getMode() + getClassLoaderNameSuffix(),
-                    quarkusBootstrap.getBaseClassLoader(), !quarkusBootstrap.isIsolateDeployment())
-                    .setAssertionsEnabled(quarkusBootstrap.isAssertionsEnabled());
-            builder.addClassLoaderEventListeners(quarkusBootstrap.getClassLoaderEventListeners());
-            //we want a class loader that can load the deployment artifacts and all their dependencies, but not
-            //any of the runtime artifacts, or user classes
-            //this will load any deployment artifacts from the parent CL if they are present
-            for (ResolvedDependency i : appModel.getDependencies()) {
-                if (configuredClassLoading.isRemovedArtifact(i.getKey())) {
-                    processCpElement(i, builder::addBannedElement, true);
-                    continue;
-                }
-                if (configuredClassLoading.isReloadableArtifact(i.getKey())) {
-                    continue;
-                }
-                processCpElement(i, element -> addCpElement(builder, i, element), true);
-            }
-
-            for (Path i : quarkusBootstrap.getAdditionalDeploymentArchives()) {
-                builder.addNormalPriorityElement(ClassPathElement.fromPath(i, false));
-            }
-            Map<String, byte[]> banned = new HashMap<>();
-            for (Collection<String> i : configuredClassLoading.getRemovedResources().values()) {
-                for (String j : i) {
-                    banned.put(j, new byte[0]);
-                }
-            }
-            builder.addBannedElement(new MemoryClassPathElement(banned, false));
-            augmentClassLoader = builder.build();
+            AugmentationClassLoaderInput input = buildAugmentationClassLoaderInput();
+            AugmentationClassLoaderResult result = quarkusBootstrap.getAugmentationClassLoaderManager()
+                    .getOrCreateAugmentationClassLoader(input,
+                            CuratedApplication::buildAugmentationClassLoader);
+            augmentClassLoader = result.classLoader();
+            augmentationElements.putAll(result.elementCache());
         }
         return augmentClassLoader;
+    }
+
+    private AugmentationClassLoaderInput buildAugmentationClassLoaderInput() {
+        return new AugmentationClassLoaderInput(
+                configuredClassLoading,
+                quarkusBootstrap.getAdditionalDeploymentArchives(),
+                quarkusBootstrap.getBaseClassLoader(),
+                quarkusBootstrap.isIsolateDeployment(),
+                quarkusBootstrap.isAssertionsEnabled(),
+                quarkusBootstrap.getClassLoaderEventListeners(),
+                appModel.getDependencies(),
+                quarkusBootstrap.getMode(),
+                getClassLoaderNameSuffix());
+    }
+
+    static AugmentationClassLoaderResult buildAugmentationClassLoader(AugmentationClassLoaderInput input) {
+        Map<ArtifactKey, ClassPathElement> elementCache = new HashMap<>();
+        ConfiguredClassLoading classLoading = input.configuredClassLoading();
+        QuarkusClassLoader.Builder builder = QuarkusClassLoader.builder(
+                "Augmentation Class Loader: " + input.mode() + input.classLoaderNameSuffix(),
+                input.baseClassLoader(), !input.isolateDeployment())
+                .setAssertionsEnabled(input.assertionsEnabled());
+        builder.addClassLoaderEventListeners(input.classLoaderEventListeners());
+        for (ResolvedDependency dep : input.dependencies()) {
+            if (classLoading.isRemovedArtifact(dep.getKey())) {
+                processAugmentationCpElement(dep, classLoading, elementCache, builder::addBannedElement);
+                continue;
+            }
+            if (classLoading.isReloadableArtifact(dep.getKey())) {
+                continue;
+            }
+            processAugmentationCpElement(dep, classLoading, elementCache, element -> {
+                if (classLoading.isParentFirstArtifact(dep.getKey())) {
+                    builder.addParentFirstElement(element);
+                    builder.addNormalPriorityElement(element);
+                } else if (dep.isFlagSet(DependencyFlags.CLASSLOADER_LESSER_PRIORITY)) {
+                    builder.addLesserPriorityElement(element);
+                } else {
+                    builder.addNormalPriorityElement(element);
+                }
+            });
+        }
+
+        for (Path p : input.additionalDeploymentArchives()) {
+            builder.addNormalPriorityElement(ClassPathElement.fromPath(p, false));
+        }
+        Map<String, byte[]> banned = new HashMap<>();
+        for (Collection<String> resources : classLoading.getRemovedResources().values()) {
+            for (String resource : resources) {
+                banned.put(resource, new byte[0]);
+            }
+        }
+        builder.addBannedElement(new MemoryClassPathElement(banned, false));
+        return new AugmentationClassLoaderResult(builder.build(), elementCache);
+    }
+
+    private static void processAugmentationCpElement(ResolvedDependency artifact,
+            ConfiguredClassLoading classLoading,
+            Map<ArtifactKey, ClassPathElement> elementCache,
+            Consumer<ClassPathElement> consumer) {
+        if (!artifact.isJar()) {
+            consumer.accept(ClassPathElement.EMPTY);
+            return;
+        }
+        Collection<String> filteredResources = classLoading.getRemovedResources().get(artifact.getKey());
+        if (filteredResources != null) {
+            Consumer<ClassPathElement> orig = consumer;
+            consumer = cpe -> orig.accept(new FilteredClassPathElement(cpe, filteredResources));
+        }
+        ClassPathElement cpe = elementCache.get(artifact.getKey());
+        if (cpe != null) {
+            consumer.accept(cpe);
+            return;
+        }
+        final PathTree contentTree = artifact.getContentTree();
+        if (contentTree.isEmpty()) {
+            consumer.accept(ClassPathElement.EMPTY);
+            return;
+        }
+        cpe = ClassPathElement.fromDependency(contentTree, artifact);
+        consumer.accept(cpe);
+        elementCache.put(artifact.getKey(), cpe);
     }
 
     /**
@@ -477,10 +538,14 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         return this.configuredClassLoading.hasReloadableArtifacts();
     }
 
+    public Map<Class<?>, Object> getCuratedApplicationContext() {
+        return curatedApplicationContext;
+    }
+
     @Override
     public void close() {
         if (augmentClassLoader != null) {
-            augmentClassLoader.close();
+            quarkusBootstrap.getAugmentationClassLoaderManager().release(augmentClassLoader);
             augmentClassLoader = null;
         }
         if (baseRuntimeClassLoader != null) {
@@ -488,6 +553,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             baseRuntimeClassLoader = null;
         }
         augmentationElements.clear();
+        curatedApplicationContext.clear();
     }
 
     public boolean isEligibleForReuse() {

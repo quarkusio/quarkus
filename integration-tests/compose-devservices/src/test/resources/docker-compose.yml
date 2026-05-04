@@ -24,7 +24,7 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_NUM_PARTITIONS: 3
     volumes:
-      - './kafka.sh:/kafka.sh'
+      - './kafka.sh:/kafka.sh:z'
   ignored_rabbit:
     image: rabbitmq:4.0-management
     labels:

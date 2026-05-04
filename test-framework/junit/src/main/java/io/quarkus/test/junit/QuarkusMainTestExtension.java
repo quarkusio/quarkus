@@ -36,6 +36,7 @@ import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.bootstrap.app.DefaultAugmentationClassLoaderManager;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
@@ -112,7 +113,7 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         }
 
         CuratedApplication curatedApplication = AppMakerHelper.makeCuratedApplication(requiredTestClass, additionalPaths,
-                context.getDisplayName(), false);
+                context.getDisplayName(), false, DefaultAugmentationClassLoaderManager.getInstance());
         return AppMakerHelper.prepare(requiredTestClass, curatedApplication, testProfile.map(klass -> klass));
     }
 

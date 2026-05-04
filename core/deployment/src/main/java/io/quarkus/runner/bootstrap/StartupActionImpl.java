@@ -62,7 +62,7 @@ public class StartupActionImpl implements StartupAction {
 
     private final CuratedApplication curatedApplication;
     private final QuarkusClassLoader runtimeClassLoader;
-    private ClassLoader deploymentClassLoader;
+    private QuarkusClassLoader deploymentClassLoader;
 
     private final String mainClassName;
     private final String applicationClassName;
@@ -92,7 +92,7 @@ public class StartupActionImpl implements StartupAction {
         this.devServicesRegistry = buildResult.consumeOptional(DevServicesRegistryBuildItem.class);
         this.devServicesCustomizers = buildResult.consumeMulti(DevServicesCustomizerBuildItem.class);
         this.additionalConfigBuildItems = buildResult.consumeMulti(DevServicesAdditionalConfigBuildItem.class);
-        this.deploymentClassLoader = buildResult.getDeploymentClassLoader();
+        this.deploymentClassLoader = (QuarkusClassLoader) buildResult.getDeploymentClassLoader();
 
         QuarkusClassLoader baseClassLoader = curatedApplication.getOrCreateBaseRuntimeClassLoader();
         QuarkusClassLoader runtimeClassLoader;
@@ -221,6 +221,7 @@ public class StartupActionImpl implements StartupAction {
 
     private void doClose() {
         devServicesStarted = false;
+        deploymentClassLoader.close();
         deploymentClassLoader = null;
         try {
             runtimeClassLoader.loadClass(Quarkus.class.getName()).getMethod("blockingExit").invoke(null);
@@ -336,10 +337,33 @@ public class StartupActionImpl implements StartupAction {
             if (deploymentClassLoader == null) {
                 throw new IllegalStateException("Dev services cannot be started without a deployment class loader.");
             }
-            devServicesRegistry.startAll(devServicesResults, devServicesCustomizers, additionalConfigBuildItems,
-                    deploymentClassLoader);
+            DevServicesRegistryBuildItem.DevServicesStartResult startResult = devServicesRegistry.startAll(
+                    devServicesResults, devServicesCustomizers, additionalConfigBuildItems, deploymentClassLoader);
 
-            devServicesProperties.putAll(devServicesRegistry.getConfigForAllRunningServices());
+            devServicesProperties.putAll(startResult.configs());
+            setDevServicesConfigSourceValues(startResult);
+        }
+    }
+
+    private void setDevServicesConfigSourceValues(DevServicesRegistryBuildItem.DevServicesStartResult startResult) {
+        try {
+            Class<?> configSourceClass = runtimeClassLoader
+                    .loadClass("io.quarkus.devservice.runtime.config.DevServicesConfigSource");
+            configSourceClass.getMethod("setConfig", Map.class).invoke(null, startResult.configs());
+        } catch (ClassNotFoundException e) {
+            // devservices runtime module not available
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Failed to set dev services config", e);
+        }
+
+        try {
+            Class<?> overrideConfigSourceClass = runtimeClassLoader
+                    .loadClass("io.quarkus.devservice.runtime.config.DevServicesOverrideConfigSource");
+            overrideConfigSourceClass.getMethod("setConfig", Map.class).invoke(null, startResult.overrideConfigs());
+        } catch (ClassNotFoundException e) {
+            // devservices runtime module not available
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Failed to set dev services override config", e);
         }
     }
 
@@ -393,6 +417,7 @@ public class StartupActionImpl implements StartupAction {
                         } finally {
                             Thread.currentThread().setContextClassLoader(original);
                             runtimeClassLoader.close();
+                            deploymentClassLoader.close();
                         }
                     } finally {
                         ForkJoinClassLoading.setForkJoinClassLoader(ClassLoader.getSystemClassLoader());
@@ -404,8 +429,6 @@ public class StartupActionImpl implements StartupAction {
                                 log.error("Failed to run close task", t);
                             }
                         }
-                        // This will read the state of the curated application at the time of closing;
-                        // If the caller of close knows that the 'next' application shares a curated application, it can set eligible for reuse to true
                         if (!curatedApplication.isEligibleForReuse()) {
                             if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.TEST
                                     && !curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication()) {

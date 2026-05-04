@@ -23,7 +23,6 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -31,6 +30,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.AugmentResult;
+import io.quarkus.bootstrap.app.ClassTransformer;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.JarResult;
 import io.quarkus.bootstrap.runner.Timing;
@@ -39,7 +39,6 @@ import io.quarkus.deployment.dev.remote.RemoteDevClient;
 import io.quarkus.deployment.dev.remote.RemoteDevClientProvider;
 import io.quarkus.deployment.mutability.DevModeTask;
 import io.quarkus.deployment.pkg.jar.FastJarFormat;
-import io.quarkus.deployment.steps.ClassTransformingBuildStep;
 import io.quarkus.dev.spi.DeploymentFailedStartHandler;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementSetup;
@@ -133,10 +132,10 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                         public void accept(DevModeContext.ModuleInfo moduleInfo, String s) {
                             copiedStaticResources.computeIfAbsent(moduleInfo, ss -> new HashSet<>()).add(s);
                         }
-                    }, new BiFunction<String, byte[], byte[]>() {
+                    }, new ClassTransformer() {
                         @Override
-                        public byte[] apply(String s, byte[] bytes) {
-                            return ClassTransformingBuildStep.transform(s, bytes);
+                        public byte[] transform(String s, byte[] bytes) {
+                            return augmentAction.getClassTransformer().transform(s, bytes);
                         }
                     }, null, deploymentProblem);
 

@@ -112,7 +112,7 @@
         </dependency>
         <dependency>
             <groupId>io.smallrye.common</groupId>
-            <artifactId>smallrye-common-vertx-context</artifactId>
+            <artifactId>smallrye-common-vertx5-context</artifactId>
         </dependency>
 
         <!-- Test dependencies -->

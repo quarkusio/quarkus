@@ -31,7 +31,7 @@ import io.undertow.websockets.util.ContextSetupHandler;
 import io.undertow.websockets.util.ObjectFactory;
 import io.undertow.websockets.util.ObjectHandle;
 import io.undertow.websockets.util.ObjectIntrospecter;
-import io.vertx.core.impl.VertxInternal;
+import io.vertx.core.internal.VertxInternal;
 
 @Recorder
 public class WebsocketCoreRecorder {
@@ -147,7 +147,7 @@ public class WebsocketCoreRecorder {
         }, Thread.currentThread().getContextClassLoader(), new Supplier<EventLoopGroup>() {
             @Override
             public EventLoopGroup get() {
-                return ((VertxInternal) VertxCoreRecorder.getVertx().get()).getEventLoopGroup();
+                return ((VertxInternal) VertxCoreRecorder.getVertx().get()).eventLoopGroup();
             }
         },
                 Collections.singletonList(new ContextSetupHandler() {

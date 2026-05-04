@@ -32,7 +32,7 @@ import io.vertx.core.http.WebSocket;
 import io.vertx.core.http.WebSocketClient;
 import io.vertx.core.http.WebSocketClientOptions;
 import io.vertx.core.http.WebSocketConnectOptions;
-import io.vertx.core.impl.ContextImpl;
+import io.vertx.core.internal.ContextInternal;
 
 abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>> {
 
@@ -255,7 +255,7 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
     record WebSocketOpen(Consumer<WebSocketClientConnection> cleanup, WebSocket websocket) {
     }
 
-    Consumer<WebSocketClientConnection> newCleanupConsumer(WebSocketClient client, ContextImpl context) {
+    Consumer<WebSocketClientConnection> newCleanupConsumer(WebSocketClient client, ContextInternal context) {
         return new Consumer<WebSocketClientConnection>() {
             @Override
             public void accept(WebSocketClientConnection conn) {

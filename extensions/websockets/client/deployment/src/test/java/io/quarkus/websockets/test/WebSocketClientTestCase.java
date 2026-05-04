@@ -1,9 +1,9 @@
 package io.quarkus.websockets.test;
 
 import java.net.URI;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import jakarta.websocket.ContainerProvider;
@@ -18,6 +18,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
@@ -57,29 +58,14 @@ public class WebSocketClientTestCase {
     }
 
     @AfterAll
-    public static void stop() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
+    public static void stop() throws TimeoutException {
+        Future<Void> closeOperation;
         if (server != null) {
-            server.close(new Handler<AsyncResult<Void>>() {
-                @Override
-                public void handle(AsyncResult<Void> voidAsyncResult) {
-                    vertx.close(new Handler<AsyncResult<Void>>() {
-                        @Override
-                        public void handle(AsyncResult<Void> event) {
-                            latch.countDown();
-                        }
-                    });
-                }
-            });
-        } else if (vertx != null) {
-            vertx.close(new Handler<AsyncResult<Void>>() {
-                @Override
-                public void handle(AsyncResult<Void> event) {
-                    latch.countDown();
-                }
-            });
+            closeOperation = server.close().andThen(ar -> vertx.close());
+        } else {
+            closeOperation = vertx.close();
         }
-        latch.await(20, TimeUnit.SECONDS);
+        closeOperation.await(20, TimeUnit.SECONDS);
     }
 
     @Test

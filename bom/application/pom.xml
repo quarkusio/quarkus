@@ -16,7 +16,7 @@
     <properties>
         <angus-activation.version>2.0.3</angus-activation.version>
         <angus-mail.version>2.0.5</angus-mail.version> <!-- keep in sync with angus-activation (mail depends on activation) -->
-        <bouncycastle.version>1.83</bouncycastle.version>
+        <bouncycastle.version>1.84</bouncycastle.version>
         <bouncycastle.fips.version>2.1.2</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>2.1.22</bouncycastle.tls.fips.version>
         <cyclonedx.version>12.1.0</cyclonedx.version>
@@ -28,7 +28,7 @@
         <parsson.version>1.1.7</parsson.version>
         <resteasy-microprofile.version>3.0.1.Final</resteasy-microprofile.version>
         <resteasy-spring-web.version>3.2.0.Final</resteasy-spring-web.version>
-        <resteasy.version>6.2.15.Final</resteasy.version>
+        <resteasy.version>6.2.16.Final</resteasy.version>
         <opentelemetry-instrumentation.version>2.23.0-alpha</opentelemetry-instrumentation.version> <!-- OTel SDk 1.55.0-->
         <opentelemetry-semconv.version>1.37.0-alpha</opentelemetry-semconv.version>
         <quarkus-http.version>5.4.0</quarkus-http.version>
@@ -107,7 +107,7 @@
         <slf4j-jboss-logmanager.version>2.0.2.Final</slf4j-jboss-logmanager.version>
         <wildfly-common.version>2.0.1</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
-        <wildfly-elytron.version>2.8.3.Final</wildfly-elytron.version>
+        <wildfly-elytron.version>2.8.4.Final</wildfly-elytron.version>
         <jboss-marshalling.version>2.3.0</jboss-marshalling.version>
         <jboss-threads.version>3.9.2</jboss-threads.version>
         <vertx.version>4.5.26</vertx.version>
@@ -193,8 +193,8 @@
         <log4j2-api.version>2.25.3</log4j2-api.version>
         <avro.version>1.12.1</avro.version>
         <apicurio-registry.version>3.1.7</apicurio-registry.version>
-        <testcontainers.version>2.0.3</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
-        <docker-java.version>3.7.0</docker-java.version> <!-- must be the version Testcontainers use: https://central.sonatype.com/artifact/org.testcontainers/testcontainers -->
+        <testcontainers.version>2.0.4</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
+        <docker-java.version>3.7.1</docker-java.version> <!-- must be the version Testcontainers use: https://central.sonatype.com/artifact/org.testcontainers/testcontainers -->
         <!-- Check the compatibility matrix (https://github.com/opensearch-project/opensearch-testcontainers) before upgrading: -->
         <opensearch-testcontainers.version>2.1.3</opensearch-testcontainers.version>
         <com.dajudge.kindcontainer>2.0.0</com.dajudge.kindcontainer>
@@ -216,7 +216,7 @@
         <prometheus.version>0.16.0</prometheus.version>
         <!-- Dev UI -->
         <importmap.version>1.0.11</importmap.version>
-        <webauthn4j.version>0.28.0.RELEASE</webauthn4j.version>
+        <webauthn4j.version>0.30.3.RELEASE</webauthn4j.version>
     </properties>
 
     <pluginRepositories>
@@ -4550,13 +4550,6 @@
                 <groupId>org.apache.kafka</groupId>
                 <artifactId>kafka-clients</artifactId>
                 <version>${kafka.version}</version>
-                <!-- TODO: remove the exclusion after upgrading to kafka-clients depending on the new lz4-java groupId (at.yawk.lz4) -->
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.lz4</groupId>
-                        <artifactId>lz4-java</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>at.yawk.lz4</groupId>

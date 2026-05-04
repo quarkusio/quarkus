@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.client.ClientResponseFilter;
@@ -23,8 +24,11 @@ import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 
+import io.vertx.core.Future;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
+import io.vertx.core.http.HttpClientResponse;
+import io.vertx.core.http.RequestOptions;
 
 @SuppressWarnings("ForLoopReplaceableByForEach")
 class HandlerChain {
@@ -45,12 +49,14 @@ class HandlerChain {
             LoggingScope loggingScope,
             Map<Class<?>, MultipartResponseData> multipartData,
             ClientLogger clientLogger,
+            Function<HttpClientResponse, Future<RequestOptions>> redirectHandler,
             List<Consumer<HttpClientRequest>> clientRequestCustomizers) {
         this.clientCaptureCurrentContextRestHandler = new ClientCaptureCurrentContextRestHandler(captureStacktrace);
         this.clientSwitchToRequestContextRestHandler = new ClientSwitchToRequestContextRestHandler();
         this.clientSendHandler = new ClientSendRequestHandler(httpClientOptions, followRedirects, loggingScope,
                 clientLogger,
                 multipartData,
+                redirectHandler,
                 clientRequestCustomizers);
         this.clientSetResponseEntityRestHandler = new ClientSetResponseEntityRestHandler();
         this.clientResponseCompleteRestHandler = new ClientResponseCompleteRestHandler();

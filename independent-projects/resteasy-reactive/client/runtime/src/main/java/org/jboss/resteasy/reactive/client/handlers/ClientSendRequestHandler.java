@@ -77,6 +77,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
     private final LoggingScope loggingScope;
     private final ClientLogger clientLogger;
     private final Map<Class<?>, MultipartResponseData> multipartResponseDataMap;
+    private final Function<HttpClientResponse, Future<RequestOptions>> redirectHandler;
     private final List<Consumer<HttpClientRequest>> clientRequestCustomizers;
     private final int maxChunkSize;
     private final int inputStreamChunkSize;
@@ -85,6 +86,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
             boolean followRedirects,
             LoggingScope loggingScope, ClientLogger logger,
             Map<Class<?>, MultipartResponseData> multipartResponseDataMap,
+            Function<HttpClientResponse, Future<RequestOptions>> redirectHandler,
             List<Consumer<HttpClientRequest>> clientRequestCustomizers) {
         this.maxChunkSize = httpClientOptions.getMaxChunkSize();
         this.inputStreamChunkSize = httpClientOptions.getMaxChunkSize();
@@ -93,6 +95,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         this.loggingScope = loggingScope;
         this.clientLogger = logger;
         this.multipartResponseDataMap = multipartResponseDataMap;
+        this.redirectHandler = redirectHandler;
         this.clientRequestCustomizers = clientRequestCustomizers;
     }
 
@@ -268,28 +271,18 @@ public class ClientSendRequestHandler implements ClientRestHandler {
      */
     private void installRedirectRequestCustomizer(HttpClientRequest httpClientRequest,
             RestClientRequestContext requestContext) {
-        if (!followRedirects || clientRequestCustomizers.isEmpty()) {
+        if (!followRedirects || clientRequestCustomizers.isEmpty() || redirectHandler == null) {
             return;
         }
         httpClientRequest.redirectHandler(response -> {
             /*
-             * The docs for `redirectHandler()` make no statement about whether the returned result is nullable.
-             * We'll guard against null here and assume there's no redirect taking place.
-             */
-            Function<HttpClientResponse, Future<RequestOptions>> redirectHandler = requestContext.getHttpClient()
-                    .redirectHandler();
-            if (redirectHandler == null) {
-                return Future.succeededFuture(null);
-            }
-
-            /*
-             * @see HttpClient#redirectHandler(Function)
-             * According to the docs the `redirectHandler` function returns null if there is no redirect taking place.
+             * @see HttpClientBuilder#withRedirectHandler(Function)
+             * According to the docs the `handler` function returns null if there is no redirect taking place.
              *
              * But it doesn't return `HttpClientRequest`, it returns a `Future<RequestOptions>`.
              * Vert.x 3 exposed redirect handling in terms of HttpClientRequest, while Vert.x 4
              * changed the client-level redirect handler to Future<RequestOptions>. The current
-             * docs still describe the old null semantics, so they are likely stale.
+             * docs still describe the old null semantics, so they are likely stale (even in Vert.x 5).
              *
              * In practice, we defensively accept both interpretations of "no redirect":
              * - the handler returns a null Future<RequestOptions>

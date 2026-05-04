@@ -1,7 +1,5 @@
 package io.quarkus.test.junit;
 
-import static io.quarkus.runtime.configuration.ConfigUtils.configBuilder;
-
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
@@ -19,8 +17,10 @@ import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.deployment.dev.testing.TestConfigCustomizer;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.configuration.QuarkusConfigBuilderCustomizer;
 import io.smallrye.config.Config;
 import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithContextExtension
@@ -54,8 +54,14 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         if (classLoader != ClassLoader.getSystemClassLoader()) {
             LaunchMode current = LaunchMode.current();
             LaunchMode.set(LaunchMode.TEST);
-            SmallRyeConfig config = configBuilder()
+            SmallRyeConfig config = new SmallRyeConfigBuilder()
                     .forClassLoader(classLoader)
+                    .addDiscoveredCustomizers()
+                    .addDiscoveredSources()
+                    .addDiscoveredConverters()
+                    .addDefaultInterceptors()
+                    .addDefaultSources()
+                    .withCustomizers(new QuarkusConfigBuilderCustomizer(LaunchMode.TEST))
                     .withCustomizers(new TestConfigCustomizer(LaunchMode.TEST))
                     .build();
             LaunchMode.set(current);

@@ -256,6 +256,13 @@ public interface TestConfig {
          */
         @ConfigDocMapKey("host-path")
         Map<String, String> volumeMounts();
+
+        /**
+         * If true, the container will be run as the current host user (uid:gid).
+         * Useful when volume mounts require matching host user permissions.
+         */
+        @WithDefault("false")
+        boolean runAsHostUser();
     }
 
     interface RestAssured {

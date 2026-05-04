@@ -2,9 +2,9 @@ package io.quarkus.test.vertx;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import io.quarkus.arc.Arc;
@@ -15,6 +15,7 @@ import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
@@ -96,34 +97,18 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
             VertxContextSafetyToggle.setContextSafe(context, true);
         }
 
-        CompletableFuture<Object> cf;
         if (shouldRunOnEventLoop(testClass, actualTestMethod)) {
-            cf = new CompletableFuture<>();
+            Promise<Object> promise = Promise.promise();
             var handler = new RunTestMethodOnVertxEventLoopContextHandler(actualTestInstance, actualTestMethod,
-                    actualTestMethodArgs, uniAsserter, cf);
+                    actualTestMethodArgs, uniAsserter, promise);
             context.runOnContext(handler);
+            return promise.future().await(30, TimeUnit.SECONDS);
         } else {
             var handler = new RunTestMethodOnVertxBlockingContextHandler(actualTestInstance, actualTestMethod,
                     actualTestMethodArgs, uniAsserter);
-            cf = (CompletableFuture<Object>) context.executeBlocking(() -> {
-                Promise<Object> promise = Promise.promise();
-                handler.handle(promise);
-                return promise.future().await();
-            }).toCompletionStage();
-            // TODO FIX RunTestMethodOnVertxBlockingContextHandler not to be a Promise handler
-            // cf = ((CompletableFuture<Object>) context.executeBlocking(handler).toCompletionStage());
+            Future<Object> future = context.executeBlocking(handler::execute);
+            return future.await(30, TimeUnit.SECONDS);
         }
-
-        try {
-            return cf.get();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return null;
-        } catch (ExecutionException e) {
-            // the test itself threw an exception
-            throw e.getCause();
-        }
-
     }
 
     private boolean shouldContextBeDuplicated(Class<?> c, Method m) {
@@ -163,12 +148,12 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
         private final Method targetMethod;
         private final List<Object> methodArgs;
         private final UnwrappableUniAsserter uniAsserter;
-        private final CompletableFuture<Object> future;
+        private final Promise<Object> promise;
 
         public RunTestMethodOnVertxEventLoopContextHandler(Object testInstance, Method targetMethod, List<Object> methodArgs,
-                UniAsserter uniAsserter, CompletableFuture<Object> future) {
+                UniAsserter uniAsserter, Promise<Object> promise) {
             this.testInstance = testInstance;
-            this.future = future;
+            this.promise = promise;
             this.targetMethod = targetMethod;
             this.methodArgs = methodArgs;
             this.uniAsserter = (UnwrappableUniAsserter) uniAsserter;
@@ -198,27 +183,27 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
                         @Override
                         public void accept(Object o) {
                             onTerminate.run();
-                            future.complete(testMethodResult);
+                            promise.complete(testMethodResult);
                         }
                     }, new Consumer<Throwable>() {
                         @Override
                         public void accept(Throwable t) {
                             onTerminate.run();
-                            future.completeExceptionally(t);
+                            promise.fail(t);
                         }
                     });
                 } else {
                     onTerminate.run();
-                    future.complete(testMethodResult);
+                    promise.complete(testMethodResult);
                 }
             } catch (Throwable t) {
                 onTerminate.run();
-                future.completeExceptionally(t.getCause());
+                promise.fail(t.getCause());
             }
         }
     }
 
-    public static class RunTestMethodOnVertxBlockingContextHandler implements Handler<Promise<Object>> {
+    public static class RunTestMethodOnVertxBlockingContextHandler {
         private static final Runnable DO_NOTHING = () -> {
         };
 
@@ -235,46 +220,32 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
             this.uniAsserter = (UnwrappableUniAsserter) uniAsserter;
         }
 
-        @Override
-        public void handle(Promise<Object> promise) {
+        public Object execute() {
             ManagedContext requestContext = Arc.container().requestContext();
             if (requestContext.isActive()) {
-                doRun(promise, DO_NOTHING);
+                return doExecute(DO_NOTHING);
             } else {
                 requestContext.activate();
-                doRun(promise, new Runnable() {
-                    @Override
-                    public void run() {
-                        requestContext.terminate();
-                    }
-                });
+                try {
+                    return doExecute(requestContext::terminate);
+                } catch (Throwable t) {
+                    requestContext.terminate();
+                    throw t;
+                }
             }
         }
 
-        private void doRun(Promise<Object> promise, Runnable onTerminate) {
+        private Object doExecute(Runnable onTerminate) {
             try {
                 Object testMethodResult = targetMethod.invoke(testInstance, methodArgs.toArray(new Object[0]));
                 if (uniAsserter != null) {
-                    uniAsserter.asUni().subscribe().with(new Consumer<Object>() {
-                        @Override
-                        public void accept(Object o) {
-                            onTerminate.run();
-                            promise.complete();
-                        }
-                    }, new Consumer<>() {
-                        @Override
-                        public void accept(Throwable t) {
-                            onTerminate.run();
-                            promise.fail(t);
-                        }
-                    });
-                } else {
-                    onTerminate.run();
-                    promise.complete(testMethodResult);
+                    uniAsserter.asUni().await().atMost(Duration.ofSeconds(30));
                 }
+                onTerminate.run();
+                return testMethodResult;
             } catch (Throwable t) {
                 onTerminate.run();
-                promise.fail(t.getCause());
+                throw new RuntimeException(t.getCause());
             }
         }
     }

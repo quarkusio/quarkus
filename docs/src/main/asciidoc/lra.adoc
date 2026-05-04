@@ -80,7 +80,7 @@ implementation("io.quarkus:quarkus-rest-client")
 
 NOTE: `quarkus-narayana-lra` requires a server Jakarta REST implementation and a REST Client implementation.
 When creating a new project, `quarkus-rest-jackson` (RESTEasy Reactive) and `quarkus-rest-client` are added by default.
-If you prefer RESTEasy Classic, replace them with `quarkus-resteasy-jackson` and `quarkus-resteasy-client-jackson`.
+If you prefer RESTEasy Classic, replace them with `quarkus-resteasy-jackson` and `quarkus-resteasy-client`.
 
 If there is a running coordinator then this is all you need in order to create
 new LRAs and to enlist participants with them.

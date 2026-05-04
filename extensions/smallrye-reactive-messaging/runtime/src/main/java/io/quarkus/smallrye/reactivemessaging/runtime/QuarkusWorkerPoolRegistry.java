@@ -30,9 +30,8 @@ import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
 import io.smallrye.reactive.messaging.providers.connectors.WorkerPoolRegistry;
 import io.smallrye.reactive.messaging.providers.helpers.Validation;
-import io.vertx.core.impl.ConcurrentHashSet;
-import io.vertx.core.impl.ContextInternal;
-import io.vertx.core.impl.WorkerExecutorInternal;
+import io.vertx.core.internal.ContextInternal;
+import io.vertx.core.internal.WorkerExecutorInternal;
 import io.vertx.mutiny.core.Context;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.WorkerExecutor;
@@ -56,7 +55,7 @@ public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {
     private volatile boolean closed = false;
 
     private static Set<String> initVirtualThreadWorkers() {
-        Set<String> set = new ConcurrentHashSet<>();
+        Set<String> set = ConcurrentHashMap.newKeySet();
         set.add(DEFAULT_VIRTUAL_THREAD_WORKER);
         return set;
     }
@@ -79,7 +78,7 @@ public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {
                 WorkerExecutor executor = entry.getValue();
                 // Get the underlying Vert.x WorkerPool and shutdown its executor
                 try {
-                    ((WorkerExecutorInternal) executor.getDelegate()).getPool().executor().shutdown();
+                    ((WorkerExecutorInternal) executor.getDelegate()).pool().executor().shutdown();
                 } catch (Exception e) {
                     log.warnf(e, "Failed to shutdown worker pool %s", entry.getKey());
                 }
@@ -94,7 +93,7 @@ public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {
                 terminated = true;
                 for (Map.Entry<String, WorkerExecutor> entry : workerExecutors.entrySet()) {
                     WorkerExecutor workerExecutor = entry.getValue();
-                    ExecutorService innerExecutor = ((WorkerExecutorInternal) workerExecutor.getDelegate()).getPool()
+                    ExecutorService innerExecutor = ((WorkerExecutorInternal) workerExecutor.getDelegate()).pool()
                             .executor();
                     WorkerPoolConfig poolConfig = workerConfig.get(entry.getKey());
                     long timeout = poolConfig != null ? poolConfig.shutdownTimeout().toNanos()
@@ -121,7 +120,7 @@ public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {
                         for (Map.Entry<String, WorkerExecutor> remaining : workerExecutors.entrySet()) {
                             try {
                                 WorkerExecutor exec = remaining.getValue();
-                                ExecutorService execService = ((WorkerExecutorInternal) exec.getDelegate()).getPool()
+                                ExecutorService execService = ((WorkerExecutorInternal) exec.getDelegate()).pool()
                                         .executor();
                                 execService.shutdownNow();
                                 exec.closeAndAwait();
@@ -148,9 +147,9 @@ public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {
         Objects.requireNonNull(uni, "Action to execute not provided");
         if (workerName == null) {
             if (msgContext != null) {
-                return msgContext.executeBlocking(uni, ordered);
+                return msgContext.executeBlocking(() -> uni.await().indefinitely());
             }
-            return executionHolder.vertx().executeBlocking(uni, ordered);
+            return executionHolder.vertx().executeBlocking(() -> uni.await().indefinitely());
         } else if (virtualThreadWorkers.contains(workerName)) {
             return runOnVirtualThread(msgContext, uni);
         } else {
@@ -161,7 +160,7 @@ public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {
     private <T> Uni<T> runOnWorkerThread(Context msgContext, Uni<T> uni, String workerName, boolean ordered) {
         WorkerExecutor worker = getWorker(workerName);
         if (msgContext != null) {
-            return worker.executeBlocking(uniOnMessageContext(uni, msgContext), ordered)
+            return worker.executeBlocking(() -> uniOnMessageContext(uni, msgContext).await().indefinitely())
                     .onItemOrFailure().transformToUni((item, failure) -> {
                         return Uni.createFrom().emitter(emitter -> {
                             if (failure != null) {
@@ -172,7 +171,7 @@ public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {
                         });
                     });
         }
-        return worker.executeBlocking(uni, ordered);
+        return worker.executeBlocking(() -> uni.await().indefinitely());
     }
 
     private static <T> Uni<T> uniOnMessageContext(Uni<T> uni, Context msgContext) {

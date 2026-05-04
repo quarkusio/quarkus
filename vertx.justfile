@@ -23,6 +23,13 @@ modules := """
     extensions/redis-client
     extensions/grpc
     extensions/vertx-graphql
+    extensions/stork
+    integration-tests/grpc-stork-response-time
+    integration-tests/grpc-stork-simple
+    integration-tests/rest-client-reactive-stork
+    integration-tests/smallrye-stork-consul-registration
+    integration-tests/smallrye-stork-consul-registration-health-check
+    integration-tests/smallrye-stork-consul-registration-prod-mode
     """
 
 # Build the comma-separated list of directories containing a pom.xml

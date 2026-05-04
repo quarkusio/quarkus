@@ -14,3 +14,9 @@ metadata:
   categories:
   - "data"
   status: "preview"
+  codestart:
+    name: "narayana-lra"
+    languages:
+    - "java"
+    - "kotlin"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

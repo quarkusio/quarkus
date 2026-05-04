@@ -72,15 +72,14 @@ import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.signals.Signal;
 import io.quarkus.signals.runtime.impl.DefaultBlockingReceiverExecutor;
-import io.quarkus.signals.runtime.impl.DefaultRequestContextInterceptor;
 import io.quarkus.signals.runtime.impl.InvokerReceiver;
 import io.quarkus.signals.runtime.impl.InvokerReceiver.ReceiverInfo;
 import io.quarkus.signals.runtime.impl.ReceiverManager;
+import io.quarkus.signals.runtime.impl.RequestContextInterceptor;
 import io.quarkus.signals.runtime.impl.SignalBeanCreator;
 import io.quarkus.signals.runtime.impl.SignalsRecorder;
 import io.quarkus.signals.runtime.impl.SignalsRecorder.SignalsContext;
 import io.quarkus.signals.runtime.impl.VertxReceiverExecutor;
-import io.quarkus.signals.runtime.impl.VertxRequestContextInterceptor;
 import io.quarkus.signals.spi.Receiver.ExecutionModel;
 
 class SignalsProcessor {
@@ -368,13 +367,17 @@ class SignalsProcessor {
             String componentTypeName) {
         Map<String, List<String>> beforeEdges = new HashMap<>();
         Map<String, List<String>> afterEdges = new HashMap<>();
-        Set<String> allIds = new HashSet<>();
+        Map<String, List<BeanInfo>> idToBeans = new HashMap<>();
 
         for (BeanInfo bean : beanDiscovery.beanStream().withBeanType(spiType)) {
             String id = readIdentifier(bean, componentTypeName);
-            if (!allIds.add(id)) {
+            List<BeanInfo> beans = idToBeans.computeIfAbsent(id, k -> new ArrayList<>());
+            beans.add(bean);
+            if (beans.size() > 1) {
                 throw new IllegalStateException(
-                        "Multiple " + componentTypeName + " beans with the same @Identifier value detected: " + id);
+                        "Multiple " + componentTypeName
+                                + " beans with the same @Identifier value detected: " + id
+                                + "; beans: " + beans);
             }
             if (bean.getTarget().isPresent()) {
                 AnnotationInstance orderAnnotation = bean.getTarget().get().declaredAnnotation(DotNames.RELATIVE_ORDER);
@@ -391,10 +394,10 @@ class SignalsProcessor {
             }
         }
 
-        if (allIds.isEmpty()) {
+        if (idToBeans.keySet().isEmpty()) {
             return List.of();
         }
-        return TopologicalSort.sort(allIds, beforeEdges, afterEdges, componentTypeName);
+        return TopologicalSort.sort(idToBeans.keySet(), beforeEdges, afterEdges, componentTypeName);
     }
 
     private static String readIdentifier(BeanInfo bean, String componentTypeName) {
@@ -431,11 +434,10 @@ class SignalsProcessor {
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> beans,
             ReceiverExecutorImplementationBuildItem receiverExecutorImplementation) {
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder();
-        builder.addBeanClass(ReceiverManager.class);
+        builder.addBeanClasses(ReceiverManager.class, RequestContextInterceptor.class);
         switch (receiverExecutorImplementation.getImplementation()) {
-            case VERTX -> builder.addBeanClasses(VertxReceiverExecutor.class, VertxRequestContextInterceptor.class);
-            case DEFAULT_BLOCKING -> builder.addBeanClasses(DefaultBlockingReceiverExecutor.class,
-                    DefaultRequestContextInterceptor.class);
+            case VERTX -> builder.addBeanClass(VertxReceiverExecutor.class);
+            case DEFAULT_BLOCKING -> builder.addBeanClass(DefaultBlockingReceiverExecutor.class);
             default -> throw new IllegalArgumentException(
                     "Unexpected value: " + receiverExecutorImplementation.getImplementation());
         }

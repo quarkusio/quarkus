@@ -22,7 +22,7 @@
     <parent>
         <artifactId>quarkus-extensions-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>3.27.3</version>
+        <version>3.27.3.1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 

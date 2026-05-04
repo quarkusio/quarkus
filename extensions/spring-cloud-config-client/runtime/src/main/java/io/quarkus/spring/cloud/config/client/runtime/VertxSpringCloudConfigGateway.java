@@ -1,6 +1,6 @@
 package io.quarkus.spring.cloud.config.client.runtime;
 
-import static io.vertx.core.spi.resolver.ResolverProvider.DISABLE_DNS_RESOLVER_PROP_NAME;
+import static io.vertx.core.impl.SysProps.DISABLE_DNS_RESOLVER;
 
 import java.io.InputStream;
 import java.net.URI;
@@ -27,12 +27,12 @@ import io.quarkus.spring.cloud.config.client.runtime.eureka.RandomEurekaInstance
 import io.quarkus.spring.cloud.config.client.runtime.util.UrlUtility;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.VertxOptions;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.KeyStoreOptionsBase;
 import io.vertx.core.net.PfxOptions;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
@@ -88,11 +88,11 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
 
     private Vertx createVertxInstance() {
         // We must disable the async DNS resolver as it can cause issues when resolving the Vault instance.
-        // This is done using the DISABLE_DNS_RESOLVER_PROP_NAME system property.
+        // This is done using the DISABLE_DNS_RESOLVER system property.
         // The DNS resolver used by vert.x is configured during the (synchronous) initialization.
         // So, we just need to disable the async resolver around the Vert.x instance creation.
         try (var resettableSystemProperties = ResettableSystemProperties.of(
-                DISABLE_DNS_RESOLVER_PROP_NAME, "true")) {
+                DISABLE_DNS_RESOLVER.name, "true")) {
             return Vertx.vertx(new VertxOptions());
         }
     }
@@ -109,9 +109,9 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
                 KeyStoreOptionsBase storeOptions = storeOptions(trustStorePath, config.trustStorePassword(),
                         createStoreOptions(type));
                 if (isPfx(type)) {
-                    webClientOptions.setPfxTrustOptions((PfxOptions) storeOptions);
+                    webClientOptions.setTrustOptions(storeOptions);
                 } else {
-                    webClientOptions.setTrustStoreOptions((JksOptions) storeOptions);
+                    webClientOptions.setTrustOptions(storeOptions);
                 }
             } else if (config.trustCerts()) {
                 skipVerify(webClientOptions);
@@ -122,9 +122,9 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
                 KeyStoreOptionsBase storeOptions = storeOptions(keyStorePath, config.keyStorePassword(),
                         createStoreOptions(type));
                 if (isPfx(type)) {
-                    webClientOptions.setPfxKeyCertOptions((PfxOptions) storeOptions);
+                    webClientOptions.setKeyCertOptions(storeOptions);
                 } else {
-                    webClientOptions.setKeyStoreOptions((JksOptions) storeOptions);
+                    webClientOptions.setKeyCertOptions(storeOptions);
                 }
             }
         } catch (Exception e) {

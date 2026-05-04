@@ -62,15 +62,40 @@ public abstract class AbstractPolicyEnforcerTest {
     }
 
     @Test
-    public void testUserHasSuperUserRoleWebTenant() throws Exception {
-        testWebAppTenantAllowed("alice");
-        testWebAppTenantForbidden("admin");
-        testWebAppTenantForbidden("jdoe");
+    public void testUserHasAdminRoleServiceTenantWithMatrix() {
+        assureGetPath("/api-permission-tenant;", 403, getAccessToken("alice"), null);
+        assureGetPath("//api-permission-tenant;", 403, getAccessToken("alice"), null);
+        assureGetPath("/api-permission-tenant;a", 403, getAccessToken("alice"), null);
+        assureGetPath("//api-permission-tenant;a", 403, getAccessToken("alice"), null);
+
+        assureGetPath("/api-permission-tenant;", 403, getAccessToken("jdoe"), null);
+        assureGetPath("//api-permission-tenant;", 403, getAccessToken("jdoe"), null);
+        assureGetPath("/api-permission-tenant;a", 403, getAccessToken("jdoe"), null);
+        assureGetPath("//api-permission-tenant;a", 403, getAccessToken("jdoe"), null);
+
+        assureGetPath("/api-permission-tenant;", 200, getAccessToken("admin"), "Permission Resource Tenant");
+        assureGetPath("//api-permission-tenant;", 200, getAccessToken("admin"), "Permission Resource Tenant");
+        assureGetPath("/api-permission-tenant;a", 200, getAccessToken("admin"), "Permission Resource Tenant");
+        assureGetPath("//api-permission-tenant;a", 200, getAccessToken("admin"), "Permission Resource Tenant");
     }
 
-    private void testWebAppTenantAllowed(String user) throws Exception {
+    @Test
+    public void testUserHasSuperUserRoleWebTenant() throws Exception {
+        testWebAppTenantAllowed("alice", "/api-permission-webapp");
+        testWebAppTenantForbidden("admin", "/api-permission-webapp");
+        testWebAppTenantForbidden("jdoe", "/api-permission-webapp");
+    }
+
+    @Test
+    public void testUserHasSuperUserRoleWebTenantWithMatrix() throws Exception {
+        testWebAppTenantAllowed("alice", "/api-permission-webapp;a=b");
+        testWebAppTenantForbidden("admin", "/api-permission-webapp;a=b");
+        testWebAppTenantForbidden("jdoe", "/api-permission-webapp;a=b");
+    }
+
+    private void testWebAppTenantAllowed(String user, String path) throws Exception {
         try (final org.htmlunit.WebClient webClient = createWebClient()) {
-            HtmlPage page = webClient.getPage("http://localhost:8081/api-permission-webapp");
+            HtmlPage page = webClient.getPage("http://localhost:8081" + path);
 
             assertEquals("Sign in to quarkus", page.getTitleText());
 
@@ -91,9 +116,9 @@ public abstract class AbstractPolicyEnforcerTest {
         }
     }
 
-    private void testWebAppTenantForbidden(String user) throws Exception {
+    private void testWebAppTenantForbidden(String user, String path) throws Exception {
         try (final org.htmlunit.WebClient webClient = createWebClient()) {
-            HtmlPage page = webClient.getPage("http://localhost:8081/api-permission-webapp");
+            HtmlPage page = webClient.getPage("http://localhost:8081" + path);
 
             assertEquals("Sign in to quarkus", page.getTitleText());
 
@@ -148,10 +173,53 @@ public abstract class AbstractPolicyEnforcerTest {
     }
 
     @Test
+    public void testUserHasRoleConfidentialWithMatrix() {
+        assureGetPath("/api;/permission;", 403, getAccessToken("alice"), null);
+        assureGetPath("//api;/permission;", 403, getAccessToken("alice"), null);
+
+        assureGetPath("/api;a/permission;a", 403, getAccessToken("alice"), null);
+        assureGetPath("//api;a/permission;a", 403, getAccessToken("alice"), null);
+
+        assureGetPath("/api;/permission;", 200, getAccessToken("jdoe"), "Permission Resource");
+        assureGetPath("//api;/permission;", 200, getAccessToken("jdoe"), "Permission Resource");
+
+        assureGetPath("/api;a/permission;a", 200, getAccessToken("jdoe"), "Permission Resource");
+        assureGetPath("//api;a/permission;a", 200, getAccessToken("jdoe"), "Permission Resource");
+
+        assureGetPath("/api;/permission;/scope;?scope=write", 403, getAccessToken("jdoe"), null);
+        assureGetPath("//api;/permission;/scope;?scope=write", 403, getAccessToken("jdoe"), null);
+
+        assureGetPath("/api;a/permission;a/scope;a?scope=write", 403, getAccessToken("jdoe"), null);
+        assureGetPath("//api;a/permission;a/scope;a?scope=write", 403, getAccessToken("jdoe"), null);
+
+        assureGetPath("/api;/permission;/annotation;/scope-write;", 403, getAccessToken("jdoe"), null);
+        assureGetPath("//api;/permission;/annotation;/scope-write;", 403, getAccessToken("jdoe"), null);
+
+        assureGetPath("/api;a/permission;a/annotation;a/scope-write;a", 403, getAccessToken("jdoe"), null);
+        assureGetPath("//api;a/permission;a/annotation;a/scope-write;a", 403, getAccessToken("jdoe"), null);
+
+        assureGetPath("/api;/permission;/scope;?scope=read", 200, getAccessToken("jdoe"), "read");
+        assureGetPath("//api;/permission;/scope;?scope=read", 200, getAccessToken("jdoe"), "read");
+
+        assureGetPath("/api;a/permission;a/scope;a?scope=read", 200, getAccessToken("jdoe"), "read");
+        assureGetPath("//api;a/permission;a/scope;a?scope=read", 200, getAccessToken("jdoe"), "read");
+
+        assureGetPath("/api;/permission;", 403, getAccessToken("admin"), null);
+        assureGetPath("//api;/permission;", 403, getAccessToken("admin"), null);
+
+        assureGetPath("/api;a/permission;a", 403, getAccessToken("admin"), null);
+        assureGetPath("//api;a/permission;a", 403, getAccessToken("admin"), null);
+
+        assureGetPath("/api;/permission;/entitlements;", 200, getAccessToken("admin"), null);
+        assureGetPath("//api;/permission;/entitlements;", 200, getAccessToken("admin"), null);
+
+        assureGetPath("/api;a/permission;a/entitlements;a", 200, getAccessToken("admin"), null);
+        assureGetPath("//api;a/permission;a/entitlements;a", 200, getAccessToken("admin"), null);
+    }
+
+    @Test
     public void testRequestParameterAsClaim() {
         assureGetPath("/api/permission/claim-protected?grant=true", 200, getAccessToken("alice"),
-                "Claim Protected Resource");
-        assureGetPath("//api/permission/claim-protected?grant=true", 200, getAccessToken("alice"),
                 "Claim Protected Resource");
 
         assureGetPath("/api/permission/claim-protected?grant=false", 403, getAccessToken("alice"), null);
@@ -159,6 +227,27 @@ public abstract class AbstractPolicyEnforcerTest {
 
         assureGetPath("/api/permission/claim-protected", 403, getAccessToken("alice"), null);
         assureGetPath("//api/permission/claim-protected", 403, getAccessToken("alice"), null);
+    }
+
+    @Test
+    public void testRequestParameterAsClaimWithMatrix() {
+        assureGetPath("/api;/permission;/claim-protected;?grant=true", 200, getAccessToken("alice"),
+                "Claim Protected Resource");
+
+        assureGetPath("/api;/permission;/claim-protected;?grant=false", 403, getAccessToken("alice"), null);
+        assureGetPath("//api;/permission;/claim-protected;?grant=false", 403, getAccessToken("alice"), null);
+
+        assureGetPath("/api;/permission;/claim-protected;", 403, getAccessToken("alice"), null);
+        assureGetPath("//api;/permission;/claim-protected;", 403, getAccessToken("alice"), null);
+
+        assureGetPath("/api;a/permission;a/claim-protected;a?grant=true", 200, getAccessToken("alice"),
+                "Claim Protected Resource");
+
+        assureGetPath("/api;a/permission;a/claim-protected;a?grant=false", 403, getAccessToken("alice"), null);
+        assureGetPath("//api;a/permission;a/claim-protected;a?grant=false", 403, getAccessToken("alice"), null);
+
+        assureGetPath("/api;a/permission;a/claim-protected;a", 403, getAccessToken("alice"), null);
+        assureGetPath("//api;a/permission;a/claim-protected;a", 403, getAccessToken("alice"), null);
     }
 
     @Test
@@ -171,8 +260,31 @@ public abstract class AbstractPolicyEnforcerTest {
     }
 
     @Test
+    public void testHttpResponseFromExternalServiceAsClaimWithMatrix() {
+        assureGetPath("/api;/permission;/http-response-claim-protected;", 200, getAccessToken("alice"), null);
+        assureGetPath("//api;/permission;/http-response-claim-protected;", 200, getAccessToken("alice"), null);
+
+        assureGetPath("/api;/permission;/http-response-claim-protected;", 403, getAccessToken("jdoe"), null);
+        assureGetPath("//api;/permission;/http-response-claim-protected;", 403, getAccessToken("jdoe"), null);
+
+        assureGetPath("/api;a/permission;a/http-response-claim-protected;a", 200, getAccessToken("alice"), null);
+        assureGetPath("//api;a/permission;a/http-response-claim-protected;a", 200, getAccessToken("alice"), null);
+
+        assureGetPath("/api;a/permission;a/http-response-claim-protected;a", 403, getAccessToken("jdoe"), null);
+        assureGetPath("//api;a/permission;a/http-response-claim-protected;a", 403, getAccessToken("jdoe"), null);
+    }
+
+    @Test
     public void testBodyClaim() {
         assurePostPath("/api/permission/body-claim", "{\"from-body\": \"grant\"}", 200, getAccessToken("alice"),
+                "Body Claim Protected Resource");
+    }
+
+    @Test
+    public void testBodyClaimWithMatrix() {
+        assurePostPath("/api;/permission;/body-claim;", "{\"from-body\": \"grant\"}", 200, getAccessToken("alice"),
+                "Body Claim Protected Resource");
+        assurePostPath("/api;a/permission;a/body-claim;a", "{\"from-body\": \"grant\"}", 200, getAccessToken("alice"),
                 "Body Claim Protected Resource");
     }
 
@@ -188,14 +300,38 @@ public abstract class AbstractPolicyEnforcerTest {
     }
 
     @Test
+    public void testPublicResourceWithEnforcingPolicyWithMatrix() {
+        assureGetPath("/api;/public-enforcing;", 401, null, null);
+        assureGetPath("//api;/public-enforcing;", 401, null, null);
+        assureGetPath("/api;a/public-enforcing;a", 401, null, null);
+        assureGetPath("//api;a/public-enforcing;a", 401, null, null);
+    }
+
+    @Test
     public void testPublicResourceWithEnforcingPolicyAndToken() {
         assureGetPath("/api/public-enforcing", 403, getAccessToken("alice"), null);
         assureGetPath("//api/public-enforcing", 403, getAccessToken("alice"), null);
     }
 
     @Test
+    public void testPublicResourceWithEnforcingPolicyAndTokenWithMatrix() {
+        assureGetPath("/api;/public-enforcing;", 403, getAccessToken("alice"), null);
+        assureGetPath("//api;/public-enforcing;", 403, getAccessToken("alice"), null);
+        assureGetPath("/api;a/public-enforcing;a", 403, getAccessToken("alice"), null);
+        assureGetPath("//api;a/public-enforcing;a", 403, getAccessToken("alice"), null);
+    }
+
+    @Test
     public void testPublicResourceWithDisabledPolicyAndToken() {
         assureGetPath("/api/public-token", 204, getAccessToken("alice"), null);
+    }
+
+    @Test
+    public void testPublicResourceWithDisabledPolicyAndTokenWithMatrix() {
+        assureGetPath("/api;/public-token;", 204, getAccessToken("alice"), null);
+        assureGetPath("//api;/public-token;", 204, getAccessToken("alice"), null);
+        assureGetPath("/api;a/public-token;a", 204, getAccessToken("alice"), null);
+        assureGetPath("//api;a/public-token;a", 204, getAccessToken("alice"), null);
     }
 
     @Test
@@ -208,6 +344,27 @@ public abstract class AbstractPolicyEnforcerTest {
 
         assureGetPath("/", 404, null, null);
         assureGetPath("//", 400, null, null);
+    }
+
+    @Test
+    public void testPathConfigurationPrecedenceWhenPathCacheNotDefinedWithMatrix() {
+        assureGetPath("/api2;/resource;", 401, null, null);
+        assureGetPath("//api2;/resource;", 401, null, null);
+
+        assureGetPath("/hello;", 404, null, null);
+        assureGetPath("//hello;", 404, null, null);
+
+        assureGetPath("/;", 404, null, null);
+        assureGetPath("//;", 404, null, null);
+
+        assureGetPath("/api2;a/resource;a", 401, null, null);
+        assureGetPath("//api2;a/resource;a", 401, null, null);
+
+        assureGetPath("/hello;a", 404, null, null);
+        assureGetPath("//hello;a", 404, null, null);
+
+        assureGetPath("/;a", 404, null, null);
+        assureGetPath("//;a", 404, null, null);
     }
 
     @Test
@@ -231,6 +388,49 @@ public abstract class AbstractPolicyEnforcerTest {
 
         assureGetPath("/api/permission/scopes/annotation-way-denied", 403, getAccessToken("jdoe"), null);
         assureGetPath("//api/permission/scopes/annotation-way-denied", 403, getAccessToken("jdoe"), null);
+    }
+
+    @Test
+    public void testPermissionScopesWithMatrix() {
+        // 'jdoe' has scope 'read' and 'read' is required
+        assureGetPath("/api;/permission;/scopes;/standard-way;", 200, getAccessToken("jdoe"), "read");
+        assureGetPath("//api;/permission;/scopes;/standard-way;", 200, getAccessToken("jdoe"), "read");
+
+        // 'jdoe' has scope 'read' while 'write' is required
+        assureGetPath("/api;/permission;/scopes;/standard-way-denied;", 403, getAccessToken("jdoe"), null);
+        assureGetPath("//api;/permission;/scopes;/standard-way-denied;", 403, getAccessToken("jdoe"), null);
+
+        assureGetPath("/api;/permission;/scopes;/programmatic-way;", 200, getAccessToken("jdoe"), "read");
+        assureGetPath("//api;/permission;/scopes;/programmatic-way;", 200, getAccessToken("jdoe"), "read");
+
+        assureGetPath("/api;/permission;/scopes;/programmatic-way-denied;", 403, getAccessToken("jdoe"), null);
+        assureGetPath("//api;/permission;/scopes;/programmatic-way-denied;", 403, getAccessToken("jdoe"), null);
+
+        assureGetPath("/api;/permission;/scopes;/annotation-way;", 200, getAccessToken("jdoe"), "read");
+        assureGetPath("//api;/permission;/scopes;/annotation-way;", 200, getAccessToken("jdoe"), "read");
+
+        assureGetPath("/api;/permission;/scopes;/annotation-way-denied;", 403, getAccessToken("jdoe"), null);
+        assureGetPath("//api;/permission;/scopes;/annotation-way-denied;", 403, getAccessToken("jdoe"), null);
+
+        // 'jdoe' has scope 'read' and 'read' is required
+        assureGetPath("/api;a/permission;a/scopes;a/standard-way;a", 200, getAccessToken("jdoe"), "read");
+        assureGetPath("//api;a/permission;a/scopes;a/standard-way;a", 200, getAccessToken("jdoe"), "read");
+
+        // 'jdoe' has scope 'read' while 'write' is required
+        assureGetPath("/api;a/permission;a/scopes;a/standard-way-denied;a", 403, getAccessToken("jdoe"), null);
+        assureGetPath("//api;a/permission;a/scopes;a/standard-way-denied;a", 403, getAccessToken("jdoe"), null);
+
+        assureGetPath("/api;a/permission;a/scopes;a/programmatic-way;a", 200, getAccessToken("jdoe"), "read");
+        assureGetPath("//api;a/permission;a/scopes;a/programmatic-way;a", 200, getAccessToken("jdoe"), "read");
+
+        assureGetPath("/api;a/permission;a/scopes;a/programmatic-way-denied;a", 403, getAccessToken("jdoe"), null);
+        assureGetPath("//api;a/permission;a/scopes;a/programmatic-way-denied;a", 403, getAccessToken("jdoe"), null);
+
+        assureGetPath("/api;a/permission;a/scopes;a/annotation-way;a", 200, getAccessToken("jdoe"), "read");
+        assureGetPath("//api;a/permission;a/scopes;a/annotation-way;a", 200, getAccessToken("jdoe"), "read");
+
+        assureGetPath("/api;a/permission;a/scopes;a/annotation-way-denied;a", 403, getAccessToken("jdoe"), null);
+        assureGetPath("//api;a/permission;a/scopes;a/annotation-way-denied;a", 403, getAccessToken("jdoe"), null);
     }
 
     protected String getAccessToken(String userName) {

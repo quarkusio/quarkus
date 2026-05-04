@@ -33,8 +33,8 @@ import io.vertx.core.http.WebSocketClient;
 import io.vertx.core.http.WebSocketConnectOptions;
 import io.vertx.core.http.WebSocketFrame;
 import io.vertx.core.http.WebSocketFrameType;
-import io.vertx.core.impl.VertxImpl;
 import io.vertx.core.internal.ContextInternal;
+import io.vertx.core.internal.VertxInternal;
 
 @Typed(BasicWebSocketConnector.class)
 @Dependent
@@ -160,7 +160,7 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
             // We want to avoid a situation where if multiple clients/connections are created in a row,
             // the same event loop is used and so writing/receiving messages is de-facto serialized
             // Get rid of this workaround once https://github.com/eclipse-vertx/vert.x/issues/5366 is resolved
-            ContextInternal context = ((VertxImpl) vertx).createEventLoopContext();
+            ContextInternal context = ((VertxInternal) vertx).createEventLoopContext();
             context.dispatch(new Handler<Void>() {
                 @Override
                 public void handle(Void event) {

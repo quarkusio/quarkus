@@ -48,7 +48,7 @@ https://download.eclipse.org/microprofile/microprofile-lra-1.0/apidocs/[MicroPro
 Once you have your Quarkus Maven project configured you can add the `narayana-lra` extension
 by running the following command in your project base directory:
 
-:add-extension-extensions: narayana-lra,resteasy-jackson,resteasy-client-jackson
+:add-extension-extensions: narayana-lra
 include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
@@ -62,11 +62,11 @@ This will add the following to your build file:
 </dependency>
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-jackson</artifactId>
+    <artifactId>quarkus-rest-jackson</artifactId>
 </dependency>
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-client-jackson</artifactId>
+    <artifactId>quarkus-rest-client</artifactId>
 </dependency>
 ----
 
@@ -74,15 +74,13 @@ This will add the following to your build file:
 .build.gradle
 ----
 implementation("io.quarkus:quarkus-narayana-lra")
-implementation("io.quarkus:quarkus-resteasy-jackson")
-implementation("io.quarkus:quarkus-resteasy-client-jackson")
+implementation("io.quarkus:quarkus-rest-jackson")
+implementation("io.quarkus:quarkus-rest-client")
 ----
 
-[IMPORTANT]
-====
-`quarkus-narayana-lra` needs to be complemented with a server Jakarta REST implementation and a REST Client implementation in order to work.
-This means that users should also have either `quarkus-resteasy-jackson` and `quarkus-resteasy-client-jackson` or `quarkus-rest-jackson` and `quarkus-rest-client-jackson` dependencies in their application.
-====
+NOTE: `quarkus-narayana-lra` requires a server Jakarta REST implementation and a REST Client implementation.
+When creating a new project, `quarkus-rest-jackson` (RESTEasy Reactive) and `quarkus-rest-client` are added by default.
+If you prefer RESTEasy Classic, replace them with `quarkus-resteasy-jackson` and `quarkus-resteasy-client-jackson`.
 
 If there is a running coordinator then this is all you need in order to create
 new LRAs and to enlist participants with them.

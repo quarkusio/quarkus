@@ -24,6 +24,7 @@ import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.client.WebClient;
 
@@ -100,6 +101,29 @@ public class JakartaRestResourceHttpPermissionTest {
     }
 
     @ParameterizedTest
+    @ValueSource(strings = {
+            // path without wildcard, with leading slashes in both policy and @Path
+            "////api;/foo;", "/api;/foo;", "/api;//foo;", "/api;//foo;", "/api;///foo;", "/api;/foo;/;", "/api;/foo;///",
+            "/api;/foo;///.", "/api;/foo;/./",
+            "////api;a/foo;a", "/api;a/foo;a", "/api;a//foo;a", "/api;a//foo;a", "/api;a///foo;a", "/api;a/foo;a/;a",
+            "/api;a/foo;a///",
+            "/api;a/foo;a///.", "/api;a/foo;a/./",
+            // path with wildcard, without leading slashes in both policy and @Path
+            "////api;/bar;", "/api;///bar;", "/api;//bar;", "/api;/bar;", "/api;/bar;/;", "/api;/bar;/irish;",
+            "/api;/bar;///irish;", "/api;/bar;///irish;/.", "/../api;/bar;///irish;/.",
+            "////api;a/bar;a", "/api;a///bar;a", "/api;a//bar;a", "/api;a/bar;a", "/api;a/bar;a/;a", "/api;a/bar;a/irish;a",
+            "/api;a/bar;a///irish;a", "/api;a/bar;a///irish;a/.", "/../api;a/bar;a///irish;a/.",
+            // combination of permit and authenticated policies, paths are resolved to /api/baz/fum/ and auth required
+            "/api;/baz;/fum;/;", "/api;//baz;/fum;//;", "/api;//baz;/fum;/.",
+            "/api;a/baz;a/fum;a/;a", "/api;a//baz;a/fum;a//;a", "/api;a//baz;a/fum;a/."
+    })
+    public void testEmptyPathSegmentsWithMatrix(String path) {
+        assurePath(path, 401);
+
+        assurePathAuthenticated(path, getLastNonEmptySegmentContent(path));
+    }
+
+    @ParameterizedTest
     @ValueSource(strings = { "/", "///", "/?stuff", "/#stuff/", "" })
     public void testRootPath(String path) {
         assurePath(path, 401);
@@ -107,8 +131,24 @@ public class JakartaRestResourceHttpPermissionTest {
     }
 
     @ParameterizedTest
+    @ValueSource(strings = { "/;", "///;", "/;?stuff", "/#stuff;/;",
+            "/;a", "///;a", "/;a?stuff", "/#stuff;a/;a" })
+    public void testRootPathWithMatrix(String path) {
+        assurePath(path, 401);
+        assurePathAuthenticated(path);
+    }
+
+    @ParameterizedTest
     @ValueSource(strings = { "/one/", "///two", "/three?stuff", "/four#stuff", "/.////five" })
     public void testNotSecuredPaths(String path) {
+        // negative testing - all paths are public unless auth policy is applied
+        assurePathAuthenticated(path);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "/one;/;", "///two;", "/three;?stuff", "/four#stuff;", "/.////five;",
+            "/one;a/;a", "///two;a", "/three;a?stuff", "/four#stuff;a", "/.////five;a" })
+    public void testNotSecuredPathsWithMatrix(String path) {
         // negative testing - all paths are public unless auth policy is applied
         assurePathAuthenticated(path);
     }
@@ -122,7 +162,20 @@ public class JakartaRestResourceHttpPermissionTest {
         assurePath("/jax-rs", 200, "admin", true, "admin");
     }
 
+    @Test
+    public void testJaxRsRolesHttpSecurityPolicyWithMatrix() {
+        // insufficient role, expected admin
+        assurePath("/jax-rs;", 401);
+        assurePath("/jax-rs;a", 401);
+        assurePath("///jax-rs;///;", 401);
+        assurePath("///jax-rs;a///;a", 401);
+
+        assurePath("/jax-rs;", 200, "admin", true, "admin");
+        assurePath("/jax-rs;a", 200, "admin", true, "admin");
+    }
+
     private static String getLastNonEmptySegmentContent(String path) {
+        path = HttpSecurityUtils.pathWithoutMatrixParams(path);
         while (path.endsWith("/") || path.endsWith(".")) {
             path = path.substring(0, path.length() - 1);
         }

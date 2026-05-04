@@ -81,9 +81,9 @@ public class GrpcServices {
         CompletableFuture<Void> result = new CompletableFuture<>();
 
         servers.add(VertxServerBuilder.forAddress(vertx, "localhost", port)
-                .addService(service).build().start(r -> {
-                    if (r.failed()) {
-                        result.completeExceptionally(r.cause());
+                .addService(service).build().start((ignored, t) -> {
+                    if (t != null) {
+                        result.completeExceptionally(t);
                     } else {
                         System.out.println("Started test gRPC server at port " + port);
                         result.complete(null);

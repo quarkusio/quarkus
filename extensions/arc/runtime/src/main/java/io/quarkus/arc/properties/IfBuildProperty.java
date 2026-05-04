@@ -36,6 +36,14 @@ public @interface IfBuildProperty {
      */
     boolean enableIfMissing() default false;
 
+    /**
+     * Defines how the {@code stringValue} is matched against the actual property value.
+     * <p>
+     * By default, exact string equality ({@link StringValueMatch#EQ}) is used.
+     * Set to {@link StringValueMatch#REGEX} to interpret {@code stringValue} as a regular expression.
+     */
+    StringValueMatch match() default StringValueMatch.EQ;
+
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ ElementType.METHOD, ElementType.TYPE, ElementType.FIELD })
     @interface List {

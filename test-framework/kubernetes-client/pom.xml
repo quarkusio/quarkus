@@ -49,7 +49,7 @@
         </dependency>
         <dependency>
             <groupId>io.fabric8</groupId>
-            <artifactId>kubernetes-httpclient-vertx</artifactId>
+            <artifactId>kubernetes-httpclient-vertx-5</artifactId>
         </dependency>
         <dependency>
             <groupId>jakarta.annotation</groupId>

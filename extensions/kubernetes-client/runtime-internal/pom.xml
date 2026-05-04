@@ -32,11 +32,15 @@
                     <groupId>io.fabric8</groupId>
                     <artifactId>kubernetes-httpclient-okhttp</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>kubernetes-httpclient-vertx</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
             <groupId>io.fabric8</groupId>
-            <artifactId>kubernetes-httpclient-vertx</artifactId>
+            <artifactId>kubernetes-httpclient-vertx-5</artifactId>
             <scope>provided</scope>
         </dependency>
     </dependencies>

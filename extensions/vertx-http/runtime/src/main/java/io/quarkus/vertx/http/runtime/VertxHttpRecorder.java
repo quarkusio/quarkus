@@ -1576,7 +1576,10 @@ public class VertxHttpRecorder {
                 .childHandler(new ChannelInitializer<VirtualChannel>() {
                     @Override
                     public void initChannel(VirtualChannel ch) throws Exception {
-                        ContextInternal rootContext = vertx.createEventLoopContext();
+                        // We are already on a Netty Event loop, just ask Vert.x to create a context from it.
+                        // This is the root context used by the HTTP connection (read and write MUST be done from
+                        // THAT event loop).
+                        ContextInternal rootContext = vertx.getOrCreateContext();
                         VertxHandler<Http1xServerConnection> handler = VertxHandler.create(chctx -> {
 
                             Http1xServerConnection conn = new Http1xServerConnection(

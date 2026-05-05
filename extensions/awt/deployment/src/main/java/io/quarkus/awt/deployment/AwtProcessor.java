@@ -75,12 +75,13 @@ class AwtProcessor {
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    void resources(
-            BuildProducer<NativeImageResourcePatternsBuildItem> resourcePatternsBuildItemBuildProducer) {
+    void resources(final BuildProducer<NativeImageResourcePatternsBuildItem> resourcePatternsBuildItemBuildProducer) {
         resourcePatternsBuildItemBuildProducer
                 .produce(NativeImageResourcePatternsBuildItem.builder()
-                        .includeGlobs("**/iio-plugin*.properties", // Texts for e.g. exceptions strings
-                                "**/*.pf") // Default colour profiles
+                        .module("java.desktop") // Target JDK module.
+                        .includeGlobs(
+                                "com/sun/imageio/plugins/*/iio-plugin*.properties", // Texts for e.g. exceptions strings
+                                "sun/java2d/cmm/profiles/*.pf") // Default colour profiles
                         .build());
     }
 

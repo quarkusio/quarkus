@@ -73,7 +73,6 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourcePatternsBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
@@ -551,11 +550,5 @@ public class JaxbProcessor {
         }
 
         return XmlAccessType.valueOf(xmlAccessorTypeAi.value().asEnum());
-    }
-
-    @BuildStep
-    void jaxbIndex(final BuildProducer<NativeImageResourcePatternsBuildItem> resource) {
-        LOG.debug("adding jaxb.index to native image resources");
-        resource.produce(NativeImageResourcePatternsBuildItem.builder().includeGlob("**/jaxb.index").build());
     }
 }

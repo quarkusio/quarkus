@@ -509,6 +509,11 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
+            <dependency>
+                <groupId>io.smallrye.classfile</groupId>
+                <artifactId>jdk-classfile-backport</artifactId>
+                <version>${smallrye-classfile.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>

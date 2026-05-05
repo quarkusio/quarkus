@@ -20,15 +20,40 @@ This feature is currently experimental.
 When you run a Quarkus application in dev mode, you can expose a Model Context Protocol (MCP) server. 
 It presents the methods used by the DevUI *MCP tools* (methods you can call) and the data exposed by *MCP resources*. 
 
-=== Connecting an MCP client
+=== Connecting a coding agent
 
-Open the **Dev UI** settings dialog and select the Dev MCP tab.
-There you can enable Dev MCP, get the connection details (Default `http://localhost:8080/q/dev-mcp`) and see what clients are connected.
+The recommended way to connect an AI coding agent to your Quarkus application is the https://github.com/quarkusio/quarkus-agent-mcp[Quarkus Agent MCP] server.
+It manages the application lifecycle, proxies Dev MCP tools, provides documentation search, and delivers extension-specific coding skills.
 
-Any MCP client that supports the https://modelcontextprotocol.io/specification/2025-03-26[Streamable Protocol, version 2025‑03‑26] can connect using that URL. 
-After a client connects, it will appears on the tab:
+The Quarkus Agent MCP server requires https://www.jbang.dev[JBang].
+Make sure JBang is installed before configuring your agent:
+
+[source,bash]
+----
+jbang version
+----
+
+If JBang is not installed, follow the instructions at https://www.jbang.dev/download/[jbang.dev/download].
+
+Most coding agents use stdio transport — for example, with https://claude.ai/claude-code[Claude Code]:
+
+[source,bash]
+----
+claude mcp add quarkus-agent -- jbang quarkus-agent-mcp@quarkusio
+----
+
+Open the **Dev UI** settings dialog and select the Dev MCP tab to see configuration snippets for all supported agents and IDEs (Claude Code, OpenCode, Cline, Goose, Zed, VS Code, Cursor, Claude Desktop, Windsurf, and JetBrains IDEs).
 
 image::dev_mcp_settings.png[Dev MCP Settings]
+
+=== Connecting an MCP client
+
+Alternatively to connecting through the Quarkus Agent, you can connect an MCP client directly to the Dev MCP endpoint on the running application.
+Open the **Dev UI** settings dialog, select the Dev MCP tab, and enable Dev MCP.
+The connection details (default `http://localhost:8080/q/dev-mcp`) and per-agent configuration snippets are available under the **Direct connection** section.
+
+Any MCP client that supports the https://modelcontextprotocol.io/specification/2025-03-26[Streamable Protocol, version 2025‑03‑26] can connect using that URL.
+After a client connects, it will appear on the tab.
 
 == Guide for extension developers
 

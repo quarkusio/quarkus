@@ -26,6 +26,7 @@ import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.internal.buffer.BufferInternal;
 import io.vertx.ext.web.RoutingContext;
 
 public class VertxRequestHandler implements Handler<RoutingContext> {
@@ -98,10 +99,10 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                 dispatch(routingContext, invoker, finalInput);
             });
         } else if (routingContext.request().method() == HttpMethod.POST) {
-            var buff = routingContext.getBody();
+            var buff = routingContext.body().buffer();
             Object input = null;
             if (buff != null && buff.length() > 0) {
-                ByteBufInputStream in = new ByteBufInputStream(buff.getByteBuf());
+                ByteBufInputStream in = new ByteBufInputStream(((BufferInternal) buff).getByteBuf());
                 ObjectReader reader = (ObjectReader) invoker.getBindingContext().get(ObjectReader.class.getName());
                 try {
                     input = reader.readValue((InputStream) in);

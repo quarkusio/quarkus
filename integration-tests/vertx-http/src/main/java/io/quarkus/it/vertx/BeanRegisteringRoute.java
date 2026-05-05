@@ -3,8 +3,6 @@ package io.quarkus.it.vertx;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.Router;
 
@@ -18,12 +16,8 @@ public class BeanRegisteringRoute {
 
         //ping only works on HTTP/2
         router.get("/ping").handler(rc -> {
-            rc.request().connection().ping(Buffer.buffer(PING_DATA), new Handler<AsyncResult<Buffer>>() {
-                @Override
-                public void handle(AsyncResult<Buffer> event) {
-                    rc.response().end(event.result());
-                }
-            });
+            rc.request().connection().ping(Buffer.buffer(PING_DATA))
+                    .onComplete(event -> rc.response().end(event.result()));
         });
     }
 }

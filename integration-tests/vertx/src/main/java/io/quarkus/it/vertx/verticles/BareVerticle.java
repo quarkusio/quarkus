@@ -10,6 +10,6 @@ public class BareVerticle extends AbstractVerticle {
         String address = config().getString("id");
         vertx.eventBus().consumer(address)
                 .handler(message -> message.reply("OK-" + address))
-                .completionHandler(done);
+                .completion().onComplete(done);
     }
 }

@@ -56,7 +56,7 @@ public class MockRestEventServer extends MockEventServer {
             traceId = UUID.randomUUID().toString();
         }
         ctx.put(AmazonLambdaApi.LAMBDA_TRACE_HEADER_KEY, traceId);
-        Buffer body = ctx.getBody();
+        Buffer body = ctx.body().buffer();
 
         AwsProxyRequest event = new AwsProxyRequest();
         event.setRequestContext(new AwsProxyRequestContext());

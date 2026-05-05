@@ -54,6 +54,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.internal.buffer.BufferInternal;
 import io.vertx.ext.web.RoutingContext;
 
 public class VertxRequestHandler implements Handler<RoutingContext> {
@@ -491,7 +492,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                                 + "' does not accept input");
                     }
                 } else if (buff != null && buff.length() > 0) {
-                    ByteBufInputStream in = new ByteBufInputStream(buff.getByteBuf());
+                    ByteBufInputStream in = new ByteBufInputStream(((BufferInternal) buff).getByteBuf());
                     ObjectReader reader = (ObjectReader) invoker.getBindingContext().get(DATA_OBJECT_READER);
                     try {
                         input = reader.readValue((InputStream) in);

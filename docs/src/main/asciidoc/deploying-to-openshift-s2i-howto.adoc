@@ -51,7 +51,7 @@ You can deploy {project-name} applications to {openshift} with Java {jdk-version
 . Create a directory called `.s2i` at the same level as the `pom.xml` file.
 . Create a file called `environment` in the `.s2i` directory and add the following content:
 +
-[source]
+[source,text]
 ----
 MAVEN_S2I_ARTIFACT_DIRS=target/quarkus-app
 S2I_SOURCE_DEPLOYMENTS_FILTER=app lib quarkus quarkus-run.jar
@@ -66,20 +66,20 @@ JAVA_APP_JAR=/deployments/quarkus-run.jar
 +
 * Java {jdk-version-earliest}:
 +
-[source,terminal,subs="attributes+",options="nowrap"]
+[source,shell,subs="attributes+",options="nowrap"]
 ----
 oc import-image {name-image-ubi9-open-jdk-17-short} --from={name-image-ubi9-open-jdk-17} --confirm
 ----
 * Java {jdk-version-other}:
 +
-[source,terminal,subs="attributes+",options="nowrap"]
+[source,shell,subs="attributes+",options="nowrap"]
 ----
 oc import-image {name-image-ubi9-open-jdk-21-short} --from={name-image-ubi9-open-jdk-21} --confirm
 ----
 +
 * Java {jdk-version-latest}:
 +
-[source,terminal,subs="attributes+",options="nowrap"]
+[source,shell,subs="attributes+",options="nowrap"]
 ----
 oc import-image {name-image-ubi9-open-jdk-25-short} --from={name-image-ubi9-open-jdk-25} --confirm
 ----
@@ -100,31 +100,31 @@ For information about this image, see link:https://catalog.redhat.com/en/softwar
 +
 * Java {jdk-version-earliest}:
 +
-[source,terminal,subs="attributes+",options="nowrap"]
+[source,shell,subs="attributes+",options="nowrap"]
 ----
-oc new-app registry.access.redhat.com/ubi9/openjdk-17~<git_path> --name=<project_name>
+oc new-app {name-image-ubi9-open-jdk-17}~<git_path> --name=<project_name>
 ----
 * Java {jdk-version-other}:
 +
-[source,terminal,subs="attributes+",options="nowrap"]
+[source,shell,subs="attributes+",options="nowrap"]
 ----
-oc new-app registry.access.redhat.com/ubi9/openjdk-21~<git_path> --name=<project_name>
+oc new-app {name-image-ubi9-open-jdk-21}~<git_path> --name=<project_name>
 ----
 +
 * Java {jdk-version-latest}:
 +
-[source,terminal,subs="attributes+",options="nowrap"]
+[source,shell,subs="attributes+",options="nowrap"]
 ----
-oc new-app registry.access.redhat.com/ubi9/openjdk-25~<git_path> --name=<project_name>
+oc new-app {name-image-ubi9-open-jdk-25}~<git_path> --name=<project_name>
 ----
 +
 .. Replace `<git_path>` with the path of the Git repository that hosts your Quarkus project.
 +
 For example, for Java {jdk-version-other}:
 +
-[source,terminal,subs="attributes+",options="nowrap"]
+[source,shell,subs="attributes+",options="nowrap"]
 ----
-oc new-app registry.access.redhat.com/ubi9/openjdk-21~https://github.com/johndoe/code-with-quarkus.git --name=code-with-quarkus
+oc new-app {name-image-ubi9-open-jdk-21}~https://github.com/johndoe/code-with-quarkus.git --name=code-with-quarkus
 ----
 {nbsp}
 +
@@ -139,14 +139,14 @@ If you are deploying on IBM Z infrastructure, enter `oc new-app ubi9/openjdk-21~
 
 . To deploy an updated version of the project, push changes to the Git repository, and then run:
 +
-[source,terminal,subs="attributes+",options="nowrap"]
+[source,shell,options="nowrap"]
 ----
 oc start-build <project_name>
 ----
 +
 . To expose a route to the application, run the following command:
 +
-[source,terminal,subs="attributes+"]
+[source,shell]
 ----
 oc expose svc <project_name>
 ----
@@ -155,13 +155,13 @@ oc expose svc <project_name>
 
 . List the pods associated with your current {openshift} project:
 +
-[source,terminal,subs="attributes+"]
+[source,shell]
 ----
 oc get pods
 ----
 . To get the log output for your application's pod, run the following command, replacing `<pod_name>` with the name of the latest pod prefixed by your application name:
 +
-[source,terminal,subs="attributes+"]
+[source,shell]
 ----
 oc logs -f <pod_name>
 ----

@@ -46,6 +46,21 @@ class BuildIT extends MojoTestBase {
     }
 
     @Test
+    void testMockitoNoDynamicAgentWarning()
+            throws MavenInvocationException, InterruptedException, IOException {
+        testDir = initProject("projects/mockito-non-public-inner-class",
+                "projects/mockito-non-public-inner-class-no-warning");
+        running = new RunningInvoker(testDir, false);
+        MavenProcessInvocationResult result = running.execute(
+                List.of("clean", "verify", "-Dquarkus.analytics.disabled=true"),
+                Map.of());
+        assertThat(result.getProcess().waitFor()).isZero();
+
+        String log = running.log();
+        assertThat(log).doesNotContain("A Java agent has been loaded dynamically");
+    }
+
+    @Test
     void testCustomTestSourceSets()
             throws MavenInvocationException, InterruptedException {
         testDir = initProject("projects/test-source-sets");

@@ -34,8 +34,8 @@ record StepUpAuthenticationPolicy(String[] expectedAcrValues, Long maxAge) imple
 
     @Override
     public void accept(TokenVerificationResult t) {
-        JsonObject json = t.localVerificationResult != null ? t.localVerificationResult
-                : new JsonObject(t.introspectionResult.getIntrospectionString());
+        JsonObject json = t.localVerificationResult() != null ? t.localVerificationResult()
+                : new JsonObject(t.introspectionResult().getIntrospectionString());
         verifyAcr(json);
         if (maxAge != null) {
             verifyMaxAge(json);

@@ -924,7 +924,7 @@ public class OidcCommonUtils {
             if (clientAssertionProvider.getClientAssertion() == null) {
                 throw exceptionCreator
                         .apply("Cannot find a valid "
-                                + (jwtConfig.source() == Source.SPIFFE ? "SPIFFE SVID" : "JWT bearer")
+                                + (jwtConfig.source() == Source.SPIFFE_JWT ? "SPIFFE JWT-SVID" : "JWT bearer")
                                 + " token at path: " + jwtConfig.tokenPath().get());
             }
             return clientAssertionProvider;
@@ -935,7 +935,7 @@ public class OidcCommonUtils {
     public static Object getClientAssertionTokenType(Source source) {
         return switch (source) {
             case BEARER, CLIENT -> "JWT bearer";
-            case SPIFFE -> "SPIFFE SVID";
+            case SPIFFE_JWT -> "SPIFFE JWT-SVID";
         };
     }
 

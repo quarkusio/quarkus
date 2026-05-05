@@ -1,6 +1,7 @@
 package io.quarkus.it.vertx.kotlin
 
 import io.quarkus.vertx.ConsumeEvent
+import io.vertx.core.MultiMap
 import jakarta.inject.Singleton
 import java.util.concurrent.CountDownLatch
 
@@ -36,13 +37,7 @@ class MessageConsumers {
     }
 
     @ConsumeEvent("headers-payload")
-    fun headersPayload(headers: io.vertx.core.MultiMap, msg: String) {
-        message = "${headers["header"]} - $msg"
-        latch.countDown()
-    }
-
-    @ConsumeEvent("mutiny-headers-payload")
-    fun mutinyHeadersPayload(headers: io.vertx.mutiny.core.MultiMap, msg: String) {
+    fun headersPayload(headers: MultiMap, msg: String) {
         message = "${headers["header"]} - $msg"
         latch.countDown()
     }

@@ -92,7 +92,13 @@ public class ErrorDuringStreamingTestCase {
                                     response
                                             .handler(bodyConsumer::accept)
                                             .exceptionHandler(latch::completeExceptionally)
-                                            .end().onComplete(ar -> latch.complete(null));
+                                            .end().onComplete(ar -> {
+                                                if (ar.failed()) {
+                                                    latch.completeExceptionally(ar.cause());
+                                                } else {
+                                                    latch.complete(null);
+                                                }
+                                            });
                                 });
 
                     }
@@ -107,7 +113,7 @@ public class ErrorDuringStreamingTestCase {
             return Multi.createFrom().emitter(emitter -> {
                 emit(emitter);
                 if (fail) {
-                    throw new VertxException("dummy");
+                    emitter.fail(new VertxException("dummy"));
                 } else {
                     emit(emitter);
                     emitter.complete();

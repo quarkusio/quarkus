@@ -24,8 +24,6 @@ While RabbitMQ 4 now supports the AMQP 1.0 protocol, the two protocols are funda
 If you want to communicate with RabbitMQ using AMQP 1.0, we recommend using the xref:amqp-reference.adoc[AMQP 1.0 connector].
 Please note that using AMQP 1.0 with RabbitMQ may still have some limitations or reduced functionality compared to native 0-9-1 usage.
 
-include::{includes}/extension-status.adoc[]
-
 == RabbitMQ connector extension
 
 To use the connector, you need to add the `quarkus-messaging-rabbitmq` extension.

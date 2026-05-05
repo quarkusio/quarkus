@@ -31,8 +31,6 @@ xref:hibernate-orm.adoc[Hibernate ORM guide]. This guide will only focus on what
 for Hibernate Reactive.
 ====
 
-include::{includes}/extension-status.adoc[]
-
 == Solution
 
 We recommend that you follow the instructions in the next sections and create the application step by step.

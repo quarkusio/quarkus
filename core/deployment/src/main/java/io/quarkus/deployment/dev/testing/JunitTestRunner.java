@@ -581,8 +581,15 @@ public class JunitTestRunner {
         }
 
         //we also only run tests from the current module, which we can also revisit later
+        Path testClassesDir = Paths.get(moduleInfo.getTest().get().getClassesPath());
+        if (!Files.isDirectory(testClassesDir)) {
+            log.warn("Test classes directory does not exist: " + testClassesDir
+                    + ". This can happen after running 'mvn clean' while dev mode is active."
+                    + " Trigger a hot-reload or restart the application to recompile test classes.");
+            return DiscoveryResult.EMPTY;
+        }
         Indexer indexer = new Indexer();
-        try (Stream<Path> files = Files.walk(Paths.get(moduleInfo.getTest().get().getClassesPath()))) {
+        try (Stream<Path> files = Files.walk(testClassesDir)) {
             files.filter(s -> s.getFileName().toString().endsWith(".class")).forEach(s -> {
                 try (InputStream in = Files.newInputStream(s)) {
                     indexer.index(in);

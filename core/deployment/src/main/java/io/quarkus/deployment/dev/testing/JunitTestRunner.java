@@ -14,7 +14,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
@@ -613,8 +612,15 @@ public class JunitTestRunner {
             }
         }
         Set<String> quarkusTestClasses = new HashSet<>();
-        for (var a : Arrays.asList(QUARKUS_TEST, QUARKUS_MAIN_TEST)) {
+        List<DotName> quarkusTestAnnotation = new ArrayList<>(collectQuarkusTestAnnotations(index, QUARKUS_TEST));
+        quarkusTestAnnotation.add(QUARKUS_MAIN_TEST);
+        for (var a : quarkusTestAnnotation) {
             for (AnnotationInstance i : index.getAnnotations(a)) {
+
+                if (i.target().asClass().isAnnotation()) {
+                    // ignore annotation on annotation
+                    continue;
+                }
 
                 DotName name = i.target()
                         .asClass()
@@ -648,16 +654,21 @@ public class JunitTestRunner {
         // Most logic in the JUnitRunner counts main tests as quarkus tests, so do a (mildly irritating) special pass to get the ones which are strictly @QuarkusTest
 
         Set<String> quarkusTestClassesForFacadeClassLoader = new HashSet<>();
-        for (AnnotationInstance i : index.getAnnotations(QUARKUS_TEST)) {
-            DotName name = i.target()
-                    .asClass()
-                    .name();
-            quarkusTestClassesForFacadeClassLoader.add(name.toString());
-            for (ClassInfo clazz : index.getAllKnownSubclasses(name)) {
-                if (!integrationTestClasses.contains(clazz.name()
-                        .toString())) {
-                    quarkusTestClassesForFacadeClassLoader.add(clazz.name()
-                            .toString());
+        for (var a : collectQuarkusTestAnnotations(index, QUARKUS_TEST)) {
+            for (AnnotationInstance i : index.getAnnotations(a)) {
+                if (i.target().asClass().isAnnotation()) {
+                    continue;
+                }
+                DotName name = i.target()
+                        .asClass()
+                        .name();
+                quarkusTestClassesForFacadeClassLoader.add(name.toString());
+                for (ClassInfo clazz : index.getAllKnownSubclasses(name)) {
+                    if (!integrationTestClasses.contains(clazz.name()
+                            .toString())) {
+                        quarkusTestClassesForFacadeClassLoader.add(clazz.name()
+                                .toString());
+                    }
                 }
             }
         }
@@ -1377,4 +1388,13 @@ public class JunitTestRunner {
         }
     }
 
+    private static List<DotName> collectQuarkusTestAnnotations(Index index, DotName testAnnotationName) {
+        return Stream.concat(Stream.of(testAnnotationName),
+                index.getAnnotations(testAnnotationName).stream()
+                        .filter(ai -> ai.target().kind() == AnnotationTarget.Kind.CLASS
+                                && ai.target().asClass().isAnnotation())
+                        .map(ai -> ai.target().asClass().name())
+                        .flatMap(name -> collectQuarkusTestAnnotations(index, name).stream()))
+                .toList();
+    }
 }

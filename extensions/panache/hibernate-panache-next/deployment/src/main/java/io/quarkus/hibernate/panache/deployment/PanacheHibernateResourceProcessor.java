@@ -15,21 +15,25 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 
 import org.hibernate.Session;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type.Kind;
 
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.staticmethods.InterceptedStaticMethodsTransformersRegisteredBuildItem;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -43,6 +47,7 @@ import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
+import io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor;
 import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildItem;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
@@ -87,6 +92,13 @@ public final class PanacheHibernateResourceProcessor {
             .createSimple(PanacheStatelessReactiveEntity.class.getName());
     static final DotName DOTNAME_PANACHE_ENTITY_MARKER = DotName.createSimple(PanacheEntityMarker.class.getName());
 
+    private static final Set<String> ALL_REPOSITORY_METHOD_ANNOTATIONS;
+    static {
+        Set<String> set = new HashSet<>(PANACHE_REPOSITORY_ANNOTATIONS);
+        HibernateOrmProcessor.HIBERNATE_REPOSITORY_ANNOTATIONS.stream().map(Class::getName).forEach(set::add);
+        ALL_REPOSITORY_METHOD_ANNOTATIONS = Set.copyOf(set);
+    }
+
     private static final DotName DOTNAME_SESSION = DotName.createSimple(Session.class.getName());
 
     private static final DotName DOTNAME_ID = DotName.createSimple(Id.class.getName());
@@ -114,6 +126,37 @@ public final class PanacheHibernateResourceProcessor {
     UnremovableBeanBuildItem ensureBeanLookupAvailable() {
         // FIXME: look for mutiny sessions too?
         return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanTypeExclusion(DOTNAME_SESSION));
+    }
+
+    @BuildStep
+    void makePanache2ReposApplicationScopedAndUnremovable(
+            CombinedIndexBuildItem index,
+            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeanBuildItems) {
+        Set<DotName> repositoryImpls = new HashSet<>();
+        collectEntityInnerInterfaces(index.getIndex(),
+                (memberClass, implementingBean) -> {
+                    if (!implementingBean.isInterface() && !implementingBean.isAbstract()) {
+                        repositoryImpls.add(implementingBean.name());
+                    }
+                });
+        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementations(DOTNAME_PANACHE_REPOSITORY_SWITCHER)) {
+            if (!classInfo.isInterface() && !classInfo.isAbstract()) {
+                repositoryImpls.add(classInfo.name());
+            }
+        }
+
+        if (repositoryImpls.isEmpty()) {
+            return;
+        }
+
+        unremovableBeanBuildItems.produce(UnremovableBeanBuildItem.beanTypes(repositoryImpls));
+        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(AnnotationTransformation.forClasses()
+                .whenClass(c -> repositoryImpls.contains(c.name()))
+                .transform(c -> {
+                    c.remove(a -> a.name().equals(BuiltinScope.DEPENDENT.getName()));
+                    c.add(ApplicationScoped.class);
+                })));
     }
 
     @BuildStep
@@ -205,27 +248,6 @@ public final class PanacheHibernateResourceProcessor {
             }
         }
         recorder.setRepositoryClassesToEntityClasses(repositoryClassesToEntityClasses);
-    }
-
-    @BuildStep
-    void makePanache2ReposUnremovable(
-            CombinedIndexBuildItem index,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeanBuildItems) throws ClassNotFoundException {
-        Set<DotName> unremovable = new HashSet<>();
-        // Find Panache 2 repos, by listing every entity, to find query interfaces with no supertype
-        collectEntityInnerInterfaces(index.getIndex(),
-                (memberClass, implementingBean) -> unremovable.add(implementingBean.name()));
-        // Now, some entities that do not explicitly add stateless/managed query repos will get some generated, so
-        // either we figure out who they are, or we blanket add them all
-        index.getIndex().getKnownClasses();
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementations(DOTNAME_PANACHE_REPOSITORY_SWITCHER)) {
-            // Only keep concrete classes
-            if (classInfo.isInterface() || classInfo.isAbstract()) {
-                continue;
-            }
-            unremovable.add(classInfo.name());
-        }
-        unremovableBeanBuildItems.produce(UnremovableBeanBuildItem.beanTypes(unremovable));
     }
 
     @BuildStep
@@ -358,10 +380,13 @@ public final class PanacheHibernateResourceProcessor {
                 continue;
             }
             ClassInfo entityClass = target.asClass();
-            // find its member interfaces
+            // find its member interfaces that are Panache repository types
             for (DotName memberClassName : entityClass.memberClasses()) {
                 ClassInfo memberClass = index.getClassByName(memberClassName);
                 if (!memberClass.isInterface()) {
+                    continue;
+                }
+                if (!isPanacheRepositoryInterface(memberClass, index)) {
                     continue;
                 }
                 for (ClassInfo implementingBean : index.getAllKnownImplementations(memberClassName)) {
@@ -369,5 +394,19 @@ public final class PanacheHibernateResourceProcessor {
                 }
             }
         }
+    }
+
+    private static boolean isPanacheRepositoryInterface(ClassInfo interfaceClass, IndexView index) {
+        if (index.getAllKnownSubinterfaces(DOTNAME_PANACHE_REPOSITORY_SWITCHER).contains(interfaceClass)) {
+            return true;
+        }
+        for (MethodInfo method : interfaceClass.methods()) {
+            for (AnnotationInstance annotation : method.annotations()) {
+                if (ALL_REPOSITORY_METHOD_ANNOTATIONS.contains(annotation.name().toString())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

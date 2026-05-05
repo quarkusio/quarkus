@@ -29,6 +29,7 @@ import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport;
+import io.quarkus.oidc.common.runtime.OidcWebClient;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
 import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.runtime.LaunchMode;
@@ -39,8 +40,6 @@ import io.smallrye.mutiny.TimeoutException;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.client.WebClientOptions;
-import io.vertx.mutiny.ext.web.client.WebClient;
 
 final class TenantContextFactory {
 
@@ -453,17 +452,14 @@ final class TenantContextFactory {
 
         String authServerUriString = OidcCommonUtils.getAuthServerUrl(oidcConfig);
 
-        WebClientOptions options = new WebClientOptions();
-        options.setFollowRedirects(oidcConfig.followRedirects());
-        OidcCommonUtils.setHttpClientOptions(oidcConfig, options, tlsSupport.forConfig(oidcConfig.tls()),
-                proxyConfigurationRegistry);
         var mutinyVertx = new io.vertx.mutiny.core.Vertx(vertx);
-        WebClient client = WebClient.create(mutinyVertx, options);
+        OidcWebClient client = OidcWebClient.create(oidcConfig, tlsSupport, mutinyVertx, proxyConfigurationRegistry,
+                "OIDC tenant `" + oidcConfig.tenantId().get() + "`");
 
         Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters = OidcUtils.getOidcRequestFilters(oidcConfig);
         Map<OidcEndpoint.Type, List<OidcResponseFilter>> oidcResponseFilters = OidcUtils.getOidcResponseFilters(oidcConfig);
 
-        Uni<OidcConfigurationMetadata> metadataUni = null;
+        final Uni<OidcConfigurationMetadata> metadataUni;
         if (!oidcConfig.discoveryEnabled().orElse(true)) {
             metadataUni = Uni.createFrom().item(createLocalMetadata(oidcConfig, authServerUriString));
         } else {
@@ -522,6 +518,7 @@ final class TenantContextFactory {
                         }
                         if (OidcUtils.isParEnabled(oidcConfig.authentication(), metadata)) {
                             if (metadata.getPushedAuthorizationRequestUri() == null) {
+                                client.close();
                                 String exceptionMessage = ("OIDC tenant '%s' has enabled the pushed authorization requests, but "
                                         + "the OpenID Provider PAR endpoint is not configured. Use '%s' if the discovery is disabled.")
                                         .formatted(tenantId,
@@ -539,6 +536,7 @@ final class TenantContextFactory {
                             boolean clientSecretQueryAuthentication = oidcConfig.credentials().clientSecret().method()
                                     .orElse(null) == OidcClientCommonConfig.Credentials.Secret.Method.QUERY;
                             if (clientSecretQueryAuthentication) {
+                                client.close();
                                 String exceptionMessage = ("OIDC tenant '%s' has enabled the pushed authorization requests, "
                                         + "and uses the client authentication method 'query'. Please set different"
                                         + " client authentication method").formatted(tenantId);

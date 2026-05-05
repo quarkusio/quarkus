@@ -3,6 +3,7 @@ package io.quarkus.qute;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.net.URI;
 import java.nio.CharBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -44,7 +45,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
     private static final Logger LOGGER = Logger.getLogger(Parser.class);
     static final String ROOT_HELPER_NAME = "$root";
 
-    static final Origin SYNTHETIC_ORIGIN = new OriginImpl(0, 0, 0, "<<synthetic>>", "<<synthetic>>", Optional.empty());
+    static final Origin SYNTHETIC_ORIGIN = new OriginImpl(0, 0, 0, "<<synthetic>>", "<<synthetic>>", null, null);
 
     private static final char START_DELIMITER = '{';
     private static final char END_DELIMITER = '}';
@@ -1138,11 +1139,12 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
 
     Origin origin(int lineCharacterOffset) {
         return new OriginImpl(line, lineCharacter - lineCharacterOffset, lineCharacter, templateId, generatedId,
-                location.getVariant());
+                location.getVariant().orElse(null), location.getSource().orElse(null));
     }
 
     Origin syntheticOrigin() {
-        return new OriginImpl(-1, -1, -1, templateId, generatedId, location.getVariant());
+        return new OriginImpl(-1, -1, -1, templateId, generatedId, location.getVariant().orElse(null),
+                location.getSource().orElse(null));
     }
 
     private List<List<TemplateNode>> readLines(SectionNode rootNode) {
@@ -1264,16 +1266,18 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
         private final int lineCharacterEnd;
         private final String templateId;
         private final String templateGeneratedId;
-        private final Optional<Variant> variant;
+        private final Variant variant;
+        private final URI source;
 
         OriginImpl(int line, int lineCharacterStart, int lineCharacterEnd, String templateId, String templateGeneratedId,
-                Optional<Variant> variant) {
+                Variant variant, URI source) {
             this.line = line;
             this.lineCharacterStart = lineCharacterStart;
             this.lineCharacterEnd = lineCharacterEnd;
             this.templateId = templateId;
             this.templateGeneratedId = templateGeneratedId;
             this.variant = variant;
+            this.source = source;
         }
 
         @Override
@@ -1302,12 +1306,17 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
         }
 
         public Optional<Variant> getVariant() {
-            return variant;
+            return Optional.ofNullable(variant);
+        }
+
+        @Override
+        public Optional<URI> getSourceUri() {
+            return Optional.ofNullable(source);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(line, templateGeneratedId, templateId, variant);
+            return Objects.hash(line, templateGeneratedId, templateId, variant, source);
         }
 
         @Override
@@ -1324,7 +1333,8 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             OriginImpl other = (OriginImpl) obj;
             return line == other.line
                     && Objects.equals(templateGeneratedId, other.templateGeneratedId)
-                    && Objects.equals(templateId, other.templateId) && Objects.equals(variant, other.variant);
+                    && Objects.equals(templateId, other.templateId) && Objects.equals(variant, other.variant)
+                    && Objects.equals(source, other.source);
         }
 
         @Override

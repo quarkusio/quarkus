@@ -2,7 +2,6 @@ package io.quarkus.redis.runtime.client;
 
 import java.util.List;
 
-import io.vertx.codegen.annotations.Nullable;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.redis.client.Redis;
@@ -73,7 +72,7 @@ public class ObservableRedis implements Redis {
         }
 
         @Override
-        public RedisConnection handler(@Nullable Handler<Response> handler) {
+        public RedisConnection handler(Handler<Response> handler) {
             delegate.handler(handler);
             return this;
         }
@@ -97,7 +96,7 @@ public class ObservableRedis implements Redis {
         }
 
         @Override
-        public RedisConnection endHandler(@Nullable Handler<Void> endHandler) {
+        public RedisConnection endHandler(Handler<Void> endHandler) {
             delegate.endHandler(endHandler);
             return this;
         }

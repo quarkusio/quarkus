@@ -69,7 +69,8 @@ public class KubernetesServiceClientAssertionProviderTest {
         Path svidTokenPath = Path.of("target").resolve("spiffe-svid-token.json");
         String svidToken = createSpiffeSvidToken();
         storeNewJwtBearerToken(svidTokenPath, svidToken);
-        try (var clientAssertionProvider = new KubernetesServiceClientAssertionProvider(vertx, svidTokenPath, Source.SPIFFE)) {
+        try (var clientAssertionProvider = new KubernetesServiceClientAssertionProvider(vertx, svidTokenPath,
+                Source.SPIFFE_JWT)) {
             assertEquals(svidToken, clientAssertionProvider.getClientAssertion());
             assertEquals(OidcConstants.SPIFFE_SVID_CLIENT_ASSERTION_TYPE, clientAssertionProvider.getClientAssertionType());
 
@@ -89,7 +90,8 @@ public class KubernetesServiceClientAssertionProviderTest {
         Path svidTokenPath = Path.of("target").resolve("invalid-spiffe-svid-token.json");
         String token = createJwtBearerToken();
         storeNewJwtBearerToken(svidTokenPath, token);
-        try (var clientAssertionProvider = new KubernetesServiceClientAssertionProvider(vertx, svidTokenPath, Source.SPIFFE)) {
+        try (var clientAssertionProvider = new KubernetesServiceClientAssertionProvider(vertx, svidTokenPath,
+                Source.SPIFFE_JWT)) {
             assertNull(clientAssertionProvider.getClientAssertion());
         } finally {
             vertx.close().toCompletionStage().toCompletableFuture().join();

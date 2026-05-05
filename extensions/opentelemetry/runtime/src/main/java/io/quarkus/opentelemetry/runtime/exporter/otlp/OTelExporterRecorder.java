@@ -27,6 +27,7 @@ import io.opentelemetry.exporter.internal.http.HttpExporter;
 import io.opentelemetry.exporter.otlp.internal.OtlpUserAgent;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigurationException;
 import io.opentelemetry.sdk.common.InternalTelemetryVersion;
+import io.opentelemetry.sdk.common.export.MemoryMode;
 import io.opentelemetry.sdk.common.internal.ComponentId;
 import io.opentelemetry.sdk.common.internal.StandardComponentId;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
@@ -165,6 +166,7 @@ public class OTelExporterRecorder {
                     TlsConfigurationRegistry tlsConfigurationRegistry) {
 
                 OtlpExporterTracesConfig tracesConfig = exporterRuntimeConfig.traces();
+                MemoryMode memoryMode = exporterRuntimeConfig.memoryMode();
 
                 return new VertxGrpcSpanExporter(new GrpcExporter(
                         new VertxGrpcSender(
@@ -178,7 +180,8 @@ public class OTelExporterRecorder {
                         InternalTelemetryVersion.LATEST,
                         ComponentId.generateLazy(StandardComponentId.ExporterType.OTLP_GRPC_SPAN_EXPORTER), // use the same as OTel does
                         MeterProvider::noop,
-                        baseUri));
+                        baseUri),
+                        memoryMode);
             }
 
             private SpanExporter createHttpSpanExporter(OtlpExporterRuntimeConfig exporterRuntimeConfig, Vertx vertx,
@@ -186,6 +189,7 @@ public class OTelExporterRecorder {
                     TlsConfigurationRegistry tlsConfigurationRegistry) {
 
                 OtlpExporterTracesConfig tracesConfig = exporterRuntimeConfig.traces();
+                MemoryMode memoryMode = exporterRuntimeConfig.memoryMode();
 
                 boolean exportAsJson = false; //TODO: this will be enhanced in the future
 
@@ -203,7 +207,8 @@ public class OTelExporterRecorder {
                         MeterProvider::noop,
                         InternalTelemetryVersion.LATEST,
                         baseUri,
-                        false));
+                        false),
+                        memoryMode);
             }
         };
     }
@@ -220,6 +225,7 @@ public class OTelExporterRecorder {
                     return NoopMetricExporter.INSTANCE;
                 }
 
+                MemoryMode memoryMode = exporterRuntimeConfig.getValue().memoryMode();
                 MetricExporter metricExporter;
 
                 try {
@@ -248,7 +254,8 @@ public class OTelExporterRecorder {
                                         MeterProvider::noop,
                                         baseUri),
                                 aggregationTemporalityResolver(metricsConfig),
-                                aggregationResolver(metricsConfig));
+                                aggregationResolver(metricsConfig),
+                                memoryMode);
                     } else if (HTTP_PROTOBUF.equals(protocol)) {
                         boolean exportAsJson = false; //TODO: this will be enhanced in the future
                         metricExporter = new VertxHttpMetricsExporter(
@@ -269,7 +276,8 @@ public class OTelExporterRecorder {
                                         baseUri,
                                         false),
                                 aggregationTemporalityResolver(metricsConfig),
-                                aggregationResolver(metricsConfig));
+                                aggregationResolver(metricsConfig),
+                                memoryMode);
                     } else {
                         throw new IllegalArgumentException(String.format("Unsupported OTLP protocol %s specified. " +
                                 "Please check `quarkus.otel.exporter.otlp.metrics.protocol` property", protocol));
@@ -295,6 +303,7 @@ public class OTelExporterRecorder {
                     return NoopLogRecordExporter.INSTANCE;
                 }
 
+                MemoryMode memoryMode = exporterRuntimeConfig.getValue().memoryMode();
                 LogRecordExporter logRecordExporter;
 
                 try {
@@ -322,7 +331,8 @@ public class OTelExporterRecorder {
                                         ComponentId.generateLazy(
                                                 StandardComponentId.ExporterType.OTLP_GRPC_LOG_EXPORTER), // use the same as OTel does
                                         MeterProvider::noop,
-                                        baseUri));
+                                        baseUri),
+                                memoryMode);
                     } else if (HTTP_PROTOBUF.equals(protocol)) {
                         boolean exportAsJson = false; //TODO: this will be enhanced in the future
                         logRecordExporter = new VertxHttpLogRecordExporter(
@@ -341,7 +351,8 @@ public class OTelExporterRecorder {
                                         MeterProvider::noop,
                                         InternalTelemetryVersion.LATEST,
                                         baseUri,
-                                        false));
+                                        false),
+                                memoryMode);
                     } else {
                         throw new IllegalArgumentException(String.format("Unsupported OTLP protocol %s specified. " +
                                 "Please check `quarkus.otel.exporter.otlp.logs.protocol` property", protocol));

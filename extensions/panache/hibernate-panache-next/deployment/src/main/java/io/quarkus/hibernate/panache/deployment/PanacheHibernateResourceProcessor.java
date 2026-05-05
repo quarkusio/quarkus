@@ -1,8 +1,11 @@
 package io.quarkus.hibernate.panache.deployment;
 
 import static io.quarkus.hibernate.panache.deployment.EntityToPersistenceUnitUtil.determineEntityPersistenceUnits;
+import static io.quarkus.security.spi.SecuredInterfaceAnnotationBuildItem.ofMethodAnnotation;
+import static io.quarkus.security.spi.SecurityTransformerBuildItem.createSecurityTransformer;
 
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -10,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -19,6 +23,8 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type.Kind;
 
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -49,8 +55,25 @@ import io.quarkus.hibernate.panache.stateless.blocking.PanacheStatelessBlockingE
 import io.quarkus.hibernate.panache.stateless.reactive.PanacheStatelessReactiveEntity;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
 import io.quarkus.panache.hibernate.common.deployment.HibernateEnhancersRegisteredBuildItem;
+import io.quarkus.security.spi.SecuredInterfaceAnnotationBuildItem;
+import io.quarkus.security.spi.SecuredTopLevelInterfaceBuildItem;
+import io.quarkus.security.spi.SecurityTransformer;
+import io.quarkus.security.spi.SecurityTransformerBuildItem;
 
 public final class PanacheHibernateResourceProcessor {
+
+    /**
+     * Collection of Jakarta Data annotations for which we create a repository, if they're detected on an inner interface.
+     *
+     * @see io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor#HIBERNATE_REPOSITORY_ANNOTATIONS
+     */
+    public static final Set<String> PANACHE_REPOSITORY_ANNOTATIONS = Set.of(
+            "jakarta.data.repository.Find",
+            "jakarta.data.repository.Query",
+            "jakarta.data.repository.Delete",
+            "jakarta.data.repository.Insert",
+            "jakarta.data.repository.Update",
+            "jakarta.data.repository.Save");
 
     static final DotName DOTNAME_PANACHE_REPOSITORY_SWITCHER = DotName.createSimple(PanacheRepositorySwitcher.class.getName());
 
@@ -190,23 +213,8 @@ public final class PanacheHibernateResourceProcessor {
             BuildProducer<UnremovableBeanBuildItem> unremovableBeanBuildItems) throws ClassNotFoundException {
         Set<DotName> unremovable = new HashSet<>();
         // Find Panache 2 repos, by listing every entity, to find query interfaces with no supertype
-        for (AnnotationInstance annotation : index.getIndex().getAnnotations(Entity.class)) {
-            AnnotationTarget target = annotation.target();
-            if (target.kind() != AnnotationTarget.Kind.CLASS) {
-                continue;
-            }
-            ClassInfo entityClass = target.asClass();
-            // find its member interfaces
-            for (DotName memberClassName : entityClass.memberClasses()) {
-                ClassInfo memberClass = index.getIndex().getClassByName(memberClassName);
-                if (!memberClass.isInterface()) {
-                    continue;
-                }
-                for (ClassInfo implementingBean : index.getIndex().getAllKnownImplementations(memberClassName)) {
-                    unremovable.add(implementingBean.name());
-                }
-            }
-        }
+        collectEntityInnerInterfaces(index.getIndex(),
+                (memberClass, implementingBean) -> unremovable.add(implementingBean.name()));
         // Now, some entities that do not explicitely add stateless/managed query repos will get some generated, so
         // either we figure out who they are, or we blanket add them all
         index.getIndex().getKnownClasses();
@@ -238,5 +246,128 @@ public final class PanacheHibernateResourceProcessor {
             }
         }
         return null;
+    }
+
+    @BuildStep
+    void registerPanacheRepositoryInterfacesForSecurityScanning(Capabilities capabilities,
+            CombinedIndexBuildItem indexBuildItem,
+            BuildProducer<SecuredTopLevelInterfaceBuildItem> interfaceBuildItemBuildProducer) {
+        // if we had certainty that all known sub-interfaces of the DOTNAME_PANACHE_REPOSITORY_SWITCHER annotations
+        // are indexed in all used indexes, we could simply provide one build item, however
+        // it is better to provide all known sub-interfaces for we can't be sure that framework classes are indexed
+        // e.g. Quarkus Security also uses BeanArchiveIndexBuildItem which currently doesn't find
+        // any known sub-interfaces of the DOTNAME_PANACHE_REPOSITORY_SWITCHER
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            indexBuildItem.getIndex().getAllKnownSubinterfaces(DOTNAME_PANACHE_REPOSITORY_SWITCHER).stream()
+                    .map(ClassInfo::name)
+                    .map(SecuredTopLevelInterfaceBuildItem::new)
+                    .forEach(interfaceBuildItemBuildProducer::produce);
+        }
+    }
+
+    @BuildStep
+    void registerPanacheRepositoryAnnotationsForSecurityScanning(Capabilities capabilities,
+            BuildProducer<SecuredInterfaceAnnotationBuildItem> securedInterfaceAnnotationProducer) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            PANACHE_REPOSITORY_ANNOTATIONS.stream()
+                    .map(SecuredInterfaceAnnotationBuildItem::ofMethodAnnotation)
+                    .forEach(securedInterfaceAnnotationProducer::produce);
+        }
+    }
+
+    // logic in this method can be verified by commenting out the registerPanacheRepositoryAnnotationsForSecurityScanning
+    // build step and running security tests in this module
+    @BuildStep
+    void validateInnerInterfaceSecurityDetected(CombinedIndexBuildItem combinedIndexBuildItem,
+            Optional<SecurityTransformerBuildItem> securityTransformerBuildItem,
+            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrorBuildItemBuildProducer,
+            Capabilities capabilities) {
+        // if there is an interface that does not inherit the DOTNAME_PANACHE_REPOSITORY_SWITCHER
+        // while it is considered a Panache repository, like the inner interfaces, we need to consider it for security
+        // scanning; right now, such interfaces may only have methods annotated with either Jakarta Data annotations
+        // like these we hardcoded in the PANACHE_REPOSITORY_ANNOTATIONS or Hibernate annotations like these
+        // defined in the HIBERNATE_REPOSITORY_ANNOTATIONS; however, we cannot just hope that if a new annotation is
+        // added, we will remember to add it to the PANACHE_REPOSITORY_ANNOTATIONS collection, hence here we validate
+        // that all the security annotations were detected
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            var index = combinedIndexBuildItem.getIndex(); // if it works for the combined index, it will work for other
+            SecurityTransformer securityTransformer = createSecurityTransformer(index, securityTransformerBuildItem);
+            Map<ClassInfo, List<ClassInfo>> innerInterfaceToImplBean = new HashMap<>();
+            collectEntityInnerInterfaces(index, (innerInterface, implBean) -> innerInterfaceToImplBean
+                    .computeIfAbsent(innerInterface, k -> new ArrayList<>()).add(implBean));
+            for (Map.Entry<ClassInfo, List<ClassInfo>> entry : innerInterfaceToImplBean.entrySet()) {
+                ClassInfo innerInterface = entry.getKey();
+                List<ClassInfo> implBeans = entry.getValue();
+                boolean hasSecurityAnnotation = securityTransformer.hasSecurityAnnotation(innerInterface);
+                if (hasSecurityAnnotation) {
+                    implBeansLoop: for (ClassInfo implBean : implBeans) {
+                        // Quarkus has method level security (with special, but unrelated exceptions), hence what
+                        // is actually secured are impl. methods; we would need to check that each implemented method
+                        // was secured; however, matching the interface method with impl. can get tricky;
+                        // we can safely assume that when at least one method is secured, the interface was scanned
+                        for (MethodInfo implBeanMethod : implBean.methods()) {
+                            if (securityTransformer.hasSecurityAnnotation(implBeanMethod)) {
+                                continue implBeansLoop;
+                            }
+                        }
+                        var be = new BuildException("Security annotation is placed on the '" + innerInterface.name()
+                                + "', however its implementation '" + implBean.name()
+                                + "' is not secured. Please report Quarkus issue");
+                        validationErrorBuildItemBuildProducer
+                                .produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(be));
+                        return;
+                    }
+                } else {
+                    for (MethodInfo method : innerInterface.methods()) {
+                        hasSecurityAnnotation = securityTransformer.hasSecurityAnnotation(method);
+                        if (hasSecurityAnnotation) {
+                            implBeanLoop: for (ClassInfo implBean : implBeans) {
+                                // asserts that each impl. has 1+ same-named methods and at least one of them is secured;
+                                // to keep this simple, this doesn't match full name + param types, because as long
+                                // as at least one security annotation is detected, the whole class will be scanned
+                                // for security annotations;
+                                // basically we verify that the inner interface was scanned, but we need to do it for
+                                // each impl. since some impl. may be detected for other reasons (like other interface)
+                                for (MethodInfo methodInfo : implBean.methods()) {
+                                    if (methodInfo.name().equals(method.name())
+                                            && securityTransformer.hasSecurityAnnotation(methodInfo)) {
+                                        continue implBeanLoop;
+                                    }
+                                }
+                                var be = new BuildException("Security annotation is placed on the '"
+                                        + innerInterface.name() + "#" + method.name() + "' method, but implementing class '"
+                                        + implBean.name() + "' has no secured method with name '" + method.name()
+                                        + "'. Please report Quarkus issue");
+                                validationErrorBuildItemBuildProducer
+                                        .produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(be));
+                                return;
+                            }
+                            break; // one method was detected for each interface - the implementations were scanned
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static void collectEntityInnerInterfaces(IndexView index,
+            BiConsumer<ClassInfo, ClassInfo> implementingBeanConsumer) {
+        for (AnnotationInstance annotation : index.getAnnotations(Entity.class)) {
+            AnnotationTarget target = annotation.target();
+            if (target.kind() != AnnotationTarget.Kind.CLASS) {
+                continue;
+            }
+            ClassInfo entityClass = target.asClass();
+            // find its member interfaces
+            for (DotName memberClassName : entityClass.memberClasses()) {
+                ClassInfo memberClass = index.getClassByName(memberClassName);
+                if (!memberClass.isInterface()) {
+                    continue;
+                }
+                for (ClassInfo implementingBean : index.getAllKnownImplementations(memberClassName)) {
+                    implementingBeanConsumer.accept(memberClass, implementingBean);
+                }
+            }
+        }
     }
 }

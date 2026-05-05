@@ -380,7 +380,7 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
                 // This option is only supported by the OIDC client extension.
                 BEARER,
                 // SPIFFE SVID token is used as a client assertion
-                SPIFFE
+                SPIFFE_JWT
             }
 
             /**

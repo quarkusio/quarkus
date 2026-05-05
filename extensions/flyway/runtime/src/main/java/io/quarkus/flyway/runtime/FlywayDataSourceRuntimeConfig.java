@@ -105,8 +105,8 @@ public interface FlywayDataSourceRuntimeConfig {
      * true to execute Flyway clean command automatically when the application starts, false otherwise.
      *
      */
-    @WithDefault("false")
-    boolean cleanAtStart();
+    @ConfigDocDefault("`false`")
+    Optional<Boolean> cleanAtStart();
 
     /**
      * true to prevent Flyway clean operations, false otherwise.
@@ -118,8 +118,8 @@ public interface FlywayDataSourceRuntimeConfig {
      * true to execute Flyway automatically when the application starts, false otherwise.
      *
      */
-    @WithDefault("false")
-    boolean migrateAtStart();
+    @ConfigDocDefault("`false`")
+    Optional<Boolean> migrateAtStart();
 
     /**
      * true to execute a Flyway repair command when the application starts, false otherwise.
@@ -148,8 +148,8 @@ public interface FlywayDataSourceRuntimeConfig {
      * Note that this will not automatically call migrate, you must either enable baselineAtStart or programmatically call
      * flyway.migrate().
      */
-    @WithDefault("false")
-    boolean baselineOnMigrate();
+    @ConfigDocDefault("`false`")
+    Optional<Boolean> baselineOnMigrate();
 
     /**
      * true to execute Flyway baseline automatically when the application starts.

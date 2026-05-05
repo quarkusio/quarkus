@@ -57,6 +57,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-server-spi-deployment</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-kubernetes-spi</artifactId>
+        </dependency>
 
         <!-- Test Dependencies -->
         <dependency>

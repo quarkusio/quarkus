@@ -1,7 +1,5 @@
 package io.quarkus.amazon.lambda.http.deployment;
 
-import static io.vertx.core.file.impl.FileResolverImpl.CACHE_DIR_BASE_PROP_NAME;
-
 import org.jboss.jandex.DotName;
 
 import io.quarkus.amazon.lambda.deployment.LambdaUtil;
@@ -34,6 +32,7 @@ import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.ContextTypeBuildItem;
 import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
+import io.vertx.core.impl.SysProps;
 
 public class AmazonLambdaHttpProcessor {
     private static final DotName AWS_PROXY_REQUEST_CONTEXT = DotName.createSimple(AwsProxyRequestContext.class);
@@ -97,7 +96,7 @@ public class AmazonLambdaHttpProcessor {
      */
     @BuildStep(onlyIf = IsProduction.class)
     void setTempDir(BuildProducer<SystemPropertyBuildItem> systemProperty) {
-        systemProperty.produce(new SystemPropertyBuildItem(CACHE_DIR_BASE_PROP_NAME, "/tmp/quarkus"));
+        systemProperty.produce(new SystemPropertyBuildItem(SysProps.FILE_CACHE_DIR.get(), "/tmp/quarkus"));
     }
 
     @BuildStep

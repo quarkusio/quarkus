@@ -1,5 +1,6 @@
 package io.quarkus.oidc;
 
+import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -22,4 +23,15 @@ public interface JavaScriptRequestChecker {
      * @return true if the current request was made by JavaScript
      */
     boolean isJavaScriptRequest(RoutingContext context);
+
+    /**
+     * Challenge data
+     *
+     * @param context {@link RoutingContext}
+     * @return ChallengeData, or null to use the default 499 response
+     */
+
+    default ChallengeData getChallenge(RoutingContext context) {
+        return new ChallengeData(499, "WWW-Authenticate", "OIDC");
+    }
 }

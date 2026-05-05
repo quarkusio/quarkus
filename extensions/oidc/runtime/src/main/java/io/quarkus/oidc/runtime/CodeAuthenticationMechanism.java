@@ -695,7 +695,15 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         if (!shouldAutoRedirect(configContext, context)) {
                             // If the client (usually an SPA) wants to handle the redirect manually, then
                             // return status code 499 and WWW-Authenticate header with the 'OIDC' value.
-                            return Uni.createFrom().item(new ChallengeData(499, "WWW-Authenticate", "OIDC"));
+                            ChallengeData challenge = null;
+                            JavaScriptRequestChecker checker = resolver.getJavaScriptRequestChecker();
+                            if (checker != null) {
+                                challenge = checker.getChallenge(context);
+                            }
+                            if (challenge == null) {
+                                challenge = new ChallengeData(499, "WWW-Authenticate", "OIDC");
+                            }
+                            return Uni.createFrom().item(challenge);
                         }
 
                         StringBuilder codeFlowParams = new StringBuilder(168); // experimentally determined to be a good size for preventing resizing and not wasting space

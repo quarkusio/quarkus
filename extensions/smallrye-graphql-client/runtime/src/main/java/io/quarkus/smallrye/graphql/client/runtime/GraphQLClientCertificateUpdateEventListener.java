@@ -20,6 +20,7 @@ import io.smallrye.graphql.client.impl.GraphQLClientsConfiguration;
 import io.smallrye.graphql.client.impl.dynamic.cdi.NamedDynamicClients;
 import io.smallrye.graphql.client.vertx.dynamic.VertxDynamicGraphQLClient;
 import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientAgent;
 
 @Singleton
 public class GraphQLClientCertificateUpdateEventListener {
@@ -89,7 +90,7 @@ public class GraphQLClientCertificateUpdateEventListener {
 
     private void doUpdateSSLOptions(HttpClient httpClient, String tlsConfigName,
             TlsConfiguration updatedTlsConfiguration) {
-        httpClient.updateSSLOptions(updatedTlsConfiguration.getSSLOptions()).onComplete(result -> {
+        ((HttpClientAgent) httpClient).updateSSLOptions(updatedTlsConfiguration.getClientSSLOptions()).onComplete(result -> {
             if (result.succeeded()) {
                 LOG.infof(
                         "SSL options updated on live HttpClient for GraphQL client(s) using TLS configuration '%s'",

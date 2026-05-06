@@ -122,7 +122,7 @@ public class KeycloakAdminRestClientProvider implements ResteasyClientProvider {
 
             @Override
             public SSLOptions getSSLOptions() {
-                return tlsConfiguration.getSSLOptions();
+                return tlsConfiguration.getClientSSLOptions();
             }
 
             @Override

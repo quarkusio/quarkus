@@ -304,6 +304,23 @@ You can learn more about virtual methods in the <<virtual_methods,following sect
 <1> no namespace, two parts - `item`, `getLabels(1)`, the second part is a virtual method with name `getLabels` and params `1`
 <2> infix notation that can be used for virtual methods with single parameter, translated to `name.or('John')`; no namespace, two parts - `name`, `or('John')`
 
+An expression can also use a <<literals,literal>> value as the base, followed by property accessors or virtual method invocations.
+
+.Literal Base Expression Examples
+[source]
+----
+{='foo'.toUpperCase} <1>
+{=1.intValue} <2>
+{#let name=('foo'.toUpperCase)}{name}{/let} <3>
+{name.replace('foo'.toUpperCase)} <4>
+----
+<1> string literal as the base followed by a property accessor; outputs `FOO`
+<2> integer literal as the base followed by a property accessor; outputs `1`
+<3> in a <<let_section,let>> section parameter, a literal base can be used directly inside parentheses
+<4> a literal base can also be used in nested expressions passed as parameters of virtual methods
+
+NOTE: In a top-level output expression, a literal base requires a special syntax prefix (such as `=`) configured via `ParserConfig`.
+
 [[literals]]
 ==== Supported Literals
 
@@ -1019,7 +1036,7 @@ This section allows you to define named local variables.
 {/let} <3>
 ----
 <1> The local variable is initialized with an expression that can also represent a <<literals,literal>>, i.e. `isActive=false` and `age=10`.
-<2> The infix notation is only supported if parentheses are used for grouping, e.g. `price=(order.price + 10)` is equivalent to `price=order.price.plus(10)`.
+<2> The infix notation is only supported if parentheses are used for grouping, e.g. `price=(order.price + 10)` is equivalent to `price=order.price.plus(10)`. A literal value can also be used as the first operand, e.g. `price=('$' + item.price)`.
 <3> Variables are not available outside the `let` section.
 
 The variables are not available outside the defining `let` section.

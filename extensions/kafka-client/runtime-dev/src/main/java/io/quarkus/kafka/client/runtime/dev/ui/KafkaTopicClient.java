@@ -49,7 +49,8 @@ public class KafkaTopicClient {
     @Inject
     KafkaAdminClient adminClient;
 
-    KafkaModelConverter modelConverter = new KafkaModelConverter();
+    @Inject
+    KafkaModelConverter modelConverter;
 
     @Inject
     @Identifier("default-kafka-broker")

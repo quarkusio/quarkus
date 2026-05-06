@@ -38,6 +38,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem.Builder;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
@@ -82,6 +83,9 @@ import io.quarkus.kafka.client.runtime.KafkaRuntimeConfigProducer;
 import io.quarkus.kafka.client.runtime.SnappyRecorder;
 import io.quarkus.kafka.client.runtime.dev.ui.KafkaTopicClient;
 import io.quarkus.kafka.client.runtime.dev.ui.KafkaUiUtils;
+import io.quarkus.kafka.client.runtime.dev.ui.model.converter.KafkaModelConverter;
+import io.quarkus.kafka.client.runtime.dev.ui.model.decoder.AvroDecoder;
+import io.quarkus.kafka.client.runtime.dev.ui.model.decoder.KafkaMessageDecoderRegistry;
 import io.quarkus.kafka.client.runtime.graal.SnappyFeature;
 import io.quarkus.kafka.client.serialization.BufferDeserializer;
 import io.quarkus.kafka.client.serialization.BufferSerializer;
@@ -557,11 +561,19 @@ public class KafkaProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public AdditionalBeanBuildItem kafkaClientBeans() {
-        return AdditionalBeanBuildItem.builder()
+        Builder builder = AdditionalBeanBuildItem.builder()
                 .addBeanClass(KafkaTopicClient.class)
                 .addBeanClass(KafkaUiUtils.class)
-                .setUnremovable()
-                .build();
+                .addBeanClass(KafkaModelConverter.class)
+                .addBeanClass(KafkaMessageDecoderRegistry.class)
+                .setUnremovable();
+
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.apicurio.registry.serde.avro.AvroKafkaDeserializer")
+                || QuarkusClassLoader.isClassPresentAtRuntime("io.apicurio.registry.serde.avro.AvroKafkaDeserializer")) {
+            builder.addBeanClass(AvroDecoder.class);
+        }
+
+        return builder.build();
     }
 
     public static final class HasSnappy implements BooleanSupplier {

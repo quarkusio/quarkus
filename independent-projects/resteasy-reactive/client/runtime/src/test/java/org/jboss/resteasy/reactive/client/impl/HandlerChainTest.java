@@ -24,7 +24,7 @@ public class HandlerChainTest {
     public void preSendHandlerIsAlwaysFirst() throws Exception {
 
         var initialChain = new HandlerChain(new HttpClientOptions(), false, true, LoggingScope.NONE, Collections.emptyMap(),
-                new DefaultClientLogger(), null, Collections.emptyList());
+                new DefaultClientLogger(), Collections.emptyList());
 
         ClientRestHandler preHandler = ctx -> {
         };

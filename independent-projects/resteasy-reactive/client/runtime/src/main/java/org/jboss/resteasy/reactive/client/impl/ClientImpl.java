@@ -91,7 +91,6 @@ public class ClientImpl implements Client {
 
     private static final int DEFAULT_CONNECT_TIMEOUT = 15000;
     private static final int DEFAULT_CONNECTION_POOL_SIZE = 50;
-    private static final Function<HttpClientResponse, Future<RequestOptions>> DEFAULT_REDIRECT_HANDLER = new DefaultVertxRedirectHandlerImpl();
 
     final ClientContext clientContext;
     final boolean closeVertx;
@@ -199,39 +198,31 @@ public class ClientImpl implements Client {
         }
 
         var httpClientBuilder = this.vertx.httpClientBuilder().with(options).with(options.getPoolOptions());
-
-        /*
-         * In Vert.x 5 the client-level redirect handler is no longer readable back from HttpClient,
-         * so Quarkus must always keep an explicit redirect function. This lets ClientSendRequestHandler
-         * mirror the redirect decision and reapply request customizers to redirected requests.
-         */
-        Function<HttpClientResponse, Future<RequestOptions>> redirectFunction = DEFAULT_REDIRECT_HANDLER;
         AdvancedRedirectHandler advancedRedirectHandler = configuration.getFromContext(AdvancedRedirectHandler.class);
         if (advancedRedirectHandler != null) {
-            redirectFunction = new WrapperVertxAdvancedRedirectHandlerImpl(advancedRedirectHandler);
+            httpClientBuilder.withRedirectHandler(new WrapperVertxAdvancedRedirectHandlerImpl(advancedRedirectHandler));
         } else {
             RedirectHandler redirectHandler = configuration.getFromContext(RedirectHandler.class);
             if (redirectHandler != null) {
-                redirectFunction = new WrapperVertxRedirectHandlerImpl(redirectHandler);
+                httpClientBuilder.withRedirectHandler(new WrapperVertxRedirectHandlerImpl(redirectHandler));
             }
         }
-        if (loggingScope != LoggingScope.NONE) {
-            Function<HttpClientResponse, Future<RequestOptions>> delegate = redirectFunction;
-            redirectFunction = response -> {
-                clientLogger.logResponse(response, true);
-                return delegate.apply(response);
-            };
-        }
-        httpClientBuilder.withRedirectHandler(redirectFunction);
 
         httpClient = httpClientBuilder.build();
+
+        if (loggingScope != LoggingScope.NONE) {
+            Function<HttpClientResponse, Future<RequestOptions>> defaultRedirectHandler = httpClient.redirectHandler();
+            httpClient.redirectHandler(response -> {
+                clientLogger.logResponse(response, true);
+                return defaultRedirectHandler.apply(response);
+            });
+        }
 
         handlerChain = new HandlerChain(options, isCaptureStacktrace(configuration),
                 followRedirects,
                 loggingScope,
                 clientContext.getMultipartResponsesData(),
                 clientLogger,
-                followRedirects ? redirectFunction : null,
                 clientRequestCustomizers);
     }
 

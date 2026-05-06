@@ -121,4 +121,5 @@ public interface OTelRuntimeConfig {
     @WithName("mp.compatibility")
     @WithDefault("false")
     boolean mpCompatibility();
+
 }

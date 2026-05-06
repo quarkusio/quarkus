@@ -20,6 +20,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TenantResolver;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.quarkus.vertx.http.runtime.security.ImmutablePathMatcher;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonArray;
@@ -125,12 +126,13 @@ final class StaticTenantResolver {
 
         @Override
         public String resolve(RoutingContext context) {
-            String[] pathSegments = context.request().path().split(PATH_SEPARATOR);
-            for (String segment : pathSegments) {
-                if (tenantConfigBean.getStaticTenant(segment) != null) {
+            String[] pathSegments = HttpSecurityUtils.pathWithoutMatrixParams(context.normalizedPath())
+                    .split(PATH_SEPARATOR);
+            for (String canonicalSegment : pathSegments) {
+                if (tenantConfigBean.getStaticTenant(canonicalSegment) != null) {
                     LOG.debugf(
-                            "Tenant id '%s' is selected on the '%s' request path", segment, context.normalizedPath());
-                    return segment;
+                            "Tenant id '%s' is selected on the '%s' request path", canonicalSegment, context.normalizedPath());
+                    return canonicalSegment;
                 }
             }
             return null;
@@ -157,10 +159,11 @@ final class StaticTenantResolver {
 
         @Override
         public String resolve(RoutingContext context) {
-            String tenantId = staticTenantPaths.match(context.normalizedPath()).getValue();
+            String canonicalPath = HttpSecurityUtils.pathWithoutMatrixParams(context.normalizedPath());
+            String tenantId = staticTenantPaths.match(canonicalPath).getValue();
             if (tenantId != null) {
                 LOG.debugf(
-                        "Tenant id '%s' is selected on the '%s' request path", tenantId, context.normalizedPath());
+                        "Tenant id '%s' is selected on the '%s' request path", tenantId, canonicalPath);
                 return tenantId;
             }
             return null;

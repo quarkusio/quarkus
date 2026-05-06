@@ -126,11 +126,14 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
 
                             //Pass the application model to the Surefire/Failsafe test process as a system property,
                             //so it doesn't have to do a workspace search to find it. Same as we do for Gradle.
+                            // Use a relative path to avoid quoting issues with spaces and backslashes
+                            // in absolute paths on Windows when passed through Surefire's argLine tokenizer.
+                            Path relativeAppModelPath = baseDir().toPath().relativize(serializedTestAppModelPath);
                             Properties properties = mavenProject().getProperties();
                             String argLine = properties.getProperty("argLine", "");
                             properties.setProperty("argLine", argLine +
-                                    " -D" + BootstrapConstants.SERIALIZED_TEST_APP_MODEL + "=\"" + serializedTestAppModelPath
-                                    + "\"");
+                                    " -D" + BootstrapConstants.SERIALIZED_TEST_APP_MODEL + "="
+                                    + relativeAppModelPath);
                         } catch (IOException e) {
                             getLog().warn("Failed to serialize application model", e);
                         }

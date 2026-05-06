@@ -1,5 +1,7 @@
 package io.quarkus.flyway.runtime;
 
+import java.util.Collections;
+
 import org.flywaydb.core.Flyway;
 
 /**
@@ -12,7 +14,8 @@ public class UnconfiguredDataSourceFlywayContainer extends FlywayContainer {
     private final Throwable cause;
 
     public UnconfiguredDataSourceFlywayContainer(String dataSourceName, String message, Throwable cause) {
-        super(null, false, false, false, false, false, false, dataSourceName, false, false);
+        super(null, false, false, false, false, false, false, dataSourceName, false, false,
+                Collections.emptySet());
         this.message = message;
         this.cause = cause;
     }

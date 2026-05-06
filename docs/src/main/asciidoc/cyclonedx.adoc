@@ -285,6 +285,17 @@ Since native executables are not currently attached to projects as Maven artifac
 
 As in the case of an Uber JAR, runtime components in an SBOM generated for a native executable will not include `evidence.occurrences.location` since their corresponding code and resources are included in a single native executable file.
 
+==== Embedded SBOM in native executables
+
+When <<embedded-dependency-sboms,SBOM embedding>> is enabled, the SBOM is also embedded directly into the native executable as global symbols (`sbom` and `sbom_length`), following the https://www.graalvm.org/jdk25/security-guide/native-image/sbom/[GraalVM SBOM specification]. This allows tools such as `syft` to extract the SBOM from the binary:
+
+[source,bash]
+----
+podman run --rm -v $(pwd):/tmp:z anchore/syft scan myapp -o cyclonedx-json
+----
+
+NOTE: The SBOM is always GZIP-compressed before being embedded as a global symbol, regardless of the `quarkus.cyclonedx.embedded.compress` setting. If the classpath resource is not already compressed, Quarkus will compress it at native image build time.
+
 === Mutable JAR
 
 Mutable JAR distribution is similar to the Fast JAR one except it also includes build time dependencies to support re-augmentation (re-building) of an application.

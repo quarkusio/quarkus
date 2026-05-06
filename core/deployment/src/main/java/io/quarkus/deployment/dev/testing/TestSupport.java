@@ -332,6 +332,24 @@ public class TestSupport implements TestController {
                 (BiConsumer<Map<String, Boolean>, List<Map.Entry<Predicate<String>, Boolean>>>) null);
     }
 
+    public synchronized void cancelRunningTests() {
+        for (var runner : moduleRunners) {
+            runner.abort();
+        }
+    }
+
+    public synchronized void resetTestState() {
+        for (var runner : moduleRunners) {
+            runner.abort();
+        }
+        testsRunning = false;
+        testsQueued = false;
+        queuedChanges = null;
+        for (var runner : moduleRunners) {
+            runner.reset();
+        }
+    }
+
     public void runTests() {
         runTests(null);
     }

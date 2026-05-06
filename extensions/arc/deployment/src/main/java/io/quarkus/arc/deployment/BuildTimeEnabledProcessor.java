@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.inject.Vetoed;
@@ -39,6 +40,7 @@ import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.quarkus.arc.properties.IfBuildProperty;
+import io.quarkus.arc.properties.StringValueMatch;
 import io.quarkus.arc.properties.UnlessBuildProperty;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -388,17 +390,20 @@ public class BuildTimeEnabledProcessor {
         private final String propertyName;
         private final String expectedStringValue;
         private final boolean enableIfMissing;
+        private final Pattern regexPattern;
 
-        private BuildProperty(String propertyName, String expectedStringValue, boolean enableIfMissing) {
+        private BuildProperty(String propertyName, String expectedStringValue, boolean enableIfMissing,
+                StringValueMatch match) {
             this.propertyName = propertyName;
             this.expectedStringValue = expectedStringValue;
             this.enableIfMissing = enableIfMissing;
+            this.regexPattern = match == StringValueMatch.REGEX ? Pattern.compile(expectedStringValue) : null;
         }
 
         boolean enabled(Config config) {
             Optional<String> optionalValue = config.getOptionalValue(propertyName, String.class);
             if (optionalValue.isPresent()) {
-                return expectedStringValue.equalsIgnoreCase(optionalValue.get());
+                return matches(optionalValue.get());
             } else {
                 return enableIfMissing;
             }
@@ -408,10 +413,17 @@ public class BuildTimeEnabledProcessor {
             // cannot just negate `enabled()`, that would change the meaning of `enableIfMissing`
             Optional<String> optionalValue = config.getOptionalValue(propertyName, String.class);
             if (optionalValue.isPresent()) {
-                return !expectedStringValue.equalsIgnoreCase(optionalValue.get());
+                return !matches(optionalValue.get());
             } else {
                 return enableIfMissing;
             }
+        }
+
+        private boolean matches(String actualValue) {
+            if (regexPattern != null) {
+                return regexPattern.matcher(actualValue).matches();
+            }
+            return expectedStringValue.equals(actualValue);
         }
 
         static BuildProperty from(AnnotationInstance instance) {
@@ -419,8 +431,11 @@ public class BuildTimeEnabledProcessor {
             String expectedStringValue = instance.value("stringValue").asString();
             AnnotationValue enableIfMissingValue = instance.value("enableIfMissing");
             boolean enableIfMissing = enableIfMissingValue != null && enableIfMissingValue.asBoolean();
+            AnnotationValue matchValue = instance.value("match");
+            StringValueMatch match = matchValue != null ? StringValueMatch.valueOf(matchValue.asEnum())
+                    : StringValueMatch.EQ;
 
-            return new BuildProperty(propertyName, expectedStringValue, enableIfMissing);
+            return new BuildProperty(propertyName, expectedStringValue, enableIfMissing, match);
         }
     }
 }

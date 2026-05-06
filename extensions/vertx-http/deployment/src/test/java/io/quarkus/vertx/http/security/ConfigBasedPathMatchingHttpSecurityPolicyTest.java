@@ -28,6 +28,8 @@ public class ConfigBasedPathMatchingHttpSecurityPolicyTest extends PathMatchingH
             quarkus.http.auth.permission.inner-wildcard6.paths=/api/*/sadly/*/dont-know
             quarkus.http.auth.permission.inner-wildcard6.policy=deny
             quarkus.http.auth.permission.baz.paths=/api/baz
+            quarkus.http.auth.permission.baz-percent-enc.policy=authenticated
+            quarkus.http.auth.permission.baz-percent-enc.paths=/api/baz%3Bv=1.1
             quarkus.http.auth.permission.baz.policy=authenticated
             quarkus.http.auth.permission.static-resource.paths=/static-file.html
             quarkus.http.auth.permission.static-resource.policy=authenticated

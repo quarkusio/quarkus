@@ -24,16 +24,36 @@ import io.quarkus.devui.spi.buildtime.DevMcpParam;
  * These tools run tests on demand and return results directly,
  * without requiring continuous testing to be started.
  */
-@DevMcpBuildTimeTool(name = "runTests", description = "Run all tests synchronously and return the results. Does not require continuous testing to be started.")
-@DevMcpBuildTimeTool(name = "runAffectedTests", description = "Run tests affected by recent code changes synchronously and return the results. On first call, runs all tests to populate tracing data. Subsequent calls intelligently filter to only affected tests.")
-@DevMcpBuildTimeTool(name = "runTest", description = "Run a specific test synchronously and return the results. Accepts a test class name or class and method.", params = {
+@DevMcpBuildTimeTool(name = OneShotTestingProcessor.RUN_TESTS_NAME, description = OneShotTestingProcessor.RUN_TESTS_DESC)
+@DevMcpBuildTimeTool(name = OneShotTestingProcessor.RUN_AFFECTED_TESTS_NAME, description = OneShotTestingProcessor.RUN_AFFECTED_TESTS_DESC)
+@DevMcpBuildTimeTool(name = OneShotTestingProcessor.RUN_TEST_NAME, description = OneShotTestingProcessor.RUN_TEST_DESC, params = {
         @DevMcpParam(name = "className", description = "The fully qualified test class name, e.g. com.example.MyTest"),
         @DevMcpParam(name = "methodName", description = "The test method name to run. If not provided, all tests in the class are run.", required = false)
 })
+@DevMcpBuildTimeTool(name = OneShotTestingProcessor.CANCEL_TESTS_NAME, description = OneShotTestingProcessor.CANCEL_TESTS_DESC)
+@DevMcpBuildTimeTool(name = OneShotTestingProcessor.RESET_TESTS_NAME, description = OneShotTestingProcessor.RESET_TESTS_DESC)
 public class OneShotTestingProcessor {
 
     private static final String NAMESPACE = "devui-testing";
     private static final long TEST_TIMEOUT_MINUTES = 5;
+
+    static final String RUN_TESTS_NAME = "runTests";
+    static final String RUN_TESTS_DESC = "Run all tests synchronously and return the results. "
+            + "Does not require continuous testing to be started.";
+    static final String RUN_AFFECTED_TESTS_NAME = "runAffectedTests";
+    static final String RUN_AFFECTED_TESTS_DESC = "Run tests affected by recent code changes synchronously and return the results. "
+            + "On first call (no prior test data), runs all tests to populate tracing data. "
+            + "Subsequent calls intelligently filter to only affected tests.";
+    static final String RUN_TEST_NAME = "runTest";
+    static final String RUN_TEST_DESC = "Run a specific test synchronously and return the results. "
+            + "Accepts a test class name (e.g. com.example.MyTest) "
+            + "or class and method (e.g. com.example.MyTest#myMethod).";
+    static final String CANCEL_TESTS_NAME = "cancelTests";
+    static final String CANCEL_TESTS_DESC = "Cancel a currently running test execution. "
+            + "Use when tests are taking too long or you need to run different tests.";
+    static final String RESET_TESTS_NAME = "resetTests";
+    static final String RESET_TESTS_DESC = "Reset the test runner state. "
+            + "Use when the test runner is stuck reporting 'tests already in progress' after a failure.";
     private static final ExecutorService executor = Executors.newCachedThreadPool(r -> {
         Thread t = new Thread(r, "oneshot-test-runner");
         t.setDaemon(true);
@@ -48,6 +68,8 @@ public class OneShotTestingProcessor {
         registerRunTestsMethod(launchModeBuildItem, actions);
         registerRunAffectedTestsMethod(launchModeBuildItem, actions);
         registerRunTestMethod(launchModeBuildItem, actions);
+        registerCancelTestsMethod(launchModeBuildItem, actions);
+        registerResetTestsMethod(launchModeBuildItem, actions);
         buildTimeActionProducer.produce(actions);
     }
 
@@ -70,9 +92,8 @@ public class OneShotTestingProcessor {
 
     private void registerRunTestsMethod(LaunchModeBuildItem launchModeBuildItem, BuildTimeActionBuildItem actions) {
         actions.actionBuilder()
-                .methodName("runTests")
-                .description("Run all tests synchronously and return the results. "
-                        + "Does not require continuous testing to be started.")
+                .methodName(RUN_TESTS_NAME)
+                .description(RUN_TESTS_DESC)
                 .function(ignored -> {
                     Optional<TestSupport> ts = TestSupport.instance();
                     if (testsDisabled(launchModeBuildItem, ts)) {
@@ -91,10 +112,8 @@ public class OneShotTestingProcessor {
     private void registerRunAffectedTestsMethod(LaunchModeBuildItem launchModeBuildItem,
             BuildTimeActionBuildItem actions) {
         actions.actionBuilder()
-                .methodName("runAffectedTests")
-                .description("Run tests affected by recent code changes synchronously and return the results. "
-                        + "On first call (no prior test data), runs all tests to populate tracing data. "
-                        + "Subsequent calls intelligently filter to only affected tests.")
+                .methodName(RUN_AFFECTED_TESTS_NAME)
+                .description(RUN_AFFECTED_TESTS_DESC)
                 .function(ignored -> {
                     Optional<TestSupport> ts = TestSupport.instance();
                     if (testsDisabled(launchModeBuildItem, ts)) {
@@ -114,10 +133,8 @@ public class OneShotTestingProcessor {
 
     private void registerRunTestMethod(LaunchModeBuildItem launchModeBuildItem, BuildTimeActionBuildItem actions) {
         actions.actionBuilder()
-                .methodName("runTest")
-                .description("Run a specific test synchronously and return the results. "
-                        + "Accepts a test class name (e.g. com.example.MyTest) "
-                        + "or class and method (e.g. com.example.MyTest#myMethod).")
+                .methodName(RUN_TEST_NAME)
+                .description(RUN_TEST_DESC)
                 .parameter("className", "The fully qualified test class name, e.g. com.example.MyTest")
                 .parameter("methodName",
                         "The test method name to run. If not provided, all tests in the class are run.",
@@ -142,6 +159,38 @@ public class OneShotTestingProcessor {
                         TestRunResults results = ts.get().runSpecificTestSynchronously(selection);
                         return results != null ? new TrimmedTestRunResult(results) : null;
                     }, executor).orTimeout(TEST_TIMEOUT_MINUTES, TimeUnit.MINUTES);
+                })
+                .enableMcpFunctionByDefault()
+                .build();
+    }
+
+    private void registerCancelTestsMethod(LaunchModeBuildItem launchModeBuildItem, BuildTimeActionBuildItem actions) {
+        actions.actionBuilder()
+                .methodName(CANCEL_TESTS_NAME)
+                .description(CANCEL_TESTS_DESC)
+                .function(ignored -> {
+                    Optional<TestSupport> ts = TestSupport.instance();
+                    if (testsDisabled(launchModeBuildItem, ts)) {
+                        return CompletableFuture.completedFuture("Test support is not available");
+                    }
+                    ts.get().cancelRunningTests();
+                    return CompletableFuture.completedFuture("Tests cancelled");
+                })
+                .enableMcpFunctionByDefault()
+                .build();
+    }
+
+    private void registerResetTestsMethod(LaunchModeBuildItem launchModeBuildItem, BuildTimeActionBuildItem actions) {
+        actions.actionBuilder()
+                .methodName(RESET_TESTS_NAME)
+                .description(RESET_TESTS_DESC)
+                .function(ignored -> {
+                    Optional<TestSupport> ts = TestSupport.instance();
+                    if (testsDisabled(launchModeBuildItem, ts)) {
+                        return CompletableFuture.completedFuture("Test support is not available");
+                    }
+                    ts.get().resetTestState();
+                    return CompletableFuture.completedFuture("Test runner state reset");
                 })
                 .enableMcpFunctionByDefault()
                 .build();

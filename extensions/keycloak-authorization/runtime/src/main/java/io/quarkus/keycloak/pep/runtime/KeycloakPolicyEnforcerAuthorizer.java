@@ -29,6 +29,7 @@ import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -61,7 +62,8 @@ public class KeycloakPolicyEnforcerAuthorizer implements HttpSecurityPolicy {
                                     return blockingExecutor.executeBlocking(new Supplier<PathConfig>() {
                                         @Override
                                         public PathConfig get() {
-                                            return policyEnforcer.getPathMatcher().matches(routingContext.normalizedPath());
+                                            return policyEnforcer.getPathMatcher().matches(HttpSecurityUtils
+                                                    .pathWithoutMatrixParams(routingContext.normalizedPath()));
                                         }
                                     }).flatMap(new Function<PathConfig, Uni<? extends CheckResult>>() {
                                         @Override

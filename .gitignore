@@ -40,6 +40,7 @@ nb-configuration.xml
 .mvn/.gradle-enterprise/
 .goose
 .claude
+.bob
 **/.claude
 .quarkus
 

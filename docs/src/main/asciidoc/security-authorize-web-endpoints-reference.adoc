@@ -13,11 +13,6 @@ include::_attributes.adoc[]
 Quarkus incorporates a pluggable web security layer.
 When security is active, the system performs a permission check on all HTTP requests to determine if they should proceed.
 
-[NOTE]
-====
-If you use Jakarta RESTful Web Services, consider using `quarkus.security.jaxrs.deny-unannotated-endpoints` or `quarkus.security.jaxrs.default-roles-allowed` to set default security requirements instead of HTTP path-level matching because annotations can override these properties on an individual endpoint.
-====
-
 Authorization is based on user roles that the security provider provides.
 To customize these roles, a `SecurityIdentityAugmentor` can be created, see
 xref:security-customization.adoc#security-identity-customization[Security Identity Customization].
@@ -25,11 +20,29 @@ xref:security-customization.adoc#security-identity-customization[Security Identi
 [[authorization-using-configuration]]
 == Authorization using configuration
 
+[NOTE]
+====
+If you work with Jakarta RESTful Web Services (JAX-RS) and need to set default security requirements, consider using <<standard-security-annotations>> and `quarkus.security.jaxrs.deny-unannotated-endpoints` or `quarkus.security.jaxrs.default-roles-allowed` properties instead of the HTTP security policy path-level matching because the security annotations can override these properties on an individual JAX-RS resource or method level.
+====
+
 Permissions are defined in the Quarkus configuration by permission sets, each specifying a policy for access control.
 
 [NOTE]
 ====
 When a security policy's `paths` property contains the most specific path that matches the current request path, it takes precedence over other security policies with matching paths and is said to win.
+====
+
+[NOTE]
+====
+Configured HTTP security policy must not contain a semicolon ';' character in its `paths` property.
+Use <<custom-http-security-policy>> when a security policy decision depends on a presence of certain matrix parameters in the request path.
+====
+
+[IMPORTANT]
+====
+Be careful with creating complex, possibly overlapping HTTP security policy path expressions.
+Make sure your HTTP policy configuration is thoroughly tested.
+If you work with Jakarta RESTful Web Services (JAX-RS) and need to create complex security policies, consider using <<standard-security-annotations>> instead.
 ====
 
 .{project-name} policies summary

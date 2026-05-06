@@ -27,6 +27,8 @@ public class FluentApiPathMatchingHttpSecurityPolicyTest extends PathMatchingHtt
 
             httpSecurity.path("/api/fubar/baz*").authenticated();
 
+            httpSecurity.path("/api/baz%3Bv=1.1").authenticated();
+
             httpSecurity.path("/q/*").authenticated();
 
             httpSecurity.path("/secured/*").shared().authorization()

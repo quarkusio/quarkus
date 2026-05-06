@@ -10,7 +10,6 @@ import javax.security.cert.X509Certificate;
 import org.junit.jupiter.api.Test;
 
 import io.netty.handler.codec.DecoderResult;
-import io.vertx.codegen.annotations.Nullable;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
@@ -110,7 +109,7 @@ class VertxUtilTest {
             }
 
             @Override
-            public @Nullable String scheme() {
+            public String scheme() {
                 return "";
             }
 
@@ -120,27 +119,27 @@ class VertxUtilTest {
             }
 
             @Override
-            public @Nullable String path() {
+            public String path() {
                 return "";
             }
 
             @Override
-            public @Nullable String query() {
+            public String query() {
                 return "";
             }
 
             @Override
-            public @Nullable HostAndPort authority() {
+            public HostAndPort authority() {
                 return null;
             }
 
             @Override
-            public @Nullable HostAndPort authority(boolean b) {
+            public HostAndPort authority(boolean b) {
                 return null;
             }
 
             @Override
-            public @Nullable String host() {
+            public String host() {
                 return "";
             }
 
@@ -212,7 +211,7 @@ class VertxUtilTest {
             }
 
             @Override
-            public HttpServerRequest uploadHandler(@Nullable Handler<HttpServerFileUpload> uploadHandler) {
+            public HttpServerRequest uploadHandler(Handler<HttpServerFileUpload> uploadHandler) {
                 return null;
             }
 
@@ -222,7 +221,7 @@ class VertxUtilTest {
             }
 
             @Override
-            public @Nullable String getFormAttribute(String attributeName) {
+            public String getFormAttribute(String attributeName) {
                 return "";
             }
 
@@ -257,12 +256,12 @@ class VertxUtilTest {
             }
 
             @Override
-            public @Nullable Cookie getCookie(String name) {
+            public Cookie getCookie(String name) {
                 return null;
             }
 
             @Override
-            public @Nullable Cookie getCookie(String name, String domain, String path) {
+            public Cookie getCookie(String name, String domain, String path) {
                 return null;
             }
 

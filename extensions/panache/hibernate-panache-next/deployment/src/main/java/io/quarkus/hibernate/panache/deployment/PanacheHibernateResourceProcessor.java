@@ -215,7 +215,7 @@ public final class PanacheHibernateResourceProcessor {
         // Find Panache 2 repos, by listing every entity, to find query interfaces with no supertype
         collectEntityInnerInterfaces(index.getIndex(),
                 (memberClass, implementingBean) -> unremovable.add(implementingBean.name()));
-        // Now, some entities that do not explicitely add stateless/managed query repos will get some generated, so
+        // Now, some entities that do not explicitly add stateless/managed query repos will get some generated, so
         // either we figure out who they are, or we blanket add them all
         index.getIndex().getKnownClasses();
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementations(DOTNAME_PANACHE_REPOSITORY_SWITCHER)) {

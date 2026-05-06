@@ -8,6 +8,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.Tokens;
+import io.quarkus.oidc.common.runtime.OidcWebClient;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -20,12 +21,14 @@ final class DeferredOidcClient implements OidcClient {
     private static final Logger LOG = Logger.getLogger(DeferredOidcClient.class);
     private final Uni<OidcClient> deferredOidcClient;
     private final String oidcClientId;
+    private final OidcWebClient webClient;
     private volatile OidcClient resolvedOidcClient;
 
-    DeferredOidcClient(Uni<OidcClient> deferredOidcClient, String oidcClientId) {
+    DeferredOidcClient(Uni<OidcClient> deferredOidcClient, String oidcClientId, OidcWebClient webClient) {
         this.deferredOidcClient = deferredOidcClient;
         this.resolvedOidcClient = null;
         this.oidcClientId = oidcClientId;
+        this.webClient = webClient;
     }
 
     @Override
@@ -62,6 +65,8 @@ final class DeferredOidcClient implements OidcClient {
     public void close() throws IOException {
         if (resolvedOidcClient != null) {
             resolvedOidcClient.close();
+        } else {
+            webClient.close();
         }
     }
 

@@ -269,6 +269,10 @@ public class CsrfReactiveTest {
                         csrfToken, "verified:true:tokenHeaderIsSet=true");
                 assurePostFormPath(vertxWebClient, "//service/csrfTokenWithHeader", 200, csrfCookie,
                         csrfToken, "verified:true:tokenHeaderIsSet=true");
+                assurePostFormPath(vertxWebClient, "//service;/csrfTokenWithHeader;", 200, csrfCookie,
+                        csrfToken, "verified:true:tokenHeaderIsSet=true");
+                assurePostFormPath(vertxWebClient, "//service;a/csrfTokenWithHeader;a", 200, csrfCookie,
+                        csrfToken, "verified:true:tokenHeaderIsSet=true");
 
                 webClient.getCookieManager().clearCookies();
             }
@@ -296,6 +300,10 @@ public class CsrfReactiveTest {
                         csrfToken, "verified:true:tokenHeaderIsSet=true");
                 assurePostJsonPath(vertxWebClient, "//service/csrfTokenWithHeader", 200, csrfCookie,
                         csrfToken, "verified:true:tokenHeaderIsSet=true");
+                assurePostJsonPath(vertxWebClient, "//service;/csrfTokenWithHeader;", 200, csrfCookie,
+                        csrfToken, "verified:true:tokenHeaderIsSet=true");
+                assurePostJsonPath(vertxWebClient, "//service;a/csrfTokenWithHeader;a", 200, csrfCookie,
+                        csrfToken, "verified:true:tokenHeaderIsSet=true");
 
                 webClient.getCookieManager().clearCookies();
             }
@@ -321,6 +329,10 @@ public class CsrfReactiveTest {
                 assurePostFormPath(vertxWebClient, "/service/csrfTokenWithHeader", 400, csrfCookie,
                         csrfCookie.getValue(), null);
                 assurePostFormPath(vertxWebClient, "//service/csrfTokenWithHeader", 400, csrfCookie,
+                        csrfCookie.getValue(), null);
+                assurePostFormPath(vertxWebClient, "//service;/csrfTokenWithHeader;", 400, csrfCookie,
+                        csrfCookie.getValue(), null);
+                assurePostFormPath(vertxWebClient, "//service;a/csrfTokenWithHeader;a", 400, csrfCookie,
                         csrfCookie.getValue(), null);
                 webClient.getCookieManager().clearCookies();
             }
@@ -367,6 +379,32 @@ public class CsrfReactiveTest {
             assertNotNull(webClient.getCookieManager().getCookie("csrftoken"));
 
             // Can't check that it matches the cookie because it's signed
+            assertNotNull(htmlPage.getContent());
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testGetWithCsrfTokenWithMatrix() throws Exception {
+        try (final WebClient webClient = createWebClient()) {
+
+            assertNull(webClient.getCookieManager().getCookie("csrftoken"));
+
+            // matrix params must not prevent CSRF token generation on createTokenPath
+            TextPage htmlPage = webClient.getPage("http://localhost:8081/service/token;a");
+
+            assertNotNull(webClient.getCookieManager().getCookie("csrftoken"));
+            assertNotNull(htmlPage.getContent());
+
+            webClient.getCookieManager().clearCookies();
+
+            // empty matrix param
+            assertNull(webClient.getCookieManager().getCookie("csrftoken"));
+
+            htmlPage = webClient.getPage("http://localhost:8081/service/token;");
+
+            assertNotNull(webClient.getCookieManager().getCookie("csrftoken"));
             assertNotNull(htmlPage.getContent());
 
             webClient.getCookieManager().clearCookies();

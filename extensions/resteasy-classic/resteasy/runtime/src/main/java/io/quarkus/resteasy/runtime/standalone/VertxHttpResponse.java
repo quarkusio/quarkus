@@ -20,6 +20,7 @@ import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.http.HttpVersion;
 import io.vertx.ext.web.RoutingContext;
 
 public class VertxHttpResponse implements HttpResponse {
@@ -159,7 +160,10 @@ public class VertxHttpResponse implements HttpResponse {
                 transformHeaders();
                 routingContext.addHeadersEndHandler(h -> {
                     response.headers().remove(HttpHeaders.CONTENT_LENGTH);
-                    response.headers().set(HttpHeaders.CONNECTION, HttpHeaders.KEEP_ALIVE);
+                    if (request.version() == HttpVersion.HTTP_1_0
+                            || request.version() == HttpVersion.HTTP_1_1) {
+                        response.headers().set(HttpHeaders.CONNECTION, HttpHeaders.KEEP_ALIVE);
+                    }
                 });
                 response.end();
             }

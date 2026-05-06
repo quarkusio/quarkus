@@ -146,6 +146,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
         ensureStarted(context);
+        ThreadLocalConfigSourceProvider.set(ConfigInjector.get(context));
         invokeBeforeClassCallbacks(context.getRequiredTestClass());
     }
 

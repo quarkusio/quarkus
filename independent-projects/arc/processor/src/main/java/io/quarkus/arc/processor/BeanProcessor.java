@@ -41,7 +41,6 @@ import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 import io.quarkus.arc.processor.bcextensions.ExtensionsEntryPoint;
 import io.quarkus.gizmo2.Expr;
-import io.quarkus.gizmo2.creator.BlockCreator;
 
 /**
  * An integrator should create a new instance of the bean processor using the convenient {@link Builder} and then invoke the
@@ -87,7 +86,7 @@ public class BeanProcessor {
     private final boolean allowMocking;
     private final boolean transformUnproxyableClasses;
     private final Predicate<BeanDeployment> optimizeContexts;
-    private final List<Function<BeanInfo, Consumer<BlockCreator>>> suppressConditionGenerators;
+    private final List<Consumer<BeanGenerator.SuppressConditionGeneration>> suppressConditionGenerators;
 
     // This predicate is used to filter annotations for InjectionPoint metadata
     // Note that we do create annotation literals for all annotations for an injection point that resolves to a @Dependent bean that injects the InjectionPoint metadata
@@ -631,7 +630,7 @@ public class BeanProcessor {
         final List<InterceptorBindingRegistrar> interceptorBindingRegistrars;
         final List<StereotypeRegistrar> stereotypeRegistrars;
         final List<BeanDeploymentValidator> beanDeploymentValidators;
-        final List<Function<BeanInfo, Consumer<BlockCreator>>> suppressConditionGenerators;
+        final List<Consumer<BeanGenerator.SuppressConditionGeneration>> suppressConditionGenerators;
 
         boolean removeUnusedBeans = false;
         final List<Predicate<BeanInfo>> removalExclusions;
@@ -977,7 +976,7 @@ public class BeanProcessor {
          * @param generator
          * @return self
          */
-        public Builder addSuppressConditionGenerator(Function<BeanInfo, Consumer<BlockCreator>> generator) {
+        public Builder addSuppressConditionGenerator(Consumer<BeanGenerator.SuppressConditionGeneration> generator) {
             this.suppressConditionGenerators.add(generator);
             return this;
         }

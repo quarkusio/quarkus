@@ -71,7 +71,7 @@
         <jacoco.version>0.8.14</jacoco.version>
         <kubernetes-client.version>7.6.1</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
         <rest-assured.version>6.0.0</rest-assured.version>
-        <hibernate-orm.version>7.3.2.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below; checked by maven-enforcer-plugin in bom -->
+        <hibernate-orm.version>7.3.3.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below; checked by maven-enforcer-plugin in bom -->
         <jakarta.persistence-api.version>3.2.0</jakarta.persistence-api.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
         <jakarta.data-api.version>1.0.1</jakarta.data-api.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
         <antlr.version>4.13.2</antlr.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->

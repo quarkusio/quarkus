@@ -16,6 +16,25 @@ public final class FlywayContainerUtil {
     private FlywayContainerUtil() {
     }
 
+    public static String flywayPropertyKey(String datasourceName, String radical) {
+        if (DataSourceUtil.isDefault(datasourceName)) {
+            return "quarkus.flyway." + radical;
+        } else {
+            return "quarkus.flyway.\"" + datasourceName + "\"." + radical;
+        }
+    }
+
+    public static List<String> flywayPropertyKeys(String datasourceName, String radical) {
+        if (DataSourceUtil.isDefault(datasourceName)) {
+            return List.of("quarkus.flyway." + radical);
+        } else {
+            // Two possible syntaxes: with or without quotes
+            return List.of(
+                    "quarkus.flyway.\"" + datasourceName + "\"." + radical,
+                    "quarkus.flyway." + datasourceName + "." + radical);
+        }
+    }
+
     public static FlywayContainer getFlywayContainer(String dataSourceName) {
         return Arc.container().instance(FlywayContainer.class,
                 getFlywayContainerQualifier(dataSourceName)).get();

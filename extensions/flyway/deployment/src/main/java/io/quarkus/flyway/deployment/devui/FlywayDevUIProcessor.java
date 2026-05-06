@@ -41,7 +41,7 @@ public class FlywayDevUIProcessor {
 
         String artifactId = curateOutcomeBuildItem.getApplicationModel().getAppArtifact().getArtifactId();
 
-        recorder.setSqlSuppliers(initialSqlSuppliers, updateSqlSuppliers, artifactId);
+        recorder.initializeJsonRpcService(initialSqlSuppliers, updateSqlSuppliers, artifactId);
 
         CardPageBuildItem card = new CardPageBuildItem();
 

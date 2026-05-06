@@ -5,7 +5,10 @@ import io.quarkus.opentelemetry.runtime.AutoConfiguredOpenTelemetrySdkBuilderCus
 /**
  * The only point in having this class is to allow {@link TracerProviderCustomizer}
  * to easily ignore the configured {@link LateBoundSpanProcessor}.
+ *
+ * Deprecated for removal. Check: https://github.com/quarkusio/quarkus/pull/52752
  */
+@Deprecated(forRemoval = true)
 public final class RemoveableLateBoundSpanProcessor extends LateBoundSpanProcessor {
 
     public static final RemoveableLateBoundSpanProcessor INSTANCE = new RemoveableLateBoundSpanProcessor();

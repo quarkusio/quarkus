@@ -2,7 +2,9 @@ package io.quarkus.resteasy.reactive.jackson.deployment.test.generated;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matchers;
@@ -530,5 +532,175 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .contentType("application/json")
                 .body("name", CoreMatchers.is("test"))
                 .body("others_size", CoreMatchers.is(2));
+    }
+
+    // --- @JsonAnyGetter ---
+
+    @Test
+    public void testAnyGetterSerialization() {
+        RestAssured.get("/generated/any-getter")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("test"))
+                .body("color", Matchers.is("red"))
+                .body("size", Matchers.is("large"))
+                .body(not(containsString("properties")));
+    }
+
+    @Test
+    public void testAnyGetterDeserialization() {
+        given()
+                .contentType("application/json")
+                .body("{\"name\":\"hello\",\"key1\":\"val1\",\"key2\":\"val2\"}")
+                .when()
+                .post("/generated/any-getter")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", CoreMatchers.is("hello"))
+                .body("props_size", CoreMatchers.is(2));
+    }
+
+    // --- @JsonManagedReference + @JsonBackReference ---
+
+    @Test
+    public void testManagedBackReferenceSerialization() {
+        RestAssured.get("/generated/managed-reference")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("parentName", Matchers.is("parent"))
+                .body("child.childName", Matchers.is("child"))
+                .body("child", not(hasKey("parent")));
+    }
+
+    // --- @JsonFormat ---
+
+    @Test
+    public void testFormatEnumAsNumberSerialization() {
+        RestAssured.get("/generated/format")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("shape-test"))
+                .body("shape", Matchers.is(1));
+    }
+
+    @Test
+    public void testFormatEnumAsNumberDeserialization() {
+        given()
+                .contentType("application/json")
+                .body("{\"name\":\"round-trip\",\"shape\":2}")
+                .when()
+                .post("/generated/format")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("round-trip"))
+                .body("shape", Matchers.is(2));
+    }
+
+    // --- @JsonGetter + @JsonSetter ---
+
+    @Test
+    public void testGetterSetterSerialization() {
+        RestAssured.get("/generated/getter-setter")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("label", Matchers.is("test"))
+                .body("count", Matchers.is(5))
+                .body(not(containsString("\"name\"")));
+    }
+
+    @Test
+    public void testGetterSetterDeserialization() {
+        given()
+                .contentType("application/json")
+                .body("{\"label\":\"hello\",\"count\":10}")
+                .when()
+                .post("/generated/getter-setter")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("label", Matchers.is("hello"))
+                .body("count", Matchers.is(10));
+    }
+
+    // --- @JsonIgnoreType ---
+
+    @Test
+    public void testIgnoreTypeSerialization() {
+        RestAssured.get("/generated/ignore-type")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("visible"))
+                .body(not(containsString("metadata")))
+                .body(not(containsString("secret-data")));
+    }
+
+    // --- @JsonInclude ---
+
+    @Test
+    public void testIncludeAllFieldsPresent() {
+        RestAssured.get("/generated/include-all-set")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("test"))
+                .body("nullableField", Matchers.is("present"))
+                .body("emptyField", Matchers.is("not-empty"));
+    }
+
+    @Test
+    public void testIncludeNullAndEmptyExcluded() {
+        RestAssured.get("/generated/include-nulls")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("test"))
+                .body(not(containsString("nullableField")))
+                .body(not(containsString("emptyField")));
+    }
+
+    // --- @JsonPropertyOrder ---
+
+    @Test
+    public void testPropertyOrderSerialization() {
+        String body = RestAssured.get("/generated/property-order")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("alpha", Matchers.is("a"))
+                .body("middle", Matchers.is("m"))
+                .body("zebra", Matchers.is("z"))
+                .extract()
+                .asString();
+
+        int zebraPos = body.indexOf("\"zebra\"");
+        int alphaPos = body.indexOf("\"alpha\"");
+        int middlePos = body.indexOf("\"middle\"");
+        assertTrue(zebraPos < alphaPos, "zebra should appear before alpha");
+        assertTrue(alphaPos < middlePos, "alpha should appear before middle");
+    }
+
+    // --- @JsonRawValue ---
+
+    @Test
+    public void testRawValueSerialization() {
+        String body = RestAssured.get("/generated/raw-value")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("test"))
+                .body("rawJson.nested", Matchers.is("value"))
+                .body("rawJson.count", Matchers.is(1))
+                .extract()
+                .asString();
+
+        assertTrue(body.contains("\"nested\":\"value\""),
+                "Raw JSON should be embedded directly, not escaped");
     }
 }

@@ -27,6 +27,7 @@ import org.jboss.jandex.TypeVariable;
 import org.jboss.jandex.VoidType;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.ObjectCodec;
@@ -384,7 +385,11 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         // save constructor field names before deserializeFields modifies the set
         Set<String> ctorFields = Set.copyOf(deserData.constructorFields);
 
-        Set<String> ignoredProperties = getIgnoredProperties(deserData.classInfo);
+        Set<String> ignoredProperties = new HashSet<>(getIgnoredProperties(deserData.classInfo));
+        MethodInfo anyGetterMethod = findAnyGetterMethod(deserData.classInfo);
+        if (anyGetterMethod != null) {
+            ignoredProperties.add(anyGetterBackingFieldName(anyGetterMethod));
+        }
         deserData.constructorFields.addAll(ignoredProperties);
 
         ResultHandle deserializationContext = deserData.methodCreator.getMethodParam(1);
@@ -594,7 +599,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
             ResultHandle objHandle, ResultHandle fieldValue, Set<String> deserializedFields, Switch.StringSwitch strSwitch,
             FieldSpecs fieldSpecs, AtomicBoolean valid) {
         if (fieldSpecs != null && deserializedFields.add(fieldSpecs.jsonName)) {
-            if (fieldSpecs.isIgnoredField()) {
+            if (fieldSpecs.isIgnoredField() || fieldSpecs.isBackReference() || isFieldTypeIgnored(fieldSpecs)) {
                 return;
             }
             strSwitch.caseOf(fieldSpecs.jsonName,
@@ -680,7 +685,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
     private boolean isSetterMethod(MethodInfo methodInfo) {
         return Modifier.isPublic(methodInfo.flags()) && !Modifier.isStatic(methodInfo.flags())
                 && methodInfo.returnType() instanceof VoidType && methodInfo.parametersCount() == 1
-                && methodInfo.name().startsWith("set");
+                && (methodInfo.name().startsWith("set") || methodInfo.hasAnnotation(JsonSetter.class));
     }
 
     private ResultHandle readValueFromJson(ClassCreator classCreator, BytecodeCreator bytecode,

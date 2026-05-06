@@ -27,12 +27,26 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.logging.Logger;
 
+import com.fasterxml.jackson.annotation.JacksonAnnotation;
+import com.fasterxml.jackson.annotation.JacksonAnnotationsInside;
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnoreType;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonRawValue;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -58,13 +72,27 @@ public abstract class JacksonCodeGenerator {
     private static final Logger log = Logger.getLogger(JacksonCodeGenerator.class);
 
     private static final Set<String> SUPPORTED_JACKSON_ANNOTATIONS = Set.of(
+            JacksonAnnotation.class.getName(),
+            JacksonAnnotationsInside.class.getName(),
             JsonAlias.class.getName(),
+            JsonAnyGetter.class.getName(),
             JsonAnySetter.class.getName(),
+            JsonBackReference.class.getName(),
+            JsonClassDescription.class.getName(),
             JsonCreator.class.getName(),
+            JsonFormat.class.getName(),
+            JsonGetter.class.getName(),
             JsonIgnore.class.getName(),
             JsonIgnoreProperties.class.getName(),
+            JsonIgnoreType.class.getName(),
+            JsonInclude.class.getName(),
+            JsonManagedReference.class.getName(),
             JsonNaming.class.getName(),
             JsonProperty.class.getName(),
+            JsonPropertyDescription.class.getName(),
+            JsonPropertyOrder.class.getName(),
+            JsonRawValue.class.getName(),
+            JsonSetter.class.getName(),
             JsonSubTypes.class.getName(),
             JsonTypeInfo.class.getName(),
             JsonTypeName.class.getName(),
@@ -305,6 +333,14 @@ public abstract class JacksonCodeGenerator {
         return !classInfo.isEnum();
     }
 
+    protected static String anyGetterBackingFieldName(MethodInfo anyGetterMethod) {
+        String methodName = anyGetterMethod.name();
+        if (methodName.startsWith("get") && methodName.length() > 3) {
+            return methodName.substring(3, 4).toLowerCase() + methodName.substring(4);
+        }
+        return methodName;
+    }
+
     private MethodInfo getterMethodInfo(ClassInfo classInfo, FieldInfo fieldInfo) {
         MethodInfo namedAccessor = findMethod(classInfo, fieldInfo.name());
         if (namedAccessor != null
@@ -345,6 +381,49 @@ public abstract class JacksonCodeGenerator {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    protected static String[] getPropertyOrder(ClassInfo classInfo) {
+        AnnotationInstance ann = classInfo.declaredAnnotation(JsonPropertyOrder.class);
+        if (ann == null || ann.value() == null) {
+            return null;
+        }
+        return ann.value().asStringArray();
+    }
+
+    protected boolean isFieldTypeIgnored(FieldSpecs fieldSpecs) {
+        ClassInfo typeInfo = jandexIndex.getClassByName(fieldSpecs.fieldType.name());
+        return typeInfo != null && typeInfo.hasAnnotation(JsonIgnoreType.class);
+    }
+
+    protected static String getClassIncludeValue(ClassInfo classInfo) {
+        AnnotationInstance include = classInfo.declaredAnnotation(JsonInclude.class);
+        if (include == null || include.value() == null) {
+            return null;
+        }
+        String includeValue = include.value().asEnum();
+        return switch (includeValue) {
+            case "NON_NULL" -> "NON_NULL";
+            case "NON_EMPTY" -> "NON_EMPTY";
+            case "NON_ABSENT" -> "NON_ABSENT";
+            default -> null;
+        };
+    }
+
+    protected boolean isEnumType(String typeName) {
+        ClassInfo ci = jandexIndex.getClassByName(typeName);
+        return ci != null && ci.isEnum();
+    }
+
+    protected MethodInfo findAnyGetterMethod(ClassInfo classInfo) {
+        for (MethodInfo method : classMethods(classInfo)) {
+            if (method.hasAnnotation(JsonAnyGetter.class)
+                    && method.parametersCount() == 0
+                    && !java.lang.reflect.Modifier.isStatic(method.flags())) {
+                return method;
+            }
+        }
+        return null;
     }
 
     protected static Set<String> getIgnoredProperties(ClassInfo classInfo) {
@@ -466,6 +545,12 @@ public abstract class JacksonCodeGenerator {
 
         private JsonNameResult jsonName(MethodInfo constructor, PropertyNamingStrategy namingStrategy) {
             AnnotationInstance jsonProperty = annotations.get(JsonProperty.class.getName());
+            if (jsonProperty == null) {
+                jsonProperty = annotations.get(JsonGetter.class.getName());
+            }
+            if (jsonProperty == null) {
+                jsonProperty = annotations.get(JsonSetter.class.getName());
+            }
             if (jsonProperty == null && constructor != null) {
                 jsonProperty = constructor.parameters().stream()
                         .filter(parameter -> parameter.name().equals(fieldName)).findFirst()
@@ -509,6 +594,37 @@ public abstract class JacksonCodeGenerator {
 
         boolean isUnwrapped() {
             return annotations.get(JsonUnwrapped.class.getName()) != null;
+        }
+
+        boolean isBackReference() {
+            return annotations.get(JsonBackReference.class.getName()) != null;
+        }
+
+        boolean isRawValue() {
+            return annotations.get(JsonRawValue.class.getName()) != null;
+        }
+
+        boolean isFormatShapeNumber() {
+            AnnotationInstance format = annotations.get(JsonFormat.class.getName());
+            if (format == null) {
+                return false;
+            }
+            AnnotationValue shape = format.value("shape");
+            return shape != null && "NUMBER".equals(shape.asEnum());
+        }
+
+        String jsonIncludeValue() {
+            AnnotationInstance include = annotations.get(JsonInclude.class.getName());
+            if (include == null || include.value() == null) {
+                return null;
+            }
+            String includeValue = include.value().asEnum();
+            return switch (includeValue) {
+                case "NON_NULL" -> "NON_NULL";
+                case "NON_EMPTY" -> "NON_EMPTY";
+                case "NON_ABSENT" -> "NON_ABSENT";
+                default -> null;
+            };
         }
 
         static boolean isUnknownAnnotation(String ann) {

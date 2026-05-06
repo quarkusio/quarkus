@@ -1,8 +1,5 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.test.generated;
 
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-
-@JsonPropertyOrder({ "name", "metadata" })
 public class IgnoreTypeBean {
 
     private String name;

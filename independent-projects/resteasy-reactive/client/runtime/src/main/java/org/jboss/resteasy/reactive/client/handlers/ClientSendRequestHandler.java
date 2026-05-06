@@ -277,6 +277,8 @@ public class ClientSendRequestHandler implements ClientRestHandler {
              * We'll guard against null here and assume there's no redirect taking place.
              */
             Function<HttpClientResponse, Future<RequestOptions>> redirectHandler = requestContext.getHttpClient()
+                    // For Vert.x 5 we'll have to cast the `HttpClient` to `HttpClientInternal` in order to access
+                    // this method
                     .redirectHandler();
             if (redirectHandler == null) {
                 return Future.succeededFuture(null);

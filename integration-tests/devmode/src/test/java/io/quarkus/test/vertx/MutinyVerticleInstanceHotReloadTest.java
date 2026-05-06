@@ -40,10 +40,10 @@ public class MutinyVerticleInstanceHotReloadTest {
 
         public void init(@Observes Router router) throws InterruptedException {
             CountDownLatch latch = new CountDownLatch(1);
-            vertx.deployVerticle(new MyMutinyVerticle(),
-                    ar -> latch.countDown());
-            router.get("/").handler(rc -> vertx.eventBus().<String> request("address", "",
-                    ar -> rc.response().end(ar.result().body())));
+            vertx.deployVerticle(new MyMutinyVerticle())
+                    .onComplete(ar -> latch.countDown());
+            router.get("/").handler(rc -> vertx.eventBus().<String> request("address", "")
+                    .onComplete(ar -> rc.response().end(ar.result().body())));
             latch.await();
         }
     }

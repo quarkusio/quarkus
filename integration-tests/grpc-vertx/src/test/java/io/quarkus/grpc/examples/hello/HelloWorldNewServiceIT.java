@@ -6,6 +6,6 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 class HelloWorldNewServiceIT extends HelloWorldNewServiceTestBase {
     @Override
     protected int port() {
-        return 9001;
+        return 8081;
     }
 }

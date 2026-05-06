@@ -60,7 +60,7 @@ public class OidcMtlsTest {
         WebClient webClient = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
 
         // HTTP 200
-        HttpResponse<io.vertx.mutiny.core.buffer.Buffer> resp = webClient.get("/service/mtls-jwt")
+        HttpResponse<Buffer> resp = webClient.get("/service/mtls-jwt")
                 .putHeader("Authorization",
                         OidcConstants.BEARER_SCHEME + " " + getAccessToken("backend-service", null, "alice"))
                 .send().await()
@@ -89,7 +89,7 @@ public class OidcMtlsTest {
         WebClient webClient = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
 
         // HTTP 200
-        HttpResponse<io.vertx.mutiny.core.buffer.Buffer> resp = webClient.get("/service/mtls-introspection")
+        HttpResponse<Buffer> resp = webClient.get("/service/mtls-introspection")
                 .putHeader("Authorization",
                         OidcConstants.BEARER_SCHEME + " " + getAccessToken("backend-service", null, "alice"))
                 .send().await()
@@ -115,7 +115,7 @@ public class OidcMtlsTest {
 
         String accessToken = getAccessToken("backend-client-with-secret", "secret", "alice");
         // HTTP 200
-        HttpResponse<io.vertx.mutiny.core.buffer.Buffer> resp = webClient.get("/service/mtls-client-with-secret")
+        HttpResponse<Buffer> resp = webClient.get("/service/mtls-client-with-secret")
                 .putHeader("Authorization",
                         OidcConstants.BEARER_SCHEME + " " + accessToken)
                 .send().await()
@@ -142,7 +142,7 @@ public class OidcMtlsTest {
 
         String accessToken = getAccessToken("backend-client-with-secret", "secret", "alice", List.of("microprofile:jwt"));
         // HTTP 200
-        HttpResponse<io.vertx.mutiny.core.buffer.Buffer> resp = webClient.get("/service/mtls-client-with-secret")
+        HttpResponse<Buffer> resp = webClient.get("/service/mtls-client-with-secret")
                 .putHeader("Authorization",
                         OidcConstants.BEARER_SCHEME + " " + accessToken)
                 .send().await()

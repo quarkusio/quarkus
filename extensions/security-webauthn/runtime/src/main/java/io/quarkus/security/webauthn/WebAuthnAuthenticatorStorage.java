@@ -42,7 +42,7 @@ public class WebAuthnAuthenticatorStorage {
         return runPotentiallyBlocking(() -> userProvider.update(credID, counter));
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({ "unchecked" })
     private <T> Uni<T> runPotentiallyBlocking(Supplier<Uni<? extends T>> supplier) {
         if (BlockingOperationControl.isBlockingAllowed()
                 || isNonBlocking(userProvider.getClass())) {
@@ -52,7 +52,7 @@ public class WebAuthnAuthenticatorStorage {
             return Uni.createFrom().deferred(supplier).runSubscriptionOn(VirtualThreadsRecorder.getCurrent());
         }
         // run it in a worker thread
-        return vertx.executeBlocking(Uni.createFrom().deferred((Supplier) supplier));
+        return vertx.executeBlocking(() -> supplier.get().await().indefinitely());
     }
 
     private boolean isNonBlocking(Class<?> klass) {

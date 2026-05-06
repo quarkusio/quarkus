@@ -26,7 +26,8 @@ public class GrpcIntegrationTestHelper {
 
     static <T> T createClient(int port, Class<T> clazz, Function<GrpcIoClientChannel, AbstractStub<?>> function) {
         try {
-            GrpcIoClientChannel channel = new GrpcIoClientChannel(grpcClient, SocketAddress.inetSocketAddress(port, "localhost"));
+            GrpcIoClientChannel channel = new GrpcIoClientChannel(grpcClient,
+                    SocketAddress.inetSocketAddress(port, "localhost"));
             var stub = function.apply(channel);
             Constructor<T> constructor = clazz.getDeclaredConstructor(stub.getClass());
             constructor.setAccessible(true);

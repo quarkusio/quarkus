@@ -1050,8 +1050,24 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                     .add(last.substring(0, last.length() - 2)).add("or(null)").build();
         }
 
+        // Check if the first part is a literal value with chaining virtual method parts
+        Object literalValue = Results.NotFound.EMPTY;
         List<Part> parts = new ArrayList<>(strParts.size());
         Part first = null;
+
+        if (strParts.size() > 1) {
+            Object firstPartLiteral = LiteralSupport.getLiteralValue(strParts.get(0));
+            if (!Results.isNotFound(firstPartLiteral)) {
+                literalValue = firstPartLiteral;
+                String literalTypeInfo = firstPartLiteral != null
+                        ? Expressions.typeInfoFrom(firstPartLiteral.getClass().getName())
+                        : null;
+                first = new ExpressionImpl.PartImpl(strParts.get(0), literalTypeInfo);
+                parts.add(first);
+                strParts = strParts.subList(1, strParts.size());
+            }
+        }
+
         Iterator<String> strPartsIterator = strParts.iterator();
         while (strPartsIterator.hasNext()) {
             Part part = createPart(idGenerator, namespace, first, strPartsIterator, scope, origin, value);
@@ -1060,7 +1076,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             }
             parts.add(part);
         }
-        return new ExpressionImpl(idGenerator.get(), namespace, ImmutableList.copyOf(parts), Results.NotFound.EMPTY, origin);
+        return new ExpressionImpl(idGenerator.get(), namespace, ImmutableList.copyOf(parts), literalValue, origin);
     }
 
     private static Part createPart(Supplier<Integer> idGenerator, String namespace, Part first,

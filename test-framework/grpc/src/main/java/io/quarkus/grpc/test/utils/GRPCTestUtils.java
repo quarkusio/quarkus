@@ -20,20 +20,20 @@ import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PemTrustOptions;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.grpc.client.GrpcClient;
+import io.vertx.grpcio.client.GrpcIoClient;
 import io.vertx.grpcio.client.GrpcIoClientChannel;
 
 public class GRPCTestUtils {
     private static final Logger log = LoggerFactory.getLogger(GRPCTestUtils.class);
 
     public static Channel channel(Vertx vertx) {
-        int port = vertx != null ? 8081 : 9001;
-        return channel(vertx, port);
+        return channel(vertx, 8081);
     }
 
     public static Channel channel(Vertx vertx, int port) {
         Channel channel;
         if (vertx != null) {
-            GrpcClient client = GrpcClient.client(vertx);
+            GrpcIoClient client = GrpcIoClient.client(vertx);
             GrpcIoClientChannel gcc = new GrpcIoClientChannel(client, SocketAddress.inetSocketAddress(port, "localhost"));
             channel = new InternalChannel(gcc, client);
         } else {
@@ -88,7 +88,7 @@ public class GRPCTestUtils {
         options.setTrustOptions(new PemTrustOptions().addCertValue(buffer));
         options.setKeyCertOptions(new PemKeyCertOptions().setCertValue(cb).setKeyValue(ck));
 
-        GrpcClient client = GrpcClient.client(vertx, options);
+        GrpcIoClient client = GrpcIoClient.client(vertx, options);
         Channel channel = new GrpcIoClientChannel(client, SocketAddress.inetSocketAddress(8444, "localhost"));
 
         return Map.entry(client, channel);

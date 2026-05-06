@@ -21,6 +21,6 @@ class HelloWorldN2OServiceTest extends HelloWorldNewServiceTestBase {
 
     @Override
     protected int port() {
-        return 9001;
+        return 8081;
     }
 }

@@ -11,7 +11,7 @@ import io.vertx.core.Vertx;
 class HelloWorldN2OServiceIT extends HelloWorldNewServiceTestBase {
     @Override
     protected int port() {
-        return 9001;
+        return 8081;
     }
 
     @Override

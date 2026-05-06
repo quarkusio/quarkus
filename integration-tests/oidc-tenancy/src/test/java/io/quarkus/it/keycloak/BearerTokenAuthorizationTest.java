@@ -42,10 +42,10 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.restassured.RestAssured;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.core.http.HttpClient;
 
 /**
@@ -993,7 +993,7 @@ public class BearerTokenAuthorizationTest {
                     .await().indefinitely();
         } finally {
             if (httpClient != null) {
-                httpClient.closeAndAwait();
+                httpClient.close().await().indefinitely();
             }
             vertx.closeAndAwait();
         }

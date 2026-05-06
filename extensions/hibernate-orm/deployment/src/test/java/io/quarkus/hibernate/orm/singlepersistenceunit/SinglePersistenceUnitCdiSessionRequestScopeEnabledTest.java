@@ -7,16 +7,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Inject;
-import jakarta.persistence.EntityManager;
 import jakarta.persistence.TransactionRequiredException;
 import jakarta.transaction.Transactional;
 
+import org.hibernate.Session;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 
-public class SinglePersistenceUnitCdiEntityManagerTest {
+public class SinglePersistenceUnitCdiSessionRequestScopeEnabledTest {
 
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
@@ -25,15 +25,15 @@ public class SinglePersistenceUnitCdiEntityManagerTest {
                     .addAsResource("application.properties"));
 
     @Inject
-    EntityManager entityManager;
+    Session session;
 
     @Test
     @Transactional
     public void inTransaction() {
         DefaultEntity defaultEntity = new DefaultEntity("default");
-        entityManager.persist(defaultEntity);
+        session.persist(defaultEntity);
 
-        DefaultEntity savedDefaultEntity = entityManager.find(DefaultEntity.class, defaultEntity.getId());
+        DefaultEntity savedDefaultEntity = session.get(DefaultEntity.class, defaultEntity.getId());
         assertEquals(defaultEntity.getName(), savedDefaultEntity.getName());
     }
 
@@ -41,11 +41,11 @@ public class SinglePersistenceUnitCdiEntityManagerTest {
     @ActivateRequestContext
     public void inRequestNoTransaction() {
         // Reads are allowed
-        assertThatCode(() -> entityManager.createQuery("select count(*) from DefaultEntity"))
+        assertThatCode(() -> session.createQuery("select count(*) from DefaultEntity"))
                 .doesNotThrowAnyException();
         // Writes are not
         DefaultEntity defaultEntity = new DefaultEntity("default");
-        assertThatThrownBy(() -> entityManager.persist(defaultEntity))
+        assertThatThrownBy(() -> session.persist(defaultEntity))
                 .isInstanceOf(TransactionRequiredException.class)
                 .hasMessageContaining(
                         "Transaction is not active, consider adding @Transactional to your method to automatically activate one");
@@ -54,7 +54,7 @@ public class SinglePersistenceUnitCdiEntityManagerTest {
     @Test
     public void noRequestNoTransaction() {
         DefaultEntity defaultEntity = new DefaultEntity("default");
-        assertThatThrownBy(() -> entityManager.persist(defaultEntity))
+        assertThatThrownBy(() -> session.persist(defaultEntity))
                 .isInstanceOf(ContextNotActiveException.class)
                 .hasMessageContainingAll(
                         "Cannot use the EntityManager/Session because neither a transaction nor a CDI request context is active",

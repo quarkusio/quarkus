@@ -7,13 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Inject;
-import jakarta.inject.Named;
-import jakarta.persistence.EntityManager;
 import jakarta.persistence.TransactionRequiredException;
 import jakarta.transaction.Transactional;
 
-import org.hibernate.SessionFactory;
-import org.junit.jupiter.api.Assertions;
+import org.hibernate.Session;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -23,7 +20,7 @@ import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.inventory.
 import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.user.User;
 import io.quarkus.test.QuarkusExtensionTest;
 
-public class MultiplePersistenceUnitsCdiEntityManagerTest {
+public class MultiplePersistenceUnitsCdiSessionRequestScopeEnabledTest {
 
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
@@ -34,53 +31,23 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
                     .addAsResource("application-multiple-persistence-units.properties", "application.properties"));
 
     @Inject
-    EntityManager defaultEntityManager;
+    Session defaultSession;
 
     @Inject
     @PersistenceUnit("users")
-    EntityManager usersEntityManager;
+    Session usersSession;
 
     @Inject
     @PersistenceUnit("inventory")
-    EntityManager inventoryEntityManager;
-
-    // The following sessionFactories are not used in tests but needs to be correctly created, if not the test will fail
-    @Inject
-    SessionFactory defaultSessionFactory;
-
-    @Inject
-    @Named("users")
-    SessionFactory usersFactory;
-
-    @Inject
-    @Named("inventory")
-    SessionFactory inventoryFactory;
-
-    @Inject
-    @PersistenceUnit("<default>")
-    EntityManager defaultEntityManagerWithQualifier;
-
-    @Inject
-    @PersistenceUnit("<default>")
-    SessionFactory defaultSessionFactoryWithQualifier;
-
-    @Inject
-    @Named("<default>")
-    @PersistenceUnit("<default>")
-    EntityManager defaultEntityManagerWithBothQualifiers;
-
-    @Inject
-    @Named("<default>")
-    @PersistenceUnit("<default>")
-    SessionFactory defaultSessionFactoryWithBothQualifiers;
+    Session inventorySession;
 
     @Test
     @Transactional
     public void defaultEntityManagerInTransaction() {
         DefaultEntity defaultEntity = new DefaultEntity("default");
-        defaultEntityManager.persist(defaultEntity);
+        defaultSession.persist(defaultEntity);
 
-        DefaultEntity savedDefaultEntity = defaultEntityManager.find(DefaultEntity.class, defaultEntity.getId());
+        DefaultEntity savedDefaultEntity = defaultSession.get(DefaultEntity.class, defaultEntity.getId());
         assertEquals(defaultEntity.getName(), savedDefaultEntity.getName());
     }
 
@@ -88,11 +55,11 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
     @ActivateRequestContext
     public void defaultEntityManagerInRequestNoTransaction() {
         // Reads are allowed
-        assertThatCode(() -> defaultEntityManager.createQuery("select count(*) from DefaultEntity"))
+        assertThatCode(() -> defaultSession.createQuery("select count(*) from DefaultEntity"))
                 .doesNotThrowAnyException();
         // Writes are not
         DefaultEntity defaultEntity = new DefaultEntity("default");
-        assertThatThrownBy(() -> defaultEntityManager.persist(defaultEntity))
+        assertThatThrownBy(() -> defaultSession.persist(defaultEntity))
                 .isInstanceOf(TransactionRequiredException.class)
                 .hasMessageContaining(
                         "Transaction is not active, consider adding @Transactional to your method to automatically activate one");
@@ -101,7 +68,7 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
     @Test
     public void defaultEntityManagerNoRequestNoTransaction() {
         DefaultEntity defaultEntity = new DefaultEntity("default");
-        assertThatThrownBy(() -> defaultEntityManager.persist(defaultEntity))
+        assertThatThrownBy(() -> defaultSession.persist(defaultEntity))
                 .isInstanceOf(ContextNotActiveException.class)
                 .hasMessageContainingAll(
                         "Cannot use the EntityManager/Session because neither a transaction nor a CDI request context is active",
@@ -113,9 +80,9 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
     @Transactional
     public void usersEntityManagerInTransaction() {
         User user = new User("gsmet");
-        usersEntityManager.persist(user);
+        usersSession.persist(user);
 
-        User savedUser = usersEntityManager.find(User.class, user.getId());
+        User savedUser = usersSession.get(User.class, user.getId());
         assertEquals(user.getName(), savedUser.getName());
     }
 
@@ -123,11 +90,11 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
     @ActivateRequestContext
     public void usersEntityManagerInRequestNoTransaction() {
         // Reads are allowed
-        assertThatCode(() -> usersEntityManager.createQuery("select count(*) from User"))
+        assertThatCode(() -> usersSession.createQuery("select count(*) from User"))
                 .doesNotThrowAnyException();
         // Writes are not
         User user = new User("gsmet");
-        assertThatThrownBy(() -> usersEntityManager.persist(user))
+        assertThatThrownBy(() -> usersSession.persist(user))
                 .isInstanceOf(TransactionRequiredException.class)
                 .hasMessageContaining(
                         "Transaction is not active, consider adding @Transactional to your method to automatically activate one");
@@ -136,7 +103,7 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
     @Test
     public void usersEntityManagerNoRequestNoTransaction() {
         User user = new User("gsmet");
-        assertThatThrownBy(() -> usersEntityManager.persist(user))
+        assertThatThrownBy(() -> usersSession.persist(user))
                 .isInstanceOf(ContextNotActiveException.class)
                 .hasMessageContainingAll(
                         "Cannot use the EntityManager/Session because neither a transaction nor a CDI request context is active",
@@ -148,9 +115,9 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
     @Transactional
     public void inventoryEntityManagerInTransaction() {
         Plane plane = new Plane("Airbus A380");
-        inventoryEntityManager.persist(plane);
+        inventorySession.persist(plane);
 
-        Plane savedPlane = inventoryEntityManager.find(Plane.class, plane.getId());
+        Plane savedPlane = inventorySession.get(Plane.class, plane.getId());
         assertEquals(plane.getName(), savedPlane.getName());
     }
 
@@ -158,11 +125,11 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
     @ActivateRequestContext
     public void inventoryEntityManagerInRequestNoTransaction() {
         // Reads are allowed
-        assertThatCode(() -> inventoryEntityManager.createQuery("select count(*) from Plane"))
+        assertThatCode(() -> inventorySession.createQuery("select count(*) from Plane"))
                 .doesNotThrowAnyException();
         // Writes are not
         Plane plane = new Plane("Airbus A380");
-        assertThatThrownBy(() -> inventoryEntityManager.persist(plane))
+        assertThatThrownBy(() -> inventorySession.persist(plane))
                 .isInstanceOf(TransactionRequiredException.class)
                 .hasMessageContaining(
                         "Transaction is not active, consider adding @Transactional to your method to automatically activate one");
@@ -171,7 +138,7 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
     @Test
     public void inventoryEntityManagerNoRequestNoTransaction() {
         Plane plane = new Plane("Airbus A380");
-        assertThatThrownBy(() -> inventoryEntityManager.persist(plane))
+        assertThatThrownBy(() -> inventorySession.persist(plane))
                 .isInstanceOf(ContextNotActiveException.class)
                 .hasMessageContainingAll(
                         "Cannot use the EntityManager/Session because neither a transaction nor a CDI request context is active",
@@ -181,25 +148,9 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
 
     @Test
     @Transactional
-    public void testUserInInventoryEntityManager() {
+    public void testUserInInventorySession() {
         User user = new User("gsmet");
-        assertThatThrownBy(() -> inventoryEntityManager.persist(user)).isInstanceOf(IllegalArgumentException.class)
+        assertThatThrownBy(() -> inventorySession.persist(user)).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unknown entity type");
-    }
-
-    @Test
-    public void defaultQualifiedEntityManagerAndSessionFactoryAreInjected() {
-        Assertions.assertNotNull(defaultEntityManagerWithQualifier,
-                "@PersistenceUnit(\"<default>\") EntityManager should be injected and non-null");
-        Assertions.assertNotNull(defaultSessionFactoryWithQualifier,
-                "@PersistenceUnit(\"<default>\") SessionFactory should be injected and non-null");
-    }
-
-    @Test
-    public void defaultEntityManagerAndSessionFactoryWithBothQualifiersAreInjected() {
-        Assertions.assertNotNull(defaultEntityManagerWithBothQualifiers,
-                "EntityManager should be injectable with both @Named and @PersistenceUnit qualifiers for <default>");
-        Assertions.assertNotNull(defaultSessionFactoryWithBothQualifiers,
-                "SessionFactory should be injectable with both @Named and @PersistenceUnit qualifiers for <default>");
     }
 }

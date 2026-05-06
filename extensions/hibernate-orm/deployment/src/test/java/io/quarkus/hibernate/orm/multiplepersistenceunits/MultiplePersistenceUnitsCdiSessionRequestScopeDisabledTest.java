@@ -1,13 +1,11 @@
 package io.quarkus.hibernate.orm.multiplepersistenceunits;
 
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Inject;
-import jakarta.persistence.TransactionRequiredException;
 import jakarta.transaction.Transactional;
 
 import org.hibernate.Session;
@@ -20,7 +18,7 @@ import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.inventory.
 import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.user.User;
 import io.quarkus.test.QuarkusExtensionTest;
 
-public class MultiplePersistenceUnitsCdiSessionTest {
+public class MultiplePersistenceUnitsCdiSessionRequestScopeDisabledTest {
 
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
@@ -28,7 +26,10 @@ public class MultiplePersistenceUnitsCdiSessionTest {
                     .addClass(DefaultEntity.class)
                     .addClass(User.class)
                     .addClass(Plane.class)
-                    .addAsResource("application-multiple-persistence-units.properties", "application.properties"));
+                    .addAsResource("application-multiple-persistence-units.properties", "application.properties"))
+            .overrideConfigKey("quarkus.hibernate-orm.request-scoped.enabled", "false")
+            .overrideConfigKey("quarkus.hibernate-orm.users.request-scoped.enabled", "false")
+            .overrideConfigKey("quarkus.hibernate-orm.inventory.request-scoped.enabled", "false");
 
     @Inject
     Session defaultSession;
@@ -54,15 +55,12 @@ public class MultiplePersistenceUnitsCdiSessionTest {
     @Test
     @ActivateRequestContext
     public void defaultEntityManagerInRequestNoTransaction() {
-        // Reads are allowed
-        assertThatCode(() -> defaultSession.createQuery("select count(*) from DefaultEntity"))
-                .doesNotThrowAnyException();
-        // Writes are not
+        // With request-scoped disabled, both reads and writes fail
+        assertThatThrownBy(() -> defaultSession.createQuery("select count(*) from DefaultEntity"))
+                .hasMessageContaining("Cannot use the EntityManager/Session because no transaction is active");
         DefaultEntity defaultEntity = new DefaultEntity("default");
         assertThatThrownBy(() -> defaultSession.persist(defaultEntity))
-                .isInstanceOf(TransactionRequiredException.class)
-                .hasMessageContaining(
-                        "Transaction is not active, consider adding @Transactional to your method to automatically activate one");
+                .hasMessageContaining("Cannot use the EntityManager/Session because no transaction is active");
     }
 
     @Test
@@ -71,9 +69,9 @@ public class MultiplePersistenceUnitsCdiSessionTest {
         assertThatThrownBy(() -> defaultSession.persist(defaultEntity))
                 .isInstanceOf(ContextNotActiveException.class)
                 .hasMessageContainingAll(
-                        "Cannot use the EntityManager/Session because neither a transaction nor a CDI request context is active",
+                        "Cannot use the EntityManager/Session because no transaction is active",
                         "Consider adding @Transactional to your method to automatically activate a transaction",
-                        "@ActivateRequestContext if you have valid reasons not to use transactions");
+                        "set 'quarkus.hibernate-orm.request-scoped.enabled' to 'true' if you have valid reasons not to use transactions");
     }
 
     @Test
@@ -89,15 +87,12 @@ public class MultiplePersistenceUnitsCdiSessionTest {
     @Test
     @ActivateRequestContext
     public void usersEntityManagerInRequestNoTransaction() {
-        // Reads are allowed
-        assertThatCode(() -> usersSession.createQuery("select count(*) from User"))
-                .doesNotThrowAnyException();
-        // Writes are not
+        // With request-scoped disabled, both reads and writes fail
+        assertThatThrownBy(() -> usersSession.createQuery("select count(*) from User"))
+                .hasMessageContaining("Cannot use the EntityManager/Session because no transaction is active");
         User user = new User("gsmet");
         assertThatThrownBy(() -> usersSession.persist(user))
-                .isInstanceOf(TransactionRequiredException.class)
-                .hasMessageContaining(
-                        "Transaction is not active, consider adding @Transactional to your method to automatically activate one");
+                .hasMessageContaining("Cannot use the EntityManager/Session because no transaction is active");
     }
 
     @Test
@@ -106,9 +101,9 @@ public class MultiplePersistenceUnitsCdiSessionTest {
         assertThatThrownBy(() -> usersSession.persist(user))
                 .isInstanceOf(ContextNotActiveException.class)
                 .hasMessageContainingAll(
-                        "Cannot use the EntityManager/Session because neither a transaction nor a CDI request context is active",
+                        "Cannot use the EntityManager/Session because no transaction is active",
                         "Consider adding @Transactional to your method to automatically activate a transaction",
-                        "@ActivateRequestContext if you have valid reasons not to use transactions");
+                        "set 'quarkus.hibernate-orm.request-scoped.enabled' to 'true' if you have valid reasons not to use transactions");
     }
 
     @Test
@@ -124,15 +119,12 @@ public class MultiplePersistenceUnitsCdiSessionTest {
     @Test
     @ActivateRequestContext
     public void inventoryEntityManagerInRequestNoTransaction() {
-        // Reads are allowed
-        assertThatCode(() -> inventorySession.createQuery("select count(*) from Plane"))
-                .doesNotThrowAnyException();
-        // Writes are not
+        // With request-scoped disabled, both reads and writes fail
+        assertThatThrownBy(() -> inventorySession.createQuery("select count(*) from Plane"))
+                .hasMessageContaining("Cannot use the EntityManager/Session because no transaction is active");
         Plane plane = new Plane("Airbus A380");
         assertThatThrownBy(() -> inventorySession.persist(plane))
-                .isInstanceOf(TransactionRequiredException.class)
-                .hasMessageContaining(
-                        "Transaction is not active, consider adding @Transactional to your method to automatically activate one");
+                .hasMessageContaining("Cannot use the EntityManager/Session because no transaction is active");
     }
 
     @Test
@@ -141,9 +133,9 @@ public class MultiplePersistenceUnitsCdiSessionTest {
         assertThatThrownBy(() -> inventorySession.persist(plane))
                 .isInstanceOf(ContextNotActiveException.class)
                 .hasMessageContainingAll(
-                        "Cannot use the EntityManager/Session because neither a transaction nor a CDI request context is active",
+                        "Cannot use the EntityManager/Session because no transaction is active",
                         "Consider adding @Transactional to your method to automatically activate a transaction",
-                        "@ActivateRequestContext if you have valid reasons not to use transactions");
+                        "set 'quarkus.hibernate-orm.request-scoped.enabled' to 'true' if you have valid reasons not to use transactions");
     }
 
     @Test

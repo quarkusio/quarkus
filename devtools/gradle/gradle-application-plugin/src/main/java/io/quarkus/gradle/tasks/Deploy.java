@@ -18,6 +18,7 @@ import javax.inject.Inject;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
+import org.gradle.work.DisableCachingByDefault;
 
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.AugmentAction;
@@ -31,6 +32,7 @@ import io.quarkus.deployment.cmd.DeployCommandHandler;
 import io.quarkus.deployment.util.DeploymentUtil;
 import io.quarkus.maven.dependency.ArtifactCoords;
 
+@DisableCachingByDefault(because = "Not cacheable")
 public abstract class Deploy extends QuarkusBuildTask {
 
     public enum Deployer {

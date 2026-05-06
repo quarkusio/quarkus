@@ -11,6 +11,7 @@ import javax.inject.Inject;
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.process.JavaForkOptions;
+import org.gradle.work.DisableCachingByDefault;
 import org.gradle.workers.ProcessWorkerSpec;
 import org.gradle.workers.WorkQueue;
 import org.gradle.workers.WorkerExecutor;
@@ -18,6 +19,7 @@ import org.gradle.workers.WorkerExecutor;
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
 import io.smallrye.common.os.OS;
 
+@DisableCachingByDefault(because = "Not cacheable")
 public abstract class QuarkusTask extends DefaultTask {
     private static final List<String> WORKER_BUILD_FORK_OPTIONS = List.of("quarkus.", "platform.quarkus.", "gradle.quarkus.");
 

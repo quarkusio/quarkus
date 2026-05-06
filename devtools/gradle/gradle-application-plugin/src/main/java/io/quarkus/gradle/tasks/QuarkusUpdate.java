@@ -7,6 +7,7 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
+import org.gradle.work.DisableCachingByDefault;
 
 import io.quarkus.devtools.commands.UpdateProject;
 import io.quarkus.devtools.project.QuarkusProject;
@@ -15,6 +16,7 @@ import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.PlatformStreamCoords;
 
+@DisableCachingByDefault(because = "Not cacheable")
 public abstract class QuarkusUpdate extends QuarkusPlatformTask {
 
     private Boolean noRewrite;

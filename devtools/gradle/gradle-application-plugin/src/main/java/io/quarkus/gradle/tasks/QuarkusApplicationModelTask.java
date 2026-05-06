@@ -55,6 +55,7 @@ import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.internal.component.external.model.ModuleComponentArtifactIdentifier;
+import org.gradle.work.DisableCachingByDefault;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
@@ -80,6 +81,7 @@ import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.HashUtil;
 
+@DisableCachingByDefault(because = "Not cacheable")
 public abstract class QuarkusApplicationModelTask extends DefaultTask {
 
     /* @formatter:off */

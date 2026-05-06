@@ -27,6 +27,7 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
+import org.gradle.work.DisableCachingByDefault;
 
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.AugmentAction;
@@ -38,6 +39,7 @@ import io.quarkus.deployment.cmd.RunCommandActionResultBuildItem;
 import io.quarkus.deployment.cmd.StartDevServicesAndRunCommandHandler;
 import io.smallrye.common.process.ProcessBuilder;
 
+@DisableCachingByDefault(because = "Not cacheable")
 public abstract class QuarkusRun extends QuarkusBuildTask {
     private final Property<File> workingDirectory;
     private final SourceSet mainSourceSet;

@@ -93,6 +93,7 @@ public abstract class AbstractLambdaPollLoop {
                         }
                         try {
                             String requestId = requestConnection.getHeaderField(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID);
+                            boolean invocationAccepted = false;
                             if (requestId != null) {
                                 MDC.put(MDC_AWS_REQUEST_ID_KEY, requestId);
                             }
@@ -100,6 +101,7 @@ public abstract class AbstractLambdaPollLoop {
                                 // connection should be closed by finally clause
                                 continue;
                             }
+                            invocationAccepted = true;
                             try {
                                 if (LambdaHotReplacementRecorder.enabled && launchMode == LaunchMode.DEVELOPMENT) {
                                     try {
@@ -154,6 +156,11 @@ public abstract class AbstractLambdaPollLoop {
                                 postError(AmazonLambdaApi.invocationError(baseUrl, requestId),
                                         new FunctionError(e.getClass().getName(), e.getMessage()));
                                 continue;
+                            } finally {
+                                if (invocationAccepted) {
+                                    // TODO pls add otel flush done
+                                    LambdaInternalExtension.invocationFinished(requestId);
+                                }
                             }
 
                         } catch (Exception e) {

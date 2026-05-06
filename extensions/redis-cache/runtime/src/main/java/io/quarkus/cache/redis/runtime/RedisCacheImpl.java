@@ -32,11 +32,11 @@ import io.smallrye.mutiny.unchecked.UncheckedFunction;
 import io.smallrye.mutiny.vertx.MutinyHelper;
 import io.vertx.core.http.ConnectionPoolTooBusyException;
 import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.mutiny.redis.client.RedisConnection;
-import io.vertx.mutiny.redis.client.Request;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Request;
+import io.vertx.redis.client.Response;
 
 /**
  * This class is an internal Quarkus cache implementation using Redis.

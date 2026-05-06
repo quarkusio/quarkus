@@ -24,7 +24,5 @@ final class DotNames {
     static final DotName MAP = DotName.createSimple(Map.class.getName());
     static final DotName HASH_MAP = DotName.createSimple(HashMap.class.getName());
     static final DotName ENUM = DotName.createSimple(Enum.class.getName());
-    static final DotName MP_CONFIG_PROPERTIES = DotName
-            .createSimple(org.eclipse.microprofile.config.inject.ConfigProperties.class.getName());
     static final DotName CONFIG_PROPERTY = DotName.createSimple(ConfigProperty.class.getName());
 }

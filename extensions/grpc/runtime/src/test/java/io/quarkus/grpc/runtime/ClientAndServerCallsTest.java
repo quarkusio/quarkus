@@ -17,6 +17,9 @@ import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.Status;
 import io.grpc.StatusException;
+import io.grpc.stub.ClientCallStreamObserver;
+import io.grpc.stub.ServerCallStreamObserver;
+import io.grpc.stub.StreamObserver;
 import io.quarkus.grpc.ExceptionHandler;
 import io.quarkus.grpc.ExceptionHandlerProvider;
 import io.quarkus.grpc.stubs.ClientCalls;
@@ -174,17 +177,128 @@ public class ClientAndServerCallsTest {
         }
 
         Uni<List<String>> manyToOne(Multi<String> multi) {
-            return ClientCalls.manyToOne(multi, o -> ServerCalls.manyToOne(o, service::manyToOne));
+            return ClientCalls.manyToOne(multi,
+                    o -> new FakeClientCallStreamObserver<>(ServerCalls.manyToOne(o, service::manyToOne)));
         }
 
         Multi<String> oneToMany(String s) {
-            return ClientCalls.oneToMany(s, (i, o) -> ServerCalls.oneToMany(i, o, null, service::oneToMany));
+            return ClientCalls.oneToMany(s,
+                    (i, o) -> ServerCalls.oneToMany(i, new FakeServerCallStreamObserver<>(o), null, service::oneToMany));
         }
 
         Multi<String> manyToMany(Multi<String> multi) {
-            return ClientCalls.manyToMany(multi, o -> ServerCalls.manyToMany(o, service::manyToMany));
+            return ClientCalls.manyToMany(multi, o -> new FakeClientCallStreamObserver<>(
+                    ServerCalls.manyToMany(new FakeServerCallStreamObserver<>(o), service::manyToMany)));
+        }
+    }
+
+    static class FakeServerCallStreamObserver<T> extends ServerCallStreamObserver<T> {
+        private final StreamObserver<T> delegate;
+
+        FakeServerCallStreamObserver(StreamObserver<T> delegate) {
+            this.delegate = delegate;
         }
 
+        @Override
+        public void onNext(T value) {
+            delegate.onNext(value);
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            delegate.onError(t);
+        }
+
+        @Override
+        public void onCompleted() {
+            delegate.onCompleted();
+        }
+
+        @Override
+        public boolean isCancelled() {
+            return false;
+        }
+
+        @Override
+        public void setOnCancelHandler(Runnable onCancelHandler) {
+        }
+
+        @Override
+        public void setCompression(String compression) {
+        }
+
+        @Override
+        public boolean isReady() {
+            return true;
+        }
+
+        @Override
+        public void setOnReadyHandler(Runnable onReadyHandler) {
+        }
+
+        @Override
+        public void disableAutoInboundFlowControl() {
+        }
+
+        @Override
+        public void request(int count) {
+        }
+
+        @Override
+        public void setMessageCompression(boolean enable) {
+        }
+
+        @Override
+        public void setOnCloseHandler(Runnable onCloseHandler) {
+        }
+    }
+
+    static class FakeClientCallStreamObserver<T> extends ClientCallStreamObserver<T> {
+        private final StreamObserver<T> delegate;
+
+        FakeClientCallStreamObserver(StreamObserver<T> delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void onNext(T value) {
+            delegate.onNext(value);
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            delegate.onError(t);
+        }
+
+        @Override
+        public void onCompleted() {
+            delegate.onCompleted();
+        }
+
+        @Override
+        public boolean isReady() {
+            return true;
+        }
+
+        @Override
+        public void setOnReadyHandler(Runnable onReadyHandler) {
+        }
+
+        @Override
+        public void disableAutoInboundFlowControl() {
+        }
+
+        @Override
+        public void request(int count) {
+        }
+
+        @Override
+        public void setMessageCompression(boolean enable) {
+        }
+
+        @Override
+        public void cancel(String message, Throwable cause) {
+        }
     }
 
     static class FailingService {

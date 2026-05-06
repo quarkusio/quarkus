@@ -31,6 +31,7 @@ This document is relatively long and is designed to be read from top to bottom.
 However, it doesn't assume much knowledge and is beginner-friendly; experts will not spend an excessive amount of time reading through.
 It is recommended to read the whole document at least once before searching for specific terms or looking into specific chapters.
 
+[#multithreading]
 == Multithreading
 
 === Overview
@@ -52,18 +53,21 @@ If request processing requires concurrency, more threads are obtained by the app
 
 === Implicit parameters
 
-To store contexts (implicit parameters), `ThreadLocal` variables are typically used.
+To store implicit parameters, `ThreadLocal` variables are typically used.
 Note that many libraries also use `ThreadLocal` variables for caching or object pooling (and sometimes for preventing infinite regress), which is an entirely different situation.
 It is important to know whether a `ThreadLocal` is used to store an implicit parameter on the side, or for a different purpose.
 
-If the request processing code obtains other threads and delegates some processing to them, contexts are often not propagated.
-It may happen that some `ThreadLocal` variable is in fact an `InheritableThreadLocal`; in this case, contexts may be propagated if the application doesn't use a thread pool but creates new threads.
-Creating threads has non-trivial overhead, so this is not very common.
+If the request processing code obtains other threads and delegates some processing to them, implicit parameters are often not available on the additional threads.
+It may happen that some `ThreadLocal` variable is in fact an `InheritableThreadLocal`, in which case the corresponding implicit parameter may be accessible:
+
+* if the application doesn't use a thread pool but creates new threads (but creating threads has non-trivial overhead), or
+* if the thread pool decides to create a new thread for some reason (but this is not deterministic).
 
 === References
 
 For more information about multithreading, read https://jcip.net/[Java Concurrency in Practice] or https://www.oreilly.com/library/view/the-art-of/9780123973375/[The Art of Multiprocessor Programming].
 
+[#event-loops]
 == Event loops
 
 === Introduction
@@ -461,7 +465,7 @@ The `Vertx.currentContext()` method returns a `Context` that is associated with 
 The `Context.runOnContext()` method adds the given task to the event loop queue.
 It is executed once all previously submitted tasks finish, and for the duration of the task execution, the `Context` is associated with the current thread.
 
-Below, we refer to the `Context` that is associated with the current thread as "current `Context`".
+Below, we refer to the `Context` that is associated with the current thread as "current ``Context``".
 
 The `Vertx.runOnContext()` helper method basically does `getOrCreateContext().runOnContext(task)`.
 
@@ -492,7 +496,7 @@ Further, there are 2 distinct set of methods on `Context` that seem to do a simi
 * static methods `isOnEventLoopThread()` and `isOnWorkerThread()`: these methods return whether the currently executing thread is an event loop thread or a worker thread, regardless of the kind of the current `Context`
 * instance methods `isEventLoopContext()` and `isWorkerContext()`: these methods return the _kind_ of the `Context`, regardless of the currently executing thread
 
-As mentioned several times, we assume that all ``Context``s are event loop ``Context``s and so `isEventLoopContext()` returns `true`, while `isWorkerContext()` returns `false`.
+As mentioned several times, we assume that all ``Context``s are event loop ``Context``s and so `isEventLoopContext()` always returns `true`, while `isWorkerContext()` always returns `false`.
 
 Now, the kind of the `Context` has *nothing* to do with what thread currently executes the code.
 Let's illustrate that using a small modification of one of the previous examples:
@@ -759,6 +763,7 @@ A different mechanism must be used; we'll explore that later on.
 For more information, see the https://vertx.io/docs/vertx-core/java/[Vert.x core manual] and the https://vertx.io/docs/guides/advanced-vertx-guide/[Advanced Vert.x guide].
 A good book is https://www.manning.com/books/vertx-in-action[Vert.x in Action].
 
+[#mutiny]
 == Mutiny
 
 Mutiny is a functional reactive programming library, similar to RxJava or Reactor.
@@ -1791,10 +1796,11 @@ In my personal opinion, this is a bug.
 
 For more information about Mutiny, see the https://smallrye.io/smallrye-mutiny/[documentation].
 
+[#cdi]
 == Contexts and Dependency Injection
 
 Contexts and Dependency Injection, or CDI for short, is a core part of Quarkus, similarly to Vert.x.
-It does not introduce a new concurrency model, but it deserves detailed treatment, because CDI contexts are one of the most important implicit parameters in Quarkus.
+It does not introduce another concurrency model, but it deserves detailed treatment, because CDI contexts are one of the most important implicit parameters in Quarkus.
 
 [NOTE]
 ====
@@ -1804,37 +1810,33 @@ Indeed, we've just introduced a _third_ meaning of the term "context":
 * Vert.x `Context`
 * CDI context
 
+Even more meanings exist.
 In this document, we try to qualify every usage of the term "context" so that it is immediately obvious which one we mean.
 Other documents are not as precise, but it is usually obvious from the surrounding text (context...) what is the intended meaning.
 ====
 
-This document doesn't introduce the entire CDI; refer to xref:cdi.adoc[Introduction to Contexts and Dependency Injection (CDI)] for that.
+This document doesn't introduce the entirety of CDI; refer to xref:cdi.adoc[Introduction to Contexts and Dependency Injection (CDI)] for that.
 However, we do introduce scopes and contexts as the most important parts of CDI for the concurrency model discussion.
 
 Each CDI bean has a _scope_, which determines its lifecycle.
-Each scope is associated with a _context object_.
-There may be multiple context objects associated with a single scope, but not the opposite: each context object is associated with exactly one scope.
 
 There are two kinds of scopes in CDI: pseudo-scopes and normal scopes.
-Normal scoped beans have a well-defined notion of _current instance_; pseudo-scoped beans do not.
+Normal scoped beans have a well-defined notion of "current instance"; pseudo-scoped beans do not.
+We will see why this is important in the following paragraphs.
 
-There are just 2 pseudo-scopes: `@Singleton` and `@Dependent`.
+There are 2 built-in pseudo-scopes: `@Singleton` and `@Dependent`.
 For `@Singleton` beans, there's always exactly one instance that is used everywhere.
 For `@Dependent` beans, a new instance is created for each usage.
 
-The most common normal scopes in Quarkus are `@ApplicationScoped` and `@RequestScoped`.
+The most common normal scopes are `@ApplicationScoped` and `@RequestScoped`.
 `@ApplicationScoped` beans are close to `@Singleton` beans in that there's always exactly one instance that is used everywhere.
-`@RequestScoped` beans have a dedicated instance for each "request" (see the _Quarkus_ chapter below for what request is and what its boundaries are).
+`@RequestScoped` beans have a dedicated instance for each request (see the next chapter for detailed treatment).
 `@SessionScoped` and `@TransactionScoped` beans are also occasionally used.
-(`@SessionScoped` is in fact the only scope in Quarkus for which multiple context objects exist.)
-
-It is possible to introduce new scopes and new context objects, but this is relatively rare.
-A vast majority of newly created scopes are normal scopes.
 
 Pseudo-scoped beans are injected directly.
 For normal scoped beans, a _client proxy_ is injected instead.
-Client proxies is what allows injecting beans of "narrower" scopes into beans with "wider" scopes.
 
+Why do we need client proxies?
 Imagine we have the following beans:
 
 [source,java]
@@ -1856,68 +1858,82 @@ public class MyService {
 ----
 
 Naively, this cannot work: how can an application-wide bean inject a bean that exists for the duration of a request, and there's an independent instance for each request?
-Client proxy is the answer.
 
-In the example above, the `MyService.request` is not injected a valid instance of `MyRequest`; it gets injected the client proxy.
-If the code in `MyService` invokes `request.hello()`, the client proxy does two things:
+The answer is: the `MyService.request` is not injected a valid instance of `MyRequest`; it gets injected a client proxy.
+When the code in `MyService` invokes `request.hello()`, the client proxy does two things:
 
 . Finds the current instance of the bean
 . Forwards the invocation to it
 
 NOTE: _This only applies to method invocations_.
 If you try to access fields from the outside, you will only get to the client proxy and _not_ to the current instance.
+Therefore, you should never access fields of normal scoped beans from the outside.
 
 Forwarding an invocation is not a terribly interesting thing, but how does the client proxy find the current instance?
 
 === Current context and current instance
 
-This is where it gets interesting.
-
-CDI is squarely based on the Jakarta EE concurrency model, multithreading.
-It doesn't know anything about event loops and Vert.x.
-What is "current" in CDI is very much tied to the _current thread_.
+It all starts with a scope.
+A _context object_ is an implementation of the scope's lifecycle.
+It contains a mapping from beans to their instances; at most one instance of a bean may be present for all beans with the context object's scope.
+This mapping is called a _context_ in CDI.
+Note that multiple context objects may declare the same scope.
 
 At any given point in time on any given thread, a context object is either active or inactive.
-On a thread, if there is exactly one active context object for a scope, it is called _current context_ for the scope and for the thread.
 
-Context objects are not typically activated/deactivated by application code; it is the job of Quarkus frameworks to do that.
+[NOTE]
+====
+Context objects are usually not activated/deactivated by application code; it is the job of Quarkus frameworks to do that.
 
-The current context may include at most one instance of a bean for all beans with the context's scope.
+Sometimes, applications need to make sure the CDI request context is active while a method is running.
+This can be achieved by annotating the method `@ActivateRequestContext`.
+Note this only works on non-`private` methods of CDI beans!
+====
+
+On a thread, if there is exactly one active context object for a scope, the context it contains is called _current context_ for the scope and for the thread.
 If the current context contains an instance of a bean, this instance is called the _current instance_.
 
 So to find the current instance of a bean, the client proxy:
 
+. Finds the bean's scope.
 . Finds the current thread.
 . Finds the current context for the bean's scope and for the current thread.
++
+You can imagine that finding the current context means iterating through all context objects with matching scope and selecting those that are active on the current thread.
+A current context exists only if exactly one context object is selected.
 +
 If current context does not exist, an exception is thrown.
 . Finds the current instance, which is the instance present in the current context.
 +
 If current instance does not exist, a new instance is created and put into the current context.
 
-When possible, Quarkus simplifies this process to improve performance, but conceptually, these steps are followed on all method invocations.
-
-// TODO maybe we need a description of all scopes?
+When possible, Quarkus simplifies this process to improve performance, but conceptually, these steps are followed on all method invocations on client proxies.
 
 === Context propagation
 
-As we've seen in the Vert.x chapter, requests are often processed on an event loop thread, interleaved with other requests, and sometimes, part of request processing is offloaded to a worker thread.
-This directly contradicts the notion of "current instance" of a bean, which is based on the current thread.
+If a context is preserved between two points in the program execution, CDI says that the context is _propagated_.
+By default, CDI contexts propagate across method calls on one thread.
 
-Quarkus includes features to associate and disassociate the context to/from a thread that currently executes request processing.
-This is called _context propagation_.
-See the _Quarkus_ chapter below for more details.
+This default stems from the thread-per-request architecture, pervasive in the multithreading concurrency model.
+It is not enough with Vert.x, where multiple requests are processed concurrently (interleaved) on one event loop thread, and sometimes, part of request processing is offloaded to a worker thread.
 
-// TODO we probably need more details
+In the next chapter, we'll see how the context propagation rules are adjusted to account for the Quarkus concurrency model.
 
+More importantly, this feature of the CDI specification gives a name to a more general concept.
+In general, *context propagation is the process of maintaining access to implicit parameters such that correct implicit parameters are accessible at the correct time* and never the opposite.
+Context propagation is currently a big issue across the entire Quarkus ecosystem.
+
+[#quarkus]
 == Quarkus
 
 Vast majority of Quarkus applications use Vert.x and so the concurrency model is a mix of multithreading and event loops.
 Small number of Quarkus applications do not include Vert.x (typically CLI applications), in which case the concurrency model collapses to multithreading.
-This is the non-interesting case: everyone knows how multithreading works, and if not, there are great resources out there.
-In this chapter, we assume that Vert.x is present.
-(In Quarkus, whenever Vert.x is present, Mutiny is also present.)
 
+In this chapter, we assume that Vert.x and Mutiny are present and that the application uses the Quarkus-managed instance of Vert.x.
+The text is still useful for applications that create their own Vert.x instance, only some code examples would need to be rewritten.
+For applications that do not use Vert.x, most of the content is not relevant, but there is still a lot of useful information.
+
+[#vertx-integration]
 === Vert.x integration
 
 Vert.x has 2 main thread pools: a pool of event loop threads, and a pool of worker threads.
@@ -1939,10 +1955,12 @@ Quarkus uses a different thread pool implementation for worker threads than bare
 In bare Vert.x, the worker thread pool is backed by JDK `ThreadPoolExecutor` and the threads are named `vert.x-worker-thread-N`.
 In Quarkus, the worker thread pool is backed by JBoss Threads `EnhancedQueueExecutor` and the threads are named `executor-thread-N`.
 
-NOTE: The worker thread pool situation is more complex in Quarkus dev mode.
+NOTE: The worker thread pool situation is more complex in _dev mode_.
 In dev mode, there's one global executor that is shared across the entire dev mode run.
+Threads of this global executor are named `executor-thread-N`.
 This global executor is not used as the Vert.x worker thread pool; instead, each application restart gets a new worker thread pool.
-Usually, you don't need to care about this.
+Threads of these worker thread pools are named `vert.x-worker-thread-N`.
+You usually don't need to care about this, but the thread names are visible in the logs, so it's good to know about the difference.
 
 ==== Worker thread pool sizing
 
@@ -1956,14 +1974,15 @@ This may turn a thread pool starvation issue into a deadlock:
 . The second blocking task waits for a thread from the worker pool. It cannot run, because the worker pool is full of executions of the first task.
 
 *Make sure the worker pool is sized such that it never starves.*
-Quarkus provides concurrency limiting and rate limiting, as well as global load shedding mechanism, which might be useful here.
+Quarkus provides concurrency limiting and rate limiting, as well as global (application-level) load shedding mechanism, which might be useful here.
 
 One might think the issue can be fixed by submitting the second task to a _different_ worker thread pool, but the situation is more complex.
 Creating just one other thread pool in a naive manner wouldn't solve the problem, because the blocking/non-blocking ping-pong may be repeated in multiple layers of nesting.
-We would either have to have multiple secondary thread pools, one for each layer, or the secondary thread pool would have to be unbounded (as in, it doesn't put tasks into a queue, but creates a new thread if all existing threads are occupied).
+We would either have to have multiple secondary thread pools, one for each layer (note that layering cannot be determined statically, it is very much dynamic!), or the secondary thread pool would have to be queue-less (as in, it creates a new thread if all existing threads are occupied).
 Both could easily become a resourcing nightmare.
 Proper thread pool sizing and overload prevention are the only real solution.
 
+[#mutiny-integration]
 === Mutiny integration
 
 As mentioned in previous sections, several Mutiny operators require a scheduled executor and if none is passed explicitly, the default Mutiny thread pool is used.
@@ -1972,18 +1991,21 @@ In Quarkus, one might imagine that the Mutiny default thread pool is the Quarkus
 The Mutiny default thread pool is the Quarkus worker thread pool _wrapped_ into a specialized adaptor that detects whether a task is being scheduled from a Vert.x `Context`.
 If it is, the Vert.x timer is used instead of the scheduling facilities of the thread pool.
 
-NOTE: Remember that the timer executes the callback on an event loop thread, regardless of the thread the original computation was running on.
-It might have easily been a worker thread.
+The Vert.x timer executes the scheduled task on an event loop thread, regardless of the thread the original computation was running on.
+If the original thread was a worker thread, this is a switch to a different kind of thread.
+Mutiny pipelines are typically used to orchestrate non-blocking code, but if you use Mutiny to orchestrate _blocking_ code, pay attention!
 
-// TODO probably expand on the note above? the impact of this may be stronger than originally expected
+NOTE: This might actually be a bug.
+One might easily argue that the Vert.x timer should _only_ be used as a scheduler if the scheduling thread is an event loop thread.
+In any case, you can always pass a scheduler explicitly and stay in control.
 
-=== Entrypoints
+=== Applications
 
-Vast majority of Quarkus extensions that expose some form of an entrypoint (such as an HTTP endpoint) do that through Vert.x.
-This means that traffic handling starts on an event loop thread.
-The way this is exposed to users is more complicated, because typically, there's framework code in Quarkus that sits between Vert.x and the application.
-This framework code, among others, decides how the application code should be invoked.
-Typically, it works like this:
+Application code in Quarkus is typically invoked by a framework that exposes an _entrypoint_.
+Vast majority of frameworks that expose an entrypoint (such as an HTTP endpoint) do that through Vert.x, so framework execution typically starts on an event loop thread.
+
+Among other framework duties, it also has to decide how to invoke the application code.
+It usually works like this:
 
 . If the application method is annotated `@Blocking`, it is executed on a worker thread.
 If it is annotated `@NonBlocking`, it is executed on an event loop.
@@ -1991,11 +2013,149 @@ If it is annotated `@NonBlocking`, it is executed on an event loop.
 . Otherwise, if the application method declares a non-blocking return type (`CompletionStage`, `Uni`, `Multi`), it is invoked on the event loop thread.
 If the application method declares any other return type, it is offloaded to a worker thread.
 
-Entrypoints support either request/response interactions, streaming interactions, or both.
-They should provide documentation for application developers to be able to distinguish in which situation they are; this applies especially if both kinds of interactions are supported.
+These rules are considered standard.
+Any deviation from these rules should be properly documented by the violating framework.
 
-NOTE: The fact that Quarkus supports exactly these two styles of interactions (request/response and streaming) stems directly from Vert.x and Mutiny.
-They both provide support for single-result actions (Vert.x `Future`, Mutiny `Uni`) and multiple-results actions (Vert.x `ReadStream` / `WriteStream`, Mutiny `Multi`).
+// Entrypoints support either request/response interactions, streaming interactions, or both.
+// They should provide documentation for application developers to be able to distinguish in which situation they are; this applies especially if both kinds of interactions are supported.
+//
+// NOTE: The fact that Quarkus supports exactly these two styles of interactions (request/response and streaming) stems directly from Vert.x and Mutiny.
+// They both provide support for single-result actions (Vert.x `Future`, Mutiny `Uni`) and multiple-results streaming actions (Vert.x `ReadStream` / `WriteStream`, Mutiny `Multi`).
+
+When the framework invokes application code, the application gains control of its own execution.
+As part of its code, the application may call into other Quarkus frameworks, which means temporarily handing over control of execution back to Quarkus.
+Note that this often occurs multiple times in a row.
+For example:
+
+. Vert.x HTTP server accepts a request and hands it over to Quarkus REST (formerly known as RESTEasy Reactive).
+. Quarkus REST deserializes the request and calls into the application.
+. Application calls a business method that is annotated with a caching interceptor binding.
+. Quarkus cache calls into the caching provider, which might be implemented using a Vert.x client and therefore execute on an event loop.
+. The cache doesn't contain the entry, so Quarkus cache calls back into the application.
+If the application method is blocking, the callback has to occur on a second worker thread, because the first is blocked waiting for the result.
+. The application code runs a database query.
+. When the application code returns a value, the Quarkus cache takes over, puts the value into the cache (again, might involve Vert.x and networking etc.) and returns.
+. Application code does something with the value, possibly obtains other values, etc.
+When the application is done, it returns the result.
+. Quarkus REST takes over, serializes the result and passes control back to the Vert.x HTTP server.
+. Vert.x HTTP server finishes sending the response.
+
+In the process above, multiple thread hops may occur between worker threads and event loop threads.
+It is therefore important to pay attention to how the APIs used by the application interact with concurrency.
+Extensions are encouraged to document their concurrency-related behaviors.
+
+==== Vert.x
+
+Applications can inject the managed `Vertx` instance by:
+
+[source,java]
+----
+@Inject
+io.vertx.core.Vertx vertx;
+----
+
+Alternatively, outside CDI beans, applications can obtain the managed `Vertx` instance by:
+
+[source,java]
+----
+io.vertx.core.Vertx vertx = io.quarkus.vertx.core.runtime.VertxCoreRecorder.getVertx().get();
+----
+
+To run code on the Vert.x event loop, applications can do:
+
+[source,java]
+----
+vertx.runOnContext(() -> {
+    ...
+});
+----
+
+To run code on the Vert.x worker thread pool, applications can do:
+
+[source,java]
+----
+vertx.executeBlocking(() -> {
+    ...
+});
+----
+
+To obtain the current Vert.x `Context`, applications can call `Vertx.currentContext()`.
+Note that a current Vert.x `Context` _does not necessarily have to exist_ and so the method may easily return `null`.
+
+We have explored the `Vertx` and `Context` APIs in detail in the <<event-loops>> chapter.
+
+==== Worker thread pool
+
+In addition to accessing the worker thread pool through `Vertx`, application can inject the managed worker thread pool by:
+
+[source,java]
+----
+@Inject
+java.util.concurrent.Executor executor;
+
+@Inject
+java.util.concurrent.ExecutorService executor; // same as `Executor` above
+
+@Inject
+java.util.concurrent.ScheduledExecutorService executor; // same as `ExecutorService` above
+
+@Inject
+org.eclipse.microprofile.context.ManagedExecutor managedExecutor;
+----
+
+Alternatively, outside CDI beans, applications can obtain the managed worker thread pool by:
+
+[source,java]
+----
+// returns the Quarkus worker thread pool
+// return type is `Executor`, but the actual result is always `ScheduledExecutorService`
+java.util.concurrent.Executor executor = io.quarkus.runtime.ExecutorRecorder.getCurrent();
+
+// returns the Mutiny default thread pool as `Executor`
+java.util.concurrent.Executor executor
+    = io.smallrye.mutiny.infrastructure.Infrastructure.getDefaultExecutor();
+
+// returns the Mutiny default thread pool as `ScheduledExecutorService`
+java.util.concurrent.ScheduledExecutorService executor
+    = io.smallrye.mutiny.infrastructure.Infrastructure.getDefaultWorkerPool();
+----
+
+These APIs are well-known, so here, we only document their additional, uncommon behavior.
+There are 3 _different_ ways to submit a task to a worker thread pool:
+
+. `Vertx.executeBlocking()` / `Context.executeBlocking()`
++
+These methods ensure that the original Vert.x `Context` is associated with the worker thread for the duration of the task.
+. `Executor.submit()` / `ExecutorService.submit()` / `ScheduledExecutorService.submit()`
++
+These methods also ensure the original Vert.x `Context` is associated with the worker thread for the duration of the task, but _not in full_.
+The following parts are removed:
++
+** CDI contexts
+** the Vert.x Web `RoutingContext` used for security purposes, if `quarkus.http.auth.propagate-security-identity` is set to `true`
+. `ManagedExecutor.submit()`
++
+Ignores the Vert.x `Context` entirely.
+Instead, it uses MicroProfile Context Propagation.
+
+==== Unamanged threads
+
+In addition to event loop threads and worker threads, which are _managed_ by Quarkus, application code can also execute on unmanaged threads.
+An unmanaged thread may come from:
+
+* `ForkJoinPool.commonPool()`
+** Note that it is very easy to use the common FJ pool without even knowing, for example by using parallel ``Stream``s or calling async methods on `CompletionStage` without specifying an executor.
+* custom application-built `ExecutorService` (e.g. `Executors.newCachedThreadPool()`)
+* `new Thread()`
+* an external framework that maintains its own thread pool
+
+Extensions that use unmanaged threads should integrate with this concurrency model by calling application code on Quarkus-managed threads by default and arranging for proper maintenance of implicit parameters, as described below.
+If an extension allows calling application code on unmanaged threads, it has to be documented and easy to recognize.
+
+Applications should preferably not use unmanaged threads at all.
+If they have to, they should integrate with this concurrency model as well.
+
+=== Implicit parameters
 
 ==== Request boundaries
 
@@ -2248,6 +2408,11 @@ The parts of Quarkus code that treat safety as isolation are buggy.
 It is possible that all ``Context``s will be considered "safe" (or "non-concurrent") by default and application code will have to opt into concurrency explicitly.
 The opposite is also possible; once again, depending on outcomes of ongoing work.
 ====
+
+=== Virtual threads
+
+Quarkus includes support for virtual threads.
+This documentation ignores it for the moment; proper description shall be added later.
 
 === References
 

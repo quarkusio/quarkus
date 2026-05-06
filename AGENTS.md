@@ -102,13 +102,14 @@ need for a separate step. Let the build fix formatting for you.
 Detailed guidance is available in `.agents/skills/` for specific tasks.
 Consult the relevant skill when you are about to do that type of work:
 
-| Skill | When to use |
-|-------|-------------|
-| `writing-build-steps` | Creating or modifying `@BuildStep` methods, build items, or recorders |
-| `writing-tests` | Creating or modifying tests for Quarkus extensions |
-| `working-with-config` | Creating or modifying `@ConfigMapping` configuration interfaces |
+| Skill | When to use                                                                           |
+|-------|---------------------------------------------------------------------------------------|
+| `writing-build-steps` | Creating or modifying `@BuildStep` methods, build items, or recorders                 |
+| `writing-tests` | Creating or modifying tests for Quarkus extensions                                    |
+| `working-with-config` | Creating or modifying `@ConfigMapping` configuration interfaces                       |
 | `classloading-and-runtime-dev` | Working with runtime-dev modules, conditional dependencies, or debugging classloading |
-| `creating-extensions` | Creating a new extension or understanding the full module layout |
-| `coding-style` | Code formatting, visibility, naming conventions, and logging |
-| `building-and-testing` | Maven build commands, flags, incremental builds, and build rules |
-| `pull-requests` | PR title/description conventions, commit hygiene, labels, and contribution rules |
+| `creating-extensions` | Creating a new extension or understanding the full module layout                      |
+| `coding-style` | Code formatting, visibility, naming conventions, and logging                          |
+| `building-and-testing` | Maven build commands, flags, incremental builds, and build rules                      |
+| `pull-requests` | PR title/description conventions, commit hygiene, labels, and contribution rules      |
+| `writing-extension-devui` | Writing a Dev UI for a Quarkus extension                                              |

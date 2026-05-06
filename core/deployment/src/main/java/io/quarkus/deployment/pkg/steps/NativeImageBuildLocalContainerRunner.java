@@ -35,15 +35,14 @@ public class NativeImageBuildLocalContainerRunner extends NativeImageBuildContai
         if (SystemUtils.IS_OS_LINUX || SystemUtils.IS_OS_MAC) {
             if (containerRuntime.isDocker() && containerRuntime.isRootless()) {
                 Collections.addAll(result, "--user", String.valueOf(0));
+            } else if (containerRuntime.isPodman() && containerRuntime.isRootless()) {
+                Collections.addAll(result, "--user", String.valueOf(0));
+                result.add("--userns=keep-id");
             } else {
                 String uid = getLinuxID("-ur");
                 String gid = getLinuxID("-gr");
                 if (uid != null && gid != null && !uid.isEmpty() && !gid.isEmpty()) {
                     Collections.addAll(result, "--user", uid + ":" + gid);
-                    if (containerRuntime.isPodman() && containerRuntime.isRootless()) {
-                        // Needed to avoid AccessDeniedExceptions
-                        result.add("--userns=keep-id");
-                    }
                 }
             }
         }

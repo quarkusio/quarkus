@@ -123,13 +123,13 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
             args.add(containerName);
             args.add("-i"); // Interactive, write logs to stdout
             args.add("--rm");
-            if (runAsHostUser) {
-                args.add("--user");
-                args.add(getHostUidGid());
-            }
-
+            // Avoid duplicate --user: getVolumeAccessArguments already maps host uid/gid (and adds
+            // --userns=keep-id for rootless Podman) when volumes need host access.
             if (!volumeMounts.isEmpty()) {
                 args.addAll(NativeImageBuildLocalContainerRunner.getVolumeAccessArguments(containerRuntime));
+            } else if (runAsHostUser) {
+                args.add("--user");
+                args.add(getHostUidGid());
             }
 
             if (httpPort != 0) {
@@ -244,13 +244,11 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         args.add(containerName);
         args.add("-i"); // Interactive, write logs to stdout
         args.add("--rm");
-        if (runAsHostUser) {
-            args.add("--user");
-            args.add(getHostUidGid());
-        }
-
         if (!volumeMounts.isEmpty()) {
             args.addAll(NativeImageBuildLocalContainerRunner.getVolumeAccessArguments(containerRuntime));
+        } else if (runAsHostUser) {
+            args.add("--user");
+            args.add(getHostUidGid());
         }
 
         args.add("-p");
@@ -448,14 +446,12 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         args.add(containerName);
         args.add("-i"); // Interactive, write logs to stdout
         args.add("--rm");
-        if (runAsHostUser) {
-            args.add("--user");
-            args.add(getHostUidGid());
-        }
-
         ContainerRuntime containerRuntime = ContainerRuntimeUtil.detectContainerRuntime();
         if (!volumeMounts.isEmpty()) {
             args.addAll(NativeImageBuildLocalContainerRunner.getVolumeAccessArguments(containerRuntime));
+        } else if (runAsHostUser) {
+            args.add("--user");
+            args.add(getHostUidGid());
         }
 
         args.addAll(toEnvVar("JAVA_TOOL_OPTIONS",

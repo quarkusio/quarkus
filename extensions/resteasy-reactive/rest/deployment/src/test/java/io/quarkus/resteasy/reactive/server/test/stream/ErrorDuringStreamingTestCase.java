@@ -26,12 +26,12 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.MultiEmitter;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.VertxException;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClosedException;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.impl.NoStackTraceException;
 
 public class ErrorDuringStreamingTestCase {
 
@@ -92,7 +92,13 @@ public class ErrorDuringStreamingTestCase {
                                     response
                                             .handler(bodyConsumer::accept)
                                             .exceptionHandler(latch::completeExceptionally)
-                                            .end(latch::complete);
+                                            .end().onComplete(ar -> {
+                                                if (ar.failed()) {
+                                                    latch.completeExceptionally(ar.cause());
+                                                } else {
+                                                    latch.complete(null);
+                                                }
+                                            });
                                 });
 
                     }
@@ -107,7 +113,7 @@ public class ErrorDuringStreamingTestCase {
             return Multi.createFrom().emitter(emitter -> {
                 emit(emitter);
                 if (fail) {
-                    throw new NoStackTraceException("dummy");
+                    emitter.fail(new VertxException("dummy"));
                 } else {
                     emit(emitter);
                     emitter.complete();

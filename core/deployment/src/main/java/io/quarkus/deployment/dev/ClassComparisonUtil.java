@@ -109,16 +109,28 @@ public class ClassComparisonUtil {
         if (a.size() != b.size()) {
             return false;
         }
-        Map<DotName, AnnotationInstance> lookup = b.stream()
-                .collect(Collectors.toMap(AnnotationInstance::name, Function.identity()));
+        // Use List to handle repeated annotations (e.g., multiple @NotNull)
+        Map<DotName, List<AnnotationInstance>> lookup = b.stream()
+                .collect(Collectors.groupingBy(AnnotationInstance::name));
 
-        for (AnnotationInstance i1 : a) {
-            AnnotationInstance i2 = lookup.get(i1.name());
-            if (i2 == null) {
+        Map<DotName, List<AnnotationInstance>> aGrouped = a.stream()
+                .collect(Collectors.groupingBy(AnnotationInstance::name));
+
+        if (!aGrouped.keySet().equals(lookup.keySet())) {
+            return false;
+        }
+
+        for (Map.Entry<DotName, List<AnnotationInstance>> entry : aGrouped.entrySet()) {
+            List<AnnotationInstance> aList = entry.getValue();
+            List<AnnotationInstance> bList = lookup.get(entry.getKey());
+            if (aList.size() != bList.size()) {
                 return false;
             }
-            if (!compareAnnotation(i1, i2)) {
-                return false;
+            // For repeated annotations, compare them pairwise
+            for (int i = 0; i < aList.size(); i++) {
+                if (!compareAnnotation(aList.get(i), bList.get(i))) {
+                    return false;
+                }
             }
         }
         return true;

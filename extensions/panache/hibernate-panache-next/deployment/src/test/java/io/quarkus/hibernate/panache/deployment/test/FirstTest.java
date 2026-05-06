@@ -1,11 +1,13 @@
 package io.quarkus.hibernate.panache.deployment.test;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusExtensionTest;
 
 public class FirstTest {
@@ -14,7 +16,8 @@ public class FirstTest {
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource("application-test.properties", "application.properties")
-                    .addClasses(MyEntity.class, MyEntity_.class, MyEntity_.ManagedBlockingQueries_.class));
+                    .addClasses(MyEntity.class, MyEntity_.class, MyEntity_.ManagedBlockingQueries_.class,
+                            MyEntity_.FindOnlyRepo_.class));
 
     @Transactional
     void createOne() {
@@ -132,6 +135,18 @@ public class FirstTest {
         Assertions.assertEquals(1, MyEntity_.managedBlockingQueries().findFoos("fu").size());
         Assertions.assertEquals(1, MyEntity_.managedBlockingQueries().findFoosHQL("fu").size());
         Assertions.assertEquals(1, MyEntity_.managedBlockingQueries().findFoosFind("fu").size());
+    }
+
+    @Test
+    void testRepositoryScopeIsApplicationScoped() {
+        Assertions.assertEquals(ApplicationScoped.class,
+                Arc.container().select(MyEntity.ManagedBlockingQueries.class).getHandle().getBean().getScope());
+    }
+
+    @Test
+    void testFindOnlyRepoScopeIsApplicationScoped() {
+        Assertions.assertEquals(ApplicationScoped.class,
+                Arc.container().select(MyEntity.FindOnlyRepo.class).getHandle().getBean().getScope());
     }
 
     @Test

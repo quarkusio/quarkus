@@ -1,9 +1,12 @@
 package io.quarkus.hibernate.panache.deployment.test;
 
+import jakarta.enterprise.context.ApplicationScoped;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
@@ -172,6 +175,12 @@ public class ReactiveTest {
                     Assertions.assertEquals(1, list.size());
                 })
                 .replaceWithVoid();
+    }
+
+    @Test
+    void testRepositoryScopeIsApplicationScoped() {
+        Assertions.assertEquals(ApplicationScoped.class,
+                Arc.container().select(MyReactiveEntity.ManagedReactiveQueries.class).getHandle().getBean().getScope());
     }
 
     @RunOnVertxContext

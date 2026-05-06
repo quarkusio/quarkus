@@ -26,4 +26,9 @@ public class MyEntity extends PanacheEntity {
         @Find
         List<MyEntity> findFoosFind(String foo);
     }
+
+    interface FindOnlyRepo {
+        @Find
+        List<MyEntity> findByFoo(String foo);
+    }
 }

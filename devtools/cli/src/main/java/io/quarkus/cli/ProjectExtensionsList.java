@@ -14,10 +14,15 @@ import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.quickcli.Help;
+import io.quarkus.quickcli.annotations.ArgGroup;
+import io.quarkus.quickcli.annotations.Command;
+import io.quarkus.quickcli.annotations.Mixin;
+import io.quarkus.quickcli.annotations.Option;
 import io.quarkus.registry.RegistryResolutionException;
-import picocli.CommandLine;
 
-@CommandLine.Command(name = "list", aliases = "ls", header = "List platforms and extensions. ", footer = {
+@Command(name = "list", aliases = "ls", header = "List platforms and extensions. ", footer = {
         "%nList modes:%n",
         "(relative). Active when invoked within a project unless an explicit release is specified. " +
                 "The current project configuration will determine what extensions are listed, " +
@@ -27,25 +32,25 @@ import picocli.CommandLine;
                 "The CLI release will be used if this command is invoked outside of a project and no other release is specified.%n" })
 public class ProjectExtensionsList extends BaseBuildCommand implements Callable<Integer> {
 
-    @CommandLine.Mixin
+    @Mixin
     RunModeOption runMode;
 
-    @CommandLine.ArgGroup(order = 2, heading = "%nQuarkus version (absolute):%n")
+    @ArgGroup(order = 2, heading = "%nQuarkus version (absolute):%n")
     TargetQuarkusPlatformGroup targetQuarkusVersion = new TargetQuarkusPlatformGroup();
 
-    @CommandLine.Option(names = { "-i",
+    @Option(names = { "-i",
             "--installable" }, defaultValue = "false", order = 2, description = "List extensions that can be installed (relative)")
     boolean installable = false;
 
-    @CommandLine.Option(names = { "-s",
+    @Option(names = { "-s",
             "--search" }, defaultValue = "*", paramLabel = "PATTERN", order = 3, description = "Search for matching extensions (simple glob using '*' and '?').")
     String searchPattern;
 
-    @CommandLine.Option(names = { "-c",
+    @Option(names = { "-c",
             "--category" }, defaultValue = "", paramLabel = "CATEGORY_ID", order = 4, description = "Only list extensions from the specified category.")
     String category;
 
-    @CommandLine.ArgGroup(heading = "%nOutput format:%n")
+    @ArgGroup(heading = "%nOutput format:%n")
     ListFormatOptions format = new ListFormatOptions();
 
     @Override
@@ -88,7 +93,7 @@ public class ProjectExtensionsList extends BaseBuildCommand implements Callable<
         }
     }
 
-    Integer dryRunList(CommandLine.Help help, BuildTool buildTool) {
+    Integer dryRunList(Help help, BuildTool buildTool) {
         Map<String, String> dryRunOutput = new TreeMap<>();
 
         if (buildTool == null) {
@@ -112,7 +117,7 @@ public class ProjectExtensionsList extends BaseBuildCommand implements Callable<
         dryRunOutput.put("Registry Client", Boolean.toString(registryClient.enabled()));
 
         output.info(help.createTextTable(dryRunOutput).toString());
-        return CommandLine.ExitCode.OK;
+        return ExitCode.OK;
     }
 
     Integer listPlatformExtensions() throws QuarkusCommandException, RegistryResolutionException {
@@ -128,7 +133,7 @@ public class ProjectExtensionsList extends BaseBuildCommand implements Callable<
                 .batchMode(runMode.isBatchMode())
                 .execute();
 
-        return outcome.isSuccess() ? CommandLine.ExitCode.OK : CommandLine.ExitCode.SOFTWARE;
+        return outcome.isSuccess() ? ExitCode.OK : ExitCode.SOFTWARE;
     }
 
     private void printHints(BuildTool buildTool, boolean formatHint, boolean filterHint, boolean addExtensionHint) {

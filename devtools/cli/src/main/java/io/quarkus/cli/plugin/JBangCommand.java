@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.quarkus.cli.common.OutputOptionMixin;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.ExitCode;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.quickcli.annotations.Command;
 
 @Command
 public class JBangCommand implements PluginCommand {

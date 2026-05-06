@@ -13,9 +13,9 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import io.quarkus.cli.config.Encrypt.KeyFormat;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
-import picocli.CommandLine.Parameters;
+import io.quarkus.quickcli.annotations.Command;
+import io.quarkus.quickcli.annotations.Option;
+import io.quarkus.quickcli.annotations.Parameters;
 
 @Command(name = "decrypt", aliases = "dec", header = "Decrypt Secrets", description = "Decrypt a Secret value using the AES/GCM/NoPadding algorithm as a default.")
 public class Decrypt extends BaseConfigCommand implements Callable<Integer> {

@@ -6,12 +6,16 @@ import java.nio.file.Paths;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.junit.main.QuarkusMainLauncher;
+import io.quarkus.test.junit.main.QuarkusMainTest;
+
+@QuarkusMainTest
 public class CliVersionTest {
     static Path workspaceRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath().resolve("target/test-project");
 
     @Test
-    public void testCommandVersion() throws Exception {
-
+    public void testCommandVersion(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "-v");
         result.echoSystemOut();
         Assertions.assertEquals(result.stdout.trim(), System.getProperty("project.version"),

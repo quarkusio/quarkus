@@ -5,26 +5,28 @@ import java.util.concurrent.Callable;
 import io.quarkus.cli.common.HelpOption;
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.registry.RegistryClientMixin;
-import picocli.CommandLine;
-import picocli.CommandLine.Model.CommandSpec;
+import io.quarkus.quickcli.CommandSpec;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.quickcli.annotations.Mixin;
+import io.quarkus.quickcli.annotations.Spec;
 
 public class BaseRegistryCommand implements Callable<Integer> {
 
-    @CommandLine.Mixin(name = "output")
+    @Mixin(name = "output")
     protected OutputOptionMixin output;
 
-    @CommandLine.Mixin
+    @Mixin
     protected RegistryClientMixin registryClient;
 
-    @CommandLine.Mixin
+    @Mixin
     protected HelpOption helpOption;
 
-    @CommandLine.Spec
+    @Spec
     protected CommandSpec spec;
 
     @Override
     public Integer call() throws Exception {
         spec.commandLine().usage(output.out());
-        return CommandLine.ExitCode.OK;
+        return ExitCode.OK;
     }
 }

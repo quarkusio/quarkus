@@ -18,19 +18,23 @@ import io.quarkus.cli.common.build.ExecuteUtil;
 import io.quarkus.cli.common.build.GradleRunner;
 import io.quarkus.devtools.commands.CreateProjectHelper;
 import io.quarkus.devtools.testing.RegistryClientTestHelper;
-import picocli.CommandLine;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.test.junit.main.QuarkusMainLauncher;
+import io.quarkus.test.junit.main.QuarkusMainTest;
 
 /**
  * Similar to CliProjectMavenTest ..
  */
+@QuarkusMainTest
 public class CliProjectGradleTest {
     static final Path testProjectRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
-            .resolve("target/test-classes/test-project/");
+            .resolve("target/test-project/");
     static final Path workspaceRoot = testProjectRoot.resolve("CliProjectGradleTest");
     static final Path wrapperRoot = testProjectRoot.resolve("gradle-wrapper");
 
     Path project;
     static File gradle;
+    static boolean gradleDaemonStarted = false;
 
     @BeforeAll
     public static void setupTestRegistry() {
@@ -48,15 +52,18 @@ public class CliProjectGradleTest {
         project = workspaceRoot.resolve("code-with-quarkus");
     }
 
-    @BeforeAll
-    static void startGradleDaemon() throws Exception {
+    static void ensureGradleDaemon(QuarkusMainLauncher launcher) throws Exception {
+        if (gradleDaemonStarted) {
+            return;
+        }
         CliDriver.deleteDir(wrapperRoot);
+        CliDriver.setLauncher(launcher);
 
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle", "--verbose", "-e", "-B",
                 "--no-code",
                 "-o", testProjectRoot.toString(),
                 "gradle-wrapper");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("SUCCESS"),
                 "Expected confirmation that the project has been created." + result);
 
@@ -69,6 +76,7 @@ public class CliProjectGradleTest {
 
         result = CliDriver.executeArbitraryCommand(wrapperRoot, args.toArray(new String[0]));
         Assertions.assertEquals(0, result.exitCode, "Gradle daemon should start properly");
+        gradleDaemonStarted = true;
     }
 
     @AfterAll
@@ -82,10 +90,13 @@ public class CliProjectGradleTest {
             CliDriver.Result result = CliDriver.executeArbitraryCommand(wrapperRoot, args.toArray(new String[0]));
             Assertions.assertEquals(0, result.exitCode, "Gradle daemon should stop properly");
         }
+        gradleDaemonStarted = false;
     }
 
     @Test
-    public void testNoCode() throws Exception {
+    public void testNoCode(QuarkusMainLauncher launcher) throws Exception {
+        ensureGradleDaemon(launcher);
+        CliDriver.setLauncher(launcher);
         // Inspect the no-code project created to hold the gradle wrapper
         Assertions.assertTrue(gradle.exists(), "Wrapper should exist");
 
@@ -99,9 +110,11 @@ public class CliProjectGradleTest {
     }
 
     @Test
-    public void testCreateAppDefaults() throws Exception {
+    public void testCreateAppDefaults(QuarkusMainLauncher launcher) throws Exception {
+        ensureGradleDaemon(launcher);
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle", "--verbose", "-e", "-B");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("SUCCESS"),
                 "Expected confirmation that the project has been created." + result);
 
@@ -121,10 +134,12 @@ public class CliProjectGradleTest {
     }
 
     @Test
-    public void testCreateAppWithoutDockerfiles() throws Exception {
+    public void testCreateAppWithoutDockerfiles(QuarkusMainLauncher launcher) throws Exception {
+        ensureGradleDaemon(launcher);
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--no-dockerfiles", "-e", "-B",
                 "--verbose");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("SUCCESS"),
                 "Expected confirmation that the project has been created." + result);
         Assertions.assertFalse(Files.exists(project.resolve("src/main/docker")),
@@ -132,10 +147,12 @@ public class CliProjectGradleTest {
     }
 
     @Test
-    public void testCreateAppDefaultsWithKotlinDSL() throws Exception {
+    public void testCreateAppDefaultsWithKotlinDSL(QuarkusMainLauncher launcher) throws Exception {
+        ensureGradleDaemon(launcher);
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle-kotlin-dsl", "--verbose", "-e",
                 "-B");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("SUCCESS"),
                 "Expected confirmation that the project has been created." + result);
 
@@ -157,7 +174,9 @@ public class CliProjectGradleTest {
     }
 
     @Test
-    public void testCreateAppOverrides() throws Exception {
+    public void testCreateAppOverrides(QuarkusMainLauncher launcher) throws Exception {
+        ensureGradleDaemon(launcher);
+        CliDriver.setLauncher(launcher);
         Path nested = workspaceRoot.resolve("cli-nested");
         project = nested.resolve("my-project");
 
@@ -173,7 +192,7 @@ public class CliProjectGradleTest {
 
         // TODO: would love a test that doesn't use a wrapper, but CI path..
 
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("SUCCESS"),
                 "Expected confirmation that the project has been created." + result);
 
@@ -194,9 +213,11 @@ public class CliProjectGradleTest {
     }
 
     @Test
-    public void testCreateCliDefaults() throws Exception {
+    public void testCreateCliDefaults(QuarkusMainLauncher launcher) throws Exception {
+        ensureGradleDaemon(launcher);
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "cli", "--gradle", "--verbose", "-e", "-B");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("SUCCESS"),
                 "Expected confirmation that the project has been created." + result);
 
@@ -216,9 +237,11 @@ public class CliProjectGradleTest {
     }
 
     @Test
-    public void testExtensionList() throws Exception {
+    public void testExtensionList(QuarkusMainLauncher launcher) throws Exception {
+        ensureGradleDaemon(launcher);
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle", "--verbose", "-e", "-B");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Path buildGradle = project.resolve("build.gradle");
         String buildGradleContent = CliDriver.readFileAsString(buildGradle);
@@ -237,20 +260,22 @@ public class CliProjectGradleTest {
 
         // TODO: Maven and Gradle give different return codes
         result = CliDriver.invokeExtensionRemoveNonexistent(project);
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
     }
 
     @Test
-    public void testBuildOptions() throws Exception {
+    public void testBuildOptions(QuarkusMainLauncher launcher) throws Exception {
+        ensureGradleDaemon(launcher);
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle", "-e", "-B", "--verbose");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         // 1 --clean --tests --native --offline
         result = CliDriver.execute(project, "build", "-e", "-B", "--dry-run",
                 "--clean", "--tests", "--native", "--offline");
 
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
 
         Assertions.assertTrue(result.stdout.contains(" clean"),
@@ -283,15 +308,17 @@ public class CliProjectGradleTest {
     }
 
     @Test
-    public void testDevOptions() throws Exception {
+    public void testDevOptions(QuarkusMainLauncher launcher) throws Exception {
+        ensureGradleDaemon(launcher);
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle", "-e", "-B", "--verbose");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         // 1 --clean --tests --suspend --offline
         result = CliDriver.execute(project, "dev", "-e", "--dry-run",
                 "--clean", "--tests", "--debug", "--suspend", "--debug-mode=listen", "--offline");
 
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         Assertions.assertTrue(result.stdout.contains("GRADLE"),
                 "gradle command should specify 'GRADLE'\n" + result);
@@ -315,7 +342,7 @@ public class CliProjectGradleTest {
         result = CliDriver.execute(project, "dev", "-e", "--dry-run",
                 "--no-clean", "--no-tests", "--no-debug");
 
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         Assertions.assertTrue(result.stdout.contains("GRADLE"),
                 "gradle command should specify 'GRADLE'\n" + result);
@@ -336,7 +363,7 @@ public class CliProjectGradleTest {
         result = CliDriver.execute(project, "dev", "-e", "--dry-run",
                 "--no-suspend", "--debug-host=0.0.0.0", "--debug-port=8008", "--debug-mode=connect", "--", "arg1", "arg2");
 
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         Assertions.assertTrue(result.stdout.contains("GRADLE"),
                 "gradle command should specify 'GRADLE'\n" + result);
@@ -354,7 +381,7 @@ public class CliProjectGradleTest {
         // 4 TEST MODE: test --clean --debug --suspend --offline
         result = CliDriver.execute(project, "test", "-e", "--dry-run",
                 "--clean", "--debug", "--suspend", "--debug-mode=listen", "--offline", "--filter=FooTest");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         Assertions.assertTrue(result.stdout.contains("Run current project in continuous test mode"), result.toString());
         Assertions.assertTrue(result.stdout.contains("-Dquarkus.test.include-pattern=FooTest"), result.toString());
@@ -362,7 +389,7 @@ public class CliProjectGradleTest {
         // 5 TEST MODE - run once: test --once --offline
         result = CliDriver.execute(project, "test", "-e", "--dry-run",
                 "--once", "--offline", "--filter=FooTest");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         Assertions.assertTrue(result.stdout.contains("Run current project in test mode"), result.toString());
         Assertions.assertTrue(result.stdout.contains("--tests FooTest"), result.toString());
@@ -376,7 +403,9 @@ public class CliProjectGradleTest {
     }
 
     @Test
-    public void testCreateArgPassthrough() throws Exception {
+    public void testCreateArgPassthrough(QuarkusMainLauncher launcher) throws Exception {
+        ensureGradleDaemon(launcher);
+        CliDriver.setLauncher(launcher);
         Path nested = workspaceRoot.resolve("cli-nested");
         project = nested.resolve("my-project");
 
@@ -387,7 +416,7 @@ public class CliProjectGradleTest {
                 "silly:my-project:0.1.0");
 
         // We don't need to retest this, just need to make sure all the arguments were passed through
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Assertions.assertTrue(result.stdout.contains("Creating an app"),
                 "Should contain 'Creating an app', found: " + result.stdout);
@@ -407,13 +436,15 @@ public class CliProjectGradleTest {
     }
 
     @Test
-    public void testCreateArgJava17() throws Exception {
+    public void testCreateArgJava17(QuarkusMainLauncher launcher) throws Exception {
+        ensureGradleDaemon(launcher);
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle",
                 "-e", "-B", "--verbose",
                 "--java", "17");
 
         // We don't need to retest this, just need to make sure all the arguments were passed through
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Path buildGradle = project.resolve("build.gradle");
         String buildGradleContent = CliDriver.readFileAsString(buildGradle);
@@ -423,13 +454,15 @@ public class CliProjectGradleTest {
     }
 
     @Test
-    public void testCreateArgJava21() throws Exception {
+    public void testCreateArgJava21(QuarkusMainLauncher launcher) throws Exception {
+        ensureGradleDaemon(launcher);
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle",
                 "-e", "-B", "--verbose",
                 "--java", "21");
 
         // We don't need to retest this, just need to make sure all the arguments were passed through
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Path buildGradle = project.resolve("build.gradle");
         String buildGradleContent = CliDriver.readFileAsString(buildGradle);
@@ -439,13 +472,15 @@ public class CliProjectGradleTest {
     }
 
     @Test
-    public void testCreateArgJava25() throws Exception {
+    public void testCreateArgJava25(QuarkusMainLauncher launcher) throws Exception {
+        ensureGradleDaemon(launcher);
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle",
                 "-e", "-B", "--verbose",
                 "--java", "25");
 
         // We don't need to retest this, just need to make sure all the arguments were passed through
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Path buildGradle = project.resolve("build.gradle");
         String buildGradleContent = CliDriver.readFileAsString(buildGradle);

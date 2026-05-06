@@ -15,11 +15,11 @@ import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
+import io.quarkus.quickcli.annotations.Option;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.config.RegistriesConfig;
-import picocli.CommandLine;
 
 public class RegistryClientMixin {
     static final boolean VALIDATE = !Boolean.parseBoolean(System.getenv("REGISTRY_CLIENT_TEST"));
@@ -29,11 +29,11 @@ public class RegistryClientMixin {
         return "-DquarkusRegistryClient=" + enabled();
     }
 
-    @CommandLine.Option(names = {
+    @Option(names = {
             "--refresh" }, description = "Refresh the local Quarkus extension registry cache", defaultValue = "false")
     boolean refresh = false;
 
-    @CommandLine.Option(paramLabel = "CONFIG", names = { "--config" }, description = "Configuration file")
+    @Option(paramLabel = "CONFIG", names = { "--config" }, description = "Configuration file")
     String config;
 
     public boolean enabled() {

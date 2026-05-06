@@ -9,9 +9,9 @@ import io.quarkus.cli.deploy.Kubernetes;
 import io.quarkus.cli.deploy.Minikube;
 import io.quarkus.cli.deploy.Openshift;
 import io.quarkus.devtools.project.BuildTool;
-import picocli.CommandLine;
+import io.quarkus.quickcli.annotations.Command;
 
-@CommandLine.Command(name = "deploy", sortOptions = false, mixinStandardHelpOptions = false, header = "Deploy application.", subcommands = {
+@Command(name = "deploy", sortOptions = false, mixinStandardHelpOptions = false, header = "Deploy application.", subcommands = {
         Kubernetes.class, Openshift.class, Knative.class, Kind.class, Minikube.class,
 }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "%nOptions:%n")
 public class Deploy extends BuildToolDelegatingCommand {

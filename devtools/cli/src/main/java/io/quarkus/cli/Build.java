@@ -10,16 +10,20 @@ import io.quarkus.cli.common.BuildOptions;
 import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.cli.common.build.BuildSystemRunner;
 import io.quarkus.devtools.project.BuildTool;
-import picocli.CommandLine;
-import picocli.CommandLine.Parameters;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.quickcli.Help;
+import io.quarkus.quickcli.annotations.ArgGroup;
+import io.quarkus.quickcli.annotations.Command;
+import io.quarkus.quickcli.annotations.Mixin;
+import io.quarkus.quickcli.annotations.Parameters;
 
-@CommandLine.Command(name = "build", showEndOfOptionsDelimiterInUsageHelp = true, header = "Build the current project.")
+@Command(name = "build", showEndOfOptionsDelimiterInUsageHelp = true, header = "Build the current project.")
 public class Build extends BaseBuildCommand implements Callable<Integer> {
 
-    @CommandLine.Mixin
+    @Mixin
     protected RunModeOption runMode;
 
-    @CommandLine.ArgGroup(order = 1, exclusive = false, validate = false, heading = "%nBuild options:%n")
+    @ArgGroup(order = 1, exclusive = false, validate = false, heading = "%nBuild options:%n")
     BuildOptions buildOptions = new BuildOptions();
 
     @Parameters(description = "Additional parameters passed to the build system")
@@ -42,11 +46,11 @@ public class Build extends BaseBuildCommand implements Callable<Integer> {
 
             if (runMode.isDryRun()) {
                 dryRunBuild(spec.commandLine().getHelp(), runner.getBuildTool(), commandArgs);
-                return CommandLine.ExitCode.OK;
+                return ExitCode.OK;
             }
 
             int exitCode = runner.run(commandArgs);
-            if (exitCode == CommandLine.ExitCode.OK && buildOptions.generateBuildReport) {
+            if (exitCode == ExitCode.OK && buildOptions.generateBuildReport) {
                 output.printText(new String[] {
                         "\nBuild report available: " + new BuildReport(runner).generate().toPath().toAbsolutePath().toString()
                                 + "\n"
@@ -59,7 +63,7 @@ public class Build extends BaseBuildCommand implements Callable<Integer> {
         }
     }
 
-    void dryRunBuild(CommandLine.Help help, BuildTool buildTool, BuildSystemRunner.BuildCommandArgs args) {
+    void dryRunBuild(Help help, BuildTool buildTool, BuildSystemRunner.BuildCommandArgs args) {
         output.printText(new String[] {
                 "\nBuild current project\n",
                 "\t" + projectRoot().toString()

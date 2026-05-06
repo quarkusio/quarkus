@@ -11,6 +11,8 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.quarkus.cli.CliDriver;
+import io.quarkus.test.junit.main.QuarkusMainLauncher;
+import io.quarkus.test.junit.main.QuarkusMainTest;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
@@ -18,12 +20,14 @@ import io.smallrye.config.SmallRyeConfigBuilder;
         +
         "I did try it in a Windows box and it works fine. Regardless, this commands is tested indirectly" +
         " in SetConfigTest, which is still enabled in Windows ")
+@QuarkusMainTest
 class EncryptTest {
     @TempDir
     Path tempDir;
 
     @Test
-    void encrypt() throws Exception {
+    void encrypt(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(tempDir, "config", "encrypt", "12345678");
         Scanner scanner = new Scanner(result.getStdout());
         String[] split = scanner.nextLine().split(" ");
@@ -41,7 +45,8 @@ class EncryptTest {
     }
 
     @Test
-    void keyPlain() throws Exception {
+    void keyPlain(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(tempDir, "config", "encrypt", "12345678", "-f=plain",
                 "--key=12345678");
         Scanner scanner = new Scanner(result.getStdout());
@@ -69,7 +74,8 @@ class EncryptTest {
     }
 
     @Test
-    void keyBase64() throws Exception {
+    void keyBase64(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(tempDir, "config", "encrypt", "12345678", "--key=12345678");
         Scanner scanner = new Scanner(result.getStdout());
         String[] split = scanner.nextLine().split(" ");

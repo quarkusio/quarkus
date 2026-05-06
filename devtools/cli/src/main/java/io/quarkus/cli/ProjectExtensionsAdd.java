@@ -8,15 +8,19 @@ import java.util.concurrent.Callable;
 import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.cli.common.build.BuildSystemRunner;
 import io.quarkus.devtools.project.BuildTool;
-import picocli.CommandLine;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.quickcli.Help;
+import io.quarkus.quickcli.annotations.Command;
+import io.quarkus.quickcli.annotations.Mixin;
+import io.quarkus.quickcli.annotations.Parameters;
 
-@CommandLine.Command(name = "add", header = "Add extension(s) to this project.")
+@Command(name = "add", header = "Add extension(s) to this project.")
 public class ProjectExtensionsAdd extends BaseBuildCommand implements Callable<Integer> {
 
-    @CommandLine.Mixin
+    @Mixin
     RunModeOption runMode;
 
-    @CommandLine.Parameters(arity = "1", paramLabel = "EXTENSION", description = "extensions to add to this project", split = ",")
+    @Parameters(arity = "1", paramLabel = "EXTENSION", description = "extensions to add to this project", split = ",")
     Set<String> extensions;
 
     @Override
@@ -28,7 +32,7 @@ public class ProjectExtensionsAdd extends BaseBuildCommand implements Callable<I
             BuildSystemRunner runner = getRunner();
             if (runMode.isDryRun()) {
                 dryRunAdd(spec.commandLine().getHelp(), runner.getBuildTool());
-                return CommandLine.ExitCode.OK;
+                return ExitCode.OK;
             }
 
             return runner.addExtension(runMode, extensions);
@@ -38,7 +42,7 @@ public class ProjectExtensionsAdd extends BaseBuildCommand implements Callable<I
         }
     }
 
-    void dryRunAdd(CommandLine.Help help, BuildTool buildTool) {
+    void dryRunAdd(Help help, BuildTool buildTool) {
         output.printText(new String[] {
                 "\nAdd extensions to the current project\n",
                 "\t" + projectRoot().toString()

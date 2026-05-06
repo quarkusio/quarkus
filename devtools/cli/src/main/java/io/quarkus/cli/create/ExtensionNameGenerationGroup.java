@@ -1,27 +1,27 @@
 package io.quarkus.cli.create;
 
 import io.quarkus.devtools.commands.CreateProjectHelper;
-import picocli.CommandLine;
+import io.quarkus.quickcli.annotations.Option;
 
 public class ExtensionNameGenerationGroup {
     String packageName;
 
-    @CommandLine.Option(paramLabel = "NAMESPACE-ID", names = { "-N",
+    @Option(paramLabel = "NAMESPACE-ID", names = { "-N",
             "--namespace-id" }, description = "A common prefix for all module artifactIds")
     String namespaceId;
 
-    @CommandLine.Option(paramLabel = "EXTENSION-NAME", names = { "--extension-name" }, description = "Extension name")
+    @Option(paramLabel = "EXTENSION-NAME", names = { "--extension-name" }, description = "Extension name")
     String extensionName;
 
-    @CommandLine.Option(paramLabel = "EXTENSION-DESCRIPTION", names = {
+    @Option(paramLabel = "EXTENSION-DESCRIPTION", names = {
             "--extension-description" }, description = "Extension description")
     String extensionDescription;
 
-    @CommandLine.Option(paramLabel = "NAMESPACE-NAME", names = {
+    @Option(paramLabel = "NAMESPACE-NAME", names = {
             "--namespace-name" }, description = "A common prefix for all module names")
     String namespaceName;
 
-    @CommandLine.Option(paramLabel = "PACKAGE-NAME", names = {
+    @Option(paramLabel = "PACKAGE-NAME", names = {
             "--package-name" }, description = "Base package for generated classes")
     void setPackageName(String name) {
         this.packageName = CreateProjectHelper.checkPackageName(name);

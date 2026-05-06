@@ -19,9 +19,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.devtools.testing.RegistryClientTestHelper;
+import io.quarkus.quickcli.ExitCode;
 import io.quarkus.registry.config.RegistriesConfig;
-import picocli.CommandLine;
+import io.quarkus.test.junit.main.QuarkusMainLauncher;
+import io.quarkus.test.junit.main.QuarkusMainTest;
 
+@QuarkusMainTest
 public class CliNonProjectTest {
     private static final String TEST_QUARKUS_REGISTRY = "test.quarkus.registry";
     static Path workspaceRoot;
@@ -29,7 +32,7 @@ public class CliNonProjectTest {
     @BeforeAll
     public static void initial() throws Exception {
         workspaceRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
-                .resolve("target/test-classes/test-project/CliNonProjectTest");
+                .resolve("target/test-project/CliNonProjectTest");
         CliDriver.deleteDir(workspaceRoot);
         Files.createDirectories(workspaceRoot);
     }
@@ -50,20 +53,22 @@ public class CliNonProjectTest {
     }
 
     @Test
-    public void testListOutsideOfProject() throws Exception {
+    public void testListOutsideOfProject(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "ext", "-e");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("Jackson"),
                 "Should contain 'Jackson' in the list of extensions, found: " + result.stdout);
     }
 
     @Test
-    public void testListPlatformExtensions() throws Exception {
+    public void testListPlatformExtensions(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         // List extensions of a specified platform version
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "ext", "list", "-P=io.quarkus:quarkus-bom:2.0.0.CR3", "-e",
                 "--origins");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("Jackson"),
                 "Should contain 'Jackson' in the list of extensions, found: " + result.stdout);
@@ -72,11 +77,12 @@ public class CliNonProjectTest {
     }
 
     @Test
-    public void testListPlatformExtensionsRegistryClient() throws Exception {
+    public void testListPlatformExtensionsRegistryClient(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         // Dry run: Make sure registry-client system property is true
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "ext", "list", "-e",
                 "--dry-run", "--registry-client");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code." + result);
 
         String noSpaces = result.stdout.replaceAll("[\\s\\p{Z}]", "");
@@ -88,7 +94,7 @@ public class CliNonProjectTest {
         // Dry run: Make sure registry-client system property is false
         result = CliDriver.execute(workspaceRoot, "ext", "list", "-e",
                 "--dry-run", "--no-registry-client");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code." + result);
 
         noSpaces = result.stdout.replaceAll("[\\s\\p{Z}]", "");
@@ -100,7 +106,7 @@ public class CliNonProjectTest {
         // Dry run: Make sure registry client property is set (default = false) TODO
         result = CliDriver.execute(workspaceRoot, "ext", "list", "-e",
                 "--dry-run");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code." + result);
 
         noSpaces = result.stdout.replaceAll("[\\s\\p{Z}]", "");
@@ -111,24 +117,27 @@ public class CliNonProjectTest {
     }
 
     @Test
-    public void testBuildOutsideOfProject() throws Exception {
+    public void testBuildOutsideOfProject(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "build", "-e");
-        Assertions.assertEquals(CommandLine.ExitCode.USAGE, result.exitCode,
+        Assertions.assertEquals(ExitCode.USAGE, result.exitCode,
                 "'quarkus build' should fail outside of a quarkus project directory:\n" + result);
     }
 
     @Test
-    public void testDevOutsideOfProject() throws Exception {
+    public void testDevOutsideOfProject(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "dev", "-e");
-        Assertions.assertEquals(CommandLine.ExitCode.USAGE, result.exitCode,
+        Assertions.assertEquals(ExitCode.USAGE, result.exitCode,
                 "'quarkus dev' should fail outside of a quarkus project directory:\n" + result);
     }
 
     @Test
-    public void testCreateAppDryRun() throws Exception {
+    public void testCreateAppDryRun(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         // A dry run of create should not create any files or directories
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "--dry-run", "-e");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("project would have been created"),
                 "Should contain 'project would have been created', found: " + result.stdout);
@@ -139,13 +148,14 @@ public class CliNonProjectTest {
     }
 
     @Test
-    public void testRegistryStreams() throws Exception {
+    public void testRegistryStreams(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
 
         CliDriver.Result result;
 
         // refresh the local cache and list the registries
         result = CliDriver.execute(workspaceRoot, "registry", "--streams", "-e");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code." + result);
 
         try (BufferedReader reader = new BufferedReader(new StringReader(result.stdout))) {
@@ -169,18 +179,19 @@ public class CliNonProjectTest {
     }
 
     @Test
-    public void testRegistryRefresh() throws Exception {
+    public void testRegistryRefresh(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result;
 
         // refresh the local cache and list the registries
         result = CliDriver.execute(workspaceRoot, "registry", "--refresh", "-e");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code." + result);
 
         Path configPath = resolveConfigPath("enabledConfig.yml");
         result = CliDriver.execute(workspaceRoot, "registry", "--refresh", "-e",
                 "--config", configPath.toAbsolutePath().toString());
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains(configPath.toString()),
                 "Should contain path to config file, found: " + result.stdout);
@@ -192,7 +203,7 @@ public class CliNonProjectTest {
         configPath = resolveConfigPath("disabledConfig.yml");
         result = CliDriver.execute(workspaceRoot, "registry", "--refresh", "-e",
                 "--config", configPath.toAbsolutePath().toString());
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains(configPath.toString()),
                 "Should contain path to config file, found: " + result.stdout);
@@ -203,7 +214,8 @@ public class CliNonProjectTest {
     }
 
     @Test
-    public void testRegistryAddRemove() throws Exception {
+    public void testRegistryAddRemove(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result;
 
         final Path testConfigYaml = workspaceRoot.resolve("test-registry-add-remove.yaml").toAbsolutePath();
@@ -211,7 +223,7 @@ public class CliNonProjectTest {
 
         assertThat(testConfigYaml).doesNotExist();
         result = CliDriver.execute(workspaceRoot, "registry", "add", "one,two", "--config", testConfigYaml.toString());
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code." + result);
 
         assertThat(testConfigYaml).exists();
@@ -221,7 +233,7 @@ public class CliNonProjectTest {
         assertThat(testConfig.getRegistries().get(1).getId()).isEqualTo("two");
 
         result = CliDriver.execute(workspaceRoot, "registry", "add", "two,three", "--config", testConfigYaml.toString());
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code." + result);
 
         testConfig = RegistriesConfig.fromFile(testConfigYaml);
@@ -231,7 +243,7 @@ public class CliNonProjectTest {
         assertThat(testConfig.getRegistries().get(2).getId()).isEqualTo("three");
 
         result = CliDriver.execute(workspaceRoot, "registry", "remove", "one,two", "--config", testConfigYaml.toString());
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code." + result);
 
         testConfig = RegistriesConfig.fromFile(testConfigYaml);
@@ -239,7 +251,7 @@ public class CliNonProjectTest {
         assertThat(testConfig.getRegistries().get(0).getId()).isEqualTo("three");
 
         result = CliDriver.execute(workspaceRoot, "registry", "add", "four", "--config", testConfigYaml.toString());
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code." + result);
 
         testConfig = RegistriesConfig.fromFile(testConfigYaml);
@@ -249,7 +261,7 @@ public class CliNonProjectTest {
 
         result = CliDriver.execute(workspaceRoot, "registry", "remove", "three,four,five", "--config",
                 testConfigYaml.toString());
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code." + result);
 
         String contents = Files.readString(testConfigYaml);

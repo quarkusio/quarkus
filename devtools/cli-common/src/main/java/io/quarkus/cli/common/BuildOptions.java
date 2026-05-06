@@ -1,27 +1,27 @@
 package io.quarkus.cli.common;
 
-import picocli.CommandLine;
+import io.quarkus.quickcli.annotations.Option;
 
 public class BuildOptions {
-    @CommandLine.Option(order = 3, names = {
+    @Option(order = 3, names = {
             "--clean" }, description = "Perform clean as part of build. False by default.", negatable = true)
     public boolean clean = false;
 
-    @CommandLine.Option(order = 4, names = { "--native" }, description = "Build native executable.", defaultValue = "false")
+    @Option(order = 4, names = { "--native" }, description = "Build native executable.", defaultValue = "false")
     public boolean buildNative = false;
 
-    @CommandLine.Option(order = 5, names = { "--offline" }, description = "Work offline.", defaultValue = "false")
+    @Option(order = 5, names = { "--offline" }, description = "Work offline.", defaultValue = "false")
     public boolean offline = false;
 
-    @CommandLine.Option(order = 6, names = {
+    @Option(order = 6, names = {
             "--no-tests" }, description = "Run tests.", negatable = true, defaultValue = "false")
     public boolean skipTests = false;
 
-    @CommandLine.Option(order = 7, names = {
+    @Option(order = 7, names = {
             "--report" }, description = "Generate build report.", negatable = true, defaultValue = "false")
     public boolean generateBuildReport = false;
 
-    @CommandLine.Option(order = 8, names = {
+    @Option(order = 8, names = {
             "--ext-capture" }, description = "Enable extended capture for build metrics.", negatable = true, defaultValue = "false")
     public boolean buildExtendedCapture = false;
 

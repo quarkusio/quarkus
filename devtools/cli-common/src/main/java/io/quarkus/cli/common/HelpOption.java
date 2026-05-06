@@ -1,8 +1,8 @@
 package io.quarkus.cli.common;
 
-import picocli.CommandLine;
+import io.quarkus.quickcli.annotations.Option;
 
 public class HelpOption {
-    @CommandLine.Option(names = { "-h", "--help" }, usageHelp = true, description = "Display this help message.")
+    @Option(names = { "-h", "--help" }, usageHelp = true, description = "Display this help message.")
     public boolean help;
 }

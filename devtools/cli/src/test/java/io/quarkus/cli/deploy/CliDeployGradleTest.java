@@ -20,20 +20,24 @@ import io.quarkus.cli.CliDriver;
 import io.quarkus.cli.common.build.ExecuteUtil;
 import io.quarkus.cli.common.build.GradleRunner;
 import io.quarkus.devtools.testing.RegistryClientTestHelper;
-import picocli.CommandLine;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.test.junit.main.QuarkusMainLauncher;
+import io.quarkus.test.junit.main.QuarkusMainTest;
 
 /**
  * Similar to CliProjecGradleTest ..
  */
+@QuarkusMainTest
 public class CliDeployGradleTest {
 
     static final Path testProjectRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
-            .resolve("target/test-classes/test-project/");
+            .resolve("target/test-project/");
     static final Path workspaceRoot = testProjectRoot.resolve("CliImageGradleTest");
     static final Path wrapperRoot = testProjectRoot.resolve("gradle-wrapper");
 
     Path project;
     static File gradle;
+    static boolean gradleDaemonStarted = false;
 
     @BeforeAll
     public static void setupTestRegistry() {
@@ -51,15 +55,18 @@ public class CliDeployGradleTest {
         project = workspaceRoot.resolve("code-with-quarkus");
     }
 
-    @BeforeAll
-    static void startGradleDaemon() throws Exception {
+    static void ensureGradleDaemon(QuarkusMainLauncher launcher) throws Exception {
+        if (gradleDaemonStarted) {
+            return;
+        }
         CliDriver.deleteDir(wrapperRoot);
+        CliDriver.setLauncher(launcher);
 
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle", "--verbose", "-e", "-B",
                 "--no-code",
                 "-o", testProjectRoot.toString(),
                 "gradle-wrapper");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
         Assertions.assertTrue(result.getStdout().contains("SUCCESS"),
                 "Expected confirmation that the project has been created." + result);
 
@@ -72,6 +79,7 @@ public class CliDeployGradleTest {
 
         result = CliDriver.executeArbitraryCommand(wrapperRoot, args.toArray(new String[0]));
         Assertions.assertEquals(0, result.getExitCode(), "Gradle daemon should start properly");
+        gradleDaemonStarted = true;
     }
 
     @AfterAll
@@ -85,15 +93,18 @@ public class CliDeployGradleTest {
             CliDriver.Result result = CliDriver.executeArbitraryCommand(wrapperRoot, args.toArray(new String[0]));
             Assertions.assertEquals(0, result.getExitCode(), "Gradle daemon should stop properly");
         }
+        gradleDaemonStarted = false;
     }
 
     @Test
-    public void testUsage() throws Exception {
+    public void testUsage(QuarkusMainLauncher launcher) throws Exception {
+        ensureGradleDaemon(launcher);
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle", "--verbose", "-e", "-B");
-        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertEquals(ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
 
         result = CliDriver.execute(project, "deploy", "--dry-run");
-        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertEquals(ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
         assertTrue(result.getStdout().contains("deploy"));
         assertTrue(result.getStdout().contains("--no-daemon"));
         assertTrue(result.getStdout().contains("--no-build-cache"));
@@ -108,7 +119,7 @@ public class CliDeployGradleTest {
 
     protected void testDeployer(String deployer, String configGroup, String defaultImageBuilder) throws Exception {
         CliDriver.Result result = CliDriver.execute(project, "deploy", deployer, "--dry-run");
-        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertEquals(ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
         assertTrue(result.getStdout().contains("deploy"));
         assertTrue(result.getStdout().contains("--no-daemon"));
         assertTrue(result.getStdout().contains("--no-build-cache"));
@@ -117,7 +128,7 @@ public class CliDeployGradleTest {
         assertFalse(result.getStdout().contains("-Dquarkus." + configGroup + ".deployment-kind"));
 
         result = CliDriver.execute(project, "deploy", deployer, "--image-build", "--dry-run");
-        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertEquals(ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
         assertTrue(result.getStdout().contains("deploy"));
         assertTrue(result.getStdout().contains("--no-daemon"));
         assertTrue(result.getStdout().contains("--no-build-cache"));
@@ -127,7 +138,7 @@ public class CliDeployGradleTest {
         assertFalse(result.getStdout().contains("-Dquarkus." + configGroup + ".deployment-kind"));
 
         result = CliDriver.execute(project, "deploy", deployer, "--image-builder=jib", "--dry-run");
-        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertEquals(ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
         assertTrue(result.getStdout().contains("deploy"));
         assertTrue(result.getStdout().contains("--no-daemon"));
         assertTrue(result.getStdout().contains("--no-build-cache"));
@@ -141,7 +152,7 @@ public class CliDeployGradleTest {
         }
         result = CliDriver.execute(project, "deploy", deployer, "--deployment-kind", "Deployment",
                 "--dry-run");
-        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertEquals(ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
         assertTrue(result.getStdout().contains("deploy"));
         assertTrue(result.getStdout().contains("--no-daemon"));
         assertTrue(result.getStdout().contains("--no-build-cache"));

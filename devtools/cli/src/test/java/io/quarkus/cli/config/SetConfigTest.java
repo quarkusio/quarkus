@@ -15,10 +15,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.quarkus.cli.CliDriver;
+import io.quarkus.test.junit.main.QuarkusMainLauncher;
+import io.quarkus.test.junit.main.QuarkusMainTest;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
+@QuarkusMainTest
 class SetConfigTest {
     @TempDir
     Path tempDir;
@@ -31,14 +34,16 @@ class SetConfigTest {
     }
 
     @Test
-    void addConfiguration() throws Exception {
+    void addConfiguration(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(tempDir, "config", "set", "foo.bar", "1234");
         assertEquals(0, result.getExitCode());
         assertEquals("1234", config().getConfigValue("foo.bar").getValue());
     }
 
     @Test
-    void setConfiguration() throws Exception {
+    void setConfiguration(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         Path propertiesFile = tempDir.resolve("src/main/resources/application.properties");
         Properties properties = new Properties();
         try (InputStream inputStream = propertiesFile.toUri().toURL().openStream()) {
@@ -54,7 +59,8 @@ class SetConfigTest {
     }
 
     @Test
-    void addEncryptedConfiguration() throws Exception {
+    void addEncryptedConfiguration(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(tempDir, "config", "set", "foo.bar", "1234", "-k");
         assertEquals(0, result.getExitCode());
 
@@ -75,7 +81,8 @@ class SetConfigTest {
     }
 
     @Test
-    void setEncryptedConfiguration() throws Exception {
+    void setEncryptedConfiguration(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         Path propertiesFile = tempDir.resolve("src/main/resources/application.properties");
         Properties properties = new Properties();
         try (InputStream inputStream = propertiesFile.toUri().toURL().openStream()) {

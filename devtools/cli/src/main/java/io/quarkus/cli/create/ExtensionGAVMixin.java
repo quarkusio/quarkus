@@ -4,7 +4,7 @@ import static io.quarkus.devtools.commands.CreateExtension.extractQuarkiverseExt
 import static io.quarkus.devtools.commands.CreateExtension.isQuarkiverseGroupId;
 
 import io.quarkus.devtools.commands.CreateExtension;
-import picocli.CommandLine;
+import io.quarkus.quickcli.annotations.Parameters;
 
 public class ExtensionGAVMixin {
     static final String DEFAULT_EXTENSION_ID = "custom";
@@ -15,7 +15,7 @@ public class ExtensionGAVMixin {
     String extensionId = null;
     String version = null;
 
-    @CommandLine.Parameters(arity = "0..1", paramLabel = "[GROUP-ID:]EXTENSION-ID[:VERSION]", description = "Quarkus extension project identifiers%n"
+    @Parameters(arity = "0..1", paramLabel = "[GROUP-ID:]EXTENSION-ID[:VERSION]", description = "Quarkus extension project identifiers%n"
             + "  " + EXAMPLE_GAV + "%n"
             + "  Examples:%n"
             + "     my-extension%n"

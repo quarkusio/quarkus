@@ -1,15 +1,15 @@
 package io.quarkus.cli.common;
 
-import picocli.CommandLine;
+import io.quarkus.quickcli.annotations.Option;
 
 public class CategoryListFormatOptions {
-    @CommandLine.Option(names = { "--id" }, order = 1, description = "Display categoryId column only. (default)")
+    @Option(names = { "--id" }, order = 1, description = "Display categoryId column only. (default)")
     boolean id = false;
 
-    @CommandLine.Option(names = { "--concise" }, order = 2, description = "Display categoryId and name columns.")
+    @Option(names = { "--concise" }, order = 2, description = "Display categoryId and name columns.")
     boolean concise = false;
 
-    @CommandLine.Option(names = { "--full" }, order = 3, description = "Display categoryId, name and description columns.")
+    @Option(names = { "--full" }, order = 3, description = "Display categoryId, name and description columns.")
     boolean full = false;
 
     public String getFormatString() {

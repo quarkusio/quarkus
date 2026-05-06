@@ -18,10 +18,15 @@ import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.JavaVersion;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.quickcli.Help;
+import io.quarkus.quickcli.annotations.ArgGroup;
+import io.quarkus.quickcli.annotations.Command;
+import io.quarkus.quickcli.annotations.Mixin;
+import io.quarkus.quickcli.annotations.Option;
 import io.quarkus.registry.catalog.ExtensionCatalog;
-import picocli.CommandLine;
 
-@CommandLine.Command(name = "extension", header = "Create a Quarkus extension project", description = "%n"
+@Command(name = "extension", header = "Create a Quarkus extension project", description = "%n"
         + "Quarkus extensions are built from multiple modules: runtime, deployment, integration-test and "
         + "docs. This command will generate a Maven multi-module project in a directory called EXTENSION-ID "
         + "by applying naming conventions to the specified EXTENSION-ID.", footer = { "%nDefault Naming conventions%n",
@@ -77,27 +82,24 @@ public class CreateExtension extends BaseCreateCommand {
         }
     }
 
-    @CommandLine.Spec
-    protected CommandLine.Model.CommandSpec spec;
-
-    @CommandLine.Mixin
+    @Mixin
     ExtensionGAVMixin gav = new ExtensionGAVMixin();
 
-    @CommandLine.ArgGroup(order = 1, heading = "%nQuarkus version:%n")
+    @ArgGroup(order = 1, heading = "%nQuarkus version:%n")
     TargetQuarkusPlatformGroup targetQuarkusVersion = new TargetQuarkusPlatformGroup();
 
     // Ideally we should use TargetLanguageGroup once we support creating extensions with Kotlin
-    @CommandLine.Option(names = {
+    @Option(names = {
             "--java" }, description = "Target Java version.\n  Valid values: ${COMPLETION-CANDIDATES}", completionCandidates = VersionCandidates.class, defaultValue = JavaVersion.DEFAULT_JAVA_VERSION_FOR_EXTENSION)
     String javaVersion;
 
-    @CommandLine.ArgGroup(order = 2, exclusive = false, heading = "%nGenerated artifacts%n")
+    @ArgGroup(order = 2, exclusive = false, heading = "%nGenerated artifacts%n")
     ExtensionNameGenerationGroup nameGeneration = new ExtensionNameGenerationGroup();
 
-    @CommandLine.ArgGroup(order = 3, exclusive = false, heading = "%nCode Generation (Optional):%n")
+    @ArgGroup(order = 3, exclusive = false, heading = "%nCode Generation (Optional):%n")
     ExtensionCodeGenerationGroup codeGeneration = new ExtensionCodeGenerationGroup();
 
-    @CommandLine.ArgGroup(order = 4, exclusive = false, validate = false)
+    @ArgGroup(order = 4, exclusive = false, validate = false)
     PropertiesOptions propertiesOptions = new PropertiesOptions();
 
     @Override
@@ -109,7 +111,7 @@ public class CreateExtension extends BaseCreateCommand {
             setExtensionId(gav.getExtensionId());
             setTestOutputDirectory(output.getTestDirectory());
             if (checkProjectRootAlreadyExists(runMode.isDryRun())) {
-                return CommandLine.ExitCode.USAGE;
+                return ExitCode.USAGE;
             }
 
             BuildTool buildTool = BuildTool.MAVEN;
@@ -151,9 +153,9 @@ public class CreateExtension extends BaseCreateCommand {
                     output.info(
                             "Navigate into this directory and get started: " + spec.root().qualifiedName() + " build");
                 }
-                return CommandLine.ExitCode.OK;
+                return ExitCode.OK;
             }
-            return CommandLine.ExitCode.SOFTWARE;
+            return ExitCode.SOFTWARE;
         } catch (Exception e) {
             output.error("Extension creation failed, " + e.getMessage());
             return output.handleCommandException(e,
@@ -162,7 +164,7 @@ public class CreateExtension extends BaseCreateCommand {
     }
 
     public void dryRun(BuildTool buildTool, CreateExtensionCommandHandler invocation, OutputOptionMixin output) {
-        CommandLine.Help help = spec.commandLine().getHelp();
+        Help help = spec.commandLine().getHelp();
         output.printText(new String[] {
                 "\nA new extension would have been created in",
                 "\t" + outputDirectory().toString(),

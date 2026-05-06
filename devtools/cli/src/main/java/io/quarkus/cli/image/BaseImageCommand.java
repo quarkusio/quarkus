@@ -5,7 +5,7 @@ import java.util.concurrent.Callable;
 
 import io.quarkus.cli.common.BuildToolContext;
 import io.quarkus.cli.common.BuildToolDelegatingCommand;
-import picocli.CommandLine;
+import io.quarkus.quickcli.annotations.ArgGroup;
 
 public class BaseImageCommand extends BuildToolDelegatingCommand implements Callable<Integer> {
 
@@ -17,7 +17,7 @@ public class BaseImageCommand extends BuildToolDelegatingCommand implements Call
     protected static final String QUARKUS_CONTAINER_IMAGE_BUILDER = "quarkus.container-image.builder";
     protected static final String QUARKUS_CONTAINER_IMAGE_REGISTRY = "quarkus.container-image.registry";
 
-    @CommandLine.ArgGroup(order = 2, exclusive = false, validate = false, heading = "%nImage options:%n")
+    @ArgGroup(order = 2, exclusive = false, validate = false, heading = "%nImage options:%n")
     ImageOptions imageOptions = new ImageOptions();
 
     public void populateContext(BuildToolContext context) {

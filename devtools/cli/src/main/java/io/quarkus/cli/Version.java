@@ -7,31 +7,36 @@ import java.util.concurrent.Callable;
 import io.quarkus.cli.common.HelpOption;
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
-import picocli.CommandLine;
-import picocli.CommandLine.Model.CommandSpec;
+import io.quarkus.quickcli.CommandSpec;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.quickcli.VersionProvider;
+import io.quarkus.quickcli.annotations.ArgGroup;
+import io.quarkus.quickcli.annotations.Command;
+import io.quarkus.quickcli.annotations.Mixin;
+import io.quarkus.quickcli.annotations.Spec;
 
-@CommandLine.Command(name = "version", header = "Display CLI version information.", hidden = true)
-public class Version implements CommandLine.IVersionProvider, Callable<Integer> {
+@Command(name = "version", header = "Display CLI version information.", hidden = true)
+public class Version implements VersionProvider, Callable<Integer> {
 
     private static String version;
 
-    @CommandLine.Mixin(name = "output")
+    @Mixin(name = "output")
     OutputOptionMixin output;
 
-    @CommandLine.Mixin
+    @Mixin
     HelpOption helpOption;
 
-    @CommandLine.ArgGroup(exclusive = false, validate = false)
+    @ArgGroup(exclusive = false, validate = false)
     protected PropertiesOptions propertiesOptions = new PropertiesOptions();
 
-    @CommandLine.Spec
+    @Spec
     CommandSpec spec;
 
     @Override
     public Integer call() throws Exception {
-        // Gather/interpolate the usual version information via IVersionProvider handling
+        // Gather/interpolate the usual version information via VersionProvider handling
         output.printText(getVersion());
-        return CommandLine.ExitCode.OK;
+        return ExitCode.OK;
     }
 
     @Override

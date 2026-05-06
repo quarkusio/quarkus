@@ -3,7 +3,7 @@ package io.quarkus.cli.image;
 import java.util.Optional;
 
 import io.quarkus.cli.common.BuildToolDelegatingCommand;
-import picocli.CommandLine.ParentCommand;
+import io.quarkus.quickcli.annotations.ParentCommand;
 
 public class BaseImageSubCommand extends BaseImageCommand {
 

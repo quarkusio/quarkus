@@ -8,9 +8,9 @@ import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.JavaVersion;
 import io.quarkus.devtools.project.SourceType;
-import picocli.CommandLine;
-import picocli.CommandLine.Model.CommandSpec;
-import picocli.CommandLine.ParameterException;
+import io.quarkus.quickcli.CommandLine.ParameterException;
+import io.quarkus.quickcli.CommandSpec;
+import io.quarkus.quickcli.annotations.Option;
 
 public class TargetLanguageGroup {
     SourceType sourceType;
@@ -21,20 +21,21 @@ public class TargetLanguageGroup {
         }
     }
 
-    @CommandLine.Option(names = {
+    @Option(names = {
             "--java" }, description = "Target Java version.\n  Valid values: ${COMPLETION-CANDIDATES}", completionCandidates = VersionCandidates.class, defaultValue = JavaVersion.DETECT_JAVA_RUNTIME_VERSION)
     String javaVersion = JavaVersion.DETECT_JAVA_RUNTIME_VERSION;
 
-    @CommandLine.Option(names = { "--kotlin" }, description = "Use Kotlin")
+    @Option(names = { "--kotlin" }, description = "Use Kotlin")
     boolean kotlin = false;
 
-    @CommandLine.Option(names = { "--scala" }, description = "Use Scala")
+    @Option(names = { "--scala" }, description = "Use Scala")
     boolean scala = false;
 
     public SourceType getSourceType(CommandSpec spec, BuildTool buildTool, Set<String> extensions, OutputOptionMixin output) {
         if (kotlin && scala) {
-            throw new ParameterException(spec.commandLine(),
-                    "Invalid source type. Projects can target either Kotlin (--kotlin) or Scala (--scala), not both.");
+            throw new ParameterException(
+                    "Invalid source type. Projects can target either Kotlin (--kotlin) or Scala (--scala), not both.",
+                    spec.commandLine());
         }
 
         if (sourceType == null) {

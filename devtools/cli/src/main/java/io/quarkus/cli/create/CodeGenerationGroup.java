@@ -5,13 +5,13 @@ import java.util.Map;
 
 import io.quarkus.devtools.commands.CreateProjectHelper;
 import io.quarkus.platform.tools.ToolsUtils;
-import picocli.CommandLine;
+import io.quarkus.quickcli.annotations.Option;
 
 public class CodeGenerationGroup {
     String packageName;
     Map<String, String> appConfig = Collections.emptyMap();
 
-    @CommandLine.Option(paramLabel = "PACKAGE-NAME", names = {
+    @Option(paramLabel = "PACKAGE-NAME", names = {
             "--package-name" }, description = "Base package for generated classes")
     void setPackageName(String name) {
         this.packageName = CreateProjectHelper.checkPackageName(name);
@@ -21,19 +21,19 @@ public class CodeGenerationGroup {
         return packageName;
     }
 
-    @CommandLine.Option(names = {
+    @Option(names = {
             "--no-wrapper" }, description = "Include a buildtool wrapper (e.g. mvnw, gradlew)", negatable = true)
     public boolean includeWrapper = true;
 
-    @CommandLine.Option(names = {
+    @Option(names = {
             "--no-code" }, description = "Include starter code provided by extensions or generate an empty project", negatable = true)
     public boolean includeCode = true;
 
-    @CommandLine.Option(names = {
+    @Option(names = {
             "--no-dockerfiles" }, description = "Include standard dockerfiles", negatable = true)
     public boolean includeDockerfiles = true;
 
-    @CommandLine.Option(names = { "-c",
+    @Option(names = { "-c",
             "--app-config" }, description = "Configuration attributes to be set in the application.properties/yml file. Specify as 'key1=value1,key2=value2'")
     void setAppConfig(String config) {
         if (config.trim().length() > 0) {

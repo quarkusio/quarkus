@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.quarkus.cli.common.OutputOptionMixin;
-import picocli.CommandLine;
-import picocli.CommandLine.Command;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.quickcli.annotations.Command;
 
 @Command
 public class TestCommand implements PluginCommand {
@@ -26,7 +26,7 @@ public class TestCommand implements PluginCommand {
     @Override
     public Integer call() throws Exception {
         System.out.println("Calling " + cmd + " " + String.join(" ", arguments));
-        return CommandLine.ExitCode.OK;
+        return ExitCode.OK;
     }
 
     @Override

@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import io.quarkus.cli.common.OutputOptionMixin;
-import picocli.CommandLine.Command;
+import io.quarkus.quickcli.annotations.Command;
 
 @Command
 public class ShellCommand implements PluginCommand, Callable<Integer> {

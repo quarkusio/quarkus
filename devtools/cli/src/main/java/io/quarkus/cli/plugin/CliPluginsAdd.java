@@ -8,19 +8,24 @@ import java.util.TreeMap;
 import java.util.concurrent.Callable;
 
 import io.quarkus.cli.common.RunModeOption;
-import picocli.CommandLine;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.quickcli.Help;
+import io.quarkus.quickcli.annotations.Command;
+import io.quarkus.quickcli.annotations.Mixin;
+import io.quarkus.quickcli.annotations.Option;
+import io.quarkus.quickcli.annotations.Parameters;
 
-@CommandLine.Command(name = "add", header = "Add plugin(s) to the Quarkus CLI.")
+@Command(name = "add", header = "Add plugin(s) to the Quarkus CLI.")
 public class CliPluginsAdd extends CliPluginsBase implements Callable<Integer> {
 
-    @CommandLine.Mixin
+    @Mixin
     RunModeOption runMode;
 
-    @CommandLine.Option(names = { "-d",
+    @Option(names = { "-d",
             "--description" }, paramLabel = "Plugin description", order = 5, description = "The plugin description")
     Optional<String> description;
 
-    @CommandLine.Parameters(arity = "1", paramLabel = "PLUGIN_NAME", description = " The plugin name or location (e.g. url, path or maven coordinates in GACTV form)")
+    @Parameters(arity = "1", paramLabel = "PLUGIN_NAME", description = " The plugin name or location (e.g. url, path or maven coordinates in GACTV form)")
     String nameOrLocation;
 
     @Override
@@ -31,7 +36,7 @@ public class CliPluginsAdd extends CliPluginsBase implements Callable<Integer> {
 
             if (runMode.isDryRun()) {
                 dryRunAdd(spec.commandLine().getHelp());
-                return CommandLine.ExitCode.OK;
+                return ExitCode.OK;
             }
 
             return addPlugin();
@@ -63,11 +68,11 @@ public class CliPluginsAdd extends CliPluginsBase implements Callable<Integer> {
                         "Plugin was added in the user scope, but another with the same name exists in the project scope!\nThe project scoped one will take precedence when invoked from within the project!");
             }
 
-            return CommandLine.ExitCode.OK;
+            return ExitCode.OK;
         }).orElseGet(() -> {
             output.error("No plugin available at: " + this.nameOrLocation);
             printHints(true);
-            return CommandLine.ExitCode.USAGE;
+            return ExitCode.USAGE;
         });
     }
 
@@ -80,7 +85,7 @@ public class CliPluginsAdd extends CliPluginsBase implements Callable<Integer> {
         }
     }
 
-    void dryRunAdd(CommandLine.Help help) {
+    void dryRunAdd(Help help) {
         output.printText(new String[] {
                 "\nAdd plugin to the CLI\n",
                 "\t" + projectRoot().toString()

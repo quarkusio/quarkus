@@ -1,27 +1,27 @@
 package io.quarkus.cli.common;
 
-import picocli.CommandLine;
+import io.quarkus.quickcli.annotations.Option;
 
 public class ListFormatOptions {
 
-    @CommandLine.Option(names = { "--id" }, order = 4, description = "Display extension artifactId only. (default)")
+    @Option(names = { "--id" }, order = 4, description = "Display extension artifactId only. (default)")
     boolean id = false;
 
-    @CommandLine.Option(names = { "--name" }, hidden = true, description = "Display extension artifactId only. (deprecated)")
+    @Option(names = { "--name" }, hidden = true, description = "Display extension artifactId only. (deprecated)")
     boolean name = false;
 
-    @CommandLine.Option(names = { "--concise" }, order = 5, description = "Display extension artifactId and name.")
+    @Option(names = { "--concise" }, order = 5, description = "Display extension artifactId and name.")
     boolean concise = false;
 
-    @CommandLine.Option(names = {
+    @Option(names = {
             "--full" }, order = 6, description = "Display extension artifactId, name, version, platform origin, and other information.")
     boolean full = false;
 
-    @CommandLine.Option(names = {
+    @Option(names = {
             "--origins" }, order = 7, description = "Display extension artifactId, name, version, and platform origins.")
     boolean origins = false;
 
-    @CommandLine.Option(names = {
+    @Option(names = {
             "--support-scope" }, order = 7, description = "Display extension artifactId, name, version, and support scope in case it's associated with an extension.")
     boolean supportScope = false;
 

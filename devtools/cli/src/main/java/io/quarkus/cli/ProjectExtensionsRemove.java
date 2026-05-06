@@ -8,15 +8,19 @@ import java.util.concurrent.Callable;
 import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.cli.common.build.BuildSystemRunner;
 import io.quarkus.devtools.project.BuildTool;
-import picocli.CommandLine;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.quickcli.Help;
+import io.quarkus.quickcli.annotations.Command;
+import io.quarkus.quickcli.annotations.Mixin;
+import io.quarkus.quickcli.annotations.Parameters;
 
-@CommandLine.Command(name = "remove", aliases = "rm", header = "Remove extension(s) from this project.")
+@Command(name = "remove", aliases = "rm", header = "Remove extension(s) from this project.")
 public class ProjectExtensionsRemove extends BaseBuildCommand implements Callable<Integer> {
 
-    @CommandLine.Mixin
+    @Mixin
     RunModeOption runMode;
 
-    @CommandLine.Parameters(arity = "1", paramLabel = "EXTENSION", description = "Extension(s) to remove from this project.", split = ",")
+    @Parameters(arity = "1", paramLabel = "EXTENSION", description = "Extension(s) to remove from this project.", split = ",")
     Set<String> extensions;
 
     @Override
@@ -28,7 +32,7 @@ public class ProjectExtensionsRemove extends BaseBuildCommand implements Callabl
             BuildSystemRunner runner = getRunner();
             if (runMode.isDryRun()) {
                 dryRunRemove(spec.commandLine().getHelp(), runner.getBuildTool());
-                return CommandLine.ExitCode.OK;
+                return ExitCode.OK;
             }
 
             return runner.removeExtension(runMode, extensions);
@@ -38,7 +42,7 @@ public class ProjectExtensionsRemove extends BaseBuildCommand implements Callabl
         }
     }
 
-    void dryRunRemove(CommandLine.Help help, BuildTool buildTool) {
+    void dryRunRemove(Help help, BuildTool buildTool) {
         output.printText(new String[] {
                 "\nRemove extensions to the current project in \n",
                 "\t" + projectRoot().toString()

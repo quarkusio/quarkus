@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.LongAdder;
 import org.jboss.logging.Logger;
 
 import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.Meter.MeterProvider;
@@ -26,7 +27,7 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.ServerWebSocket;
-import io.vertx.core.http.impl.HttpServerRequestInternal;
+import io.vertx.core.internal.http.HttpServerRequestInternal;
 import io.vertx.core.spi.metrics.HttpServerMetrics;
 import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.core.spi.observability.HttpResponse;
@@ -51,6 +52,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
     final MeterProvider<Timer> requestsTimer;
     final MeterProvider<LongTaskTimer> websocketConnectionTimer;
     final MeterProvider<Counter> pushCounter;
+    final MeterProvider<DistributionSummary> requestBytes;
 
     private final List<HttpServerMetricsTagsContributor> httpServerMetricsTagsContributors;
 
@@ -85,6 +87,10 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
 
         pushCounter = Counter.builder(config.getHttpServerPushName())
                 .description("HTTP server response push counter")
+                .withRegistry(registry);
+
+        requestBytes = DistributionSummary.builder(config.getHttpServerRequestBodySizeName())
+                .description("Size of HTTP request bodies in bytes")
                 .withRegistry(registry);
         // not dev-mode changeable -----ˆ
     }
@@ -154,6 +160,28 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         requestMetric.appendCurrentRoutePath(route);
         if (route != null) {
             requestMetric.request().context().putLocal("VertxRoute", route);
+        }
+    }
+
+    @Override
+    public void requestEnd(HttpRequestMetric requestMetric, HttpRequest request, long bytesRead) {
+        log.debugf("requestEnd %s, bytesRead=%d", requestMetric, bytesRead);
+
+        String path = requestMetric.getNormalizedUriPath(
+                config.getServerMatchPatterns(),
+                config.getServerIgnorePatterns());
+
+        if (path != null && bytesRead > 0) {
+            Tags tags = Tags.of(
+                    VertxMetricsTags.method(request.method()),
+                    HttpCommonTags.uri(path, requestMetric.getInitialPath(), 0, false));
+
+            String route = requestMetric.getRoute();
+            if (route != null && !route.isEmpty()) {
+                tags = tags.and("route", route);
+            }
+
+            requestBytes.withTags(tags).record(bytesRead);
         }
     }
 

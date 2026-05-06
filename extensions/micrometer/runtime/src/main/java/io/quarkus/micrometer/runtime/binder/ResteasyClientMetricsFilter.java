@@ -79,6 +79,7 @@ public class ResteasyClientMetricsFilter implements ClientRequestFilter, ClientR
 
                 sample.stop(timer
                         .withTags(Tags.of(
+                                Tag.of("address", HttpCommonTags.address(requestContext.getUri())),
                                 HttpCommonTags.method(requestContext.getMethod()),
                                 HttpCommonTags.uri(requestPath, requestContext.getUri().getPath(), statusCode,
                                         httpMetricsConfig.isClientSuppress4xxErrors()),

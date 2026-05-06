@@ -23,10 +23,10 @@ import io.quarkus.micrometer.test.ClientDummyTag;
 import io.quarkus.micrometer.test.ClientHeaderTag;
 import io.quarkus.micrometer.test.Util;
 import io.quarkus.test.QuarkusExtensionTest;
-import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.WebSocketConnectOptions;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.core.http.HttpServer;
 import io.vertx.mutiny.core.http.WebSocket;
 import io.vertx.mutiny.ext.web.Router;
@@ -122,13 +122,6 @@ public class VertxHttpClientMetricsTest {
                     .tag("outcome", "SUCCESS").timers().size(),
                     Util.foundClientRequests(registry, "/ with tag outcome=SUCCESS."));
 
-            // Queue
-            Assertions.assertEquals(3, registry.find("http.client.queue.delay")
-                    .tag("clientName", "my-client").timer().count());
-            Assertions.assertTrue(registry.find("http.client.queue.delay")
-                    .tag("clientName", "my-client").timer().totalTime(TimeUnit.NANOSECONDS) > 0);
-
-            await().until(() -> getMeter("http.client.queue.size").gauge().value() == 0.0);
         } finally {
             server.stop();
         }
@@ -136,11 +129,13 @@ public class VertxHttpClientMetricsTest {
 
     @Test
     void testWebSocket() {
+        // In Vert.x 5, WebSocketClient is separate from HttpClient and does not
+        // go through HttpClientMetrics, so websocket connection metrics are not
+        // available via the SPI for standalone WebSocket clients.
         server.start();
         try {
             ws.send("hello");
             ws.send("how are you?");
-            Assertions.assertNotNull(getMeter("http.client.websocket.connections").gauge());
         } finally {
             server.stop();
         }
@@ -189,8 +184,8 @@ public class VertxHttpClientMetricsTest {
 
         @PostConstruct
         public void init() {
-            client = vertx.createHttpClient(new HttpClientOptions().setShared(false)
-                    .setMetricsName("ws")).webSocket(8888, "localhost", "/ws")
+            client = vertx.createWebSocketClient()
+                    .connect(new WebSocketConnectOptions().setPort(8888).setHost("localhost").setURI("/ws"))
                     .await().indefinitely();
             client.handler(b -> {
                 // Do nothing

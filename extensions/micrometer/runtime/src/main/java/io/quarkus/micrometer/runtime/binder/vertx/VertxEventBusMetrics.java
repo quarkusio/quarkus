@@ -27,6 +27,7 @@ public class VertxEventBusMetrics implements EventBusMetrics<VertxEventBusMetric
     private final Meter.MeterProvider<DistributionSummary> written;
     private final Meter.MeterProvider<DistributionSummary> read;
     private final Meter.MeterProvider<Counter> replyFailures;
+    private final Meter.MeterProvider<Counter> scheduled;
 
     VertxEventBusMetrics(MeterRegistry registry, Tags tags) {
         this.registry = registry;
@@ -48,6 +49,9 @@ public class VertxEventBusMetrics implements EventBusMetrics<VertxEventBusMetric
         replyFailures = Counter.builder("eventBus.replyFailures")
                 .description("Count the number of reply failure")
                 .withRegistry(registry);
+        scheduled = Counter.builder("eventBus.scheduled")
+                .description("Number of messages scheduled for processing")
+                .withRegistry(registry);
     }
 
     private static boolean isInternal(String address) {
@@ -55,7 +59,7 @@ public class VertxEventBusMetrics implements EventBusMetrics<VertxEventBusMetric
     }
 
     @Override
-    public Handler handlerRegistered(String address, String repliedAddress) {
+    public Handler handlerRegistered(String address) {
         if (isInternal(address)) {
             // Ignore internal metrics
             return ignored;
@@ -75,7 +79,11 @@ public class VertxEventBusMetrics implements EventBusMetrics<VertxEventBusMetric
     }
 
     @Override
-    public void scheduleMessage(Handler handler, boolean b) {
+    public void scheduleMessage(Handler handler, boolean local) {
+        if (isValid(handler)) {
+            scheduled.withTags(this.tags.and("address", handler.address, "side", local ? "local" : "remote"))
+                    .increment();
+        }
     }
 
     @Override

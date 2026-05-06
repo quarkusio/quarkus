@@ -4,6 +4,7 @@ import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 
 import io.smallrye.common.vertx.ContextLocals;
+import io.smallrye.common.vertx.VertxContext;
 
 /**
  * This is added by the Reactive Rest Client if observability features are enabled
@@ -22,6 +23,8 @@ public class ClientObservabilityHandler implements ClientRestHandler {
     @Override
     public void handle(RestClientRequestContext requestContext) throws Exception {
         requestContext.getClientFilterProperties().put("UrlPathTemplate", templatePath);
-        ContextLocals.put(CLIENT_URL_PATH_TEMPLATE_KEY, templatePath);
+        if (VertxContext.isOnDuplicatedContext()) {
+            ContextLocals.put(CLIENT_URL_PATH_TEMPLATE_KEY, templatePath);
+        }
     }
 }

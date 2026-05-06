@@ -62,6 +62,12 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-opentelemetry</artifactId>
             <optional>true</optional>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.smallrye.common</groupId>
+                    <artifactId>smallrye-common-vertx-context</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Dependencies for Binding (optional) -->

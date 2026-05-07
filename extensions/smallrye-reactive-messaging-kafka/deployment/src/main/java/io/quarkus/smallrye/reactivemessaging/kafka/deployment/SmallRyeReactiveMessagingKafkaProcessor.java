@@ -1,8 +1,5 @@
 package io.quarkus.smallrye.reactivemessaging.kafka.deployment;
 
-import static io.quarkus.smallrye.reactivemessaging.kafka.HibernateOrmStateStore.HIBERNATE_ORM_STATE_STORE;
-import static io.quarkus.smallrye.reactivemessaging.kafka.HibernateReactiveStateStore.HIBERNATE_REACTIVE_STATE_STORE;
-import static io.quarkus.smallrye.reactivemessaging.kafka.RedisStateStore.REDIS_STATE_STORE;
 import static io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration.getChannelIncomingPropertyName;
 import static io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration.getChannelOutgoingPropertyName;
 import static io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration.getChannelPropertyName;
@@ -12,7 +9,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -29,8 +25,6 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.KotlinUtils;
-import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -43,15 +37,10 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
-import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelDirection;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
-import io.quarkus.smallrye.reactivemessaging.kafka.DatabindProcessingStateCodec;
-import io.quarkus.smallrye.reactivemessaging.kafka.HibernateOrmStateStore;
-import io.quarkus.smallrye.reactivemessaging.kafka.HibernateReactiveStateStore;
 import io.quarkus.smallrye.reactivemessaging.kafka.KafkaConfigCustomizer;
-import io.quarkus.smallrye.reactivemessaging.kafka.RedisStateStore;
 import io.smallrye.mutiny.tuples.Functions.TriConsumer;
 import io.smallrye.reactive.messaging.kafka.KafkaConnector;
 import io.smallrye.reactive.messaging.kafka.commit.ProcessingState;
@@ -59,12 +48,6 @@ import io.smallrye.reactive.messaging.kafka.commit.ProcessingState;
 public class SmallRyeReactiveMessagingKafkaProcessor {
 
     private static final Logger LOGGER = Logger.getLogger("io.quarkus.smallrye-reactive-messaging-kafka.deployment.processor");
-
-    public static final String CHECKPOINT_STATE_STORE_MESSAGE = "Quarkus detected the use of `%s` for the" +
-            " Kafka checkpoint commit strategy but the extension has not been added. Consider adding '%s'.";
-
-    private static final String CHECKPOINT_ENTITY_NAME = "io.quarkus.smallrye.reactivemessaging.kafka.CheckpointEntity";
-    private static final String CHECKPOINT_ENTITY_ID_NAME = "io.quarkus.smallrye.reactivemessaging.kafka.CheckpointEntityId";
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -122,59 +105,6 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             }
         }
         return values;
-    }
-
-    @BuildStep
-    public void checkpointRedis(BuildProducer<AdditionalBeanBuildItem> additionalBean,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            Capabilities capabilities) {
-        if (hasStateStoreConfig(REDIS_STATE_STORE, ConfigProvider.getConfig())) {
-            Optional<String> checkpointStateType = getConnectorProperty("checkpoint.state-type", ConfigProvider.getConfig());
-            checkpointStateType.ifPresent(
-                    s -> reflectiveClass.produce(ReflectiveClassBuildItem.builder(s)
-                            .reason(getClass().getName())
-                            .methods().fields().build()));
-            if (capabilities.isPresent(Capability.REDIS_CLIENT)) {
-                additionalBean.produce(new AdditionalBeanBuildItem(RedisStateStore.Factory.class));
-                additionalBean.produce(new AdditionalBeanBuildItem(DatabindProcessingStateCodec.Factory.class));
-            } else {
-                LOGGER.warnf(CHECKPOINT_STATE_STORE_MESSAGE, REDIS_STATE_STORE, "quarkus-redis-client");
-            }
-        }
-    }
-
-    @BuildStep
-    public void checkpointHibernateReactive(BuildProducer<AdditionalBeanBuildItem> additionalBean, Capabilities capabilities) {
-        if (hasStateStoreConfig(HIBERNATE_REACTIVE_STATE_STORE, ConfigProvider.getConfig())) {
-            if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
-                additionalBean.produce(new AdditionalBeanBuildItem(HibernateReactiveStateStore.Factory.class));
-            } else {
-                LOGGER.warnf(CHECKPOINT_STATE_STORE_MESSAGE, HIBERNATE_REACTIVE_STATE_STORE, "quarkus-hibernate-reactive");
-            }
-        }
-    }
-
-    @BuildStep
-    public void checkpointHibernateOrm(BuildProducer<AdditionalBeanBuildItem> additionalBean, Capabilities capabilities) {
-        if (hasStateStoreConfig(HIBERNATE_ORM_STATE_STORE, ConfigProvider.getConfig())) {
-            if (capabilities.isPresent(Capability.HIBERNATE_ORM)) {
-                additionalBean.produce(new AdditionalBeanBuildItem(HibernateOrmStateStore.Factory.class));
-            } else {
-                LOGGER.warnf(CHECKPOINT_STATE_STORE_MESSAGE, HIBERNATE_ORM_STATE_STORE, "quarkus-hibernate-orm");
-            }
-        }
-    }
-
-    @BuildStep
-    public void additionalJpaModel(BuildProducer<AdditionalJpaModelBuildItem> additionalJpaModel) {
-        // Only added to persistence units actually using this class, using Jandex-based discovery,
-        // so we pass empty sets of PUs.
-        // The build items tell the Hibernate extension to process the classes at build time:
-        // add to Jandex index, bytecode enhancement, proxy generation, ...
-        additionalJpaModel.produce(new AdditionalJpaModelBuildItem(CHECKPOINT_ENTITY_NAME,
-                Set.of()));
-        additionalJpaModel.produce(new AdditionalJpaModelBuildItem(CHECKPOINT_ENTITY_ID_NAME,
-                Set.of()));
     }
 
     /**

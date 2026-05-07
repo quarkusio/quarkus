@@ -106,6 +106,7 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
                 additionalExposedPorts(config),
                 labels(config),
                 volumeMounts,
+                testConfig.container().runAsHostUser(),
                 config.getOptionalValue("quarkus.package.jar.aot.enabled", Boolean.class)
                         .or(() -> config.getOptionalValue("quarkus.package.jar.appcds.use-aot", Boolean.class))
                         .orElse(Boolean.FALSE)
@@ -178,6 +179,7 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
         private final List<String> programArgs;
         private final Map<String, String> labels;
         private final Map<String, String> volumeMounts;
+        private final boolean runAsHostUser;
         private final String outputTargetDirectory;
 
         public DefaultDockerInitContext(int httpPort, int httpsPort, Duration waitTime, Duration shutdownTimeout,
@@ -188,6 +190,7 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
                 Map<Integer, Integer> additionalExposedPorts,
                 Map<String, String> labels,
                 Map<String, String> volumeMounts,
+                boolean runAsHostUser,
                 Boolean generateAotFile,
                 List<String> additionalRecordingArgs,
                 Optional<String> entryPoint,
@@ -200,6 +203,7 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
             this.containerWorkingDirectory = containerWorkingDirectory;
             this.labels = labels;
             this.volumeMounts = volumeMounts;
+            this.runAsHostUser = runAsHostUser;
             this.generateAotFile = generateAotFile;
             this.additionalRecordingArgs = additionalRecordingArgs;
             this.entryPoint = entryPoint;
@@ -230,6 +234,11 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
         @Override
         public Map<String, String> volumeMounts() {
             return volumeMounts;
+        }
+
+        @Override
+        public boolean runAsHostUser() {
+            return runAsHostUser;
         }
 
         @Override

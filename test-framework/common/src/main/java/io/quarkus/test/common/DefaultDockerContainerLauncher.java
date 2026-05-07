@@ -59,6 +59,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
 
     private Map<String, String> volumeMounts;
     private Map<String, String> labels;
+    private boolean runAsHostUser;
     private final Map<String, String> systemProps = new HashMap<>();
     private final String containerName = "quarkus-integration-test-" + RandomStringUtils.insecure().next(5, true, false);
     private String containerRuntimeBinaryName;
@@ -84,6 +85,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         this.additionalExposedPorts = initContext.additionalExposedPorts();
         this.volumeMounts = initContext.volumeMounts();
         this.labels = initContext.labels();
+        this.runAsHostUser = initContext.runAsHostUser();
         this.entryPoint = initContext.entryPoint();
         this.containerWorkingDirectory = initContext.containerWorkingDirectory();
         this.programArgs = initContext.programArgs();
@@ -121,9 +123,13 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
             args.add(containerName);
             args.add("-i"); // Interactive, write logs to stdout
             args.add("--rm");
-
+            // Avoid duplicate --user: getVolumeAccessArguments already maps host uid/gid (and adds
+            // --userns=keep-id for rootless Podman) when volumes need host access.
             if (!volumeMounts.isEmpty()) {
                 args.addAll(NativeImageBuildLocalContainerRunner.getVolumeAccessArguments(containerRuntime));
+            } else if (runAsHostUser) {
+                args.add("--user");
+                args.add(getHostUidGid());
             }
 
             if (httpPort != 0) {
@@ -238,9 +244,11 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         args.add(containerName);
         args.add("-i"); // Interactive, write logs to stdout
         args.add("--rm");
-
         if (!volumeMounts.isEmpty()) {
             args.addAll(NativeImageBuildLocalContainerRunner.getVolumeAccessArguments(containerRuntime));
+        } else if (runAsHostUser) {
+            args.add("--user");
+            args.add(getHostUidGid());
         }
 
         args.add("-p");
@@ -371,6 +379,16 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         return StringUtil.replaceNonAlphanumericByUnderscores(property).toUpperCase();
     }
 
+    private static String getHostUidGid() {
+        try {
+            String uid = new String(Runtime.getRuntime().exec("id -u").getInputStream().readAllBytes()).trim();
+            String gid = new String(Runtime.getRuntime().exec("id -g").getInputStream().readAllBytes()).trim();
+            return uid + ":" + gid;
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to determine host user uid:gid", e);
+        }
+    }
+
     @Override
     public void close() {
         try {
@@ -428,10 +446,12 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         args.add(containerName);
         args.add("-i"); // Interactive, write logs to stdout
         args.add("--rm");
-
         ContainerRuntime containerRuntime = ContainerRuntimeUtil.detectContainerRuntime();
         if (!volumeMounts.isEmpty()) {
             args.addAll(NativeImageBuildLocalContainerRunner.getVolumeAccessArguments(containerRuntime));
+        } else if (runAsHostUser) {
+            args.add("--user");
+            args.add(getHostUidGid());
         }
 
         args.addAll(toEnvVar("JAVA_TOOL_OPTIONS",

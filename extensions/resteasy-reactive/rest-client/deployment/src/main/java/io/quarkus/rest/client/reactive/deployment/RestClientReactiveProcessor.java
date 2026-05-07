@@ -366,7 +366,7 @@ class RestClientReactiveProcessor {
 
         MultivaluedMap<String, GeneratedClassResult> generatedProviders = new QuarkusMultivaluedHashMap<>();
         Gizmo classGizmo = Gizmo
-                .create(new GeneratedClassGizmo2Adaptor(generatedClassesProducer, null, true));
+                .create(new GeneratedClassGizmo2Adaptor(generatedClassesProducer, null, null, true));
         populateClientExceptionMapperFromAnnotations(index, classGizmo, reflectiveClassesProducer,
                 executionModelAnnotationsAllowedProducer)
                 .forEach(generatedProviders::add);

@@ -44,6 +44,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.hibernate.orm.deployment.IgnorableNonIndexedClasses;
@@ -124,6 +125,7 @@ public class SpringDataJPAProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<EntityToPersistenceUnitBuildItem> entityToPersistenceUnit) {
@@ -139,7 +141,8 @@ public class SpringDataJPAProcessor {
         addInterfacesExtendingIntermediateRepositories(indexView, interfacesExtendingRepository);
 
         removeNoRepositoryBeanClasses(interfacesExtendingRepository);
-        Set<String> entities = implementCrudRepositories(generatedBeans, generatedClasses, generatedResources, additionalBeans,
+        Set<String> entities = implementCrudRepositories(generatedBeans, generatedClasses, generatedResources,
+                generatedServiceProviders, additionalBeans,
                 reflectiveClasses,
                 interfacesExtendingRepository, indexView);
         determineEntityPersistenceUnits(jpaModelPersistenceUnitMapping, entities, "Spring Data JPA")
@@ -247,12 +250,14 @@ public class SpringDataJPAProcessor {
     private Set<String> implementCrudRepositories(BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             Set<ClassInfo> crudRepositoriesToImplement, IndexView index) {
 
         ClassOutput beansClassOutput = new GeneratedBeanGizmo2Adaptor(generatedBeans);
-        ClassOutput otherClassOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources, true);
+        ClassOutput otherClassOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
+                generatedServiceProviders, true);
 
         SpringDataRepositoryCreator repositoryCreator = new SpringDataRepositoryCreator(beansClassOutput, otherClassOutput,
                 index, (n) -> {

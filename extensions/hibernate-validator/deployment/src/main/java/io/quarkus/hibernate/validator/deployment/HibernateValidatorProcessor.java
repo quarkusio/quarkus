@@ -89,6 +89,7 @@ import io.quarkus.deployment.builditem.ConfigClassBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
@@ -254,6 +255,7 @@ class HibernateValidatorProcessor {
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<GeneratedResourceBuildItem> generatedResource,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
             BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
@@ -345,7 +347,8 @@ class HibernateValidatorProcessor {
                 .methods().build());
 
         String builderClassName = HibernateBeanValidationConfigValidator.class.getName() + "Builder";
-        Gizmo gizmo = Gizmo.create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, true))
+        Gizmo gizmo = Gizmo.create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, generatedServiceProviders,
+                true))
                 .withDebugInfo(false)
                 .withParameters(false);
         gizmo.class_(builderClassName, cc -> {

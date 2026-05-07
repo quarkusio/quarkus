@@ -92,6 +92,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -486,12 +487,13 @@ public class WebSocketProcessor {
             InvokerFactoryBuildItem invokerFactory,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<GeneratedEndpointBuildItem> generatedEndpoints,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             Optional<MetricsCapabilityBuildItem> metricsCapability) {
         final boolean metricsSupportEnabled = isMetricsSupportEnabled(metricsCapability);
         ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
-                new Function<String, String>() {
+                generatedServiceProviders, new Function<String, String>() {
                     @Override
                     public String apply(String name) {
                         int idx = name.indexOf(CLIENT_ENDPOINT_SUFFIX);

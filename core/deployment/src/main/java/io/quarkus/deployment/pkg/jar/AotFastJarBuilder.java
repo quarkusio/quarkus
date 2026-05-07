@@ -16,6 +16,7 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
@@ -39,6 +40,7 @@ public class AotFastJarBuilder extends AbstractFastJarBuilder {
             TransformedClassesBuildItem transformedClasses,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
+            List<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             Set<ArtifactKey> parentFirstArtifactKeys,
             Set<ArtifactKey> removedArtifactKeys,
             ExecutorService executorService,
@@ -46,7 +48,8 @@ public class AotFastJarBuilder extends AbstractFastJarBuilder {
             JarTreeShakeBuildItem treeShakeResult) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives,
                 additionalApplicationArchives, transformedClasses, generatedClasses, generatedResources,
-                parentFirstArtifactKeys, removedArtifactKeys, executorService, jvmRequirements, treeShakeResult);
+                generatedServiceProviders, parentFirstArtifactKeys, removedArtifactKeys, executorService, jvmRequirements,
+                treeShakeResult);
     }
 
     @Override

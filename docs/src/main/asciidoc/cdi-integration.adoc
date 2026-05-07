@@ -717,9 +717,11 @@ An integrator must also provide a corresponding `io.quarkus.arc.ResourceReferenc
 [source,java]
 ----
 @BuildStep
-void setupResourceInjection(BuildProducer<ResourceAnnotationBuildItem> resourceAnnotations, BuildProducer<GeneratedResourceBuildItem> resources) {
-    resources.produce(new GeneratedResourceBuildItem("META-INF/services/io.quarkus.arc.ResourceReferenceProvider",
-        MyResourceReferenceProvider.class.getName().getBytes()));
+void setupResourceInjection(BuildProducer<ResourceAnnotationBuildItem> resourceAnnotations,
+        BuildProducer<GeneratedServiceProviderBuildItem> serviceProviders) {
+    serviceProviders.produce(new GeneratedServiceProviderBuildItem(
+        "io.quarkus.arc.ResourceReferenceProvider",
+        MyResourceReferenceProvider.class.getName()));
     resourceAnnotations.produce(new ResourceAnnotationBuildItem(DotName.createSimple(MyAnnotation.class.getName())));
 }
 ----

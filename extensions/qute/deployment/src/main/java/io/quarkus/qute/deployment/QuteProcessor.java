@@ -95,6 +95,7 @@ import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
@@ -1975,6 +1976,7 @@ public class QuteProcessor {
     void generateValueResolvers(QuteConfig config,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BeanArchiveIndexBuildItem beanArchiveIndex,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             List<TemplateExtensionMethodBuildItem> templateExtensionMethods,
@@ -1997,7 +1999,7 @@ public class QuteProcessor {
 
         IndexView index = beanArchiveIndex.getIndex();
         ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
-                new Function<String, String>() {
+                generatedServiceProviders, new Function<String, String>() {
                     @Override
                     public String apply(String name) {
                         int idx = name.lastIndexOf(ExtensionMethodGenerator.NAMESPACE_SUFFIX);

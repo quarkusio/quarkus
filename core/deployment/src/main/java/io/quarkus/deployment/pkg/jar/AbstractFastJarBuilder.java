@@ -44,6 +44,7 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem.TransformedClass;
@@ -79,13 +80,15 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             TransformedClassesBuildItem transformedClasses,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
+            List<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             Set<ArtifactKey> parentFirstArtifactKeys,
             Set<ArtifactKey> removedArtifactKeys,
             ExecutorService executorService,
             ResolvedJVMRequirements jvmRequirements,
             JarTreeShakeBuildItem treeShakeResult) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
-                generatedClasses, generatedResources, removedArtifactKeys, executorService, jvmRequirements);
+                generatedClasses, generatedResources, generatedServiceProviders, removedArtifactKeys, executorService,
+                jvmRequirements);
         this.additionalApplicationArchives = additionalApplicationArchives;
         this.parentFirstArtifactKeys = parentFirstArtifactKeys;
         this.treeShakeResult = treeShakeResult;
@@ -200,6 +203,20 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             for (GeneratedResourceBuildItem i : generatedResources.stream()
                     .sorted(Comparator.comparing(GeneratedResourceBuildItem::getName)).toList()) {
                 archiveCreator.addFileIfNotExists(i.getData(), i.getName());
+            }
+
+            if (!generatedServiceProviders.isEmpty()) {
+                Map<String, List<byte[]>> serviceProviderEntries = new HashMap<>();
+                for (GeneratedServiceProviderBuildItem item : generatedServiceProviders) {
+                    serviceProviderEntries
+                            .computeIfAbsent("META-INF/services/" + item.getServiceInterfaceName(),
+                                    k -> new ArrayList<>())
+                            .add((item.getImplementationClassName() + System.lineSeparator())
+                                    .getBytes(StandardCharsets.UTF_8));
+                }
+                for (Map.Entry<String, List<byte[]>> entry : serviceProviderEntries.entrySet()) {
+                    archiveCreator.addFile(entry.getValue(), entry.getKey());
+                }
             }
         }
         if (decompiler != null) {

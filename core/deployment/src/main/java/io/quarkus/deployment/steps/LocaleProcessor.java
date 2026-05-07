@@ -1,6 +1,5 @@
 package io.quarkus.deployment.steps;
 
-import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -11,7 +10,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
@@ -44,14 +43,16 @@ public class LocaleProcessor {
 
     @BuildStep(onlyIf = { NativeBuild.class, NonDefaultLocale.class })
     void servicesResource(BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
-            BuildProducer<GeneratedResourceBuildItem> generatedResources) {
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders) {
         final String r1 = "META-INF/services/sun.util.resources.LocaleData$SupplementaryResourceBundleProvider";
         final String r2 = "META-INF/services/sun.util.resources.LocaleData$CommonResourceBundleProvider";
         nativeImageResources.produce(new NativeImageResourceBuildItem(r1, r2));
-        generatedResources.produce(new GeneratedResourceBuildItem(r1,
-                "sun.util.resources.provider.SupplementaryLocaleDataProvider".getBytes(StandardCharsets.UTF_8)));
-        generatedResources.produce(new GeneratedResourceBuildItem(r2,
-                "sun.util.resources.provider.LocaleDataProvider".getBytes(StandardCharsets.UTF_8)));
+        generatedServiceProviders.produce(new GeneratedServiceProviderBuildItem(
+                "sun.util.resources.LocaleData$SupplementaryResourceBundleProvider",
+                "sun.util.resources.provider.SupplementaryLocaleDataProvider"));
+        generatedServiceProviders.produce(new GeneratedServiceProviderBuildItem(
+                "sun.util.resources.LocaleData$CommonResourceBundleProvider",
+                "sun.util.resources.provider.LocaleDataProvider"));
     }
 
     /**

@@ -43,6 +43,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -235,6 +236,7 @@ public class SmallRyeFaultToleranceProcessor {
             AnnotationProxyBuildItem annotationProxy,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod,
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> errors,
@@ -257,7 +259,8 @@ public class SmallRyeFaultToleranceProcessor {
         IndexView index = beanArchiveIndexBuildItem.getIndex();
         // only generating annotation literal classes for MicroProfile/SmallRye Fault Tolerance annotations,
         // none of them are application classes
-        ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources, false);
+        ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
+                generatedServiceProviders, false);
 
         FaultToleranceScanner scanner = new FaultToleranceScanner(index, annotationStore, annotationProxy, classOutput,
                 recorderContext, reflectiveMethod);

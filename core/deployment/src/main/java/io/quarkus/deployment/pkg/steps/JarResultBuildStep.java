@@ -22,6 +22,7 @@ import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
@@ -101,6 +102,7 @@ public class JarResultBuildStep {
             ClassLoadingConfig classLoadingConfig,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
+            List<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             List<UberJarMergedResourceBuildItem> uberJarMergedResourceBuildItems,
             List<UberJarIgnoredResourceBuildItem> uberJarIgnoredResourceBuildItems,
             QuarkusBuildCloseablesBuildItem closeablesBuildItem,
@@ -128,6 +130,7 @@ public class JarResultBuildStep {
                     transformedClasses,
                     generatedClasses,
                     generatedResources,
+                    generatedServiceProviders,
                     removedArtifactKeys,
                     uberJarMergedResourceBuildItems,
                     uberJarIgnoredResourceBuildItems,
@@ -143,6 +146,7 @@ public class JarResultBuildStep {
                     transformedClasses,
                     generatedClasses,
                     generatedResources,
+                    generatedServiceProviders,
                     removedArtifactKeys,
                     buildExecutor,
                     jvmRequirements,
@@ -157,6 +161,7 @@ public class JarResultBuildStep {
                     transformedClasses,
                     generatedClasses,
                     generatedResources,
+                    generatedServiceProviders,
                     parentFirstArtifactKeys,
                     removedArtifactKeys,
                     buildExecutor,
@@ -172,6 +177,7 @@ public class JarResultBuildStep {
                     transformedClasses,
                     generatedClasses,
                     generatedResources,
+                    generatedServiceProviders,
                     parentFirstArtifactKeys,
                     removedArtifactKeys,
                     buildExecutor,
@@ -193,6 +199,7 @@ public class JarResultBuildStep {
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedNativeImageClassBuildItem> nativeImageResources,
             List<GeneratedResourceBuildItem> generatedResources,
+            List<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             MainClassBuildItem mainClassBuildItem,
             ClassLoadingConfig classLoadingConfig,
             JarTreeShakeBuildItem treeShakeResult,
@@ -208,6 +215,7 @@ public class JarResultBuildStep {
                 transformedClasses,
                 generatedClasses,
                 generatedResources,
+                generatedServiceProviders,
                 nativeImageResources,
                 getRemovedArtifactKeys(classLoadingConfig),
                 buildExecutor,

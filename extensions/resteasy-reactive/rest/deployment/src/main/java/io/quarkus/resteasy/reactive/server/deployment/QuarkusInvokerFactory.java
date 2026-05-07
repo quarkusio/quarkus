@@ -58,7 +58,7 @@ public class QuarkusInvokerFactory implements EndpointInvokerFactory {
         if (generatedInvokers.containsKey(baseName)) {
             return generatedInvokers.get(baseName);
         }
-        ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClassBuildItemBuildProducer, null,
+        ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClassBuildItemBuildProducer, null, null,
                 applicationClassPredicate.test(currentClassInfo.name().toString()));
         Gizmo g = Gizmo.create(classOutput)
                 .withDebugInfo(false)

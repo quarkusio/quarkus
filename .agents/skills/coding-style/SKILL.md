@@ -40,6 +40,7 @@ description: >
 
 - **No `@author` tags** in Javadoc — Git history tracks authorship
 - No wildcard imports
+- Never use fully-qualified class names inline — always add an `import` statement instead
 - Avoid `static` imports except for well-known patterns (e.g., test assertions)
 - **Minimize lambdas and streams in runtime code** — reduces memory footprint for native
 - Prefer descriptive method and variable names over comments

@@ -14,11 +14,16 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 class RoundRobin<T> implements Iterable<T> {
 
-    private final AtomicInteger pos = new AtomicInteger();
+    private final AtomicInteger pos;
     private final List<T> elements;
 
     RoundRobin(List<T> elements) {
+        this(elements, 0);
+    }
+
+    RoundRobin(List<T> elements, int initialPosition) {
         this.elements = List.copyOf(elements);
+        this.pos = new AtomicInteger(initialPosition);
     }
 
     /**

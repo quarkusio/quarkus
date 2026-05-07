@@ -4,6 +4,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
+import io.smallrye.common.vertx.ContextLocals;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -47,8 +48,8 @@ public class FilteredResource {
         assert requestContextActive.get();
 
         // DC
-        assert Vertx.currentContext().getLocal("filter").equals("test");
-        Vertx.currentContext().putLocal("test", "test test");
+        assert "test".equals(ContextLocals.get("filter", null));
+        ContextLocals.put("test", "test test");
 
         // MDC
         assert MDC.get("mdc").equals("test");

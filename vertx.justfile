@@ -145,10 +145,8 @@ skip_modules := """
     quarkus-integration-test-spring-data-jpa
     quarkus-integration-test-spring-data-rest
     quarkus-integration-test-spring-web
-    quarkus-integration-test-virtual-threads-disabled
     quarkus-integration-test-virtual-threads-micrometer
     quarkus-integration-test-virtual-threads-quartz
-    quarkus-integration-test-virtual-threads-reseteasy-reactive
     quarkus-integration-test-virtual-threads-scheduler
     quarkus-liquibase-mongodb-deployment
     quarkus-micrometer

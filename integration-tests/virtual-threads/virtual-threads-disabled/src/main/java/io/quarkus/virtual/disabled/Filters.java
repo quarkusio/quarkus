@@ -1,5 +1,6 @@
 package io.quarkus.virtual.disabled;
 
+import io.smallrye.common.vertx.ContextLocals;
 import jakarta.enterprise.inject.spi.CDI;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
@@ -18,7 +19,7 @@ public class Filters {
             VirtualThreadsAssertions.assertWorkerOrEventLoopThread();
             MDC.put("mdc", "test");
             CDI.current().select(Counter.class).get().increment();
-            Vertx.currentContext().putLocal("filter", "test");
+            ContextLocals.put("filter", "test");
         }
     }
 
@@ -28,7 +29,7 @@ public class Filters {
             VirtualThreadsAssertions.assertWorkerOrEventLoopThread();
             // the request filter, the method, and here.
             assert CDI.current().select(Counter.class).get().increment() == 3;
-            assert Vertx.currentContext().getLocal("test").equals("test test");
+            assert "test test".equals(ContextLocals.get("test", null));
             assert MDC.get("mdc").equals("test test");
         }
     }

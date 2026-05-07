@@ -50,6 +50,7 @@ description: >
   code paths, direct null checks are acceptable for performance
 - Commits should be atomic and semantic — properly squash before submitting PRs.
   This helps during bisects and makes it easier to revert changes when needed
+- Don't use deprecated methods or classes in new code
 
 ## Logging
 

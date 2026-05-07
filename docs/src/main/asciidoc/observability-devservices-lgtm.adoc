@@ -134,6 +134,75 @@ The extension can be added to your build file like this:
 implementation("io.quarkus:quarkus-micrometer-opentelemetry")
 ----
 
+=== LGTM and AI (MCP support)
+
+The grafana/otel-lgtm image integrates with Model Context Protocol (MCP) so AI coding tools (Claude, Cursor, etc.) can query your telemetry data directly.
+More info can be found here: https://github.com/grafana/docker-otel-lgtm/blob/main/docs/mcp-integration.md
+
+It's easy to use this with https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html[Quarkus' LangChain4j integration] - a library that lets you build Java applications that seamlessly connect to LLMs, tools, and embeddings using CDI, configuration, and native-friendly APIs.
+
+You can expose the LGTM MCP tools via properties:
+
+[source, properties]
+----
+# Tempo MCP client
+quarkus.langchain4j.mcp.tempo.transport-type=streamable-http
+quarkus.langchain4j.mcp.tempo.url=${tempo-mcp.endpoint}/api/mcp
+
+# Grafana MCP process
+quarkus.langchain4j.mcp.grafana.transport-type=stdio
+quarkus.langchain4j.mcp.grafana.command=uvx,mcp-grafana
+quarkus.langchain4j.mcp.grafana.environment.GRAFANA_URL=${grafana.endpoint}
+----
+
+Or you can do it programmatically:
+[source, java]
+----
+    @ConfigProperty(name = "tempo-mcp.endpoint")
+    String tempoMcpEndpoint;
+
+    @ConfigProperty(name = "grafana.endpoint")
+    String grafanaEndpoint;
+
+    @Singleton
+    public ToolProvider toolProvider(Instance<McpClient> clients) {
+        return McpToolProvider.builder()
+                .mcpClients(clients.stream().toList())
+                .build();
+    }
+
+    @Singleton
+    public McpClient tempoMcpClient(Vertx vertx) {
+        McpTransport transport = new QuarkusStreamableHttpMcpTransport.Builder()
+                .mcpClientName("tempo")
+                .url(tempoMcpEndpoint + "/api/mcp")
+                .httpClient(vertx.createHttpClient())
+                .build();
+        return new DefaultMcpClient.Builder()
+                .clientName("tempo")
+                .transport(transport)
+                .build();
+    }
+
+    @Singleton
+    public McpClient grafanaMcpClient() {
+        McpTransport transport = new StdioMcpTransport.Builder()
+                .command(List.of("uvx", "mcp-grafana"))
+                .environment(Map.of("GRAFANA_URL", grafanaEndpoint))
+                .logEvents(true)
+                .build();
+        return new DefaultMcpClient.Builder()
+                .clientName("grafana")
+                .transport(transport)
+                .build();
+    }
+
+    public void destroyMcpClient(@Disposes McpClient client) throws Exception {
+        log.info("Closing the mcp client: " + client.key());
+        client.close();
+    }
+----
+
 == Grafana
 
 === Grafana UI access
@@ -146,7 +215,7 @@ You will see a log entry like this:
 
 [source, log]
 ----
-[io.qu.ob.de.ObservabilityDevServiceProcessor] (build-35) Dev Service Lgtm started, config: {grafana.endpoint=http://localhost:42797, quarkus.otel.exporter.otlp.endpoint=http://localhost:34711, otel-collector.url=localhost:34711, quarkus.micrometer.export.otlp.url=http://localhost:34711/v1/metrics, quarkus.otel.exporter.otlp.protocol=http/protobuf}
+[io.qu.ob.de.ObservabilityDevServiceProcessor] (build-35) Dev Service Lgtm started, config: {grafana.endpoint=http://localhost:42797, tempo-mcp.endpoint=http://localhost:55678, quarkus.otel.exporter.otlp.endpoint=http://localhost:34711, otel-collector.url=localhost:34711, quarkus.micrometer.export.otlp.url=http://localhost:34711/v1/metrics, quarkus.otel.exporter.otlp.protocol=http/protobuf}
 ----
 Remember that Grafana is accessible in an ephemeral port, so you need to check the logs to see which port is being used. In this example, the grafana endpoint is `grafana.endpoint=http://localhost:42797`.
 

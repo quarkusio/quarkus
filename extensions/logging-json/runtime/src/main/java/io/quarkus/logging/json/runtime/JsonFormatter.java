@@ -7,21 +7,31 @@ import static io.quarkus.logging.json.runtime.JsonLogConfig.AdditionalFieldConfi
 import static java.util.Optional.ofNullable;
 
 import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import jakarta.enterprise.inject.spi.CDI;
+
+import org.jboss.logging.Logger;
 import org.jboss.logmanager.ExtLogRecord;
 
 import io.quarkus.logging.json.runtime.JsonLogConfig.JsonConfig.LogFormat;
 
 public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter {
 
+    private static final Logger LOG = Logger.getLogger(JsonFormatter.class);
+
     private Set<String> excludedKeys;
     private Map<String, AdditionalField> additionalFields;
     private LogFormat logFormat = LogFormat.DEFAULT;
     private String tracePrefix = "";
+    private List<JsonProvider> discoveredProviders = Collections.emptyList();
+    private volatile List<JsonProvider> jsonProviders;
 
     public enum AdditionalKey {
         ECS_VERSION("ecs.version"),
@@ -104,6 +114,10 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         this.additionalFields = additionalFields;
     }
 
+    public void setDiscoveredProviders(List<JsonProvider> providers) {
+        this.discoveredProviders = List.copyOf(providers);
+    }
+
     public void setLogFormat(LogFormat logFormat) {
         this.logFormat = logFormat;
     }
@@ -147,6 +161,25 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
             // fast path
             addToGenerator(additionalFields, generator);
         }
+
+        JsonLogGenerator jsonLogGenerator = new JsonLogGenerator(generator, this.excludedKeys);
+        for (JsonProvider provider : getJsonProviders()) {
+            provider.writeTo(jsonLogGenerator, record);
+        }
+    }
+
+    private List<JsonProvider> getJsonProviders() {
+        if (jsonProviders != null) {
+            return jsonProviders;
+        }
+        List<JsonProvider> result = new ArrayList<>(discoveredProviders);
+        try {
+            CDI.current().select(JsonProvider.class).forEach(result::add);
+            jsonProviders = Collections.unmodifiableList(result);
+        } catch (Throwable ignored) {
+            LOG.debug("CDI not available, JsonProvider CDI beans will not be loaded");
+        }
+        return result;
     }
 
     private void addToGenerator(Map<String, AdditionalField> fields, Generator generator) throws Exception {
@@ -165,25 +198,114 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         }
     }
 
-    private static class FormatterJsonGenerator implements Generator {
-        private final Generator generator;
+    /**
+     * A JSON generator for use with {@link JsonProvider}.
+     * Writes JSON fields for the current log record, respecting any keys configured via
+     * {@code quarkus.log.*.json.excluded-keys}.
+     */
+    public static final class JsonLogGenerator {
+
+        private final Generator delegate;
+        private final Set<String> excludedKeys;
+        private int skippedDepth = 0;
+
+        JsonLogGenerator(final Generator delegate, final Set<String> excludedKeys) {
+            this.delegate = delegate;
+            this.excludedKeys = excludedKeys;
+        }
+
+        public JsonLogGenerator add(final String key, final boolean value) throws Exception {
+            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
+                delegate.add(key, String.valueOf(value));
+            }
+            return this;
+        }
+
+        public JsonLogGenerator add(final String key, final int value) throws Exception {
+            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
+                delegate.add(key, value);
+            }
+            return this;
+        }
+
+        public JsonLogGenerator add(final String key, final long value) throws Exception {
+            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
+                delegate.add(key, value);
+            }
+            return this;
+        }
+
+        public JsonLogGenerator add(final String key, final Map<String, ?> value) throws Exception {
+            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
+                delegate.add(key, value);
+            }
+            return this;
+        }
+
+        public JsonLogGenerator add(final String key, final String value) throws Exception {
+            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
+                delegate.add(key, value);
+            }
+            return this;
+        }
+
+        public JsonLogGenerator startObject(final String key) throws Exception {
+            if (skippedDepth > 0 || excludedKeys.contains(key)) {
+                skippedDepth++;
+            } else {
+                delegate.startObject(key);
+            }
+            return this;
+        }
+
+        public JsonLogGenerator endObject() throws Exception {
+            if (skippedDepth > 0) {
+                skippedDepth--;
+            } else {
+                delegate.endObject();
+            }
+            return this;
+        }
+
+        public JsonLogGenerator startArray(final String key) throws Exception {
+            if (skippedDepth > 0 || excludedKeys.contains(key)) {
+                skippedDepth++;
+            } else {
+                delegate.startArray(key);
+            }
+            return this;
+        }
+
+        public JsonLogGenerator endArray() throws Exception {
+            if (skippedDepth > 0) {
+                skippedDepth--;
+            } else {
+                delegate.endArray();
+            }
+            return this;
+        }
+    }
+
+    private static final class FormatterJsonGenerator implements Generator {
+
+        private final Generator delegate;
         private final Set<String> excludedKeys;
 
-        private FormatterJsonGenerator(final Generator generator, final Set<String> excludedKeys) {
-            this.generator = generator;
+        private FormatterJsonGenerator(final Generator delegate, final Set<String> excludedKeys) {
+            this.delegate = delegate;
             this.excludedKeys = excludedKeys;
         }
 
         @Override
         public Generator begin() throws Exception {
-            generator.begin();
+            delegate.begin();
             return this;
         }
 
         @Override
         public Generator add(final String key, final int value) throws Exception {
             if (!excludedKeys.contains(key)) {
-                generator.add(key, value);
+                delegate.add(key, value);
             }
             return this;
         }
@@ -191,7 +313,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         @Override
         public Generator add(final String key, final long value) throws Exception {
             if (!excludedKeys.contains(key)) {
-                generator.add(key, value);
+                delegate.add(key, value);
             }
             return this;
         }
@@ -199,7 +321,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         @Override
         public Generator add(final String key, final Map<String, ?> value) throws Exception {
             if (!excludedKeys.contains(key)) {
-                generator.add(key, value);
+                delegate.add(key, value);
             }
             return this;
         }
@@ -207,38 +329,38 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         @Override
         public Generator add(final String key, final String value) throws Exception {
             if (!excludedKeys.contains(key)) {
-                generator.add(key, value);
+                delegate.add(key, value);
             }
             return this;
         }
 
         @Override
         public Generator startObject(final String key) throws Exception {
-            generator.startObject(key);
+            delegate.startObject(key);
             return this;
         }
 
         @Override
         public Generator endObject() throws Exception {
-            generator.endObject();
+            delegate.endObject();
             return this;
         }
 
         @Override
         public Generator startArray(final String key) throws Exception {
-            generator.startArray(key);
+            delegate.startArray(key);
             return this;
         }
 
         @Override
         public Generator endArray() throws Exception {
-            generator.endArray();
+            delegate.endArray();
             return this;
         }
 
         @Override
         public Generator end() throws Exception {
-            generator.end();
+            delegate.end();
             return this;
         }
     }

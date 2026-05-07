@@ -12,5 +12,4 @@ class ElasticsearchRestClientProcessor {
         // Indicates that this extension would like the SSL support to be enabled
         extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.ELASTICSEARCH_REST_CLIENT_COMMON));
     }
-
 }

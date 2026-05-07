@@ -7,8 +7,10 @@ import static org.hamcrest.Matchers.is;
 import java.util.List;
 import java.util.Map;
 
+import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response.Status;
 
+import org.elasticsearch.client.RestClient;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -19,6 +21,7 @@ import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
+import io.smallrye.common.annotation.Identifier;
 import io.vertx.core.http.HttpHeaders;
 
 @QuarkusTest
@@ -34,6 +37,10 @@ class HibernateSearchTenancyReindexFunctionalityTest {
                     "quarkus.hibernate-search-orm.management.enabled", "true");
         }
     }
+
+    @Inject
+    @Identifier("another-es")
+    RestClient restClient;
 
     @Test
     void test() {

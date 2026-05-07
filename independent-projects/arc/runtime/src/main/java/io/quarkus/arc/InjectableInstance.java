@@ -104,7 +104,7 @@ public interface InjectableInstance<T> extends Instance<T> {
 
     /**
      * Returns the list of instances of {@linkplain InjectableBean#checkActive() active} beans that match
-     * the required type and qualifiers, sorter in priority order (higher priority goes first).
+     * the required type and qualifiers, sorted in priority order (higher priority goes first).
      *
      * @return the list of instances of matching active beans
      */

@@ -6,14 +6,16 @@ import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigPhase;
-import io.quarkus.runtime.annotations.ConfigRoot;
-import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
-@ConfigMapping(prefix = "quarkus.elasticsearch")
-@ConfigRoot(phase = ConfigPhase.RUN_TIME)
-public interface ElasticsearchConfig {
+@ConfigGroup
+public interface ElasticsearchClientRuntimeConfig {
+
+    /**
+     * Defines whether the client should be active at runtime.
+     */
+    @WithDefault("true")
+    boolean active();
 
     /**
      * The list of hosts of the Elasticsearch servers.
@@ -99,4 +101,5 @@ public interface ElasticsearchConfig {
         @WithDefault("5M")
         Duration refreshInterval();
     }
+
 }

@@ -49,6 +49,7 @@ import io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElastics
 import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchCommonBuildTimeConfig.ElasticsearchDevServicesBuildTimeConfig.Distribution;
 import io.quarkus.hibernate.search.backend.elasticsearch.common.deployment.HibernateSearchBackendElasticsearchEnabledBuildItem;
 import io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.ElasticsearchVersionSubstitution;
+import io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.HibernateSearchBackendElasticsearchBuildTimeConfig;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneBuildTimeConfig;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneElasticsearchMapperContext;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneRecorder;
@@ -238,7 +239,9 @@ class HibernateSearchStandaloneProcessor {
         ElasticsearchVersion version = defaultBackendConfig.version().get();
         String hostsPropertyKey = backendPropertyKey(null, null,
                 "hosts");
-        buildItemBuildProducer.produce(new DevservicesElasticsearchBuildItem(hostsPropertyKey,
+        buildItemBuildProducer.produce(new DevservicesElasticsearchBuildItem(
+                clientName(null, defaultBackendConfig),
+                hostsPropertyKey,
                 version.versionString(),
                 Distribution.valueOf(version.distribution().toString().toUpperCase())));
 
@@ -261,6 +264,10 @@ class HibernateSearchStandaloneProcessor {
                         }));
             }
         }
+    }
+
+    private String clientName(String backendName, HibernateSearchBackendElasticsearchBuildTimeConfig backendConfig) {
+        return "<default>";
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

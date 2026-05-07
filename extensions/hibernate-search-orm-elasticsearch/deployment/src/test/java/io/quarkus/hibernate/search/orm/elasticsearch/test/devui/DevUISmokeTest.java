@@ -10,7 +10,8 @@ public class DevUISmokeTest extends AbstractDevUITest {
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
             .withApplicationRoot(
                     (jar) -> jar.addAsResource("application-devui.properties", "application.properties")
-                            .addClasses(MyIndexedEntity.class));
+                            .addClass(MyIndexedEntity.class)
+                            .addClass(RestClientStarterService.class));
 
     public DevUISmokeTest() {
         super("<default>", MyIndexedEntity.class.getName());

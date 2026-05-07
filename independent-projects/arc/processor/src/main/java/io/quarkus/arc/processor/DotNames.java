@@ -73,6 +73,7 @@ import io.quarkus.arc.VetoedProducer;
 import io.quarkus.arc.WithCaching;
 import io.quarkus.arc.impl.ComputingCache;
 import io.quarkus.arc.impl.Identified;
+import io.smallrye.common.annotation.Identifier;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
@@ -129,6 +130,7 @@ public final class DotNames {
     public static final DotName OPTIONAL_LONG = create(OptionalLong.class);
     public static final DotName OPTIONAL_DOUBLE = create(OptionalDouble.class);
     public static final DotName NAMED = create(Named.class);
+    public static final DotName IDENTIFIER = create(Identifier.class);
     public static final DotName ACTIVATE_REQUEST_CONTEXT = create(ActivateRequestContext.class);
     public static final DotName TRANSACTION_PHASE = create(TransactionPhase.class);
     public static final DotName INITIALIZED = create(Initialized.class);

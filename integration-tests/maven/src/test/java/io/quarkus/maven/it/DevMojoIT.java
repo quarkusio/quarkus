@@ -1935,4 +1935,39 @@ public class DevMojoIT extends LaunchMojoTestBase {
         runAndCheck();
         assertThat(devModeClient.getHttpResponse("/app/hello/")).isEqualTo("hello");
     }
+
+    @Test
+    public void testPanacheNextProcessorAutoConfigured() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/panache-next-processor-auto");
+        run(true);
+
+        File metamodelFile = new File(testDir, "target/generated-sources/annotations/org/acme/MyEntity_.java");
+
+        // Wait until app is compiled and started
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/hello").contains("Hello"));
+
+        // Verify the metamodel file was generated with the initial field
+        assertThat(metamodelFile).exists().content().contains("AMOUNT");
+
+        // Edit the entity to add a new field
+        File entitySource = new File(testDir, "src/main/java/org/acme/MyEntity.java");
+        filter(entitySource, Collections.singletonMap("public int amount;", "public int amount;\n    public String newField;"));
+
+        // Edit the resource to use the new field
+        File resourceSource = new File(testDir, "src/main/java/org/acme/HelloResource.java");
+        filter(resourceSource, Collections.singletonMap("return \"Hello: \" + MyEntity_.class.getSimpleName();",
+                "return \"Hello with new field: \" + MyEntity_.NEW_FIELD;"));
+
+        // Wait for recompilation and metamodel regeneration
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/hello").contains("new field"));
+
+        // Verify the metamodel was regenerated with the new field
+        assertThat(metamodelFile).exists().content().contains("AMOUNT").contains("NEW_FIELD");
+    }
 }

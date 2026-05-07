@@ -6,11 +6,19 @@ import static io.quarkus.gradle.tasks.QuarkusGradleUtils.getSourceSet;
 import static io.quarkus.gradle.tooling.dependency.DependencyDataCollector.declaredDependencyCollectorEnabled;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -26,6 +34,8 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ProjectDependency;
+import org.gradle.api.artifacts.ResolvedArtifact;
+import org.gradle.api.artifacts.ResolvedConfiguration;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.java.archives.Attributes;
 import org.gradle.api.plugins.BasePlugin;
@@ -42,6 +52,8 @@ import org.gradle.api.tasks.testing.Test;
 import org.gradle.tooling.provider.model.ToolingModelBuilderRegistry;
 import org.gradle.util.GradleVersion;
 
+import io.quarkus.deployment.dev.AnnotationProcessorPaths;
+import io.quarkus.deployment.dev.AnnotationProcessorProvider;
 import io.quarkus.gradle.actions.BeforeTestAction;
 import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
@@ -364,8 +376,11 @@ public class QuarkusPlugin implements Plugin<Project> {
         project.getPlugins().withType(
                 JavaPlugin.class,
                 javaPlugin -> {
-
-                    project.afterEvaluate(this::afterEvaluate);
+                    project.afterEvaluate(evaluated -> {
+                        afterEvaluate(evaluated);
+                        // Discover and add annotation processors from extensions after evaluation
+                        addAnnotationProcessorsFromExtensions(evaluated);
+                    });
 
                     TaskProvider<Task> classesTask = tasks.named(JavaPlugin.CLASSES_TASK_NAME);
                     TaskProvider<Task> resourcesTask = tasks.named(JavaPlugin.PROCESS_RESOURCES_TASK_NAME);
@@ -753,6 +768,95 @@ public class QuarkusPlugin implements Plugin<Project> {
                     configurations.findByName(sourceSetExtension.extraNativeTest().getImplementationConfigurationName()));
             configurations.getByName(NATIVE_TEST_RUNTIME_ONLY_CONFIGURATION_NAME).extendsFrom(
                     configurations.findByName(sourceSetExtension.extraNativeTest().getRuntimeOnlyConfigurationName()));
+        }
+    }
+
+    private void addAnnotationProcessorsFromExtensions(Project project) {
+        // Build classpath from deployment dependencies (which includes deployment modules)
+        ApplicationDeploymentClasspathBuilder classpathBuilder = new ApplicationDeploymentClasspathBuilder(project,
+                LaunchMode.NORMAL);
+        Configuration deploymentClasspath = classpathBuilder.getDeploymentConfiguration();
+
+        if (deploymentClasspath == null) {
+            project.getLogger().debug(
+                    "Deployment configuration not found, skipping annotation processor discovery");
+            return;
+        }
+
+        // Access the resolved configuration to get deployment JARs
+        ResolvedConfiguration resolvedConfig = deploymentClasspath.getResolvedConfiguration();
+        Set<File> classpathFiles = new LinkedHashSet<>();
+        for (ResolvedArtifact artifact : resolvedConfig.getResolvedArtifacts()) {
+            classpathFiles.add(artifact.getFile());
+        }
+
+        // Create URLClassLoader for ServiceLoader
+        List<URL> urls = new ArrayList<>();
+        for (File file : classpathFiles) {
+            try {
+                urls.add(file.toURI().toURL());
+            } catch (MalformedURLException e) {
+                project.getLogger().warn("Failed to convert file to URL: " + file, e);
+            }
+        }
+
+        try (URLClassLoader extensionClassLoader = new URLClassLoader(
+                urls.toArray(new URL[0]),
+                getClass().getClassLoader())) {
+
+            // Discover annotation processors via SPI
+            ServiceLoader<AnnotationProcessorProvider> providers = ServiceLoader.load(
+                    AnnotationProcessorProvider.class, extensionClassLoader);
+
+            Set<String> discoveredProcessors = new LinkedHashSet<>();
+            for (AnnotationProcessorProvider provider : providers) {
+                discoveredProcessors.addAll(provider.getAnnotationProcessors());
+                String extensionCoord = AnnotationProcessorPaths.getExtensionCoordinate(provider);
+                project.getLogger().info("Extension {} requires annotation processors: {}",
+                        extensionCoord,
+                        provider.getAnnotationProcessors());
+            }
+
+            if (!discoveredProcessors.isEmpty()) {
+                // Get existing annotation processor dependencies
+                Configuration annotationProcessorConfig = project.getConfigurations()
+                        .getByName(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME);
+
+                // Make annotationProcessor inherit platform constraints from implementation
+                Configuration implementation = project.getConfigurations()
+                        .getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
+                // Only extend if not already extending (to avoid conflicts)
+                if (!annotationProcessorConfig.getExtendsFrom().contains(implementation)) {
+                    annotationProcessorConfig.extendsFrom(implementation);
+                }
+
+                Set<String> existing = annotationProcessorConfig.getAllDependencies().stream()
+                        .map(dep -> dep.getGroup() + ":" + dep.getName())
+                        .collect(Collectors.toSet());
+
+                // Add new processors
+                for (String processor : discoveredProcessors) {
+                    // Normalize to group:artifact for comparison (ignore version)
+                    String[] parts = processor.split(":");
+                    String coord = parts.length >= 2 ? parts[0] + ":" + parts[1] : processor;
+
+                    if (!existing.contains(coord)) {
+                        project.getLogger().info("Auto-configuring annotation processor: {}", coord);
+                        // Add as string with just group:name - platform constraints will provide version
+                        if (parts.length >= 2) {
+                            // Use string notation "group:name:" (with colon but no version) to use platform version
+                            project.getDependencies().add(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME,
+                                    parts[0] + ":" + parts[1] + ":");
+                        } else {
+                            // Fallback to original string if parsing fails
+                            project.getDependencies().add(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME,
+                                    processor);
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            project.getLogger().warn("Failed to close extension classloader", e);
         }
     }
 

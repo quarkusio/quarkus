@@ -1,8 +1,6 @@
 package io.quarkus.deployment.dev;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -17,7 +15,6 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
-import org.jboss.jandex.TypeTarget;
 
 public class ClassComparisonUtil {
     private static final Set<DotName> IGNORED_ANNOTATIONS = Set.of(
@@ -95,10 +92,20 @@ public class ClassComparisonUtil {
                 if (!paramEqual) {
                     continue;
                 }
-                if (!compareMethodAnnotations(i.annotations(), method.annotations())) {
-                    continue;
-                }
+                // The two methods match;
+                // this implies they have the same return type and parameter types,
+                // which implies those have the same annotations (`type().equals(...)` considers annotations).
                 om = i;
+                // We still need to check method annotations and parameter annotations are equivalent.
+                if (!compareAnnotations(method.declaredAnnotations(), om.declaredAnnotations())) {
+                    return false;
+                }
+                for (int j = 0; j < method.parametersCount(); ++j) {
+                    if (!compareAnnotations(method.parameters().get(j).declaredAnnotations(),
+                            om.parameters().get(j).declaredAnnotations())) {
+                        return false;
+                    }
+                }
             }
             //no further checks needed, we fully matched in the loop
             if (om == null) {
@@ -108,7 +115,7 @@ public class ClassComparisonUtil {
         return true;
     }
 
-    static boolean compareAnnotations(Collection<AnnotationInstance> a, Collection<AnnotationInstance> b) {
+    private static boolean compareAnnotations(Collection<AnnotationInstance> a, Collection<AnnotationInstance> b) {
         if (a.size() != b.size()) {
             return false;
         }
@@ -125,66 +132,6 @@ public class ClassComparisonUtil {
             }
         }
         return true;
-    }
-
-    static boolean compareMethodAnnotations(Collection<AnnotationInstance> a, Collection<AnnotationInstance> b) {
-        if (a.size() != b.size()) {
-            return false;
-        }
-        List<AnnotationInstance> method1 = new ArrayList<>();
-        Map<Integer, List<AnnotationInstance>> params1 = new HashMap<>();
-        Map<Integer, List<AnnotationInstance>> paramTypes1 = new HashMap<>();
-        methodMap(a, method1, params1, paramTypes1);
-        List<AnnotationInstance> method2 = new ArrayList<>();
-        Map<Integer, List<AnnotationInstance>> params2 = new HashMap<>();
-        Map<Integer, List<AnnotationInstance>> paramTypes2 = new HashMap<>();
-        methodMap(b, method2, params2, paramTypes2);
-        if (!compareAnnotations(method1, method2)) {
-            return false;
-        }
-        if (!params1.keySet().equals(params2.keySet())) {
-            return false;
-        }
-        for (Map.Entry<Integer, List<AnnotationInstance>> entry : params1.entrySet()) {
-            List<AnnotationInstance> other = params2.get(entry.getKey());
-            if (!compareAnnotations(other, entry.getValue())) {
-                return false;
-            }
-        }
-        for (Map.Entry<Integer, List<AnnotationInstance>> entry : paramTypes1.entrySet()) {
-            List<AnnotationInstance> other = paramTypes2.get(entry.getKey());
-            if (!compareAnnotations(other, entry.getValue())) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private static void methodMap(Collection<AnnotationInstance> b, List<AnnotationInstance> method2,
-            Map<Integer, List<AnnotationInstance>> params2, Map<Integer, List<AnnotationInstance>> paramTypes2) {
-        for (AnnotationInstance i : b) {
-            int index;
-            switch (i.target().kind()) {
-                case METHOD:
-                    method2.add(i);
-                    break;
-                case METHOD_PARAMETER:
-                    index = i.target().asMethodParameter().position();
-                    params2.computeIfAbsent(index, k -> new ArrayList<>()).add(i);
-                    break;
-                case TYPE:
-                    TypeTarget.Usage usage = i.target().asType().usage();
-                    if (usage == TypeTarget.Usage.METHOD_PARAMETER) {
-                        index = i.target().asType().asMethodParameterType().position();
-                        paramTypes2.computeIfAbsent(index, k -> new ArrayList<>()).add(i);
-                    } else {
-                        throw new IllegalArgumentException("Unsupported type annotation usage: " + usage);
-                    }
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unsupported annotation target kind: " + i.target().kind());
-            }
-        }
     }
 
     private static boolean compareAnnotation(AnnotationInstance a, AnnotationInstance b) {

@@ -1,5 +1,6 @@
 package io.quarkus.virtual.disabled;
 
+import io.smallrye.common.vertx.ContextLocals;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -26,8 +27,8 @@ public class FilteredResource {
         assert counter.increment() == 2;
 
         // DC
-        assert Vertx.currentContext().getLocal("filter").equals("test");
-        Vertx.currentContext().putLocal("test", "test test");
+        assert "test".equals(ContextLocals.get("filter", null));
+        ContextLocals.put("filter", "test test");
 
         // MDC
         assert MDC.get("mdc").equals("test");

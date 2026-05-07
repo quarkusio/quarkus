@@ -3,6 +3,7 @@ package io.quarkus.deployment.dev;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -11,7 +12,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.AnnotationInstanceEquivalenceProxy;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
@@ -106,22 +107,28 @@ public class ClassComparisonUtil {
     }
 
     static boolean compareAnnotations(Collection<AnnotationInstance> a, Collection<AnnotationInstance> b) {
-        if (a.size() != b.size()) {
-            return false;
-        }
-        Map<DotName, AnnotationInstance> lookup = b.stream()
-                .collect(Collectors.toMap(AnnotationInstance::name, Function.identity()));
+        // Use AnnotationInstanceEquivalenceProxy to compare annotations by type and values,
+        // ignoring the annotation target. This handles cases where:
+        // - An annotation has both FIELD and TYPE_USE targets (e.g., @NotNull) and javac
+        //   generates both a field annotation and a type annotation in the bytecode
+        // - Multiple annotations of the same type appear on the same element (e.g., @Ann List<@Ann String>)
+        // - Annotations have null targets
+        Set<AnnotationInstanceEquivalenceProxy> setA = new HashSet<>();
+        Set<AnnotationInstanceEquivalenceProxy> setB = new HashSet<>();
 
-        for (AnnotationInstance i1 : a) {
-            AnnotationInstance i2 = lookup.get(i1.name());
-            if (i2 == null) {
-                return false;
-            }
-            if (!compareAnnotation(i1, i2)) {
-                return false;
+        for (AnnotationInstance annotation : a) {
+            if (!IGNORED_ANNOTATIONS.contains(annotation.name())) {
+                setA.add(annotation.createEquivalenceProxy());
             }
         }
-        return true;
+
+        for (AnnotationInstance annotation : b) {
+            if (!IGNORED_ANNOTATIONS.contains(annotation.name())) {
+                setB.add(annotation.createEquivalenceProxy());
+            }
+        }
+
+        return setA.equals(setB);
     }
 
     static boolean compareMethodAnnotations(Collection<AnnotationInstance> a, Collection<AnnotationInstance> b) {
@@ -184,21 +191,4 @@ public class ClassComparisonUtil {
         }
     }
 
-    private static boolean compareAnnotation(AnnotationInstance a, AnnotationInstance b) {
-        if (IGNORED_ANNOTATIONS.contains(a.name())) {
-            return true;
-        }
-        List<AnnotationValue> valuesA = a.values();
-        List<AnnotationValue> valuesB = b.values();
-        if (valuesA.size() != valuesB.size()) {
-            return false;
-        }
-        for (AnnotationValue valueA : valuesA) {
-            AnnotationValue valueB = b.value(valueA.name());
-            if (!valueA.equals(valueB)) {
-                return false;
-            }
-        }
-        return true;
-    }
 }

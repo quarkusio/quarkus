@@ -24,8 +24,8 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.cyclonedx.generator.CycloneDxSbomGenerator;
 import io.quarkus.maven.components.QuarkusWorkspaceProvider;
 import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.sbom.ApplicationManifest;
-import io.quarkus.sbom.ApplicationManifestConfig;
+import io.quarkus.sbom.CoreSbomContributionConfig;
+import io.quarkus.sbom.SbomContribution;
 
 /**
  * Quarkus application SBOM generator
@@ -103,11 +103,12 @@ public class DependencySbomMojo extends AbstractMojo {
             return;
         }
         final Path outputFilePath = getSbomFile().toPath();
+        SbomContribution contribution = CoreSbomContributionConfig.builder()
+                .setApplicationModel(resolveApplicationModel())
+                .build()
+                .toSbomContribution();
         CycloneDxSbomGenerator.newInstance()
-                .setManifest(ApplicationManifest.fromConfig(
-                        ApplicationManifestConfig.builder()
-                                .setApplicationModel(resolveApplicationModel())
-                                .build()))
+                .setContributions(List.of(contribution))
                 .setOutputFile(outputFilePath)
                 .setFormat(format)
                 .setEffectiveModelResolver(EffectiveModelResolver.of(getResolver()))

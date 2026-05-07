@@ -3,10 +3,12 @@ package io.quarkus.cyclonedx.deployment;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
 import io.quarkus.bootstrap.app.DependencyInfoProvider;
+import io.quarkus.bootstrap.app.SbomResult;
 import io.quarkus.cyclonedx.deployment.spi.EmbeddedSbomMetadataBuildItem;
 import io.quarkus.cyclonedx.deployment.spi.EmbeddedSbomRequestBuildItem;
 import io.quarkus.cyclonedx.generator.CycloneDxSbomGenerator;
@@ -14,48 +16,58 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AppModelProviderBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
-import io.quarkus.deployment.sbom.ApplicationManifestsBuildItem;
 import io.quarkus.deployment.sbom.SbomBuildItem;
-import io.quarkus.sbom.ApplicationManifest;
-import io.quarkus.sbom.ApplicationManifestConfig;
+import io.quarkus.deployment.sbom.SbomContributionBuildItem;
+import io.quarkus.sbom.CoreSbomContributionConfig;
+import io.quarkus.sbom.SbomContribution;
 
 /**
- * Generates SBOMs for packaged applications if the corresponding config is enabled.
- * The API around this is still in development and will likely change in the near future.
+ * Generates CycloneDX SBOMs for Quarkus applications.
  */
 public class CycloneDxProcessor {
 
     /**
-     * Generates CycloneDX SBOMs from application manifests.
+     * Generates CycloneDX SBOM files for the packaged application.
+     * <p>
+     * Assembles the core application contribution from {@link ArtifactResultBuildItem}
+     * (which includes distribution paths resolved during packaging) and merges it with
+     * extension contributions from {@link SbomContributionBuildItem}.
      *
-     * @param applicationManifestsBuildItem application manifests
-     * @param outputTargetBuildItem build output
-     * @param appModelProviderBuildItem application model provider
+     * @param outputTargetBuildItem build output directory
+     * @param appModelProviderBuildItem application model provider for POM metadata resolution
+     * @param artifactResultBuildItems packaged artifact results carrying {@link CoreSbomContributionConfig}
+     * @param sbomContributions extension SBOM contributions (npm, PyPI, etc.)
      * @param cdxSbomConfig CycloneDX SBOM generation configuration
      * @param sbomProducer SBOM build item producer
      */
     @BuildStep
-    public void generate(ApplicationManifestsBuildItem applicationManifestsBuildItem,
-            OutputTargetBuildItem outputTargetBuildItem,
+    public void generate(OutputTargetBuildItem outputTargetBuildItem,
             AppModelProviderBuildItem appModelProviderBuildItem,
+            List<ArtifactResultBuildItem> artifactResultBuildItems,
+            List<SbomContributionBuildItem> sbomContributions,
             CycloneDxConfig cdxSbomConfig,
             BuildProducer<SbomBuildItem> sbomProducer) {
-        if (!cdxSbomConfig.enabled() || applicationManifestsBuildItem.getManifests().isEmpty()) {
-            // until there is a proper way to request the desired build items as build outcome
+        if (!cdxSbomConfig.enabled() || artifactResultBuildItems.isEmpty()) {
             return;
         }
         var depInfoProvider = getDependencyInfoProvider(appModelProviderBuildItem);
-        for (var manifest : applicationManifestsBuildItem.getManifests()) {
-            for (var sbom : CycloneDxSbomGenerator.newInstance()
-                    .setManifest(manifest)
+        for (ArtifactResultBuildItem artifactResult : artifactResultBuildItems) {
+            CoreSbomContributionConfig manifestConfig = artifactResult.getCoreSbomConfig();
+            if (manifestConfig == null) {
+                continue;
+            }
+            List<SbomContribution> contributions = collectContributions(manifestConfig.toSbomContribution(), sbomContributions);
+            for (SbomResult sbom : CycloneDxSbomGenerator.newInstance()
                     .setOutputDirectory(outputTargetBuildItem.getOutputDirectory())
                     .setEffectiveModelResolver(depInfoProvider == null ? null : depInfoProvider.getMavenModelResolver())
                     .setFormat(cdxSbomConfig.format())
                     .setSchemaVersion(cdxSbomConfig.schemaVersion().orElse(null))
                     .setIncludeLicenseText(cdxSbomConfig.includeLicenseText())
                     .setPrettyPrint(cdxSbomConfig.prettyPrint())
+                    .setContributions(contributions)
                     .generate()) {
                 sbomProducer.produce(new SbomBuildItem(sbom));
             }
@@ -67,13 +79,46 @@ public class CycloneDxProcessor {
         return supplier == null ? null : supplier.get();
     }
 
+    private static List<SbomContribution> collectContributions(SbomContribution coreContribution,
+            List<SbomContributionBuildItem> contributions) {
+        if (contributions.isEmpty()) {
+            return List.of(coreContribution);
+        }
+        List<SbomContribution> result = new ArrayList<>(contributions.size() + 1);
+        result.add(coreContribution);
+        for (SbomContributionBuildItem contribution : contributions) {
+            result.add(contribution.getContribution());
+        }
+        return result;
+    }
+
+    /**
+     * Embeds a dependency SBOM as a compressed resource inside the application artifact.
+     * <p>
+     * Assembles the core application contribution from {@link CurateOutcomeBuildItem}
+     * (without distribution paths, since the embedded SBOM describes dependencies rather
+     * than the distribution layout) and merges it with extension contributions from
+     * {@link SbomContributionBuildItem}.
+     * <p>
+     * This step does not depend on {@link ArtifactResultBuildItem}, avoiding a build cycle
+     * with the jar packaging steps.
+     *
+     * @param generatedResourceBuildItem producer for the embedded SBOM resource
+     * @param embeddedSbomMetadataProducer producer for embedded SBOM metadata
+     * @param cdxConfig CycloneDX SBOM configuration
+     * @param curateOutcomeBuildItem application dependency model
+     * @param appModelProviderBuildItem application model provider for POM metadata resolution
+     * @param embeddedSbomRequests explicit requests to embed an SBOM
+     * @param sbomContributions extension SBOM contributions (npm, PyPI, etc.)
+     */
     @BuildStep
     public void embedDependencySbom(BuildProducer<GeneratedResourceBuildItem> generatedResourceBuildItem,
             BuildProducer<EmbeddedSbomMetadataBuildItem> embeddedSbomMetadataProducer,
             CycloneDxConfig cdxConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             AppModelProviderBuildItem appModelProviderBuildItem,
-            List<EmbeddedSbomRequestBuildItem> embeddedSbomRequests) {
+            List<EmbeddedSbomRequestBuildItem> embeddedSbomRequests,
+            List<SbomContributionBuildItem> sbomContributions) {
         if (!cdxConfig.enabled() || !cdxConfig.embedded().enabled() && embeddedSbomRequests.isEmpty()) {
             return;
         }
@@ -84,20 +129,22 @@ public class CycloneDxProcessor {
             throw new IllegalArgumentException("resourceName is not configured for the embedded dependency SBOM");
         }
 
+        SbomContribution coreContribution = CoreSbomContributionConfig.builder()
+                .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
+                .build()
+                .toSbomContribution();
+
         var depInfoProvider = getDependencyInfoProvider(appModelProviderBuildItem);
         List<String> result = CycloneDxSbomGenerator.newInstance()
-                .setManifest(ApplicationManifest.fromConfig(ApplicationManifestConfig.builder()
-                        .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
-                        .build()))
                 .setEffectiveModelResolver(depInfoProvider == null ? null : depInfoProvider.getMavenModelResolver())
                 .setFormat(getFormat(resourceName))
                 .setSchemaVersion(cdxConfig.schemaVersion().orElse(null))
                 .setIncludeLicenseText(cdxConfig.includeLicenseText())
                 .setPrettyPrint(cdxConfig.prettyPrint())
+                .setContributions(collectContributions(coreContribution, sbomContributions))
                 .generateText();
 
         if (result.size() != 1) {
-            // this should never happen since the format is derived from the resourceName
             throw new RuntimeException(
                     "Embedded dependency SBOM has more than 1 result for configured resource " + resourceName);
         }

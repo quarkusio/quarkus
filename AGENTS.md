@@ -112,3 +112,4 @@ Consult the relevant skill when you are about to do that type of work:
 | `coding-style` | Code formatting, visibility, naming conventions, and logging |
 | `building-and-testing` | Maven build commands, flags, incremental builds, and build rules |
 | `pull-requests` | PR title/description conventions, commit hygiene, labels, and contribution rules |
+| `building-docs` | Building, previewing, or testing documentation changes locally |

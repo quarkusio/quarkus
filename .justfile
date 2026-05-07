@@ -15,6 +15,10 @@ build-fast:
 build-docs:
     {{mvncmd}} -e -DskipTests -DskipITs -Dinvoker.skip -DskipExtensionValidation -Dskip.gradle.tests -Dtruststore.skip -Dno-test-modules -Dasciidoctor.fail-if=DEBUG clean install
 
+# build docs, sync to website, serve with Jekyll, and open browser
+docs-preview:
+    bash docs/docs-preview.sh
+
 # format code according to Quarkus coding conventions
 format:
     {{mvncmd}} process-sources -Denforcer.skip -Dprotoc.skip

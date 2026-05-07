@@ -9,6 +9,9 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
  */
 public enum Feature {
 
+    AESH,
+    AESH_SSH,
+    AESH_WEBSOCKET,
     AGROAL,
     AMAZON_LAMBDA,
     AZURE_FUNCTIONS,

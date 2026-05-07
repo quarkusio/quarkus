@@ -7,7 +7,6 @@ import org.aesh.terminal.Attributes;
 import org.aesh.terminal.Connection;
 import org.aesh.terminal.Device;
 import org.aesh.terminal.tty.Capability;
-import org.aesh.terminal.tty.Point;
 import org.aesh.terminal.tty.Signal;
 import org.aesh.terminal.tty.Size;
 
@@ -41,7 +40,7 @@ public class DelegateConnection implements Connection {
     }
 
     @Override
-    public Consumer<Size> getSizeHandler() {
+    public Consumer<Size> sizeHandler() {
         return sizeHandler;
     }
 
@@ -51,7 +50,7 @@ public class DelegateConnection implements Connection {
     }
 
     @Override
-    public Consumer<Signal> getSignalHandler() {
+    public Consumer<Signal> signalHandler() {
         return signalHandler;
     }
 
@@ -61,7 +60,7 @@ public class DelegateConnection implements Connection {
     }
 
     @Override
-    public Consumer<int[]> getStdinHandler() {
+    public Consumer<int[]> stdinHandler() {
         return stdinHandler;
     }
 
@@ -84,7 +83,7 @@ public class DelegateConnection implements Connection {
     }
 
     @Override
-    public Consumer<Void> getCloseHandler() {
+    public Consumer<Void> closeHandler() {
         return closeHandler;
     }
 
@@ -115,8 +114,8 @@ public class DelegateConnection implements Connection {
     }
 
     @Override
-    public Attributes getAttributes() {
-        return delegate.getAttributes();
+    public Attributes attributes() {
+        return delegate.attributes();
     }
 
     @Override
@@ -161,12 +160,8 @@ public class DelegateConnection implements Connection {
         if (!closed) {
             return delegate.enterRawMode();
         } else {
-            return delegate.getAttributes();
+            return delegate.attributes();
         }
     }
 
-    @Override
-    public Point getCursorPosition() {
-        return delegate.getCursorPosition();
-    }
 }

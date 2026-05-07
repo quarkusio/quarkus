@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quarkus Aesh Terminal</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.css" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #1e1e1e;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .wrapper {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    h1 {
+      margin: 0 0 10px 0;
+      font-size: 24px;
+      color: #f0f0f0;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    #terminal-container {
+      flex: 1;
+      border: 2px solid #444;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      background: #000;
+      min-height: 0;
+    }
+
+    .connection-status {
+      margin-bottom: 10px;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-size: 14px;
+      display: inline-block;
+      flex-shrink: 0;
+      align-self: center;
+    }
+
+    .status-connected {
+      background: #1a472a;
+      color: #4ade80;
+    }
+
+    .status-disconnected {
+      background: #4a1a1a;
+      color: #f87171;
+    }
+
+    .status-connecting {
+      background: #4a3a1a;
+      color: #fbbf24;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <h1>Quarkus Aesh Terminal</h1>
+    <div id="status" class="connection-status status-connecting">Connecting...</div>
+    <div id="terminal-container"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.js"></script>
+  <script>
+    (function() {
+      'use strict';
+
+      var statusEl = document.getElementById('status');
+
+      function setStatus(status, message) {
+        statusEl.className = 'connection-status status-' + status;
+        statusEl.textContent = message;
+      }
+
+      function detectCapabilities() {
+        var capabilities = {
+          type: 'xterm-256color',
+          colorDepth: 'TRUE_COLOR',
+          features: []
+        };
+
+        try {
+          var canvas = document.createElement('canvas');
+          var ctx = canvas.getContext('2d');
+          if (ctx) {
+            capabilities.features.push('UNICODE');
+          }
+        } catch (e) {
+          // No canvas support
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          capabilities.features.push('CLIPBOARD');
+        }
+
+        capabilities.userAgent = navigator.userAgent;
+        return capabilities;
+      }
+
+      function connect() {
+        var wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        var wsHost = window.location.host || 'localhost:8080';
+        var params = new URLSearchParams(window.location.search);
+        var wsPath = params.get('path') || '/aesh/terminal';
+        var wsUrl = wsProtocol + '//' + wsHost + wsPath;
+
+        setStatus('connecting', 'Connecting to ' + wsUrl + '...');
+
+        var socket = new WebSocket(wsUrl);
+        var term = null;
+        var fitAddon = null;
+        var resizeTimeout = null;
+
+        socket.onopen = function() {
+          setStatus('connected', 'Connected');
+
+          term = new Terminal({
+            cursorBlink: true,
+            cursorStyle: 'block',
+            fontFamily: '"DejaVu Sans Mono", "Liberation Mono", "Courier New", monospace',
+            fontSize: 14,
+            theme: {
+              background: '#000000',
+              foreground: '#f0f0f0',
+              cursor: '#f0f0f0',
+              cursorAccent: '#000000',
+              selectionBackground: 'rgba(255, 255, 255, 0.3)'
+            },
+            allowProposedApi: true
+          });
+
+          fitAddon = new FitAddon.FitAddon();
+          term.loadAddon(fitAddon);
+          term.open(document.getElementById('terminal-container'));
+          fitAddon.fit();
+
+          var capabilities = detectCapabilities();
+          capabilities.cols = term.cols;
+          capabilities.rows = term.rows;
+
+          socket.send(JSON.stringify({
+            action: 'init',
+            type: capabilities.type,
+            colorDepth: capabilities.colorDepth,
+            features: capabilities.features,
+            cols: capabilities.cols,
+            rows: capabilities.rows,
+            userAgent: capabilities.userAgent
+          }));
+
+          socket.onmessage = function(event) {
+            if (event.type === 'message') {
+              term.write(event.data);
+            }
+          };
+
+          term.onData(function(data) {
+            socket.send(JSON.stringify({action: 'read', data: data}));
+          });
+
+          term.onResize(function(size) {
+            socket.send(JSON.stringify({
+              action: 'resize',
+              cols: size.cols,
+              rows: size.rows
+            }));
+          });
+
+          function handleResize() {
+            if (resizeTimeout) {
+              clearTimeout(resizeTimeout);
+            }
+            resizeTimeout = setTimeout(function() {
+              if (fitAddon && term) {
+                fitAddon.fit();
+              }
+            }, 100);
+          }
+
+          window.addEventListener('resize', handleResize);
+
+          if (window.ResizeObserver) {
+            var container = document.getElementById('terminal-container');
+            var resizeObserver = new ResizeObserver(function() {
+              handleResize();
+            });
+            resizeObserver.observe(container);
+          }
+
+          socket.onclose = function(event) {
+            setStatus('disconnected', 'Disconnected (code: ' + event.code + ')');
+            term.write('\r\n\x1b[31mConnection closed.\x1b[0m\r\n');
+            socket.onmessage = null;
+            socket.onclose = null;
+            window.removeEventListener('resize', handleResize);
+          };
+
+          socket.onerror = function(error) {
+            setStatus('disconnected', 'Connection error');
+            console.error('WebSocket error:', error);
+          };
+
+          term.focus();
+        };
+
+        socket.onerror = function(error) {
+          setStatus('disconnected', 'Failed to connect');
+          console.error('WebSocket connection error:', error);
+        };
+      }
+
+      window.addEventListener('load', connect);
+    })();
+  </script>
+</body>
+</html>

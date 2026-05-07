@@ -2,7 +2,6 @@ package io.quarkus.maven;
 
 import static io.quarkus.devtools.commands.CreateJBangProject.CreateJBangProjectKey.NO_JBANG_WRAPPER;
 import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.codestartLoadersBuilder;
-import static org.fusesource.jansi.Ansi.ansi;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,6 +10,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 
+import org.aesh.terminal.utils.ANSIBuilder;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Component;
@@ -134,7 +134,7 @@ public class CreateJBangMojo extends AbstractMojo {
         if (success) {
             getLog().info("");
             getLog().info("========================================================================");
-            getLog().warn(ansi().a("Quarkus JBang project is an experimental feature.").toString());
+            getLog().warn(ANSIBuilder.builder().append("Quarkus JBang project is an experimental feature.").toString());
             getLog().info("========================================================================");
             getLog().info("");
         } else {

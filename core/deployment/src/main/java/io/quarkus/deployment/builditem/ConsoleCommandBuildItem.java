@@ -5,7 +5,7 @@ import org.aesh.command.container.CommandContainer;
 import org.aesh.command.impl.container.AeshCommandContainer;
 import org.aesh.command.impl.container.AeshCommandContainerBuilder;
 import org.aesh.command.impl.internal.ProcessedCommand;
-import org.aesh.command.impl.parser.CommandLineParserBuilder;
+import org.aesh.command.impl.parser.AeshCommandLineParser;
 import org.aesh.command.parser.CommandLineParserException;
 
 import io.quarkus.builder.item.MultiBuildItem;
@@ -20,9 +20,7 @@ public final class ConsoleCommandBuildItem extends MultiBuildItem {
 
     public ConsoleCommandBuildItem(ProcessedCommand consoleCommand) {
         this.consoleCommand = new AeshCommandContainer(
-                CommandLineParserBuilder.builder()
-                        .processedCommand(consoleCommand)
-                        .create());
+                new AeshCommandLineParser(consoleCommand));
     }
 
     public ConsoleCommandBuildItem(Command<?> consoleCommand) {

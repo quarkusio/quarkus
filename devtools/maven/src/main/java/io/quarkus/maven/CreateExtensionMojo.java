@@ -4,12 +4,12 @@ import static io.quarkus.devtools.commands.CreateExtension.extractQuarkiverseExt
 import static io.quarkus.devtools.commands.CreateExtension.isQuarkiverseGroupId;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
-import static org.fusesource.jansi.Ansi.ansi;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+import org.aesh.terminal.utils.ANSIBuilder;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -245,7 +245,7 @@ public class CreateExtensionMojo extends AbstractMojo {
 
         if (!isBlank(artifactId)) {
             if (isBlank(extensionId)) {
-                getLog().warn(ansi().a(
+                getLog().warn(ANSIBuilder.builder().append(
                         "the given 'artifactId' has been automatically converted to 'extensionId' for backward compatibility.")
                         .toString());
                 if (artifactId.startsWith("quarkus-")) {

@@ -17,13 +17,22 @@ This feature is currently experimental.
 
 == Overview
 
-When you run a Quarkus application in dev mode, you can expose a Model Context Protocol (MCP) server. 
-It presents the methods used by the DevUI *MCP tools* (methods you can call) and the data exposed by *MCP resources*. 
+When you run a Quarkus application in dev mode, you can expose a Model Context Protocol (MCP) server.
+It presents the methods used by the DevUI *MCP tools* (methods you can call) and the data exposed by *MCP resources*.
 
-=== Connecting a coding agent
+The primary way to interact with Dev MCP is through the https://github.com/quarkusio/quarkus-agent-mcp[Quarkus Agent MCP] server, which provides a complete developer experience including application lifecycle management, documentation search, and extension-specific coding skills.
+Alternatively, you can connect MCP clients directly to the Dev MCP endpoint for advanced use cases.
 
-The recommended way to connect an AI coding agent to your Quarkus application is the https://github.com/quarkusio/quarkus-agent-mcp[Quarkus Agent MCP] server.
-It manages the application lifecycle, proxies Dev MCP tools, provides documentation search, and delivers extension-specific coding skills.
+=== Connecting a coding agent (recommended)
+
+The https://github.com/quarkusio/quarkus-agent-mcp[Quarkus Agent MCP] server is the recommended way to connect AI coding agents to your Quarkus application.
+It provides several key benefits:
+
+- **Lifecycle management** — Automatically starts, stops, and restarts your Quarkus application
+- **Dev MCP proxy** — Seamlessly forwards all Dev MCP tools and resources from your running application
+- **Documentation search** — Provides semantic search across Quarkus documentation matching your project version
+- **Extension skills** — Delivers extension-specific coding patterns, testing guidelines, and best practices
+- **Build tools** — Includes tools for running tests, managing dependencies, and building your application
 
 The Quarkus Agent MCP server requires https://www.jbang.dev[JBang].
 Make sure JBang is installed before configuring your agent:
@@ -46,14 +55,25 @@ Open the **Dev UI** settings dialog and select the Dev MCP tab to see configurat
 
 image::dev_mcp_settings.png[Dev MCP Settings]
 
-=== Connecting an MCP client
+[TIP]
+====
+The Quarkus Agent MCP server is the recommended approach for most developers.
+Use direct connection only if you need to integrate with a custom MCP client or have specific requirements that the agent doesn't support.
+====
 
-Alternatively to connecting through the Quarkus Agent, you can connect an MCP client directly to the Dev MCP endpoint on the running application.
-Open the **Dev UI** settings dialog, select the Dev MCP tab, and enable Dev MCP.
-The connection details (default `http://localhost:8080/q/dev-mcp`) and per-agent configuration snippets are available under the **Direct connection** section.
+=== Advanced: Direct connection to Dev MCP
+
+For advanced use cases, you can connect an MCP client directly to the Dev MCP endpoint on your running Quarkus application.
+This approach requires you to manually manage the application lifecycle and provides access only to the Dev MCP tools and resources, without the additional features provided by the Quarkus Agent MCP server.
+
+To use direct connection:
+
+1. Open the **Dev UI** settings dialog and select the Dev MCP tab
+2. Enable Dev MCP
+3. Use the connection details (default `http://localhost:8080/q/dev-mcp`) shown under the **Direct connection** section
 
 Any MCP client that supports the https://modelcontextprotocol.io/specification/2025-03-26[Streamable Protocol, version 2025‑03‑26] can connect using that URL.
-After a client connects, it will appear on the tab.
+After a client connects, it will appear on the Dev MCP tab.
 
 == Guide for extension developers
 

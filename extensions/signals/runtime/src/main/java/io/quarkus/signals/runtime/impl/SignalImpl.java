@@ -149,10 +149,21 @@ class SignalImpl<T> implements Signal<T> {
         return (T) obj;
     }
 
+    private static IllegalArgumentException nullSignal() {
+        return new IllegalArgumentException("Signal object must not be null");
+    }
+
+    private static IllegalArgumentException nullResponseType() {
+        return new IllegalArgumentException("Response type must not be null");
+    }
+
     class ReactiveEmissionImpl<S> implements ReactiveEmission<S> {
 
         @Override
         public Uni<Void> publish(S signal) {
+            if (signal == null) {
+                throw nullSignal();
+            }
             List<Receiver<?, ?>> receivers = manager.resolveReceivers(signalType, qualifiers);
             if (receivers.isEmpty()) {
                 return Uni.createFrom().voidItem();
@@ -172,6 +183,9 @@ class SignalImpl<T> implements Signal<T> {
 
         @Override
         public Uni<Void> send(S signal) {
+            if (signal == null) {
+                throw nullSignal();
+            }
             var receiver = manager.nextReceiver(signalType, qualifiers, null);
             if (receiver != null) {
                 return Uni.createFrom().deferred(new Supplier<Uni<? extends Void>>() {
@@ -189,15 +203,24 @@ class SignalImpl<T> implements Signal<T> {
 
         @Override
         public <R> Uni<R> request(S signal, Class<R> responseType) {
+            if (responseType == null) {
+                throw nullResponseType();
+            }
             return request(signal, (Type) responseType);
         }
 
         @Override
         public <R> Uni<R> request(S signal, TypeLiteral<R> responseType) {
+            if (responseType == null) {
+                throw nullResponseType();
+            }
             return request(signal, responseType.getType());
         }
 
         private <R> Uni<R> request(S signal, Type responseType) {
+            if (signal == null) {
+                throw nullSignal();
+            }
             var receiver = manager.nextReceiver(signalType, qualifiers, responseType);
             if (receiver != null) {
                 return Uni.createFrom().deferred(new Supplier<Uni<? extends R>>() {

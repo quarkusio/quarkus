@@ -125,7 +125,8 @@ public interface Signal<T> {
      * To perform additional logic when all receivers have completed, use {@link #reactive()} and then
      * {@link ReactiveEmission#publish(Object)}.
      *
-     * @param signal the signal object
+     * @param signal the signal object (must not be {@code null})
+     *
      * @see ReactiveEmission#publish(Object)
      * @see Receives
      */
@@ -141,7 +142,8 @@ public interface Signal<T> {
      * To perform additional logic when the receiver has completed, use {@link #reactive()} and then
      * {@link ReactiveEmission#send(Object)}.
      *
-     * @param signal the signal object
+     * @param signal the signal object (must not be {@code null})
+     *
      * @see ReactiveEmission#send(Object)
      * @see Receives
      */
@@ -157,9 +159,10 @@ public interface Signal<T> {
      * For a non-blocking variant, use {@link #reactive()} and then {@link ReactiveEmission#request(Object, Class)}.
      *
      * @param <R> the response type
-     * @param signal the signal object
-     * @param responseType the expected response type
+     * @param signal the signal object (must not be {@code null})
+     * @param responseType the expected response type (must not be {@code null})
      * @return the receiver's response, or {@code null} if no receiver matches
+     *
      * @see ReactiveEmission#request(Object, Class)
      * @see Receives
      */
@@ -175,9 +178,10 @@ public interface Signal<T> {
      * For a non-blocking variant, use {@link #reactive()} and then {@link ReactiveEmission#request(Object, TypeLiteral)}.
      *
      * @param <R> the response type
-     * @param signal the signal object
-     * @param responseType a {@link TypeLiteral} representing the expected response type
+     * @param signal the signal object (must not be {@code null})
+     * @param responseType a {@link TypeLiteral} representing the expected response type (must not be {@code null})
      * @return the receiver's response, or {@code null} if no receiver matches
+     *
      * @see ReactiveEmission#request(Object, TypeLiteral)
      * @see Receives
      */
@@ -207,8 +211,9 @@ public interface Signal<T> {
          * All receivers are executed asynchronously.
          * If no receiver matches, the returned {@link Uni} completes with {@code null}.
          *
-         * @param signal the signal object
+         * @param signal the signal object (must not be {@code null})
          * @return a {@link Uni} that completes when all receivers are executed
+         *
          * @see Signal#publish(Object)
          */
         @CheckReturnValue
@@ -221,8 +226,9 @@ public interface Signal<T> {
          * If multiple receivers match, one is selected in round-robin order.
          * If no receiver matches, the returned {@link Uni} completes with {@code null}.
          *
-         * @param signal the signal object
+         * @param signal the signal object (must not be {@code null})
          * @return a {@link Uni} that completes when a receiver is executed
+         *
          * @see Signal#send(Object)
          */
         @CheckReturnValue
@@ -236,9 +242,10 @@ public interface Signal<T> {
          * If no receiver matches, the returned {@link Uni} completes with {@code null}.
          *
          * @param <R> the response type
-         * @param signal the signal object
-         * @param responseType the expected response type
+         * @param signal the signal object (must not be {@code null})
+         * @param responseType the expected response type (must not be {@code null})
          * @return a {@link Uni} that completes with the receiver's response
+         *
          * @see Signal#request(Object, Class)
          * @see Receives
          */
@@ -253,9 +260,10 @@ public interface Signal<T> {
          * If no receiver matches, the returned {@link Uni} completes with {@code null}.
          *
          * @param <R> the response type
-         * @param signal the signal object
-         * @param responseType a {@link TypeLiteral} representing the expected response type
+         * @param signal the signal object (must not be {@code null})
+         * @param responseType a {@link TypeLiteral} representing the expected response type (must not be {@code null})
          * @return a {@link Uni} that completes with the receiver's response
+         *
          * @see Signal#request(Object, TypeLiteral)
          * @see Receives
          */

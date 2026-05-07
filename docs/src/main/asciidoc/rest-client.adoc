@@ -1931,7 +1931,9 @@ quarkus.proxy.credentials-provider.password-key=passwordKey
 <2> Configure the Credentials Provider to obtain the username and password for the proxy.
 
 [NOTE]
+====
 The Credentials Provider is not used when `quarkus.proxy.password` (for global) or `quarkus.proxy.<named>.password` (for named) is not set.
+====
 
 === Local proxy for dev mode
 

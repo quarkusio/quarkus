@@ -718,20 +718,26 @@ The Quarkus build uses the `prod` configuration profile:
    as a project's `application-prod.properties`, `application-prod.yaml` and `application-prod.yml` files
 
 [WARNING]
+====
 The above priorities have changed in Quarkus plugin starting with 3.0. Older versions of the Quarkus Gradle plugin
 preferred `application.properties` over settings in the Gradle build.
+====
 
 [NOTE]
+====
 The Quarkus Gradle plugin uses the "standard" Quarkus mechanisms to load and parse configurations. Support for
 `application.(yaml|yml)` has been added in Quarkus 3.0 in addition to `application.properties`. Also new in 3.0
 is that all mechanisms available via SmallRye Config, are implicitly also now available for the Quarkus Gradle
 plugin.
+====
 
 
 [TIP]
+====
 Use the `quarkusShowEffectiveConfig` task to show the effective configuration options used for a Quarkus build. If you
 specify the `--save-config-properties` command line option, the configuration properties are also store in the file
 `build/<final-name>.quarkus-build.properties`.
+====
 
 
 === Gradle caching / task inputs
@@ -868,12 +874,14 @@ The `quarkusAppPartsBuild` and `quarkusDependenciesBuild` tasks do nothing for `
 |===
 
 [NOTE]
+====
 In a local development environment, the cost (think: time) of storing (and retrieving) even bigger cache artifacts is
 lower than the cost of re-building a Quarkus application. This means, that The Quarkus Gradle plugin allows caching
 even potentially big artifacts like uber-jars or native binaries in non-CI environments. In CI environments, which run
 builds against varying states of a code base (think: running CI against every commit on a main branch), adding each
 built (and big) artifact to the build cache would let the build cache become unnecessarily big, which becomes a
 problem for example in GitHub, where the total amount of cached artifacts is limited to 10 GB.
+====
 
 
 [NOTE]

@@ -104,8 +104,8 @@
         },
         {
             "category": "Misc1",
-            "timeout": 70,
-            "test-modules": "jackson, jsonb, kotlin, rest-client-reactive-kotlin-serialization, quartz, qute, logging-min-level-unset, logging-min-level-set, simple with space, web-dependency-locator",
+            "timeout": 80,
+            "test-modules": "jackson, jsonb, kotlin, rest-client-reactive-kotlin-serialization, quartz, qute, logging-min-level-unset, logging-min-level-set, simple with space, web-dependency-locator, signals, signals-command-mode",
             "os-name": "ubuntu-latest"
         },
         {

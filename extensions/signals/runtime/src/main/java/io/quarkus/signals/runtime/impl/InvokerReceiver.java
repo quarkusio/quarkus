@@ -4,15 +4,11 @@ import java.util.concurrent.CompletionStage;
 
 import jakarta.enterprise.invoke.Invoker;
 
-import org.jboss.logging.Logger;
-
 import io.quarkus.signals.SignalContext;
 import io.quarkus.signals.spi.Receiver;
 import io.smallrye.mutiny.Uni;
 
 public abstract class InvokerReceiver<SIGNAL, RESPONSE> implements Receiver<SIGNAL, RESPONSE> {
-
-    private static final Logger LOG = Logger.getLogger(InvokerReceiver.class);
 
     private final Invoker<SIGNAL, RESPONSE> invoker;
     private final ReceiverInfo receiveInfo;
@@ -43,7 +39,6 @@ public abstract class InvokerReceiver<SIGNAL, RESPONSE> implements Receiver<SIGN
                 return (Uni<RESPONSE>) Uni.createFrom().item(ret);
             }
         } catch (Throwable e) {
-            LOG.warnf("Notification of InvokerReceiver [%s] failed: %s", invoker.getClass().getName(), e);
             return Uni.createFrom().failure(e);
         }
     }

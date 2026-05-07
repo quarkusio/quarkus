@@ -120,7 +120,7 @@ class SignalImpl<T> implements Signal<T> {
 
         @Override
         public void accept(Throwable t) {
-            LOG.debugf(t, "Signal emission failed");
+            LOG.warnf("Receiver notification failed: %s", t);
         }
     };
 

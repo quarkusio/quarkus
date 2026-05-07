@@ -34,7 +34,7 @@ public class ReceiverFailureTest extends AbstractSignalTest {
     @RegisterExtension
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root.addClasses(Cmd.class,
-                    WorkerCmd.class, EventLoopCmd.class,
+                    WorkerCmd.class, EventLoopCmd.class, UniFailureCmd.class,
                     DeclarativeReceivers.class));
 
     @Inject
@@ -45,6 +45,9 @@ public class ReceiverFailureTest extends AbstractSignalTest {
 
     @Inject
     Signal<EventLoopCmd> eventLoopSignal;
+
+    @Inject
+    Signal<UniFailureCmd> uniFailureSignal;
 
     @Inject
     Receivers receivers;
@@ -250,6 +253,85 @@ public class ReceiverFailureTest extends AbstractSignalTest {
         }
     }
 
+    @Test
+    public void testPublishUniFailure() {
+        var reg = receivers.newReceiver(Cmd.class)
+                .setExecutionModel(ExecutionModel.NON_BLOCKING)
+                .notify(new Function<SignalContext<Cmd>, Uni<Void>>() {
+                    @Override
+                    public Uni<Void> apply(SignalContext<Cmd> ctx) {
+                        return Uni.createFrom().failure(new IllegalStateException("publish-uni-boom"));
+                    }
+                });
+        try {
+            var failure = assertThrows(CompositeException.class,
+                    () -> cmd.reactive().publish(new Cmd("u"))
+                            .ifNoItem().after(defaultTimeout()).fail()
+                            .await().indefinitely());
+            assertInstanceOf(IllegalStateException.class, failure.getCauses().get(0));
+        } finally {
+            reg.unregister();
+        }
+    }
+
+    @Test
+    public void testSendUniFailure() {
+        var reg = receivers.newReceiver(Cmd.class)
+                .setExecutionModel(ExecutionModel.NON_BLOCKING)
+                .notify(new Function<SignalContext<Cmd>, Uni<Void>>() {
+                    @Override
+                    public Uni<Void> apply(SignalContext<Cmd> ctx) {
+                        return Uni.createFrom().failure(new IllegalStateException("send-uni-boom"));
+                    }
+                });
+        try {
+            assertThrows(IllegalStateException.class,
+                    () -> cmd.reactive().send(new Cmd("u"))
+                            .ifNoItem().after(defaultTimeout()).fail()
+                            .await().indefinitely());
+        } finally {
+            reg.unregister();
+        }
+    }
+
+    @Test
+    public void testRequestUniFailure() {
+        var reg = receivers.newReceiver(Cmd.class)
+                .setResponseType(String.class)
+                .setExecutionModel(ExecutionModel.NON_BLOCKING)
+                .notify(new Function<SignalContext<Cmd>, Uni<String>>() {
+                    @Override
+                    public Uni<String> apply(SignalContext<Cmd> ctx) {
+                        return Uni.createFrom().failure(new IllegalStateException("request-uni-boom"));
+                    }
+                });
+        try {
+            assertThrows(IllegalStateException.class,
+                    () -> cmd.reactive().request(new Cmd("u"), String.class)
+                            .ifNoItem().after(defaultTimeout()).fail()
+                            .await().indefinitely());
+        } finally {
+            reg.unregister();
+        }
+    }
+
+    @Test
+    public void testDeclarativePublishUniFailure() {
+        var failure = assertThrows(CompositeException.class,
+                () -> uniFailureSignal.reactive().publish(new UniFailureCmd())
+                        .ifNoItem().after(defaultTimeout()).fail()
+                        .await().indefinitely());
+        assertInstanceOf(IllegalStateException.class, failure.getCauses().get(0));
+    }
+
+    @Test
+    public void testDeclarativeSendUniFailure() {
+        assertThrows(IllegalStateException.class,
+                () -> uniFailureSignal.reactive().send(new UniFailureCmd())
+                        .ifNoItem().after(defaultTimeout()).fail()
+                        .await().indefinitely());
+    }
+
     record Cmd(String id) {
     }
 
@@ -257,6 +339,9 @@ public class ReceiverFailureTest extends AbstractSignalTest {
     }
 
     record EventLoopCmd() {
+    }
+
+    record UniFailureCmd() {
     }
 
     @Singleton
@@ -268,6 +353,10 @@ public class ReceiverFailureTest extends AbstractSignalTest {
 
         Uni<Void> onEventLoop(@Receives EventLoopCmd cmd) {
             throw new IllegalStateException("declarative-eventloop-boom");
+        }
+
+        Uni<Void> onUniFailure(@Receives UniFailureCmd cmd) {
+            return Uni.createFrom().failure(new IllegalStateException("declarative-uni-failure-boom"));
         }
     }
 }

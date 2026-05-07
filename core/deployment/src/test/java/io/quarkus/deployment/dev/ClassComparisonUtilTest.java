@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
-import java.lang.annotation.Annotation;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -12,93 +11,86 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.List;
 
-import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.Index;
-import org.jboss.jandex.MethodParameterInfo;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class ClassComparisonUtilTest {
 
     @Nested
-    class CompareMethodAnnotations {
+    class CompareMethodParameterAnnotations {
 
         @Test
-        public void annotationsEqual() {
-            AnnotationInstance instance1 = methodParameterAnnotation(AnnotationForTest1.class);
-            AnnotationInstance instance2 = methodParameterAnnotation(AnnotationForTest1.class);
-
-            List<AnnotationInstance> instances1 = List.of(instance1);
-            List<AnnotationInstance> instances2 = List.of(instance2);
-
-            assertTrue(ClassComparisonUtil.compareMethodAnnotations(instances1, instances2));
+        public void annotationsEqual() throws IOException {
+            assertTrue(isSameStructure(ClassWithParameterAnnotation1.class, ClassWithParameterAnnotation1.class));
+            assertTrue(isSameStructure(ClassWithParameterAnnotation2.class, ClassWithParameterAnnotation2.class));
         }
 
         @Test
-        public void annotationsNotEqual() {
-            AnnotationInstance instance1 = methodParameterAnnotation(AnnotationForTest1.class);
-            AnnotationInstance instance2 = methodParameterAnnotation(AnnotationForTest2.class);
-
-            List<AnnotationInstance> instances1 = List.of(instance1);
-            List<AnnotationInstance> instances2 = List.of(instance2);
-
-            assertFalse(ClassComparisonUtil.compareMethodAnnotations(instances1, instances2));
+        public void annotationsNotEqual() throws IOException {
+            assertFalse(isSameStructure(ClassWithParameterAnnotation1.class, ClassWithParameterAnnotation2.class));
         }
 
         @Test
-        public void compareMethodAnnotationsSizeDiffer() {
-            AnnotationInstance instance = methodParameterAnnotation(AnnotationForTest1.class);
-
-            List<AnnotationInstance> instances = List.of(instance);
-
-            assertFalse(ClassComparisonUtil.compareMethodAnnotations(instances, List.of()));
-            assertFalse(ClassComparisonUtil.compareMethodAnnotations(List.of(), instances));
+        public void compareMethodAnnotationsSizeDiffer() throws IOException {
+            assertFalse(isSameStructure(ClassWithNoParameterAnnotation.class, ClassWithParameterAnnotation1.class));
         }
 
         @Test
-        public void multipleAnnotationsAtSamePosition() {
-            List<AnnotationInstance> instances1 = List.of(
-                    methodParameterAnnotation(AnnotationForTest1.class),
-                    methodParameterAnnotation(AnnotationForTest2.class));
-            List<AnnotationInstance> instances2 = List.of(
-                    methodParameterAnnotation(AnnotationForTest2.class),
-                    methodParameterAnnotation(AnnotationForTest1.class));
-
-            assertTrue(ClassComparisonUtil.compareMethodAnnotations(instances1, instances2));
+        public void multipleAnnotationsAtSamePosition() throws IOException {
+            assertTrue(isSameStructure(ClassWithParameterAnnotationMultipleSamePosition.class,
+                    ClassWithParameterAnnotationMultipleSamePositionInverted.class));
         }
 
         @Test
-        public void multipleAnnotations() {
-            List<AnnotationInstance> instances1 = List.of(
-                    methodParameterAnnotation(AnnotationForTest1.class, 1),
-                    methodParameterAnnotation(AnnotationForTest2.class, 2));
-
-            List<AnnotationInstance> instances2 = List.of(
-                    methodParameterAnnotation(AnnotationForTest1.class, 2),
-                    methodParameterAnnotation(AnnotationForTest2.class, 1));
-
-            assertFalse(ClassComparisonUtil.compareMethodAnnotations(instances1, instances2));
+        public void multipleAnnotations() throws IOException {
+            assertFalse(isSameStructure(ClassWithParameterAnnotationOnTwoParams.class,
+                    ClassWithParameterAnnotationOnTwoParamsInverted.class));
         }
 
-        private static AnnotationInstance methodParameterAnnotation(
-                Class<? extends Annotation> annotation) {
-            return methodParameterAnnotation(annotation, 1);
+        static class ClassWithNoParameterAnnotation {
+            public void process(String param1) {
+            }
         }
 
-        private static AnnotationInstance methodParameterAnnotation(
-                Class<? extends Annotation> annotation, int position) {
-            MethodParameterInfo target = MethodParameterInfo.create(null, (short) position);
-            return AnnotationInstance.builder(annotation).buildWithTarget(target);
+        static class ClassWithParameterAnnotation1 {
+            public void process(@AnnotationForTest1 String param1) {
+            }
         }
 
-        @Target({ ElementType.PARAMETER, ElementType.TYPE_USE })
+        static class ClassWithParameterAnnotation2 {
+            public void process(@AnnotationForTest2 String param1) {
+            }
+        }
+
+        static class ClassWithParameterAnnotationMultipleSamePosition {
+            public void process(@AnnotationForTest1 @AnnotationForTest2 String param1) {
+            }
+        }
+
+        static class ClassWithParameterAnnotationMultipleSamePositionInverted {
+            public void process(@AnnotationForTest2 @AnnotationForTest1 String param1) {
+            }
+        }
+
+        static class ClassWithParameterAnnotationOnTwoParams {
+            public void process(@AnnotationForTest1 String param1, @AnnotationForTest2 String param2) {
+            }
+        }
+
+        static class ClassWithParameterAnnotationOnTwoParamsInverted {
+            public void process(@AnnotationForTest2 String param1, @AnnotationForTest1 String param2) {
+            }
+        }
+
+        @Target({ ElementType.PARAMETER })
         @Retention(RetentionPolicy.RUNTIME)
         @Documented
         private @interface AnnotationForTest1 {
         }
 
-        @Target({ ElementType.PARAMETER, ElementType.TYPE_USE })
+        @Target({ ElementType.PARAMETER })
         @Retention(RetentionPolicy.RUNTIME)
         @Documented
         private @interface AnnotationForTest2 {

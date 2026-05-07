@@ -10,9 +10,9 @@ import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.logging.Logger;
 
+import io.smallrye.common.vertx.ContextLocals;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
-import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 
 @Path("/reproducer/25818")
@@ -24,7 +24,7 @@ public class ReproducerResource {
     BlockingService service;
 
     private void addToContext() {
-        Vertx.currentContext().putLocal("hello-target", "you");
+        ContextLocals.put("hello-target", "you");
     }
 
     @GET
@@ -52,12 +52,11 @@ public class ReproducerResource {
     @GET
     @Path("/worker-pool-submit")
     public Uni<String> workerPoolSubmit() {
-        Vertx.currentContext().putLocal("yolo", "yolo");
+        ContextLocals.put("yolo", "yolo");
         return Uni.createFrom().emitter(emitter -> {
             Infrastructure.getDefaultWorkerPool().submit(() -> {
-                Context ctx = Vertx.currentContext();
-                if (ctx != null) {
-                    emitter.complete("yolo -> " + ctx.getLocal("yolo"));
+                if (Vertx.currentContext() != null) {
+                    emitter.complete("yolo -> " + ContextLocals.<String> get("yolo", null));
                 } else {
                     emitter.complete("Context was null");
                 }
@@ -68,12 +67,11 @@ public class ReproducerResource {
     @GET
     @Path("/worker-pool-schedule")
     public Uni<String> workerPoolSchedule() {
-        Vertx.currentContext().putLocal("yolo", "yolo");
+        ContextLocals.put("yolo", "yolo");
         return Uni.createFrom().emitter(emitter -> {
             Infrastructure.getDefaultWorkerPool().schedule(() -> {
-                Context ctx = Vertx.currentContext();
-                if (ctx != null) {
-                    emitter.complete("yolo -> " + ctx.getLocal("yolo"));
+                if (Vertx.currentContext() != null) {
+                    emitter.complete("yolo -> " + ContextLocals.<String> get("yolo", null));
                 } else {
                     emitter.complete("Context was null");
                 }

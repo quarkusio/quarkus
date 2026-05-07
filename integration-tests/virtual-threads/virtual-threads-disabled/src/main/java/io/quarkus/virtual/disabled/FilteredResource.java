@@ -10,7 +10,7 @@ import org.jboss.logmanager.MDC;
 
 import io.quarkus.test.vertx.VirtualThreadsAssertions;
 import io.smallrye.common.annotation.RunOnVirtualThread;
-import io.vertx.core.Vertx;
+import io.smallrye.common.vertx.ContextLocals;
 
 @Path("/filter")
 public class FilteredResource {

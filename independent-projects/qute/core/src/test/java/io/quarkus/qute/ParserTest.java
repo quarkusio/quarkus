@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.Reader;
 import java.io.StringReader;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -203,6 +204,38 @@ public class ParserTest {
                 .withMessage(
                         "Parser error in template [foo.html:1]: mandatory section parameters not declared for {#if}: [condition]")
                 .hasFieldOrProperty("origin");
+    }
+
+    @Test
+    public void testSourceUriInTemplateException() {
+        URI sourceUri = URI.create("file:///path/to/foo.html");
+        Engine engine = Engine.builder().addDefaultSectionHelpers().addLocator(id -> Optional.of(new TemplateLocation() {
+
+            @Override
+            public Reader read() {
+                return new StringReader("{#if}");
+            }
+
+            @Override
+            public Optional<Variant> getVariant() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<URI> getSource() {
+                return Optional.of(sourceUri);
+            }
+        })).build();
+        try {
+            engine.getTemplate("foo.html");
+            fail("No parser error found");
+        } catch (TemplateException expected) {
+            assertEquals(
+                    "Parser error in template [file:///path/to/foo.html:1]: mandatory section parameters not declared for {#if}: [condition]",
+                    expected.getMessage());
+            assertNotNull(expected.getOrigin());
+            assertEquals(sourceUri, expected.getOrigin().getSourceUri().orElse(null));
+        }
     }
 
     @Test

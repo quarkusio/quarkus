@@ -4,14 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.ParameterDeclaration;
 import io.quarkus.qute.TemplateNode.Origin;
-import io.quarkus.qute.Variant;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
 
 public class TemplateAnalysisTest {
@@ -38,11 +36,6 @@ public class TemplateAnalysisTest {
             @Override
             public Origin getOrigin() {
                 return new Origin() {
-
-                    @Override
-                    public Optional<Variant> getVariant() {
-                        return Optional.empty();
-                    }
 
                     @Override
                     public String getTemplateId() {

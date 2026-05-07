@@ -1,5 +1,6 @@
 package io.quarkus.qute;
 
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -166,11 +167,23 @@ public interface TemplateNode {
          *
          * @return the template variant
          */
-        Optional<Variant> getVariant();
+        default Optional<Variant> getVariant() {
+            return Optional.empty();
+        }
+
+        /**
+         *
+         * @return the source {@link URI} or empty
+         */
+        default Optional<URI> getSourceUri() {
+            return Optional.empty();
+        }
 
         default void appendTo(StringBuilder builder) {
-            // It only makes sense to append the info for a template with an explicit id
-            if (hasNonGeneratedTemplateId()) {
+            Optional<URI> sourceUri = getSourceUri();
+            if (sourceUri.isPresent()) {
+                builder.append(" template [").append(sourceUri.get()).append(":").append(getLine()).append("]");
+            } else if (hasNonGeneratedTemplateId()) {
                 builder.append(" template [").append(getTemplateId()).append(":").append(getLine()).append("]");
             }
         }

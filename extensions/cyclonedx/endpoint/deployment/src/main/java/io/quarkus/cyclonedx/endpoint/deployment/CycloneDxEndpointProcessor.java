@@ -2,13 +2,13 @@ package io.quarkus.cyclonedx.endpoint.deployment;
 
 import java.util.Optional;
 
-import io.quarkus.cyclonedx.deployment.spi.EmbeddedSbomMetadataBuildItem;
 import io.quarkus.cyclonedx.deployment.spi.EmbeddedSbomRequestBuildItem;
 import io.quarkus.cyclonedx.endpoint.runtime.CycloneDxEndpointRecorder;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.EmbeddedSbomMetadataBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;

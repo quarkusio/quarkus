@@ -25,6 +25,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.EmbeddedSbomMetadataBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.NativeMonitoringBuildItem;
 import io.quarkus.deployment.builditem.SuppressNonRuntimeConfigChangedWarningBuildItem;
@@ -134,7 +135,8 @@ public class NativeImageBuildStep {
             List<NativeImageFeatureBuildItem> nativeImageFeatures,
             NativeImageRunnerBuildItem nativeImageRunner,
             List<NativeMonitoringBuildItem> nativeMonitoringBuildItems,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
+            Optional<EmbeddedSbomMetadataBuildItem> embeddedSbomRequests) {
 
         Path outputDir;
         try {
@@ -149,7 +151,7 @@ public class NativeImageBuildStep {
 
         String nativeImageName = getNativeImageName(outputTargetBuildItem, packageConfig);
 
-        NativeImageInvokerInfo nativeImageArgs = new NativeImageInvokerInfo.Builder()
+        NativeImageInvokerInfo.Builder nativeArgsBuilder = new NativeImageInvokerInfo.Builder()
                 .setNativeConfig(nativeConfig)
                 .setLocalesBuildTimeConfig(localesBuildTimeConfig)
                 .setOutputTargetBuildItem(outputTargetBuildItem)
@@ -166,8 +168,11 @@ public class NativeImageBuildStep {
                 .setGraalVMVersion(GraalVM.Version.CURRENT)
                 .setNativeImageFeatures(nativeImageFeatures)
                 .setContainerBuild(nativeImageRunner.isContainerBuild())
-                .setNativeMonitoringOptions(nativeMonitoringBuildItems)
-                .build();
+                .setNativeMonitoringOptions(nativeMonitoringBuildItems);
+        if (embeddedSbomRequests.isPresent()) {
+            nativeArgsBuilder.setSBOMResourceName("/" + embeddedSbomRequests.get().getResourceName());
+        }
+        NativeImageInvokerInfo nativeImageArgs = nativeArgsBuilder.build();
         List<String> command = nativeImageArgs.getArgs();
 
         try {
@@ -223,7 +228,8 @@ public class NativeImageBuildStep {
             List<NativeImageFeatureBuildItem> nativeImageFeatures,
             Optional<NativeImageAgentConfigDirectoryBuildItem> nativeImageAgentConfigDirectoryBuildItem,
             List<NativeMonitoringBuildItem> nativeMonitoringItems,
-            NativeImageRunnerBuildItem nativeImageRunner) {
+            NativeImageRunnerBuildItem nativeImageRunner,
+            Optional<EmbeddedSbomMetadataBuildItem> sbomResource) {
         if (nativeConfig.debug().enabled()) {
             copyJarSourcesToLib(outputTargetBuildItem, curateOutcomeBuildItem);
             copySourcesToSourceCache(outputTargetBuildItem);
@@ -264,7 +270,7 @@ public class NativeImageBuildStep {
         checkGraalVMVersion(graalVMVersion);
 
         try {
-            NativeImageInvokerInfo commandAndExecutable = new NativeImageInvokerInfo.Builder()
+            NativeImageInvokerInfo.Builder nativeArgsBuilder = new NativeImageInvokerInfo.Builder()
                     .setNativeConfig(nativeConfig)
                     .setLocalesBuildTimeConfig(localesBuildTimeConfig)
                     .setOutputTargetBuildItem(outputTargetBuildItem)
@@ -284,8 +290,11 @@ public class NativeImageBuildStep {
                     .setGraalVMVersion(graalVMVersion)
                     .setNativeImageFeatures(nativeImageFeatures)
                     .setContainerBuild(isContainerBuild)
-                    .setNativeImageAgentConfigDirectory(nativeImageAgentConfigDirectoryBuildItem)
-                    .build();
+                    .setNativeImageAgentConfigDirectory(nativeImageAgentConfigDirectoryBuildItem);
+            if (sbomResource.isPresent()) {
+                nativeArgsBuilder.setSBOMResourceName("/" + sbomResource.get().getResourceName());
+            }
+            NativeImageInvokerInfo commandAndExecutable = nativeArgsBuilder.build();
 
             List<String> nativeImageArgs = commandAndExecutable.args;
 
@@ -730,6 +739,7 @@ public class NativeImageBuildStep {
             private boolean classpathIsBroken;
             private boolean containerBuild;
             private Optional<NativeImageAgentConfigDirectoryBuildItem> nativeImageAgentConfigDirectory = Optional.empty();
+            private String sbomResourceName;
 
             public Builder setNativeConfig(NativeConfig nativeConfig) {
                 this.nativeConfig = nativeConfig;
@@ -769,6 +779,11 @@ public class NativeImageBuildStep {
 
             public Builder setExcludeConfigs(List<ExcludeConfigBuildItem> excludeConfigs) {
                 this.excludeConfigs = excludeConfigs;
+                return this;
+            }
+
+            public Builder setSBOMResourceName(String sbomResource) {
+                this.sbomResourceName = sbomResource;
                 return this;
             }
 
@@ -924,6 +939,21 @@ public class NativeImageBuildStep {
 
                 if (nativeConfig.enableReports()) {
                     addExperimentalVMOption(nativeImageArgs, "-H:PrintAnalysisCallTreeType=CSV");
+                }
+
+                if (sbomResourceName != null) {
+                    // Oracle GraalVM suppors --enable-sbom=embed and does the SBOM generation itself
+                    // Mandrel/GraalVM CE will use the path to the classpath resource to find the SBOM that
+                    // is being embedded in the produced native image
+                    Distribution distro = graalVMVersion.getDistribution();
+                    boolean addSbomOption = distro == Distribution.ORACLE || distro == Distribution.MANDREL;
+                    if (addSbomOption) {
+                        String embedOptionValue = "embed";
+                        if (graalVMVersion.getDistribution() == Distribution.MANDREL) {
+                            embedOptionValue += ":" + sbomResourceName;
+                        }
+                        nativeImageArgs.add("--enable-sbom=" + embedOptionValue);
+                    }
                 }
 
                 // For getting the build output stats as a JSON file

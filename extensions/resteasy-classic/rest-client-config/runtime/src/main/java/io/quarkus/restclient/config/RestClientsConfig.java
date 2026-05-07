@@ -141,7 +141,6 @@ public interface RestClientsConfig {
      * <p>
      * Can be overwritten by client-specific settings.
      */
-    @Deprecated
     @WithDefault("15000")
     Long connectTimeout();
 

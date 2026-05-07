@@ -10,7 +10,7 @@ import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 
 import io.quarkus.test.vertx.VirtualThreadsAssertions;
-import io.vertx.core.Vertx;
+import io.smallrye.common.vertx.ContextLocals;
 
 public class Filters {
     @ServerRequestFilter(nonBlocking = true)

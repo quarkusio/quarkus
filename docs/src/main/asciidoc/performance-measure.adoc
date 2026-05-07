@@ -13,11 +13,14 @@ This guide covers:
 
 * how we measure memory usage
 * how we measure startup time
+* how we measure throughput
 * which additional flags will Quarkus apply to native-image by default
 * Coordinated omission Problem in Tools
 
 All of our tests are run on the same hardware for a given batch.
 It goes without saying, but it's better when you say it.
+
+NOTE: The https://github.com/quarkusio/spring-quarkus-perf-comparison[spring-quarkus-perf-comparison] repository contains the runnable scripts used for our official benchmarks. The sections below describe the methodology; the repository has the exact, up-to-date commands.
 
 == How do we measure memory usage
 
@@ -86,7 +89,16 @@ If you happen to be running on Linux, you can execute the `ps` command directly,
 
 === Platform Specific Memory Reporting
 
-In order to not incur the performance overhead of running with NVM enabled, we measure the total RSS of an JVM application using tools specific to each platform.
+In order to not incur the performance overhead of running with NMT enabled, we measure the total RSS of a JVM application using tools specific to each platform.
+
+The https://github.com/quarkusio/spring-quarkus-perf-comparison/blob/main/scripts/perf-lab/main.yml[performance lab] captures RSS after the first successful request using `pmap`:
+
+[source,shell]
+----
+pmap -x $PID | grep total | awk '{print $4}'
+----
+
+This returns the total RSS in kilobytes, which is then converted to MiB.
 
 Linux::
 
@@ -146,56 +158,99 @@ Which means IntelliJ IDEA consumes 281,8 MB of resident memory.
 == How do we measure startup time
 
 Some frameworks use aggressive lazy initialization techniques.
-It is important to measure the startup time to first request to most accurately reflect how long a framework needs to start.
+It is important to measure the startup time to first request (TTFR) to most accurately reflect how long a framework needs to start.
 Otherwise, you will miss the time the framework _actually_ takes to initialize.
 
 Here is how we measure startup time in our tests.
 
-We create a sample application that logs timestamps for certain points in the application lifecycle.
+=== Approach
 
-[source, java]
-----
-@Path("/")
-public class GreetingEndpoint {
+We record a nanosecond timestamp immediately before launching the application, then poll the application's HTTP endpoint until it returns a 200 response. The difference is the Time to First Request (TTFR).
 
-    private static final String template = "Hello, %s!";
-
-    @GET
-    @Path("/greeting")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Greeting greeting(@QueryParam("name") String name) {
-        System.out.println(new SimpleDateFormat("HH:mm:ss.SSS").format(new java.util.Date(System.currentTimeMillis())));
-        String suffix = name != null ? name : "World";
-        return new Greeting(String.format(template, suffix));
-    }
-
-    void onStart(@Observes StartupEvent startup) {
-        System.out.println(new SimpleDateFormat("HH:mm:ss.SSS").format(new Date()));
-    }
-}
-----
-
-We start looping in a shell, sending requests to the rest endpoint of the sample application we are testing.
+The https://github.com/quarkusio/spring-quarkus-perf-comparison/blob/main/scripts/perf-lab/scripts/time-to-1st-request.sh[`time-to-1st-request.sh`] script in the benchmark repository implements this precisely. It records the start time using nanosecond precision:
 
 [source,shell]
 ----
-$ while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:8080/api/greeting)" != "200" ]]; do sleep .00001; done
+$ date +%s%N
 ----
 
-In a separate terminal, we start the timing application that we are testing, printing the time the application starts
+NOTE: On macOS, the built-in `date` does not support `%N`. Install GNU coreutils and use `gdate +%s%N` instead.
+
+A background polling loop attempts TCP connections and sends HTTP GET requests until a 200 response is received:
 
 [source,shell]
 ----
-$ date +"%T.%3N" &&  ./target/quarkus-timing-runner
-
-10:57:32.508
-10:57:32.512
-2019-04-05 10:57:32,512 INFO  [io.quarkus] (main) Quarkus 0.11.0 started in 0.002s. Listening on: http://127.0.0.1:8080
-2019-04-05 10:57:32,512 INFO  [io.quarkus] (main) Installed features: [cdi, rest, rest-jackson]
-10:57:32.537
+while true; do
+  if exec 3<>/dev/tcp/"$HOST"/"$PORT"; then
+    echo -e "GET $URL_PATH HTTP/1.0\r\nHost: $HOST\r\nConnection: close\r\n\r\n" >&3
+    read -r _ status_code _ <&3
+    exec 3>&-
+    if [[ "$status_code" == "200" ]]; then
+      break
+    fi
+  fi
+done
 ----
 
-The difference between the final timestamp and the first timestamp is the total startup time for the application to serve the first request.
+The TTFR is then computed as the difference between the response timestamp and the start timestamp, in nanoseconds.
+
+=== Why not just use the framework's reported startup time?
+
+A framework-reported startup time (e.g. "started in 0.002s") only measures internal initialization.
+It may not include time spent loading shared libraries, JVM bootstrap, or the time until the application can actually serve a request.
+Measuring TTFR end-to-end captures the full cost.
+
+== How do we measure throughput
+
+Throughput is measured using https://hyperfoil.io[Hyperfoil], a tool designed to avoid the <<coordinated-omission,coordinated omission problem>>.
+We run Hyperfoil via https://www.jbang.dev[JBang], which handles downloading and launching it automatically.
+
+The https://github.com/quarkusio/spring-quarkus-perf-comparison/blob/main/scripts/perf-lab/main.yml[performance lab] invokes Hyperfoil as follows:
+
+[source,shell]
+----
+$ jbang \
+    -Dio.hyperfoil.rootdir=${HYPERFOIL_LOGS_DIR} \
+    -Dio.hyperfoil.cpu.watchdog.idle.threshold=0.0 \
+    run@hyperfoil \
+      -o ${HYPERFOIL_LOGS_DIR} \
+      load-test-fixed-threads-read-all.hf.yml
+----
+
+The https://github.com/quarkusio/spring-quarkus-perf-comparison/blob/main/scripts/perf-lab/load-tests/load-test-fixed-threads-read-all.hf.yml[Hyperfoil configuration] defines three phases:
+
+1. **Warmup** — 2 minutes of traffic with 100 concurrent connections (configurable)
+2. **Cooldown** — a 30-second pause
+3. **Load test** — 30 seconds of measured traffic with 100 concurrent connections
+
+The configuration uses these defaults, which can be overridden with `-P` flags:
+
+[cols="1,1,3"]
+|===
+| Parameter | Default | Description
+
+| `CONNECTIONS` | 100 | Number of concurrent connections
+| `THREADS` | 2 | Hyperfoil executor threads
+| `WARMUP_DURATION` | 2m | Duration of warmup phase
+| `LOAD_DURATION` | 30s | Duration of measured load test
+| `PATH` | /fruits | Endpoint under test
+|===
+
+Throughput is calculated from the Hyperfoil results as requests completed divided by elapsed time.
+
+=== JVM flags for benchmarking
+
+The benchmark scripts apply these JVM flags when running the application under test:
+
+[source,shell]
+----
+-XX:ActiveProcessorCount=4 -Xms512m -Xmx512m
+----
+
+`-XX:ActiveProcessorCount` limits how many processors the JVM believes are available, ensuring consistent thread pool sizing across environments.
+`-Xms` and `-Xmx` are set to the same value to eliminate heap resizing during the measurement.
+
+In the performance lab, CPU affinity is further controlled using `taskset` to pin processes to specific cores, preventing interference between the application, database, load generator, and monitoring.
 
 == Additional flags applied by Quarkus
 
@@ -239,23 +294,24 @@ If you're to investigate some differences in detail make sure to check what Quar
 plugin is producing a native image, the full command lines are logged.
 
 
+[[coordinated-omission]]
 == Coordinated Omission Problem in Tools
 
-When measuring performance of a framework like Quarkus the latency experience by users are especially interesting and for that there are many different tools. Unfortunately, many fail to measure the latency correctly and instead fall short and create the Coordinate Omission problem. Meaning tools fails to acoomodate for delays to submit new requests when system is under load and aggregate these numbers making the latency and throughput numbers very misleading.
+When measuring performance of a framework like Quarkus the latency experience by users are especially interesting and for that there are many different tools. Unfortunately, many fail to measure the latency correctly and instead fall short and create the Coordinate Omission problem. Meaning tools fails to accommodate for delays to submit new requests when system is under load and aggregate these numbers making the latency and throughput numbers very misleading.
 
 A good walkthrough of the issue is https://www.youtube.com/watch?v=lJ8ydIuPFeU[this video] where Gil Tene the author of wrk2 explains the issue and https://www.youtube.com/watch?v=xdG8b9iDYbE[Quarkus Insights #22] have John O'Hara from Quarkus performance team show how it can show up.
 
-Although that video and related papers and articles date all back to 2015 then even today you will find tools that fall short with the coordinated oission problem
+Although that video and related papers and articles date all back to 2015 then even today you will find tools that fall short with the coordinated omission problem.
 
-Tools that at current time of writing is known to excert the problem and should NOT be used for measuring latency/throughput (it may be used for other things):
+Tools that at current time of writing are known to exhibit the problem and should NOT be used for measuring latency/throughput (they may be used for other things):
 
  * JMeter
  * wrk
 
-Tools that are known to not be affected are:
+Tools that are known to not be affected:
 
  * https://github.com/giltene/wrk2[wrk2]
- * https://hyperfoil.io[HyperFoil]
+ * https://hyperfoil.io[Hyperfoil] — this is what the https://github.com/quarkusio/spring-quarkus-perf-comparison[Quarkus benchmark suite] uses
 
 Mind you, the tools are not better than your own understanding of what they measure thus even when using `wrk2` or `hyperfoil` make sure you understand what the numbers mean.
 

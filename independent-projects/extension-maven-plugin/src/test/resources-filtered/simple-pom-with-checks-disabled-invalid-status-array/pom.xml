@@ -1,0 +1,27 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>io.quackiverse</groupId>
+  <artifactId>test-artifact</artifactId>
+  <version>1.4.2-SNAPSHOT</version>
+  <name>an arbitrary name</name>
+
+  <properties>
+    <skipExtensionValidation>true</skipExtensionValidation>
+    <ignoreNotDetectedQuarkusCoreVersion>true</ignoreNotDetectedQuarkusCoreVersion>
+  </properties>
+
+  <scm>
+    <url>https://github.com/from/pom</url>
+  </scm>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>quarkus.io</groupId>
+        <artifactId>extension-maven-plugin</artifactId>
+        <version>${project.version}</version>
+      </plugin>
+    </plugins>
+  </build>
+</project>

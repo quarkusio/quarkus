@@ -95,7 +95,7 @@ public class SupplierMap<K, V> implements Map<K, V> {
     @Override
     public void putAll(Map<? extends K, ? extends V> m) {
         for (Map.Entry<? extends K, ? extends V> entry : m.entrySet()) {
-            cache.put(entry.getKey(), entry.getValue());
+            suppliers.put(entry.getKey(), entry::getValue);
         }
     }
 

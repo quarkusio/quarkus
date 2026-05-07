@@ -53,7 +53,10 @@ public class ClassComparisonUtil {
             if (!of.type().equals(field.type())) {
                 return false;
             }
-            if (!compareAnnotations(of.annotations(), field.annotations())) {
+            // Use declaredAnnotations() to only compare FIELD annotations, not TYPE annotations.
+            // TYPE annotations are already compared via the type().equals() check above,
+            // since Jandex Type objects include annotation positioning information.
+            if (!compareAnnotations(of.declaredAnnotations(), field.declaredAnnotations())) {
                 return false;
             }
         }

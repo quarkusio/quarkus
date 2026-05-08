@@ -30,6 +30,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
     private Map<String, AdditionalField> additionalFields;
     private LogFormat logFormat = LogFormat.DEFAULT;
     private String tracePrefix = "";
+    private boolean flatMdc = false;
     private List<JsonProvider> discoveredProviders = Collections.emptyList();
     private volatile List<JsonProvider> jsonProviders;
 
@@ -126,10 +127,18 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         this.tracePrefix = tracePrefix;
     }
 
+    public boolean isFlatMdc() {
+        return flatMdc;
+    }
+
+    public void setFlatMdc(boolean flatMdc) {
+        this.flatMdc = flatMdc;
+    }
+
     @Override
     protected Generator createGenerator(final Writer writer) {
         Generator superGenerator = super.createGenerator(writer);
-        return new FormatterJsonGenerator(superGenerator, this.excludedKeys);
+        return new FormatterJsonGenerator(superGenerator, this.excludedKeys, this.flatMdc);
     }
 
     @Override
@@ -290,10 +299,12 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
 
         private final Generator delegate;
         private final Set<String> excludedKeys;
+        private final boolean flatMdc;
 
-        private FormatterJsonGenerator(final Generator delegate, final Set<String> excludedKeys) {
+        private FormatterJsonGenerator(final Generator delegate, final Set<String> excludedKeys, final boolean flatMdc) {
             this.delegate = delegate;
             this.excludedKeys = excludedKeys;
+            this.flatMdc = flatMdc;
         }
 
         @Override
@@ -321,7 +332,16 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         @Override
         public Generator add(final String key, final Map<String, ?> value) throws Exception {
             if (!excludedKeys.contains(key)) {
-                delegate.add(key, value);
+                if (flatMdc && value != null && !value.isEmpty()) {
+                    for (Map.Entry<String, ?> entry : value.entrySet()) {
+                        Object v = entry.getValue();
+                        if (v != null) {
+                            delegate.add(entry.getKey(), v.toString());
+                        }
+                    }
+                } else if (!flatMdc) {
+                    delegate.add(key, value);
+                }
             }
             return this;
         }

@@ -482,6 +482,23 @@ The possible values are:
 
 * *default*: Generates structured logs based on the `key,values` present in the log record.
 Mapped Diagnostic Context (MDC) and Nested Diagnostic Context (NDC) data are included under the `mdc` and `ndc` fields.
++
+Set `quarkus.log.console.json.mdc.flat-fields=true` to write MDC entries as root-level JSON fields instead of nesting them under `mdc`.
+This is useful when a log aggregator (such as OpenSearch or Elasticsearch) needs MDC fields to be queryable as top-level document fields.
++
+.Example: nested MDC (default, `flat-fields=false`)
+[source,json]
+----
+{"timestamp":"...","message":"Handling request","mdc":{"requestId":"abc123","userId":"42"}}
+----
++
+.Example: flat MDC (`flat-fields=true`)
+[source,json]
+----
+{"timestamp":"...","message":"Handling request","requestId":"abc123","userId":"42"}
+----
++
+The option is available for all handler types: `quarkus.log.console.json.mdc.flat-fields`, `quarkus.log.file.json.mdc.flat-fields`, `quarkus.log.syslog.json.mdc.flat-fields`, `quarkus.log.socket.json.mdc.flat-fields`, and named handlers such as `quarkus.log.handler.console.<name>.json.mdc.flat-fields`.
 * *ecs*: Uses the link:https://www.elastic.co/docs/reference/ecs/ecs-field-reference[Elastic Common Schema (ECS)] format.
 This format modifies some default field names and adds other fields to align with ECS.
 +

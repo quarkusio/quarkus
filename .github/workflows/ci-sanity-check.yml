@@ -21,6 +21,7 @@ permissions:
 #      - '.github/*.conf'
 #      - '.sdkmanrc'
 #      - '.devcontainer/**'
+#      - '.agents/**'
 #  pull_request:
 #    paths:
 #      - '.gitignore'
@@ -36,7 +37,7 @@ permissions:
 #      - '.github/*.conf'
 #      - '.sdkmanrc'
 #      - '.devcontainer/**'
-on: [workflow_dispatch]
+#      - '.agents/**'
 
 jobs:
   ci-sanity-check:

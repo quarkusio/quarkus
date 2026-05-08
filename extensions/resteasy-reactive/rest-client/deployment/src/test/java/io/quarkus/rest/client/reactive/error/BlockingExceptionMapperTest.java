@@ -49,10 +49,11 @@ public class BlockingExceptionMapperTest {
                             ClientResource.class,
                             Resource.class)
                     .addAsResource(
-                            new StringAsset(setUrlForClass(ClientUsingNotBlockingExceptionMapper.class) + "\n"
-                                    + setUrlForClass(ClientUsingBlockingExceptionMapper.class) + "\n"
-                                    + setUrlForClass(ClientUsingBlockingExceptionMapperWithAnnotation.class) + "\n"
-                                    + setUrlForClass(ClientUsingBothExceptionMappers.class) + "\n"),
+                            new StringAsset(setUrlForClass(ClientUsingNotBlockingExceptionMapper.class)
+                                    + setUrlForClass(ClientUsingBlockingExceptionMapper.class)
+                                    + setUrlForClass(ClientUsingBlockingExceptionMapperWithAnnotation.class)
+                                    + setUrlForClass(ClientUsingBothExceptionMappers.class)
+                                    + "quarkus.log.category.\"io.quarkus.vertx.http.runtime.QuarkusErrorHandler\".level=OFF\n"),
                             "application.properties"));
 
     public static final String ERROR_MESSAGE = "The entity was not found";

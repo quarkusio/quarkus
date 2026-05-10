@@ -487,7 +487,7 @@ This format modifies some default field names and adds other fields to align wit
 +
 Fields include `@timestamp`, `log.logger`, `log.level`, `process.pid`, `process.name`, `process.thread.name`, `process.thread.id`, `host.hostname`, `event.sequence`, `error.message`, `error.stack_trace`, `ecs.version`, `data_stream.type`, `service.name`, `service.version`, and `service.environment`.
 * *gcp*: Uses the link:https://cloud.google.com/logging/docs/structured-logging#structured_logging_special_fields[Google Cloud] format.
-This format follows the *default* format.
+This format follows the *default* format. When using GCP format, if `exception-output-type` is set to `DETAILED` (the default), it is automatically upgraded to `DETAILED_AND_FORMATTED` to ensure stack traces appear in the `stack_trace` field.
 +
 When you use xref:opentelemetry-tracing.adoc[OpenTelemetry], Quarkus flattens tracing data present in the `mdc` field and copies it to `spanId`, `traceSampled`, and `trace`, with the `trace` value including a prefix.
 +

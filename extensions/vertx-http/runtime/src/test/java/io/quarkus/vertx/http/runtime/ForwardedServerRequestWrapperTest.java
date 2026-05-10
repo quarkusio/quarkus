@@ -43,7 +43,7 @@ class ForwardedServerRequestWrapperTest {
         when(mockRequest.authority()).thenReturn(HostAndPort.create("localhost", 8080));
 
         ForwardingProxyOptions options = new ForwardingProxyOptions(
-                false, false, false, false, false, null, false, false, null, null, null);
+                false, false, false, false, false, null, false, false, null, null, null, null);
 
         TrustedProxyCheck trustedProxyCheck = TrustedProxyCheck.allowAll();
         wrapper = new ForwardedServerRequestWrapper(mockRequest, options, trustedProxyCheck);

@@ -2,6 +2,7 @@ package io.quarkus.vertx.http.runtime.options;
 
 import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setCurrentContextSafe;
 import static io.quarkus.vertx.http.runtime.TrustedProxyCheck.allowAll;
+import static io.quarkus.vertx.http.runtime.TrustedProxyCheck.createTrustedProxyDnCheck;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -27,6 +28,7 @@ import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.ClientAuth;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.Router;
@@ -91,26 +93,29 @@ public class HttpServerCommonHandlers {
     }
 
     public static Handler<HttpServerRequest> applyProxy(ProxyConfig proxyConfig, Handler<HttpServerRequest> root,
-            Supplier<Vertx> vertx) {
+            Supplier<Vertx> vertx, ClientAuth clientAuth) {
         if (proxyConfig.proxyAddressForwarding()) {
-            final ForwardingProxyOptions forwardingProxyOptions = ForwardingProxyOptions.from(proxyConfig);
+            final ForwardingProxyOptions forwardingProxyOptions = ForwardingProxyOptions.from(proxyConfig, clientAuth);
+
+            if (forwardingProxyOptions.trustedProxyDns != null && !forwardingProxyOptions.trustedProxyDns.isEmpty()) {
+                return new ProxyHttpServerRequestHandler(root, forwardingProxyOptions) {
+                    @Override
+                    protected TrustedProxyCheck getProxyCheck(HttpServerRequest event) {
+                        return createTrustedProxyDnCheck(event, forwardingProxyOptions.trustedProxyDns);
+                    }
+                };
+            }
+
             final TrustedProxyCheck.TrustedProxyCheckBuilder proxyCheckBuilder = forwardingProxyOptions.trustedProxyCheckBuilder;
             if (proxyCheckBuilder == null) {
                 // no proxy check => we do not restrict who can send `X-Forwarded` or `X-Forwarded-*` headers
-                final TrustedProxyCheck allowAllProxyCheck = allowAll();
-                return new Handler<>() {
+                return new ProxyHttpServerRequestHandler(root, forwardingProxyOptions) {
+
+                    private final TrustedProxyCheck trustedProxyCheck = allowAll();
+
                     @Override
-                    public void handle(HttpServerRequest event) {
-                        ForwardedServerRequestWrapper wrapper;
-                        try {
-                            wrapper = new ForwardedServerRequestWrapper(event, forwardingProxyOptions, allowAllProxyCheck);
-                            @SuppressWarnings("unused")
-                            var unused = wrapper.authority();
-                        } catch (IllegalArgumentException e) {
-                            event.response().setStatusCode(400).end();
-                            return;
-                        }
-                        root.handle(wrapper);
+                    protected TrustedProxyCheck getProxyCheck(HttpServerRequest event) {
+                        return trustedProxyCheck;
                     }
                 };
             } else {
@@ -208,6 +213,34 @@ public class HttpServerCommonHandlers {
                     }
                 }
             }
+        }
+    }
+
+    private static abstract class ProxyHttpServerRequestHandler implements Handler<HttpServerRequest> {
+
+        private final Handler<HttpServerRequest> root;
+        private final ForwardingProxyOptions forwardingProxyOptions;
+
+        protected ProxyHttpServerRequestHandler(Handler<HttpServerRequest> root,
+                ForwardingProxyOptions forwardingProxyOptions) {
+            this.root = root;
+            this.forwardingProxyOptions = forwardingProxyOptions;
+        }
+
+        protected abstract TrustedProxyCheck getProxyCheck(HttpServerRequest event);
+
+        @Override
+        public void handle(HttpServerRequest event) {
+            ForwardedServerRequestWrapper wrapper;
+            try {
+                wrapper = new ForwardedServerRequestWrapper(event, forwardingProxyOptions, getProxyCheck(event));
+                @SuppressWarnings("unused")
+                var unused = wrapper.authority();
+            } catch (IllegalArgumentException e) {
+                event.response().setStatusCode(400).end();
+                return;
+            }
+            root.handle(wrapper);
         }
     }
 }

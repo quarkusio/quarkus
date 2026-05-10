@@ -12,6 +12,7 @@ import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.RANDO
 import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.RANDOM_PORT_MANAGEMENT;
 import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.getInsecureRequestStrategy;
 import static io.quarkus.vertx.http.runtime.options.HttpServerTlsConfig.getHttpServerTlsConfigName;
+import static io.quarkus.vertx.http.runtime.options.HttpServerTlsConfig.getTlsClientAuth;
 
 import java.io.File;
 import java.io.IOException;
@@ -499,7 +500,8 @@ public class VertxHttpRecorder {
         }
 
         warnIfProxyAddressForwardingAllowedWithMultipleHeaders(httpConfig.proxy());
-        root = HttpServerCommonHandlers.applyProxy(httpConfig.proxy(), root, vertx);
+        root = HttpServerCommonHandlers.applyProxy(httpConfig.proxy(), root, vertx,
+                getTlsClientAuth(httpConfig, httpBuildTimeConfig, launchMode));
 
         boolean quarkusWrapperNeeded = false;
 
@@ -604,7 +606,8 @@ public class VertxHttpRecorder {
             applyCompression(managementBuildTimeConfig.enableCompression(), mr);
 
             Handler<HttpServerRequest> handler = HttpServerCommonHandlers.enforceDuplicatedContext(mr, mustResumeRequest);
-            handler = HttpServerCommonHandlers.applyProxy(managementConfig.getValue().proxy(), handler, vertx);
+            handler = HttpServerCommonHandlers.applyProxy(managementConfig.getValue().proxy(), handler, vertx,
+                    managementBuildTimeConfig.tlsClientAuth());
 
             int routesBeforeMiEvent = mr.getRoutes().size();
             event.select(ManagementInterface.class).fire(new ManagementInterfaceImpl(mr));

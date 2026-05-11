@@ -184,8 +184,11 @@ When tree-shaking is enabled, the build log includes a one-line summary at info 
 
 [source]
 ----
-Tree-shaking removed 2469 unreachable classes from 15 dependencies, saving 1.5 MB (20.0%)
+Tree-shaking removed 2469 unreachable classes from 15 dependencies, saving 1.5 MB (20.0%) of bytecode
 ----
+
+The reported savings represent raw (uncompressed) bytecode removed from dependency classes.
+The actual reduction in packaged application size will be smaller because JARs are ZIP-compressed and also contain non-class resources (such as `META-INF` entries) that tree-shaking does not affect.
 
 For a detailed per-dependency breakdown, enable debug logging for the tree shaker. The debug output includes total/reachable/removed class counts and a list of affected dependencies.
 

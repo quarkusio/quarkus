@@ -79,7 +79,8 @@ public class ApplicationLifecycleManager {
     private static final Condition stateCond = stateLock.newCondition();
     private static ShutdownHookThread shutdownHookThread;
 
-    private static int exitCode = -1;
+    private static volatile int exitCode = -1;
+    private static volatile Throwable exitThrowable;
     private static volatile boolean shutdownRequested;
     private static volatile Application currentApplication;
     private static boolean vmShuttingDown;
@@ -117,6 +118,7 @@ public class ApplicationLifecycleManager {
                 throw new IllegalStateException("Quarkus already running");
             }
             exitCode = -1;
+            exitThrowable = null;
             shutdownRequested = false;
             currentApplication = application;
         } finally {
@@ -239,7 +241,7 @@ public class ApplicationLifecycleManager {
             application.stop(); //this could have already been called
         }
         currentApplication = null;
-        (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(getExitCode(), null); //this may not be called if shutdown was initiated by a signal
+        (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(getExitCode(), exitThrowable); //this may not be called if shutdown was initiated by a signal
     }
 
     // this is needed only when async console logging is enabled
@@ -392,10 +394,24 @@ public class ApplicationLifecycleManager {
      * @param code The exit code
      */
     public static void exit(int code) {
+        exit(code, null);
+    }
+
+    /**
+     * Signals that the application should exit with the given code.
+     *
+     * Note that the first positive exit code will 'win', so if the exit code
+     * has already been set then the exit code and throwable will be ignored.
+     *
+     * @param code The exit code
+     * @param throwable The exception causing the exit
+     */
+    public static void exit(int code, Throwable throwable) {
         stateLock.lock();
         try {
             if (code >= 0 && exitCode == -1) {
                 exitCode = code;
+                exitThrowable = throwable;
             }
             if (shutdownRequested) {
                 return;

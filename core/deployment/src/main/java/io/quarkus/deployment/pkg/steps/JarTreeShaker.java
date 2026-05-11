@@ -38,6 +38,12 @@ class JarTreeShaker {
     private static final String SERVICE_LOADER_INTERNAL = "java/util/ServiceLoader";
     private static final String SISU_NAMED_RESOURCE = "META-INF/sisu/javax.inject.Named";
 
+    /**
+     * Suffixes for JBoss Logging companion classes that are loaded reflectively
+     * via name concatenation in {@code Logger.getMessageLogger()}.
+     */
+    private static final String[] JBOSS_LOGGING_SUFFIXES = { "_$logger", "_$bundle", "_impl" };
+
     private final JarTreeShakeInput input;
 
     /**
@@ -58,7 +64,7 @@ class JarTreeShaker {
      * ultimately triggers the dynamic loading. These entry points are then executed
      * in an isolated classloader to capture which classes are actually loaded at runtime.
      */
-    private final Map<String, Set<String>> callerIndex = new HashMap<>();
+    private final Map<MethodKey, Set<MethodKey>> callerIndex = new HashMap<>();
 
     JarTreeShaker(JarTreeShakeInput input) {
         this.input = input;
@@ -70,17 +76,30 @@ class JarTreeShaker {
      * and returns a {@link JarTreeShakeBuildItem} with the reachable set and per-dependency removals.
      */
     JarTreeShakeBuildItem run() {
-        final long startTime = log.isDebugEnabled() ? System.currentTimeMillis() : -1;
+        final long startTime = System.currentTimeMillis();
+        final boolean debug = log.isDebugEnabled();
 
         // Trace all reachable classes using bytecode analysis for full method-body coverage
         Set<String> visited = new HashSet<>();
         Set<String> reachable = traceReachableClasses(input.roots, visited);
+        if (debug) {
+            log.debugf("BFS reachability: %d classes reached from %d roots, %d caller index entries",
+                    reachable.size(), input.roots.size(), callerIndex.size());
+        }
 
         // Evaluate conditional roots to fixed point
         reachable = evaluateConditionalRoots(reachable);
 
-        // Analyze class-loading chains (fixed-point loop)
-        reachable = analyzeClassLoadingChains(reachable);
+        // Analyze class-loading chains (fixed-point loop) — skip if no seed methods
+        // (ClassLoader.loadClass, Class.forName, etc.) were called by any reachable code
+        if (hasCallerIndexSeedEntries()) {
+            reachable = analyzeClassLoadingChains(reachable);
+        } else {
+            if (debug) {
+                log.debug("Class-loading chain analysis skipped: no seed method calls found");
+            }
+            callerIndex.clear();
+        }
 
         // Mark all classes from excluded artifacts as reachable (after analysis,
         // so they don't act as roots for transitive tracing). This preserves
@@ -125,13 +144,16 @@ class JarTreeShaker {
         input.releaseAnalysisData();
 
         // Report
-        log.infof("Tree-shaking removed %d unreachable classes from %d dependencies, saving %s (%.1f%%) of bytecode",
+        long elapsedMs = System.currentTimeMillis() - startTime;
+        log.infof("Tree-shaking removed %d unreachable classes from %d dependencies,"
+                + " saving %s (%.1f%%) of bytecode in %dms",
                 removedClassCount,
                 removedClassesPerDep.size(),
                 formatSize(removedBytes),
-                totalDepClasses > 0 ? (removedClassCount * 100.0 / totalDepClasses) : 0.0);
+                totalDepClasses > 0 ? (removedClassCount * 100.0 / totalDepClasses) : 0.0,
+                elapsedMs);
 
-        if (startTime > 0) {
+        if (log.isDebugEnabled()) {
             int reachableClasses = totalDepClasses - removedClassCount;
             log.debug("============================================================");
             log.debug("  Dependency Classes Usage Analysis");
@@ -154,11 +176,27 @@ class JarTreeShaker {
     }
 
     /**
+     * Returns {@code true} if the caller index contains at least one entry for a
+     * class-loading seed method. When no seeds are present, the entire
+     * {@link ClassLoadingChainAnalyzer} phase produces no results and can be skipped.
+     */
+    private boolean hasCallerIndexSeedEntries() {
+        for (MethodKey seed : MethodKey.SEED_METHOD_KEYS) {
+            if (callerIndex.containsKey(seed)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Runs class-loading chain analysis in a fixed-point loop, discovering classes
      * that are loaded dynamically via ClassLoader.loadClass() or Class.forName()
      * during static initialization or construction of reachable classes.
      */
     private Set<String> analyzeClassLoadingChains(Set<String> reachable) {
+        final boolean debug = log.isDebugEnabled();
+
         // Build the transformed bytecode map once (optimization B)
         Map<String, Supplier<byte[]>> transformedBytecode = new HashMap<>();
         for (String name : input.transformedClassNames) {
@@ -170,35 +208,57 @@ class JarTreeShaker {
 
         ClassLoadingChainAnalyzer analyzer = new ClassLoadingChainAnalyzer(callerIndex, input.classToDep.keySet());
         Set<String> allPhase3Discovered = new HashSet<>();
+        int iteration = 0;
 
-        while (true) {
-            Set<String> newEntryPoints = analyzer.findEntryPoints();
-            if (newEntryPoints.isEmpty()) {
-                break;
+        try (var env = ForkedJvmEnvironment.create(
+                input.generatedBytecode, transformedBytecode,
+                input.depJarPaths, input.appPaths)) {
+
+            while (true) {
+                iteration++;
+                Set<String> newEntryPoints = analyzer.findEntryPoints();
+                if (newEntryPoints.isEmpty()) {
+                    if (debug) {
+                        log.debugf("Class-loading chain iteration %d: no new entry points, stopping", iteration);
+                    }
+                    break;
+                }
+
+                // Skip fork if all new entry points were already discovered by prior forks —
+                // their transitive class loads were already captured
+                if (allPhase3Discovered.containsAll(newEntryPoints)) {
+                    if (debug) {
+                        log.debugf("Class-loading chain iteration %d: %d entry points already covered, stopping",
+                                iteration, newEntryPoints.size());
+                    }
+                    break;
+                }
+
+                // Phase 3: execute only new entry points in a forked JVM
+                Set<String> discovered = env.executeEntryPoints(newEntryPoints, input.allKnownClasses);
+
+                allPhase3Discovered.addAll(discovered);
+
+                // Filter to non-reachable classes
+                discovered.removeAll(reachable);
+                if (debug) {
+                    log.debugf("Class-loading chain iteration %d: %d entry points, forked JVM discovered %d classes"
+                            + " (%d new)",
+                            iteration, newEntryPoints.size(), allPhase3Discovered.size(),
+                            discovered.size());
+                }
+                if (discovered.isEmpty()) {
+                    break;
+                }
+                traceReachableClasses(discovered, reachable);
+                evaluateConditionalRoots(reachable);
             }
-
-            // Skip fork if all new entry points were already discovered by prior forks —
-            // their transitive class loads were already captured
-            if (allPhase3Discovered.containsAll(newEntryPoints)) {
-                break;
-            }
-
-            // Phase 3: execute only new entry points in a forked JVM
-            Set<String> discovered = ClassLoadingChainAnalyzer.executeEntryPoints(
-                    newEntryPoints, input.generatedBytecode, transformedBytecode,
-                    input.allKnownClasses, input.depJarPaths, input.appPaths);
-
-            allPhase3Discovered.addAll(discovered);
-
-            // Filter to known, non-reachable classes
-            discovered.retainAll(input.allKnownClasses);
-            discovered.removeAll(reachable);
-            if (discovered.isEmpty()) {
-                break;
-            }
-            log.debugf("Class-loading chain analysis discovered %d additional classes", discovered.size());
-            traceReachableClasses(discovered, reachable);
-            evaluateConditionalRoots(reachable);
+        } catch (IOException | InterruptedException e) {
+            log.warnf(e, "Failed to run class-loading chain analysis in forked JVM, skipping Phase 3");
+        }
+        if (debug) {
+            log.debugf("Class-loading chain analysis completed: %d iterations, %d total discovered classes",
+                    iteration, allPhase3Discovered.size());
         }
         analyzer.release();
         callerIndex.clear();
@@ -311,8 +371,10 @@ class JarTreeShaker {
         }
         Map<String, Set<String>> remaining = new HashMap<>(input.conditionalRoots);
         boolean changed = true;
+        int iteration = 0;
         while (changed) {
             changed = false;
+            iteration++;
             Set<String> newRoots = new HashSet<>();
             var it = remaining.entrySet().iterator();
             while (it.hasNext()) {
@@ -325,6 +387,10 @@ class JarTreeShaker {
             newRoots.removeAll(reachable);
             if (!newRoots.isEmpty()) {
                 changed = true;
+                if (log.isDebugEnabled()) {
+                    log.debugf("Conditional roots iteration %d: %d new roots, %d conditions remaining",
+                            iteration, newRoots.size(), remaining.size());
+                }
                 traceReachableClasses(newRoots, reachable);
             }
         }
@@ -342,9 +408,12 @@ class JarTreeShaker {
         // Process reachable entries, removing them as we go to avoid re-scanning.
         // When new classes become reachable, they may have higher-version entries
         // that need processing too, so we loop until no new classes are discovered.
+        int preSize = reachable.size();
         boolean changed = true;
+        int iteration = 0;
         while (changed) {
             changed = false;
+            iteration++;
             var it = input.higherVersionBytecode.entrySet().iterator();
             while (it.hasNext()) {
                 var entry = it.next();
@@ -362,6 +431,10 @@ class JarTreeShaker {
                 }
             }
         }
+        if (log.isDebugEnabled() && reachable.size() > preSize) {
+            log.debugf("Multi-release bytecode: %d new classes discovered in %d iterations",
+                    reachable.size() - preSize, iteration);
+        }
     }
 
     /**
@@ -369,7 +442,7 @@ class JarTreeShaker {
      * via name concatenation in Logger.getMessageLogger().
      */
     private void enqueueJBossLoggingCompanions(String name, Set<String> visited, Queue<String> queue) {
-        for (String suffix : new String[] { "_$logger", "_$bundle", "_impl" }) {
+        for (String suffix : JBOSS_LOGGING_SUFFIXES) {
             String companion = name + suffix;
             if (input.depBytecode.containsKey(companion) && visited.add(companion)) {
                 queue.add(companion);
@@ -435,8 +508,24 @@ class JarTreeShaker {
             public MethodVisitor visitMethod(int access, String name, String descriptor,
                     String signature, String[] exceptions) {
                 visitMethodSignature(descriptor, signature, exceptions);
-                String callerKey = internalOwner + "." + name + descriptor;
+                // Capture the enclosing method's name/descriptor before they are
+                // shadowed by the inner visitor's visitMethodInsn parameters
+                final String mName = name;
+                final String mDesc = descriptor;
                 return new RefCollectingMethodVisitor(refs) {
+                    // Lazily constructed MethodKey for this method, built only
+                    // when a caller index entry is actually recorded
+                    private MethodKey callerKeyObj;
+
+                    private MethodKey callerKey() {
+                        MethodKey k = callerKeyObj;
+                        if (k == null) {
+                            k = callerKeyObj = new MethodKey(
+                                    internalOwner, mName, mDesc);
+                        }
+                        return k;
+                    }
+
                     // State for ServiceLoader.load(SomeClass.class) tracking
                     private org.objectweb.asm.Type lastClassConstant;
 
@@ -480,10 +569,21 @@ class JarTreeShaker {
                             hasGetResources = true;
                         }
 
-                        // Caller index for class-loading chain analysis
-                        String calleeKey = owner + "." + name + descriptor;
-                        if (ClassLoadingChainAnalyzer.shouldRecordCall(calleeKey)) {
-                            callerIndex.computeIfAbsent(calleeKey, k -> new HashSet<>()).add(callerKey);
+                        // Caller index for class-loading chain analysis.
+                        // Pre-filter on owner prefix to avoid MethodKey construction
+                        // for the ~90% of calls targeting JDK/infra classes.
+                        if (!MethodKey.isJdkOrInfraClass(owner)) {
+                            var calleeKey = new MethodKey(
+                                    owner, name, descriptor);
+                            callerIndex.computeIfAbsent(calleeKey, k -> new HashSet<>())
+                                    .add(callerKey());
+                        } else if (MethodKey.isSeedMethodOwner(owner)) {
+                            var calleeKey = new MethodKey(
+                                    owner, name, descriptor);
+                            if (MethodKey.SEED_METHOD_KEYS.contains(calleeKey)) {
+                                callerIndex.computeIfAbsent(calleeKey, k -> new HashSet<>())
+                                        .add(callerKey());
+                            }
                         }
 
                         super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
@@ -719,13 +819,22 @@ class JarTreeShaker {
 
     /**
      * Checks whether a string (or its comma/colon-delimited parts) matches known class names,
-     * adding matches to {@code refs}.
+     * adding matches to {@code refs}. Uses manual character-level splitting to avoid
+     * the per-call {@link java.util.regex.Pattern} compilation that {@link String#split}
+     * incurs for the {@code [,:]} character class.
      */
     static void matchClassNames(String str, Set<String> knownClasses, Set<String> refs) {
         if (str.indexOf(',') >= 0 || str.indexOf(':') >= 0) {
-            for (String part : str.split("[,:]")) {
-                if (knownClasses.contains(part)) {
-                    refs.add(part);
+            int start = 0;
+            for (int i = 0; i <= str.length(); i++) {
+                if (i == str.length() || str.charAt(i) == ',' || str.charAt(i) == ':') {
+                    if (i > start) {
+                        String part = str.substring(start, i);
+                        if (knownClasses.contains(part)) {
+                            refs.add(part);
+                        }
+                    }
+                    start = i + 1;
                 }
             }
         } else {
@@ -787,17 +896,17 @@ class JarTreeShaker {
         public void visit(int version, int access, String name, String signature,
                 String superName, String[] interfaces) {
             if (superName != null) {
-                refs.add(toClassName(superName));
+                addClassRef(superName, refs);
             }
             if (interfaces != null) {
                 for (String iface : interfaces) {
-                    refs.add(toClassName(iface));
+                    addClassRef(iface, refs);
                 }
             }
             addSignatureTypes(signature, refs);
             int dollar = name.lastIndexOf('$');
             if (dollar > 0) {
-                refs.add(toClassName(name.substring(0, dollar)));
+                addClassRef(name.substring(0, dollar), refs);
             }
         }
 
@@ -834,7 +943,7 @@ class JarTreeShaker {
             addSignatureTypes(signature, refs);
             if (exceptions != null) {
                 for (String ex : exceptions) {
-                    refs.add(toClassName(ex));
+                    addClassRef(ex, refs);
                 }
             }
         }
@@ -859,7 +968,7 @@ class JarTreeShaker {
         public void visitTryCatchBlock(Label start, Label end, Label handler, String type) {
             lastStringConstant = null;
             if (type != null) {
-                refs.add(toClassName(type));
+                addClassRef(type, refs);
             }
         }
 
@@ -871,13 +980,13 @@ class JarTreeShaker {
         @Override
         public void visitTypeInsn(int opcode, String type) {
             lastStringConstant = null;
-            refs.add(toClassName(type));
+            addClassRef(type, refs);
         }
 
         @Override
         public void visitFieldInsn(int opcode, String owner, String name, String descriptor) {
             lastStringConstant = null;
-            refs.add(toClassName(owner));
+            addClassRef(owner, refs);
             addDescriptorType(descriptor, refs);
         }
 
@@ -891,7 +1000,7 @@ class JarTreeShaker {
                 }
             }
             lastStringConstant = null;
-            refs.add(toClassName(owner));
+            addClassRef(owner, refs);
             addMethodDescriptorTypes(descriptor, refs);
         }
 
@@ -904,11 +1013,11 @@ class JarTreeShaker {
             }
             if (value instanceof org.objectweb.asm.Type type) {
                 if (type.getSort() == org.objectweb.asm.Type.OBJECT) {
-                    refs.add(toClassName(type.getInternalName()));
+                    addClassRef(type.getInternalName(), refs);
                 } else if (type.getSort() == org.objectweb.asm.Type.ARRAY) {
                     org.objectweb.asm.Type elem = type.getElementType();
                     if (elem.getSort() == org.objectweb.asm.Type.OBJECT) {
-                        refs.add(toClassName(elem.getInternalName()));
+                        addClassRef(elem.getInternalName(), refs);
                     }
                 }
             }
@@ -978,24 +1087,74 @@ class JarTreeShaker {
 
     // ---- Helpers ----
 
+    /**
+     * Converts a JVM internal name (e.g. {@code com/example/Foo}) to a dot-separated
+     * class name (e.g. {@code com.example.Foo}).
+     */
     private static String toClassName(String internalName) {
         return internalName.replace('/', '.');
     }
 
+    /**
+     * Adds a class reference to {@code refs} after converting from JVM internal name
+     * to dot-separated format, but only if the class is not in the {@code java/}
+     * package hierarchy. JDK classes are never present in the dependency, application,
+     * or generated bytecode maps, so they are always filtered out downstream by
+     * {@link JarTreeShakeInput#hasBytecode} — skipping them here avoids the
+     * {@link String#replace} allocation and the {@link Set#add} lookup.
+     */
+    private static void addClassRef(String internalName, Set<String> refs) {
+        if (!internalName.startsWith("java/")) {
+            refs.add(internalName.replace('/', '.'));
+        }
+    }
+
+    /**
+     * Returns {@code true} if the descriptor references at least one object type.
+     * In JVM descriptor grammar, object types are encoded as {@code Lfully/qualified/Name;},
+     * so the presence of the {@code L} character is a necessary and sufficient condition.
+     * Descriptors that contain only primitive types ({@code I}, {@code J}, {@code D}, etc.),
+     * void ({@code V}), or arrays of primitives ({@code [I}, {@code [B}) will not
+     * contain {@code L}.
+     */
+    private static boolean hasObjectType(String descriptor) {
+        return descriptor.indexOf('L') >= 0;
+    }
+
+    /**
+     * Parses a single field or type descriptor (e.g. {@code Ljava/lang/String;})
+     * and adds any object type reference to {@code refs}. Skips parsing when the
+     * descriptor contains only primitive types, void, or arrays of primitives.
+     */
     private static void addDescriptorType(String descriptor, Set<String> refs) {
+        if (!hasObjectType(descriptor)) {
+            return;
+        }
         org.objectweb.asm.Type type = org.objectweb.asm.Type.getType(descriptor);
         addAsmType(type, refs);
     }
 
+    /**
+     * Parses a method descriptor (e.g. {@code (Ljava/lang/String;I)V}) and adds
+     * all argument and return type object references to {@code refs}. Skips
+     * parsing when the descriptor contains only primitive types and void.
+     */
     private static void addMethodDescriptorTypes(String descriptor, Set<String> refs) {
+        if (!hasObjectType(descriptor)) {
+            return;
+        }
         for (org.objectweb.asm.Type argType : org.objectweb.asm.Type.getArgumentTypes(descriptor)) {
             addAsmType(argType, refs);
         }
         addAsmType(org.objectweb.asm.Type.getReturnType(descriptor), refs);
     }
 
+    /**
+     * Adds the owner class reference and descriptor type references from an
+     * {@code invokedynamic} bootstrap method handle to {@code refs}.
+     */
     private static void addHandleType(Handle handle, Set<String> refs) {
-        refs.add(toClassName(handle.getOwner()));
+        addClassRef(handle.getOwner(), refs);
         int tag = handle.getTag();
         if (tag == Opcodes.H_GETFIELD || tag == Opcodes.H_GETSTATIC
                 || tag == Opcodes.H_PUTFIELD || tag == Opcodes.H_PUTSTATIC) {
@@ -1018,14 +1177,19 @@ class JarTreeShaker {
         new SignatureReader(signature).accept(new SignatureVisitor(Opcodes.ASM9) {
             @Override
             public void visitClassType(String name) {
-                refs.add(toClassName(name));
+                addClassRef(name, refs);
             }
         });
     }
 
+    /**
+     * Adds the class reference from an ASM {@link org.objectweb.asm.Type} to {@code refs},
+     * recursing into the element type for array types. Delegates to {@link #addClassRef}
+     * to skip {@code java/} package classes.
+     */
     private static void addAsmType(org.objectweb.asm.Type type, Set<String> refs) {
         if (type.getSort() == org.objectweb.asm.Type.OBJECT) {
-            refs.add(toClassName(type.getInternalName()));
+            addClassRef(type.getInternalName(), refs);
         } else if (type.getSort() == org.objectweb.asm.Type.ARRAY) {
             addAsmType(type.getElementType(), refs);
         }

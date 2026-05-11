@@ -8,6 +8,7 @@ import java.util.Set;
 import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -35,6 +36,7 @@ public class PrometheusEnabledTest {
     PrometheusMeterRegistry promRegistry;
 
     @Test
+    @Order(Integer.MIN_VALUE)
     public void testMeterRegistryPresent() {
         // Prometheus is enabled (only registry)
         Assertions.assertNotNull(registry, "A registry should be configured");
@@ -63,10 +65,14 @@ public class PrometheusEnabledTest {
                 .get("/q/metrics")
                 .then()
                 .statusCode(200);
+    }
 
+    @Test
+    public void metricsEndpointCompressed() {
         given().header("Accept-Encoding", "gzip")
                 .get("/q/metrics")
                 .then()
+                .log().all()
                 .statusCode(200)
                 .header("content-encoding", is("gzip"));
     }

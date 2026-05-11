@@ -120,7 +120,7 @@ public class VertxHttpFacade implements HttpRequest, HttpResponse {
 
             @Override
             public String getRelativePath() {
-                return HttpSecurityUtils.pathWithoutMatrixParams(routingContext.normalizedPath());
+                return HttpSecurityUtils.normalizePath(routingContext.normalizedPath());
             }
 
             @Override

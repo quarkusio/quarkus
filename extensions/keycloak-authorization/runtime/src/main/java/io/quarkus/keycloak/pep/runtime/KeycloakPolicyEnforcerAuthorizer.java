@@ -63,7 +63,7 @@ public class KeycloakPolicyEnforcerAuthorizer implements HttpSecurityPolicy {
                                         @Override
                                         public PathConfig get() {
                                             return policyEnforcer.getPathMatcher().matches(HttpSecurityUtils
-                                                    .pathWithoutMatrixParams(routingContext.normalizedPath()));
+                                                    .normalizePath(routingContext.normalizedPath()));
                                         }
                                     }).flatMap(new Function<PathConfig, Uni<? extends CheckResult>>() {
                                         @Override

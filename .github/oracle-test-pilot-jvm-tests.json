@@ -1,19 +1,19 @@
 {
     "include": [
         {
-            "category": "19c",
+            "category": "base-database-service-19c",
             "timeout": 20,
             "test-modules": "jpa-oracle, reactive-oracle-client, hibernate-reactive-oracle",
             "java-version": 17
         },
         {
-            "category": "21c",
+            "category": "base-database-service-21c",
             "timeout": 20,
             "test-modules": "jpa-oracle, reactive-oracle-client, hibernate-reactive-oracle",
             "java-version": 17
         },
         {
-            "category": "26ai",
+            "category": "base-database-service-26ai",
             "timeout": 20,
             "test-modules": "jpa-oracle, reactive-oracle-client, hibernate-reactive-oracle",
             "java-version": 17

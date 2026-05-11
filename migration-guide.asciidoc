@@ -22,22 +22,6 @@ Refer to the https://docs.hibernate.org/orm/7.4/migration-guide/[Hibernate ORM 7
 * https://docs.hibernate.org/orm/7.4/migration-guide/#ddl-changes[A unique constraint is now added to `@ElementCollection` set tables where appropriate].
 * https://docs.hibernate.org/orm/7.4/migration-guide/#ddl-changes[`@CreationTimestamp` and `@UpdateTimestamp` columns now have a `NOT NULL` constraint added automatically].
 
-=== New: core `@Audited` as an alternative to Envers
-
-Hibernate ORM 7.4 introduces built-in temporal entity support with new annotations in `org.hibernate.annotations`: `@Audited`, `@Changelog`, and `@Temporal`. This provides audit/changelog functionality similar to Hibernate Envers, but integrated into core ORM with a simpler programming model — you can use standard `Session` APIs and HQL queries within a temporal session opened via `atChangeset()`.
-
-Migration from Envers is entirely optional. Envers continues to work as before. If you wish to migrate, the key annotation mappings are:
-
-* `@org.hibernate.envers.Audited` -> `@org.hibernate.annotations.Audited`
-* `@org.hibernate.envers.NotAudited` -> `@org.hibernate.annotations.Audited.Excluded`
-* `@org.hibernate.envers.RevisionEntity` -> `@org.hibernate.annotations.Changelog`
-* `@org.hibernate.envers.RevisionNumber` -> `@org.hibernate.annotations.Changelog.ChangesetId`
-* `@org.hibernate.envers.RevisionTimestamp` -> `@org.hibernate.annotations.Changelog.Timestamp`
-
-No DDL changes are needed — the default column names and encoding are compatible between Envers and core.
-
-Refer to the https://docs.hibernate.org/orm/7.4/migration-guide/#envers-migration[Envers to core migration section] for the full API mapping and details.
-
 === Minimum database versions
 
 * PostgreSQL: bumped minimum version from 13 to 14

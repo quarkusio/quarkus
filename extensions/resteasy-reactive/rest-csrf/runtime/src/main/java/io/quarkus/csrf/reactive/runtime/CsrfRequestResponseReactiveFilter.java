@@ -277,7 +277,7 @@ public class CsrfRequestResponseReactiveFilter {
 
     private static boolean isCsrfTokenRequired(RoutingContext routing, RestCsrfConfig config) {
         return config.createTokenPath()
-                .map(value -> value.contains(HttpSecurityUtils.pathWithoutMatrixParams(routing.normalizedPath()))).orElse(true);
+                .map(value -> value.contains(HttpSecurityUtils.normalizePath(routing.normalizedPath()))).orElse(true);
     }
 
     private static void createCookie(String cookieTokenValue, RoutingContext routing, RestCsrfConfig config) {

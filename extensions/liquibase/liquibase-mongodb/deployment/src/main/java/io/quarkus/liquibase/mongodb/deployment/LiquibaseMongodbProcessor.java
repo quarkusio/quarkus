@@ -1,16 +1,15 @@
 package io.quarkus.liquibase.mongodb.deployment;
 
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Default;
@@ -32,6 +31,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.InitTaskBuildItem;
 import io.quarkus.deployment.builditem.InitTaskCompletedBuildItem;
@@ -44,6 +44,9 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.liquibase.common.LiquibaseChangeLogResourceDiscovery;
+import io.quarkus.liquibase.common.LiquibaseChangeLogResourceDiscovery.LogicalPhysicalAlias;
+import io.quarkus.liquibase.common.runtime.LiquibaseLogicalPathMappings;
 import io.quarkus.liquibase.mongodb.LiquibaseMongodbFactory;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbBuildTimeClientConfig;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbBuildTimeConfig;
@@ -53,16 +56,9 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.mongodb.runtime.MongoConfig;
 import io.quarkus.paths.PathFilter;
-import liquibase.change.Change;
 import liquibase.change.DatabaseChangeProperty;
-import liquibase.change.core.CreateProcedureChange;
-import liquibase.change.core.CreateViewChange;
-import liquibase.change.core.LoadDataChange;
-import liquibase.change.core.SQLFileChange;
 import liquibase.changelog.ChangeLogParameters;
-import liquibase.changelog.ChangeSet;
 import liquibase.changelog.DatabaseChangeLog;
-import liquibase.exception.LiquibaseException;
 import liquibase.parser.ChangeLogParser;
 import liquibase.parser.ChangeLogParserFactory;
 import liquibase.plugin.AbstractPluginFactory;
@@ -214,6 +210,60 @@ class LiquibaseMongodbProcessor {
         resourceBundle.produce(new NativeImageResourceBundleBuildItem("liquibase/i18n/liquibase-mongo"));
     }
 
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    void liquibaseNativeLogicalPathMappings(
+            LiquibaseMongodbBuildTimeConfig liquibaseBuildConfig,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResources) {
+
+        ChangeLogParameters changeLogParameters = new ChangeLogParameters();
+        ChangeLogParserFactory changeLogParserFactory = ChangeLogParserFactory.getInstance();
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+
+        LinkedHashSet<LogicalPhysicalAlias> allAliases = new LinkedHashSet<>();
+        try (var classLoaderResourceAccessor = new ClassLoaderResourceAccessor(classLoader)) {
+            for (LiquibaseMongodbBuildTimeClientConfig buildConfig : liquibaseBuildConfig.clientConfigs().values()) {
+                String changeLog = buildConfig.changeLog();
+                ChangeLogParser parser = changeLogParserFactory.getParser(changeLog, classLoaderResourceAccessor);
+                DatabaseChangeLog root = parser.parse(changeLog, changeLogParameters, classLoaderResourceAccessor);
+                if (root != null) {
+                    allAliases.addAll(LiquibaseChangeLogResourceDiscovery.scan(root).logicalPhysicalAliases());
+                }
+            }
+        } catch (Exception ex) {
+            throw new IllegalStateException(
+                    "Error while loading the liquibase changelogs: %s".formatted(ex.getMessage()), ex);
+        }
+
+        byte[] mappingBytes = mergeLogicalPathMappingProperties(allAliases);
+        if (mappingBytes != null) {
+            generatedResources.produce(
+                    new GeneratedResourceBuildItem(LiquibaseLogicalPathMappings.MONGODB_MAPPING_RESOURCE, mappingBytes));
+            nativeImageResources
+                    .produce(new NativeImageResourceBuildItem(LiquibaseLogicalPathMappings.MONGODB_MAPPING_RESOURCE));
+        }
+    }
+
+    private byte[] mergeLogicalPathMappingProperties(LinkedHashSet<LogicalPhysicalAlias> aliases) {
+        if (aliases.isEmpty()) {
+            return null;
+        }
+        TreeMap<String, String> sorted = new TreeMap<>();
+        for (LogicalPhysicalAlias alias : aliases) {
+            String previous = sorted.put(alias.logical(), alias.physical());
+            if (previous != null && !previous.equals(alias.physical())) {
+                LOGGER.warnf("Conflicting Liquibase logical path mapping for %s: %s vs %s", alias.logical(), previous,
+                        alias.physical());
+            }
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("# Generated by Quarkus -- logicalFilePath to classpath resource path (MongoDB Liquibase)\n");
+        for (var entry : sorted.entrySet()) {
+            sb.append(entry.getKey()).append('=').append(entry.getValue()).append('\n');
+        }
+        return sb.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
     private void addService(BuildProducer<ServiceProviderBuildItem> services,
             BuildProducer<ReflectiveClassBuildItem> reflective, String serviceClassName,
             boolean shouldRegisterFieldForReflection, String... excludedImpls) {
@@ -305,11 +355,13 @@ class LiquibaseMongodbProcessor {
 
             Set<String> resources = new LinkedHashSet<>();
             for (LiquibaseMongodbBuildTimeClientConfig buildConfig : liquibaseBuildConfig.clientConfigs().values()) {
-                resources.addAll(findAllChangeLogFiles(
-                        buildConfig.changeLog(),
-                        changeLogParserFactory,
-                        classLoaderResourceAccessor,
-                        changeLogParameters));
+                ChangeLogParser parser = changeLogParserFactory.getParser(buildConfig.changeLog(),
+                        classLoaderResourceAccessor);
+                DatabaseChangeLog changelog = parser.parse(buildConfig.changeLog(), changeLogParameters,
+                        classLoaderResourceAccessor);
+                if (changelog != null) {
+                    resources.addAll(LiquibaseChangeLogResourceDiscovery.scan(changelog).resourcePaths());
+                }
             }
             LOGGER.debugf("Liquibase changeLogs: %s", resources);
 
@@ -322,70 +374,4 @@ class LiquibaseMongodbProcessor {
         }
     }
 
-    /**
-     * Finds all resource files for the given change log file
-     */
-    private Set<String> findAllChangeLogFiles(String file, ChangeLogParserFactory changeLogParserFactory,
-            ClassLoaderResourceAccessor classLoaderResourceAccessor,
-            ChangeLogParameters changeLogParameters) {
-        try {
-            ChangeLogParser parser = changeLogParserFactory.getParser(file, classLoaderResourceAccessor);
-            DatabaseChangeLog changelog = parser.parse(file, changeLogParameters, classLoaderResourceAccessor);
-
-            if (changelog != null) {
-                Set<String> result = new LinkedHashSet<>();
-                // get all changeSet files
-                for (ChangeSet changeSet : changelog.getChangeSets()) {
-                    result.add(changeSet.getFilePath());
-
-                    changeSet.getChanges().stream()
-                            .map(change -> extractChangeFile(change, changeSet.getFilePath()))
-                            .forEach(changeFile -> changeFile.ifPresent(result::add));
-
-                    // get all parents of the changeSet
-                    DatabaseChangeLog parent = changeSet.getChangeLog();
-                    while (parent != null) {
-                        result.add(parent.getFilePath());
-                        parent = parent.getParentChangeLog();
-                    }
-                }
-                result.add(changelog.getFilePath());
-                return result;
-            }
-        } catch (LiquibaseException ex) {
-            throw new IllegalStateException(ex);
-        }
-        return Collections.emptySet();
-    }
-
-    private Optional<String> extractChangeFile(Change change, String changeSetFilePath) {
-        String path = null;
-        Boolean relative = null;
-        if (change instanceof LoadDataChange loadDataChange) {
-            path = loadDataChange.getFile();
-            relative = loadDataChange.isRelativeToChangelogFile();
-        } else if (change instanceof SQLFileChange sqlFileChange) {
-            path = sqlFileChange.getPath();
-            relative = sqlFileChange.isRelativeToChangelogFile();
-        } else if (change instanceof CreateProcedureChange createProcedureChange) {
-            path = createProcedureChange.getPath();
-            relative = createProcedureChange.isRelativeToChangelogFile();
-        } else if (change instanceof CreateViewChange createViewChange) {
-            path = createViewChange.getPath();
-            relative = createViewChange.getRelativeToChangelogFile();
-        }
-
-        // unrelated change or change does not reference a file (e.g. inline view)
-        if (path == null) {
-            return Optional.empty();
-        }
-        // absolute file path or changeSet has no file path
-        if (relative == null || !relative || changeSetFilePath == null) {
-            return Optional.of(path);
-        }
-
-        // relative file path needs to be resolved against changeSetFilePath
-        // notes: ClassLoaderResourceAccessor does not provide a suitable method and CLRA.getFinalPath() is not visible
-        return Optional.of(Paths.get(changeSetFilePath).resolveSibling(path).toString().replace('\\', '/'));
-    }
 }

@@ -10,6 +10,8 @@ import java.util.regex.Pattern;
 import com.mongodb.client.MongoClient;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.liquibase.common.runtime.LiquibaseLogicalPathMappings;
+import io.quarkus.liquibase.common.runtime.LogicalPathMappingResourceAccessor;
 import io.quarkus.liquibase.common.runtime.NativeImageResourceAccessor;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbBuildTimeClientConfig;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbClientConfig;
@@ -80,7 +82,13 @@ public class LiquibaseMongodbFactory {
     }
 
     private ResourceAccessor nativeImageResourceAccessor(CompositeResourceAccessor rootAccessor) {
-        return rootAccessor.addResourceAccessor(new NativeImageResourceAccessor());
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        var nativeAccessor = new NativeImageResourceAccessor();
+        var mapping = LiquibaseLogicalPathMappings.load(cl, LiquibaseLogicalPathMappings.MONGODB_MAPPING_RESOURCE);
+        if (mapping.isEmpty()) {
+            return rootAccessor.addResourceAccessor(nativeAccessor);
+        }
+        return rootAccessor.addResourceAccessor(new LogicalPathMappingResourceAccessor(mapping, nativeAccessor));
     }
 
     private String parseChangeLog(String changeLog) {

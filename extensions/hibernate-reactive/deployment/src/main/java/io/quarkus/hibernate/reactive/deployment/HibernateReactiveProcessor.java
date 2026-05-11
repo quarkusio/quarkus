@@ -81,13 +81,12 @@ public final class HibernateReactiveProcessor {
 
     private static final String HIBERNATE_REACTIVE = "Hibernate Reactive";
     private static final Logger LOG = Logger.getLogger(HibernateReactiveProcessor.class);
-    static final String[] REFLECTIVE_CONSTRUCTORS_NEEDED = {
+    static final List<String> REFLECTIVE_CONSTRUCTORS_NEEDED = List.of(
             "org.hibernate.reactive.persister.entity.impl.ReactiveSingleTableEntityPersister",
             "org.hibernate.reactive.persister.entity.impl.ReactiveJoinedSubclassEntityPersister",
             "org.hibernate.reactive.persister.entity.impl.ReactiveUnionSubclassEntityPersister",
             "org.hibernate.reactive.persister.collection.impl.ReactiveOneToManyPersister",
-            "org.hibernate.reactive.persister.collection.impl.ReactiveBasicCollectionPersister",
-    };
+            "org.hibernate.reactive.persister.collection.impl.ReactiveBasicCollectionPersister");
 
     @BuildStep
     void registerServicesForReflection(BuildProducer<ServiceProviderBuildItem> services) {
@@ -103,7 +102,7 @@ public final class HibernateReactiveProcessor {
 
     @BuildStep
     void reflections(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, REFLECTIVE_CONSTRUCTORS_NEEDED));
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(REFLECTIVE_CONSTRUCTORS_NEEDED).constructors().build());
     }
 
     @BuildStep

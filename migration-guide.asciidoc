@@ -1,0 +1,65 @@
+== Hibernate ORM
+
+=== Upgrade to Hibernate ORM 7.4
+
+The Quarkus extension for Hibernate ORM was upgraded to Hibernate ORM 7.4.
+
+Hibernate ORM 7.4 is a feature release that introduces temporal entity support (audit/changelog), but also includes several behavioral changes. Below are the ones most likely to affect existing applications.
+
+Refer to the https://docs.hibernate.org/orm/7.4/migration-guide/[Hibernate ORM 7.4 migration guide] for more information.
+
+=== Behavioral changes
+
+* https://docs.hibernate.org/orm/7.4/migration-guide/#behavior-changes[HQL `current date` and `local date` on Oracle now translate to `trunc(current_date)`, zeroing out the time part].
+* https://docs.hibernate.org/orm/7.4/migration-guide/#behavior-changes[MySQL no longer has a dialect-specific default for `hibernate.max_fetch_depth`. Applications relying on the implicit default of `2` should set it explicitly].
+* https://docs.hibernate.org/orm/7.4/migration-guide/#behavior-changes[Eager `@Any` associations are now join-fetched by default when loading by id, instead of using a separate `SELECT`].
+* https://docs.hibernate.org/orm/7.4/migration-guide/#behavior-changes[When pagination or a limit is used with a query that fetches a collection, the limit is now processed as part of the SQL query. Use the query hint `org.hibernate.limitInMemory` to recover the previous behavior].
+* https://docs.hibernate.org/orm/7.4/migration-guide/#behavior-changes[Schema actions (including `import.sql` execution) are now processed even when no `@Entity` classes are mapped. Applications with an accidental `import.sql` on the classpath may see it executed].
+* https://docs.hibernate.org/orm/7.4/migration-guide/#behavior-changes[`SpannerPostgreSQLDialect` moved from `hibernate-community-dialects` (`org.hibernate.community.dialect`) to `hibernate-core` (`org.hibernate.dialect`). Update dialect configuration if using it explicitly].
+
+=== DDL changes
+
+* https://docs.hibernate.org/orm/7.4/migration-guide/#ddl-changes[A unique constraint is now added to `@ElementCollection` set tables where appropriate].
+* https://docs.hibernate.org/orm/7.4/migration-guide/#ddl-changes[`@CreationTimestamp` and `@UpdateTimestamp` columns now have a `NOT NULL` constraint added automatically].
+
+=== New: core `@Audited` as an alternative to Envers
+
+Hibernate ORM 7.4 introduces built-in temporal entity support with new annotations in `org.hibernate.annotations`: `@Audited`, `@Changelog`, and `@Temporal`. This provides audit/changelog functionality similar to Hibernate Envers, but integrated into core ORM with a simpler programming model — you can use standard `Session` APIs and HQL queries within a temporal session opened via `atChangeset()`.
+
+Migration from Envers is entirely optional. Envers continues to work as before. If you wish to migrate, the key annotation mappings are:
+
+* `@org.hibernate.envers.Audited` -> `@org.hibernate.annotations.Audited`
+* `@org.hibernate.envers.NotAudited` -> `@org.hibernate.annotations.Audited.Excluded`
+* `@org.hibernate.envers.RevisionEntity` -> `@org.hibernate.annotations.Changelog`
+* `@org.hibernate.envers.RevisionNumber` -> `@org.hibernate.annotations.Changelog.ChangesetId`
+* `@org.hibernate.envers.RevisionTimestamp` -> `@org.hibernate.annotations.Changelog.Timestamp`
+
+No DDL changes are needed — the default column names and encoding are compatible between Envers and core.
+
+Refer to the https://docs.hibernate.org/orm/7.4/migration-guide/#envers-migration[Envers to core migration section] for the full API mapping and details.
+
+=== Minimum database versions
+
+* PostgreSQL: bumped minimum version from 13 to 14
+
+See https://docs.hibernate.org/orm/7.4/dialect/dialect.html[here] for details on the current minimum versions.
+
+== Hibernate Reactive
+
+=== Upgrade to Hibernate Reactive TODO
+
+// TODO: update version once a Hibernate Reactive release compatible with ORM 7.4 is available (tracking: wip/4.4 branch, hibernate-reactive#3670)
+
+The Quarkus extension for Hibernate Reactive was upgraded to Hibernate Reactive TODO.
+
+Hibernate Reactive TODO is backwards-compatible with Hibernate Reactive 3.3, with the exception of a few breaking changes inherited from Hibernate ORM and listed above.
+
+== Hibernate Search
+
+=== Upgrade to Hibernate Search 8.4
+
+The Quarkus extensions for Hibernate Search were upgraded to Hibernate Search 8.4.
+
+Hibernate Search 8.4 is fully backwards-compatible with 8.3: no reindexing, schema updates, or code changes are necessary.
+
+Refer to the https://docs.hibernate.org/search/8.4/migration/html_single/[Hibernate Search 8.4 migration guide] for more information.

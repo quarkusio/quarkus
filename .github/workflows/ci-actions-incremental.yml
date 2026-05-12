@@ -1738,8 +1738,7 @@ jobs:
     permissions:
       contents: read
     needs: [configure, build-jdk17, calculate-test-jobs]
-    # TODO Oracle Test Pilot involves specific runners that are only available in the main repo; prepend "github.repository == 'quarkusio/quarkus' &&"
-    if: needs.calculate-test-jobs.outputs.otp_jvm_matrix != '{}'
+    if: github.repository == 'quarkusio/quarkus' && needs.calculate-test-jobs.outputs.otp_jvm_matrix != '{}'
     env:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
     timeout-minutes: ${{matrix.timeout}}
@@ -1848,8 +1847,7 @@ jobs:
     permissions:
       contents: read
     needs: [configure, build-jdk17, calculate-test-jobs]
-    # TODO Oracle Test Pilot involves specific runners that are only available in the main repo; prepend "github.repository == 'quarkusio/quarkus' &&"
-    if: needs.calculate-test-jobs.outputs.otp_native_matrix != '{}'
+    if: github.repository == 'quarkusio/quarkus' && needs.calculate-test-jobs.outputs.otp_native_matrix != '{}'
     env:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
     timeout-minutes: ${{matrix.timeout}}

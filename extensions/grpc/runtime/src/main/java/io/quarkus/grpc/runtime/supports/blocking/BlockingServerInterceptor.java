@@ -1,6 +1,7 @@
 package io.quarkus.grpc.runtime.supports.blocking;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
@@ -246,6 +247,9 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
                 if (!this.isConsumingFromIncomingEvents) {
                     reorderForRequestBeforeHalfClose(incomingEvents);
                     first = incomingEvents.poll();
+                    if (first != null) {
+                        this.isConsumingFromIncomingEvents = true;
+                    }
                 }
             }
             if (first != null) {
@@ -254,16 +258,17 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
         }
 
         private void scheduleOrEnqueue(ReplayEvent<ReqT> event) {
-            boolean executeNow = false;
+            Consumer<ServerCall.Listener<ReqT>> toRunDirectly = null;
             synchronized (incomingEvents) {
                 if (this.delegate != null && !this.isConsumingFromIncomingEvents && incomingEvents.isEmpty()) {
-                    executeNow = true;
+                    toRunDirectly = event.action;
+                    this.isConsumingFromIncomingEvents = true;
                 } else {
                     incomingEvents.add(event);
                 }
             }
-            if (executeNow) {
-                executeBlockingWithRequestContext(event.action);
+            if (toRunDirectly != null) {
+                executeBlockingWithRequestContext(toRunDirectly);
             }
         }
 
@@ -288,14 +293,9 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
                 blockingHandler = new DevModeBlockingExecutionHandler(Thread.currentThread().getContextClassLoader(),
                         blockingHandler);
             }
-            // Written outside the lock intentionally: this method is only ever called from
-            // the event loop thread (directly or via the onComplete handler which is also
-            // on the event loop). gRPC guarantees sequential event delivery on the event
-            // loop, so no concurrent scheduleOrEnqueue call can race with this true-write.
-            // The transition back to false is done under the lock because it happens on the
-            // worker thread (where a concurrent scheduleOrEnqueue from the event loop could
-            // otherwise observe a stale false and bypass the queue). The volatile keyword
-            // ensures both transitions are immediately visible across threads.
+            // Usually already true: setDelegate / scheduleOrEnqueue set it under
+            // incomingEvents before dispatching. This write keeps the worker-chain path
+            // consistent when chaining from executeBlocking's onComplete handler.
             this.isConsumingFromIncomingEvents = true;
             vertx.executeBlocking(blockingHandler, false).onComplete(p -> {
                 ReplayEvent<ReqT> next;
@@ -373,6 +373,9 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
                 if (!this.isConsumingFromIncomingEvents) {
                     reorderForRequestBeforeHalfClose(incomingEvents);
                     first = incomingEvents.poll();
+                    if (first != null) {
+                        this.isConsumingFromIncomingEvents = true;
+                    }
                 }
             }
             if (first != null) {
@@ -381,16 +384,17 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
         }
 
         private void scheduleOrEnqueue(ReplayEvent<ReqT> event) {
-            boolean executeNow = false;
+            Consumer<ServerCall.Listener<ReqT>> toRunDirectly = null;
             synchronized (incomingEvents) {
                 if (this.delegate != null && !this.isConsumingFromIncomingEvents && incomingEvents.isEmpty()) {
-                    executeNow = true;
+                    toRunDirectly = event.action;
+                    this.isConsumingFromIncomingEvents = true;
                 } else {
                     incomingEvents.add(event);
                 }
             }
-            if (executeNow) {
-                executeVirtualWithRequestContext(event.action);
+            if (toRunDirectly != null) {
+                executeVirtualWithRequestContext(toRunDirectly);
             }
         }
 
@@ -402,9 +406,9 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
                 blockingHandler = new DevModeBlockingExecutionHandler(Thread.currentThread().getContextClassLoader(),
                         blockingHandler);
             }
-            // True while a virtual-thread task is running or is about to run; cleared under
-            // incomingEvents lock when the queue is drained (same visibility pattern as the
-            // worker path, but this method may also be invoked when chaining from a virtual thread).
+            // Usually already true: setDelegate / scheduleOrEnqueue set it under incomingEvents
+            // before dispatching. Kept for the chain path that calls here after polling the next
+            // event. Cleared under incomingEvents when the queue is drained.
             this.isConsumingFromIncomingEvents = true;
             var finalBlockingHandler = blockingHandler;
             virtualThreadExecutor.execute(() -> {
@@ -470,43 +474,48 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
      * it. The caller must hold the queue's monitor.
      */
     private static <ReqT> void reorderForRequestBeforeHalfClose(Deque<ReplayEvent<ReqT>> queue) {
-        int halfCloseIndex = -1;
-        int i = 0;
-        for (ReplayEvent<ReqT> event : queue) {
-            if (event.kind == EventKind.HALF_CLOSE) {
-                halfCloseIndex = i;
-                break;
-            }
-            i++;
-        }
-        if (halfCloseIndex < 0) {
+        int size = queue.size();
+        if (size == 0) {
             return;
         }
-        // Collect MESSAGE events that appear after the first HALF_CLOSE.
-        Deque<ReplayEvent<ReqT>> messagesAfterHalfClose = new ArrayDeque<>();
-        int idx = 0;
-        for (ReplayEvent<ReqT> event : queue) {
-            if (idx > halfCloseIndex && event.kind == EventKind.MESSAGE) {
-                messagesAfterHalfClose.add(event);
+        // Snapshot once so we do not walk the deque multiple times.
+        List<ReplayEvent<ReqT>> snapshot = new ArrayList<>(queue);
+        int halfCloseIdx = -1;
+        for (int i = 0; i < snapshot.size(); i++) {
+            if (snapshot.get(i).kind == EventKind.HALF_CLOSE) {
+                halfCloseIdx = i;
+                break;
             }
-            idx++;
         }
-        if (messagesAfterHalfClose.isEmpty()) {
-            return; // already ordered correctly - nothing to do
+        if (halfCloseIdx < 0) {
+            return;
         }
-        // Rebuild: prefix before HALF_CLOSE, promoted messages, HALF_CLOSE, remaining non-messages.
-        Deque<ReplayEvent<ReqT>> result = new ArrayDeque<>(queue.size());
-        idx = 0;
-        for (ReplayEvent<ReqT> event : queue) {
-            if (idx < halfCloseIndex) {
-                result.add(event);
-            } else if (idx == halfCloseIndex) {
-                result.addAll(messagesAfterHalfClose);
-                result.add(event); // the HALF_CLOSE itself
-            } else if (event.kind != EventKind.MESSAGE) {
-                result.add(event); // non-message events after HALF_CLOSE are preserved
+        boolean hasTrailingMessage = false;
+        for (int i = halfCloseIdx + 1; i < snapshot.size(); i++) {
+            if (snapshot.get(i).kind == EventKind.MESSAGE) {
+                hasTrailingMessage = true;
+                break;
             }
-            idx++;
+        }
+        if (!hasTrailingMessage) {
+            return;
+        }
+        Deque<ReplayEvent<ReqT>> result = new ArrayDeque<>(snapshot.size());
+        for (int i = 0; i < halfCloseIdx; i++) {
+            result.addLast(snapshot.get(i));
+        }
+        for (int i = halfCloseIdx + 1; i < snapshot.size(); i++) {
+            ReplayEvent<ReqT> e = snapshot.get(i);
+            if (e.kind == EventKind.MESSAGE) {
+                result.addLast(e);
+            }
+        }
+        result.addLast(snapshot.get(halfCloseIdx));
+        for (int i = halfCloseIdx + 1; i < snapshot.size(); i++) {
+            ReplayEvent<ReqT> e = snapshot.get(i);
+            if (e.kind != EventKind.MESSAGE) {
+                result.addLast(e);
+            }
         }
         queue.clear();
         queue.addAll(result);

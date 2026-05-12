@@ -295,6 +295,15 @@ public class SecurityProcessor {
     }
 
     @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void configureJCAProvidersAtRuntime(SecurityProviderRecorder recorder,
+            List<JCAProviderBuildItem> jcaProviders) {
+        for (JCAProviderBuildItem provider : jcaProviders) {
+            recorder.configureProvider(provider.getProviderName(), provider.getProviderConfig());
+        }
+    }
+
+    @BuildStep
     void prepareBouncyCastleProviders(CurateOutcomeBuildItem curateOutcomeBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflection,
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeReInitialized,

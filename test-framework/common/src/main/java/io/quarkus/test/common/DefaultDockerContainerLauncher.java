@@ -25,10 +25,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.util.PropertyUtils;
+import io.quarkus.deployment.pkg.steps.ContainerUserResolver;
 import io.quarkus.deployment.pkg.steps.NativeImageBuildLocalContainerRunner;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
@@ -59,7 +61,6 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
 
     private Map<String, String> volumeMounts;
     private Map<String, String> labels;
-    private boolean runAsHostUser;
     private final Map<String, String> systemProps = new HashMap<>();
     private final String containerName = "quarkus-integration-test-" + RandomStringUtils.insecure().next(5, true, false);
     private String containerRuntimeBinaryName;
@@ -85,7 +86,6 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         this.additionalExposedPorts = initContext.additionalExposedPorts();
         this.volumeMounts = initContext.volumeMounts();
         this.labels = initContext.labels();
-        this.runAsHostUser = initContext.runAsHostUser();
         this.entryPoint = initContext.entryPoint();
         this.containerWorkingDirectory = initContext.containerWorkingDirectory();
         this.programArgs = initContext.programArgs();
@@ -123,13 +123,8 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
             args.add(containerName);
             args.add("-i"); // Interactive, write logs to stdout
             args.add("--rm");
-            // Avoid duplicate --user: getVolumeAccessArguments already maps host uid/gid (and adds
-            // --userns=keep-id for rootless Podman) when volumes need host access.
             if (!volumeMounts.isEmpty()) {
-                args.addAll(NativeImageBuildLocalContainerRunner.getVolumeAccessArguments(containerRuntime));
-            } else if (runAsHostUser) {
-                args.add("--user");
-                args.add(getHostUidGid());
+                args.addAll(volumeAccessArguments(containerRuntime, containerImage));
             }
 
             if (httpPort != 0) {
@@ -245,10 +240,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         args.add("-i"); // Interactive, write logs to stdout
         args.add("--rm");
         if (!volumeMounts.isEmpty()) {
-            args.addAll(NativeImageBuildLocalContainerRunner.getVolumeAccessArguments(containerRuntime));
-        } else if (runAsHostUser) {
-            args.add("--user");
-            args.add(getHostUidGid());
+            args.addAll(volumeAccessArguments(containerRuntime, containerImage));
         }
 
         args.add("-p");
@@ -379,13 +371,60 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         return StringUtil.replaceNonAlphanumericByUnderscores(property).toUpperCase();
     }
 
-    private static String getHostUidGid() {
+    /**
+     * Builds the user-namespace / UID-mapping arguments needed so that files written
+     * to the bind-mounted volume on the host are owned by the real host user.
+     * <p>
+     * The container's running UID/GID is detected dynamically via {@link ContainerUserResolver}.
+     * If detection fails we throw immediately rather than letting the container start and
+     * produce a cryptic "Permission denied" error on the entrypoint.
+     * <p>
+     * This is intentionally Linux-only. On macOS, Docker Desktop uses VirtioFS and Podman
+     * runs inside a Linux VM — both handle UID/GID mapping transparently at the VM layer.
+     * Adding {@code --user} or {@code --userns} flags on macOS conflicts with that VM-level
+     * mapping and causes failures rather than fixing them.
+     */
+    private static List<String> volumeAccessArguments(ContainerRuntime containerRuntime, String image) {
+        if (!SystemUtils.IS_OS_LINUX) {
+            return List.of();
+        }
+
+        ContainerUserResolver.ContainerUser containerUser = ContainerUserResolver.resolve(containerRuntime, image);
+        if (containerUser == null) {
+            throw new RuntimeException(
+                    "Cannot determine the UID/GID of the user inside container image '" + image + "'. " +
+                            "Ensure the image is available locally and contains the 'id' command, " +
+                            "or remove the volume-mount configuration to skip this check.");
+        }
+
+        final List<String> result = new ArrayList<>();
+        if (containerRuntime.isPodman() && containerRuntime.isRootless()) {
+            // Rootless Podman: map the container user to the host user inside the user namespace
+            result.add("--userns=keep-id:uid=" + containerUser.uid() + ",gid=" + containerUser.gid());
+        } else if (containerRuntime.isPodman()) {
+            // Rootful Podman: remap container uid/gid to host uid/gid
+            String hostUid = getLinuxID("-ur");
+            String hostGid = getLinuxID("-gr");
+            if (hostUid != null && hostGid != null) {
+                result.add("--uidmap=" + containerUser.uid() + ":" + hostUid + ":1");
+                result.add("--gidmap=" + containerUser.gid() + ":" + hostGid + ":1");
+            }
+        } else {
+            // Docker (rootless or rootful): fall back to --user host-uid:host-gid
+            String hostUid = getLinuxID("-ur");
+            String hostGid = getLinuxID("-gr");
+            if (hostUid != null && hostGid != null) {
+                Collections.addAll(result, "--user", hostUid + ":" + hostGid);
+            }
+        }
+        return result;
+    }
+
+    private static String getLinuxID(String option) {
         try {
-            String uid = new String(Runtime.getRuntime().exec("id -u").getInputStream().readAllBytes()).trim();
-            String gid = new String(Runtime.getRuntime().exec("id -g").getInputStream().readAllBytes()).trim();
-            return uid + ":" + gid;
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to determine host user uid:gid", e);
+            return io.smallrye.common.process.ProcessBuilder.execToString("id", option).trim();
+        } catch (Exception e) {
+            return null;
         }
     }
 
@@ -448,10 +487,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         args.add("--rm");
         ContainerRuntime containerRuntime = ContainerRuntimeUtil.detectContainerRuntime();
         if (!volumeMounts.isEmpty()) {
-            args.addAll(NativeImageBuildLocalContainerRunner.getVolumeAccessArguments(containerRuntime));
-        } else if (runAsHostUser) {
-            args.add("--user");
-            args.add(getHostUidGid());
+            args.addAll(volumeAccessArguments(containerRuntime, containerImage));
         }
 
         args.addAll(toEnvVar("JAVA_TOOL_OPTIONS",

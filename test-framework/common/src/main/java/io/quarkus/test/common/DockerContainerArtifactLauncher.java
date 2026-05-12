@@ -18,8 +18,6 @@ public interface DockerContainerArtifactLauncher extends ArtifactLauncher<Docker
 
         Map<String, String> volumeMounts();
 
-        boolean runAsHostUser();
-
         Optional<String> entryPoint();
 
         Optional<String> containerWorkingDirectory();

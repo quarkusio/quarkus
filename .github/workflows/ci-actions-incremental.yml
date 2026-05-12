@@ -1906,11 +1906,12 @@ jobs:
         with:
           oci-service: ${{ matrix.oci-service }}
           action: create
-          user: quarkus_test
+          # This needs to be unique to the job, in particular it must be different to the TestPilot JVM job
+          user: quarkus_test_native
       - name: Build
         env:
           # Begin OTP setup
-          TESTPILOT_USERNAME: quarkus_test_${{ github.run_number }}
+          TESTPILOT_USERNAME: quarkus_test_native_${{ github.run_number }}
           TESTPILOT_PASSWORD: ${{ steps.create_database.outputs.database_password }}
           TESTPILOT_CONNECTION_STRING_SUFFIX_WDQ: ${{ steps.create_database.outputs.connection_string_suffix }}
           RUNID: ${{ github.run_number }}
@@ -1940,7 +1941,7 @@ jobs:
         with:
           oci-service: ${{ matrix.oci-service }}
           action: delete
-          user: quarkus_test
+          user: quarkus_test_native
       - name: Prepare build reports archive
         if: always()
         run: |

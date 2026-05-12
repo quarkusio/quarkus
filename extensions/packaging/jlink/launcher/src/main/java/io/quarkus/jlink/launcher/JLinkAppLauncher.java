@@ -10,6 +10,9 @@ import io.smallrye.modules.LoadedModule;
 import io.smallrye.modules.ModuleFinder;
 import io.smallrye.modules.ModuleLoader;
 
+/**
+ * The application launcher for a jlink'd module application.
+ */
 public final class JLinkAppLauncher {
     private JLinkAppLauncher() {
     }

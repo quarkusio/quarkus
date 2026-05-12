@@ -114,8 +114,33 @@ public final class ModularitySteps {
             List<ModuleEnableNativeAccessBuildItem> nativeAccesses,
             List<AddedDependencyBuildItem> extraDeps,
             List<BootModulePathBuildItem> bootPathItems) {
+
+        /* @formatter:off
+         * Build the modular application model. This is done in a few stages.
+         *
+         * • Find all of the artifacts present in the application
+         * • Collect and index the build items relating to modularity (add opens/exports, native access, etc.)
+         * • (temporary) create an index of which packages belong to which modules
+         *   ◦ Note: this is temporary because it prohibits packages from existing in one more module.
+         *     See #44657 for more information on why this is temporarily necessary.
+         * • (temporary) add ArC dependencies
+         *   ◦ Note: this is temporary as we would want to move this to the ArC extension.
+         *     However we presently do not have a strategy for this. See #52933.
+         * • (temporary) find all service providers hiding as generated resources
+         *   ◦ Note: this too is temporary. #53699 introduces a service provider build item to replace this.
+         * • Create the module set from the set of artifacts
+         *   ◦ This may entail traversing dependency sets for automatic modules
+         *   ◦ The output of this stage is a `io.quarkus.modular.spi.model.ModuleInfo` for each module
+         * • Calculate the set of boot modules
+         *   ◦ This is derived from the dependency graph of each BootModulePathBuildItem value
+         * • Assemble the modules into the final ApplicationModuleInfoBuildItem
+         * @formatter:on
+         */
+
+        // Find all artifacts
+
         ApplicationModel model = curateOutcome.getApplicationModel();
-        // construct complete module information for the entire project
+        // This is the single application artifact/module.
         ResolvedDependency appArtifact = model.getAppArtifact();
 
         // tabulate all generated and transformed resources, by package, so we can assign them to modules
@@ -125,13 +150,21 @@ public final class ModularitySteps {
         Set<String> arcGeneratedPackages = new HashSet<>();
         Set<String> arcRuntimeGeneratedPackages = new HashSet<>();
         Set<String> extraAppModuleDepPackages = new HashSet<>();
+
+        // Collect the initial set of modules that must be on the boot path.
         Set<String> bootPathModules = bootPathItems.stream().map(BootModulePathBuildItem::moduleName)
                 .collect(Collectors.toSet());
+
+        // Get all known artifacts with their module names and build an index.
         Map<String, ResolvedDependency> knownNamedModules = model.getDependencies().stream()
                 .filter(d -> d.isFlagSet(DependencyFlags.RUNTIME_CP))
                 .filter(d -> !d.isFlagSet(DependencyFlags.MISSING_FROM_APPLICATION))
                 .map(d -> Map.entry(d.getModuleName(), d))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        // Collect all added dependencies and merge them into a flat map.
+        // In particular, we collapse duplicates by combining modifier sets union-wise.
+        // The mapping here is: from module -> to module -> with modifier(s)
         Map<String, Map<String, Modifiers<Modifier>>> extraDepsMap = extraDeps.stream()
                 .collect(Collectors.groupingBy(
                         AddedDependencyBuildItem::module,
@@ -139,6 +172,10 @@ public final class ModularitySteps {
                                 AddedDependencyBuildItem::targetModule,
                                 Collectors.mapping(AddedDependencyBuildItem::modifiers,
                                         Collectors.reducing(Modifier.set(), Modifiers::withAll)))));
+
+        // Collect all add-opens and merge them into a flat map.
+        // We collapse duplicates by taking the union of the opened packages.
+        // Note that add-opens will take precedence over add-exports.
         // opening module -> opened module -> package set
         Map<String, Map<String, Set<String>>> addOpensByModule = opens.stream()
                 .collect(Collectors.groupingBy(
@@ -147,11 +184,15 @@ public final class ModularitySteps {
                                 ModuleOpenBuildItem::openedModuleName,
                                 Collectors.flatMapping(mobi -> mobi.packageNames().stream(),
                                         Collectors.toSet()))));
+        // Collect the set of modules which require native access.
         Set<String> nativeAccessNames = nativeAccesses.stream()
                 .map(ModuleEnableNativeAccessBuildItem::moduleName)
                 .collect(Collectors.toUnmodifiableSet());
+
+        // Here's the temporary modules-by-package index used until #44657 can be resolved.
         Map<String, String> modulesByPackageTemporary = new HashMap<>();
 
+        // Analyze generated classes for ArC (#52933) and for #44657.
         for (GeneratedClassBuildItem gcbi : generatedClasses) {
             String pn = gcbi.packageName();
             String bn = gcbi.binaryName();
@@ -179,6 +220,8 @@ public final class ModularitySteps {
                 });
             }
         }
+
+        // Gather up the set of generated resources for indexing (#44657) and service providers (#53699).
         int misLen = "META-INF/services".length();
         // impl package -> service name -> impl name
         Map<String, Map<String, List<String>>> extraServicesByPackage = new HashMap<>();
@@ -219,6 +262,8 @@ public final class ModularitySteps {
                         .put(name, new MemoryResource(name, rsrc.getData()));
             }
         }
+
+        // Scan transformed classes to make sure they don't overlap with a generated class and index it (#44657).
         for (Set<TransformedClassesBuildItem.TransformedClass> set : transformedClasses.getTransformedClassesByJar().values()) {
             for (TransformedClassesBuildItem.TransformedClass tc : set) {
                 String bn = tc.getClassName();
@@ -246,9 +291,11 @@ public final class ModularitySteps {
 
         // now start creating the module set
 
+        // This is just an index of each artifact by groupId+artifactId.
         Map<ArtifactKey, ResolvedDependency> allDependenciesByKey = knownNamedModules.values().stream().map(
                 d -> Map.entry(keyOf(d), d)).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
+        // This will be our collection of all modules in the application.
         Map<String, ModuleInfo> modulesByName = new HashMap<>();
 
         // map of all `module-info.class` models
@@ -265,16 +312,20 @@ public final class ModularitySteps {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
+        // The application's module name
         final String appModuleName = appArtifact.getModuleName();
 
         // ArC must depend on the application module (for service loading)
-        // todo: find a better solution
+        // todo: ArC should use AddedDependencyBuildItem for this.
         extraDepsMap.computeIfAbsent("io.quarkus.arc", k -> new HashMap<>())
                 .put(appModuleName, Modifier.set(Modifier.SERVICES));
 
+        // Vert.x core needs to link against `io.quarkus.vertx`.
+        // todo: The Vert.x extension should use AddedDependencyBuildItem for this.
         extraDepsMap.computeIfAbsent("io.vertx.core", k -> new HashMap<>())
                 .put("io.quarkus.vertx", Modifier.set(Modifier.READ, Modifier.LINKED, Modifier.SYNTHETIC));
 
+        // Now go through the process to build a (Quarkus) module descriptor for each artifact.
         for (ResolvedDependency dependency : knownNamedModules.values()) {
             if (!dependency.isRuntimeCp()) {
                 continue;
@@ -284,18 +335,24 @@ public final class ModularitySteps {
                 // we do app module at the end
                 continue;
             }
+            // Get the module info.
+            // todo: we're doing a lot of extra transformations here that will eventually move out.
             final ModuleInfo depModule = getModuleInfo(dependency, generatedByPackageAndPath, moduleInfoClassModels,
                     allDependenciesByKey, Map.of(), knownNamedModules, mi -> {
-                        // add extra services
+                        // Transformations for a given module.
+                        // These flags ensure we don't add dependencies twice (see #52933).
                         boolean arcAdded = false;
                         boolean arcRuntimeAdded = false;
+                        // Add the native-access flag if a build item says to do so.
                         if (nativeAccessNames.contains(moduleName)) {
                             mi = mi.withModifier(ModuleDescriptor.Modifier.NATIVE_ACCESS);
                         }
                         for (String pkg : mi.packages().keySet()) {
+                            // Add service providers found in build items.
                             if (extraServicesByPackage.containsKey(pkg)) {
                                 mi = mi.withMoreServices(extraServicesByPackage.remove(pkg));
                             }
+                            // Handle the ArC stuff (#52933).
                             // TODO: use build items to do this more efficiently up front
                             if (!arcAdded && arcGeneratedPackages.contains(pkg)) {
                                 if (!mi.name().equals("io.quarkus.arc")) {
@@ -319,6 +376,7 @@ public final class ModularitySteps {
                                 arcRuntimeAdded = true;
                             }
                         }
+                        // TODO: Temporary fixups; remove when we can.
                         switch (moduleName) {
                             // todo: needs resteasy release
                             case "org.jboss.resteasy.core.spi" -> {
@@ -326,12 +384,13 @@ public final class ModularitySteps {
                                         PackageAccess.PRIVATE, Set.of(), Set.of("org.jboss.logging"))));
                             }
                         }
-                        // add extra dependencies
+                        // Add extra dependencies from build items.
                         mi = mi.withMoreDependencies(extraDepsMap.getOrDefault(mi.name(), Map.of())
                                 .entrySet()
                                 .stream()
                                 .map((e) -> new DependencyInfo(e.getKey(), e.getValue(), Map.of()))
                                 .toList());
+                        // Add extra opens from build items.
                         Map<String, Set<String>> obi = addOpensByModule.getOrDefault(moduleName, Map.of());
                         if (!obi.isEmpty()) {
                             mi = mi.withMoreDependencies(obi
@@ -346,6 +405,7 @@ public final class ModularitySteps {
                         }
                         return mi;
                     });
+            // Add the module to the index.
             if (modulesByName.containsKey(moduleName)) {
                 ModuleInfo existing = modulesByName.get(moduleName);
                 if (existing.equals(depModule)) {
@@ -356,6 +416,7 @@ public final class ModularitySteps {
                         depModule.resolvedArtifact() + " and " + existing.resolvedArtifact());
             }
             modulesByName.put(moduleName, depModule);
+            // Warn about any split packages (temporary until #44657; then we don't care as much about it).
             depModule.packages().keySet().forEach(pn -> {
                 String existing = modulesByPackageTemporary.putIfAbsent(pn, moduleName);
                 if (existing != null && !existing.equals(moduleName)) {
@@ -364,6 +425,8 @@ public final class ModularitySteps {
             });
         }
 
+        // Compute the set of extra app module dependencies from ArC component providers.
+        // todo: Remove once #52933 is sorted out.
         for (String pn : extraAppModuleDepPackages) {
             String moduleName = modulesByPackageTemporary.get(pn);
             if (moduleName != null) {
@@ -374,6 +437,8 @@ public final class ModularitySteps {
             }
         }
 
+        // Assemble the initial extra packages map for the application module.
+        // todo: once #44657 is resolved, we should be able to get this from the build items themselves.
         Map<String, PackageInfo> initialPackages = new HashMap<>(Map.of(
                 "", PackageInfo.PRIVATE,
                 "io.quarkus.runner", PackageInfo.EXPORTED,
@@ -384,9 +449,11 @@ public final class ModularitySteps {
                 "io.quarkus.arc.generator", PackageInfo.EXPORTED,
                 "io.quarkus.runner.recorded", PackageInfo.EXPORTED));
 
-        // claim all unclaimed generated classes and resources
+        // claim all unclaimed generated classes and resources (#44657)
         generatedByPackageAndPath.keySet().forEach(pn -> initialPackages.putIfAbsent(pn, PackageInfo.PRIVATE));
 
+        // Get the descriptor information for the application module.
+        // todo: we do a few extra transformations for ArC due to #52933.
         final ModuleInfo appModule = getModuleInfo(appArtifact, generatedByPackageAndPath, moduleInfoClassModels,
                 allDependenciesByKey, initialPackages,
                 knownNamedModules, mi -> {
@@ -412,7 +479,7 @@ public final class ModularitySteps {
                             arcRuntimeAdded = true;
                         }
                     }
-                    // now add all extra dependencies
+                    // now add all extra dependencies (from build items)
                     mi = mi.withMoreDependencies(extraDepsMap.getOrDefault(mi.name(), Map.of())
                             .entrySet()
                             .stream()
@@ -421,6 +488,7 @@ public final class ModularitySteps {
                     return mi;
                 });
 
+        // Register the app module with the others.
         modulesByName.put(appModuleName, appModule);
 
         // -----------------------------------
@@ -428,7 +496,7 @@ public final class ModularitySteps {
         // -----------------------------------
 
         // determine the set of boot-path modules
-        // todo: this is extension-dependent
+        // todo: this is packaging-dependent!
         Set<ModuleInfo> bootModuleSet = new HashSet<>();
         HashSet<String> visited = new HashSet<>();
         for (ModuleInfo moduleInfo : modulesByName.values()) {
@@ -436,6 +504,7 @@ public final class ModularitySteps {
                 computeBootPath(moduleInfo, modulesByName, visited, bootModuleSet);
             }
         }
+        // Build and return the final modular model.
         AppModuleModel.Builder amb = AppModuleModel.builder();
         amb.appModuleInfo(appModule);
         bootModuleSet.forEach(m -> amb.bootModule(m.name()));
@@ -446,7 +515,18 @@ public final class ModularitySteps {
     private static final Set<String> bootLayerNames = ModuleLayer.boot().modules().stream().map(Module::getName)
             .collect(Collectors.toUnmodifiableSet());
 
-    private static boolean computeBootPath(ModuleInfo toAdd, final Map<String, ModuleInfo> modulesByArtifact,
+    /**
+     * Add a module to the boot path, including its transitive dependency set.
+     * The Quarkus module dependency model is more flexible than the core JVM model, so this
+     * set should be as minimal as possible to avoid problems due to cycles and so forth.
+     *
+     * @param toAdd the module to add (must not be {@code null})
+     * @param modulesByName the (read-only) index of modules by name (must not be {@code null})
+     * @param visited the visited set (must not be {@code null})
+     * @param set the (writable) set of boot modules (must not be {@code null})
+     * @return {@code true} if further recursion is needed, or {@code false} to bail out
+     */
+    private static boolean computeBootPath(ModuleInfo toAdd, final Map<String, ModuleInfo> modulesByName,
             final HashSet<String> visited, final Set<ModuleInfo> set) {
         if (visited.add(toAdd.name())) {
             if (toAdd.modifiers().contains(ModuleDescriptor.Modifier.AUTOMATIC)
@@ -460,7 +540,7 @@ public final class ModularitySteps {
             boolean add = true;
             for (DependencyInfo dep : toAdd.dependencies()) {
                 if (dep.modifiers().contains(Modifier.LINKED)) {
-                    if (!computeBootPath(modulesByArtifact, visited, set, dep)) {
+                    if (!computeBootPath(modulesByName, visited, set, dep)) {
                         add = false;
                         break;
                     }
@@ -470,7 +550,7 @@ public final class ModularitySteps {
                 for (AutoDependencyGroup grp : toAdd.autoDependencies()) {
                     for (DependencyInfo dep : grp.dependencies()) {
                         if (dep.modifiers().contains(Modifier.LINKED)) {
-                            if (!computeBootPath(modulesByArtifact, visited, set, dep)) {
+                            if (!computeBootPath(modulesByName, visited, set, dep)) {
                                 add = false;
                                 break;
                             }
@@ -493,29 +573,66 @@ public final class ModularitySteps {
         }
     }
 
-    private static boolean computeBootPath(final Map<String, ModuleInfo> modulesByArtifact, final HashSet<String> visited,
+    /**
+     * An internal recursion partner for {@link #computeBootPath(ModuleInfo, Map, HashSet, Set)}.
+     * This method should not be called directly outside of that method.
+     *
+     * @param modulesByName the (read-only) index of modules by name (must not be {@code null})
+     * @param visited the visited set (must not be {@code null})
+     * @param set the (writable) set of boot modules (must not be {@code null})
+     * @param dep the dependency to consider (must not be {@code null})
+     * @return {@code true} if further recursion is needed, or {@code false} to bail out
+     */
+    private static boolean computeBootPath(final Map<String, ModuleInfo> modulesByName, final HashSet<String> visited,
             final Set<ModuleInfo> set, final DependencyInfo dep) {
         String name = dep.moduleName();
         // auto-include JDK modules
         if (bootLayerNames.contains(name)) {
             return true;
         }
-        ModuleInfo depStuff = modulesByArtifact.get(name);
+        ModuleInfo depStuff = modulesByName.get(name);
         if (depStuff != null) {
-            return computeBootPath(depStuff, modulesByArtifact, visited, set);
+            return computeBootPath(depStuff, modulesByName, visited, set);
         }
         return true;
     }
 
+    /**
+     * Read and tabulate a services file given an input stream in UTF-8 format.
+     *
+     * @param stream the input stream (must not be {@code null})
+     * @param output the collection to write to (must not be {@code null})
+     * @return the collection passed in to {@code output} (not {@code null})
+     * @param <C> the collection type
+     * @throws IOException if the services file could not be read
+     */
     private static <C extends Collection<String>> C readServicesFile(InputStream stream, C output) throws IOException {
         return readServicesFile(new InputStreamReader(stream, StandardCharsets.UTF_8), output);
     }
 
+    /**
+     * Read and tabulate a services file given a reader.
+     *
+     * @param reader the reader (must not be {@code null})
+     * @param output the collection to write to (must not be {@code null})
+     * @return the collection passed in to {@code output} (not {@code null})
+     * @param <C> the collection type
+     * @throws IOException if the services file could not be read
+     */
     private static <C extends Collection<String>> C readServicesFile(Reader reader, C output) throws IOException {
         return reader instanceof BufferedReader br ? readServicesFile(br, output)
                 : readServicesFile(new BufferedReader(reader), output);
     }
 
+    /**
+     * Read and tabulate a services file given a buffered reader.
+     *
+     * @param reader the buffered reader (must not be {@code null})
+     * @param output the collection to write to (must not be {@code null})
+     * @return the collection passed in to {@code output} (not {@code null})
+     * @param <C> the collection type
+     * @throws IOException if the services file could not be read
+     */
     private static <C extends Collection<String>> C readServicesFile(BufferedReader reader, C output) throws IOException {
         String impl;
         while ((impl = reader.readLine()) != null) {
@@ -534,6 +651,13 @@ public final class ModularitySteps {
         return output;
     }
 
+    /***
+     * Try to locate a {@code module-info} model in a content tree by path.
+     *
+     * @param contentTree the content tree (must not be {@code null})
+     * @param pathName the path name (must not be {@code null})
+     * @return the parsed {@code module-info} model.
+     */
     private static ClassModel findModuleInfoClass(final PathTree contentTree, final String pathName) {
         return contentTree.apply(pathName, v -> {
             if (v == null) {
@@ -547,6 +671,22 @@ public final class ModularitySteps {
         });
     }
 
+    /**
+     * Compute the Quarkus module descriptor for a given artifact.
+     * If the artifact does not have a {@code module-info} descriptor,
+     * then its Quarkus module descriptor will be computed as if
+     * the artifact is an automatic module using its transitive artifact dependency graph.
+     *
+     * @param dependency the dependency to process (must not be {@code null})
+     * @param generatedByPackageAndPath the (temporary) index of generated classes and resource by package and path name
+     * @param moduleInfoClassModels the (read-only) cache of loaded {@code module-info} models by dependency (must not be
+     *        {@code null})
+     * @param allDeps the (read-only) index of all known dependencies by group and artifact ID (must not be {@code null})
+     * @param initialPackages the (read-only) map of initial packages to add to this module (must not be {@code null})
+     * @param knownNamedModules the (read-only) map of artifacts by module name (must not be {@code null})
+     * @param transformation a transformation operation to apply before returning the descriptor (must not be {@code null})
+     * @return the computed module descriptor (not {@code null})
+     */
     private static ModuleInfo getModuleInfo(
             ResolvedDependency dependency,
             Map<String, Map<String, Resource>> generatedByPackageAndPath,
@@ -572,7 +712,9 @@ public final class ModularitySteps {
         Map<String, Map<String, PackageAccess>> depAccesses = new HashMap<>();
         List<AutoDependencyGroup> autoDeps = List.of();
 
-        // todo: Manual module add-exports/add-opens fixups
+        // This temporary measure patches modules which have dependency issues
+        // and/or which need to utilize `AddedDependencyBuildItem` but do not yet.
+        // todo: this will be removed; do not add to it if you can fix the extension instead.
         switch (moduleName) {
             case "io.quarkus.vertx" -> {
                 depAccesses.computeIfAbsent("io.vertx.core", ModularitySteps::newMap)
@@ -644,12 +786,14 @@ public final class ModularitySteps {
             }
         }
 
-        // now build the module info
+        // Now build the module info. There are two possibilities:
+        //   • We have a `module-info.class` and should build a regular module from that
+        //   • We do not have `module-info` so we build an automatic module from Maven dependencies
         if (cm != null) {
             // there is a descriptor
             Optional<RuntimeInvisibleAnnotationsAttribute> ria = cm.findAttribute(Attributes.runtimeInvisibleAnnotations());
             if (ria.isPresent()) {
-                // process annotations
+                // process annotations from the module declaration
                 RuntimeInvisibleAnnotationsAttribute riaa = ria.get();
                 for (Annotation a : riaa.annotations()) {
                     switch (a.className().stringValue()) {
@@ -666,40 +810,47 @@ public final class ModularitySteps {
                     }
                 }
             }
+            // register the main class
             mainClass = cm.findAttribute(Attributes.moduleMainClass()).map(ModuleMainClassAttribute::mainClass)
                     .map(ClassEntry::name)
                     .map(Utf8Entry::stringValue)
                     .map(n -> n.replace('/', '.'))
                     .orElse(null);
+            // figure out which packages we open to everyone
             Set<String> openedPackages = cm.findAttribute(Attributes.module()).map(ModuleAttribute::opens)
                     .map(l -> l.stream()
                             .filter(ei -> ei.opensTo().isEmpty())
                             .map(ei -> ei.openedPackage().name().stringValue().replace('/', '.'))
                             .collect(Collectors.toSet()))
                     .orElse(Set.of());
+            // figure out which packages we export to everyone
             Set<String> exportedPackages = cm.findAttribute(Attributes.module()).map(ModuleAttribute::exports)
                     .map(l -> l.stream()
                             .filter(ei -> ei.exportsTo().isEmpty())
                             .map(ei -> ei.exportedPackage().name().stringValue().replace('/', '.'))
                             .collect(Collectors.toSet()))
                     .orElse(Set.of());
+            // compute a PackageInfo for every package, merging in exported and opened package information
             cm.findAttribute(Attributes.modulePackages()).ifPresentOrElse(a -> a.packages().forEach(pe -> {
                 String pn = pe.name().stringValue().replace('/', '.');
                 PackageInfo info = openedPackages.contains(pn) ? PackageInfo.OPEN
                         : exportedPackages.contains(pn) ? PackageInfo.EXPORTED : PackageInfo.PRIVATE;
                 packages.compute(pn, (ignored, old) -> PackageInfo.merge(info, old));
             }), () -> indexPackages(packages, contentTree));
+            // find the set of used services
             uses = cm.findAttribute(Attributes.module()).map(ModuleAttribute::uses).orElse(List.of()).stream()
                     .map(ClassEntry::name)
                     .map(Utf8Entry::stringValue)
                     .map(c -> c.replace('/', '.'))
                     .collect(Collectors.toUnmodifiableSet());
+            // find the set of provided services
             provides = cm.findAttribute(Attributes.module()).map(ModuleAttribute::provides).orElse(List.of()).stream()
                     .map(mpi -> Map.entry(
                             mpi.provides().name().stringValue().replace('/', '.'),
                             mpi.providesWith().stream().map(ClassEntry::name).map(Utf8Entry::stringValue)
                                     .map(e -> e.replace('/', '.')).toList()))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            // find the dependency set, marking things `optional` if they are missing
             cm.findAttribute(Attributes.module()).map(ModuleAttribute::requires).orElse(List.of()).stream()
                     .map(mri -> Map.entry(
                             mri.requires().name().stringValue(),
@@ -715,24 +866,31 @@ public final class ModularitySteps {
                                 depAccesses.getOrDefault(depName, Map.of())));
                     });
         } else {
-            // try automatic-module?
+            // create an automatic module
             flags = flags.with(ModuleDescriptor.Modifier.AUTOMATIC);
+            // process the manifest for standard attributes
             ManifestAttributes manifestAttributes = contentTree.getManifestAttributes();
             if (manifestAttributes != null) {
+                // the main class
                 mainClass = manifestAttributes.mainClassName();
+                // add-opens
                 manifestAttributes.addOpens().forEach((mn, pl) -> {
                     Map<String, PackageAccess> subMap = depAccesses.computeIfAbsent(mn, ModularitySteps::newMap);
                     pl.forEach(pn -> subMap.put(pn, PackageAccess.OPEN));
                 });
+                // add-exports
                 manifestAttributes.addExports().forEach((mn, pl) -> {
                     Map<String, PackageAccess> subMap = depAccesses.computeIfAbsent(mn, ModularitySteps::newMap);
                     pl.forEach(pn -> subMap.putIfAbsent(pn, PackageAccess.EXPORTED));
                 });
+                // enable-native-access
                 if (manifestAttributes.enableNativeAccess()) {
                     flags = flags.with(ModuleDescriptor.Modifier.NATIVE_ACCESS);
                 }
             }
+            // create an index of all of the packages based on the content tree
             indexPackages(packages, contentTree);
+            // process the service files into a service provider map
             provides = contentTree.apply("META-INF/services", pv -> {
                 if (pv == null) {
                     return Map.of();
@@ -754,12 +912,16 @@ public final class ModularitySteps {
             // automatic module implicit requirements; the rest come from Maven
             requires.add(new DependencyInfo("java.base", Modifier.set(Modifier.LINKED,
                     Modifier.READ, Modifier.SERVICES, Modifier.MANDATED), Map.of()));
+            // todo: ideally we could avoid requiring `java.se` even for automatic modules thru dep analysis
             requires.add(new DependencyInfo("java.se", Modifier.set(Modifier.LINKED,
                     Modifier.READ, Modifier.SERVICES, Modifier.SYNTHETIC), Map.of()));
             // compute automatic dependencies
+            // NOTE: this includes each artifact in the transitive graph; this is NOT THE SAME
+            // as marking the module dependency as `TRANSITIVE` and cannot be replaced with doing so.
             autoDeps = computeAutomaticDependencies(moduleName, dependency,
                     allDeps, depAccesses);
         }
+        // Add generated resources that were previously indexed for us (#44657)
         // NOTE: modifies the generated packages map
         List<Resource> generated = packages.keySet().stream()
                 .map(generatedByPackageAndPath::remove)
@@ -774,9 +936,28 @@ public final class ModularitySteps {
         return transformation.apply(mi);
     }
 
+    /**
+     * A work list item for the recursive automatic dependency processing algorithm.
+     *
+     * @param moduleName the module name to depend on (must not be {@code null})
+     * @param artifact the artifact of the dependency module (must not be {@code null})
+     * @param depth the recursion depth
+     * @param optional {@code true} if the dependency should be optional, or {@code false} if it should be required
+     */
     private record WorkListItem(String moduleName, ResolvedDependency artifact, int depth, boolean optional) {
     }
 
+    /**
+     * The entry point for automatic dependency processing.
+     * The dependencies are assembled into "groups" so that we can add comments before each group to understand
+     * where each dependency came from.
+     *
+     * @param moduleName the name of the module being considered (must not be {@code null})
+     * @param rootArtifact the artifact of the module being considered (must not be {@code null})
+     * @param allDeps the map of all dependencies in the project (must not be {@code null})
+     * @param depAccesses the dependency extra accesses map
+     * @return the list of automatic dependency groups (not {@code null})
+     */
     private static List<AutoDependencyGroup> computeAutomaticDependencies(String moduleName, ResolvedDependency rootArtifact,
             final Map<ArtifactKey, ResolvedDependency> allDeps,
             final Map<String, Map<String, PackageAccess>> depAccesses) {
@@ -785,7 +966,9 @@ public final class ModularitySteps {
         visited.add(keyOf(rootArtifact));
         final ArrayDeque<WorkListItem> workList = new ArrayDeque<>();
         ArrayList<AutoDependencyGroup> groups = new ArrayList<>();
+        // add the initial work list entry
         workList.add(new WorkListItem(moduleName, rootArtifact, 0, false));
+        // run the work list until all dependencies have been processed
         while (!workList.isEmpty()) {
             WorkListItem item = workList.removeFirst();
             computeAutomaticDependencies(item.moduleName(), item.artifact(), allDeps, visited, workList,
@@ -801,8 +984,8 @@ public final class ModularitySteps {
      * because automatic modules normally can "see" all of these artifacts.
      * Note that this is not exactly the same as traditional {@code module-info} transitive dependencies.
      *
-     * @param moduleName the name of the module being built (must not be {@code null})
-     * @param artifact the artifact of the module being built (must not be {@code null})
+     * @param moduleName the name of the module being considered (must not be {@code null})
+     * @param artifact the artifact of the module being considered (must not be {@code null})
      * @param allDeps the map of all dependencies in the project (must not be {@code null})
      * @param visited the visited set of module names (must not be {@code null})
      * @param workList the remaining work list (must not be {@code null})
@@ -866,10 +1049,22 @@ public final class ModularitySteps {
         }
     }
 
+    /**
+     * Create a usable artifact key from a dependency or its coordinates.
+     *
+     * @param dependency the coordinates object (must not be {@code null})
+     * @return the artifact key (group, artifact, and classifier only) (not {@code null})
+     */
     private static ArtifactKey keyOf(final ArtifactCoords dependency) {
         return ArtifactKey.gac(dependency.getGroupId(), dependency.getArtifactId(), dependency.getClassifier());
     }
 
+    /**
+     * Convert JPMS access flags to Quarkus module modifiers.
+     *
+     * @param flags the JPMS access flags set (must not be {@code null})
+     * @return the Quarkus module modifiers (not {@code null})
+     */
     private static Modifiers<Modifier> depModifiersOf(final Set<AccessFlag> flags) {
         Modifiers<Modifier> set = Modifier.set(Modifier.LINKED, Modifier.READ,
                 Modifier.SERVICES);
@@ -888,9 +1083,16 @@ public final class ModularitySteps {
         return set;
     }
 
+    /**
+     * Update the given package index based on discovered packages in an automatic module.
+     *
+     * @param packages the packages map to update (must not be {@code null})
+     * @param content the artifact content (must not be {@code null})
+     */
     private static void indexPackages(final Map<String, PackageInfo> packages, final PathTree content) {
         content.walk(vp -> {
             String rp = vp.getRelativePath();
+            // flatten MR-JAR structure.
             if (rp.startsWith("META-INF/versions/")) {
                 int idx = rp.indexOf('/', 18);
                 if (idx == -1) {
@@ -899,10 +1101,12 @@ public final class ModularitySteps {
                 }
                 rp = rp.substring(idx + 1);
             }
+            // A directory is a package if it contains a class.
             if (rp.endsWith(".class")) {
                 int idx = rp.lastIndexOf('/');
                 if (idx != -1) {
                     String pkgName = rp.substring(0, idx).replace('/', '.');
+                    // A package is public if it does not contain a segment named `impl`, `private_`, or `_private`.
                     packages.compute(pkgName, (n, old) -> {
                         if (n.endsWith(".impl") || n.contains(".impl.")
                                 || n.endsWith(".private_") || n.contains(".private_.")
@@ -917,6 +1121,14 @@ public final class ModularitySteps {
         });
     }
 
+    /**
+     * Process one of the access annotations: {@code io.smallrye.common.annotation.AddOpens}
+     * or {@code io.smallrye.common.annotation.AddExports}.
+     *
+     * @param ann the annotation (must not be {@code null})
+     * @param depAccesses the writable map of package accesses (must not be {@code null})
+     * @param access the access to grant (must not be {@code null}; based on the annotation type)
+     */
     private static void processAccessAnnotation(Annotation ann, Map<String, Map<String, PackageAccess>> depAccesses,
             PackageAccess access) {
         String moduleName = null;
@@ -940,10 +1152,20 @@ public final class ModularitySteps {
         }
     }
 
+    /**
+     * {@return a new map for use in Map.compute*() operations}
+     */
     private static <K, V> Map<K, V> newMap(Object ignored) {
         return new HashMap<>();
     }
 
+    /**
+     * Process an access annotation list.
+     *
+     * @param ann the list annotation (must not be {@code null})
+     * @param depAccesses the writable map of package accesses (must not be {@code null})
+     * @param access the access to grant (must not be {@code null}; based on the annotation type)
+     */
     private static void processAccessAnnotationList(Annotation ann, Map<String, Map<String, PackageAccess>> depAccesses,
             PackageAccess access) {
         for (AnnotationElement element : ann.elements()) {

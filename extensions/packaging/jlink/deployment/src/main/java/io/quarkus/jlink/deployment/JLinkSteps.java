@@ -39,6 +39,9 @@ import io.smallrye.common.resource.MemoryResource;
 import io.smallrye.common.resource.Resource;
 import io.smallrye.modules.desc.Dependency;
 
+/**
+ * The steps for producing a jlink image from the modular model.
+ */
 public final class JLinkSteps {
     private static final Logger log = Logger.getLogger("io.quarkus.jlink");
     private static final Logger jlinkOut = Logger.getLogger("io.quarkus.jlink.out");
@@ -50,29 +53,48 @@ public final class JLinkSteps {
         this.config = config;
     }
 
+    /**
+     * {@return the item for the jlink launcher module}
+     */
     @BuildStep
     public BootModulePathBuildItem bootPath() {
         return new BootModulePathBuildItem("io.quarkus.jlink.launcher");
     }
 
+    /**
+     * Steps to stage the jlink output into directories so it can be processed by the tool itself.
+     *
+     * @param curateOutcome the curate outcome item (must not be {@code null})
+     * @param moduleInfoItem the modular model item (must not be {@code null})
+     * @return the staged jlink output (not {@code null})
+     * @throws IOException if a file operation fails
+     */
     @BuildStep
     public JLinkStagedOutputItem stageOutput(
             CurateOutcomeBuildItem curateOutcome,
             ApplicationModuleInfoBuildItem moduleInfoItem) throws IOException {
-        // fetch and patch each JAR file
-        final Path staging = config.outputDirectory().resolve(config.stagingDirectory());
-        Files.createDirectories(staging);
-        final Map<String, Path> bmp = new HashMap<>();
+
+        // gather information we'll need
         AppModuleModel model = moduleInfoItem.model();
         Map<String, ModuleInfo> modulesByName = model.modulesByName();
+
+        // create the staging directory
+        final Path staging = config.outputDirectory().resolve(config.stagingDirectory());
+        Files.createDirectories(staging);
+
+        // create a mapping for each boot module path
+        final Map<String, Path> bmp = new HashMap<>();
         for (String moduleName : model.bootModules()) {
+            // get this boot module descriptor
             ModuleInfo moduleInfo = modulesByName.get(moduleName);
             if (moduleInfo == null) {
                 throw new IllegalStateException("Boot module listed in model is missing from the module index");
             }
+            // our special launcher module
             if (moduleName.equals("io.quarkus.jlink.launcher")) {
+                // the list of resources produced by generating the main class
                 List<Resource> dynModuleResources = new ArrayList<>();
-                // now generate the main class
+                // generate the simple main class which runs the launcher with the app module info
                 Gizmo gizmo = Gizmo.create((path, bytes) -> dynModuleResources.add(new MemoryResource(path, bytes)));
                 gizmo.class_(APP_MAIN, cc -> {
                     cc.public_();
@@ -88,6 +110,7 @@ public final class JLinkSteps {
                         });
                     });
                 });
+                // create a derived launcher module which includes our generated class and a dep on the app module
                 moduleInfo = moduleInfo
                         .withMoreResources(dynModuleResources)
                         .withMoreDependencies(model.bootModules().stream().filter(n -> !n.equals(moduleName))
@@ -99,12 +122,21 @@ public final class JLinkSteps {
                         .withMainClass(APP_MAIN);
             }
             // write the JAR
-            // TODO: create an actual manifest
+            // TODO: create an actual manifest (if needed)
             bmp.put(moduleName, ModuleWriter.writeModule(moduleInfo, staging, new Manifest(), true));
         }
         return new JLinkStagedOutputItem(staging, bmp);
     }
 
+    /**
+     * A step to execute jlink on the staged output and copy in the dynamic module set to produce the final image.
+     *
+     * @param stagedOutput the staged jlink output item (must not be {@code null})
+     * @param moduleInfoItem the modular model item (must not be {@code null})
+     * @return an item representing the built image (not {@code null})
+     * @throws BuildException if there is a problem running jlink
+     * @throws IOException if there is a filesystem problem
+     */
     @BuildStep
     public JLinkImageBuildItem jlink(
             JLinkStagedOutputItem stagedOutput,
@@ -208,7 +240,7 @@ public final class JLinkSteps {
                 // skip boot modules
                 continue;
             }
-            // TODO: create an actual manifest
+            // TODO: create an actual manifest (if needed)
             ModuleWriter.writeModule(moduleInfo, lib.resolve(moduleInfo.name()), new Manifest(), false);
         }
 
@@ -217,6 +249,12 @@ public final class JLinkSteps {
         return new JLinkImageBuildItem(imagePath, Set.of(config.launcherName()));
     }
 
+    /**
+     * Produce a classic artifact result build item from the jlink image item.
+     *
+     * @param imageItem the jlink image item (must not be {@code null})
+     * @return the artifact result item (not {@code null})
+     */
     @BuildStep
     public ArtifactResultBuildItem produceArtifactResult(JLinkImageBuildItem imageItem) {
         return new ArtifactResultBuildItem(imageItem.imagePath().toAbsolutePath(), "jlink", Map.of());

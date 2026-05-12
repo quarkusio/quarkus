@@ -5,6 +5,9 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.jboss.logging.Logger;
 
+/**
+ * A utility which captures text output and writes it to the log.
+ */
 final class LogWriter extends Writer {
     private final ReentrantLock lock = new ReentrantLock();
     private final StringBuilder b = new StringBuilder();

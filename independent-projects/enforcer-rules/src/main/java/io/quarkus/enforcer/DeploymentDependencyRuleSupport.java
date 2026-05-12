@@ -15,18 +15,15 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.enforcer.rule.api.EnforcerLevel;
-import org.apache.maven.enforcer.rule.api.EnforcerRule;
-import org.apache.maven.enforcer.rule.api.EnforcerRule2;
-import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
-import org.apache.maven.enforcer.rule.api.EnforcerRuleHelper;
-import org.apache.maven.model.Dependency;
-import org.apache.maven.plugin.logging.Log;
-import org.apache.maven.project.MavenProject;
-import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluationException;
+import javax.inject.Inject;
 
-public abstract class DeploymentDependencyRuleSupport implements EnforcerRule2 {
+import org.apache.maven.artifact.Artifact;
+import org.apache.maven.enforcer.rule.api.AbstractEnforcerRule;
+import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
+import org.apache.maven.model.Dependency;
+import org.apache.maven.project.MavenProject;
+
+public abstract class DeploymentDependencyRuleSupport extends AbstractEnforcerRule {
 
     protected static final String GROUP_ID_PREFIX = "io.quarkus";
     protected static final String DEPLOYMENT_ARTIFACT_ID_SUFFIX = "-deployment";
@@ -34,30 +31,11 @@ public abstract class DeploymentDependencyRuleSupport implements EnforcerRule2 {
     private static final String EXT_PROPERTIES_PATH = "META-INF/quarkus-extension.properties";
     private static final Map<String, Optional<String>> DEPLOYMENT_GAV_CACHE = new ConcurrentHashMap<>();
 
-    protected Log logger;
-
-    private EnforcerLevel level = EnforcerLevel.ERROR;
-
-    @Override
-    public final EnforcerLevel getLevel() {
-        return level;
-    }
-
-    public final void setLevel(EnforcerLevel level) {
-        this.level = level;
-    }
+    @Inject
+    private MavenProject project;
 
     @Override
-    public final void execute(EnforcerRuleHelper helper) throws EnforcerRuleException {
-        logger = helper.getLog();
-
-        MavenProject project;
-        try {
-            project = (MavenProject) helper.evaluate("${project}");
-        } catch (ExpressionEvaluationException e) {
-            throw new IllegalStateException("Failed to get project from EnforcerRuleHelper", e);
-        }
-
+    public final void execute() throws EnforcerRuleException {
         if (!isCheckRequired(project)) {
             return;
         }
@@ -78,7 +56,7 @@ public abstract class DeploymentDependencyRuleSupport implements EnforcerRule2 {
         // To avoid this "soft exit", explicit resolving would be necessary but that is pretty elaborate in an enforcer rule.
         // If the build goal is "late" enough, artifacts for the respective scope *will* be resolved automatically.
         if (nonDeploymentArtifactsByGAV.values().stream().anyMatch(artifact -> !artifact.isResolved())) {
-            logger.warn("Skipping rule " + RequiresMinimalDeploymentDependency.class.getSimpleName()
+            getLog().warn("Skipping rule " + RequiresMinimalDeploymentDependency.class.getSimpleName()
                     + ": Artifacts are not resolved, consider using a later build goal like 'package'.");
             return;
         }
@@ -145,20 +123,5 @@ public abstract class DeploymentDependencyRuleSupport implements EnforcerRule2 {
 
     protected boolean isCheckRequired(MavenProject project) {
         return true;
-    }
-
-    @Override
-    public final boolean isCacheable() {
-        return false;
-    }
-
-    @Override
-    public final boolean isResultValid(EnforcerRule cachedRule) {
-        return false;
-    }
-
-    @Override
-    public final String getCacheId() {
-        return null;
     }
 }

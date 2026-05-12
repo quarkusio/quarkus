@@ -73,7 +73,7 @@
                                 <externalRules>
                                     <location>classpath:enforcer-rules/quarkus-banned-dependencies-okhttp.xml</location>
                                 </externalRules>
-                                <requiresMinimalDeploymentDependency implementation="io.quarkus.enforcer.RequiresMinimalDeploymentDependency"/>
+                                <requiresMinimalDeploymentDependency/>
                             </rules>
                         </configuration>
                     </execution>

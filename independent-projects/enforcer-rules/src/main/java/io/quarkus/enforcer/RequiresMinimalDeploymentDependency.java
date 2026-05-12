@@ -9,6 +9,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.inject.Named;
+
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
 import org.apache.maven.model.Dependency;
@@ -18,6 +20,7 @@ import org.apache.maven.project.MavenProject;
  * Enforces that for each direct "runtime" dependency the current project also defines a direct minimal "*-deployment"
  * dependency to produce a consistent build order.
  */
+@Named("requiresMinimalDeploymentDependency")
 public class RequiresMinimalDeploymentDependency extends DeploymentDependencyRuleSupport {
 
     private static final String REQ_TYPE = "pom";

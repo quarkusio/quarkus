@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import javax.inject.Named;
+
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
 import org.apache.maven.model.Dependency;
@@ -12,6 +14,7 @@ import org.apache.maven.project.MavenProject;
 /**
  * Bans from a deployment module of an extension all runtime dependencies to "foreign" extensions.
  */
+@Named("bansRuntimeDependency")
 public class BansRuntimeDependency extends DeploymentDependencyRuleSupport {
 
     @Override

@@ -4,16 +4,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+
 import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.enforcer.rule.api.EnforcerLevel;
-import org.apache.maven.enforcer.rule.api.EnforcerRule;
-import org.apache.maven.enforcer.rule.api.EnforcerRule2;
+import org.apache.maven.enforcer.rule.api.AbstractEnforcerRule;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
-import org.apache.maven.enforcer.rule.api.EnforcerRuleHelper;
-import org.apache.maven.plugin.logging.Log;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.project.MavenProject;
-import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluationException;
-import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.DefaultArtifact;
@@ -27,7 +25,8 @@ import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
  * This rule resolves a reference artifact (e.g., Hibernate Platform) and checks that the versions
  * declared in the project's dependencyManagement/dependencies sections match those in the reference artifact.
  */
-public class DependencyAlignmentRule implements EnforcerRule2 {
+@Named("dependencyAlignmentRule")
+public class DependencyAlignmentRule extends AbstractEnforcerRule {
 
     /**
      * The reference artifact to check against in the format "groupId:artifactId:version".
@@ -43,9 +42,14 @@ public class DependencyAlignmentRule implements EnforcerRule2 {
      */
     private List<DependencyAlignmentData> dependencies;
 
-    private Log logger;
+    @Inject
+    private MavenProject project;
 
-    private EnforcerLevel level = EnforcerLevel.ERROR;
+    @Inject
+    private MavenSession session;
+
+    @Inject
+    private RepositorySystem repositorySystem;
 
     public void setReferenceArtifact(String referenceArtifact) {
         this.referenceArtifact = referenceArtifact;
@@ -56,25 +60,14 @@ public class DependencyAlignmentRule implements EnforcerRule2 {
     }
 
     @Override
-    public EnforcerLevel getLevel() {
-        return level;
-    }
-
-    public void setLevel(EnforcerLevel level) {
-        this.level = level;
-    }
-
-    @Override
-    public void execute(EnforcerRuleHelper helper) throws EnforcerRuleException {
-        logger = helper.getLog();
-
+    public void execute() throws EnforcerRuleException {
         // Validate configuration
         if (referenceArtifact == null || referenceArtifact.trim().isEmpty()) {
             throw new EnforcerRuleException(
                     "referenceArtifact must be configured (e.g., 'org.hibernate.orm:hibernate-platform:7.3.0.Final')");
         }
         if (dependencies == null || dependencies.isEmpty()) {
-            logger.warn("No dependencies configured for alignment check");
+            getLog().warn("No dependencies configured for alignment check");
             return;
         }
 
@@ -88,22 +81,9 @@ public class DependencyAlignmentRule implements EnforcerRule2 {
         String referenceArtifactId = parts[1];
         String referenceVersion = parts[2];
 
-        logger.debug("Checking alignment with " + referenceArtifact);
+        getLog().debug("Checking alignment with " + referenceArtifact);
 
-        MavenProject project;
-        RepositorySystem repositorySystem;
-        RepositorySystemSession repositorySession;
-
-        try {
-            // With the old enforcer API (3.0.0-M3), we need to use evaluate() to get the project and session
-            // The newer API (3.2.1+) would allow cleaner dependency injection with @Inject
-            project = (MavenProject) helper.evaluate("${project}");
-            repositorySystem = helper.getComponent(RepositorySystem.class);
-            // RepositorySystemSession is not available via helper methods, must use property evaluation
-            repositorySession = (RepositorySystemSession) helper.evaluate("${repositorySystemSession}");
-        } catch (ExpressionEvaluationException | ComponentLookupException e) {
-            throw new EnforcerRuleException("Failed to get Maven components from context", e);
-        }
+        RepositorySystemSession repositorySession = session.getRepositorySession();
 
         // Get remote repositories directly from the project (no need for property evaluation)
         var remoteRepositories = project.getRemoteArtifactRepositories();
@@ -135,7 +115,7 @@ public class DependencyAlignmentRule implements EnforcerRule2 {
                     errors.append("  - Artifact '%s' not found in project's dependencyManagement or dependencies\n"
                             .formatted(artifact));
                 } else {
-                    logger.debug("Artifact '%s' not found in project (skipping)".formatted(artifact));
+                    getLog().debug("Artifact '%s' not found in project (skipping)".formatted(artifact));
                 }
                 continue;
             }
@@ -147,7 +127,7 @@ public class DependencyAlignmentRule implements EnforcerRule2 {
                             but reference artifact expects '%s'
                         """.formatted(artifact, actualVersion, expectedVersion));
             } else {
-                logger.debug("✓ %s version %s is aligned".formatted(artifact, actualVersion));
+                getLog().debug("✓ %s version %s is aligned".formatted(artifact, actualVersion));
             }
         }
 
@@ -174,7 +154,7 @@ public class DependencyAlignmentRule implements EnforcerRule2 {
                     versions.put(key, dep.getVersion());
                 }
             });
-            logger.debug("Extracted " + versions.size() + " dependencies from project's dependencyManagement");
+            getLog().debug("Extracted " + versions.size() + " dependencies from project's dependencyManagement");
         }
 
         // Also check dependencies section for artifacts not in dependencyManagement
@@ -189,11 +169,12 @@ public class DependencyAlignmentRule implements EnforcerRule2 {
                 }
             }
             if (dependenciesAdded > 0) {
-                logger.debug("Extracted " + dependenciesAdded + " additional dependencies from project's dependencies section");
+                getLog().debug(
+                        "Extracted " + dependenciesAdded + " additional dependencies from project's dependencies section");
             }
         }
 
-        logger.debug("Total: " + versions.size() + " dependencies extracted from project");
+        getLog().debug("Total: " + versions.size() + " dependencies extracted from project");
         return versions;
     }
 
@@ -234,7 +215,7 @@ public class DependencyAlignmentRule implements EnforcerRule2 {
 
             var descriptorResult = repositorySystem.readArtifactDescriptor(repositorySession, descriptorRequest);
 
-            logger.debug("Resolved reference artifact: " + artifact);
+            getLog().debug("Resolved reference artifact: " + artifact);
 
             var versions = new HashMap<String, String>();
 
@@ -245,7 +226,7 @@ public class DependencyAlignmentRule implements EnforcerRule2 {
                         .map(org.eclipse.aether.graph.Dependency::getArtifact)
                         .filter(a -> a.getVersion() != null && !a.getVersion().isEmpty())
                         .forEach(a -> versions.put(a.getGroupId() + ":" + a.getArtifactId(), a.getVersion()));
-                logger.debug("Extracted %d managed dependencies".formatted(managedDeps.size()));
+                getLog().debug("Extracted %d managed dependencies".formatted(managedDeps.size()));
             }
 
             // Extract regular dependencies (from dependencies section) for those not in managedDependencies
@@ -258,33 +239,18 @@ public class DependencyAlignmentRule implements EnforcerRule2 {
                         .peek(a -> versions.put(a.getGroupId() + ":" + a.getArtifactId(), a.getVersion()))
                         .count();
                 if (dependenciesAdded > 0) {
-                    logger.debug("Extracted %d additional dependencies from dependencies section"
+                    getLog().debug("Extracted %d additional dependencies from dependencies section"
                             .formatted(dependenciesAdded));
                 }
             }
 
-            logger.debug("Total: %d dependencies extracted from reference artifact".formatted(versions.size()));
+            getLog().debug("Total: %d dependencies extracted from reference artifact".formatted(versions.size()));
             return versions;
 
         } catch (ArtifactDescriptorException e) {
             throw new EnforcerRuleException(
                     "Failed to resolve reference artifact " + groupId + ":" + artifactId + ":" + version, e);
         }
-    }
-
-    @Override
-    public boolean isCacheable() {
-        return false;
-    }
-
-    @Override
-    public boolean isResultValid(EnforcerRule cachedRule) {
-        return false;
-    }
-
-    @Override
-    public String getCacheId() {
-        return null;
     }
 
     @Override

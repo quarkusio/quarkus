@@ -196,6 +196,13 @@ public interface ResolvedDependency extends Dependency {
             }
             moduleName = finalNameBuilder.toString();
         }
+        if (classifier != null && !classifier.isEmpty()) {
+            LogHolder.log.warnf("Artifact %s:%s:%s does not have a defined module name; using computed name %s", groupId,
+                    artifactId, classifier, moduleName);
+        } else {
+            LogHolder.log.warnf("Artifact %s:%s does not have a defined module name; using computed name %s", groupId,
+                    artifactId, moduleName);
+        }
         return moduleName;
     }
 }

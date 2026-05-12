@@ -30,8 +30,8 @@ import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
-import io.vertx.mutiny.core.MultiMap;
 
 @Recorder
 public class OidcClientRecorder {
@@ -161,7 +161,7 @@ public class OidcClientRecorder {
         MultiMap tokenGrantParams = null;
 
         if (oidcConfig.grant().type() != Grant.Type.REFRESH) {
-            tokenGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+            tokenGrantParams = MultiMap.caseInsensitiveMultiMap();
             setGrantClientParams(oidcConfig, tokenGrantParams, grantType);
 
             if (oidcConfig.grantOptions() != null) {
@@ -201,7 +201,7 @@ public class OidcClientRecorder {
             }
         }
 
-        MultiMap commonRefreshGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+        MultiMap commonRefreshGrantParams = MultiMap.caseInsensitiveMultiMap();
         setGrantClientParams(oidcConfig, commonRefreshGrantParams, OidcConstants.REFRESH_TOKEN_GRANT);
 
         return OidcClientImpl.of(client, metadata.tokenRequestUri, metadata.tokenRevokeUri, grantType,

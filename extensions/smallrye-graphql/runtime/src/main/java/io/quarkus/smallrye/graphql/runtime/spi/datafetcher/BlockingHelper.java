@@ -21,7 +21,7 @@ public final class BlockingHelper {
 
     public static boolean nonBlockingShouldExecuteBlocking(Operation operation, Context vc) {
         // Rule is that by default this should execute non-blocking except if marked as blocking
-        return operation.getExecute().equals(Execute.BLOCKING) && vc.isEventLoopContext();
+        return vc != null && operation.getExecute().equals(Execute.BLOCKING) && vc.isEventLoopContext();
     }
 
     public static boolean shouldUseVirtualThread(Operation operation, Context vc) {
@@ -42,9 +42,16 @@ public final class BlockingHelper {
                     result.fail(t);
                 }
             });
-        } else {
-            // use regular blocking execution
+        } else if (vc != null) {
             vc.executeBlocking(contextualCallable).onComplete(result);
+        } else {
+            // No Vert.x context (e.g. ForkJoinPool thread after CompletableFuture.supplyAsync) —
+            // already off the event loop, safe to execute directly
+            try {
+                result.complete(contextualCallable.call());
+            } catch (Throwable t) {
+                result.fail(t);
+            }
         }
     }
 }

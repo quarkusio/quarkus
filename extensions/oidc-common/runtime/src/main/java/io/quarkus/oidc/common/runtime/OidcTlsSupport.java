@@ -91,6 +91,10 @@ public interface OidcTlsSupport {
             return null;
         }
 
+        public boolean useTlsRegistryAndMtls() {
+            return useTlsRegistry() && tlsConfig.getKeyStoreOptions() != null;
+        }
+
         public String getTlsConfigName() {
             return tlsConfigName;
         }

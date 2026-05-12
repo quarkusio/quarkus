@@ -39,7 +39,18 @@ public class GeneratedAnnotationWithReflectionFreeSerializersTest extends Abstra
                                     PropertyViewRecord.class,
                                     NamingViewBean.class,
                                     IgnorePropertiesCreatorRecord.class,
-                                    IgnoreAnySetterBean.class)
+                                    IgnoreAnySetterBean.class,
+                                    AnyGetterBean.class,
+                                    ManagedReferenceParent.class,
+                                    ManagedReferenceChild.class,
+                                    FormatShape.class,
+                                    FormatBean.class,
+                                    GetterSetterBean.class,
+                                    IgnoredType.class,
+                                    IgnoreTypeBean.class,
+                                    IncludeBean.class,
+                                    PropertyOrderBean.class,
+                                    RawValueBean.class)
                             .addAsResource(new StringAsset(
                                     "quarkus.jackson.fail-on-unknown-properties=true\n" +
                                             "quarkus.rest.jackson.optimization.enable-reflection-free-serializers=true\n"),

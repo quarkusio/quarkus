@@ -26,6 +26,7 @@ import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.ClientAssertionProvider;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.common.runtime.OidcWebClient;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt.Source;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniOnItem;
@@ -37,7 +38,6 @@ import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
-import io.vertx.mutiny.ext.web.client.WebClient;
 
 public class OidcClientImpl implements OidcClient {
 
@@ -62,7 +62,7 @@ public class OidcClientImpl implements OidcClient {
     private static final String DEFAULT_OIDC_CLIENT_ID = "Default";
     private static final String AUTHORIZATION_HEADER = String.valueOf(HttpHeaders.AUTHORIZATION);
 
-    private final WebClient client;
+    private final OidcWebClient client;
     private final String tokenRequestUri;
     private final String tokenRevokeUri;
     private final MultiMap tokenGrantParams;
@@ -78,7 +78,7 @@ public class OidcClientImpl implements OidcClient {
     private volatile String clientSecret;
     private volatile String clientSecretBasicAuthScheme;
 
-    private OidcClientImpl(WebClient client, String tokenRequestUri, String tokenRevokeUri, String grantType,
+    private OidcClientImpl(OidcWebClient client, String tokenRequestUri, String tokenRevokeUri, String grantType,
             MultiMap tokenGrantParams, MultiMap commonRefreshGrantParams, OidcClientConfig oidcClientConfig,
             Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters,
             Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters, Vertx vertx,
@@ -269,8 +269,12 @@ public class OidcClientImpl implements OidcClient {
             }
         }
         if (LOG.isDebugEnabled()) {
-            LOG.debugf("%s token: url : %s, headers: %s, request params: %s", op.operation(), request.uri(), request.headers(),
-                    body);
+            String logMessage = """
+                    %s token: url : %s, headers: %s, request params: %s
+                    """.formatted(op.operation(), request.uri(),
+                    OidcCommonUtils.maskAuthorizationHeader(request.headers()),
+                    OidcCommonUtils.maskFormData(body));
+            LOG.debug(logMessage);
         }
         // Retry up to three times with a one-second delay between the retries if the connection is closed
         Buffer buffer = OidcCommonUtils.encodeForm(body);
@@ -467,7 +471,7 @@ public class OidcClientImpl implements OidcClient {
         return oidcConfig;
     }
 
-    WebClient getWebClient() {
+    OidcWebClient getWebClient() {
         return client;
     }
 
@@ -475,7 +479,7 @@ public class OidcClientImpl implements OidcClient {
         return op == Operation.REFRESH;
     }
 
-    static Uni<OidcClient> of(WebClient client, String tokenRequestUri, String tokenRevokeUri, String grantType,
+    static Uni<OidcClient> of(OidcWebClient client, String tokenRequestUri, String tokenRevokeUri, String grantType,
             MultiMap tokenGrantParams, MultiMap commonRefreshGrantParams, OidcClientConfig oidcClientConfig,
             Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters,
             Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters, Vertx vertx) {

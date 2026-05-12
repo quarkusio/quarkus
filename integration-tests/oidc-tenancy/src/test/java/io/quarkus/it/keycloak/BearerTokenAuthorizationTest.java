@@ -177,6 +177,22 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testJavaScriptRequestCustomResponse() throws IOException, InterruptedException {
+        try (final WebClient webClient = createWebClient()) {
+            try {
+                webClient.addRequestHeader("HX-Problem-Request", "true");
+                webClient.getPage("http://localhost:8081/tenant/tenant-web-app-javascript/api/user/webapp");
+                fail("401 status error is expected");
+            } catch (FailingHttpStatusCodeException ex) {
+                assertEquals(401, ex.getStatusCode());
+                assertEquals("OIDC-SPA", ex.getResponse().getResponseHeaderValue("WWW-Authenticate"));
+            }
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
     public void testResolveTenantIdentifierWebApp2() throws IOException {
         testTenantWebApp2("webapp2", "tenant-web-app2:alice");
     }

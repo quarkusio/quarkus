@@ -1,4 +1,4 @@
-package io.quarkus.tls.runtime;
+package io.quarkus.tls;
 
 import io.vertx.core.Vertx;
 

@@ -98,6 +98,7 @@ public final class GraalVM {
         public static final Version VERSION_24_1_999 = new Version("GraalVM 24.1.999", "24.1.999", "23", Distribution.GRAALVM);
         public static final Version VERSION_24_2_0 = new Version("GraalVM 24.2.0", "24.2.0", "24", Distribution.GRAALVM);
         public static final Version VERSION_25_0_0 = new Version("GraalVM 25.0.0", "25.0.0", "25", Distribution.GRAALVM);
+        public static final Version VERSION_25_1_0 = new Version("GraalVM 25.1.0", "25.1.0", "25", Distribution.GRAALVM);
 
         // Temporarily work around https://github.com/quarkusio/quarkus/issues/36246,
         // till we have a consensus on how to move forward in

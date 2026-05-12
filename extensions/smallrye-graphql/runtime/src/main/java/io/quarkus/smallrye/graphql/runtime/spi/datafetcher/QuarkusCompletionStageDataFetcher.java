@@ -23,7 +23,7 @@ public class QuarkusCompletionStageDataFetcher<K, T> extends AbstractAsyncDataFe
     @Override
     protected Uni<?> handleUserMethodCall(DataFetchingEnvironment dfe, Object[] transformedArguments) throws Exception {
         Context vc = Vertx.currentContext();
-        if (runBlocking(dfe) || !BlockingHelper.nonBlockingShouldExecuteBlocking(operation, vc)) {
+        if (vc == null || runBlocking(dfe) || !BlockingHelper.nonBlockingShouldExecuteBlocking(operation, vc)) {
             return handleUserMethodCallNonBlocking(transformedArguments);
         } else {
             return handleUserMethodCallBlocking(transformedArguments, vc);
@@ -33,7 +33,7 @@ public class QuarkusCompletionStageDataFetcher<K, T> extends AbstractAsyncDataFe
     @Override
     protected Uni<List<T>> handleUserBatchLoad(DataFetchingEnvironment dfe, Object[] arguments) throws Exception {
         Context vc = Vertx.currentContext();
-        if (runBlocking(dfe) || !BlockingHelper.nonBlockingShouldExecuteBlocking(operation, vc)) {
+        if (vc == null || runBlocking(dfe) || !BlockingHelper.nonBlockingShouldExecuteBlocking(operation, vc)) {
             return handleUserBatchLoadNonBlocking(arguments);
         } else {
             return handleUserBatchLoadBlocking(arguments, vc);

@@ -351,7 +351,7 @@ quarkus.tls.key-store.jks.alias-password=my-alias-password
 Note that all keys must use the same password.
 
 ==== Provided keystores
-If you need more control over the keystore used in a TLS configuration, you can provide a CDI bean implementing the `io.quarkus.tls.runtime.KeyStoreProvider` interface.
+If you need more control over the keystore used in a TLS configuration, you can provide a CDI bean implementing the `io.quarkus.tls.KeyStoreProvider` interface.
 
 Quarkus calls `KeyStoreProvider::getKeyStore` when the TLS configuration is <<startup-checks,initially created>> and any time the configuration is <<reloading-certificates,reloaded>>.
 The resulting keystore and options are then made available via `TlsConfiguration::getKeyStore` and `TlsConfiguration::getKeyStoreOptions`.
@@ -359,8 +359,8 @@ The resulting keystore and options are then made available via `TlsConfiguration
 .Example KeyStoreProvider
 [source, java]
 ----
-import io.quarkus.tls.runtime.KeyStoreAndKeyCertOptions;
-import io.quarkus.tls.runtime.KeyStoreProvider;
+import io.quarkus.tls.KeyStoreAndKeyCertOptions;
+import io.quarkus.tls.KeyStoreProvider;
 import io.smallrye.common.annotation.Identifier;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -396,6 +396,111 @@ Omit the qualifier to indicate the default TLS configuration.
 You can also use `@Default` explicitly to indicate the default TLS configuration.
 For more information, see <<referencing-a-tls-configuration>>.
 <3> You can inject other CDI beans to access keystore material at runtime.
+
+==== Other keystore types
+
+If you need to use a keystore type other than PEM, PKCS12, or JKS (for example, Bouncy Castle FIPS `BCFKS`), use the `other` configuration:
+
+[source,properties]
+----
+quarkus.tls.key-store.other.type=bcfks
+quarkus.tls.key-store.other.provider=BCFIPS
+quarkus.tls.key-store.other.path=server-keystore.bcfks
+quarkus.tls.key-store.other.password=secret
+quarkus.tls.key-store.other.alias=mykey
+quarkus.tls.key-store.other.alias-password=secret
+----
+
+The `type` property is required and corresponds to the type passed to `java.security.KeyStore.getInstance(type)`.
+The optional `provider` property specifies the Java security provider name.
+All other properties (`path`, `password`, `alias`, `alias-password`) work identically to the JKS and PKCS12 configurations.
+The `other` option is mutually exclusive with `pem`, `p12`, `jks`, and `KeyStoreProvider` beans.
+
+===== Custom keystore factory
+
+For keystore types that require custom loading logic beyond `KeyStore.getInstance()`, implement a `KeyStoreFactory` CDI bean annotated with `@Identifier` matching the `type` value:
+
+[source,java]
+----
+import io.quarkus.tls.KeyStoreAndKeyCertOptions;
+import io.quarkus.tls.KeyStoreFactory;
+import io.quarkus.tls.OtherKeyStoreConfigurationuration;
+import io.smallrye.common.annotation.Identifier;
+import io.vertx.core.Vertx;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+@Identifier("my-custom-type")
+public class MyKeyStoreFactory implements KeyStoreFactory {
+
+    @Override
+    public KeyStoreAndKeyCertOptions createKeyStore(OtherKeyStoreConfiguration config, Vertx vertx, String name) {
+        // Custom keystore loading logic
+        // Access arbitrary params via config.params()
+    }
+}
+----
+
+The factory receives the full `OtherKeyStoreConfiguration`, including arbitrary parameters set via `quarkus.tls.key-store.other.params.<key>=<value>`.
+If no factory bean is found for the given type, the standard `KeyStore.getInstance(type, provider)` loading is used as a fallback.
+
+===== PKCS#11 example
+
+PKCS#11 keystores are provider-managed (backed by a hardware security module or software token) and cannot be loaded from a file.
+Use a `KeyStoreFactory` to integrate a PKCS#11 keystore with the TLS registry:
+
+[source,properties]
+----
+quarkus.tls.key-store.other.type=PKCS11
+quarkus.tls.key-store.other.params.config-file=/etc/pkcs11/provider.cfg
+----
+
+[source,java]
+----
+import java.io.FileInputStream;
+import java.security.KeyStore;
+import java.security.Provider;
+import java.security.Security;
+
+import io.quarkus.tls.KeyStoreAndKeyCertOptions;
+import io.quarkus.tls.KeyStoreFactory;
+import io.quarkus.tls.OtherKeyStoreConfigurationuration;
+import io.smallrye.common.annotation.Identifier;
+import io.vertx.core.Vertx;
+import io.vertx.core.net.KeyStoreOptionsBase;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+@Identifier("PKCS11") // <1>
+public class Pkcs11KeyStoreFactory implements KeyStoreFactory {
+
+    @Override
+    public KeyStoreAndKeyCertOptions createKeyStore(OtherKeyStoreConfiguration config, Vertx vertx, String name) {
+        try {
+            String configFile = config.params().get("config-file"); // <2>
+            Provider provider = Security.getProvider("SunPKCS11").configure(configFile);
+            Security.addProvider(provider);
+
+            KeyStore ks = KeyStore.getInstance("PKCS11", provider);
+            char[] pin = config.password().map(String::toCharArray).orElse(null);
+            ks.load(null, pin); // <3>
+
+            var options = new KeyStoreOptionsBase() {} // <4>
+                    .setKeyStoreType("PKCS11")
+                    .setProviderName(provider.getName())
+                    .setPassword(config.password().orElse(null));
+
+            return new KeyStoreAndKeyCertOptions(ks, options);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load PKCS#11 keystore for '" + name + "'", e);
+        }
+    }
+}
+----
+<1> The `@Identifier` value must match the `type` in the configuration.
+<2> Arbitrary parameters from `quarkus.tls.key-store.other.params.*` are available via `config.params()`.
+<3> PKCS#11 keystores are loaded with `null` — the provider manages the underlying storage.
+<4> Use `KeyStoreOptionsBase` to let Vert.x create a `KeyManagerFactory` from the provider-backed keystore.
 
 [[sni]]
 ==== SNI
@@ -500,13 +605,13 @@ quarkus.tls.trust-store.jks.alias=my-alias
 However, unlike keystores, the alias does not require a password because it contains a public certificate, not a private key.
 
 ==== Provided truststores
-If you need more control over the truststore used in a TLS configuration, you can provide a CDI bean implementing the `io.quarkus.tls.runtime.TrustStoreProvider` interface. Quarkus calls `TrustStoreProvider::getTrustStore` when the TLS configuration is <<startup-checks,initially created>> and any time the configuration is <<reloading-certificates,reloaded>>. The resulting truststore and options are then made available via `TlsConfiguration::getTrustStore` and `TlsConfiguration::getTrustStoreOptions`.
+If you need more control over the truststore used in a TLS configuration, you can provide a CDI bean implementing the `io.quarkus.tls.TrustStoreProvider` interface. Quarkus calls `TrustStoreProvider::getTrustStore` when the TLS configuration is <<startup-checks,initially created>> and any time the configuration is <<reloading-certificates,reloaded>>. The resulting truststore and options are then made available via `TlsConfiguration::getTrustStore` and `TlsConfiguration::getTrustStoreOptions`.
 
 .Example TrustStoreProvider
 [source, java]
 ----
-import io.quarkus.tls.runtime.TrustStoreAndTrustOptions;
-import io.quarkus.tls.runtime.TrustStoreProvider;
+import io.quarkus.tls.TrustStoreAndTrustOptions;
+import io.quarkus.tls.TrustStoreProvider;
 import io.smallrye.common.annotation.Identifier;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -542,6 +647,21 @@ You can also use `@Default` explicitly to indicate the default TLS configuration
 For more information, see <<referencing-a-tls-configuration>>.
 <3> You can inject other CDI beans to access truststore material at runtime.
 
+==== Other truststore types
+
+If you need to use a truststore type other than PEM, PKCS12, or JKS, use the `other` configuration:
+
+[source,properties]
+----
+quarkus.tls.trust-store.other.type=bcfks
+quarkus.tls.trust-store.other.provider=BCFIPS
+quarkus.tls.trust-store.other.path=truststore.bcfks
+quarkus.tls.trust-store.other.password=secret
+quarkus.tls.trust-store.other.alias=myca
+----
+
+This works the same as the <<Other keystore types>> configuration described above.
+For custom loading logic, implement a `TrustStoreFactory` CDI bean annotated with `@Identifier` matching the `type` value.
 
 ==== Credential providers
 

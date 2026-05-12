@@ -3,7 +3,6 @@ package io.quarkus.paths;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
@@ -100,9 +99,8 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 
     @Override
     public void walk(PathVisitor visitor) {
-        try (FileSystem fs = openFs()) {
-            final Path dir = fs.getPath("/");
-            PathTreeVisit.walk(archive, dir, dir, pathFilter, getMultiReleaseMapping(), visitor);
+        try (OpenPathTree open = open()) {
+            open.walk(visitor);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read " + archive, e);
         }
@@ -110,9 +108,8 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 
     @Override
     public void walkRaw(PathVisitor visitor) {
-        try (FileSystem fs = openFs()) {
-            final Path dir = fs.getPath("/");
-            PathTreeVisit.walk(archive, dir, dir, pathFilter, Map.of(), visitor);
+        try (OpenPathTree open = open()) {
+            open.walkRaw(visitor);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read " + archive, e);
         }
@@ -124,14 +121,8 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
         if (!PathFilter.isVisible(pathFilter, resourceDirName)) {
             return;
         }
-        try (FileSystem fs = openFs()) {
-            final String dirPath = PathTreeVisit.resourceNameToFsPath(resourceDirName, fs);
-            for (Path root : fs.getRootDirectories()) {
-                final Path walkDir = root.resolve(dirPath);
-                if (Files.exists(walkDir)) {
-                    PathTreeVisit.walk(archive, root, walkDir, pathFilter, getMultiReleaseMapping(), visitor);
-                }
-            }
+        try (OpenPathTree open = open()) {
+            open.walkIfContains(resourceDirName, visitor);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read " + archive, e);
         }
@@ -146,30 +137,17 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
         return resourceNames == null ? resourceNames = super.getResourceNames() : resourceNames;
     }
 
-    private String resolveResourceName(String resourceName, boolean manifestEnabled) {
-        return manifestEnabled ? toMultiReleaseResourceName(resourceName) : resourceName;
-    }
-
     @Override
     protected <T> T apply(String resourceName, Function<PathVisit, T> func, boolean manifestEnabled) {
         ensureResourcePath(resourceName);
         if (!PathFilter.isVisible(pathFilter, resourceName)) {
             return func.apply(null);
         }
-        try (FileSystem fs = openFs()) {
-            final String relativePath = PathTreeVisit.resourceNameToFsPath(
-                    resolveResourceName(resourceName, manifestEnabled), fs);
-            for (Path root : fs.getRootDirectories()) {
-                final Path path = root.resolve(relativePath);
-                if (!Files.exists(path)) {
-                    continue;
-                }
-                return PathTreeVisit.process(archive, root, path, pathFilter, func);
-            }
+        try (OpenPathTree open = open()) {
+            return open.apply(resourceName, func);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read " + archive, e);
         }
-        return func.apply(null);
     }
 
     @Override
@@ -179,21 +157,11 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
             consumer.accept(null);
             return;
         }
-        try (FileSystem fs = openFs()) {
-            final String relativePath = PathTreeVisit.resourceNameToFsPath(
-                    resolveResourceName(resourceName, manifestEnabled), fs);
-            for (Path root : fs.getRootDirectories()) {
-                final Path path = root.resolve(relativePath);
-                if (!Files.exists(path)) {
-                    continue;
-                }
-                PathTreeVisit.consume(archive, root, path, pathFilter, consumer);
-                return;
-            }
+        try (OpenPathTree open = open()) {
+            open.accept(resourceName, consumer);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read " + archive, e);
         }
-        consumer.accept(null);
     }
 
     @Override
@@ -202,19 +170,11 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
         if (!PathFilter.isVisible(pathFilter, resourceName)) {
             return false;
         }
-        try (FileSystem fs = openFs()) {
-            final String relativePath = PathTreeVisit.resourceNameToFsPath(
-                    resolveResourceName(resourceName, manifestEnabled), fs);
-            for (Path root : fs.getRootDirectories()) {
-                final Path path = root.resolve(relativePath);
-                if (Files.exists(path)) {
-                    return true;
-                }
-            }
+        try (OpenPathTree open = open()) {
+            return open.contains(resourceName);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read " + archive, e);
         }
-        return false;
     }
 
     protected FileSystem openFs() throws IOException {

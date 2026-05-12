@@ -301,7 +301,7 @@ public class DefaultTenantConfigResolver {
                         Uni<TenantConfigContext> dynamicContextUni = null;
                         if (Boolean.valueOf(context.get(REPLACE_TENANT_CONFIG_CONTEXT))) {
                             // replace the context and reconnect
-                            dynamicContextUni = tenantConfigBean.replaceDynamicTenantContext(tenantConfig);
+                            dynamicContextUni = tenantConfigBean.replaceDynamicTenantContext(tenantConfig, context.vertx());
                         } else {
                             // update the context without reconnect
                             dynamicContextUni = tenantConfigBean.updateDynamicTenantContext(tenantConfig);

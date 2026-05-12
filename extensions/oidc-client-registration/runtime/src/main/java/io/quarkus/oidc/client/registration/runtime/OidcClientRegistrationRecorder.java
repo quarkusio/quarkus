@@ -24,6 +24,7 @@ import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport;
+import io.quarkus.oidc.common.runtime.OidcWebClient;
 import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
@@ -32,9 +33,6 @@ import io.quarkus.tls.TlsConfigurationRegistry;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.PoolOptions;
-import io.vertx.ext.web.client.WebClientOptions;
-import io.vertx.mutiny.ext.web.client.WebClient;
 
 @Recorder
 public class OidcClientRegistrationRecorder {
@@ -130,18 +128,13 @@ public class OidcClientRegistrationRecorder {
             return Uni.createFrom().failure(new RuntimeException(message));
         }
 
-        WebClientOptions options = new WebClientOptions();
-        PoolOptions poolOptions = new PoolOptions();
-        options.setFollowRedirects(oidcConfig.followRedirects());
-        OidcCommonUtils.setHttpClientOptions(oidcConfig, options, poolOptions,
-                tlsSupport.forConfig(oidcConfig.tls().tlsConfigurationName()), proxyConfigurationRegistrySupplier.get());
-
         final io.vertx.mutiny.core.Vertx vertx = new io.vertx.mutiny.core.Vertx(vertxSupplier.get());
-        WebClient client = WebClient.create(vertx, options, poolOptions);
+        OidcWebClient client = OidcWebClient.create(oidcConfig, tlsSupport, vertx, proxyConfigurationRegistrySupplier.get(),
+                "OIDC client registration `" + oidcConfig.id().orElse(DEFAULT_ID) + "`");
 
         Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters = OidcCommonUtils.getOidcRequestFilters();
         Map<OidcEndpoint.Type, List<OidcResponseFilter>> oidcResponseFilters = OidcCommonUtils.getOidcResponseFilters();
-        Uni<OidcConfigurationMetadata> clientRegConfigUni = null;
+        final Uni<OidcConfigurationMetadata> clientRegConfigUni;
         if (OidcCommonUtils.isAbsoluteUrl(oidcConfig.registrationPath())) {
             clientRegConfigUni = Uni.createFrom().item(
                     new OidcConfigurationMetadata(oidcConfig.registrationPath().get()));
@@ -153,8 +146,7 @@ public class OidcClientRegistrationRecorder {
                                 OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.registrationPath())));
             } else {
                 clientRegConfigUni = discoverRegistrationUri(client, oidcRequestFilters, oidcResponseFilters,
-                        authServerUriString.toString(), vertx,
-                        oidcConfig);
+                        authServerUriString, vertx, oidcConfig);
             }
         }
         return clientRegConfigUni.onItemOrFailure()
@@ -163,10 +155,12 @@ public class OidcClientRegistrationRecorder {
                     @Override
                     public Uni<OidcClientRegistration> apply(OidcConfigurationMetadata metadata, Throwable t) {
                         if (t != null) {
+                            client.close();
                             throw toOidcClientRegException(getEndpointUrl(oidcConfig), t);
                         }
 
                         if (metadata.clientRegistrationUri == null) {
+                            client.close();
                             throw new ConfigurationException(
                                     "OpenId Connect Provider client registration endpoint URL is not configured and can not be discovered");
                         }
@@ -235,7 +229,7 @@ public class OidcClientRegistrationRecorder {
         return oidcConfig.authServerUrl().isPresent() ? oidcConfig.authServerUrl().get() : oidcConfig.registrationPath().get();
     }
 
-    private static Uni<OidcConfigurationMetadata> discoverRegistrationUri(WebClient client,
+    private static Uni<OidcConfigurationMetadata> discoverRegistrationUri(OidcWebClient client,
             Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters,
             Map<OidcEndpoint.Type, List<OidcResponseFilter>> oidcResponseFilters,
             String authServerUrl, io.vertx.mutiny.core.Vertx vertx, OidcClientRegistrationConfig oidcConfig) {

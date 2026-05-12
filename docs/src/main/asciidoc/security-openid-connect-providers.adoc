@@ -552,8 +552,9 @@ Check the `OAuth 2.0` check box:
 
 image::oidc-twitter-7.png[role="thumb"]
 
-Select `Web App` as application type, then fill in your application details (use `<host>/_renarde/security/twitter-success`
-for the `Callback URI`).
+Select `Web App` as application type, then fill in your application details.
+For the `Callback URI`, register the public URL where your Quarkus application completes the X authorization code flow.
+If the callback is not the application root such as `http://localhost:8080/`, set `quarkus.oidc.authentication.redirect-path` and register that full URL with X; See the <<exact_redirect_uri_match>> section for how Quarkus validates redirect URIs against provider configuration.
 
 NOTE: X doesn't require https usage in practice, but won't accept your `Website URL` without it, so
 you can still use ngrok for it.

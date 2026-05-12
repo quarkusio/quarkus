@@ -173,6 +173,13 @@ public final class EffectiveConfig {
                 for (String propertyName : config.getPropertyNames()) {
                     if (propertyName.startsWith("quarkus.") || propertyName.startsWith("platform.quarkus.")) {
                         ConfigValue configValue = config.getConfigValue(propertyName);
+
+                        // Propagate properties from any source from the test namespace, because they can be read in the launcher
+                        if (configValue.getValue() != null && configValue.getName().startsWith("quarkus.test.")) {
+                            properties.put(propertyName, configValue.getValue());
+                            continue;
+                        }
+
                         // Only propagate properties from sources not available in Quarkus
                         if (configValue.getValue() != null && propagateSources.contains(configValue.getConfigSourceName())) {
                             // Exclude defaults coming from PackageConfig and NativeConfig, as this Map as passed as

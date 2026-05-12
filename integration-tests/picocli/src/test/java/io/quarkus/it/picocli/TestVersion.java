@@ -13,12 +13,12 @@ public class TestVersion {
     @RegisterExtension
     static final QuarkusProdModeTest config = createConfig("version-app", EntryWithVersionCommand.class,
             VersionProvider.class)
-            .overrideConfigKey("some.version", "1.1")
+            .overrideConfigKey("some.version", "1.99")
             .setCommandLineParameters("--version");
 
     @Test
     public void simpleTest() {
-        Assertions.assertThat(config.getStartupConsoleOutput()).containsOnlyOnce("1.1");
+        Assertions.assertThat(config.getStartupConsoleOutput()).containsOnlyOnce("1.99");
         Assertions.assertThat(config.getExitCode()).isZero();
     }
 

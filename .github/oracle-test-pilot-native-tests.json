@@ -1,17 +1,20 @@
 {
     "include": [
         {
-            "category": "base-database-service-19c",
+            "category": "19c",
+            "oci-service": "base-database-service-19c",
             "timeout": 15,
             "test-modules": "jpa-oracle, reactive-oracle-client, hibernate-reactive-oracle"
         },
         {
-            "category": "base-database-service-21c",
+            "category": "21c",
+            "oci-service": "base-database-service-21c",
             "timeout": 15,
             "test-modules": "jpa-oracle, reactive-oracle-client, hibernate-reactive-oracle"
         },
         {
-            "category": "base-database-service-26ai",
+            "category": "26ai",
+            "oci-service": "base-database-service-26ai",
             "timeout": 15,
             "test-modules": "jpa-oracle, reactive-oracle-client, hibernate-reactive-oracle"
         }

@@ -1787,7 +1787,7 @@ jobs:
         id: create_database
         uses: oracle-actions/setup-testpilot@f620f11f9f26dacfe80ba1823342e3e92604c55f # v1.0.23
         with:
-          oci-service: ${{ matrix.category }}
+          oci-service: ${{ matrix.oci-service }}
           action: create
           user: quarkus_test
       - name: Build
@@ -1796,7 +1796,6 @@ jobs:
           TESTPILOT_USERNAME: quarkus_test_${{ github.run_number }}
           TESTPILOT_PASSWORD: ${{ steps.create_database.outputs.database_password }}
           TESTPILOT_CONNECTION_STRING_SUFFIX_WDQ: ${{ steps.create_database.outputs.connection_string_suffix }}
-          RDBMS: ${{ matrix.category }}
           RUNID: ${{ github.run_number }}
           API_HOST: ""
           TESTPILOT_CLIENT_ID: ""
@@ -1822,7 +1821,7 @@ jobs:
         if: always() && steps.create_database.outcome == 'success'
         uses: oracle-actions/setup-testpilot@f620f11f9f26dacfe80ba1823342e3e92604c55f # v1.0.23
         with:
-          oci-service: ${{ matrix.category }}
+          oci-service: ${{ matrix.oci-service }}
           action: delete
           user: quarkus_test
       - name: Prepare build reports archive
@@ -1907,7 +1906,7 @@ jobs:
         id: create_database
         uses: oracle-actions/setup-testpilot@f620f11f9f26dacfe80ba1823342e3e92604c55f # v1.0.23
         with:
-          oci-service: ${{ matrix.category }}
+          oci-service: ${{ matrix.oci-service }}
           action: create
           user: quarkus_test
       - name: Build
@@ -1916,7 +1915,6 @@ jobs:
           TESTPILOT_USERNAME: quarkus_test_${{ github.run_number }}
           TESTPILOT_PASSWORD: ${{ steps.create_database.outputs.database_password }}
           TESTPILOT_CONNECTION_STRING_SUFFIX_WDQ: ${{ steps.create_database.outputs.connection_string_suffix }}
-          RDBMS: ${{ matrix.category }}
           RUNID: ${{ github.run_number }}
           API_HOST: ""
           TESTPILOT_CLIENT_ID: ""
@@ -1942,7 +1940,7 @@ jobs:
         if: always() && steps.create_database.outcome == 'success'
         uses: oracle-actions/setup-testpilot@f620f11f9f26dacfe80ba1823342e3e92604c55f # v1.0.23
         with:
-          oci-service: ${{ matrix.category }}
+          oci-service: ${{ matrix.oci-service }}
           action: delete
           user: quarkus_test
       - name: Prepare build reports archive

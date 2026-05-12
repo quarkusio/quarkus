@@ -10,6 +10,10 @@ public class OpenedSessionsStateStatelessImpl extends OpenedSessionsState<Mutiny
         return sessionFactory.createStatelessSession();
     }
 
+    public OpenedSessionsStateStatelessImpl() {
+        super(HibernateReactiveVertxServiceProvider.STATELESS_SESSIONS_LOCAL);
+    }
+
     @Override
     protected Class<Mutiny.StatelessSession> getSessionType() {
         return Mutiny.StatelessSession.class;

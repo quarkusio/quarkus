@@ -5,19 +5,18 @@ import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSI
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
-import org.hibernate.reactive.common.spi.Implementor;
-import org.hibernate.reactive.context.Context.Key;
-import org.hibernate.reactive.context.impl.BaseKey;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.impl.ComputingCache;
 import io.quarkus.hibernate.orm.PersistenceUnit;
+import io.smallrye.common.vertx.ContextLocals;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
+import io.vertx.core.spi.context.storage.ContextLocal;
 
 public abstract class OpenedSessionsState<T extends Mutiny.Closeable> {
     // This key is used to keep track of the Set<String> sessions created on demand
@@ -33,29 +32,24 @@ public abstract class OpenedSessionsState<T extends Mutiny.Closeable> {
 
     protected abstract Uni<Void> flushSession(T session);
 
-    private final ComputingCache<String, Key<T>> sessionKeys = new ComputingCache<>(
-            k -> createKeyForSessionType(k));
+    private final ContextLocal<ConcurrentHashMap<String, T>> sessionsLocal;
 
     private final ComputingCache<String, Mutiny.SessionFactory> sessionFactories = new ComputingCache<>(
             k -> createSessionFactory(k));
 
-    protected OpenedSessionsState() {
+    protected OpenedSessionsState(ContextLocal sessionsLocal) {
+        this.sessionsLocal = sessionsLocal;
         sessionOnDemandKey = "hibernate.reactive.openedSessionState." + getSessionType().getName();
     }
 
-    public record SessionWithKey<T>(org.hibernate.reactive.context.Context.Key<T> key, T session) {
+    public record SessionWithKey<T>(String persistenceUnitName, T session) {
     }
 
     public Optional<SessionWithKey<T>> getOpenedSession(Context context, String persistenceUnitName) {
-        Key<T> sessionKey = sessionKeys.getValue(persistenceUnitName);
-        return getOpenedSession(context, sessionKey);
-    }
-
-    private Optional<SessionWithKey<T>> getOpenedSession(Context context, Key<T> sessionKey) {
-        T current = context.getLocal(sessionKey);
+        T current = context.getLocal(sessionsLocal, ConcurrentHashMap::new).get(persistenceUnitName);
         return Optional.ofNullable(current)
-                .filter(s -> isSessionOpen(s))
-                .map(s -> new SessionWithKey<>(sessionKey, s));
+                .filter(this::isSessionOpen)
+                .map(s -> new SessionWithKey<>(persistenceUnitName, s));
     }
 
     public Uni<Void> flushSession(Context context, String persistenceUnitName) {
@@ -73,39 +67,33 @@ public abstract class OpenedSessionsState<T extends Mutiny.Closeable> {
     public T createNewSession(String persistenceUnitName, Context context) {
         Mutiny.SessionFactory sessionFactory = sessionFactories.getValue(persistenceUnitName);
         T session = newSessionMethod(sessionFactory);
-        Key<T> sessionKey = sessionKeys.getValue(persistenceUnitName);
 
-        storeSession(context, persistenceUnitName, sessionKey, session);
+        storeSession(context, persistenceUnitName, session);
         return session;
     }
 
-    private void storeSession(Context context, String persistenceUnitName, Key<T> sessionKey, T session) {
+    private void storeSession(Context context, String persistenceUnitName, T session) {
         Set<String> openedSession = openedSessionContextSet(context);
         // open a new reactive session and store it in the vertx duplicated context
         // the context was marked as "lazy" which means that the session will be eventually closed
         openedSession.add(persistenceUnitName);
-        context.putLocal(sessionKey, session);
+        context.getLocal(sessionsLocal, ConcurrentHashMap::new).put(persistenceUnitName, session);
     }
 
     private Set<String> openedSessionContextSet(Context context) {
         // This will keep track of all on-demand opened sessions
-        Set<String> onDemandSessionsCreated = context.getLocal(sessionOnDemandKey);
+        Set<String> onDemandSessionsCreated = ContextLocals.<Set<String>> get(sessionOnDemandKey).orElse(null);
         if (onDemandSessionsCreated == null) {
             onDemandSessionsCreated = new HashSet<>();
-            context.putLocal(sessionOnDemandKey, onDemandSessionsCreated);
+            ContextLocals.put(sessionOnDemandKey, onDemandSessionsCreated);
         }
         return onDemandSessionsCreated;
     }
 
     private Uni<Void> closeAndRemoveSession(Context context, SessionWithKey<T> openSession) {
-        return openSession.session.close()
-                .eventually(() -> context.removeLocal(openSession.key));
-    }
-
-    private Key<T> createKeyForSessionType(String persistenceUnitName) {
-        Mutiny.SessionFactory value = createSessionFactory(persistenceUnitName);
-        Implementor implementor = (Implementor) ClientProxy.unwrap(value);
-        return new BaseKey<>(getSessionType(), implementor.getUuid());
+        return openSession.session().close()
+                .eventually(() -> context.getLocal(sessionsLocal, ConcurrentHashMap::new)
+                        .remove(openSession.persistenceUnitName()));
     }
 
     private static Mutiny.SessionFactory createSessionFactory(String persistenceunitname) {

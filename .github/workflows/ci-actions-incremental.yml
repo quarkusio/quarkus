@@ -118,9 +118,6 @@ env:
   JVM_TEST_NORMAL_TESTS_SELECTOR: "-pl !docs -Dno-test-modules"
   #PTS_MAVEN_ARGS: "-Ddevelocity.pts.enabled=${{ github.event_name == 'pull_request' && github.base_ref == 'main' && 'true' || 'false' }}"
   PTS_MAVEN_ARGS: ""
-  DB_USER: hibernate_orm_test
-  DB_PASSWORD: hibernate_orm_test
-  DB_NAME: hibernate_orm_test
   PULL_REQUEST_NUMBER: ${{ github.event.number }}
   MVNW_REPOURL: https://maven-central.storage-download.googleapis.com/maven2
 

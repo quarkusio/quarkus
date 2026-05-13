@@ -686,6 +686,32 @@ public abstract class AbstractGeneratedAnnotationTest {
         assertTrue(alphaPos < middlePos, "alpha should appear before middle");
     }
 
+    // --- Package-protected class with single int constructor ---
+
+    @Test
+    public void testPackageProtectedSerialization() {
+        RestAssured.get("/generated/package-protected")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("value", Matchers.is(42))
+                .body("label", Matchers.is("custom-label"));
+    }
+
+    @Test
+    public void testPackageProtectedDeserialization() {
+        given()
+                .contentType("application/json")
+                .body("{\"value\":7,\"label\":\"from-json\"}")
+                .when()
+                .post("/generated/package-protected")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("value", Matchers.is(7))
+                .body("label", Matchers.is("from-json"));
+    }
+
     // --- @JsonRawValue ---
 
     @Test

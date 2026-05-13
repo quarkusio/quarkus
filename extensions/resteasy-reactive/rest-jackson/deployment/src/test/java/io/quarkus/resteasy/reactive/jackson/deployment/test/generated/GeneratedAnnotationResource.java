@@ -403,4 +403,21 @@ public class GeneratedAnnotationResource {
         bean.setRawJson("{\"nested\":\"value\",\"count\":1}");
         return bean;
     }
+
+    // --- PackageProtectedBean: package-protected class with single int constructor ---
+
+    @GET
+    @Path("/package-protected")
+    public PackageProtectedBean getPackageProtected() {
+        PackageProtectedBean bean = new PackageProtectedBean(42);
+        bean.setLabel("custom-label");
+        return bean;
+    }
+
+    @POST
+    @Path("/package-protected")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public PackageProtectedBean echoPackageProtected(PackageProtectedBean bean) {
+        return bean;
+    }
 }

@@ -29,13 +29,13 @@ dependencies {
     implementation enforcedPlatform('{it.groupId}:{it.artifactId}:{it.version}')
     {/if}
 {/each}
-{#if input.selected-extensions-ga.contains('io.quarkus:quarkus-hibernate-panache-next')}
+{#if input.selected-extensions-ga.contains('io.quarkus:quarkus-data-hibernate')}
     annotationProcessor enforcedPlatform("$\{quarkusPlatformGroupId}:$\{quarkusPlatformArtifactId}:$\{quarkusPlatformVersion}")
 {/if}
 {#for dep in dependencies}
     implementation '{dep}'
 {/for}
-{#if input.selected-extensions-ga.contains('io.quarkus:quarkus-hibernate-panache-next')}
+{#if input.selected-extensions-ga.contains('io.quarkus:quarkus-data-hibernate')}
     annotationProcessor 'org.hibernate.orm:hibernate-processor'
 {/if}
 {#if quarkus.version == null || quarkus.version.compareVersionTo("3.30.999") > 0}

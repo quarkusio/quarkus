@@ -3,17 +3,17 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Simplified Hibernate with Panache Next
+= Simplified Hibernate with Quarkus Data Hibernate
 include::_attributes.adoc[]
 :categories: data
-:summary: Hibernate is the de facto Jakarta Persistence implementation and offers you the full breadth of an Object Relational Mapper. It makes complex mappings possible, but it does not make simple and common mappings trivial. Hibernate with Panache Next focuses on making your entities trivial and fun to write.
+:summary: Hibernate is the de facto Jakarta Persistence implementation and offers you the full breadth of an Object Relational Mapper. It makes complex mappings possible, but it does not make simple and common mappings trivial. Quarkus Data Hibernate focuses on making your entities trivial and fun to write.
 :config-file: application.properties
 :topics: data,hibernate-orm,hibernate-reactive,panache,sql,jdbc
-:extensions: io.quarkus:quarkus-hibernate-panache-next,io.quarkus:quarkus-hibernate-orm,io.quarkus:quarkus-hibernate-reactive
+:extensions: io.quarkus:quarkus-data-hibernate,io.quarkus:quarkus-hibernate-orm,io.quarkus:quarkus-hibernate-reactive
 :hibernate-panache-api: https://javadoc.io/doc/io.quarkus.hibernate.panache/hibernate-panache/{quarkus-version}
 :extension-status: experimental
 
-Hibernate with Panache Next is the perfect solution if you want to get started using Hibernate in Quarkus.
+Quarkus Data Hibernate is the perfect solution if you want to get started using Hibernate in Quarkus.
 
 include::{includes}/extension-status.adoc[]
 
@@ -24,7 +24,7 @@ or via link:https://github.com/orgs/quarkusio/projects/50/views/1[GitHub issues]
 
 == Walk-through
 
-Let's take a progressive approach to learning how to use Hibernate with Panache, and start with a simple entity.
+Let's take a progressive approach to learning how to use Quarkus Data Hibernate, and start with a simple entity.
 
 This guide is not going to go into the specifics of using either
 xref:hibernate-orm.adoc[Hibernate], or its underlying
@@ -36,10 +36,10 @@ because both already have great documentation that you can and should use for mo
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
-<!-- Import the Hibernate with Panache extension -->
+<!-- Import the Quarkus Data Hibernate extension -->
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-hibernate-panache-next</artifactId>
+    <artifactId>quarkus-data-hibernate</artifactId>
 </dependency>
 <!-- Pick your database driver -->
 <dependency>
@@ -51,8 +51,8 @@ because both already have great documentation that you can and should use for mo
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-// Import the Hibernate with Panache extension
-implementation("io.quarkus:quarkus-hibernate-panache-next")
+// Import the Quarkus Data Hibernate extension
+implementation("io.quarkus:quarkus-data-hibernate")
 
 // Pick your database driver
 implementation("io.quarkus:quarkus-jdbc-postgresql")
@@ -106,7 +106,7 @@ mode: if you don't, a dev service will be provided for you):
 
 == Our first entity
 
-What this guide will focus on is the basics of how to use Hibernate with Panache, so let's start with how to
+What this guide will focus on is the basics of how to use Quarkus Data Hibernate, so let's start with how to
 create an entity:
 
 [source,java]
@@ -214,7 +214,7 @@ public class Cat extends PanacheEntity {
 }
 ----
 
-A Hibernate with Panache repository is:
+A Quarkus Data Hibernate repository is:
 
 - An interface nested in the entity (though it could be a toplevel interface if you prefer)
 - Which extends the `PanacheRepository` interface, with the entity in question as type parameter

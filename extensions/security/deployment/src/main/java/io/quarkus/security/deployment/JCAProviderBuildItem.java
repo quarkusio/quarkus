@@ -1,5 +1,7 @@
 package io.quarkus.security.deployment;
 
+import java.util.List;
+
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
@@ -7,22 +9,22 @@ import io.quarkus.builder.item.MultiBuildItem;
  */
 public final class JCAProviderBuildItem extends MultiBuildItem {
     final private String providerName;
-    final private String providerConfig;
+    final private List<String> providerConfigs;
 
     public JCAProviderBuildItem(String providerName) {
-        this(providerName, null);
+        this(providerName, List.of());
     }
 
-    public JCAProviderBuildItem(String providerName, String providerConfig) {
+    public JCAProviderBuildItem(String providerName, List<String> providerConfigs) {
         this.providerName = providerName;
-        this.providerConfig = providerConfig;
+        this.providerConfigs = providerConfigs != null ? providerConfigs : List.of();
     }
 
     public String getProviderName() {
         return providerName;
     }
 
-    public String getProviderConfig() {
-        return providerConfig;
+    public List<String> getProviderConfigs() {
+        return providerConfigs;
     }
 }

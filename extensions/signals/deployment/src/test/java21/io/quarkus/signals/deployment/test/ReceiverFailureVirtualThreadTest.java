@@ -16,7 +16,7 @@ import io.quarkus.signals.Receivers;
 import io.quarkus.signals.Receives;
 import io.quarkus.signals.Signal;
 import io.quarkus.signals.SignalContext;
-import io.quarkus.signals.spi.Receiver.ExecutionModel;
+import io.quarkus.signals.Receivers.ExecutionModel;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.CompositeException;

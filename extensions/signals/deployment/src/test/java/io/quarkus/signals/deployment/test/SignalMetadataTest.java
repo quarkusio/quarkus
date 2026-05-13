@@ -19,8 +19,7 @@ import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
 
 /**
- * Verifies that metadata attached via {@link Signal.Emission#withMeta(String, Object)}
- * is accessible in the receiver through {@link SignalContext#metadata()}.
+ * Verifies that attached metadata is accessible in the receiver through {@link SignalContext#metadata()}.
  */
 public class SignalMetadataTest extends AbstractSignalTest {
 
@@ -38,7 +37,7 @@ public class SignalMetadataTest extends AbstractSignalTest {
     public void testMetadata() {
         receivers.captured.clear();
 
-        Signal<Event> eventWithMeta = event.setMetadata(Map.of("traceId", "abc-123", "source", "test"));
+        Signal<Event> eventWithMeta = event.withReplacedMetadata(Map.of("traceId", "abc-123", "source", "test"));
 
         Uni<String> uni = eventWithMeta
                 .reactive().request(new Event("hello"), String.class);
@@ -54,7 +53,7 @@ public class SignalMetadataTest extends AbstractSignalTest {
 
         receivers.captured.clear();
 
-        result = eventWithMeta.putMetadata("traceId", "def-123")
+        result = eventWithMeta.withMetadata("traceId", "def-123")
                 .reactive().request(new Event("hi"), String.class)
                 .ifNoItem()
                 .after(defaultTimeout())
@@ -69,10 +68,10 @@ public class SignalMetadataTest extends AbstractSignalTest {
     public void testSetMetadataReplacesAll() {
         receivers.captured.clear();
 
-        // First: setMetadata with traceId + source
-        Signal<Event> first = event.setMetadata(Map.of("traceId", "aaa", "source", "test"));
-        // Second: setMetadata replaces all metadata — only "traceId" and "source" present
-        Signal<Event> second = first.setMetadata(Map.of("traceId", "bbb", "source", "test"));
+        // First: withReplacedMetadata with traceId + source
+        Signal<Event> first = event.withReplacedMetadata(Map.of("traceId", "aaa", "source", "test"));
+        // Second: withReplacedMetadata replaces all metadata — only "traceId" and "source" present
+        Signal<Event> second = first.withReplacedMetadata(Map.of("traceId", "bbb", "source", "test"));
 
         String result = second.reactive().request(new Event("replaced"), String.class)
                 .ifNoItem().after(defaultTimeout()).fail()
@@ -90,9 +89,9 @@ public class SignalMetadataTest extends AbstractSignalTest {
     public void testPutMetadataReplacesExistingKey() {
         receivers.captured.clear();
 
-        Signal<Event> withTrace = event.setMetadata(Map.of("traceId", "first", "source", "test"));
-        // putMetadata with same key should replace the value
-        Signal<Event> replaced = withTrace.putMetadata("traceId", "second");
+        Signal<Event> withTrace = event.withReplacedMetadata(Map.of("traceId", "first", "source", "test"));
+        // withMetadata with same key should replace the value
+        Signal<Event> replaced = withTrace.withMetadata("traceId", "second");
 
         String result = replaced.reactive().request(new Event("check"), String.class)
                 .ifNoItem().after(defaultTimeout()).fail()

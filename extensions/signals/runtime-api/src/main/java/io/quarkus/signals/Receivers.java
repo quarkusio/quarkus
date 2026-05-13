@@ -1,19 +1,20 @@
 package io.quarkus.signals;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import jakarta.enterprise.util.TypeLiteral;
 
-import io.quarkus.signals.spi.Receiver;
-import io.quarkus.signals.spi.Receiver.ExecutionModel;
 import io.smallrye.common.annotation.Experimental;
 import io.smallrye.mutiny.Uni;
 
 /**
- * Allows programmatic registration of {@link Receiver} instances at runtime.
+ * Allows programmatic registration of receivers at runtime.
  * <p>
  * An instance can be injected as a CDI bean; the implementation is provided by the extension.
  *
@@ -51,6 +52,64 @@ public interface Receivers {
      * @return a new receiver builder
      */
     <SIGNAL> ReceiverDefinition<SIGNAL, Void> newReceiver(TypeLiteral<SIGNAL> signalType);
+
+    /**
+     * Resolves the receivers matching the given signal type and qualifiers.
+     * <p>
+     * The resolution rules are the same as for signal emissions.
+     * If no qualifiers are given, the {@linkplain jakarta.enterprise.inject.Default default qualifier} is assumed.
+     *
+     * @param signalType the signal type
+     * @param qualifiers the qualifiers
+     * @return the list of matching receivers, never {@code null}
+     * @see Signal
+     */
+    List<ReceiverInfo> resolveReceivers(Class<?> signalType, Annotation... qualifiers);
+
+    /**
+     * Resolves the receivers matching the given signal type and qualifiers.
+     * <p>
+     * The resolution rules are the same as for signal emissions.
+     * If no qualifiers are given, the {@linkplain jakarta.enterprise.inject.Default default qualifier} is assumed.
+     *
+     * @param signalType the signal type
+     * @param qualifiers the qualifiers
+     * @return the list of matching receivers, never {@code null}
+     * @see Signal
+     */
+    List<ReceiverInfo> resolveReceivers(TypeLiteral<?> signalType, Annotation... qualifiers);
+
+    /**
+     * Read-only information about a resolved receiver.
+     */
+    interface ReceiverInfo {
+
+        /**
+         * @return the received signal type
+         */
+        Type signalType();
+
+        /**
+         * @return the set of qualifiers, never {@code null}
+         */
+        Set<Annotation> qualifiers();
+
+        /**
+         * @return the response type
+         */
+        Type responseType();
+
+        /**
+         * @return the execution model
+         */
+        ExecutionModel executionModel();
+
+        /**
+         * @return the kind of the receiver
+         */
+        ReceiverKind kind();
+
+    }
 
     /**
      * A builder for creating {@link Receiver} instances programmatically.
@@ -111,7 +170,7 @@ public interface Receivers {
          */
         default Registration notify(Consumer<SignalContext<SIGNAL>> callback) {
             Objects.requireNonNull(callback);
-            return setResponseType(Void.class).notify(new Function<SignalContext<SIGNAL>, Uni<Void>>() {
+            return setResponseType(void.class).notify(new Function<SignalContext<SIGNAL>, Uni<Void>>() {
                 @Override
                 public Uni<Void> apply(SignalContext<SIGNAL> ctx) {
                     try {
@@ -149,6 +208,48 @@ public interface Receivers {
          * method executes. When the method returns, the receiver is fully unregistered.
          */
         void unregister();
+
+    }
+
+    /**
+     * Determines the threading model used to execute a receiver.
+     */
+    enum ExecutionModel {
+
+        /**
+         * The receiver performs blocking operations and is offloaded to a worker thread.
+         * This is the default for receiver methods with a blocking signature (i.e., not returning {@link Uni}
+         * or {@link java.util.concurrent.CompletionStage}).
+         */
+        BLOCKING,
+
+        /**
+         * The receiver is executed on a virtual thread.
+         */
+        VIRTUAL_THREAD,
+
+        /**
+         * The receiver performs non-blocking operations. When Vert.x is available, it is executed on the event loop.
+         * This is the default for receiver methods returning {@link Uni}.
+         */
+        NON_BLOCKING
+
+    }
+
+    /**
+     * The kind of receiver definition.
+     */
+    enum ReceiverKind {
+
+        /**
+         * A declarative receiver defined as a method annotated with {@link Receives}.
+         */
+        DECLARATIVE,
+
+        /**
+         * A programmatic receiver registered via {@link Receivers#newReceiver(Class)}.
+         */
+        PROGRAMMATIC
 
     }
 

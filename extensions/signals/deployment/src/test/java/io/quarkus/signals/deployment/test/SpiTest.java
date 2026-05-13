@@ -95,7 +95,7 @@ public class SpiTest extends AbstractSignalTest {
     public void testEnricherPutMetadataThrowsOnDuplicateKey() {
         // Signal already has "correlationId" in metadata — enricher tries to put the same key
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> {
-            signal.putMetadata("correlationId", "existing")
+            signal.withMetadata("correlationId", "existing")
                     .reactive().request(new Cmd("dup"), String.class)
                     .ifNoItem().after(defaultTimeout()).fail()
                     .await().indefinitely();

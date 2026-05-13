@@ -4,6 +4,7 @@ import java.util.concurrent.CompletionStage;
 
 import jakarta.enterprise.invoke.Invoker;
 
+import io.quarkus.signals.Receivers.ReceiverKind;
 import io.quarkus.signals.SignalContext;
 import io.quarkus.signals.spi.Receiver;
 import io.smallrye.mutiny.Uni;
@@ -11,9 +12,9 @@ import io.smallrye.mutiny.Uni;
 public abstract class InvokerReceiver<SIGNAL, RESPONSE> implements Receiver<SIGNAL, RESPONSE> {
 
     private final Invoker<SIGNAL, RESPONSE> invoker;
-    private final ReceiverInfo receiveInfo;
+    private final InvokerReceiverInfo receiveInfo;
 
-    public InvokerReceiver(Invoker<SIGNAL, RESPONSE> invoker, ReceiverInfo receiverInfo) {
+    public InvokerReceiver(Invoker<SIGNAL, RESPONSE> invoker, InvokerReceiverInfo receiverInfo) {
         this.invoker = invoker;
         this.receiveInfo = receiverInfo;
     }
@@ -43,7 +44,12 @@ public abstract class InvokerReceiver<SIGNAL, RESPONSE> implements Receiver<SIGN
         }
     }
 
-    public record ReceiverInfo(short signalArgPosition, boolean receiveContext, short totalParams) {
+    public record InvokerReceiverInfo(short signalArgPosition, boolean receiveContext, short totalParams) {
+    }
+
+    @Override
+    public ReceiverKind kind() {
+        return ReceiverKind.DECLARATIVE;
     }
 
     public String toString() {

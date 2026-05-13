@@ -82,6 +82,9 @@ public class OpenApiDocumentService {
                 if (requestFilters.isEmpty()) {
                     this.documentHolders.put(documentName, new StaticDocument(builder.build()));
                 } else {
+                    // Mark the model as intermediate so that private extensions remain
+                    // available for filters running at each request.
+                    builder.withIntermediateModel(true);
                     var perRequestFilterSetup = addFilters(requestFilters, loader);
                     // Only regenerate the OpenAPI document when configured and there are filters to run
                     this.documentHolders.put(documentName,

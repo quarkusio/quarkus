@@ -17,7 +17,6 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.quarkus.arc.Arc;
@@ -127,7 +126,6 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
             public void requestBegin(RequestTracker requestMetric, String uri, HttpRequest request) {
                 requestMetric.request = request;
                 requestMetric.tags = tags.and(
-                        Tag.of("address", remote),
                         HttpCommonTags.method(request.method().name()),
                         HttpCommonTags.uri(request.uri(), null, -1, false));
                 String path = requestMetric.getNormalizedUriPath(
@@ -253,7 +251,6 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
         RequestTracker(Tags origin, String address, HttpRequest request) {
             this.request = request;
             this.tags = origin.and(
-                    Tag.of("address", address),
                     HttpCommonTags.method(request.method().name()),
                     HttpCommonTags.uri(request.uri(), null, -1, false));
         }

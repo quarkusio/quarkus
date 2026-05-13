@@ -9,13 +9,13 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-integration-test-hibernate-panache-next</artifactId>
-    <name>Quarkus - Integration Tests - Hibernate with Panache Next</name>
+    <artifactId>quarkus-integration-test-quarkus-data-hibernate</artifactId>
+    <name>Quarkus - Integration Tests - Quarkus Data Hibernate</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-panache-next</artifactId>
+            <artifactId>quarkus-data-hibernate</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -71,7 +71,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-panache-next-deployment</artifactId>
+            <artifactId>quarkus-data-hibernate-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

@@ -13,13 +13,13 @@ import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTest;
 import io.quarkus.maven.ArtifactKey;
 
-public class HibernatePanacheNextCodestartIT {
+public class QuarkusDataHibernateCodestartIT {
 
     @RegisterExtension
     public static QuarkusCodestartTest codestartMavenTest = QuarkusCodestartTest.builder()
             .codestarts("hibernate-orm")
             .extension(new ArtifactKey("io.quarkus", "quarkus-jdbc-h2"))
-            .extension(new ArtifactKey("io.quarkus", "quarkus-hibernate-panache-next"))
+            .extension(new ArtifactKey("io.quarkus", "quarkus-data-hibernate"))
             .languages(JAVA)
             .build();
 
@@ -27,7 +27,7 @@ public class HibernatePanacheNextCodestartIT {
     public static QuarkusCodestartTest codestartGradleTest = QuarkusCodestartTest.builder()
             .codestarts("hibernate-orm")
             .extension(new ArtifactKey("io.quarkus", "quarkus-jdbc-h2"))
-            .extension(new ArtifactKey("io.quarkus", "quarkus-hibernate-panache-next"))
+            .extension(new ArtifactKey("io.quarkus", "quarkus-data-hibernate"))
             .buildTool(BuildTool.GRADLE)
             .languages(JAVA)
             .build();
@@ -36,7 +36,7 @@ public class HibernatePanacheNextCodestartIT {
     public static QuarkusCodestartTest codestartGradleKotlinTest = QuarkusCodestartTest.builder()
             .codestarts("hibernate-orm")
             .extension(new ArtifactKey("io.quarkus", "quarkus-jdbc-h2"))
-            .extension(new ArtifactKey("io.quarkus", "quarkus-hibernate-panache-next"))
+            .extension(new ArtifactKey("io.quarkus", "quarkus-data-hibernate"))
             .buildTool(BuildTool.GRADLE_KOTLIN_DSL)
             .languages(JAVA)
             .build();

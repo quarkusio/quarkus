@@ -163,7 +163,7 @@
                 <configuration>
                     <parameters>true</parameters>
                 </configuration>
-                {#if input.selected-extensions-ga.contains('io.quarkus:quarkus-hibernate-panache-next')}
+                {#if input.selected-extensions-ga.contains('io.quarkus:quarkus-data-hibernate')}
                 <executions>
                     <execution>
                         <id>default-compile</id>

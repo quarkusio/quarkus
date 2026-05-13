@@ -1,5 +1,6 @@
 package io.quarkus.it.mongodb.panache;
 
+import static io.quarkus.test.micrometer.PrometheusMetricsAssert.assertMetrics;
 import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.is;
 
@@ -12,7 +13,6 @@ import java.util.GregorianCalendar;
 import java.util.List;
 
 import org.apache.http.HttpStatus;
-import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -369,14 +369,15 @@ class MongodbPanacheResourceTest {
         Assertions.assertEquals(0, count);
 
         // Test prometheus metrics gathered using micrometer metrics
-        RestAssured.given()
+        assertMetrics(RestAssured.given()
                 .when().get("/q/metrics")
                 .then()
                 .statusCode(200)
-                .body(CoreMatchers.containsString("mongodb_driver_commands_seconds_max"))
-                .body(CoreMatchers.containsString("mongodb_driver_pool_checkedout"))
-                .body(CoreMatchers.containsString("mongodb_driver_pool_size"))
-                .body(CoreMatchers.containsString("mongodb_driver_pool_waitqueuesize"));
+                .extract().asInputStream())
+                .hasMetricNameContaining("mongodb_driver_commands_seconds_max")
+                .hasMetricNameContaining("mongodb_driver_pool_checkedout")
+                .hasMetricNameContaining("mongodb_driver_pool_size")
+                .hasMetricNameContaining("mongodb_driver_pool_waitqueuesize");
     }
 
     private Date yearToDate(int year) {

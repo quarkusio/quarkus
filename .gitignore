@@ -42,3 +42,6 @@ nb-configuration.xml
 
 .goosehints
 .goose
+.claude
+**/.claude
+CLAUDE.local.md

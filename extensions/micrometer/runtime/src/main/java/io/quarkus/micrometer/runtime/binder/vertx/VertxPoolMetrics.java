@@ -15,7 +15,7 @@ import io.vertx.core.spi.metrics.PoolMetrics;
 /**
  * Adaptation of the Vert.x Pool Metrics implementation for Quarkus Micrometer.
  */
-public class VertxPoolMetrics implements PoolMetrics<EventTiming> {
+public class VertxPoolMetrics implements PoolMetrics<EventTiming, EventTiming> {
 
     private final String poolType;
     private final int maxPoolSize;
@@ -25,7 +25,6 @@ public class VertxPoolMetrics implements PoolMetrics<EventTiming> {
     private final LongAdder current = new LongAdder();
     private final LongAdder queue = new LongAdder();
     private final Counter completed;
-    private final Counter rejected;
     private final Timer queueDelay;
 
     VertxPoolMetrics(MeterRegistry registry, String poolType, String poolName, int maxPoolSize) {
@@ -90,11 +89,6 @@ public class VertxPoolMetrics implements PoolMetrics<EventTiming> {
                 .tags(tags)
                 .register(registry);
 
-        rejected = Counter.builder(name("rejected"))
-                .description("Number of times submissions to the pool have been rejected")
-                .tags(tags)
-                .register(registry);
-
     }
 
     private String name(String suffix) {
@@ -102,33 +96,29 @@ public class VertxPoolMetrics implements PoolMetrics<EventTiming> {
     }
 
     @Override
-    public EventTiming submitted() {
+    public EventTiming enqueue() {
         queue.increment();
         return new EventTiming(queueDelay);
     }
 
     @Override
-    public void rejected(EventTiming submitted) {
+    public void dequeue(EventTiming submitted) {
         queue.decrement();
-        rejected.increment();
         submitted.end();
     }
 
     @Override
-    public EventTiming begin(EventTiming submitted) {
-        queue.decrement();
-        submitted.end();
+    public EventTiming begin() {
         current.increment();
         computeRatio(current.longValue());
         return new EventTiming(usage);
     }
 
     @Override
-    public void end(EventTiming timer, boolean succeeded) {
+    public void end(EventTiming timer) {
         current.decrement();
         computeRatio(current.longValue());
         timer.end();
-
         completed.increment();
     }
 

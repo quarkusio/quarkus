@@ -11,38 +11,20 @@ import io.micrometer.core.instrument.Timer;
 import io.vertx.core.spi.metrics.ClientMetrics;
 
 public class VertxClientMetrics
-        implements ClientMetrics<EventTiming, EventTiming, Object, Object> {
+        implements ClientMetrics<EventTiming, Object, Object> {
 
     private final String type;
     private final Timer processing;
     private final LongAdder current = new LongAdder();
-    private final LongAdder queue = new LongAdder();
     private final Counter resetCount;
     private final Counter completed;
-    private final Timer queueDelay;
 
     VertxClientMetrics(MeterRegistry registry, String type, Tags tags) {
         this.type = type;
 
-        queueDelay = Timer.builder(name("queue.delay"))
-                .description("Time spent in the waiting queue before being processed")
-                .tags(tags)
-                .register(registry);
-
         processing = Timer.builder(name("processing"))
                 .description("Processing time, from request start to response end")
                 .tags(tags)
-                .register(registry);
-
-        Gauge.builder(name("queue.size"), new Supplier<Number>() {
-            @Override
-            public Number get() {
-                return queue.doubleValue();
-            }
-        })
-                .description("Number of pending elements in the waiting queue")
-                .tags(tags)
-                .strongReference(true)
                 .register(registry);
 
         Gauge.builder(name("current"), new Supplier<Number>() {
@@ -72,25 +54,13 @@ public class VertxClientMetrics
     }
 
     @Override
-    public EventTiming enqueueRequest() {
-        queue.increment();
-        return new EventTiming(queueDelay);
-    }
-
-    @Override
-    public void dequeueRequest(EventTiming event) {
-        queue.decrement();
-        event.end();
-    }
-
-    @Override
     public EventTiming requestBegin(String uri, Object request) {
         current.increment();
         return new EventTiming(processing);
     }
 
     @Override
-    public void requestEnd(EventTiming requestMetric) {
+    public void requestEnd(EventTiming requestMetric, long bytesWritten) {
         // Ignoring request-alone metrics at the moment
     }
 
@@ -107,7 +77,7 @@ public class VertxClientMetrics
     }
 
     @Override
-    public void responseEnd(EventTiming event) {
+    public void responseEnd(EventTiming event, long bytesRead) {
         current.decrement();
         event.end();
         completed.increment();

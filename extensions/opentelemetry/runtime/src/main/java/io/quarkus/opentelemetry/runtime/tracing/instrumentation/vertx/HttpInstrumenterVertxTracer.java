@@ -36,7 +36,6 @@ import io.opentelemetry.instrumentation.api.semconv.http.HttpSpanNameExtractor;
 import io.opentelemetry.instrumentation.api.semconv.http.HttpSpanStatusExtractor;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
-import io.smallrye.common.vertx.ContextLocals;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.MultiMap;
@@ -132,7 +131,7 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
         if (spanOperation != null) {
             Context runningCtx = spanOperation.getContext();
             if (VertxContext.isDuplicatedContext(runningCtx)) {
-                String pathTemplate = ContextLocals.<String> get("ClientUrlPathTemplate").orElse(null);
+                String pathTemplate = (String) VertxContext.localContextData(runningCtx).get("ClientUrlPathTemplate");
                 if (pathTemplate != null && !pathTemplate.isEmpty()) {
                     Span.fromContext(spanOperation.getSpanContext())
                             .updateName(((HttpRequest) spanOperation.getRequest()).method().name() + " " + pathTemplate);

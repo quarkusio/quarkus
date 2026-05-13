@@ -1,5 +1,6 @@
 package io.quarkus.micrometer.runtime.binder;
 
+import java.net.URI;
 import java.util.Objects;
 
 import io.micrometer.core.instrument.Tag;
@@ -96,6 +97,15 @@ public class HttpCommonTags {
 
         // Use first segment of request path
         return Tag.of("uri", pathInfo);
+    }
+
+    public static String address(URI uri) {
+        String host = uri.getHost();
+        if (host == null) {
+            return "unknown";
+        }
+        int port = uri.getPort();
+        return port > 0 ? host + ":" + port : host;
     }
 
     private static boolean isTemplatedPath(String pathInfo, String initialPath) {

@@ -40,7 +40,7 @@ import io.quarkus.micrometer.test.HelloResource;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.vertx.core.Vertx;
-import io.vertx.core.impl.VertxInternal;
+import io.vertx.core.internal.VertxInternal;
 
 public class NettyMetricsTest {
     @RegisterExtension
@@ -84,7 +84,7 @@ public class NettyMetricsTest {
 
     private static final Set<Tag> VX_NAM_PBBA_TAGS = Tags.of(
             "name", VertxNettyAllocatorMetricsProvider.VERTX_POOLED_ALLOCATOR_NAME,
-            "allocator.type", "PooledByteBufAllocator")
+            "allocator.type", "AdaptiveByteBufAllocator")
             .stream()
             .collect(Collectors.toSet());
 
@@ -168,8 +168,8 @@ public class NettyMetricsTest {
     @Timeout(60L)
     public void testEventExecutorMetricsValues() throws Exception {
         VertxInternal vi = (VertxInternal) vertx;
-        assertEventGroup(vi.getEventLoopGroup(), "eventLoop");
-        assertEventGroup(vi.getAcceptorEventLoopGroup(), "acceptor");
+        assertEventGroup(vi.eventLoopGroup(), "eventLoop");
+        assertEventGroup(vi.acceptorEventLoopGroup(), "acceptor");
     }
 
     private void assertEventGroup(EventLoopGroup group, String expectedExecutorTag) throws Exception {

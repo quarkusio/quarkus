@@ -15,7 +15,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.micrometer.deployment.MicrometerProcessor;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
@@ -34,7 +33,6 @@ public class HttpBinderProcessor {
     private static final String JAKARTA_REST_CLIENT_REQUEST_FILTER = "jakarta.ws.rs.client.ClientRequestFilter";
     private static final String RESTEASY_CLIENT_METRICS_FILTER = "io.quarkus.micrometer.runtime.binder.ResteasyClientMetricsFilter";
     private static final String REST_CLIENT_METRICS_FILTER = "io.quarkus.micrometer.runtime.binder.vertx.RestClientMetricsFilter";
-    private static final String REST_CLIENT_BUILDER_METRICS_LISTENER = "io.quarkus.micrometer.runtime.binder.vertx.RestClientBuilderMetricsListener";
 
     static class HttpServerBinderEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
@@ -101,17 +99,13 @@ public class HttpBinderProcessor {
     @BuildStep(onlyIf = RestClientBinderEnabled.class)
     void registerProvider(Capabilities capabilities,
             BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexed,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            BuildProducer<ServiceProviderBuildItem> serviceProviders) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         if (capabilities.isPresent(Capability.RESTEASY_CLIENT)) {
             additionalIndexed.produce(new AdditionalIndexedClassesBuildItem(RESTEASY_CLIENT_METRICS_FILTER));
             additionalBeans.produce(new AdditionalBeanBuildItem(RESTEASY_CLIENT_METRICS_FILTER));
         } else if (capabilities.isPresent(Capability.REST_CLIENT_REACTIVE)) {
             additionalIndexed.produce(new AdditionalIndexedClassesBuildItem(REST_CLIENT_METRICS_FILTER));
             additionalBeans.produce(new AdditionalBeanBuildItem(REST_CLIENT_METRICS_FILTER));
-            serviceProviders
-                    .produce(new ServiceProviderBuildItem("org.eclipse.microprofile.rest.client.spi.RestClientBuilderListener",
-                            REST_CLIENT_BUILDER_METRICS_LISTENER));
         }
     }
 

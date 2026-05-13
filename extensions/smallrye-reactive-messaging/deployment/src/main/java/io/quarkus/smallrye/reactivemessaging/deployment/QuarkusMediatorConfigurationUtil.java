@@ -34,6 +34,7 @@ import org.jboss.jandex.Type;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.CustomInvokerBuildItem;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusMediatorConfiguration;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusParameterDescriptor;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusWorkerPoolRegistry;
@@ -52,7 +53,8 @@ public final class QuarkusMediatorConfigurationUtil {
 
     public static QuarkusMediatorConfiguration create(MethodInfo methodInfo, boolean isSuspendMethod, BeanInfo bean,
             RecorderContext recorderContext,
-            ClassLoader cl, boolean strict, ReactiveMessagingConfiguration.ExecutionMode executionMode) {
+            ClassLoader cl, boolean strict, ReactiveMessagingConfiguration.ExecutionMode executionMode,
+            CustomInvokerBuildItem customInvoker) {
 
         Class[] parameterTypeClasses;
         Class<?> returnTypeClass;
@@ -182,6 +184,35 @@ public final class QuarkusMediatorConfigurationUtil {
                     }
                 }));
         configuration.setHasTargetedOutput(mediatorConfigurationSupport.processTargetedOutput());
+
+        if (customInvoker != null) {
+            if (customInvoker.getShape() != null) {
+                configuration.setShape(customInvoker.getShape());
+                configuration.setOutgoings(List.of());
+            }
+            if (customInvoker.getProduction() != null) {
+                configuration.setProduction(customInvoker.getProduction());
+            }
+            if (customInvoker.getConsumption() != null) {
+                configuration.setConsumption(customInvoker.getConsumption());
+            }
+            if (customInvoker.getAcknowledgment() != null) {
+                configuration.setAcknowledgment(customInvoker.getAcknowledgment());
+            }
+            if (customInvoker.getMerge() != null) {
+                configuration.setMerge(customInvoker.getMerge());
+            }
+            if (customInvoker.getBlocking() != null) {
+                configuration.setBlocking(customInvoker.getBlocking());
+            }
+            for (String syntheticParamType : customInvoker.getSyntheticParameterTypes()) {
+                TypeInfo ti = new TypeInfo();
+                ti.setName(recorderContext.classProxy(syntheticParamType));
+                ti.setGenerics(List.of());
+                gen.add(ti);
+            }
+        }
+
         if (!hasBlockingAnnotation(methodInfo)
                 && !hasNonBlockingAnnotation(methodInfo)
                 && hasBlockingPayloadSignature(methodInfo)) {

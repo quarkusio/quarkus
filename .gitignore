@@ -46,3 +46,8 @@ nb-configuration.xml
 
 CLAUDE.local.md
 docs/superpowers
+docs/.docs-preview-last-run
+docs/.docs-preview-root-build-last-run
+docs/.docs-preview-root-build-head
+docs/.docs-preview-times
+docs/.docs-preview.lock/

@@ -42,6 +42,7 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.net.JdkSSLEngineOptions;
 import io.vertx.core.net.KeyCertOptions;
+import io.vertx.core.net.OpenSSLEngineOptions;
 import io.vertx.core.net.TCPSSLOptions;
 import io.vertx.core.net.TrafficShapingOptions;
 import io.vertx.core.net.TrustOptions;
@@ -252,6 +253,10 @@ public class HttpServerOptionsUtils {
         }
         if (!other.isUseAlpn()) {
             serverOptions.setUseAlpn(false);
+        }
+        if (other.isUseHybrid()) {
+            serverOptions.setSslEngineOptions(new OpenSSLEngineOptions());
+            serverOptions.setUseHybrid(true);
         }
         serverOptions.setEnabledSecureTransportProtocols(other.getEnabledSecureTransportProtocols());
     }

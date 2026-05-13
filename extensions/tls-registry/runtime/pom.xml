@@ -32,6 +32,7 @@
         </dependency>
 
         <!-- To register the let's encrypt routes -->
+
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-web</artifactId>

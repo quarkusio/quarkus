@@ -1,5 +1,6 @@
 package io.quarkus.grpc.example.streaming;
 
+import static io.quarkus.test.micrometer.PrometheusMetricsAssert.assertMetrics;
 import static io.restassured.RestAssured.get;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -37,13 +38,10 @@ class StreamingEndpointTestBase {
     }
 
     public void ensureThatMetricsAreProduced() {
-        String metrics = get("/q/metrics")
-                .then().statusCode(200)
-                .extract().asString();
-
-        assertThat(metrics)
-                .contains("grpc_server_processing_duration_seconds_max") // server
-                .contains("grpc_client_processing_duration_seconds_count"); // client
+        assertMetrics(get("/q/metrics").then().statusCode(200)
+                .extract().asInputStream())
+                .hasMetricNameContaining("grpc_server_processing_duration_seconds_max") // server
+                .hasMetricNameContaining("grpc_client_processing_duration_seconds_count"); // client
     }
 
 }

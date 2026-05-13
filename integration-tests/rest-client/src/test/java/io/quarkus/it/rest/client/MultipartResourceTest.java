@@ -1,8 +1,9 @@
 package io.quarkus.it.rest.client;
 
+import static io.quarkus.test.micrometer.PrometheusMetricsAssert.assertMetrics;
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.entry;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.not;
 
 import org.junit.jupiter.api.Test;
 
@@ -24,12 +25,13 @@ public class MultipartResourceTest {
                         containsString("greeting.txt"),
                         containsString("Content-Disposition: form-data; name=\"uuid\""));
 
-        given()
+        assertMetrics(given()
                 .when().get("/q/metrics")
                 .then()
                 .statusCode(200)
-                // /echo is ignored in application.properties
-                .body(not(containsString(
-                        "clientName=\"localhost\",method=\"POST\",outcome=\"SUCCESS\",status=\"200\",uri=\"/echo\",} 1.0")));
+                .extract().asInputStream())
+                .doesNotHaveMetricWithLabels("http_client_requests_seconds_count",
+                        entry("clientName", "localhost"), entry("method", "POST"),
+                        entry("outcome", "SUCCESS"), entry("status", "200"), entry("uri", "/echo"));
     }
 }

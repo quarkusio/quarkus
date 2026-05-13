@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.processor;
 
+import static io.quarkus.bootstrap.classloading.QuarkusClassLoader.isApplicationClass;
+
 import java.lang.reflect.Modifier;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -313,7 +315,7 @@ public abstract class JacksonCodeGenerator {
 
     private void registerTypeToBeGenerated(String typeName) {
         ClassInfo classInfo = jandexIndex.getClassByName(typeName);
-        if (classInfo == null) {
+        if (classInfo == null || !isRuntimeAccessible(classInfo, typeName)) {
             return;
         }
         if (vetoedClass(classInfo, typeName)) {
@@ -327,6 +329,10 @@ public abstract class JacksonCodeGenerator {
         if (shouldGenerateCodeFor(classInfo)) {
             toBeGenerated.add(classInfo);
         }
+    }
+
+    private static boolean isRuntimeAccessible(ClassInfo classInfo, String className) {
+        return Modifier.isPublic(classInfo.flags()) || isApplicationClass(className);
     }
 
     protected boolean shouldGenerateCodeFor(ClassInfo classInfo) {

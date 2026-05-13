@@ -268,7 +268,6 @@ public class ExtensionDescriptorTask extends DefaultTask {
         }
     }
 
-
     private void computeProjectName(ObjectNode extObject) {
         if (!extObject.has("name")) {
             if (projectInfo.containsKey("name")) {

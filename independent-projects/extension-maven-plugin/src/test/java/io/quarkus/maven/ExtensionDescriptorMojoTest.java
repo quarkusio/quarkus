@@ -115,7 +115,7 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
     @Test
     public void shouldFailOnInvalidStatusArray()
             throws Exception {
-        ExtensionDescriptorMojo mojo = makeMojo("simple-pom-with-checks-disabled-invalid-status-array");
+        ExtensionDescriptorMojo mojo = makeMojo("simple-pom-with-checks-disabled");
 
         Path yamlPath = mojo.project.getBasedir().toPath().resolve("target/classes/META-INF/quarkus-extension.yaml");
         Files.createDirectories(yamlPath.getParent());
@@ -126,17 +126,21 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
                 + "  - \"stable\"\n"
                 + "  - \"deprecated\"\n");
 
-        Exception thrown = Assertions.assertThrows(MojoExecutionException.class, mojo::execute);
-        Assertions.assertTrue(thrown.getMessage().contains("Invalid quarkus-extension.yaml metadata"),
-                "Expected schema validation error but got:\n" + thrown.getMessage());
-        Assertions.assertTrue(thrown.getMessage().contains("status"),
-                "Expected status field to be mentioned but got:\n" + thrown.getMessage());
+        try {
+            Exception thrown = Assertions.assertThrows(MojoExecutionException.class, mojo::execute);
+            Assertions.assertTrue(thrown.getMessage().contains("Invalid quarkus-extension.yaml metadata"),
+                    "Expected schema validation error but got:\n" + thrown.getMessage());
+            Assertions.assertTrue(thrown.getMessage().contains("status"),
+                    "Expected status field to be mentioned but got:\n" + thrown.getMessage());
+        } finally {
+            Files.deleteIfExists(yamlPath);
+        }
     }
 
     @Test
     public void shouldAcceptDeprecatedStatus()
             throws Exception {
-        ExtensionDescriptorMojo mojo = makeMojo("simple-pom-with-checks-disabled-deprecated-status");
+        ExtensionDescriptorMojo mojo = makeMojo("simple-pom-with-checks-disabled");
 
         Path yamlPath = mojo.project.getBasedir().toPath().resolve("target/classes/META-INF/quarkus-extension.yaml");
         Files.createDirectories(yamlPath.getParent());

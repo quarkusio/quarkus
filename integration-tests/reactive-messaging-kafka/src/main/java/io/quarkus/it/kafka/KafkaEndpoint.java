@@ -22,6 +22,24 @@ public class KafkaEndpoint {
     KafkaReceivers receivers;
 
     @Inject
+    ExactlyOnceProcessor exactlyOnceProcessor;
+
+    @Inject
+    ExactlyOnceConsumer exactlyOnceConsumer;
+
+    @Inject
+    ExactlyOnceListProcessor exactlyOnceListProcessor;
+
+    @Inject
+    ExactlyOnceListConsumer exactlyOnceListConsumer;
+
+    @Inject
+    ExactlyOnceUniProcessor exactlyOnceUniProcessor;
+
+    @Inject
+    ExactlyOnceUniConsumer exactlyOnceUniConsumer;
+
+    @Inject
     @RedisClientName("my-redis")
     RedisDataSource rds;
 
@@ -65,5 +83,47 @@ public class KafkaEndpoint {
     @Produces(MediaType.APPLICATION_JSON)
     public List<String> getDataForKeyed() {
         return receivers.getDataForKeyed();
+    }
+
+    @GET
+    @Path("/exactly-once-processed")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Integer> getExactlyOnceProcessed() {
+        return exactlyOnceProcessor.getProcessed();
+    }
+
+    @GET
+    @Path("/exactly-once-results")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Integer> getExactlyOnceResults() {
+        return exactlyOnceConsumer.getResults();
+    }
+
+    @GET
+    @Path("/exactly-once-list-processed")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Integer> getExactlyOnceListProcessed() {
+        return exactlyOnceListProcessor.getProcessed();
+    }
+
+    @GET
+    @Path("/exactly-once-list-results")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Integer> getExactlyOnceListResults() {
+        return exactlyOnceListConsumer.getResults();
+    }
+
+    @GET
+    @Path("/exactly-once-uni-processed")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Integer> getExactlyOnceUniProcessed() {
+        return exactlyOnceUniProcessor.getProcessed();
+    }
+
+    @GET
+    @Path("/exactly-once-uni-results")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Integer> getExactlyOnceUniResults() {
+        return exactlyOnceUniConsumer.getResults();
     }
 }

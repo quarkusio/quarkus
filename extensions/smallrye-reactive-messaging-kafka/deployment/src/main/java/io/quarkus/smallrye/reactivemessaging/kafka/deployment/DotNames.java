@@ -17,6 +17,7 @@ final class DotNames {
     static final DotName MUTINY_EMITTER = DotName.createSimple(io.smallrye.reactive.messaging.MutinyEmitter.class.getName());
     static final DotName CONTEXTUAL_EMITTER = DotName.createSimple(io.quarkus.smallrye.reactivemessaging.runtime.ContextualEmitter.class.getName());
     static final DotName KAFKA_TRANSACTIONS_EMITTER = DotName.createSimple(io.smallrye.reactive.messaging.kafka.transactions.KafkaTransactions.class.getName());
+    static final DotName EXACTLY_ONCE = DotName.createSimple(io.quarkus.smallrye.reactivemessaging.kafka.ExactlyOnce.class.getName());
     static final DotName KAFKA_REQUEST_REPLY_EMITTER = DotName.createSimple(io.smallrye.reactive.messaging.kafka.reply.KafkaRequestReply.class.getName());
 
     static final DotName TARGETED = DotName.createSimple(io.smallrye.reactive.messaging.Targeted.class.getName());
@@ -56,5 +57,12 @@ final class DotNames {
     static final DotName LIST = DotName.createSimple(java.util.List.class.getName());
     static final DotName KAFKA_BATCH_RECORD = DotName.createSimple(io.smallrye.reactive.messaging.kafka.KafkaRecordBatch.class.getName());
     static final DotName CONSUMER_RECORDS = DotName.createSimple(org.apache.kafka.clients.consumer.ConsumerRecords.class.getName());
+
+    static final DotName VOID = DotName.createSimple(void.class.getName());
+    static final DotName BLOCKING = DotName.createSimple(io.smallrye.reactive.messaging.annotations.Blocking.class.getName());
+    static final DotName SMALLRYE_BLOCKING = DotName.createSimple(io.smallrye.common.annotation.Blocking.class.getName());
+    static final DotName TRANSACTIONAL = DotName.createSimple("jakarta.transaction.Transactional");
+    static final DotName WITH_TRANSACTION = DotName.createSimple("io.quarkus.hibernate.reactive.panache.common.WithTransaction");
+    static final DotName CONTINUATION = DotName.createSimple("kotlin.coroutines.Continuation");
     // @formatter:on
 }

@@ -34,6 +34,7 @@ import org.jboss.jandex.Type;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.CustomInvokerBuildItem;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusMediatorConfiguration;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusParameterDescriptor;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusWorkerPoolRegistry;
@@ -52,7 +53,8 @@ public final class QuarkusMediatorConfigurationUtil {
 
     public static QuarkusMediatorConfiguration create(MethodInfo methodInfo, boolean isSuspendMethod, BeanInfo bean,
             RecorderContext recorderContext,
-            ClassLoader cl, boolean strict, ReactiveMessagingConfiguration.ExecutionMode executionMode) {
+            ClassLoader cl, boolean strict, ReactiveMessagingConfiguration.ExecutionMode executionMode,
+            CustomInvokerBuildItem customInvoker) {
 
         Class[] parameterTypeClasses;
         Class<?> returnTypeClass;
@@ -182,6 +184,35 @@ public final class QuarkusMediatorConfigurationUtil {
                     }
                 }));
         configuration.setHasTargetedOutput(mediatorConfigurationSupport.processTargetedOutput());
+
+        if (customInvoker != null) {
+            if (customInvoker.getShape() != null) {
+                configuration.setShape(customInvoker.getShape());
+                configuration.setOutgoings(List.of());
+            }
+            if (customInvoker.getProduction() != null) {
+                configuration.setProduction(customInvoker.getProduction());
+            }
+            if (customInvoker.getConsumption() != null) {
+                configuration.setConsumption(customInvoker.getConsumption());
+            }
+            if (customInvoker.getAcknowledgment() != null) {
+                configuration.setAcknowledgment(customInvoker.getAcknowledgment());
+            }
+            if (customInvoker.getMerge() != null) {
+                configuration.setMerge(customInvoker.getMerge());
+            }
+            if (customInvoker.getBlocking() != null) {
+                configuration.setBlocking(customInvoker.getBlocking());
+            }
+            for (String syntheticParamType : customInvoker.getSyntheticParameterTypes()) {
+                TypeInfo ti = new TypeInfo();
+                ti.setName(recorderContext.classProxy(syntheticParamType));
+                ti.setGenerics(List.of());
+                gen.add(ti);
+            }
+        }
+
         if (!hasBlockingAnnotation(methodInfo)
                 && !hasNonBlockingAnnotation(methodInfo)
                 && hasBlockingPayloadSignature(methodInfo)) {
@@ -206,7 +237,11 @@ public final class QuarkusMediatorConfigurationUtil {
         // IF @RunOnVirtualThread is used on the declaring class, it forces all @Blocking method to be run on virtual threads.
         AnnotationInstance runOnVirtualThreadClassAnnotation = methodInfo.declaringClass()
                 .declaredAnnotation(RUN_ON_VIRTUAL_THREAD);
-        if (blockingAnnotation != null || smallryeBlockingAnnotation != null || transactionalAnnotation != null
+        boolean hasReactiveReturnType = methodInfo.returnType().name().equals(ReactiveMessagingDotNames.UNI)
+                || methodInfo.returnType().name().equals(COMPLETION_STAGE);
+        boolean isTransactionalBlocking = transactionalAnnotation != null && !hasReactiveReturnType;
+
+        if (blockingAnnotation != null || smallryeBlockingAnnotation != null || isTransactionalBlocking
                 || runOnVirtualThreadAnnotation != null) {
             mediatorConfigurationSupport.validateBlocking(validationOutput);
             configuration.setBlocking(true);
@@ -477,10 +512,17 @@ public final class QuarkusMediatorConfigurationUtil {
     }
 
     public static boolean hasBlockingAnnotation(MethodInfo method) {
-        return method.hasAnnotation(BLOCKING)
+        if (method.hasAnnotation(BLOCKING)
                 || method.hasAnnotation(SMALLRYE_BLOCKING)
-                || method.hasAnnotation(RUN_ON_VIRTUAL_THREAD)
-                || method.hasAnnotation(TRANSACTIONAL);
+                || method.hasAnnotation(RUN_ON_VIRTUAL_THREAD)) {
+            return true;
+        }
+        if (method.hasAnnotation(TRANSACTIONAL)) {
+            DotName returnType = method.returnType().name();
+            return !ReactiveMessagingDotNames.UNI.equals(returnType)
+                    && !COMPLETION_STAGE.equals(returnType);
+        }
+        return false;
     }
 
     private static boolean hasBlockingPayloadSignature(MethodInfo methodInfo) {

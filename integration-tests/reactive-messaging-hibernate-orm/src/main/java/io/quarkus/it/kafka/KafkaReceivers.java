@@ -17,6 +17,7 @@ import io.quarkus.it.kafka.fruit.FruitDto;
 import io.quarkus.it.kafka.people.PeopleState;
 import io.quarkus.it.kafka.people.Person;
 import io.quarkus.it.kafka.pet.Pet;
+import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.smallrye.reactive.messaging.kafka.commit.CheckpointMetadata;
 
 @ApplicationScoped
@@ -31,6 +32,9 @@ public class KafkaReceivers {
 
     @Incoming("fruits-in")
     @Transactional
+    // Before the transactional methods were forcibly Blocking, now if the method is annotated with @Transactional,
+    // it can be non-blocking, so we need to explicitly annotate it with @Blocking to keep the same behavior as before.
+    @Blocking
     public CompletionStage<Void> persist(Fruit fruit) {
         fruit.persist();
         return emitter.send(new FruitDto(fruit));

@@ -248,8 +248,8 @@ public class SecurityProcessor {
             } else if (SecurityProviderUtils.BOUNCYCASTLE_FIPS_JSSE_PROVIDER_NAME.equals(providerName)) {
                 bouncyCastleJsseProvider.produce(new BouncyCastleJsseProviderBuildItem(true));
             } else {
-                jcaProviders
-                        .produce(new JCAProviderBuildItem(providerName, security.securityProviderConfig().get(providerName)));
+                List<String> configs = security.securityProviderConfig().getOrDefault(providerName, List.of());
+                jcaProviders.produce(new JCAProviderBuildItem(providerName, configs));
             }
             log.debugf("Added providerName: %s", providerName);
         }
@@ -285,7 +285,7 @@ public class SecurityProcessor {
             List<JCAProviderBuildItem> jcaProviders,
             BuildProducer<NativeImageSecurityProviderBuildItem> additionalProviders) throws IOException, URISyntaxException {
         for (JCAProviderBuildItem provider : jcaProviders) {
-            List<String> providerClasses = registerProvider(provider.getProviderName(), provider.getProviderConfig(),
+            List<String> providerClasses = registerProvider(provider.getProviderName(), provider.getProviderConfigs(),
                     additionalProviders);
             for (String className : providerClasses) {
                 classes.produce(ReflectiveClassBuildItem.builder(className).methods().fields().build());
@@ -299,7 +299,7 @@ public class SecurityProcessor {
     void configureJCAProvidersAtRuntime(SecurityProviderRecorder recorder,
             List<JCAProviderBuildItem> jcaProviders) {
         for (JCAProviderBuildItem provider : jcaProviders) {
-            recorder.configureProvider(provider.getProviderName(), provider.getProviderConfig());
+            recorder.configureProvider(provider.getProviderName(), provider.getProviderConfigs());
         }
     }
 
@@ -608,7 +608,7 @@ public class SecurityProcessor {
      * @return class names that make up the provider and its services
      */
     private static List<String> registerProvider(String providerName,
-            String providerConfig,
+            List<String> providerConfigs,
             BuildProducer<NativeImageSecurityProviderBuildItem> additionalProviders) {
         List<String> providerClasses = new ArrayList<>();
         Provider provider = Security.getProvider(providerName);
@@ -623,7 +623,7 @@ public class SecurityProcessor {
                 }
             }
 
-            if (providerConfig != null) {
+            for (String providerConfig : providerConfigs) {
                 Provider configuredProvider = provider.configure(providerConfig);
                 if (configuredProvider != null) {
                     Security.addProvider(configuredProvider);

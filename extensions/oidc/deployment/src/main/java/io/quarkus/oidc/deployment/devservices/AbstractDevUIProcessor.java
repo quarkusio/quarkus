@@ -3,6 +3,7 @@ package io.quarkus.oidc.deployment.devservices;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
@@ -15,9 +16,9 @@ import io.quarkus.devui.spi.page.Page;
 import io.quarkus.oidc.runtime.OidcTenantConfig;
 import io.quarkus.oidc.runtime.dev.ui.OidcDevUiRecorder;
 import io.quarkus.oidc.runtime.dev.ui.OidcDevUiRpcSvcPropertiesBean;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.smallrye.mutiny.Uni;
 
 public abstract class AbstractDevUIProcessor {
     protected static final String CONFIG_PREFIX = "quarkus.oidc.";
@@ -76,7 +77,7 @@ public abstract class AbstractDevUIProcessor {
 
         cardPage.addBuildTimeData("devRoot", nonApplicationRootPathBuildItem.getNonApplicationRootPath());
 
-        RuntimeValue<OidcDevUiRpcSvcPropertiesBean> runtimeProperties = recorder.getRpcServiceProperties(
+        Supplier<Uni<OidcDevUiRpcSvcPropertiesBean>> runtimeProperties = recorder.getRpcServiceProperties(
                 webClientTimeout, grantOptions, oidcProviderName, oidcGrantType, introspectionIsAvailable,
                 swaggerIsAvailable, graphqlIsAvailable, swaggerUiPath, graphqlUiPath, devServiceConfigHashCode,
                 discoverMetadata, devUiLogoutPath, devUiReadSessionCookiePath, authServerUrl, buildTimeKeycloakAdminUrl,

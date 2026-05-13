@@ -49,20 +49,14 @@ import org.eclipse.aether.resolution.DependencyRequest;
 import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
 
-import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.core.util.DefaultIndenter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.networknt.schema.Schema;
-import com.networknt.schema.SchemaRegistry;
-import com.networknt.schema.SpecificationVersion;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
@@ -80,6 +74,7 @@ import io.quarkus.maven.capabilities.CapabilityConfig;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.platform.tools.ExtensionMetadataValidator;
 
 /**
  * Generates Quarkus extension descriptor for the runtime artifact.
@@ -103,7 +98,6 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     private static final String ARTIFACT_ID = "artifact-id";
     private static final String METADATA = "metadata";
     private static final String COMMA = ",";
-    private static final String EXTENSION_SCHEMA_RESOURCE = "/META-INF/quarkus-extension-schema.json";
 
     /**
      * The entry point to Aether, i.e. the component doing all the work.
@@ -365,6 +359,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             extObject.put("description", project.getDescription());
         }
 
+
         setBuiltWithQuarkusCoreVersion(quarkusCoreVersion, extObject);
         setRequiresQuarkusCoreVersion(quarkusCoreVersionRange, extObject);
         addJavaVersion(extObject);
@@ -374,7 +369,11 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
         completeCodestartArtifact(mapper, extObject);
 
-        validateExtensionMetadata(extObject);
+        try {
+            ExtensionMetadataValidator.validate(extObject);
+        } catch (IOException e) {
+            throw new MojoExecutionException(e.getMessage(), e.getCause());
+        }
 
         final DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter();
         prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
@@ -388,37 +387,6 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         }
     }
 
-    private void validateExtensionMetadata(ObjectNode extObject) throws MojoExecutionException {
-        final Schema schema;
-        try (InputStream is = ExtensionDescriptorMojo.class.getResourceAsStream(EXTENSION_SCHEMA_RESOURCE)) {
-            if (is == null) {
-                throw new MojoExecutionException("Failed to load extension metadata schema from " + EXTENSION_SCHEMA_RESOURCE);
-            }
-            final ObjectMapper jsonMapper = JsonMapper.builder()
-                    .enable(SerializationFeature.INDENT_OUTPUT)
-                    .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)
-                    .enable(JsonReadFeature.ALLOW_LEADING_ZEROS_FOR_NUMBERS)
-                    .build();
-            final JsonNode schemaNode = jsonMapper.readTree(is);
-
-            final SchemaRegistry schemaRegistry = SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12);
-            schema = schemaRegistry.getSchema(schemaNode);
-            schema.initializeValidators();
-        } catch (IOException e) {
-            throw new MojoExecutionException("Failed to read extension metadata schema from " + EXTENSION_SCHEMA_RESOURCE, e);
-        }
-
-        final List<com.networknt.schema.Error> errors = schema.validate(extObject);
-        if (!errors.isEmpty()) {
-            final StringBuilder sb = new StringBuilder();
-            sb.append("Invalid ").append(BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME).append(" metadata:");
-            for (com.networknt.schema.Error err : errors) {
-                sb.append(System.lineSeparator()).append("- ").append(err.getInstanceLocation()).append(": ")
-                        .append(err.getMessage());
-            }
-            throw new MojoExecutionException(sb.toString());
-        }
-    }
 
     private void recordDevModeConfig(Properties props) {
         if (devMode == null) {

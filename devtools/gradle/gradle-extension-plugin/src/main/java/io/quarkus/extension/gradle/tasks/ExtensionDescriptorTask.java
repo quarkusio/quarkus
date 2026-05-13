@@ -34,9 +34,6 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.networknt.schema.Schema;
-import com.networknt.schema.SchemaRegistry;
-import com.networknt.schema.SpecificationVersion;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
@@ -48,6 +45,7 @@ import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
+import io.quarkus.platform.tools.ExtensionMetadataValidator;
 
 /**
  * Task that generates extension descriptor files.
@@ -62,7 +60,6 @@ public class ExtensionDescriptorTask extends DefaultTask {
     private static final String GROUP_ID = "group-id";
     private static final String ARTIFACT_ID = "artifact-id";
     private static final String METADATA = "metadata";
-    private static final String EXTENSION_SCHEMA_RESOURCE = "/META-INF/quarkus-extension-schema.json";
 
     private final Map<String, String> projectInfo;
 
@@ -253,7 +250,11 @@ public class ExtensionDescriptorTask extends DefaultTask {
             extObject.put("description", projectInfo.get("description"));
         }
 
-        validateExtensionMetadata(extObject);
+        try {
+            ExtensionMetadataValidator.validate(extObject);
+        } catch (IOException e) {
+            throw new GradleException(e.getMessage(), e.getCause());
+        }
 
         final DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter();
         prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
@@ -267,33 +268,6 @@ public class ExtensionDescriptorTask extends DefaultTask {
         }
     }
 
-    private void validateExtensionMetadata(ObjectNode extObject) {
-        final Schema schema;
-        try (InputStream is = ExtensionDescriptorTask.class.getResourceAsStream(EXTENSION_SCHEMA_RESOURCE)) {
-            if (is == null) {
-                throw new GradleException("Failed to load extension metadata schema from " + EXTENSION_SCHEMA_RESOURCE);
-            }
-            final ObjectMapper jsonMapper = new ObjectMapper();
-            final JsonNode schemaNode = jsonMapper.readTree(is);
-
-            final SchemaRegistry schemaRegistry = SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12);
-            schema = schemaRegistry.getSchema(schemaNode);
-            schema.initializeValidators();
-        } catch (IOException e) {
-            throw new GradleException("Failed to read extension metadata schema from " + EXTENSION_SCHEMA_RESOURCE, e);
-        }
-
-        final List<com.networknt.schema.Error> errors = schema.validate(extObject);
-        if (!errors.isEmpty()) {
-            final StringBuilder sb = new StringBuilder();
-            sb.append("Invalid ").append(BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME).append(" metadata:");
-            for (com.networknt.schema.Error err : errors) {
-                sb.append(System.lineSeparator()).append("- ").append(err.getInstanceLocation()).append(": ")
-                        .append(err.getMessage());
-            }
-            throw new GradleException(sb.toString());
-        }
-    }
 
     private void computeProjectName(ObjectNode extObject) {
         if (!extObject.has("name")) {

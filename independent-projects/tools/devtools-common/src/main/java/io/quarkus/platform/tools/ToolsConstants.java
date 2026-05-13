@@ -32,4 +32,6 @@ public interface ToolsConstants {
     String PROP_PROPOSED_MVN_VERSION = "proposed-maven-version";
     String PROP_MVN_WRAPPER_VERSION = "maven-wrapper-version";
     String PROP_GRADLE_WRAPPER_VERSION = "gradle-wrapper-version";
+
+    String EXTENSION_SCHEMA_RESOURCE = "/META-INF/quarkus-extension-schema.json";
 }

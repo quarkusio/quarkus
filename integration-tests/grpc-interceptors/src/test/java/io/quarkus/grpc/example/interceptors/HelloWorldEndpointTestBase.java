@@ -40,6 +40,17 @@ class HelloWorldEndpointTestBase {
         assertThat(response).isEqualTo("Hello neo-mutiny");
     }
 
+    @Test
+    public void testRestClientThenGrpcDoesNotConflictWithMetrics() {
+        String response = get("/hello/rest-then-grpc/neo").then().statusCode(200)
+                .extract().asString();
+        assertThat(response).isEqualTo("pong Hello neo");
+
+        String metrics = get("/q/metrics").then().statusCode(200)
+                .extract().asString();
+        assertThat(metrics).contains("http_client_requests_seconds");
+    }
+
     public void ensureThatMetricsAreProduced() {
         String metrics = get("/q/metrics")
                 .then().statusCode(200)

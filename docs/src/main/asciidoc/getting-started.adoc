@@ -321,7 +321,7 @@ testImplementation("io.quarkus:quarkus-junit")
 testImplementation("io.rest-assured:rest-assured")
 ----
 
-Quarkus supports https://docs.junit.org/current/user-guide/[JUnit] tests.
+Quarkus supports https://docs.junit.org[JUnit] tests.
 
 Because of this, in the case of Maven, the version of the https://maven.apache.org/surefire/maven-surefire-plugin/[Surefire Maven Plugin] must be set, as the default version does not support JUnit:
 

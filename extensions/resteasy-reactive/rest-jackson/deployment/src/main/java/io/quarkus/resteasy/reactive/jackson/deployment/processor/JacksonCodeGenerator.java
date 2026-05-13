@@ -307,7 +307,9 @@ public abstract class JacksonCodeGenerator {
 
     private MethodInfo getterMethodInfo(ClassInfo classInfo, FieldInfo fieldInfo) {
         MethodInfo namedAccessor = findMethod(classInfo, fieldInfo.name());
-        if (namedAccessor != null) {
+        if (namedAccessor != null
+                && (classInfo.isRecord() || namedAccessor.hasAnnotation(JsonProperty.class)
+                        || fieldInfo.hasAnnotation(JsonProperty.class))) {
             return namedAccessor;
         }
         String methodName = (fieldInfo.type().name().toString().equals("boolean") ? "is" : "get") + ucFirst(fieldInfo.name());

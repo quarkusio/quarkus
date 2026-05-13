@@ -234,7 +234,7 @@ You can use the mock configurator API via the `QuarkusComponentTestExtensionBuil
 
 == Nested Tests
 
-JUnit https://docs.junit.org/current/user-guide/#writing-tests-nested[@Nested tests] may help to structure more complex test scenarios.
+JUnit https://docs.junit.org/current/writing-tests/nested-tests.html[@Nested tests] may help to structure more complex test scenarios.
 However, only basic use cases are tested with `@QuarkusComponentTest`.
 
 .Nested test

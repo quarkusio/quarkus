@@ -125,7 +125,7 @@ class JarTreeShaker {
         input.releaseAnalysisData();
 
         // Report
-        log.infof("Tree-shaking removed %d unreachable classes from %d dependencies, saving %s (%.1f%%)",
+        log.infof("Tree-shaking removed %d unreachable classes from %d dependencies, saving %s (%.1f%%) of bytecode",
                 removedClassCount,
                 removedClassesPerDep.size(),
                 formatSize(removedBytes),

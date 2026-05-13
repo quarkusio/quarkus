@@ -184,6 +184,14 @@ public class OidcProvider implements Closeable {
                 asymmetricKeyResolver, true, oidcConfig.token().issuedAtRequired());
     }
 
+    public TokenVerificationResult verifyJwtToken(String token, boolean enforceAudienceVerification, boolean subjectRequired,
+            String nonce, boolean enforceExpReq)
+            throws InvalidJwtException {
+        return verifyJwtTokenInternal(customizeJwtToken(token), enforceAudienceVerification, subjectRequired, nonce,
+                (requiredAlgorithmConstraints != null ? requiredAlgorithmConstraints : ASYMMETRIC_ALGORITHM_CONSTRAINTS),
+                asymmetricKeyResolver, enforceExpReq, oidcConfig.token().issuedAtRequired());
+    }
+
     public TokenVerificationResult verifyLogoutJwtToken(String token) throws InvalidJwtException {
         final boolean enforceExpReq = !oidcConfig.token().age().isPresent();
         TokenVerificationResult result = verifyJwtTokenInternal(token, true, false, null, ASYMMETRIC_ALGORITHM_CONSTRAINTS,
@@ -191,7 +199,7 @@ public class OidcProvider implements Closeable {
         if (!enforceExpReq) {
             // Expiry check was skipped during the initial verification but if the logout token contains the exp claim
             // then it must be verified
-            final Long exp = result.localVerificationResult.getLong(Claims.exp.name());
+            final Long exp = result.localVerificationResult().getLong(Claims.exp.name());
             if (exp != null) {
                 final long secondsAfterExpiry = now() / 1000 - (exp + getLifespanGrace());
                 if (secondsAfterExpiry > 0) {
@@ -303,7 +311,7 @@ public class OidcProvider implements Closeable {
         }
         TokenVerificationResult result = new TokenVerificationResult(OidcCommonUtils.decodeJwtContent(token), null);
 
-        verifyTokenAge(result.localVerificationResult.getLong(Claims.iat.name()));
+        verifyTokenAge(result.localVerificationResult().getLong(Claims.iat.name()));
         return result;
     }
 

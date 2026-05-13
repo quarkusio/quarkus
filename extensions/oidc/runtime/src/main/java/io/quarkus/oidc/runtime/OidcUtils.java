@@ -378,7 +378,7 @@ public final class OidcUtils {
         if (codeFlowAccessTokenResult != null) {
             builder.addAttribute(CODE_ACCESS_TOKEN_RESULT, codeFlowAccessTokenResult);
             if (Roles.Source.accesstoken == config.roles().source().orElse(null)) {
-                setIntrospectionScopes(builder, codeFlowAccessTokenResult.introspectionResult);
+                setIntrospectionScopes(builder, codeFlowAccessTokenResult.introspectionResult());
                 if (codeTokens != null && codeTokens.getAccessTokenScope() != null) {
                     builder.addPermissionsAsString(new HashSet<>(Arrays.asList(codeTokens.getAccessTokenScope().split(" "))));
                 }

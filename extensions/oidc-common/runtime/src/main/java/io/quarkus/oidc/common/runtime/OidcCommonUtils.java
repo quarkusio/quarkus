@@ -86,10 +86,73 @@ public class OidcCommonUtils {
     static final String HTTP_SCHEME = "http";
 
     private static final Logger LOG = Logger.getLogger(OidcCommonUtils.class);
+    private static final String AUTHORIZATION_HEADER = String.valueOf(HttpHeaders.AUTHORIZATION);
     private static final BlockingTaskRunner<Void> VOID_BLOCKING_TASK_RUNNER = new BlockingTaskRunner<>();
 
     private OidcCommonUtils() {
 
+    }
+
+    public static MultiMap maskAuthorizationHeader(MultiMap headers) {
+        String authorizationHeader = headers.get(AUTHORIZATION_HEADER);
+        if (authorizationHeader == null) {
+            return headers;
+        }
+
+        StringBuilder maskedAuthorization = new StringBuilder();
+        int idx = authorizationHeader.indexOf(' ');
+        final String scheme = idx > 0 ? authorizationHeader.substring(0, idx) : null;
+        // In the Quarkus OIDC to OIDC provider requests, if Authorization header is present,
+        // it can only be a non-null scheme, either Basic or Bearer, if set by Quarkus OIDC.
+        // In some cases, custom filters might add their own Authorization header to deal with the provider
+        // specific authentication requirements for accessing typically public endpoints such as a discovery endpoint
+        // and theoretically, they might set Authorization without a scheme - unlikely but we check it just in case.
+        if (scheme != null) {
+            maskedAuthorization.append(scheme).append(' ');
+        }
+        maskedAuthorization.append("...");
+
+        MultiMap debugHeaders = MultiMap.caseInsensitiveMultiMap().addAll(headers);
+        debugHeaders.set(AUTHORIZATION_HEADER, maskedAuthorization);
+        return debugHeaders;
+    }
+
+    public static MultiMap maskFormData(MultiMap formParams) {
+
+        MultiMap debugFormParams = MultiMap.caseInsensitiveMultiMap().addAll(formParams);
+        if (formParams.contains(OidcConstants.CLIENT_SECRET)) {
+            debugFormParams.set(OidcConstants.CLIENT_SECRET, "...");
+        }
+        if (formParams.contains(OidcConstants.CLIENT_ASSERTION)) {
+            debugFormParams.set(OidcConstants.CLIENT_ASSERTION, "...");
+        }
+        if (formParams.contains(OidcConstants.PASSWORD_GRANT_PASSWORD)) {
+            debugFormParams.set(OidcConstants.PASSWORD_GRANT_PASSWORD, "...");
+        }
+        if (formParams.contains(OidcConstants.CODE_FLOW_CODE)) {
+            debugFormParams.set(OidcConstants.CODE_FLOW_CODE, "...");
+        }
+        if (formParams.contains(OidcConstants.PKCE_CODE_VERIFIER)) {
+            debugFormParams.set(OidcConstants.PKCE_CODE_VERIFIER, "...");
+        }
+        if (formParams.contains(OidcConstants.REFRESH_TOKEN_VALUE)) {
+            debugFormParams.set(OidcConstants.REFRESH_TOKEN_VALUE, "...");
+        }
+        return debugFormParams;
+    }
+
+    public static JsonObject maskJsonTokens(JsonObject jsonObject) {
+        JsonObject maskedJson = jsonObject.copy();
+        if (maskedJson.containsKey(OidcConstants.ACCESS_TOKEN_VALUE)) {
+            maskedJson.put(OidcConstants.ACCESS_TOKEN_VALUE, "...");
+        }
+        if (maskedJson.containsKey(OidcConstants.REFRESH_TOKEN_VALUE)) {
+            maskedJson.put(OidcConstants.REFRESH_TOKEN_VALUE, "...");
+        }
+        if (maskedJson.containsKey(OidcConstants.ID_TOKEN_VALUE)) {
+            maskedJson.put(OidcConstants.ID_TOKEN_VALUE, "...");
+        }
+        return maskedJson;
     }
 
     public static void verifyEndpointUrl(String endpointUrl) {

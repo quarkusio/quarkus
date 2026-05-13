@@ -564,19 +564,19 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             }
 
             String idTokenIss = idTokenJson.getString(Claims.iss.name());
-            String logoutTokenIss = backChannelLogoutTokenResult.localVerificationResult.getString(Claims.iss.name());
+            String logoutTokenIss = backChannelLogoutTokenResult.localVerificationResult().getString(Claims.iss.name());
             if (logoutTokenIss != null && !logoutTokenIss.equals(idTokenIss)) {
                 LOG.debugf("Logout token issuer does not match the ID token issuer");
                 return false;
             }
             String idTokenSub = idTokenJson.getString(Claims.sub.name());
-            String logoutTokenSub = backChannelLogoutTokenResult.localVerificationResult.getString(Claims.sub.name());
+            String logoutTokenSub = backChannelLogoutTokenResult.localVerificationResult().getString(Claims.sub.name());
             if (logoutTokenSub != null && idTokenSub != null && !logoutTokenSub.equals(idTokenSub)) {
                 LOG.debugf("Logout token subject does not match the ID token subject");
                 return false;
             }
             String idTokenSid = idTokenJson.getString(OidcConstants.ID_TOKEN_SID_CLAIM);
-            String logoutTokenSid = backChannelLogoutTokenResult.localVerificationResult
+            String logoutTokenSid = backChannelLogoutTokenResult.localVerificationResult()
                     .getString(OidcConstants.BACK_CHANNEL_LOGOUT_SID_CLAIM);
             if (logoutTokenSid != null && idTokenSid != null && !logoutTokenSid.equals(idTokenSid)) {
                 LOG.debugf("Logout token session id does not match the ID token session id");

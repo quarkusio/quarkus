@@ -742,4 +742,13 @@ public class SimpleJsonResource extends SuperClass<Person> {
     public PolymorphicItemResponse polymorphicItemSer() {
         return new PolymorphicItemResponse(new PolymorphicItem.TypeA("hello"));
     }
+
+    @GET
+    @Path("/sensor-metadata")
+    public SensorMetadata sensorMetadata() {
+        return new SensorMetadata(
+                List.of(
+                        new SensorMetadata.ComponentMetadata("CPU", 0, "CPU Power", true, SensorUnit.mW)),
+                "macOS powermetrics derived information");
+    }
 }

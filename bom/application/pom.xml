@@ -31,7 +31,7 @@
         <resteasy.version>6.2.16.Final</resteasy.version>
         <opentelemetry-instrumentation.version>2.26.1-alpha</opentelemetry-instrumentation.version> <!-- OTel SDk 1.60.1-->
         <opentelemetry-semconv.version>1.40.0-alpha</opentelemetry-semconv.version>
-        <quarkus-http.version>5.4.0</quarkus-http.version>
+        <quarkus-http.version>5.5.0</quarkus-http.version>
         <micrometer.version>1.16.5</micrometer.version><!-- keep in sync with hdrhistogram: https://central.sonatype.com/artifact/io.micrometer/micrometer-core -->
         <hdrhistogram.version>2.2.2</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
@@ -110,7 +110,7 @@
         <wildfly-elytron.version>2.8.4.Final</wildfly-elytron.version>
         <jboss-marshalling.version>2.3.0</jboss-marshalling.version>
         <jboss-threads.version>3.9.2</jboss-threads.version>
-        <vertx.version>4.5.26</vertx.version>
+        <vertx.version>4.5.27</vertx.version>
         <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>
         <httpasync.version>4.1.5</httpasync.version>
@@ -118,8 +118,8 @@
         <quartz.version>2.5.2</quartz.version>
         <h2.version>2.4.240</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions
                                               and the dependency jts-core needs to be updated in extensions/jdbc/jdbc-h2/runtime/pom.xml -->
-        <postgresql-jdbc.version>42.7.10</postgresql-jdbc.version>
-        <mariadb-jdbc.version>3.5.7</mariadb-jdbc.version>
+        <postgresql-jdbc.version>42.7.11</postgresql-jdbc.version>
+        <mariadb-jdbc.version>3.5.8</mariadb-jdbc.version>
         <mysql-jdbc.version>9.6.0</mysql-jdbc.version>
         <mssql-jdbc.version>13.2.1.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
@@ -131,8 +131,8 @@
         <infinispan.version>16.0.9</infinispan.version>
         <infinispan.protostream.version>6.0.6</infinispan.protostream.version>
         <caffeine.version>3.2.3</caffeine.version>
-        <netty.version>4.1.132.Final</netty.version>
-        <brotli4j.version>1.16.0</brotli4j.version>
+        <netty.version>4.1.133.Final</netty.version>
+        <brotli4j.version>1.23.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <jboss-logging.version>3.6.3.Final</jboss-logging.version>
         <mutiny.version>3.1.1</mutiny.version>

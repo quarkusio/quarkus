@@ -7,9 +7,9 @@ import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.signals.Receivers.ExecutionModel;
 import io.quarkus.signals.SignalContext;
 import io.quarkus.signals.spi.Receiver;
-import io.quarkus.signals.spi.Receiver.ExecutionModel;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.smallrye.common.vertx.VertxContext;

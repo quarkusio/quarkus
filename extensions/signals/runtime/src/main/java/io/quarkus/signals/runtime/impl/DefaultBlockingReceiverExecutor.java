@@ -9,9 +9,9 @@ import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.signals.Receivers.ExecutionModel;
 import io.quarkus.signals.SignalContext;
 import io.quarkus.signals.spi.Receiver;
-import io.quarkus.signals.spi.Receiver.ExecutionModel;
 import io.smallrye.mutiny.Uni;
 
 @Singleton

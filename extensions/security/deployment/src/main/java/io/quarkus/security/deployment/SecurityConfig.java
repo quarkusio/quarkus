@@ -1,5 +1,6 @@
 package io.quarkus.security.deployment;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -33,7 +34,7 @@ public interface SecurityConfig {
      * Security provider configuration
      */
     @ConfigDocMapKey("provider-name")
-    Map<String, String> securityProviderConfig();
+    Map<String, List<String>> securityProviderConfig();
 
     /**
      * If set to true, access to all methods of beans that have any security annotations on other members will be denied by

@@ -63,7 +63,7 @@ class SignalImpl<T> implements Signal<T> {
     }
 
     @Override
-    public Signal<T> putMetadata(String key, Object value) {
+    public Signal<T> withMetadata(String key, Object value) {
         Objects.requireNonNull(key);
         Objects.requireNonNull(value);
         Map<String, Object> meta;
@@ -78,7 +78,7 @@ class SignalImpl<T> implements Signal<T> {
     }
 
     @Override
-    public Signal<T> setMetadata(Map<String, Object> metadata) {
+    public Signal<T> withReplacedMetadata(Map<String, Object> metadata) {
         Objects.requireNonNull(metadata);
         return new SignalImpl<>(signalType, qualifiers, Map.copyOf(metadata), manager);
     }

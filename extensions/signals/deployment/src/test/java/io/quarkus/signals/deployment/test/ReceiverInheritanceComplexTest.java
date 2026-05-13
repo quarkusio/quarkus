@@ -55,7 +55,7 @@ public class ReceiverInheritanceComplexTest extends AbstractSignalTest {
         inheritingReceiver.sequence.clear();
 
         String reply = stringEnvelope
-                .setMetadata(Map.of("priority", "high"))
+                .withReplacedMetadata(Map.of("priority", "high"))
                 .reactive().request(new Envelope<>("beta", "data"), String.class)
                 .ifNoItem().after(defaultTimeout()).fail()
                 .await().indefinitely();

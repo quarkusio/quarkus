@@ -1,8 +1,8 @@
 package io.quarkus.signals.runtime.impl;
 
+import io.quarkus.signals.Receivers.ExecutionModel;
 import io.quarkus.signals.SignalContext;
 import io.quarkus.signals.spi.Receiver;
-import io.quarkus.signals.spi.Receiver.ExecutionModel;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -10,9 +10,9 @@ import io.smallrye.mutiny.Uni;
  * <p>
  * This interface is pluggable &mdash; other Quarkus extensions can provide a custom implementation as a CDI bean to
  * override the default behavior. The default implementation is based on Vert.x and respects the receiver's
- * {@link Receiver.ExecutionModel execution model} (event loop, worker thread, or virtual thread).
+ * {@link ExecutionModel execution model} (event loop, worker thread, or virtual thread).
  *
- * @see Receiver.ExecutionModel
+ * @see ExecutionModel
  */
 public interface ReceiverExecutor {
 

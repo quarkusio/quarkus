@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime.dev.ui;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -15,12 +16,11 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
 @Recorder
@@ -41,12 +41,24 @@ public class OidcDevUiRecorder {
     }
 
     public void createJsonRPCService(BeanContainer beanContainer,
-            RuntimeValue<OidcDevUiRpcSvcPropertiesBean> oidcDevUiRpcSvcPropertiesBean) {
+            Supplier<Uni<OidcDevUiRpcSvcPropertiesBean>> oidcDevUiRpcSvcPropertiesBeanSupplier) {
         OidcDevJsonRpcService jsonRpcService = beanContainer.beanInstance(OidcDevJsonRpcService.class);
-        jsonRpcService.hydrate(oidcDevUiRpcSvcPropertiesBean.getValue(), httpConfig.getValue());
+        jsonRpcService.hydrate(oidcDevUiRpcSvcPropertiesBeanSupplier.get(), httpConfig.getValue());
     }
 
-    public RuntimeValue<OidcDevUiRpcSvcPropertiesBean> getRpcServiceProperties(Duration webClientTimeout,
+    public Supplier<Uni<OidcDevUiRpcSvcPropertiesBean>> getRpcServiceProperties(Duration webClientTimeout,
+            Map<String, Map<String, String>> grantOptions,
+            String oidcProviderName, String oidcGrantType, boolean introspectionIsAvailable, boolean swaggerIsAvailable,
+            boolean graphqlIsAvailable, String swaggerUiPath, String graphqlUiPath, String devServiceConfigHashCode,
+            boolean discoverMetadata, String devUiLogoutPath, String devUiReadSessionCookiePath, String authServerUrl,
+            String buildTimeKeycloakAdminUrl, String buildTimeOidcApplicationType, DevServiceType devServiceType) {
+        return () -> getRpcServicePropertiesInternal(webClientTimeout, grantOptions, oidcProviderName, oidcGrantType,
+                introspectionIsAvailable, swaggerIsAvailable, graphqlIsAvailable, swaggerUiPath, graphqlUiPath,
+                devServiceConfigHashCode, discoverMetadata, devUiLogoutPath, devUiReadSessionCookiePath, authServerUrl,
+                buildTimeKeycloakAdminUrl, buildTimeOidcApplicationType, devServiceType);
+    }
+
+    public Uni<OidcDevUiRpcSvcPropertiesBean> getRpcServicePropertiesInternal(Duration webClientTimeout,
             Map<String, Map<String, String>> grantOptions,
             String oidcProviderName, String oidcGrantType, boolean introspectionIsAvailable, boolean swaggerIsAvailable,
             boolean graphqlIsAvailable, String swaggerUiPath, String graphqlUiPath, String devServiceConfigHashCode,
@@ -115,22 +127,31 @@ public class OidcDevUiRecorder {
             oidcApplicationType = buildTimeOidcApplicationType;
         }
 
+        final var beanWithoutDiscovery = new OidcDevUiRpcSvcPropertiesBean(authorizationUrl, tokenUrl, logoutUrl,
+                webClientTimeout, grantOptions, oidcUsers, oidcProviderName, oidcApplicationType, oidcGrantType,
+                introspectionIsAvailable, keycloakAdminUrl, keycloakRealms, swaggerIsAvailable,
+                graphqlIsAvailable, swaggerUiPath, graphqlUiPath, devServiceConfigHashCode,
+                devUiLogoutPath, devUiReadSessionCookiePath);
         if (discoverMetadata) {
-            JsonObject metadata = discoverMetadata(authServerUrl);
-            if (metadata != null) {
-                authorizationUrl = metadata.getString("authorization_endpoint");
-                tokenUrl = metadata.getString("token_endpoint");
-                logoutUrl = metadata.getString("end_session_endpoint");
-                introspectionIsAvailable = metadata.containsKey("introspection_endpoint")
-                        || metadata.containsKey("userinfo_endpoint");
-            }
+            return discoverMetadata(authServerUrl, webClientTimeout)
+                    .map(metadata -> {
+                        if (metadata != null) {
+                            return new OidcDevUiRpcSvcPropertiesBean(metadata.getString("authorization_endpoint"),
+                                    metadata.getString("token_endpoint"), metadata.getString("end_session_endpoint"),
+                                    webClientTimeout, grantOptions, oidcUsers, oidcProviderName, oidcApplicationType,
+                                    oidcGrantType,
+                                    metadata.containsKey("introspection_endpoint") || metadata.containsKey("userinfo_endpoint"),
+                                    keycloakAdminUrl, keycloakRealms, swaggerIsAvailable,
+                                    graphqlIsAvailable, swaggerUiPath, graphqlUiPath, devServiceConfigHashCode,
+                                    devUiLogoutPath, devUiReadSessionCookiePath);
+                        } else {
+                            return beanWithoutDiscovery;
+                        }
+                    })
+                    .memoize().indefinitely();
+        } else {
+            return Uni.createFrom().item(beanWithoutDiscovery);
         }
-        return new RuntimeValue<>(
-                new OidcDevUiRpcSvcPropertiesBean(authorizationUrl, tokenUrl, logoutUrl,
-                        webClientTimeout, grantOptions, oidcUsers, oidcProviderName, oidcApplicationType, oidcGrantType,
-                        introspectionIsAvailable, keycloakAdminUrl, keycloakRealms, swaggerIsAvailable,
-                        graphqlIsAvailable, swaggerUiPath, graphqlUiPath, devServiceConfigHashCode,
-                        devUiLogoutPath, devUiReadSessionCookiePath));
     }
 
     public Handler<RoutingContext> readSessionCookieHandler() {
@@ -141,25 +162,29 @@ public class OidcDevUiRecorder {
         return new OidcDevSessionLogoutHandler();
     }
 
-    private static JsonObject discoverMetadata(String authServerUrl) {
-        WebClient client = OidcDevServicesUtils.createWebClient(VertxCoreRecorder.getVertx().get());
-        try {
+    private static Uni<JsonObject> discoverMetadata(String authServerUrl, Duration webClientTimeout) {
+        return Uni.createFrom().deferred(() -> {
+            WebClient client = OidcDevServicesUtils.createWebClient(VertxCoreRecorder.getVertx().get());
+
             String metadataUrl = authServerUrl + OidcConstants.WELL_KNOWN_CONFIGURATION;
+
             LOG.infof("OIDC Dev Console: discovering the provider metadata at %s", metadataUrl);
 
-            HttpResponse<Buffer> resp = client.getAbs(metadataUrl)
-                    .putHeader(HttpHeaders.ACCEPT.toString(), "application/json").send().await().indefinitely();
-            if (resp.statusCode() == 200) {
-                return resp.bodyAsJsonObject();
-            } else {
-                LOG.errorf("OIDC metadata discovery failed: %s", resp.bodyAsString());
-                return null;
-            }
-        } catch (Throwable t) {
-            LOG.infof("OIDC metadata can not be discovered: %s", t.toString());
-            return null;
-        } finally {
-            client.close();
-        }
+            return client.getAbs(metadataUrl)
+                    .putHeader(HttpHeaders.ACCEPT.toString(), "application/json")
+                    .timeout(webClientTimeout.toMillis())
+                    .send()
+                    .map(resp -> {
+                        if (resp.statusCode() == 200) {
+                            return resp.bodyAsJsonObject();
+                        } else {
+                            LOG.errorf("OIDC metadata discovery failed: %s", resp.bodyAsString());
+                            return null;
+                        }
+                    })
+                    .onFailure().invoke(t -> LOG.infof("OIDC metadata can not be discovered: %s", t.toString()))
+                    .onFailure().recoverWithNull()
+                    .onTermination().invoke(client::close);
+        });
     }
 }

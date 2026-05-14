@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <artifactId>quarkus-build-parent</artifactId>
+        <groupId>io.quarkus</groupId>
+        <version>3.36.999-SNAPSHOT</version>
+        <relativePath>../../build-parent/pom.xml</relativePath>
+    </parent>
+
+    <artifactId>quarkus-documentation-core-rag</artifactId>
+    <name>Quarkus - Documentation Core RAG</name>
+    <description>Aggregated RAG vector embeddings for core Quarkus documentation</description>
+
+    <properties>
+        <skipRagGeneration>true</skipRagGeneration>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>generate-extension-descriptor</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-documentation-rag-maven-plugin</artifactId>
+                <version>0.0.5</version>
+                <executions>
+                    <execution>
+                        <id>generate-core-rag</id>
+                        <goals>
+                            <goal>generate-rag</goal>
+                        </goals>
+                        <configuration>
+                            <guidesDirectory>${project.basedir}/../../docs/src/main/asciidoc</guidesDirectory>
+                            <skip>${skipRagGeneration}</skip>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

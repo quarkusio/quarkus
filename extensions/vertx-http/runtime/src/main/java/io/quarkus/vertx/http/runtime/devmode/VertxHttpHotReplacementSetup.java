@@ -151,16 +151,18 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
             routingContext.next();
             return;
         }
-        ClassLoader current = Thread.currentThread().getContextClassLoader();
-        VertxCoreRecorder.getVertx().get().getOrCreateContext().executeBlocking(new Callable<Boolean>() {
-            @Override
-            public Boolean call() {
-                //the blocking pool may have a stale TCCL
-                Thread.currentThread().setContextClassLoader(current);
-                boolean restart = false;
-                try {
-                    DevConsoleManager.setDoingHttpInitiatedReload(true);
-                    synchronized (this) {
+        // We need to set the flag immediately after the check to mitigate
+        // the timing issue when multiple requests are processed concurrently
+        DevConsoleManager.setDoingHttpInitiatedReload(true);
+        try {
+            ClassLoader current = Thread.currentThread().getContextClassLoader();
+            VertxCoreRecorder.getVertx().get().getOrCreateContext().executeBlocking(new Callable<Boolean>() {
+                @Override
+                public Boolean call() {
+                    //the blocking pool may have a stale TCCL
+                    Thread.currentThread().setContextClassLoader(current);
+                    boolean restart = false;
+                    synchronized (VertxHttpHotReplacementSetup.this) {
                         if (nextUpdate < System.currentTimeMillis() || hotReplacementContext.isTest()) {
                             nextUpdate = System.currentTimeMillis() + HOT_REPLACEMENT_INTERVAL;
                             Object currentState = VertxHttpRecorder.getCurrentApplicationState();
@@ -194,28 +196,32 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                             }
                         }
                     }
-                } finally {
-                    DevConsoleManager.setDoingHttpInitiatedReload(false);
+                    return restart;
                 }
-                return restart;
-            }
-        }, false).onComplete(new Handler<AsyncResult<Boolean>>() {
-            @Override
-            public void handle(AsyncResult<Boolean> event) {
-                if (event.failed()) {
-                    handleDeploymentProblem(routingContext, event.cause());
-                } else {
-                    boolean restart = event.result();
-                    if (restart) {
-                        QuarkusExecutorFactory.reinitializeDevModeExecutor();
-                        routingContext.request().headers().set(HEADER_NAME, "true");
-                        VertxHttpRecorder.getRootHandler().handle(routingContext.request());
+            }, false).onComplete(new Handler<AsyncResult<Boolean>>() {
+                @Override
+                public void handle(AsyncResult<Boolean> result) {
+                    // Unset the flag when the blocking code completes
+                    DevConsoleManager.setDoingHttpInitiatedReload(false);
+                    if (result.failed()) {
+                        handleDeploymentProblem(routingContext, result.cause());
                     } else {
-                        routingContext.next();
+                        boolean restart = result.result();
+                        if (restart) {
+                            QuarkusExecutorFactory.reinitializeDevModeExecutor();
+                            routingContext.request().headers().set(HEADER_NAME, "true");
+                            VertxHttpRecorder.getRootHandler().handle(routingContext.request());
+                        } else {
+                            routingContext.next();
+                        }
                     }
                 }
-            }
-        });
+            });
+        } catch (Throwable e) {
+            // Make sure the flag is unset when something bad happens
+            DevConsoleManager.setDoingHttpInitiatedReload(false);
+            throw e;
+        }
 
     }
 

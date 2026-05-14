@@ -29,6 +29,7 @@ import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.net.KeyStoreOptions;
 import io.vertx.core.net.PemKeyCertOptions;
+import io.vertx.core.net.PemTrustOptions;
 import io.vertx.core.net.SSLOptions;
 
 /**
@@ -212,9 +213,13 @@ public class TlsCertificateReloader {
         }
 
         if (sslConfig.certificate().trustStoreFile().isPresent()) {
-            var opts = ((KeyStoreOptions) copy.getTrustOptions());
-            opts.setValue(Buffer.buffer(getFileContent(sslConfig.certificate().trustStoreFile().get())));
-            copy.setTrustOptions(opts);
+            Buffer newContent = Buffer.buffer(getFileContent(sslConfig.certificate().trustStoreFile().get()));
+            if (copy.getTrustOptions() instanceof KeyStoreOptions kso) {
+                kso.setValue(newContent);
+            } else if (copy.getTrustOptions() instanceof PemTrustOptions pto) {
+                pto.getCertValues().clear();
+                pto.addCertValue(newContent);
+            }
         }
 
         return copy;

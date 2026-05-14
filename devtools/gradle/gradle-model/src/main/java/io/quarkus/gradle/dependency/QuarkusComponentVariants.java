@@ -185,7 +185,6 @@ public class QuarkusComponentVariants {
     private final List<ConditionalDependencyVariant> dependencyVariantQueue = new ArrayList<>();
     private final Map<String, SatisfiedExtensionDeps> satisfiedExtensionDeps = new HashMap<>();
     private final LaunchMode mode;
-    private final AtomicInteger configCopyCounter = new AtomicInteger();
 
     private QuarkusComponentVariants(Project project, LaunchMode mode,
             Property<PlatformSpec> platformSpecProperty) {
@@ -364,12 +363,18 @@ public class QuarkusComponentVariants {
     }
 
     private Configuration copyBaseConfig(Configuration baseConfig) {
-        return project.getConfigurations()
-                .resolvable(baseConfig.getName() + "Copy" + configCopyCounter.incrementAndGet(), c -> {
-                    c.setCanBeConsumed(false);
-                    c.extendsFrom(baseConfig);
-                    setIterativeConditionalAttributes(c, project, satisfiedExtensionDeps.values());
-                }).get();
+        // copyRecursive() returns a fully independent copy that is not registered in the
+        // project's configurations container. Using it (instead of adding a named copy via
+        // configurations.resolvable(name, ...) and later removing it) avoids re-firing
+        // configureEach listeners — including Kotlin's withDependencies callback — which
+        // would mark Configuration as a subscribed type and trigger an addPending re-fire
+        // during later container iteration (e.g. htmlDependencyReport), failing with
+        // "Cannot mutate the state of configuration ... after the configuration was resolved".
+        // See https://github.com/quarkusio/quarkus/issues/54142.
+        Configuration c = baseConfig.copyRecursive();
+        c.setCanBeConsumed(false);
+        setIterativeConditionalAttributes(c, project, satisfiedExtensionDeps.values());
+        return c;
     }
 
     private void processConfiguration(Configuration baseConfig) {
@@ -378,8 +383,6 @@ public class QuarkusComponentVariants {
         for (var dep : config.getResolvedConfiguration().getFirstLevelModuleDependencies()) {
             processDependency(null, dep, visited, true);
         }
-        // drop the temporary configuration
-        project.getConfigurations().remove(config);
     }
 
     private void processDependency(ProcessedDependency parent,

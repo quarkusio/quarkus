@@ -15,17 +15,18 @@ import io.quarkus.test.junit.TestProfile;
 import io.restassured.RestAssured;
 
 /**
- * A configuration block is defined for a single service (see Map returned by ConsulTestResource), but without the need to
- * indicate the registrar type.
+ * Verifies that when {@code instance-name} is configured, the service is registered in Consul
+ * using exactly that name as the service instance ID.
  */
-
 @DisabledOnOs(OS.WINDOWS)
 @QuarkusTest
-@TestProfile(CustomExplicitConfigRegistrationTest.CustomExplicitConfigProfile.class)
+@TestProfile(CustomInstanceNameRegistrationTest.CustomInstanceNameProfile.class)
 @QuarkusTestResource(ConsulContainerWithFixedPortsTestResource.class)
-public class CustomExplicitConfigRegistrationTest {
+public class CustomInstanceNameRegistrationTest {
 
-    public static class CustomExplicitConfigProfile implements QuarkusTestProfile {
+    static final String INSTANCE_NAME = "my-custom-instance-id";
+
+    public static class CustomInstanceNameProfile implements QuarkusTestProfile {
         @Override
         public String getConfigProfile() {
             return "minimal";
@@ -34,21 +35,16 @@ public class CustomExplicitConfigRegistrationTest {
         @Override
         public Map<String, String> getConfigOverrides() {
             return Map.of(
-                    "quarkus.stork.my-service.service-registrar.ip-address", "145.123.145.145",
-                    "quarkus.stork.my-service.service-registrar.port", "9090");
+                    "quarkus.stork.my-service.service-registrar.instance-name", INSTANCE_NAME);
         }
-
     }
 
     @Test
-    public void test() {
-        RestAssured.get(ConsulTestUtils.serviceUrl("my-service"))
+    public void testServiceRegisteredWithConfiguredInstanceName() {
+        RestAssured.get("http://localhost:8500/v1/agent/service/" + INSTANCE_NAME)
                 .then()
                 .statusCode(200)
                 .body(containsString("\"Service\": \"my-service\""),
-                        containsString("\"Port\": 9090"),
-                        containsString("\"Address\": \"145.123.145.145\""));
-
+                        containsString("\"ID\": \"" + INSTANCE_NAME + "\""));
     }
-
 }

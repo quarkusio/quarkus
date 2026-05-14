@@ -250,7 +250,7 @@
                         </goals>
                         <configuration>
                             <rules combine.children="append">
-                                <bansRuntimeDependency implementation="io.quarkus.enforcer.BansRuntimeDependency"/>
+                                <bansRuntimeDependency/>
                             </rules>
                         </configuration>
                     </execution>

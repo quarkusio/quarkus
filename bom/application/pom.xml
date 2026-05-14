@@ -6758,7 +6758,7 @@
                         </goals>
                         <configuration>
                             <rules>
-                                <dependencyAlignmentRule implementation="io.quarkus.enforcer.DependencyAlignmentRule">
+                                <dependencyAlignmentRule>
                                     <referenceArtifact>org.hibernate.orm:hibernate-platform:${hibernate-orm.version}</referenceArtifact>
                                     <dependencies>
                                         <dependency>
@@ -6778,7 +6778,7 @@
                                         </dependency>
                                     </dependencies>
                                 </dependencyAlignmentRule>
-                                <dependencyAlignmentRule implementation="io.quarkus.enforcer.DependencyAlignmentRule">
+                                <dependencyAlignmentRule>
                                     <referenceArtifact>org.hibernate.orm:hibernate-spatial:${hibernate-orm.version}</referenceArtifact>
                                     <dependencies>
                                         <dependency>

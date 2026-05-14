@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3600 1250">
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4020 1250">
   <g>
     <rect x="615.95" y="600.96" width="2497.94" height="135.96" rx="9.16" ry="9.16" style="fill: #b5d5f7; stroke-width: 0px;"/>
     <rect x="1858.75" y="600.96" width="418.38" height="135.96" style="fill: #ffccdb; stroke-width: 0px;"/>
     <rect x="615.95" y="59.89" width="1242.8" height="135.96" rx="9.16" ry="9.16" style="fill: #b5d5f7; stroke-width: 0px;"/>
     <rect x="615.95" y="871.5" width="1661.18" height="135.96" rx="9.16" ry="9.16" style="fill: #b5d5f7; stroke-width: 0px;"/>
     <path d="M1021.95,871.5h1246.02c5.06,0,9.16,4.11,9.16,9.16v117.64c0,5.06-4.11,9.16-9.16,9.16H1021.95v-135.96h0Z" style="fill: #ffccdb; stroke-width: 0px;"/>
-    <rect x="615.95" y="330.43" width="2905.29" height="135.96" rx="9.16" ry="9.16" style="fill: #b5d5f7; stroke-width: 0px;"/>
+    <rect x="615.95" y="330.43" width="3323.67" height="135.96" rx="9.16" ry="9.16" style="fill: #b5d5f7; stroke-width: 0px;"/>
     <rect x="2277.13" y="330.43" width="836.76" height="135.96" style="fill: #ffccdb; stroke-width: 0px;"/>
     <text transform="translate(87.24 141.41)" style="fill: #091313; font-family: OpenSans-ExtraBold, &apos;Open Sans&apos;; font-size: 48px; font-weight: 700;"><tspan x="0" y="0">Run modes</tspan></text>
     <text transform="translate(1101.14 136.4)" style="fill: #091313; font-family: OpenSans-Regular, &apos;Open Sans&apos;; font-size: 29px;"><tspan x="0" y="0">Works in dev mode</tspan></text>
@@ -14,10 +14,11 @@
     <text transform="translate(1545.68 136.4)" style="fill: #091313; font-family: OpenSans-Regular, &apos;Open Sans&apos;; font-size: 29px;"><tspan x="0" y="0">Works in native</tspan></text>
     <g>
       <line x1="58.67" y1="263.14" x2="64.67" y2="263.14" style="fill: none; stroke: #091313; stroke-miterlimit: 10;"/>
-      <line x1="88.8" y1="263.14" x2="3514.2" y2="263.14" style="fill: none; stroke: #091313; stroke-dasharray: 0 0 12.06 24.12; stroke-miterlimit: 10;"/>
-      <line x1="3526.27" y1="263.14" x2="3532.27" y2="263.14" style="fill: none; stroke: #091313; stroke-miterlimit: 10;"/>
+      <line x1="88.8" y1="263.14" x2="3932.58" y2="263.14" style="fill: none; stroke: #091313; stroke-dasharray: 0 0 12.06 24.12; stroke-miterlimit: 10;"/>
+      <line x1="3944.65" y1="263.14" x2="3950.65" y2="263.14" style="fill: none; stroke: #091313; stroke-miterlimit: 10;"/>
     </g>
     <circle cx="3532.27" cy="263.14" r="9.06" style="fill: #fff; stroke: #000; stroke-miterlimit: 10; stroke-width: 2px;"/>
+    <circle cx="3950.65" cy="263.14" r="9.06" style="fill: #fff; stroke: #000; stroke-miterlimit: 10; stroke-width: 2px;"/>
     <circle cx="603.61" cy="263.14" r="9.06" style="fill: #fff; stroke: #000; stroke-miterlimit: 10; stroke-width: 2px;"/>
     <circle cx="1021.99" cy="263.14" r="9.06" style="fill: #fff; stroke: #000; stroke-miterlimit: 10; stroke-width: 2px;"/>
     <circle cx="1440.37" cy="263.14" r="9.06" style="fill: #fff; stroke: #000; stroke-miterlimit: 10; stroke-width: 2px;"/>
@@ -40,12 +41,14 @@
     <text transform="translate(2409.78 406.93)" style="fill: #091313; font-family: OpenSans-Regular, &apos;Open Sans&apos;; font-size: 29px;"><tspan x="0" y="0">Rich Dev UI</tspan></text>
     <text transform="translate(2723.84 406.93)" style="fill: #091313; font-family: OpenSans-Regular, &apos;Open Sans&apos;; font-size: 29px;"><tspan x="0" y="0">Joyful programming model</tspan></text>
     <text transform="translate(3192.63 406.93)" style="fill: #091313; font-family: OpenSans-Regular, &apos;Open Sans&apos;; font-size: 29px;"><tspan x="0" y="0">Codestart template</tspan></text>
+    <text transform="translate(3610.01 406.93)" style="fill: #091313; font-family: OpenSans-Regular, &apos;Open Sans&apos;; font-size: 29px;"><tspan x="0" y="0">AI coding skill</tspan></text>
     <g>
       <line x1="58.67" y1="533.68" x2="64.67" y2="533.68" style="fill: none; stroke: #091313; stroke-miterlimit: 10;"/>
-      <line x1="88.8" y1="533.68" x2="3514.2" y2="533.68" style="fill: none; stroke: #091313; stroke-dasharray: 0 0 12.06 24.12; stroke-miterlimit: 10;"/>
-      <line x1="3526.27" y1="533.68" x2="3532.27" y2="533.68" style="fill: none; stroke: #091313; stroke-miterlimit: 10;"/>
+      <line x1="88.8" y1="533.68" x2="3932.58" y2="533.68" style="fill: none; stroke: #091313; stroke-dasharray: 0 0 12.06 24.12; stroke-miterlimit: 10;"/>
+      <line x1="3944.65" y1="533.68" x2="3950.65" y2="533.68" style="fill: none; stroke: #091313; stroke-miterlimit: 10;"/>
     </g>
     <circle cx="3532.27" cy="533.68" r="9.06" style="fill: #fff; stroke: #000; stroke-miterlimit: 10; stroke-width: 2px;"/>
+    <circle cx="3950.65" cy="533.68" r="9.06" style="fill: #fff; stroke: #000; stroke-miterlimit: 10; stroke-width: 2px;"/>
     <circle cx="603.61" cy="533.68" r="9.06" style="fill: #fff; stroke: #000; stroke-miterlimit: 10; stroke-width: 2px;"/>
     <circle cx="1021.99" cy="533.68" r="9.06" style="fill: #fff; stroke: #000; stroke-miterlimit: 10; stroke-width: 2px;"/>
     <circle cx="1440.37" cy="533.68" r="9.06" style="fill: #fff; stroke: #000; stroke-miterlimit: 10; stroke-width: 2px;"/>
@@ -117,10 +120,11 @@
     <text transform="translate(2755.73 677.47)" style="fill: #091313; font-family: OpenSans-Regular, &apos;Open Sans&apos;; font-size: 29px;"><tspan x="0" y="0">Add Mutiny-based API</tspan></text>
     <g>
       <line x1="58.67" y1="804.21" x2="64.67" y2="804.21" style="fill: none; stroke: #091313; stroke-miterlimit: 10;"/>
-      <line x1="88.8" y1="804.21" x2="3514.2" y2="804.21" style="fill: none; stroke: #091313; stroke-dasharray: 0 0 12.06 24.12; stroke-miterlimit: 10;"/>
-      <line x1="3526.27" y1="804.21" x2="3532.27" y2="804.21" style="fill: none; stroke: #091313; stroke-miterlimit: 10;"/>
+      <line x1="88.8" y1="804.21" x2="3932.58" y2="804.21" style="fill: none; stroke: #091313; stroke-dasharray: 0 0 12.06 24.12; stroke-miterlimit: 10;"/>
+      <line x1="3944.65" y1="804.21" x2="3950.65" y2="804.21" style="fill: none; stroke: #091313; stroke-miterlimit: 10;"/>
     </g>
     <circle cx="3532.27" cy="804.21" r="9.06" style="fill: #fff; stroke: #000; stroke-miterlimit: 10; stroke-width: 2px;"/>
+    <circle cx="3950.65" cy="804.21" r="9.06" style="fill: #fff; stroke: #000; stroke-miterlimit: 10; stroke-width: 2px;"/>
     <circle cx="603.61" cy="804.21" r="9.06" style="fill: #fff; stroke: #000; stroke-miterlimit: 10; stroke-width: 2px;"/>
     <circle cx="1021.99" cy="804.21" r="9.06" style="fill: #fff; stroke: #000; stroke-miterlimit: 10; stroke-width: 2px;"/>
     <circle cx="1440.37" cy="804.21" r="9.06" style="fill: #fff; stroke: #000; stroke-miterlimit: 10; stroke-width: 2px;"/>
@@ -169,10 +173,11 @@
     </g>
     <g>
       <line x1="58.67" y1="1074.74" x2="64.67" y2="1074.74" style="fill: none; stroke: #091313; stroke-miterlimit: 10;"/>
-      <line x1="88.8" y1="1074.74" x2="3514.2" y2="1074.74" style="fill: none; stroke: #091313; stroke-dasharray: 0 0 12.06 24.12; stroke-miterlimit: 10;"/>
-      <line x1="3526.27" y1="1074.74" x2="3532.27" y2="1074.74" style="fill: none; stroke: #091313; stroke-miterlimit: 10;"/>
+      <line x1="88.8" y1="1074.74" x2="3932.58" y2="1074.74" style="fill: none; stroke: #091313; stroke-dasharray: 0 0 12.06 24.12; stroke-miterlimit: 10;"/>
+      <line x1="3944.65" y1="1074.74" x2="3950.65" y2="1074.74" style="fill: none; stroke: #091313; stroke-miterlimit: 10;"/>
     </g>
     <circle cx="3532.27" cy="1074.74" r="9.06" style="fill: #fff; stroke: #000; stroke-miterlimit: 10; stroke-width: 2px;"/>
+    <circle cx="3950.65" cy="1074.74" r="9.06" style="fill: #fff; stroke: #000; stroke-miterlimit: 10; stroke-width: 2px;"/>
     <circle cx="603.61" cy="1074.74" r="9.06" style="fill: #fff; stroke: #000; stroke-miterlimit: 10; stroke-width: 2px;"/>
     <circle cx="1021.99" cy="1074.74" r="9.06" style="fill: #fff; stroke: #000; stroke-miterlimit: 10; stroke-width: 2px;"/>
     <circle cx="1440.37" cy="1074.74" r="9.06" style="fill: #fff; stroke: #000; stroke-miterlimit: 10; stroke-width: 2px;"/>

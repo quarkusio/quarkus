@@ -15,7 +15,7 @@ import io.smallrye.common.process.ProcessUtil;
 class VineflowerDecompiler implements Decompiler {
 
     private static final Logger LOG = Logger.getLogger(VineflowerDecompiler.class);
-    private static final String DEFAULT_VINEFLOWER_VERSION = "1.11.1";
+    private static final String DEFAULT_VINEFLOWER_VERSION = "1.12.0";
 
     private Context context;
     private Path decompilerJar;

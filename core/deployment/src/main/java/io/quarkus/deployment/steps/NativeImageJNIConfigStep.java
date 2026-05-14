@@ -101,13 +101,7 @@ public class NativeImageJNIConfigStep {
         }
         final boolean isGraalVm25OrNewer = isGraalVm25OrNewer(nativeImageRunnerBuildItem);
         final JsonObjectBuilder root = Json.object();
-        if (isGraalVm25OrNewer) {
-            root.put("reflection", reflectionArray);
-        } else {
-            // GraalVM/Mandrel 21 uses the "jni" key for JNI metadata in reachability-metadata.json
-            root.put("jni", reflectionArray);
-        }
-
+        root.put("reflection", reflectionArray);
         try (StringWriter writer = new StringWriter()) {
             root.appendTo(writer);
             jniConfig.produce(new GeneratedResourceBuildItem("META-INF/native-image/jni/reachability-metadata.json",

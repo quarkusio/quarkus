@@ -44,7 +44,7 @@ public class CustomExplicitConfigRegistrationTest {
 
     @Test
     public void test() {
-        RestAssured.get("http://localhost:8500/v1/catalog/service/my-service")
+        RestAssured.get(ConsulTestUtils.serviceUrl("my-service"))
                 .then()
                 .statusCode(200)
                 .body(containsString("\"ServiceID\": \"my-service::145.123.145.145::9090\""),

@@ -29,5 +29,6 @@
         <module>cli</module>
         <module>config-doc-maven-plugin</module>
         <module>extension-skills</module>
+        <module>extension-rag</module>
     </modules>
 </project>

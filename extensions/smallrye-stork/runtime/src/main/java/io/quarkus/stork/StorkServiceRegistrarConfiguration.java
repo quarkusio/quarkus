@@ -24,6 +24,13 @@ public interface StorkServiceRegistrarConfiguration {
     Optional<String> type();
 
     /**
+     * Optional name for this service instance as registered in the service registry.
+     * When set, this value is used as the instance identifier instead of the auto-generated
+     * {@code serviceName::ip::port} default. Must be unique within the service in the registry.
+     */
+    Optional<String> instanceName();
+
+    /**
      * Service Registrar parameters.
      * Check the documentation of the selected registrar type for available parameters
      *

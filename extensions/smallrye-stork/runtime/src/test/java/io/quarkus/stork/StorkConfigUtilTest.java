@@ -46,7 +46,8 @@ public class StorkConfigUtilTest {
         String healthCheckPath = "/q/health";
         String registrarType = "consul";
 
-        ServiceConfiguration config = StorkConfigUtil.buildRegistrarOnlyConfiguration(registrarType, healthCheckPath);
+        ServiceConfiguration config = StorkConfigUtil.createMinimalAutoRegistrarConfig(registrarType,
+                healthCheckPath);
 
         assertThat(config.serviceRegistrar().isPresent()).isTrue();
         var registrar = config.serviceRegistrar().get();
@@ -66,7 +67,8 @@ public class StorkConfigUtilTest {
         String healthCheckPath = "";
         String registrarType = "consul";
 
-        ServiceConfiguration config = StorkConfigUtil.buildRegistrarOnlyConfiguration(registrarType, healthCheckPath);
+        ServiceConfiguration config = StorkConfigUtil.createMinimalAutoRegistrarConfig(registrarType,
+                healthCheckPath);
 
         assertThat(config.serviceRegistrar().isPresent()).isTrue();
         var registrar = config.serviceRegistrar().get();
@@ -83,7 +85,7 @@ public class StorkConfigUtilTest {
         String registrarType = "";
 
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            StorkConfigUtil.buildRegistrarOnlyConfiguration(registrarType, healthCheckPath);
+            StorkConfigUtil.createMinimalAutoRegistrarConfig(registrarType, healthCheckPath);
         });
 
         String expectedMessage = "Parameter type should be provided.";
@@ -209,7 +211,7 @@ public class StorkConfigUtilTest {
     @Test
     public void shouldNotLeakRegistrarConfigBetweenServices() {
         StorkConfiguration storkConfig = buildStorkConfiguration(
-                Map.entry("backend-1", buildServiceConfig(null, null, buildRegistrarConfig("consul", Map.of()))),
+                Map.entry("backend-1", buildServiceConfig(null, null, buildRegistrarConfig("consul", null, Map.of()))),
                 Map.entry("backend-2", buildServiceConfig(buildDiscoveryConfig("consul", Map.of()),
                         buildLoadBalancerConfig("round-robin", Map.of()), null)));
 
@@ -233,8 +235,8 @@ public class StorkConfigUtilTest {
         StorkConfiguration storkConfig = buildStorkConfiguration(
                 Map.entry("svc-a", buildServiceConfig(buildDiscoveryConfig("consul", Map.of()),
                         buildLoadBalancerConfig("round-robin", Map.of()),
-                        buildRegistrarConfig("consul", Map.of()))),
-                Map.entry("svc-b", buildServiceConfig(null, null, buildRegistrarConfig("consul", Map.of()))));
+                        buildRegistrarConfig("consul", null, Map.of()))),
+                Map.entry("svc-b", buildServiceConfig(null, null, buildRegistrarConfig("consul", null, Map.of()))));
 
         List<ServiceConfig> result = StorkConfigUtil.toStorkServiceConfig(storkConfig);
 
@@ -248,9 +250,9 @@ public class StorkConfigUtilTest {
     public void shouldNotLeakCustomParametersBetweenServices() {
         StorkConfiguration storkConfig = buildStorkConfiguration(
                 Map.entry("svc-a", buildServiceConfig(null, null,
-                        buildRegistrarConfig("consul", Map.of("ip-address", "10.0.0.1", "port", "9090")))),
+                        buildRegistrarConfig("consul", null, Map.of("ip-address", "10.0.0.1", "port", "9090")))),
                 Map.entry("svc-b", buildServiceConfig(null, null,
-                        buildRegistrarConfig("consul", Map.of()))));
+                        buildRegistrarConfig("consul", null, Map.of()))));
 
         List<ServiceConfig> result = StorkConfigUtil.toStorkServiceConfig(storkConfig);
 
@@ -269,7 +271,7 @@ public class StorkConfigUtilTest {
                 Map.entry("my-service", buildServiceConfig(
                         buildDiscoveryConfig("consul", Map.of("consul-host", "localhost")),
                         buildLoadBalancerConfig("round-robin", Map.of()),
-                        buildRegistrarConfig("consul", Map.of("ip-address", "10.0.0.5")))));
+                        buildRegistrarConfig("consul", null, Map.of("ip-address", "10.0.0.5")))));
 
         List<ServiceConfig> result = StorkConfigUtil.toStorkServiceConfig(storkConfig);
 
@@ -306,7 +308,7 @@ public class StorkConfigUtilTest {
     public void shouldHandleServiceWithRegistrarOnly() {
         StorkConfiguration storkConfig = buildStorkConfiguration(
                 Map.entry("registrar-only", buildServiceConfig(null, null,
-                        buildRegistrarConfig("consul", Map.of()))));
+                        buildRegistrarConfig("consul", null, Map.of()))));
 
         List<ServiceConfig> result = StorkConfigUtil.toStorkServiceConfig(storkConfig);
 
@@ -378,7 +380,8 @@ public class StorkConfigUtilTest {
         };
     }
 
-    private static StorkServiceRegistrarConfiguration buildRegistrarConfig(String type, Map<String, String> parameters) {
+    private static StorkServiceRegistrarConfiguration buildRegistrarConfig(String type, String instanceName,
+            Map<String, String> parameters) {
         return new StorkServiceRegistrarConfiguration() {
             @Override
             public boolean enabled() {
@@ -388,6 +391,11 @@ public class StorkConfigUtilTest {
             @Override
             public Optional<String> type() {
                 return Optional.of(type);
+            }
+
+            @Override
+            public Optional<String> instanceName() {
+                return Optional.of(instanceName);
             }
 
             @Override

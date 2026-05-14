@@ -74,7 +74,8 @@ public class StorkConfigUtil {
      * @throws IllegalArgumentException if {@code serviceRegistrarType} is null or blank
      */
 
-    public static ServiceConfiguration buildRegistrarOnlyConfiguration(String serviceRegistrarType, String healthCheckPath) {
+    public static ServiceConfiguration createMinimalAutoRegistrarConfig(String serviceRegistrarType,
+            String healthCheckPath) {
         requireRegistrarTypeNotBlank(serviceRegistrarType);
         Map<String, String> parameters = new HashMap<>();
         Config quarkusConfig = ConfigProvider.getConfig();
@@ -83,7 +84,8 @@ public class StorkConfigUtil {
                     + getOrDefaultPort(parameters, quarkusConfig) + healthCheckPath;
             parameters.put("health-check-url", healthCheckPath);
         }
-        StorkServiceRegistrarConfiguration registrar = buildServiceRegistrarConfiguration(serviceRegistrarType, true,
+        StorkServiceRegistrarConfiguration registrar = buildServiceRegistrarConfiguration(serviceRegistrarType, null,
+                true,
                 parameters);
         return new ServiceConfiguration() {
             @Override
@@ -129,7 +131,10 @@ public class StorkConfigUtil {
             parameters.put("health-check-url", healthCheckUrl);
         }
         boolean enabled = storkServiceRegistrarConfiguration.map(StorkServiceRegistrarConfiguration::enabled).orElse(true);
-        StorkServiceRegistrarConfiguration registrar = buildServiceRegistrarConfiguration(serviceRegistrarType, enabled,
+        String instanceName = storkServiceRegistrarConfiguration
+                .flatMap(StorkServiceRegistrarConfiguration::instanceName).orElse(null);
+        StorkServiceRegistrarConfiguration registrar = buildServiceRegistrarConfiguration(serviceRegistrarType,
+                instanceName, enabled,
                 parameters);
         return new ServiceConfiguration() {
             @Override
@@ -149,7 +154,8 @@ public class StorkConfigUtil {
         };
     }
 
-    private static StorkServiceRegistrarConfiguration buildServiceRegistrarConfiguration(String type, boolean enabled,
+    private static StorkServiceRegistrarConfiguration buildServiceRegistrarConfiguration(String type, String instanceName,
+            boolean enabled,
             Map<String, String> parameters) {
         return new StorkServiceRegistrarConfiguration() {
             @Override
@@ -160,6 +166,11 @@ public class StorkConfigUtil {
             @Override
             public Optional<String> type() {
                 return Optional.of(type);
+            }
+
+            @Override
+            public Optional<String> instanceName() {
+                return Optional.ofNullable(instanceName);
             }
 
             @Override

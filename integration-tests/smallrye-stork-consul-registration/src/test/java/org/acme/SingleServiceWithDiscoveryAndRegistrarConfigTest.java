@@ -42,7 +42,7 @@ public class SingleServiceWithDiscoveryAndRegistrarConfigTest {
 
     @Test
     public void test() {
-        RestAssured.get("http://localhost:8500/v1/agent/service/red-service")
+        RestAssured.get(ConsulTestUtils.serviceUrl("red-service"))
                 .then()
                 .statusCode(200)
                 .body(containsString("\"Service\": \"red-service\""));

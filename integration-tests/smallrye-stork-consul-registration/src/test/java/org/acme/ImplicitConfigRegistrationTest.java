@@ -27,7 +27,7 @@ public class ImplicitConfigRegistrationTest {
 
     @Test
     public void test() {
-        RestAssured.get("http://localhost:8500/v1/agent/service/quarkus-integration-test-smallrye-stork-consul-registration")
+        RestAssured.get(ConsulTestUtils.serviceUrl("quarkus-integration-test-smallrye-stork-consul-registration"))
                 .then()
                 .statusCode(200)
                 .body(containsString("\"Service\": \"quarkus-integration-test-smallrye-stork-consul-registration\""));

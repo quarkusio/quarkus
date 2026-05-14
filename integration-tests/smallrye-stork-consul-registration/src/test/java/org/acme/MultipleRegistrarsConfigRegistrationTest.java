@@ -44,13 +44,13 @@ public class MultipleRegistrarsConfigRegistrationTest {
 
     @Test
     public void test() {
-        RestAssured.get("http://localhost:8500/v1/agent/service/red-service")
+        RestAssured.get(ConsulTestUtils.serviceUrl("red-service"))
                 .then()
                 .statusCode(200)
                 .body(containsString("\"Service\": \"red-service\""),
                         containsString("\"145.123.145.145\""));
 
-        RestAssured.get("http://localhost:8500/v1/agent/service/blue-service")
+        RestAssured.get(ConsulTestUtils.serviceUrl("blue-service"))
                 .then()
                 .statusCode(200)
                 .body(containsString("\"Service\": \"blue-service\""),

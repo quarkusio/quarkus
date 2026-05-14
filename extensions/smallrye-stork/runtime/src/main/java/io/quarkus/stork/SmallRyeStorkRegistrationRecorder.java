@@ -53,26 +53,31 @@ public class SmallRyeStorkRegistrationRecorder {
         shutdown.addLastShutdownTask(new Runnable() {
             @Override
             public void run() {
-                deregisterServiceInstance(runtimeConfig.getValue());
+                deregisterServiceInstance();
             }
         });
     }
 
-    private void deregisterServiceInstance(StorkConfiguration configuration) {
-        List<ServiceConfig> serviceConfigs = StorkConfigUtil.toStorkServiceConfig(configuration);
+    private void deregisterServiceInstance() {
+        List<ServiceConfig> serviceConfigs = StorkConfigUtil.toStorkServiceConfig(runtimeConfig.getValue());
+        Config quarkusConfig = ConfigProvider.getConfig();
         for (ServiceConfig serviceConfig : serviceConfigs) {
             String serviceName = serviceConfig.serviceName();
-            if (configuration.serviceConfiguration().get(serviceName).serviceRegistrar().isPresent()) {
-                StorkServiceRegistrarConfiguration storkServiceRegistrarConfiguration = configuration.serviceConfiguration()
+            if (runtimeConfig.getValue().serviceConfiguration().get(serviceName).serviceRegistrar().isPresent()) {
+                StorkServiceRegistrarConfiguration storkServiceRegistrarConfiguration = runtimeConfig.getValue()
+                        .serviceConfiguration()
                         .get(serviceName).serviceRegistrar().get();
                 if (!storkServiceRegistrarConfiguration.enabled()) {
                     continue;
                 }
             }
+            Map<String, String> parameters = serviceConfig.serviceRegistrar().parameters();
+            String host = StorkConfigUtil.getOrDefaultHost(parameters, quarkusConfig);
+            int port = StorkConfigUtil.getOrDefaultPort(parameters, quarkusConfig);
             CountDownLatch registrationLatch = new CountDownLatch(1);
             Stork.getInstance()
                     .getService(serviceName)
-                    .deregisterServiceInstance(serviceName)
+                    .deregisterServiceInstance(serviceName, host, port)
                     .subscribe()
                     .with(
                             success -> registrationLatch.countDown(),

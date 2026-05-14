@@ -17,8 +17,8 @@ public interface SignalContext<T> {
 
     /**
      * @return the metadata attached to the emission, never {@code null}
-     * @see Signal#putMetadata(String, Object)
-     * @see Signal#setMetadata(Map)
+     * @see Signal#withMetadata(String, Object)
+     * @see Signal#withReplacedMetadata(Map)
      */
     Map<String, Object> metadata();
 

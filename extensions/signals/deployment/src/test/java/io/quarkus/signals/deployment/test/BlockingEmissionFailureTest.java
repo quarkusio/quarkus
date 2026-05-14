@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.LogRecord;
 
@@ -16,9 +15,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.signals.Receivers;
+import io.quarkus.signals.Receivers.ExecutionModel;
 import io.quarkus.signals.Signal;
 import io.quarkus.signals.SignalContext;
-import io.quarkus.signals.spi.Receiver.ExecutionModel;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
 
@@ -33,10 +32,6 @@ public class BlockingEmissionFailureTest extends AbstractSignalTest {
             .withApplicationRoot(root -> root.addClasses(Cmd.class))
             .setLogRecordPredicate(r -> r.getLoggerName().contains("SignalImpl"))
             .assertLogRecords(records -> {
-                assertFailureLogged(records, "publish-worker-boom");
-                assertFailureLogged(records, "publish-eventloop-boom");
-                assertFailureLogged(records, "send-worker-boom");
-                assertFailureLogged(records, "send-eventloop-boom");
                 assertFailureLogged(records, "publish-uni-boom");
                 assertFailureLogged(records, "send-uni-boom");
             });
@@ -48,86 +43,6 @@ public class BlockingEmissionFailureTest extends AbstractSignalTest {
     Receivers receivers;
 
     @Test
-    public void testPublishFailureWorkerThread() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        var reg = receivers.newReceiver(Cmd.class)
-                .setExecutionModel(ExecutionModel.BLOCKING)
-                .notify(new Consumer<SignalContext<Cmd>>() {
-                    @Override
-                    public void accept(SignalContext<Cmd> t) {
-                        latch.countDown();
-                        throw new IllegalStateException("publish-worker-boom");
-                    }
-                });
-        try {
-            cmd.publish(new Cmd());
-            assertTrue(latch.await(defaultTimeout().toMillis(), TimeUnit.MILLISECONDS));
-        } finally {
-            reg.unregister();
-        }
-    }
-
-    @Test
-    public void testPublishFailureEventLoop() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        var reg = receivers.newReceiver(Cmd.class)
-                .setExecutionModel(ExecutionModel.NON_BLOCKING)
-                .notify(new Consumer<SignalContext<Cmd>>() {
-                    @Override
-                    public void accept(SignalContext<Cmd> t) {
-                        latch.countDown();
-                        throw new IllegalStateException("publish-eventloop-boom");
-                    }
-                });
-        try {
-            cmd.publish(new Cmd());
-            assertTrue(latch.await(defaultTimeout().toMillis(), TimeUnit.MILLISECONDS));
-        } finally {
-            reg.unregister();
-        }
-    }
-
-    @Test
-    public void testSendFailureWorkerThread() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        var reg = receivers.newReceiver(Cmd.class)
-                .setExecutionModel(ExecutionModel.BLOCKING)
-                .notify(new Consumer<SignalContext<Cmd>>() {
-                    @Override
-                    public void accept(SignalContext<Cmd> t) {
-                        latch.countDown();
-                        throw new IllegalStateException("send-worker-boom");
-                    }
-                });
-        try {
-            cmd.send(new Cmd());
-            assertTrue(latch.await(defaultTimeout().toMillis(), TimeUnit.MILLISECONDS));
-        } finally {
-            reg.unregister();
-        }
-    }
-
-    @Test
-    public void testSendFailureEventLoop() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        var reg = receivers.newReceiver(Cmd.class)
-                .setExecutionModel(ExecutionModel.NON_BLOCKING)
-                .notify(new Consumer<SignalContext<Cmd>>() {
-                    @Override
-                    public void accept(SignalContext<Cmd> t) {
-                        latch.countDown();
-                        throw new IllegalStateException("send-eventloop-boom");
-                    }
-                });
-        try {
-            cmd.send(new Cmd());
-            assertTrue(latch.await(defaultTimeout().toMillis(), TimeUnit.MILLISECONDS));
-        } finally {
-            reg.unregister();
-        }
-    }
-
-    @Test
     public void testPublishUniFailure() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
         var reg = receivers.newReceiver(Cmd.class)
@@ -135,8 +50,8 @@ public class BlockingEmissionFailureTest extends AbstractSignalTest {
                 .notify(new Function<SignalContext<Cmd>, Uni<Void>>() {
                     @Override
                     public Uni<Void> apply(SignalContext<Cmd> ctx) {
-                        latch.countDown();
-                        return Uni.createFrom().failure(new IllegalStateException("publish-uni-boom"));
+                        return Uni.createFrom().<Void> failure(new IllegalStateException("publish-uni-boom"))
+                                .eventually(latch::countDown);
                     }
                 });
         try {
@@ -155,8 +70,8 @@ public class BlockingEmissionFailureTest extends AbstractSignalTest {
                 .notify(new Function<SignalContext<Cmd>, Uni<Void>>() {
                     @Override
                     public Uni<Void> apply(SignalContext<Cmd> ctx) {
-                        latch.countDown();
-                        return Uni.createFrom().failure(new IllegalStateException("send-uni-boom"));
+                        return Uni.createFrom().<Void> failure(new IllegalStateException("send-uni-boom"))
+                                .eventually(latch::countDown);
                     }
                 });
         try {

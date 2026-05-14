@@ -11,10 +11,11 @@ import jakarta.enterprise.inject.spi.BeanContainer;
 import jakarta.enterprise.util.TypeLiteral;
 
 import io.quarkus.signals.Receivers;
+import io.quarkus.signals.Receivers.ExecutionModel;
+import io.quarkus.signals.Receivers.ReceiverKind;
 import io.quarkus.signals.Receivers.Registration;
 import io.quarkus.signals.SignalContext;
 import io.quarkus.signals.spi.Receiver;
-import io.quarkus.signals.spi.Receiver.ExecutionModel;
 import io.smallrye.mutiny.Uni;
 
 class ReceiverDefinitionImpl<SIGNAL, RESPONSE> implements Receivers.ReceiverDefinition<SIGNAL, RESPONSE> {
@@ -22,7 +23,7 @@ class ReceiverDefinitionImpl<SIGNAL, RESPONSE> implements Receivers.ReceiverDefi
     private final Function<CallbackReceiver<SIGNAL, RESPONSE>, Receivers.Registration> registerFun;
     private final BeanContainer beanContainer;
     private final Type signalType;
-    private Type responseType;
+    private Type responseType = void.class;
     private Set<Annotation> qualifiers = Set.of();
     private ExecutionModel executionModel = ExecutionModel.BLOCKING;
 
@@ -112,6 +113,11 @@ class ReceiverDefinitionImpl<SIGNAL, RESPONSE> implements Receivers.ReceiverDefi
         @Override
         public ExecutionModel executionModel() {
             return executionModel;
+        }
+
+        @Override
+        public ReceiverKind kind() {
+            return ReceiverKind.PROGRAMMATIC;
         }
 
         @Override

@@ -14,7 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.signals.Receivers;
 import io.quarkus.signals.Signal;
-import io.quarkus.signals.spi.Receiver.ExecutionModel;
+import io.quarkus.signals.Receivers.ExecutionModel;
 import io.quarkus.test.QuarkusExtensionTest;
 
 public class ReceiversVirtualThreadTest {

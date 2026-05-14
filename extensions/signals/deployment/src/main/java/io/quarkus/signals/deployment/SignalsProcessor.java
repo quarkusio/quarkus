@@ -70,17 +70,17 @@ import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.gizmo2.desc.FieldDesc;
 import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.runtime.util.HashUtil;
+import io.quarkus.signals.Receivers.ExecutionModel;
 import io.quarkus.signals.Signal;
 import io.quarkus.signals.runtime.impl.DefaultBlockingReceiverExecutor;
 import io.quarkus.signals.runtime.impl.InvokerReceiver;
-import io.quarkus.signals.runtime.impl.InvokerReceiver.ReceiverInfo;
+import io.quarkus.signals.runtime.impl.InvokerReceiver.InvokerReceiverInfo;
 import io.quarkus.signals.runtime.impl.ReceiverManager;
 import io.quarkus.signals.runtime.impl.RequestContextInterceptor;
 import io.quarkus.signals.runtime.impl.SignalBeanCreator;
 import io.quarkus.signals.runtime.impl.SignalsRecorder;
 import io.quarkus.signals.runtime.impl.SignalsRecorder.SignalsContext;
 import io.quarkus.signals.runtime.impl.VertxReceiverExecutor;
-import io.quarkus.signals.spi.Receiver.ExecutionModel;
 
 class SignalsProcessor {
 
@@ -263,11 +263,11 @@ class SignalsProcessor {
                 cc.constructor(con -> {
                     con.body(bc -> {
                         Expr invoker = bc.new_(receiver.getInvoker().getClassDesc());
-                        Expr receiveInfo = bc.new_(ReceiverInfo.class,
+                        Expr receiveInfo = bc.new_(InvokerReceiverInfo.class,
                                 Const.of(receiver.getSignalParam().position()),
                                 Const.of(receiver.getSignalParam().type().name().equals(DotNames.SIGNAL_CONTEXT)),
                                 Const.of((short) receiver.getMethod().parametersCount()));
-                        bc.invokeSpecial(ConstructorDesc.of(InvokerReceiver.class, Invoker.class, ReceiverInfo.class),
+                        bc.invokeSpecial(ConstructorDesc.of(InvokerReceiver.class, Invoker.class, InvokerReceiverInfo.class),
                                 cc.this_(), invoker, receiveInfo);
 
                         LocalVar tccl = bc.localVar("tccl", bc.invokeVirtual(
@@ -285,7 +285,7 @@ class SignalsProcessor {
                         if (responseType != null) {
                             bc.set(cc.this_().field(responseTypeField), rttc.create(responseType));
                         } else {
-                            bc.set(cc.this_().field(responseTypeField), Const.ofNull(Type.class));
+                            bc.set(cc.this_().field(responseTypeField), Const.of(void.class));
                         }
 
                         bc.return_();

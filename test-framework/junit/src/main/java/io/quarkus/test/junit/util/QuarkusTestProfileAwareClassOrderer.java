@@ -7,8 +7,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.ClassDescriptor;
 import org.junit.jupiter.api.ClassOrderer;
@@ -22,6 +20,7 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.junit.main.QuarkusMainTest;
+import io.smallrye.config.Config;
 
 /**
  * A {@link ClassOrderer} that orders {@link QuarkusTest}, {@link QuarkusIntegrationTest} and {@link QuarkusMainTest} classes
@@ -84,7 +83,7 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
     private final Optional<Class<? extends Annotation>> componentTestAnnotation;
 
     public QuarkusTestProfileAwareClassOrderer() {
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.getOrCreate();
         this.prefixQuarkusTest = config.getOptionalValue(CFGKEY_ORDER_PREFIX_QUARKUS_TEST, String.class)
                 .orElse(DEFAULT_ORDER_PREFIX_QUARKUS_TEST);
         this.prefixQuarkusMainTest = config

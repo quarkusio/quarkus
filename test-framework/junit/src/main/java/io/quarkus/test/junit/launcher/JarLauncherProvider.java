@@ -14,15 +14,13 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.ServiceLoader;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.DefaultJarLauncher;
 import io.quarkus.test.common.JarArtifactLauncher;
 import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.junit.common.JdkUtil;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 
 public class JarLauncherProvider implements ArtifactLauncherProvider {
 
@@ -44,7 +42,7 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
                 launcher = new DefaultJarLauncher();
             }
 
-            SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+            Config config = Config.get();
             TestConfig testConfig = config.getConfigMapping(TestConfig.class);
 
             Path jarPath = context.buildOutputDirectory().resolve(pathStr);

@@ -284,6 +284,8 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                     .withSources(integrationTestSource)
                     .build();
             ConfigInjector.set(context, newConfig);
+            // Because Config may be accessed ArtifactLauncherProvider.create
+            ThreadLocalConfigSourceProvider.set(ConfigInjector.get(context));
 
             ArtifactLauncher<?> launcher;
             Optional<String> testHost = config.getOptionalValue("quarkus.http.test-host", String.class);

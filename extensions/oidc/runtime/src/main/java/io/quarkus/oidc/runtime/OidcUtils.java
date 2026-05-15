@@ -305,11 +305,11 @@ public final class OidcUtils {
         }
     }
 
-    private static String[] splitClaimPath(String claimPath) {
+    static String[] splitClaimPath(String claimPath) {
         return claimPath.indexOf('/') > 0 ? CLAIM_PATH_PATTERN.split(claimPath) : new String[] { claimPath };
     }
 
-    private static Object findClaimValue(String claimPath, JsonObject json, String[] pathArray, int step) {
+    static Object findClaimValue(String claimPath, JsonObject json, String[] pathArray, int step) {
         Object claimValue = json.getValue(pathArray[step].replace("\"", ""));
         if (claimValue == null) {
             LOG.debugf("No claim exists at the path '%s' at the path segment '%s'", claimPath, pathArray[step]);

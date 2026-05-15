@@ -346,6 +346,57 @@ public class OidcUtilsTest {
     }
 
     @Test
+    public void testFindClaimValueFlat() {
+        JsonObject json = new JsonObject().put("name", "johndoe");
+        String[] path = OidcUtils.splitClaimPath("name");
+        Object value = OidcUtils.findClaimValue("name", json, path, 0);
+        assertEquals("johndoe", value);
+    }
+
+    @Test
+    public void testFindClaimValueNested() {
+        JsonObject json = new JsonObject()
+                .put("metadata", new JsonObject().put("name", "johndoe"));
+        String[] path = OidcUtils.splitClaimPath("metadata/name");
+        Object value = OidcUtils.findClaimValue("metadata/name", json, path, 0);
+        assertEquals("johndoe", value);
+    }
+
+    @Test
+    public void testFindClaimValueDeeplyNested() {
+        JsonObject json = new JsonObject()
+                .put("a", new JsonObject()
+                        .put("b", new JsonObject()
+                                .put("c", "deep")));
+        String[] path = OidcUtils.splitClaimPath("a/b/c");
+        Object value = OidcUtils.findClaimValue("a/b/c", json, path, 0);
+        assertEquals("deep", value);
+    }
+
+    @Test
+    public void testFindClaimValueMissingPath() {
+        JsonObject json = new JsonObject().put("metadata", new JsonObject().put("name", "johndoe"));
+        String[] path = OidcUtils.splitClaimPath("metadata/missing");
+        Object value = OidcUtils.findClaimValue("metadata/missing", json, path, 0);
+        assertNull(value);
+    }
+
+    @Test
+    public void testSplitClaimPathFlat() {
+        String[] path = OidcUtils.splitClaimPath("name");
+        assertEquals(1, path.length);
+        assertEquals("name", path[0]);
+    }
+
+    @Test
+    public void testSplitClaimPathNested() {
+        String[] path = OidcUtils.splitClaimPath("metadata/name");
+        assertEquals(2, path.length);
+        assertEquals("metadata", path[0]);
+        assertEquals("name", path[1]);
+    }
+
+    @Test
     public void testJwtContentTypeCheck() {
         assertTrue(OidcUtils.isApplicationJwtContentType("application/jwt"));
         assertTrue(OidcUtils.isApplicationJwtContentType(" application/jwt "));

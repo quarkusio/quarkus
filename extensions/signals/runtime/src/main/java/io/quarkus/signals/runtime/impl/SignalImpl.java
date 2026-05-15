@@ -127,10 +127,10 @@ class SignalImpl<T> implements Signal<T> {
     private <SIGNAL> SignalContextImpl<SIGNAL> enrich(SIGNAL signal, SignalContext.EmissionType emissionType,
             Type responseType) {
         List<SignalMetadataEnricher> enrichers = manager.enrichers();
-        if (enrichers.isEmpty()) {
-            return new SignalContextImpl<>(signal, metadata, emissionType, responseType);
-        }
         SignalContextImpl<SIGNAL> signalContext = new SignalContextImpl<>(signal, metadata, emissionType, responseType);
+        if (enrichers.isEmpty()) {
+            return signalContext;
+        }
         for (SignalMetadataEnricher enricher : enrichers) {
             EnrichmentContextImpl enrichmentContext = new EnrichmentContextImpl(signalContext);
             enricher.enrich(enrichmentContext);

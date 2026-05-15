@@ -11,14 +11,12 @@ import java.util.Map;
 import java.util.OptionalInt;
 import java.util.ServiceLoader;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.DefaultNativeImageLauncher;
 import io.quarkus.test.common.NativeImageLauncher;
 import io.quarkus.test.common.TestConfigUtil;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 
 public class NativeImageLauncherProvider implements ArtifactLauncherProvider {
     @Override
@@ -39,7 +37,7 @@ public class NativeImageLauncherProvider implements ArtifactLauncherProvider {
                 launcher = new DefaultNativeImageLauncher();
             }
 
-            SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+            Config config = Config.get();
             TestConfig testConfig = config.getConfigMapping(TestConfig.class);
             boolean pgoEnabled = config.getOptionalValue("quarkus.native.pgo.enabled", Boolean.class)
                     .orElse(Boolean.FALSE);

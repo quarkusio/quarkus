@@ -346,6 +346,46 @@ public class OidcUtilsTest {
     }
 
     @Test
+    public void testFindStringClaimValueFlat() {
+        JsonObject json = new JsonObject().put("name", "johndoe");
+        assertEquals("johndoe", OidcUtils.findStringClaimValue("name", json));
+    }
+
+    @Test
+    public void testFindStringClaimValueNested() {
+        JsonObject json = new JsonObject()
+                .put("metadata", new JsonObject().put("name", "johndoe"));
+        assertEquals("johndoe", OidcUtils.findStringClaimValue("metadata/name", json));
+    }
+
+    @Test
+    public void testFindStringClaimValueDeeplyNested() {
+        JsonObject json = new JsonObject()
+                .put("a", new JsonObject()
+                        .put("b", new JsonObject()
+                                .put("c", "deep")));
+        assertEquals("deep", OidcUtils.findStringClaimValue("a/b/c", json));
+    }
+
+    @Test
+    public void testFindStringClaimValueMissingPath() {
+        JsonObject json = new JsonObject().put("metadata", new JsonObject().put("name", "johndoe"));
+        assertNull(OidcUtils.findStringClaimValue("metadata/missing", json));
+    }
+
+    @Test
+    public void testFindStringClaimValueNonString() {
+        JsonObject json = new JsonObject()
+                .put("metadata", new JsonObject().put("count", 42));
+        try {
+            OidcUtils.findStringClaimValue("metadata/count", json);
+            fail("Expected OIDCException for non-string claim value");
+        } catch (OIDCException ex) {
+            // expected
+        }
+    }
+
+    @Test
     public void testJwtContentTypeCheck() {
         assertTrue(OidcUtils.isApplicationJwtContentType("application/jwt"));
         assertTrue(OidcUtils.isApplicationJwtContentType(" application/jwt "));

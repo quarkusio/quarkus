@@ -8,11 +8,22 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.AclEntryType;
+import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileTime;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.List;
+import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
+
+import io.smallrye.common.os.OS;
 
 final class JarEntryOutputStream extends OutputStream {
     private final JarOutputStream jarOutput;
@@ -23,6 +34,35 @@ final class JarEntryOutputStream extends OutputStream {
     private final OutputStream os;
     private long written;
     private boolean closed;
+    private static final FileAttribute<?> USER_ACCESS_ONLY;
+
+    static {
+        // todo: this blob should probably be in `smallrye-common-io` somewhere
+        if (OS.current() == OS.WINDOWS) {
+            List<AclEntry> aclList;
+            try {
+                aclList = List.of(AclEntry.newBuilder()
+                        .setType(AclEntryType.ALLOW)
+                        .setPrincipal(
+                                FileSystems.getDefault().getUserPrincipalLookupService().lookupPrincipalByName("CREATOR OWNER"))
+                        .build());
+            } catch (IOException e) {
+                throw new IllegalStateException("Cannot get ACL entries", e);
+            }
+            USER_ACCESS_ONLY = new FileAttribute<List<AclEntry>>() {
+                public String name() {
+                    return "acl:acl";
+                }
+
+                public List<AclEntry> value() {
+                    return aclList;
+                }
+            };
+        } else {
+            USER_ACCESS_ONLY = PosixFilePermissions
+                    .asFileAttribute(Set.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE));
+        }
+    }
 
     JarEntryOutputStream(final JarOutputStream jarOutput, final String name, boolean compress, long estSize)
             throws IOException {
@@ -49,7 +89,7 @@ final class JarEntryOutputStream extends OutputStream {
                 raf = null;
                 os = new ByteArrayOutputStream((int) estSize);
             } else {
-                tempFile = File.createTempFile("quarkus-", "");
+                tempFile = Files.createTempFile("quarkus-", "", USER_ACCESS_ONLY).toFile();
                 raf = new RandomAccessFile(tempFile, "rw");
                 try {
                     os = new FileOutputStream(raf.getFD());

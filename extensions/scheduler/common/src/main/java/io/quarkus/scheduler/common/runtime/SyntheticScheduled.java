@@ -24,10 +24,11 @@ public final class SyntheticScheduled extends AnnotationLiteral<Scheduled> imple
     private final String timeZone;
     private final String implementation;
     private final String executionMaxDelay;
+    private final String description;
 
     public SyntheticScheduled(String identity, String cron, String every, long delay, TimeUnit delayUnit, String delayed,
             String overdueGracePeriod, ConcurrentExecution concurrentExecution, SkipPredicate skipPredicate, String timeZone,
-            String implementation, String executionMaxDelay) {
+            String implementation, String executionMaxDelay, String description) {
         this.identity = Objects.requireNonNull(identity);
         this.cron = Objects.requireNonNull(cron);
         this.every = Objects.requireNonNull(every);
@@ -40,6 +41,7 @@ public final class SyntheticScheduled extends AnnotationLiteral<Scheduled> imple
         this.timeZone = timeZone;
         this.implementation = implementation;
         this.executionMaxDelay = executionMaxDelay;
+        this.description = Objects.requireNonNull(description);
     }
 
     @Override
@@ -102,6 +104,11 @@ public final class SyntheticScheduled extends AnnotationLiteral<Scheduled> imple
         return executionMaxDelay;
     }
 
+    @Override
+    public String description() {
+        return description;
+    }
+
     public String toJson() {
         if (skipPredicate != null) {
             throw new IllegalStateException("A skipPredicate instance may not be serialized");
@@ -118,6 +125,7 @@ public final class SyntheticScheduled extends AnnotationLiteral<Scheduled> imple
         json.put("timeZone", timeZone);
         json.put("executeWith", implementation);
         json.put("executionMaxDelay", executionMaxDelay);
+        json.put("description", description);
         return json.encode();
     }
 
@@ -126,7 +134,8 @@ public final class SyntheticScheduled extends AnnotationLiteral<Scheduled> imple
         return new SyntheticScheduled(jsonObj.getString("identity"), jsonObj.getString("cron"), jsonObj.getString("every"),
                 jsonObj.getLong("delay"), TimeUnit.valueOf(jsonObj.getString("delayUnit")), jsonObj.getString("delayed"),
                 jsonObj.getString("overdueGracePeriod"), ConcurrentExecution.valueOf(jsonObj.getString("concurrentExecution")),
-                null, jsonObj.getString("timeZone"), jsonObj.getString("executeWith"), jsonObj.getString("executionMaxDelay"));
+                null, jsonObj.getString("timeZone"), jsonObj.getString("executeWith"), jsonObj.getString("executionMaxDelay"),
+                jsonObj.getString("description", ""));
     }
 
     @Override

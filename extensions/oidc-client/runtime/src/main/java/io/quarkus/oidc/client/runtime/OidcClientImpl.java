@@ -266,8 +266,12 @@ public class OidcClientImpl implements OidcClient {
             }
         }
         if (LOG.isDebugEnabled()) {
-            LOG.debugf("%s token: url : %s, headers: %s, request params: %s", op.operation(), request.uri(), request.headers(),
-                    body);
+            String logMessage = """
+                    %s token: url : %s, headers: %s, request params: %s
+                    """.formatted(op.operation(), request.uri(),
+                    OidcCommonUtils.maskAuthorizationHeader(request.headers()),
+                    OidcCommonUtils.maskFormData(body));
+            LOG.debug(logMessage);
         }
         // Retry up to three times with a one-second delay between the retries if the connection is closed
         Buffer buffer = OidcCommonUtils.encodeForm(body);

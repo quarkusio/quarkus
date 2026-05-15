@@ -26,7 +26,6 @@ import java.util.function.Consumer;
 import jakarta.inject.Inject;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.jandex.Index;
@@ -257,8 +256,7 @@ public final class IntegrationTestUtil {
         if (isDockerAppLaunch) {
             if (networkId == null) {
                 // use the network the use has specified or else just generate one if none is configured
-                Optional<String> networkIdOpt = ConfigProvider.getConfig().getOptionalValue(
-                        "quarkus.test.container.network", String.class);
+                Optional<String> networkIdOpt = Config.get().getOptionalValue("quarkus.test.container.network", String.class);
                 if (networkIdOpt.isPresent()) {
                     networkId = networkIdOpt.get();
                 } else {

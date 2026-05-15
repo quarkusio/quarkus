@@ -59,52 +59,6 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
                 unsafeAllocated, reason, stream(classes).map(Class::getName).toArray(String[]::new));
     }
 
-    /**
-     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
-     *             instead.
-     */
-    @Deprecated(since = "3.0", forRemoval = true)
-    public ReflectiveClassBuildItem(boolean methods, boolean fields, Class<?>... classes) {
-        this(true, methods, fields, classes);
-    }
-
-    /**
-     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
-     *             instead.
-     */
-    @Deprecated(since = "3.0", forRemoval = true)
-    public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, Class<?>... classes) {
-        this(constructors, false, methods, false, fields, false, false, false, false, null, classes);
-    }
-
-    /**
-     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
-     *             instead.
-     */
-    @Deprecated(since = "3.0", forRemoval = true)
-    public ReflectiveClassBuildItem(boolean methods, boolean fields, String... classNames) {
-        this(true, methods, fields, classNames);
-    }
-
-    /**
-     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
-     *             instead.
-     */
-    @Deprecated(since = "3.0", forRemoval = true)
-    public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, String... classNames) {
-        this(constructors, false, methods, false, fields, false, false, false, classNames);
-    }
-
-    /**
-     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
-     *             instead.
-     */
-    @Deprecated(since = "3.0", forRemoval = true)
-    public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean serialization,
-            String... classNames) {
-        this(constructors, false, methods, false, fields, false, serialization, false, classNames);
-    }
-
     public static ReflectiveClassBuildItem weakClass(String... classNames) {
         return ReflectiveClassBuildItem.builder(classNames).constructors().methods().fields().weak().build();
     }

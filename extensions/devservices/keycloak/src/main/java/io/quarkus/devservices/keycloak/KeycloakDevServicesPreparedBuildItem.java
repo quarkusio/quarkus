@@ -1,5 +1,7 @@
 package io.quarkus.devservices.keycloak;
 
+import java.util.Optional;
+
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 
@@ -11,12 +13,22 @@ import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 public final class KeycloakDevServicesPreparedBuildItem extends SimpleBuildItem {
 
     private final String devServiceConfigHashCode;
+    private final boolean realmExportSupported;
 
-    KeycloakDevServicesPreparedBuildItem(String devServiceConfigHashCode) {
+    KeycloakDevServicesPreparedBuildItem(String devServiceConfigHashCode, boolean realmExportSupported) {
         this.devServiceConfigHashCode = devServiceConfigHashCode;
+        this.realmExportSupported = realmExportSupported;
     }
 
     public String getDevServiceConfigHashCode() {
         return devServiceConfigHashCode;
+    }
+
+    static boolean isRealmExportSupported(Optional<KeycloakDevServicesPreparedBuildItem> optionalSelf) {
+        return optionalSelf.isPresent() && optionalSelf.get().realmExportSupported;
+    }
+
+    static boolean isRealmExportNotSupported(Optional<KeycloakDevServicesPreparedBuildItem> optionalSelf) {
+        return !isRealmExportSupported(optionalSelf);
     }
 }

@@ -3,10 +3,12 @@ package io.quarkus.devservices.keycloak;
 import static io.quarkus.devservices.common.ConfigureUtil.getDefaultImageNameFor;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
+import static io.quarkus.devservices.keycloak.KeycloakDevServicesPreparedBuildItem.isRealmExportNotSupported;
 import static io.quarkus.devservices.keycloak.KeycloakDevServicesRequiredBuildItem.getDevServicesConfigurator;
 import static io.quarkus.devservices.keycloak.KeycloakDevServicesUtils.createWebClient;
 import static io.quarkus.devservices.keycloak.KeycloakDevServicesUtils.getPasswordAccessToken;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -15,6 +17,7 @@ import java.net.ServerSocket;
 import java.net.SocketException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -31,6 +34,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -44,17 +48,30 @@ import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.util.JsonSerialization;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
+import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.async.ResultCallback;
+import com.github.dockerjava.api.command.ExecCreateCmdResponse;
+import com.github.dockerjava.api.model.Frame;
+import com.github.dockerjava.api.model.StreamType;
+
+import io.quarkus.builder.item.EmptyBuildItem;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.annotations.Consume;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
+import io.quarkus.deployment.builditem.DevServicesRegistryBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
@@ -65,6 +82,7 @@ import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.devservices.common.StartableContainer;
+import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.runtime.LaunchMode;
@@ -183,7 +201,9 @@ public class KeycloakDevServicesProcessor {
         devServicesResultProducer.produce(devServicesResultBuildItem);
 
         // now we know that Keycloak Dev Services will start
-        keycloakDevServicesPreparedProducer.produce(new KeycloakDevServicesPreparedBuildItem(serviceConfigHashCode));
+        boolean realmExportSupported = devServicesResultBuildItem.isStartable() && usesH2DevFile(config);
+        keycloakDevServicesPreparedProducer
+                .produce(new KeycloakDevServicesPreparedBuildItem(serviceConfigHashCode, realmExportSupported));
     }
 
     private static String getServiceConfigIdentifier(KeycloakDevServicesConfig config) {
@@ -276,6 +296,7 @@ public class KeycloakDevServicesProcessor {
         }
     }
 
+    @Consume(RealmExportPageRegisteredBuildItem.class)
     @BuildStep(onlyIf = IsDevelopment.class)
     void produceDevUiCardWithKeycloakUrl(
             Optional<KeycloakDevServicesPreparedBuildItem> keycloakDevServicesPreparedBuildItem,
@@ -291,6 +312,134 @@ public class KeycloakDevServicesProcessor {
                 cardPageProducer.produce(i.cardPage);
             });
         }
+    }
+
+    @Produce(RealmExportPageRegisteredBuildItem.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    void registerRealmExportPage(
+            Optional<KeycloakDevServicesPreparedBuildItem> keycloakDevServicesPreparedBuildItem,
+            List<KeycloakAdminPageBuildItem> keycloakAdminPageBuildItems,
+            List<KeycloakDevServicesRequiredBuildItem> devSvcRequiredMarkerItems,
+            KeycloakDevServicesConfig config,
+            DevServicesRegistryBuildItem devServicesRegistry,
+            BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer) {
+
+        // TODO: this is workaround to keep this only for Quarkus OIDC extension, but once we get DEV UI enhancements
+        //  we will be able to provide this even when Quarkus OIDC is not present
+        var oidcPage = keycloakAdminPageBuildItems.stream().filter(i -> i.belongsToCapability(Capability.OIDC)).findAny()
+                .orElse(null);
+        if (oidcPage == null) {
+            return;
+        }
+
+        if (isRealmExportNotSupported(keycloakDevServicesPreparedBuildItem)) {
+            return;
+        }
+
+        String realmName = config.realmName().orElse(config.realmPath().isPresent() ? null : "quarkus");
+        String exportTitle = realmName != null ? "Export '" + realmName + "' realm" : "Export realms";
+        String featureName = KeycloakDevServicesRequiredBuildItem.getFeature(devSvcRequiredMarkerItems).getName();
+        String serviceConfigHashCode = keycloakDevServicesPreparedBuildItem.get().getDevServiceConfigHashCode();
+
+        var actions = new BuildTimeActionBuildItem();
+        actions.actionBuilder()
+                .methodName("exportRealm")
+                .description("Export the Keycloak realm as JSON from the running Dev Service container")
+                .function(ignored -> CompletableFuture.supplyAsync(
+                        () -> executeRealmExport(devServicesRegistry, featureName, serviceConfigHashCode, realmName)))
+                .build();
+        buildTimeActionProducer.produce(actions);
+
+        oidcPage.cardPage.addPage(Page
+                .webComponentPageBuilder()
+                .title(exportTitle)
+                .icon("font-awesome-solid:file-export")
+                .componentLink("qwc-keycloak-realm-export.js"));
+    }
+
+    private static Map<String, Object> executeRealmExport(DevServicesRegistryBuildItem devServicesRegistry,
+            String featureName, String serviceConfigHashCode, String realmName) {
+        var runningService = devServicesRegistry.getRunningServices(featureName, featureName, serviceConfigHashCode);
+        if (runningService == null || runningService.containerId() == null) {
+            return Map.of("success", false, "error", "Keycloak Dev Service container not found");
+        }
+
+        String containerId = runningService.containerId();
+        DockerClient dockerClient = DockerClientFactory.lazyClient();
+
+        try {
+            execInContainer(dockerClient, containerId, "rm", "-f", "/tmp/keycloakdb.mv.db", "/tmp/quarkus-realm.json");
+
+            var copyResult = execInContainer(dockerClient, containerId, "cp", "/opt/keycloak/data/h2/keycloakdb.mv.db",
+                    "/tmp/keycloakdb.mv.db");
+            if (copyResult.exitCode != 0) {
+                return Map.of("success", false, "error", "Failed to copy H2 database: " + copyResult.stderr);
+            }
+
+            List<String> exportCmd = new ArrayList<>(List.of(
+                    "/opt/keycloak/bin/kc.sh", "export",
+                    "--db-url=jdbc:h2:file:/tmp/keycloakdb;NON_KEYWORDS=VALUE",
+                    "--file=/tmp/quarkus-realm.json"));
+            if (realmName != null) {
+                exportCmd.add("--realm=" + realmName);
+            }
+            ExecResult exportResult = execInContainer(dockerClient, containerId, exportCmd.toArray(String[]::new));
+            if (exportResult.exitCode != 0) {
+                return Map.of("success", false, "error", "Failed to export realm: " + exportResult.stderr);
+            }
+
+            ExecResult catResult = execInContainer(dockerClient, containerId, "cat", "/tmp/quarkus-realm.json");
+            if (catResult.exitCode != 0) {
+                return Map.of("success", false, "error", "Failed to read exported realm file: " + catResult.stderr);
+            }
+
+            return Map.of("success", true, "realmJson", catResult.stdout);
+        } catch (IOException | InterruptedException e) {
+            LOG.error("Failed to export Keycloak realm", e);
+            return Map.of("success", false, "error", "Export failed: " + e.getMessage());
+        }
+    }
+
+    private static ExecResult execInContainer(DockerClient dockerClient, String containerId, String... command)
+            throws IOException, InterruptedException {
+        ExecCreateCmdResponse exec = dockerClient.execCreateCmd(containerId)
+                .withAttachStdout(true)
+                .withAttachStderr(true)
+                .withCmd(command)
+                .exec();
+
+        var stdout = new ByteArrayOutputStream();
+        var stderr = new ByteArrayOutputStream();
+        try (var callback = dockerClient.execStartCmd(exec.getId()).exec(new ResultCallback.Adapter<Frame>() {
+            @Override
+            public void onNext(Frame frame) {
+                if (frame.getStreamType() == StreamType.STDOUT || frame.getStreamType() == StreamType.RAW) {
+                    stdout.writeBytes(frame.getPayload());
+                } else if (frame.getStreamType() == StreamType.STDERR) {
+                    stderr.writeBytes(frame.getPayload());
+                }
+            }
+        })) {
+            callback.awaitCompletion();
+        }
+
+        int exitCode = dockerClient.inspectExecCmd(exec.getId()).exec().getExitCodeLong().intValue();
+        return new ExecResult(exitCode, stdout.toString(StandardCharsets.UTF_8), stderr.toString(StandardCharsets.UTF_8));
+    }
+
+    private record ExecResult(int exitCode, String stdout, String stderr) {
+    }
+
+    private static boolean usesH2DevFile(KeycloakDevServicesConfig config) {
+        String dbEnv = config.containerEnv().get("KC_DB");
+        if (dbEnv != null && !"dev-file".equals(dbEnv)) {
+            return false;
+        }
+        if (config.startCommand().isPresent()) {
+            String cmd = config.startCommand().get();
+            return !cmd.contains("--db=") || cmd.contains("--db=dev-file");
+        }
+        return true;
     }
 
     private static String getBaseURL(String scheme, String host, Integer port) {
@@ -956,4 +1105,6 @@ public class KeycloakDevServicesProcessor {
                 .orElse(config.createClient() ? "secret" : "");
     }
 
+    private static final class RealmExportPageRegisteredBuildItem extends EmptyBuildItem {
+    }
 }

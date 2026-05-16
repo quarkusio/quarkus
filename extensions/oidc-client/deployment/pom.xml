@@ -82,6 +82,11 @@
             <artifactId>quarkus-resteasy-client-deployment</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devui-test-spi</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

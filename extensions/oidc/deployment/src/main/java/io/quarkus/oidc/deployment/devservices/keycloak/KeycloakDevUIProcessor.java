@@ -5,6 +5,7 @@ import java.util.Optional;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -52,7 +53,7 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
             cardPageBuildItem.setLogo("keycloak_logo.svg", "keycloak_logo.svg");
 
             // use same card page so that both pages appear on the same card
-            var keycloakAdminPageItem = new KeycloakAdminPageBuildItem(cardPageBuildItem);
+            var keycloakAdminPageItem = new KeycloakAdminPageBuildItem(cardPageBuildItem, Capability.OIDC);
             keycloakAdminPageProducer.produce(keycloakAdminPageItem);
         }
     }

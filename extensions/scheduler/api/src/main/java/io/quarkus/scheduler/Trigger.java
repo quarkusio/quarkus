@@ -63,4 +63,13 @@ public interface Trigger {
         return null;
     }
 
+    /**
+     *
+     * @return the description or {@code null} if not set
+     * @see Scheduled#description()
+     */
+    default String getDescription() {
+        return null;
+    }
+
 }

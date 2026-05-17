@@ -11,11 +11,14 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.devtools.commands.CreateExtension;
 import io.quarkus.devtools.testing.RegistryClientTestHelper;
-import picocli.CommandLine;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.test.junit.main.QuarkusMainLauncher;
+import io.quarkus.test.junit.main.QuarkusMainTest;
 
+@QuarkusMainTest
 public class CliCreateExtensionTest {
     static final Path testProjectRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
-            .resolve("target/test-classes/test-project/");
+            .resolve("target/test-project/");
     static final Path workspaceRoot = testProjectRoot.resolve("CliCreateExtensionTest");
     Path project;
 
@@ -36,7 +39,8 @@ public class CliCreateExtensionTest {
     }
 
     @Test
-    public void testCreateDryRun() throws Exception {
+    public void testCreateDryRun(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "extension", "--dry-run");
         String noSpaces = result.stdout.replaceAll("[\\s\\p{Z}]", "");
         Assertions.assertTrue(noSpaces.contains("SkipDev-modeTestfalse"),
@@ -48,7 +52,8 @@ public class CliCreateExtensionTest {
     }
 
     @Test
-    public void testCreateDryRunWithoutTests() throws Exception {
+    public void testCreateDryRunWithoutTests(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "extension", "--dry-run", "--without-tests");
         String noSpaces = result.stdout.replaceAll("[\\s\\p{Z}]", "");
         Assertions.assertTrue(noSpaces.contains("SkipDev-modeTesttrue"),
@@ -60,7 +65,8 @@ public class CliCreateExtensionTest {
     }
 
     @Test
-    public void testCreateDryRunNoTests() throws Exception {
+    public void testCreateDryRunNoTests(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "extension", "--dry-run",
                 "--no-unit-test", "--no-it-test", "--no-devmode-test");
         String noSpaces = result.stdout.replaceAll("[\\s\\p{Z}]", "");
@@ -73,10 +79,11 @@ public class CliCreateExtensionTest {
     }
 
     @Test
-    public void testCreateExtensionDefaults() throws Exception {
+    public void testCreateExtensionDefaults(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         // Create a Quarkiverse extension by default
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "extension", "-e", "-B", "--verbose");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("generated"),
                 "Expected confirmation that the project has been created." + result);
 
@@ -129,12 +136,13 @@ public class CliCreateExtensionTest {
     }
 
     @Test
-    public void testCreateExtension() throws Exception {
+    public void testCreateExtension(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         // Create a standalone extension w/ specified names
         project = workspaceRoot.resolve("something");
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "extension", "-e", "-B", "--verbose",
                 "org.my:something:0.1");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("generated"),
                 "Expected confirmation that the project has been created." + result);
 

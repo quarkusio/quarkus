@@ -17,8 +17,11 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
 import io.quarkus.maven.dependency.ArtifactCoords;
-import picocli.CommandLine;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.test.junit.main.QuarkusMainLauncher;
+import io.quarkus.test.junit.main.QuarkusMainTest;
 
+@QuarkusMainTest
 public class MavenProjectCreateForPlatformTest extends RegistryClientBuilderTestBase {
 
     @BeforeAll
@@ -77,13 +80,14 @@ public class MavenProjectCreateForPlatformTest extends RegistryClientBuilderTest
     }
 
     @Test
-    void testCreateForPlatformWithUpstream() throws Exception {
+    void testCreateForPlatformWithUpstream(QuarkusMainLauncher launcher) throws Exception {
+        this.currentLauncher = launcher;
 
         final CliDriver.Result createResult = run(workDir(), "create", "app", "create-for-platform",
                 "-P com.acme.quarkus.platform:acme-supersonic-bom:8.0.0", "-x supersonic,subatomic");
         createResult.echoSystemOut();
         createResult.echoSystemErr();
-        assertThat(createResult.exitCode).isEqualTo(CommandLine.ExitCode.OK)
+        assertThat(createResult.exitCode).isEqualTo(ExitCode.OK)
                 .as(() -> "Expected OK return code." + createResult);
         assertThat(createResult.stdout).contains("SUCCESS")
                 .as(() -> "Expected confirmation that the project has been created." + createResult);

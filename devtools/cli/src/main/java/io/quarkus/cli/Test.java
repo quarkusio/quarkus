@@ -14,22 +14,26 @@ import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.cli.common.build.BuildSystemRunner;
 import io.quarkus.cli.common.build.BuildSystemRunner.BuildCommandArgs;
 import io.quarkus.devtools.project.BuildTool;
-import picocli.CommandLine;
-import picocli.CommandLine.Parameters;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.quickcli.Help;
+import io.quarkus.quickcli.annotations.ArgGroup;
+import io.quarkus.quickcli.annotations.Command;
+import io.quarkus.quickcli.annotations.Option;
+import io.quarkus.quickcli.annotations.Parameters;
 
-@CommandLine.Command(name = "test", showEndOfOptionsDelimiterInUsageHelp = true, header = "Run the current project in continuous testing mode.")
+@Command(name = "test", showEndOfOptionsDelimiterInUsageHelp = true, header = "Run the current project in continuous testing mode.")
 public class Test extends BaseBuildCommand implements Callable<Integer> {
 
-    @CommandLine.ArgGroup(order = 1, exclusive = false, heading = "%nContinuous Test Mode options:%n")
+    @ArgGroup(order = 1, exclusive = false, heading = "%nContinuous Test Mode options:%n")
     DevOptions testOptions = new DevOptions();
 
-    @CommandLine.ArgGroup(order = 3, exclusive = false, validate = true, heading = "%nDebug options:%n")
+    @ArgGroup(order = 3, exclusive = false, validate = true, heading = "%nDebug options:%n")
     DebugOptions debugOptions = new DebugOptions();
 
-    @CommandLine.Option(names = "--once", description = "Run the test suite with continuous mode disabled.")
+    @Option(names = "--once", description = "Run the test suite with continuous mode disabled.")
     boolean runOnce = false;
 
-    @CommandLine.Option(names = "--filter", description = { "Run a subset of the test suite that matches the given filter.",
+    @Option(names = "--filter", description = { "Run a subset of the test suite that matches the given filter.",
             "If continuous testing is enabled then the value is a regular expression that is matched against the test class name.",
             "If continuous testing is disabled then the value is passed as-is to the underlying build tool." })
     String filter;
@@ -53,7 +57,7 @@ public class Test extends BaseBuildCommand implements Callable<Integer> {
                 BuildCommandArgs commandArgs = runner.prepareTest(buildOptions, new RunModeOption(), params, filter);
                 if (testOptions.isDryRun()) {
                     dryRunTest(spec.commandLine().getHelp(), runner.getBuildTool(), commandArgs, false);
-                    return CommandLine.ExitCode.OK;
+                    return ExitCode.OK;
                 }
                 return runner.run(commandArgs);
             }
@@ -66,7 +70,7 @@ public class Test extends BaseBuildCommand implements Callable<Integer> {
 
             if (testOptions.isDryRun()) {
                 dryRunTest(spec.commandLine().getHelp(), runner.getBuildTool(), commandArgs.iterator().next().get(), true);
-                return CommandLine.ExitCode.OK;
+                return ExitCode.OK;
             }
             int ret = 1;
             for (Supplier<BuildSystemRunner.BuildCommandArgs> i : commandArgs) {
@@ -82,7 +86,7 @@ public class Test extends BaseBuildCommand implements Callable<Integer> {
         }
     }
 
-    void dryRunTest(CommandLine.Help help, BuildTool buildTool, BuildSystemRunner.BuildCommandArgs args, boolean isContinuous) {
+    void dryRunTest(Help help, BuildTool buildTool, BuildSystemRunner.BuildCommandArgs args, boolean isContinuous) {
         output.printText("\nRun current project in" + (isContinuous ? " continuous" : "") + " test mode\n",
                 "\t" + projectRoot().toString());
         Map<String, String> dryRunOutput = new TreeMap<>();

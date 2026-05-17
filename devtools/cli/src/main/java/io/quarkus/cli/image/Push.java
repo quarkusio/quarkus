@@ -5,9 +5,10 @@ import java.util.Optional;
 
 import io.quarkus.cli.common.BuildToolContext;
 import io.quarkus.devtools.project.BuildTool;
-import picocli.CommandLine;
+import io.quarkus.quickcli.annotations.Command;
+import io.quarkus.quickcli.annotations.Option;
 
-@CommandLine.Command(name = "push", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Push a container image.", description = "%n"
+@Command(name = "push", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Push a container image.", description = "%n"
         + "This command will build and push a container image for the project.", footer = "%n", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
 public class Push extends BaseImageCommand {
 
@@ -19,19 +20,19 @@ public class Push extends BaseImageCommand {
     private static final String QUARKUS_CONTAINER_IMAGE_USERNAME = "quarkus.container-image.username";
     private static final String QUARKUS_CONTAINER_IMAGE_PASSWORD = "quarkus.container-image.password";
 
-    @CommandLine.Option(order = 8, names = {
+    @Option(order = 8, names = {
             "--registry-username" }, description = "The image registry username.")
     public Optional<String> registryUsername = Optional.empty();
 
-    @CommandLine.Option(order = 9, names = {
+    @Option(order = 9, names = {
             "--registry-password" }, description = "The image registry password.")
     public Optional<String> registryPassword = Optional.empty();
 
-    @CommandLine.Option(order = 10, names = {
+    @Option(order = 10, names = {
             "--registry-password-stdin" }, description = "Read the image registry password from stdin.")
     public boolean registryPasswordStdin;
 
-    @CommandLine.Option(order = 11, names = {
+    @Option(order = 11, names = {
             "--also-build" }, description = "(Re)build the image before pushing.")
     public boolean alsoBuild;
 

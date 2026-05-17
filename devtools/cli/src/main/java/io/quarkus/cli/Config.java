@@ -9,27 +9,30 @@ import io.quarkus.cli.config.Decrypt;
 import io.quarkus.cli.config.Encrypt;
 import io.quarkus.cli.config.RemoveConfig;
 import io.quarkus.cli.config.SetConfig;
-import picocli.CommandLine;
-import picocli.CommandLine.Command;
+import io.quarkus.quickcli.CommandSpec;
+import io.quarkus.quickcli.annotations.Command;
+import io.quarkus.quickcli.annotations.Mixin;
+import io.quarkus.quickcli.annotations.Spec;
+import io.quarkus.quickcli.annotations.Unmatched;
 
 @Command(name = "config", header = "Manage Quarkus configuration", subcommands = { SetConfig.class, RemoveConfig.class,
         Encrypt.class, Decrypt.class })
 public class Config implements Callable<Integer> {
-    @CommandLine.Mixin(name = "output")
+    @Mixin(name = "output")
     protected OutputOptionMixin output;
 
-    @CommandLine.Mixin
+    @Mixin
     protected HelpOption helpOption;
 
-    @CommandLine.Spec
-    protected CommandLine.Model.CommandSpec spec;
+    @Spec
+    protected CommandSpec spec;
 
-    @CommandLine.Unmatched // avoids throwing errors for unmatched arguments
+    @Unmatched // avoids throwing errors for unmatched arguments
     List<String> unmatchedArgs;
 
     @Override
     public Integer call() throws Exception {
-        spec.commandLine().usage(System.out);
+        spec.commandLine().usage(output.out());
         return 0;
     }
 }

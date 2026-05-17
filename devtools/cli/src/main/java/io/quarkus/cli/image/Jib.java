@@ -10,9 +10,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.quarkus.cli.common.BuildToolContext;
-import picocli.CommandLine;
+import io.quarkus.quickcli.annotations.Command;
+import io.quarkus.quickcli.annotations.Option;
 
-@CommandLine.Command(name = "jib", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Build a container image using Jib.", description = "%n"
+@Command(name = "jib", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Build a container image using Jib.", description = "%n"
         + "This command will build or push a container image for the project, using Jib.", footer = "%n"
                 + "For example (using default values), it will create a container image using with REPOSITORY='${user.name}/<project.artifactId>' and TAG='<project.version>'.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
 public class Jib extends BaseImageSubCommand {
@@ -35,41 +36,41 @@ public class Jib extends BaseImageSubCommand {
 
     private static final String USER = "user";
 
-    @CommandLine.Option(order = 7, names = { "--base-image" }, description = "The base image to use.")
+    @Option(order = 7, names = { "--base-image" }, description = "The base image to use.")
     public Optional<String> baseImage;
 
-    @CommandLine.Option(order = 8, names = {
+    @Option(order = 8, names = {
             "--arg" }, description = "Additional argument to pass when starting the application.")
     public List<String> arguments = new ArrayList<>();
 
-    @CommandLine.Option(order = 9, names = { "--entrypoint" }, description = "The entrypoint of the container image.")
+    @Option(order = 9, names = { "--entrypoint" }, description = "The entrypoint of the container image.")
     public List<String> entrypoint = new ArrayList<>();
 
-    @CommandLine.Option(order = 10, names = { "--env" }, description = "Environment variables to add to the container image.")
+    @Option(order = 10, names = { "--env" }, description = "Environment variables to add to the container image.")
     public Map<String, String> environmentVariables = new HashMap<>();
 
-    @CommandLine.Option(order = 11, names = { "--label" }, description = "Custom labels to add to the generated image.")
+    @Option(order = 11, names = { "--label" }, description = "Custom labels to add to the generated image.")
     public Map<String, String> labels = new HashMap<>();
 
-    @CommandLine.Option(order = 12, names = { "--port" }, description = "The ports to expose.")
+    @Option(order = 12, names = { "--port" }, description = "The ports to expose.")
     public List<Integer> ports = new ArrayList<>();
 
-    @CommandLine.Option(order = 13, names = { "--user" }, description = "The user in the generated image.")
+    @Option(order = 13, names = { "--user" }, description = "The user in the generated image.")
     public String user;
 
-    @CommandLine.Option(order = 14, names = {
+    @Option(order = 14, names = {
             "--always-cache-base-image" }, description = "Controls the optimization which skips downloading base image layers that exist in a target registry.")
     public boolean alwaysCacheBaseImage;
 
-    @CommandLine.Option(order = 15, names = {
+    @Option(order = 15, names = {
             "--platform" }, description = "The target platforms defined using the pattern <os>[/arch][/variant]|<os>/<arch>[/variant]")
     public Set<String> platforms = new HashSet<>();
 
-    @CommandLine.Option(order = 16, names = {
+    @Option(order = 16, names = {
             "--image-digest-file" }, description = "The path of a file that will be written containing the digest of the generated image.")
     public String imageDigestFile;
 
-    @CommandLine.Option(order = 17, names = {
+    @Option(order = 17, names = {
             "--image-id-file" }, description = "The path of a file that will be written containing the id of the generated image.")
     public String imageIdFile;
 

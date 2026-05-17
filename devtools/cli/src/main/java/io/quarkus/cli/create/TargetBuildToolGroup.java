@@ -1,19 +1,19 @@
 package io.quarkus.cli.create;
 
 import io.quarkus.devtools.project.BuildTool;
-import picocli.CommandLine;
+import io.quarkus.quickcli.annotations.Option;
 
 public class TargetBuildToolGroup {
-    @CommandLine.Option(names = { "--jbang" }, description = "Use JBang (Java only)")
+    @Option(names = { "--jbang" }, description = "Use JBang (Java only)")
     boolean jbang = false;
 
-    @CommandLine.Option(names = { "--maven" }, description = "Use Maven")
+    @Option(names = { "--maven" }, description = "Use Maven")
     boolean maven = false;
 
-    @CommandLine.Option(names = { "--gradle" }, description = "Use Gradle")
+    @Option(names = { "--gradle" }, description = "Use Gradle")
     boolean gradle = false;
 
-    @CommandLine.Option(names = { "--gradle-kotlin-dsl" }, description = "Use Gradle with Kotlin DSL")
+    @Option(names = { "--gradle-kotlin-dsl" }, description = "Use Gradle with Kotlin DSL")
     boolean gradleKotlinDsl = false;
 
     public boolean isBuildless() {

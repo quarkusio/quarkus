@@ -3,9 +3,10 @@ package io.quarkus.cli.deploy;
 import java.util.Optional;
 
 import io.quarkus.cli.common.BuildToolContext;
-import picocli.CommandLine;
+import io.quarkus.quickcli.annotations.Command;
+import io.quarkus.quickcli.annotations.Option;
 
-@CommandLine.Command(name = "minikube", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Perform the deploy action on minikube.", description = "%n"
+@Command(name = "minikube", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Perform the deploy action on minikube.", description = "%n"
         + "The command will deploy the application on minikube.", footer = "%n"
                 + "For example (using default values), it will create a Deployment named '<project.artifactId>' using the image with REPOSITORY='${user.name}/<project.artifactId>' and TAG='<project.version>' and will deploy it to the target cluster.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
 public class Minikube extends BaseKubernetesDeployCommand {
@@ -21,7 +22,7 @@ public class Minikube extends BaseKubernetesDeployCommand {
         Job
     }
 
-    @CommandLine.Option(names = { "--deployment-kind" }, description = "The kind of resource to generate and deploy")
+    @Option(names = { "--deployment-kind" }, description = "The kind of resource to generate and deploy")
     public Optional<DeploymentKind> kind;
 
     @Override

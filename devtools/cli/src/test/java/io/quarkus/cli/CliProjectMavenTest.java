@@ -14,14 +14,17 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.devtools.commands.CreateProjectHelper;
 import io.quarkus.devtools.testing.RegistryClientTestHelper;
-import picocli.CommandLine;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.test.junit.main.QuarkusMainLauncher;
+import io.quarkus.test.junit.main.QuarkusMainTest;
 
 /**
  * Similar to CliProjectGradleTest ..
  */
+@QuarkusMainTest
 public class CliProjectMavenTest {
     static Path workspaceRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
-            .resolve("target/test-classes/test-project/CliProjectMavenTest");
+            .resolve("target/test-project/CliProjectMavenTest");
     Path project;
 
     @BeforeAll
@@ -41,9 +44,10 @@ public class CliProjectMavenTest {
     }
 
     @Test
-    public void testCreateAppDefaults() throws Exception {
+    public void testCreateAppDefaults(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "-e", "-B", "--verbose");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("SUCCESS"),
                 "Expected confirmation that the project has been created." + result);
 
@@ -76,10 +80,11 @@ public class CliProjectMavenTest {
     }
 
     @Test
-    public void testCreateAppWithoutDockerfiles() throws Exception {
+    public void testCreateAppWithoutDockerfiles(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--no-dockerfiles", "-e", "-B",
                 "--verbose");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("SUCCESS"),
                 "Expected confirmation that the project has been created." + result);
         Assertions.assertFalse(Files.exists(project.resolve("src/main/docker")),
@@ -87,7 +92,8 @@ public class CliProjectMavenTest {
     }
 
     @Test
-    public void testCreateAppOverrides() throws Exception {
+    public void testCreateAppOverrides(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         Path nested = workspaceRoot.resolve("cli-nested");
         project = nested.resolve("my-project");
 
@@ -103,7 +109,7 @@ public class CliProjectMavenTest {
                 "-x rest,micrometer-registry-prometheus",
                 "silly:my-project:0.1.0");
 
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("SUCCESS"),
                 "Expected confirmation that the project has been created." + result);
 
@@ -125,7 +131,7 @@ public class CliProjectMavenTest {
         result = CliDriver.execute(workspaceRoot, "create", "app", "--dry-run", "--verbose", "-e", "-B",
                 "--output-directory=" + nested,
                 "silly:my-project:0.1.0");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code. " + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code. " + result);
         Assertions.assertTrue(result.stdout.contains("WARN"),
                 "Expected a warning that the directory already exists. " + result);
 
@@ -134,9 +140,10 @@ public class CliProjectMavenTest {
     }
 
     @Test
-    public void testExtensionList() throws Exception {
+    public void testExtensionList(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "-e", "-B", "--verbose");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Path pom = project.resolve("pom.xml");
         String pomContent = CliDriver.readFileAsString(pom);
@@ -157,19 +164,20 @@ public class CliProjectMavenTest {
 
         // TODO: Maven and Gradle give different return codes
         result = CliDriver.invokeExtensionRemoveNonexistent(project);
-        Assertions.assertEquals(CommandLine.ExitCode.SOFTWARE, result.exitCode,
+        Assertions.assertEquals(ExitCode.SOFTWARE, result.exitCode,
                 "Expected error return code. Result:\n" + result);
     }
 
     @Test
-    public void testBuildOptions() throws Exception {
+    public void testBuildOptions(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "-e", "-B", "--verbose");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         // 1 --clean --tests --native --offline
         result = CliDriver.execute(project, "build", "-e", "-B", "--dry-run",
                 "--clean", "--tests", "--native", "--offline");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
 
         Assertions.assertTrue(result.stdout.contains(" clean"),
@@ -206,15 +214,16 @@ public class CliProjectMavenTest {
     }
 
     @Test
-    public void testDevTestOptions() throws Exception {
+    public void testDevTestOptions(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "-e", "-B", "--verbose");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         // 1 --clean --tests --suspend --offline
         result = CliDriver.execute(project, "dev", "-e", "--dry-run",
                 "--clean", "--tests", "--debug", "--suspend", "--debug-mode=listen", "--offline");
 
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         Assertions.assertTrue(result.stdout.contains("MAVEN"),
                 "quarkus command should specify 'MAVEN'\n" + result);
@@ -240,7 +249,7 @@ public class CliProjectMavenTest {
         result = CliDriver.execute(project, "dev", "-e", "--dry-run",
                 "--no-clean", "--no-tests", "--no-debug");
 
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         Assertions.assertTrue(result.stdout.contains("MAVEN"),
                 "quarkus command should specify 'MAVEN'\n" + result);
@@ -263,7 +272,7 @@ public class CliProjectMavenTest {
         result = CliDriver.execute(project, "dev", "-e", "--dry-run",
                 "--no-suspend", "--debug-host=0.0.0.0", "--debug-port=8008", "--debug-mode=connect", "--", "arg1", "arg2");
 
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         Assertions.assertTrue(result.stdout.contains("MAVEN"),
                 "quarkus command should specify 'MAVEN'\n" + result);
@@ -281,7 +290,7 @@ public class CliProjectMavenTest {
         // 4 TEST MODE: test --clean --debug --suspend --offline
         result = CliDriver.execute(project, "test", "-e", "--dry-run",
                 "--clean", "--debug", "--suspend", "--debug-mode=listen", "--offline", "--filter=FooTest");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         Assertions.assertTrue(result.stdout.contains("Run current project in continuous test mode"), result.toString());
         Assertions.assertTrue(result.stdout.contains("-Dquarkus.test.include-pattern=FooTest"), result.toString());
@@ -289,7 +298,7 @@ public class CliProjectMavenTest {
         // 5 TEST MODE - run once: test --once --offline
         result = CliDriver.execute(project, "test", "-e", "--dry-run",
                 "--once", "--offline", "--filter=FooTest");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         Assertions.assertTrue(result.stdout.contains("Run current project in test mode"), result.toString());
         Assertions.assertTrue(result.stdout.contains("-Dtest=FooTest"), result.toString());
@@ -303,9 +312,10 @@ public class CliProjectMavenTest {
     }
 
     @Test
-    public void testCreateCliDefaults() throws Exception {
+    public void testCreateCliDefaults(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "cli", "-e", "-B", "--verbose");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("SUCCESS"),
                 "Expected confirmation that the project has been created." + result);
 
@@ -327,7 +337,8 @@ public class CliProjectMavenTest {
     }
 
     @Test
-    public void testCreateArgPassthrough() throws Exception {
+    public void testCreateArgPassthrough(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         Path nested = workspaceRoot.resolve("cli-nested");
         project = nested.resolve("my-project");
 
@@ -340,7 +351,7 @@ public class CliProjectMavenTest {
                 "silly:my-project:0.1.0");
 
         // We don't need to retest this, just need to make sure all the arguments were passed through
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Assertions.assertTrue(result.stdout.contains("Creating an app"),
                 "Should contain 'Creating an app', found: " + result.stdout);
@@ -360,13 +371,14 @@ public class CliProjectMavenTest {
     }
 
     @Test
-    public void testCreateArgJava17() throws Exception {
+    public void testCreateArgJava17(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app",
                 "-e", "-B", "--verbose",
                 "--java", "17");
 
         // We don't need to retest this, just need to make sure all the arguments were passed through
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Path pom = project.resolve("pom.xml");
         String pomContent = CliDriver.readFileAsString(pom);
@@ -376,13 +388,14 @@ public class CliProjectMavenTest {
     }
 
     @Test
-    public void testCreateArgJava21() throws Exception {
+    public void testCreateArgJava21(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app",
                 "-e", "-B", "--verbose",
                 "--java", "21");
 
         // We don't need to retest this, just need to make sure all the arguments were passed through
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Path pom = project.resolve("pom.xml");
         String pomContent = CliDriver.readFileAsString(pom);
@@ -392,13 +405,14 @@ public class CliProjectMavenTest {
     }
 
     @Test
-    public void testCreateArgJava25() throws Exception {
+    public void testCreateArgJava25(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app",
                 "-e", "-B", "--verbose",
                 "--java", "25");
 
         // We don't need to retest this, just need to make sure all the arguments were passed through
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Path pom = project.resolve("pom.xml");
         String pomContent = CliDriver.readFileAsString(pom);
@@ -408,10 +422,11 @@ public class CliProjectMavenTest {
     }
 
     @Test
-    public void testCreateNameDescription() throws Exception {
+    public void testCreateNameDescription(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--name", "My name", "--description",
                 "My description");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("SUCCESS"),
                 "Expected confirmation that the project has been created." + result);
 

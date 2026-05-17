@@ -1,13 +1,13 @@
 package io.quarkus.cli.common.registry;
 
-import picocli.CommandLine;
+import io.quarkus.quickcli.annotations.Option;
 
 public class ToggleRegistryClientMixin extends RegistryClientMixin {
 
     boolean useRegistryClient = true;
 
-    @CommandLine.Option(names = { "--registry-client" }, description = "Use the Quarkus extension catalog", negatable = true)
-    void setRegistryClient(boolean enabled) {
+    @Option(names = { "--registry-client" }, description = "Use the Quarkus extension catalog", negatable = true)
+    public void setRegistryClient(boolean enabled) {
         System.setProperty("quarkusRegistryClient", Boolean.toString(enabled));
         useRegistryClient = enabled;
     }

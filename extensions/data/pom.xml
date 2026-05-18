@@ -13,6 +13,6 @@
     <name>Quarkus - Extensions - Quarkus Data</name>
     <packaging>pom</packaging>
     <modules>
-        <module>quarkus-data-hibernate</module>
+        <module>hibernate</module>
     </modules>
 </project>

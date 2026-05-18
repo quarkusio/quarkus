@@ -10,13 +10,13 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.hibernate.orm.H2Util;
 import io.quarkus.hibernate.orm.MyEntity;
-import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
 import io.quarkus.test.QuarkusExtensionTest;
 
 public class DbVersionInvalidTest {
 
-    private static final String ACTUAL_H2_VERSION = DialectVersions.Defaults.H2;
+    private static final String ACTUAL_H2_VERSION = H2Util.getActualVersion();
     // We will set the DB version to something higher than the actual version: this is invalid.
     private static final String CONFIGURED_DB_VERSION = "999.999";
     static {
@@ -34,6 +34,7 @@ public class DbVersionInvalidTest {
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
+                    .addClass(H2Util.class)
                     .addClass(MyEntity.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.datasource.db-version", "999.999")

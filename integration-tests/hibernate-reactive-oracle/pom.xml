@@ -49,6 +49,11 @@
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
         <dependency>
@@ -117,9 +122,9 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
-                    <systemPropertyVariables>
-                        <org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>true
-                        </org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>
+                    <systemPropertyVariables combine.children="append">
+                        <oracle.version>${oracle.version}</oracle.version>
+                        <org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>true</org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -127,9 +132,9 @@
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
-                    <systemPropertyVariables>
-                        <org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>true
-                        </org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>
+                    <systemPropertyVariables combine.children="append">
+                        <oracle.version>${oracle.version}</oracle.version>
+                        <org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>true</org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

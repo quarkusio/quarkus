@@ -229,9 +229,8 @@ public final class HibernateReactiveProcessor {
 
         Optional<String> datasourceName = reactiveDataSource.map(ReactiveDataSourceBuildItem::getName);
         Optional<String> explicitDialect = persistenceUnitConfig.dialect().dialect();
-        Optional<String> explicitDbMinVersion = reactiveDataSource.flatMap(ReactiveDataSourceBuildItem::getVersion);
+        Optional<String> explicitDbMinVersion = reactiveDataSource.flatMap(ReactiveDataSourceBuildItem::getDbVersion);
         Optional<String> dbKindOptional = reactiveDataSource.map(ReactiveDataSourceBuildItem::getDbKind);
-        Optional<String> dbVersion = reactiveDataSource.flatMap(ReactiveDataSourceBuildItem::getVersion);
 
         if (dbKindOptional.isEmpty()) {
             throw new ConfigurationException(
@@ -270,7 +269,8 @@ public final class HibernateReactiveProcessor {
                         datasourceName,
                         dbKindOptional,
                         reactivePUWithDBKind.supportedDatabaseKind.map(DatabaseKind.SupportedDatabaseKind::getMainName),
-                        dbVersion,
+                        reactiveDataSource.flatMap(ReactiveDataSourceBuildItem::getDbVersion),
+                        reactiveDataSource.map(ReactiveDataSourceBuildItem::isDbVersionUserSpecified).orElse(false),
                         persistenceUnitConfig.dialect().dialect(),
                         entityClassNames,
                         io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy.NONE,

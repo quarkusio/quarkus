@@ -41,7 +41,7 @@ Add the following dependencies to your project:
 
 * the Hibernate ORM extension: `io.quarkus:quarkus-hibernate-orm`
 * your JDBC driver extension; the following options are available:
-  - `quarkus-jdbc-db2` for link:https://www.ibm.com/products/db2-database[IBM DB2]
+  - `quarkus-jdbc-db2` for link:https://www.ibm.com/products/db2-database[IBM Db2]
   - `quarkus-jdbc-h2` for link:https://www.h2database.com/html/main.html[H2]
   - `quarkus-jdbc-mariadb` for link:https://mariadb.com/[MariaDB]
   - `quarkus-jdbc-mssql` for link:https://www.microsoft.com/en-gb/sql-server/[Microsoft SQL Server]
@@ -177,17 +177,25 @@ the link:{hibernate-orm-docs-url}#database-dialect[Hibernate ORM dialect]
 does not need to be set explicitly:
 it is selected automatically based on the datasource.
 
-By default, the dialect is configured to target the minimum supported version of the database.
+Quarkus defaults to the latest, or close to latest, database version:
 
-In order for Hibernate ORM to generate more efficient SQL,
-to avoid workarounds and to take advantage of more database features,
-you can set the database version explicitly:
+* IBM Db2 {db2-version}
+* MariaDB {mariadb-version}
+* Microsoft SQL Server {mssql-version}
+* MySQL {mysql-version}
+* Oracle Database {oracle-version}
+* PostgreSQL {postgres-version}
+
+These defaults enable all available features and best performance when using these versions.
+They also match the xref:databases-dev-services.adoc[Dev Services] container versions.
+
+If you intend to connect to an older database version, you must set the `db-version` explicitly to be lower than or equal to your actual database version:
 
 [source,properties]
-.`{config-file}` with an explicit `db-version`
+.`{config-file}` with an explicit (older) `db-version`
 ----
 quarkus.datasource.db-kind = postgresql
-quarkus.datasource.db-version = 18.1 <1>
+quarkus.datasource.db-version = 17.0 <1>
 
 %prod.quarkus.datasource.username = hibernate
 %prod.quarkus.datasource.password = hibernate
@@ -195,17 +203,14 @@ quarkus.datasource.db-version = 18.1 <1>
 ----
 <1> Set the database version. The Hibernate ORM dialect will target that version.
 
-As a rule, the version set here should be as high as possible,
-but must be lower than or equal to the version of any database your application will connect to.
-
 [NOTE]
 ====
-As described above, the version can either be preconfigured explicitly via a `quarkus.datasource.db-version` configuration property,
-or implicitly set by the Quarkus build process to a minimum supported version of the database.
-Quarkus will try to check this preconfigured version against the actual database version on startup,
-leading to a startup failure when the actual version is lower.
+As described above, the version can either be set explicitly via a `quarkus.datasource.db-version` configuration property,
+or defaulted to the latest stable version.
+Quarkus will check the configured version against the actual database version on startup,
+leading to a startup failure when the actual version is lower than the configured version.
 
-This is a safeguard: for versions of the database older than what is configured,
+This is a safeguard: for databases older than what is configured,
 Hibernate ORM may generate SQL that is invalid which would lead to runtime exceptions.
 
 // TODO disable the check by default when offline startup is opted in

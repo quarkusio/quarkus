@@ -10,7 +10,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>quarkus-data-parent</artifactId>
-    <name>Quarkus - Extensions - Quarkus Data</name>
+    <name>Quarkus - Extensions - Data</name>
     <packaging>pom</packaging>
     <modules>
         <module>hibernate</module>

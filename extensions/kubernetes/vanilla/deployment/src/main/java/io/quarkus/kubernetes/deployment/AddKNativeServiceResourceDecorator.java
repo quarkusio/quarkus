@@ -1,6 +1,7 @@
 package io.quarkus.kubernetes.deployment;
 
 import java.util.List;
+import java.util.TreeMap;
 
 import io.fabric8.knative.serving.v1.Service;
 import io.fabric8.knative.serving.v1.ServiceBuilder;
@@ -128,17 +129,19 @@ public class AddKNativeServiceResourceDecorator
         // add template metadata annotations if needed
         if (config.needsScalingAnnotations() || config.revisionName().isPresent()) {
             final var templateMetadata = revisionTemplate.editOrNewMetadata();
-            config.minScale().ifPresent(min -> templateMetadata.addToAnnotations(MIN_SCALE, String.valueOf(min)));
-            config.maxScale().ifPresent(max -> templateMetadata.addToAnnotations(MAX_SCALE, String.valueOf(max)));
+            final var sorted = new TreeMap<String, String>();
+            config.minScale().ifPresent(min -> sorted.put(MIN_SCALE, String.valueOf(min)));
+            config.maxScale().ifPresent(max -> sorted.put(MAX_SCALE, String.valueOf(max)));
             revisionAutoScaling.autoScalerClass()
-                    .ifPresent(a -> templateMetadata.addToAnnotations(AUTOSCALING_CLASS,
+                    .ifPresent(a -> sorted.put(AUTOSCALING_CLASS,
                             a.name().toLowerCase() + AUTOSCALING_CLASS_SUFFIX));
             revisionAutoScaling.metric()
-                    .ifPresent(m -> templateMetadata.addToAnnotations(AUTOSCALING_METRIC, m.name().toLowerCase()));
+                    .ifPresent(m -> sorted.put(AUTOSCALING_METRIC, m.name().toLowerCase()));
             revisionAutoScaling.targetUtilizationPercentage()
-                    .ifPresent(t -> templateMetadata.addToAnnotations(UTILIZATION_PERCENTAGE, String.valueOf(t)));
+                    .ifPresent(t -> sorted.put(UTILIZATION_PERCENTAGE, String.valueOf(t)));
             revisionAutoScaling.target()
-                    .ifPresent(t -> templateMetadata.addToAnnotations(AUTOSCALING_TARGET, String.valueOf(t)));
+                    .ifPresent(t -> sorted.put(AUTOSCALING_TARGET, String.valueOf(t)));
+            templateMetadata.addToAnnotations(sorted);
 
             //Traffic Splitting
             config.revisionName().ifPresent(templateMetadata::withName);

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.TreeMap;
 
 import org.jspecify.annotations.Nullable;
 
@@ -182,7 +183,10 @@ abstract class BaseAddResourceDecorator<T extends HasMetadata, B extends Visitab
         if (namespace != null) {
             builder.withNamespace(namespace);
         }
-        builder.addToLabels(labels);
+        // order labels alphabetically
+        if (labels != null) {
+            builder.addToLabels(new TreeMap<>(labels));
+        }
         return builder;
     }
 

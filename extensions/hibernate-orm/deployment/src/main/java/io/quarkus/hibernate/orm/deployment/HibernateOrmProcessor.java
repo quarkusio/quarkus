@@ -87,6 +87,7 @@ import io.quarkus.arc.processor.DotNames;
 import io.quarkus.builder.BuildException;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbVersionBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
@@ -145,7 +146,6 @@ import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
 import io.quarkus.hibernate.orm.runtime.boot.xml.JAXBElementSubstitution;
 import io.quarkus.hibernate.orm.runtime.boot.xml.QNameSubstitution;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
-import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
 import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
 import io.quarkus.hibernate.orm.runtime.customized.JsonFormatterCustomizationCheck;
 import io.quarkus.hibernate.orm.runtime.graal.RegisterServicesForReflectionFeature;
@@ -236,16 +236,11 @@ public final class HibernateOrmProcessor {
         producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.DB2, "DB2",
                 Set.of("org.hibernate.dialect.DB2Dialect")));
         producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.H2, "H2",
-                Set.of("org.hibernate.dialect.H2Dialect"),
-                // Using our own default version is extra important for H2
-                // See https://github.com/quarkusio/quarkus/issues/1886
-                DialectVersions.Defaults.H2));
+                Set.of("org.hibernate.dialect.H2Dialect")));
         producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.MARIADB, "MariaDB",
-                Set.of("org.hibernate.dialect.MariaDBDialect"),
-                DialectVersions.Defaults.MARIADB));
+                Set.of("org.hibernate.dialect.MariaDBDialect")));
         producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.MSSQL, "Microsoft SQL Server",
-                Set.of("org.hibernate.dialect.SQLServerDialect"),
-                DialectVersions.Defaults.MSSQL));
+                Set.of("org.hibernate.dialect.SQLServerDialect")));
         producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.MYSQL, "MySQL",
                 Set.of("org.hibernate.dialect.MySQLDialect")));
         producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.ORACLE, "Oracle",
@@ -387,7 +382,8 @@ public final class HibernateOrmProcessor {
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
-            List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
+            List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems,
+            List<DefaultDataSourceDbVersionBuildItem> defaultDbVersions) {
         // First produce the PUs having a persistence.xml: these are not reactive, as we don't allow using a persistence.xml for them.
         for (PersistenceXmlDescriptorBuildItem persistenceXmlDescriptorBuildItem : persistenceXmlDescriptors) {
             PersistenceUnitDescriptor xmlDescriptor = persistenceXmlDescriptorBuildItem.getDescriptor();
@@ -395,7 +391,7 @@ public final class HibernateOrmProcessor {
             Optional<JdbcDataSourceBuildItem> jdbcDataSource = jdbcDataSources.stream()
                     .filter(i -> i.isDefault())
                     .findFirst();
-            collectDialectConfigForPersistenceXml(puName, xmlDescriptor);
+            collectDialectConfigForPersistenceXml(puName, xmlDescriptor, defaultDbVersions);
             Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities,
                     hibernateOrmConfig.mapping().format().global());
             Optional<FormatMapperKind> xmlMapper = xmlMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
@@ -413,6 +409,7 @@ public final class HibernateOrmProcessor {
                                     jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind),
                                     Optional.empty(),
                                     jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion),
+                                    jdbcDataSource.map(JdbcDataSourceBuildItem::isDbVersionUserSpecified).orElse(false),
                                     Optional.ofNullable(xmlDescriptor.getProperties().getProperty(AvailableSettings.DIALECT)),
                                     Set.of(), // Not relevant for persistence.xml, because such a PU never gets deactivated.
                                     getMultiTenancyStrategy(
@@ -1166,6 +1163,7 @@ public final class HibernateOrmProcessor {
                                 jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind),
                                 supportedDatabaseKind.map(DatabaseKind.SupportedDatabaseKind::getMainName),
                                 jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion),
+                                jdbcDataSource.map(JdbcDataSourceBuildItem::isDbVersionUserSpecified).orElse(false),
                                 persistenceUnitConfig.dialect().dialect(),
                                 entityClassNames,
                                 multiTenancyStrategy,
@@ -1225,7 +1223,7 @@ public final class HibernateOrmProcessor {
     }
 
     private static void collectDialectConfigForPersistenceXml(String persistenceUnitName,
-            PersistenceUnitDescriptor puDescriptor) {
+            PersistenceUnitDescriptor puDescriptor, List<DefaultDataSourceDbVersionBuildItem> defaultDbVersions) {
         Properties properties = puDescriptor.getProperties();
         String dialect = puDescriptor.getProperties().getProperty(AvailableSettings.DIALECT);
         // Legacy behavior: we used to do this through a custom DialectSelector,
@@ -1236,11 +1234,15 @@ public final class HibernateOrmProcessor {
                 && !properties.containsKey(AvailableSettings.JAKARTA_HBM2DDL_DB_MAJOR_VERSION)
                 && !properties.containsKey(AvailableSettings.JAKARTA_HBM2DDL_DB_MINOR_VERSION)
                 && !properties.containsKey(AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION)) {
-            Logger.getLogger(HibernateOrmProcessor.class)
-                    .infof("Persistence unit '%1$s': Enforcing Quarkus defaults for dialect 'org.hibernate.dialect.H2Dialect'"
-                            + " by automatically setting '%2$s=%3$s'.",
-                            persistenceUnitName, AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION, DialectVersions.Defaults.H2);
-            properties.setProperty(AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION, DialectVersions.Defaults.H2);
+            Optional<String> defaultH2Version = DefaultDataSourceDbVersionBuildItem.resolveDefaultDbVersion("h2",
+                    defaultDbVersions);
+            if (defaultH2Version.isPresent()) {
+                Logger.getLogger(HibernateOrmProcessor.class)
+                        .infof("Persistence unit '%1$s': Enforcing Quarkus defaults for dialect 'org.hibernate.dialect.H2Dialect'"
+                                + " by automatically setting '%2$s=%3$s'.",
+                                persistenceUnitName, AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION, defaultH2Version.get());
+                properties.setProperty(AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION, defaultH2Version.get());
+            }
         }
     }
 

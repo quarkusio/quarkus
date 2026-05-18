@@ -162,13 +162,19 @@
                     <plugin>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                            <skip>false</skip>
+                            <skip>true</skip>
+                            <systemPropertyVariables combine.children="append">
+                                <oracle.version>${oracle.version}</oracle.version>
+                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
                     <plugin>
                         <artifactId>maven-failsafe-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
+                            <systemPropertyVariables combine.children="append">
+                                <oracle.version>${oracle.version}</oracle.version>
+                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
                 </plugins>

@@ -146,12 +146,18 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
+                    <systemPropertyVariables combine.children="append">
+                        <postgres.version>${postgres.version}</postgres.version>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
-                    <skip>true</skip>
+                    <skip>false</skip>
+                    <systemPropertyVariables combine.children="append">
+                        <postgres.version>${postgres.version}</postgres.version>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
             <plugin>

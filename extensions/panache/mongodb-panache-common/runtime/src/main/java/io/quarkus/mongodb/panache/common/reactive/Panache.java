@@ -13,6 +13,7 @@ import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
+import io.vertx.core.internal.ContextInternal;
 import mutiny.zero.flow.adapters.AdaptersToFlow;
 
 /**
@@ -33,7 +34,7 @@ public class Panache {
      */
     public static <T> Uni<T> withTransaction(Supplier<Uni<T>> work) {
         Context context = vertxContext();
-        ClientSession current = context.getLocal(SESSION_KEY);
+        ClientSession current = ((ContextInternal) context).getLocal(SESSION_KEY);
         if (current != null && current.hasActiveTransaction()) {
             // reactive session exists - reuse this session
             return work.get();
@@ -41,7 +42,7 @@ public class Panache {
             // reactive session does not exist - open a new one and close it when the returned Uni completes
             return Panache.startSession()
                     .invoke(s -> s.startTransaction())
-                    .invoke(s -> context.putLocal(SESSION_KEY, s))
+                    .invoke(s -> ((ContextInternal) context).putLocal(SESSION_KEY, s))
                     .chain(s -> work.get())
                     .call(() -> commitTransaction())
                     .onFailure().call(() -> abortTransaction())
@@ -59,18 +60,18 @@ public class Panache {
      */
     public static ClientSession getCurrentSession() {
         Context context = Vertx.currentContext();
-        return context != null ? context.getLocal(SESSION_KEY) : null;
+        return context != null ? ((ContextInternal) context).getLocal(SESSION_KEY) : null;
     }
 
     private static Uni<?> abortTransaction() {
         Context context = vertxContext();
-        ClientSession current = context.getLocal(SESSION_KEY);
+        ClientSession current = ((ContextInternal) context).getLocal(SESSION_KEY);
         return toUni(current.abortTransaction());
     }
 
     private static Uni<?> commitTransaction() {
         Context context = vertxContext();
-        ClientSession current = context.getLocal(SESSION_KEY);
+        ClientSession current = ((ContextInternal) context).getLocal(SESSION_KEY);
         return toUni(current.commitTransaction());
     }
 
@@ -90,11 +91,11 @@ public class Panache {
 
     private static void closeSession() {
         Context context = vertxContext();
-        ClientSession current = context.getLocal(SESSION_KEY);
+        ClientSession current = ((ContextInternal) context).getLocal(SESSION_KEY);
         try {
             current.close();
         } finally {
-            context.removeLocal(SESSION_KEY);
+            ((ContextInternal) context).removeLocal(SESSION_KEY);
         }
     }
 

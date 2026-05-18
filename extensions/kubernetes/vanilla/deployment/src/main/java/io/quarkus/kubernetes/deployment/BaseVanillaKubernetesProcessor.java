@@ -5,6 +5,7 @@ import static io.quarkus.kubernetes.deployment.Constants.MAX_NODE_PORT_VALUE;
 import static io.quarkus.kubernetes.deployment.Constants.MAX_PORT_NUMBER;
 import static io.quarkus.kubernetes.deployment.Constants.MIN_NODE_PORT_VALUE;
 import static io.quarkus.kubernetes.deployment.Constants.MIN_PORT_NUMBER;
+import static io.quarkus.kubernetes.deployment.Constants.SERVICE;
 import static io.quarkus.kubernetes.deployment.KubernetesConfigUtil.MANAGEMENT_PORT_NAME;
 import static io.quarkus.kubernetes.deployment.KubernetesConfigUtil.managementPortIsEnabled;
 
@@ -153,6 +154,12 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
                     config.nodePort().orElseGet(
                             () -> getStablePortNumberInRange(context.name(), MIN_NODE_PORT_VALUE, MAX_NODE_PORT_VALUE)),
                     config.ingress().targetPort()));
+        }
+
+        if (config.service() != null) {
+            for (Map.Entry<String, String> annotation : config.service().annotations().entrySet()) {
+                context.add(new AddAnnotationDecorator(context.name(), annotation.getKey(), annotation.getValue(), SERVICE));
+            }
         }
     }
 

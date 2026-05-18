@@ -87,8 +87,9 @@
                                             <!-- com.google.auth -->
                                             <!-- perfmark.version https://central.sonatype.com/artifact/io.grpc/grpc-core  -->
         <grpc-jprotoc.version>1.2.2</grpc-jprotoc.version>
-        <protoc.version>4.33.2</protoc.version>
+        <protoc.version>4.34.1</protoc.version>
         <protobuf-java.version>${protoc.version}</protobuf-java.version>
+        <protobuf4j.version>0.0.4</protobuf4j.version>
         <protobuf-kotlin.version>${protoc.version}</protobuf-kotlin.version>
         <proto-google-common-protos.version>2.70.0</proto-google-common-protos.version>
         <perfmark.version>0.27.0</perfmark.version><!-- dependency of io.grpc:grpc-core not managed in io.grpc:grpc-bom -->

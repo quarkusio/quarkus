@@ -13,6 +13,7 @@
     <artifactId>quarkus-modular-parent</artifactId>
 
     <name>Quarkus - Modularity</name>
+    <description>The parent POM for modular packaging</description>
 
     <packaging>pom</packaging>
 

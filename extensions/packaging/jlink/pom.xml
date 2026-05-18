@@ -13,6 +13,7 @@
     <artifactId>quarkus-jlink-parent</artifactId>
 
     <name>Quarkus - JLink</name>
+    <description>The parent POM for JLink packaging</description>
 
     <packaging>pom</packaging>
 

@@ -13,6 +13,7 @@
     <artifactId>quarkus-modular</artifactId>
 
     <name>Quarkus - Modularity - Runtime</name>
+    <description>The runtime module for modular builds</description>
 
     <dependencies>
         <!-- Not really a "real" dependency; excluded from boot modules -->

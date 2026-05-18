@@ -13,6 +13,7 @@
     <artifactId>quarkus-jlink</artifactId>
 
     <name>Quarkus - JLink - Runtime</name>
+    <description>The runtime module for JLink packaging</description>
 
     <dependencies>
         <dependency>

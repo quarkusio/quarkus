@@ -13,6 +13,7 @@
     <artifactId>quarkus-packaging-parent</artifactId>
 
     <name>Quarkus - Packaging</name>
+    <description>The parent POM for packaging types</description>
 
     <packaging>pom</packaging>
 

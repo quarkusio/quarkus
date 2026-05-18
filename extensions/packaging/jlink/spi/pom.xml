@@ -13,6 +13,7 @@
     <artifactId>quarkus-jlink-spi</artifactId>
 
     <name>Quarkus - JLink - SPI</name>
+    <description>The SPI module for JLink packaging.</description>
 
     <dependencies>
         <dependency>

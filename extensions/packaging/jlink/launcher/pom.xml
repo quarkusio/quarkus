@@ -13,6 +13,7 @@
     <artifactId>quarkus-jlink-launcher</artifactId>
 
     <name>Quarkus - JLink - Launcher</name>
+    <description>The special launcher module for JLink packaging</description>
 
     <dependencies>
         <dependency>

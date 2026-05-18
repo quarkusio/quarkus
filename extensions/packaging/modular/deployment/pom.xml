@@ -13,6 +13,7 @@
     <artifactId>quarkus-modular-deployment</artifactId>
 
     <name>Quarkus - Modularity - Deployment</name>
+    <description>The build module for modular builds</description>
 
     <dependencies>
         <dependency>

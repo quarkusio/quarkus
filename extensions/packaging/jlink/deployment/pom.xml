@@ -13,6 +13,8 @@
     <artifactId>quarkus-jlink-deployment</artifactId>
 
     <name>Quarkus - JLink - Deployment</name>
+    <description>The build module for JLink packaging</description>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

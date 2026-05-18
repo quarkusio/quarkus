@@ -13,6 +13,8 @@
     <artifactId>quarkus-modular-spi</artifactId>
 
     <name>Quarkus - Modularity - SPI</name>
+    <description>The SPI for modular builds</description>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

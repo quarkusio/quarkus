@@ -6,6 +6,7 @@ import static io.quarkus.arc.processor.DotNames.EVENT;
 import static io.quarkus.arc.processor.DotNames.NAMED;
 import static io.quarkus.oidc.common.runtime.OidcConstants.BEARER_SCHEME;
 import static io.quarkus.oidc.common.runtime.OidcConstants.CODE_FLOW_CODE;
+import static io.quarkus.oidc.common.runtime.OidcConstants.RESOURCE_METADATA_WELL_KNOWN_PATH;
 import static io.quarkus.oidc.runtime.OidcRecorder.ACR_VALUES_TO_MAX_AGE_SEPARATOR;
 import static io.quarkus.oidc.runtime.OidcUtils.DEFAULT_TENANT_ID;
 import static io.quarkus.security.spi.ClassSecurityAnnotationBuildItem.useClassLevelSecurity;
@@ -119,6 +120,7 @@ import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpAuthMechanismAnnotationBuildItem;
 import io.quarkus.vertx.http.deployment.PreRouterFinalizationBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
+import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.smallrye.jwt.auth.cdi.ClaimValueProducer;
@@ -518,6 +520,14 @@ public class OidcBuildStep {
     FilterBuildItem registerResourceMetadataHandler(BeanContainerBuildItem beanContainerBuildItem, OidcRecorder recorder) {
         Handler<RoutingContext> handler = recorder.getResourceMetadataHandler(beanContainerBuildItem.getValue());
         return new FilterBuildItem(handler, SecurityHandlerPriorities.AUTHORIZATION - 50);
+    }
+
+    @BuildStep
+    void registerResourceMetadataDevEndpoint(
+            BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints) {
+        displayableEndpoints.produce(
+                new NotFoundPageDisplayableEndpointBuildItem(RESOURCE_METADATA_WELL_KNOWN_PATH,
+                        "OAuth 2.0 Protected Resource Metadata", true));
     }
 
     private static boolean areEagerSecInterceptorsSupported(Capabilities capabilities,

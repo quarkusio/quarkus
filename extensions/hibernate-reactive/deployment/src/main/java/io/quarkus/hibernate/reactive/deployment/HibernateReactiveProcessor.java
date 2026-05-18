@@ -44,7 +44,6 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
-import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
@@ -127,7 +126,6 @@ public final class HibernateReactiveProcessor {
             JpaModelBuildItem jpaModel,
             Capabilities capabilities,
             List<SqlLoadScriptDefaultBuildItem> additionalSqlLoadScriptDefaults,
-            BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
@@ -162,7 +160,7 @@ public final class HibernateReactiveProcessor {
                     jdbcDataSources,
                     applicationArchivesBuildItem, additionalJpaModelBuildItems, jpaModel, launchMode, capabilities,
                     additionalSqlLoadScriptDefaults,
-                    systemProperties, nativeImageResources,
+                    nativeImageResources,
                     hotDeploymentWatchedFiles, persistenceUnitDescriptors,
                     unremovableBeans, dbKindDialectBuildItems);
         }
@@ -179,7 +177,7 @@ public final class HibernateReactiveProcessor {
                     enableDefaultPersistenceUnit, reactiveDataSources, jdbcDataSources,
                     applicationArchivesBuildItem, additionalJpaModelBuildItems, jpaModel, launchMode, capabilities,
                     additionalSqlLoadScriptDefaults,
-                    systemProperties, nativeImageResources,
+                    nativeImageResources,
                     hotDeploymentWatchedFiles, persistenceUnitDescriptors,
                     unremovableBeans, dbKindDialectBuildItems);
         }
@@ -195,7 +193,6 @@ public final class HibernateReactiveProcessor {
             JpaModelBuildItem jpaModel, LaunchModeBuildItem launchMode,
             Capabilities capabilities,
             List<SqlLoadScriptDefaultBuildItem> additionalSqlLoadScriptDefaults,
-            BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
@@ -244,7 +241,7 @@ public final class HibernateReactiveProcessor {
                 dbKindOptional, explicitDialect, explicitDbMinVersion, applicationArchivesBuildItem,
                 launchMode.getLaunchMode(),
                 additionalSqlLoadScriptDefaults,
-                systemProperties, nativeImageResources, hotDeploymentWatchedFiles, dbKindDialectBuildItems,
+                nativeImageResources, hotDeploymentWatchedFiles, dbKindDialectBuildItems,
                 enableDefaultPersistenceUnit);
 
         Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
@@ -345,7 +342,6 @@ public final class HibernateReactiveProcessor {
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchMode launchMode,
             List<SqlLoadScriptDefaultBuildItem> additionalSqlLoadScriptDefaults,
-            BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             List<DatabaseKindDialectBuildItem> dbKindDialectBuildItems, boolean enableDefaultPersistenceUnit) {
@@ -374,7 +370,6 @@ public final class HibernateReactiveProcessor {
                 explicitDbMinVersion,
                 dialectConfig,
                 dbKindDialectBuildItems,
-                systemProperties,
                 descriptor.getProperties()::setProperty);
 
         configureProperties(descriptor, persistenceUnitConfig, hibernateOrmConfig, true);

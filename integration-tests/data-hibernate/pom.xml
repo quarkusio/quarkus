@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-integration-test-quarkus-data-hibernate</artifactId>
+    <artifactId>quarkus-integration-test-data-hibernate</artifactId>
     <name>Quarkus - Integration Tests - Quarkus Data Hibernate</name>
 
     <dependencies>

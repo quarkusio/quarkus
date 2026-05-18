@@ -50,4 +50,13 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>release</id>
+            <properties>
+                <skipRagGeneration>false</skipRagGeneration>
+            </properties>
+        </profile>
+    </profiles>
 </project>

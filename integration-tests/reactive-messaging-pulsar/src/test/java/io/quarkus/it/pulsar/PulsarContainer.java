@@ -9,11 +9,12 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.DockerImageName;
 
+import io.quarkus.test.common.DockerImageNames;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 
 public class PulsarContainer extends GenericContainer<PulsarContainer> {
 
-    public static final DockerImageName PULSAR_IMAGE = DockerImageName.parse(System.getProperty("pulsar.image", "apachepulsar/pulsar:3.2.4"));
+    public static final DockerImageName PULSAR_IMAGE = DockerImageName.parse(DockerImageNames.getImage("pulsar.image"));
 
     public static final String STARTER_SCRIPT = "/run_pulsar.sh";
 
